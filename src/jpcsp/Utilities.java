@@ -20,40 +20,19 @@ package jpcsp;
 public class Utilities {
   public static String formatString(String type , String oldstring)
   {
-    String newString="";
-    if(type.equals("byte"))
-    {
-      int length = oldstring.length();
-      int counter = length;
-      while(counter<=2)
-      {
-           newString = "0" + oldstring;
-           counter++;
-      }
-      
-      
-    }
-    if(type.equals("short"))
-    {
-      int length = oldstring.length();
-      int counter = length;   
-      while(counter<=5)
-      {
-           newString = "0" + oldstring;
-           counter++;
-      }
-        
-    }
-    if(type.equals("long"))
-    {
-      int length = oldstring.length();
-      int counter = length;   
-      while(counter<=8)
-      {
-           newString = "0" + oldstring;
-           counter++;
-      }
-    }
-    return newString;
+    int counter=0; 
+    if(type.equals("byte")) counter=2;
+    if(type.equals("short")) counter =4;
+    if(type.equals("long")) counter =8;
+    
+    int len = oldstring.length();
+   StringBuilder sb = new StringBuilder();
+   while ( len++ < counter )
+   {
+     sb.append( '0' );
+   }
+    oldstring= sb.append(oldstring).toString();  
+    return oldstring;
+    
   }
 }
