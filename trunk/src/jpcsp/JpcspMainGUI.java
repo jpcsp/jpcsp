@@ -27,7 +27,7 @@ import javax.swing.UIManager;
  * @author  George
  */
 public class JpcspMainGUI extends javax.swing.JFrame {
-
+    ElfHeaderInfo elfinfo; 
     /** Creates new form JpcspMainGUI */
     public JpcspMainGUI() {
         initComponents();
@@ -104,16 +104,18 @@ public class JpcspMainGUI extends javax.swing.JFrame {
     }//GEN-LAST:event_exitMenuItemActionPerformed
 
 private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openMenuItemActionPerformed
-       final JFileChooser fc = new JFileChooser();
+    boolean isloaded = false; // variable to check if user at least choose something   
+    final JFileChooser fc = new JFileChooser();
        fc.setDialogTitle("Open Elf File");
        
        int returnVal = fc.showOpenDialog(desktopPane);
-        
+        //TODO open current project dir as default. Maybe save the dir to XML (perhaps later)
         if (returnVal == JFileChooser.APPROVE_OPTION) {
             File file = fc.getSelectedFile();
             //This is where a real application would open the file.   
           try {
             ElfHeader.readHeader(file.getName());
+            isloaded=true; //TODO check if it a valid file
           }
           catch(IOException e)
           {
@@ -123,7 +125,18 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
            //user cancel the action
            
         }
-           
+       if(isloaded)
+       {
+        //TODO: ADD CHECK IF window is already open.
+         elfinfo = new ElfHeaderInfo();
+        elfinfo.setLocation(0, 0);      
+        elfinfo.setVisible(true);
+       
+       desktopPane.add( elfinfo);
+       try {
+             elfinfo.setSelected(true);
+        } catch (java.beans.PropertyVetoException e) {}
+       }
 }//GEN-LAST:event_openMenuItemActionPerformed
 
     /**

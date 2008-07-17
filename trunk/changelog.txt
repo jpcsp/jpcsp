@@ -1,5 +1,10 @@
-TODO: Display String values correctly
 
+
+17/07/2008
+----------
+Few adds to ElfHeader (nothing important ) (shadow)
+Added Utility class for display the Hexs properly. Not fully working (shadow)
+Added ElfHeaderInfo for displaying elf header(shadow)
 
 16/07/2008
 ----------
