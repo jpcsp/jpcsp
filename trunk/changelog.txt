@@ -1,0 +1,12 @@
+TODO: Display String values correctly
+
+
+16/07/2008
+----------
+
+Add a basic gui with fileloader. (shadow)
+Elfheader seems to load okay . Time now for Section Header. (shadow)
+
+15/07/2008
+----------
+First try of elf loader creation. Not working yet! (shadow)
