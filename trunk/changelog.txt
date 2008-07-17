@@ -2,6 +2,8 @@
 
 17/07/2008
 ----------
+Startup support for PBP loading (shadow)
+Fixed the FileLoading problem (shadow)
 Fixed The Utility class. Strings display as the should now. (shadow)
 Few adds to ElfHeader (nothing important ) (shadow)
 Added Utility class for display the Hexs properly. Not fully working (shadow)

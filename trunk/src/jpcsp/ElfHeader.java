@@ -25,6 +25,33 @@ import java.io.RandomAccessFile;
  * @author George
  */
 class ElfHeader {
+    
+  private static class PBP_Header
+  {
+     private long p_magic; 
+     private long p_version;
+     private long p_offset_param_sfo;
+     private long p_icon0_png;
+     private long offset_icon1_pmf;
+     private long offset_pic0_png;
+     private long offset_pic1_png;
+     private long offset_snd0_at3;
+     private long offset_psp_data;
+     private long offset_psar_data;
+    private void read (RandomAccessFile f) throws IOException
+    {
+     p_magic = readUWord(f); 
+     p_version = readUWord(f);
+     p_offset_param_sfo = readUWord(f);
+     p_icon0_png = readUWord(f);
+     offset_icon1_pmf = readUWord(f);
+     offset_pic0_png = readUWord(f);
+     offset_pic1_png = readUWord(f);
+     offset_snd0_at3 = readUWord(f);
+     offset_psp_data = readUWord(f);
+     offset_psar_data = readUWord(f);
+    }
+  }
   private static class Elf32_Ehdr
   { 
     private long e_magic;
@@ -164,9 +191,25 @@ class ElfHeader {
   static void readHeader(String file) throws IOException
   {
     RandomAccessFile f = new RandomAccessFile (file, "r");
+    /** Read pbp **/
+    PBP_Header pbp = new PBP_Header();
+    pbp.read(f);
+    if(Long.toHexString(pbp.p_magic & 0xFFFFFFFFL).equals("50425000"))//file is pbp
+    {
+        f.seek(pbp.offset_psp_data); //seek the new offset!
+    }
+    else
+    {
+        f.seek(0); // start read from start file is not pbp check if it an elf;
+    }
     /** Read the ELF header. */
     Elf32_Ehdr ehdr = new Elf32_Ehdr ();
     ehdr.read (f);
+    if(!Long.toHexString(ehdr.e_magic & 0xFFFFFFFFL).toUpperCase().equals("464C457F"))
+    {
+        System.out.println("NOT AN ELF FILE");
+        
+    }
     ElfInfo = ehdr.toString();
     Elf32_Shdr shdr = new Elf32_Shdr();
     shdr.read(f);

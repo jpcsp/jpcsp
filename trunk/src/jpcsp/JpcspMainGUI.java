@@ -107,14 +107,14 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     boolean isloaded = false; // variable to check if user at least choose something   
     final JFileChooser fc = new JFileChooser();
        fc.setDialogTitle("Open Elf File");
-       
+       fc.setCurrentDirectory(new java.io.File("."));
        int returnVal = fc.showOpenDialog(desktopPane);
-        //TODO open current project dir as default. Maybe save the dir to XML (perhaps later)
         if (returnVal == JFileChooser.APPROVE_OPTION) {
             File file = fc.getSelectedFile();
+            
             //This is where a real application would open the file.   
           try {
-            ElfHeader.readHeader(file.getName());
+            ElfHeader.readHeader(file.getPath());
             isloaded=true; //TODO check if it a valid file
           }
           catch(IOException e)
