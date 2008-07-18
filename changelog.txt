@@ -1,4 +1,6 @@
-
+18/07/2008
+----------
+More to Elf Header . Next step will be loading it to PSP Memory (shadow)
 
 17/07/2008
 ----------

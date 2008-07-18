@@ -131,6 +131,8 @@ class ElfHeader {
     private int sh_info;
     private int sh_addralign;
     private long sh_entsize;
+    
+
     private static int sizeof () { return 40; }
     private void read (RandomAccessFile f) throws IOException
     {
@@ -187,6 +189,31 @@ class ElfHeader {
       
    
    }
+   enum ShFlags { None(0) , Write(1) , Allocate(2) , Execute(4); 
+            private int value;
+            ShFlags(int val)
+            {
+                value=val;
+            }
+            int getValue()
+            {
+                return value;
+            }
+    
+    }
+   enum ShType { NULL(0), PROGBITS(1) ,SYMTAB(2) ,STRTAB(3),
+		 RELA(4),HASH(5),DYNAMIC(6),NOTE(7),NOBITS(8)
+		 ,REL(9),SHLIB(10),DYNSYM(11);
+             private int value;
+            ShType(int val)
+            {
+                value=val;
+            }
+            int getValue()
+            {
+                return value;
+            }
+   }
   static String ElfInfo;
   static void readHeader(String file) throws IOException
   {
@@ -210,17 +237,37 @@ class ElfHeader {
         System.out.println("NOT AN ELF FILE");
         
     }
+    if(!Integer.toHexString(ehdr.e_machine & 0xFFFF).equals("8"))
+    {
+        System.out.println("NOT A MIPS executable");
+    }
     ElfInfo = ehdr.toString();
     Elf32_Shdr shdr = new Elf32_Shdr();
-    shdr.read(f);
-    shdr.printSectionHeader();
+    //shdr.read(f);
+    
     
     for (int i = 0; i < ehdr.e_shnum; i++)
     {
        	// Read information about this section.
 	f.seek (ehdr.e_shoff + (i * ehdr.e_shentsize));
 	shdr.read (f);
-        
+        shdr.printSectionHeader();
+        if((shdr.sh_flags & ShFlags.Allocate.getValue())== ShFlags.Allocate.getValue())
+        {
+             
+             switch(shdr.sh_type)
+             {
+                 case 1: //ShType.PROGBITS
+                     System.out.println("FEED MEMORY WITH IT!");
+                     break;
+                 case 8: // ShType.NOBITS
+                     System.out.println("NO BITS");
+                     break;
+                 
+                 
+                 
+             }
+        }
     }
     
   }
