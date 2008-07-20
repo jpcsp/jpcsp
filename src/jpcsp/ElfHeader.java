@@ -99,7 +99,8 @@ class ElfHeader {
        StringBuffer str = new StringBuffer();
        str.append("-----ELF HEADER---------" + "\n");
        str.append("e_magic " + "\t " +  Utilities.formatString("long", Long.toHexString(e_magic & 0xFFFFFFFFL).toUpperCase()) + "\n");
-       str.append("e_class " + "\t " +  Utilities.formatString("byte", Integer.toHexString(e_class & 0xFF ).toUpperCase())+ "\n");
+      str.append("e_class " + "\t " +  Utilities.integerToHex(e_class & 0xFF ) + "\n");
+       // str.append("e_class " + "\t " +  Utilities.formatString("byte", Integer.toHexString(e_class & 0xFF ).toUpperCase())+ "\n");
        str.append("e_data " + "\t " + Utilities.formatString("byte", Integer.toHexString(e_data & 0xFF ).toUpperCase())+ "\n");
        str.append("e_idver " + "\t " + Utilities.formatString("byte", Integer.toHexString(e_idver & 0xFF).toUpperCase())+ "\n");
        str.append("e_type " + "\t " + Utilities.formatString("short",Integer.toHexString(e_type & 0xFFFF).toUpperCase())+ "\n");
@@ -153,8 +154,8 @@ class ElfHeader {
              System.out.println("sh_type " + sh_type);
              System.out.println("sh_flags "  + Long.toHexString(sh_flags));
              System.out.println("sh_addr "  + Long.toHexString(sh_addr));
-             System.out.println("sh_offset " + sh_offset);
-             System.out.println("sh_size " + sh_size);
+             System.out.println("sh_offset " + Long.toHexString(sh_offset));
+             System.out.println("sh_size " + Long.toHexString(sh_size));
              System.out.println("sh_link " + sh_link);
              System.out.println("sh_info " + sh_info);
              System.out.println("sh_addralign " + sh_addralign);
@@ -244,7 +245,7 @@ class ElfHeader {
     ElfInfo = ehdr.toString();
     Elf32_Shdr shdr = new Elf32_Shdr();
     //shdr.read(f);
-    
+    Memory mem = new Memory();// intialaze memory. This probably should exist somewhere else! test for now...
     
     for (int i = 0; i < ehdr.e_shnum; i++)
     {
@@ -259,6 +260,25 @@ class ElfHeader {
              {
                  case 1: //ShType.PROGBITS
                      System.out.println("FEED MEMORY WITH IT!");
+                     //f.seek(shdr.sh_offset);
+                     
+                     //f.readFully(b, (int)shdr.sh_offset, (int)shdr.sh_offset + (int)shdr.sh_size);
+                    // System.out.println(shdr.sh_offset);
+                     //System.out.println(shdr.sh_size);
+                     //f.readFully(b,0xb0,3);
+                    // int from = (int)shdr.sh_offset;
+                    // int to = (int)shdr.sh_offset + (int)shdr.sh_size-1;
+                     //byte[] b = new byte[to-from+1];//small test
+                   // byte[] b = new byte[ 0x01FFFFFF];
+                     f.seek(shdr.sh_offset);
+                     f.read(mem.mainmemory,0x08900000-0x08000000,(int)shdr.sh_size+(int)shdr.sh_offset);//not sure if it proper... probably it will have a problem if 2 progfiles loaded it is probably okay for minifire.pbp
+                   //  for(int k=0; k<mem.mainmemory.length; k++)
+                    // {
+                      // System.out.println(mem.mainmemory[]);   
+                    // }
+                    
+                     
+                     //mem.write32(shdr.sh_addr, b);
                      break;
                  case 8: // ShType.NOBITS
                      System.out.println("NO BITS");
@@ -269,6 +289,7 @@ class ElfHeader {
              }
         }
     }
+    System.out.println(mem.read32(0x08900010));
     
   }
 }

@@ -14,29 +14,29 @@
     You should have received a copy of the GNU General Public License
     along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 package jpcsp;
 
 
-public class Utilities {
-  public static String formatString(String type , String oldstring)
-  {
-    int counter=0; 
-    if(type.equals("byte")) counter=2;
-    if(type.equals("short")) counter =4;
-    if(type.equals("long")) counter =8;
-    
-    int len = oldstring.length();
-   StringBuilder sb = new StringBuilder();
-   while ( len++ < counter )
-   {
-     sb.append( '0' );
-   }
-    oldstring= sb.append(oldstring).toString();  
-    return oldstring;
-    
-  }
-  public static String integerToHex(int value)
-  {
-      return Integer.toHexString( 0x100 | value).substring(1).toUpperCase();
-  }
+public class Memory {
+      byte[] mainmemory; 
+      byte[] scratchpad;
+      byte[] videoram;
+      
+      public Memory()
+      {
+        mainmemory = new byte[0x01FFFFFF]; //32mb main ram
+        scratchpad = new byte[0x00003FFF]; //16kb scratchpad
+        videoram= new byte[0x001FFFFF]; // 2mb videoram
+      }
+      
+      	int read32(int address)  { //for testing supports only RAM!
+            int i = address-0x08000000;
+	    return (((int)mainmemory[i+3] << 24) |
+			(((int)mainmemory[i+2] << 16)&0x00ff0000) |
+			(((int)mainmemory[i+1] << 8)&0x0000ff00) |
+			(((int)mainmemory[i])&0x000000ff));
+		}
+	
+      
 }
