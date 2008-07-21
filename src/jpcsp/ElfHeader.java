@@ -51,6 +51,26 @@ public class ElfHeader {
      offset_psp_data = readUWord(f);
      offset_psar_data = readUWord(f);
     }
+    
+        @Override
+         public String toString() 
+     {
+       StringBuffer str = new StringBuffer();
+       str.append("-----PBP HEADER---------" + "\n");
+       str.append("p_magic " + "\t\t " +  Utilities.formatString("long", Long.toHexString(p_magic & 0xFFFFFFFFL).toUpperCase()) + "\n");
+       str.append("p_version " + "\t\t " +  Utilities.formatString("long", Long.toHexString(p_version & 0xFFFFFFFFL).toUpperCase()) + "\n");
+       str.append("p_offset_param_sfo " + "\t " +  Utilities.formatString("long", Long.toHexString(p_offset_param_sfo & 0xFFFFFFFFL).toUpperCase()) + "\n");
+       str.append("p_icon0_png " + "\t\t " +  Utilities.formatString("long", Long.toHexString(p_icon0_png & 0xFFFFFFFFL).toUpperCase()) + "\n");
+       str.append("offset_icon1_pmf " + "\t " +  Utilities.formatString("long", Long.toHexString(offset_icon1_pmf & 0xFFFFFFFFL).toUpperCase()) + "\n");
+       str.append("offset_pic0_png " + "\t " +  Utilities.formatString("long", Long.toHexString(offset_pic0_png & 0xFFFFFFFFL).toUpperCase()) + "\n");
+       str.append("offset_pic1_png " + "\t " +  Utilities.formatString("long", Long.toHexString(offset_pic1_png & 0xFFFFFFFFL).toUpperCase()) + "\n");
+       str.append("offset_snd0_at3 " + "\t " +  Utilities.formatString("long", Long.toHexString(offset_snd0_at3 & 0xFFFFFFFFL).toUpperCase()) + "\n");
+       str.append("offset_psp_data " + "\t " +  Utilities.formatString("long", Long.toHexString(offset_psp_data & 0xFFFFFFFFL).toUpperCase()) + "\n");
+       str.append("offset_psar_data " + "\t " +  Utilities.formatString("long", Long.toHexString(offset_psar_data & 0xFFFFFFFFL).toUpperCase()) + "\n");
+       
+      
+       return str.toString();
+     }
   }
   private static class Elf32_Ehdr
   { 
@@ -94,6 +114,7 @@ public class ElfHeader {
       e_shnum = readUHalf (f);
       e_shstrndx = readUHalf (f);
     }   
+        @Override
      public String toString() 
      {
        StringBuffer str = new StringBuffer();
@@ -161,6 +182,22 @@ public class ElfHeader {
              System.out.println("sh_addralign " + sh_addralign);
              System.out.println("sh_entsize "  + sh_entsize);
     }
+    public String toString() 
+     {
+       StringBuffer str = new StringBuffer();
+       str.append("-----SECTION HEADER---------" + "\n");
+       str.append("sh_name " + "\t " +  Utilities.formatString("long", Long.toHexString(sh_name & 0xFFFFFFFFL).toUpperCase()) + "\n");
+       str.append("sh_type " + "\t " +  Utilities.integerToHex(sh_type & 0xFF ) + "\n");
+       str.append("sh_flags " + "\t " +  Utilities.integerToHex(sh_flags & 0xFF ) + "\n");
+       str.append("sh_addr " + "\t " +  Utilities.formatString("long", Long.toHexString(sh_addr & 0xFFFFFFFFL).toUpperCase()) + "\n");
+       str.append("sh_offset " + "\t " +  Utilities.formatString("long", Long.toHexString(sh_offset & 0xFFFFFFFFL).toUpperCase()) + "\n");
+       str.append("sh_size " + "\t " +  Utilities.formatString("long", Long.toHexString(sh_size & 0xFFFFFFFFL).toUpperCase()) + "\n");
+       str.append("sh_link " + "\t " +  Utilities.integerToHex(sh_link & 0xFF ) + "\n");
+       str.append("sh_info " + "\t " +  Utilities.integerToHex(sh_info & 0xFF ) + "\n");
+       str.append("sh_addralign " + "\t " +  Utilities.integerToHex(sh_addralign & 0xFF ) + "\n");
+       str.append("sh_entsize " + "\t " +  Utilities.formatString("long", Long.toHexString(sh_entsize & 0xFFFFFFFFL).toUpperCase()) + "\n");
+       return str.toString();
+     }
   }
 
   private static int readUByte (RandomAccessFile f) throws IOException
@@ -215,7 +252,7 @@ public class ElfHeader {
                 return value;
             }
    }
-  public static String ElfInfo;
+  public static String ElfInfo,PbpInfo,SectInfo;
   static void readHeader(String file) throws IOException
   {
     Memory.get_instance().NullMemory(); //re-initiate *test
@@ -231,6 +268,7 @@ public class ElfHeader {
     {
         f.seek(0); // start read from start file is not pbp check if it an elf;
     }
+    PbpInfo = pbp.toString();
     /** Read the ELF header. */
     Elf32_Ehdr ehdr = new Elf32_Ehdr ();
     ehdr.read (f);
@@ -292,6 +330,7 @@ public class ElfHeader {
                  
              }
         }
+        SectInfo = shdr.toString();
     }
     System.out.println(Memory.get_instance().read32(0x08900010));//small test of memory. OKAY!
     

@@ -23,7 +23,10 @@ public class ElfHeaderInfo extends javax.swing.JInternalFrame {
     /** Creates new form ElfHeaderInfo */
     public ElfHeaderInfo() {
         initComponents();
+        ELFInfoArea.append(ElfHeader.PbpInfo);
         ELFInfoArea.append(ElfHeader.ElfInfo);
+        ELFInfoArea.append(ElfHeader.SectInfo);
+        
     }
 
     /** This method is called from within the constructor to
