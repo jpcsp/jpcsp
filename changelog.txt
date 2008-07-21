@@ -1,3 +1,16 @@
+21/07/2008
+----------
+More work in disasembler . Loading machine code now. minifire code seems okay (shadow)
+Memory class is using singleton pattern (shadow)
+Prelimary work for disasembler. Not much done and it will take a while :P (shadow)
+
+20/07/2008
+----------
+-created prototype memory class. So far only read32 from ram which is the most important now in order
+ to get disasembler to be implemented and memory viewer (shadow)
+-minifire seems to load okay to prototype RAM. ELf loader probably need a little more work
+ to work okay with other elfs but i quess it is not something hard (shadow)
+
 18/07/2008
 ----------
 More to Elf Header . Next step will be loading it to PSP Memory (shadow)

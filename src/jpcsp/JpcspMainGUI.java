@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import javax.swing.JFileChooser;
 import javax.swing.UIManager;
+import jpcsp.Debugger.Disasembler;
 
 /**
  *
@@ -28,6 +29,7 @@ import javax.swing.UIManager;
  */
 public class JpcspMainGUI extends javax.swing.JFrame {
     ElfHeaderInfo elfinfo; 
+    Disasembler dis;
     /** Creates new form JpcspMainGUI */
     public JpcspMainGUI() {
         initComponents();
@@ -47,6 +49,8 @@ public class JpcspMainGUI extends javax.swing.JFrame {
         fileMenu = new javax.swing.JMenu();
         openMenuItem = new javax.swing.JMenuItem();
         exitMenuItem = new javax.swing.JMenuItem();
+        Windows = new javax.swing.JMenu();
+        Disasembler = new javax.swing.JMenuItem();
         helpMenu = new javax.swing.JMenu();
         aboutMenuItem = new javax.swing.JMenuItem();
 
@@ -76,6 +80,23 @@ public class JpcspMainGUI extends javax.swing.JFrame {
 
         menuBar.add(fileMenu);
 
+        Windows.setText("Windows");
+        Windows.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                WindowsActionPerformed(evt);
+            }
+        });
+
+        Disasembler.setText("Disasembler");
+        Disasembler.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                DisasemblerActionPerformed(evt);
+            }
+        });
+        Windows.add(Disasembler);
+
+        menuBar.add(Windows);
+
         helpMenu.setText("Help");
 
         aboutMenuItem.setText("About");
@@ -93,7 +114,7 @@ public class JpcspMainGUI extends javax.swing.JFrame {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(desktopPane, javax.swing.GroupLayout.DEFAULT_SIZE, 496, Short.MAX_VALUE)
+            .addComponent(desktopPane, javax.swing.GroupLayout.DEFAULT_SIZE, 557, Short.MAX_VALUE)
         );
 
         pack();
@@ -139,6 +160,22 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
        }
 }//GEN-LAST:event_openMenuItemActionPerformed
 
+private void DisasemblerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DisasemblerActionPerformed
+        //TODO: ADD CHECK IF window is already open.
+         dis = new Disasembler();
+        dis.setLocation(100, 0);      
+        dis.setVisible(true);
+       
+       desktopPane.add( dis);
+       try {
+             dis.setSelected(true);
+        } catch (java.beans.PropertyVetoException e) {}
+}//GEN-LAST:event_DisasemblerActionPerformed
+
+private void WindowsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_WindowsActionPerformed
+// TODO add your handling code here:
+}//GEN-LAST:event_WindowsActionPerformed
+
     /**
     * @param args the command line arguments
     */
@@ -157,6 +194,8 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JMenuItem Disasembler;
+    private javax.swing.JMenu Windows;
     private javax.swing.JMenuItem aboutMenuItem;
     private javax.swing.JDesktopPane desktopPane;
     private javax.swing.JMenuItem exitMenuItem;
