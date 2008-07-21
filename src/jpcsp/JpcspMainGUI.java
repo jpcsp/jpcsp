@@ -125,7 +125,8 @@ public class JpcspMainGUI extends javax.swing.JFrame {
     }//GEN-LAST:event_exitMenuItemActionPerformed
 
 private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openMenuItemActionPerformed
-    boolean isloaded = false; // variable to check if user at least choose something   
+    boolean isloaded = false; // variable to check if user at least choose something  
+    
     final JFileChooser fc = new JFileChooser();
        fc.setDialogTitle("Open Elf File");
        fc.setCurrentDirectory(new java.io.File("."));
@@ -147,10 +148,17 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
            
         }
        if(isloaded)
-       {
-        //TODO: ADD CHECK IF window is already open.
+       {      
+        
         //elf info window
-         elfinfo = new ElfHeaderInfo();
+        if(elfinfo!=null){
+            //clear previously opened stuff
+            elfinfo.setVisible(false);
+            desktopPane.remove(elfinfo); 
+            elfinfo=null;
+        }
+
+        elfinfo = new ElfHeaderInfo();
         elfinfo.setLocation(0, 0);      
         elfinfo.setVisible(true);
         
@@ -159,6 +167,12 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
              elfinfo.setSelected(true);
         } catch (java.beans.PropertyVetoException e) {}
        //disassembler window
+       if(dis!=null){
+            //clear previously opened stuff
+            dis.setVisible(false);
+            desktopPane.remove(dis); 
+            dis=null;
+        }
        dis=new Disasembler();
        dis.setLocation(300, 0); 
        dis.setVisible(true);
@@ -167,6 +181,8 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
              dis.setSelected(true);
              dis.RefreshDebugger();
         } catch (java.beans.PropertyVetoException e) {}
+       
+       
        }
 }//GEN-LAST:event_openMenuItemActionPerformed
 
