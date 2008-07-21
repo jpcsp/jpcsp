@@ -70,7 +70,7 @@ public class Disasembler extends javax.swing.JInternalFrame  {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void RefreshDebugger()
+    public void RefreshDebugger()
     {
         long t;
         long cnt;
