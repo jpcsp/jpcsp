@@ -1,20 +1,19 @@
 /*
-    This file is part of jpcsp.
+This file is part of jpcsp.
 
-    Jpcsp is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-    Jpcsp is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp;
 
 import java.io.File;
@@ -28,8 +27,10 @@ import jpcsp.Debugger.*;
  * @author  George
  */
 public class JpcspMainGUI extends javax.swing.JFrame {
-    ElfHeaderInfo elfinfo; 
+
+    ElfHeaderInfo elfinfo;
     Disasembler dis;
+
     /** Creates new form JpcspMainGUI */
     public JpcspMainGUI() {
         initComponents();
@@ -82,6 +83,11 @@ public class JpcspMainGUI extends javax.swing.JFrame {
         menuBar.add(fileMenu);
 
         Windows.setText("Windows");
+        Windows.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mousePressed(java.awt.event.MouseEvent evt) {
+                WindowsMousePressed(evt);
+            }
+        });
         Windows.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 WindowsActionPerformed(evt);
@@ -135,76 +141,82 @@ public class JpcspMainGUI extends javax.swing.JFrame {
 
 private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openMenuItemActionPerformed
     boolean isloaded = false; // variable to check if user at least choose something  
-    
+
     final JFileChooser fc = new JFileChooser();
-       fc.setDialogTitle("Open Elf File");
-       fc.setCurrentDirectory(new java.io.File("."));
-       int returnVal = fc.showOpenDialog(desktopPane);
-        if (returnVal == JFileChooser.APPROVE_OPTION) {
-            File file = fc.getSelectedFile();
-            
-            //This is where a real application would open the file.   
-          try {
+    fc.setDialogTitle("Open Elf File");
+    fc.setCurrentDirectory(new java.io.File("."));
+    int returnVal = fc.showOpenDialog(desktopPane);
+    if (returnVal == JFileChooser.APPROVE_OPTION) {
+        File file = fc.getSelectedFile();
+
+        //This is where a real application would open the file.   
+        try {
             ElfHeader.readHeader(file.getPath());
-            isloaded=true; //TODO check if it a valid file
-          }
-          catch(IOException e)
-          {
+            isloaded = true; //TODO check if it a valid file
+        } catch (IOException e) {
             e.printStackTrace();
-          }
-        } else {
-           //user cancel the action
-           
         }
-       if(isloaded)
-       {      
-        
+    } else {
+        //user cancel the action
+    }
+    if (isloaded) {
+
         //elf info window
-        if(elfinfo!=null){
+        if (elfinfo != null) {
             //clear previously opened stuff
             elfinfo.setVisible(false);
-            desktopPane.remove(elfinfo); 
-            elfinfo=null;
+            desktopPane.remove(elfinfo);
+            elfinfo = null;
         }
 
         elfinfo = new ElfHeaderInfo();
-        elfinfo.setLocation(0, 0);      
+        elfinfo.setLocation(0, 0);
         elfinfo.setVisible(true);
-        
-       desktopPane.add(elfinfo);
-       try {
-             elfinfo.setSelected(true);
-        } catch (java.beans.PropertyVetoException e) {}
-       //disassembler window
-       if(dis!=null){
+
+        desktopPane.add(elfinfo);
+        ElfInfo.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
+        try {
+            elfinfo.setSelected(true);
+        } catch (java.beans.PropertyVetoException e) {
+        }
+        //disassembler window
+        if (dis != null) {
             //clear previously opened stuff
             dis.setVisible(false);
-            desktopPane.remove(dis); 
-            dis=null;
+            Disasembler.setIcon(null);
+            desktopPane.remove(dis);
+            dis = null;
         }
-       dis=new Disasembler();
-       dis.setLocation(300, 0); 
-       dis.setVisible(true);
-       desktopPane.add(dis);
-       try {
-             dis.setSelected(true);
-             //dis.RefreshDebugger();
-        } catch (java.beans.PropertyVetoException e) {}
-       
-       
-       }
+        dis = new Disasembler();
+        dis.setLocation(300, 0);
+        dis.setVisible(true);
+        desktopPane.add(dis);
+        Disasembler.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
+        try {
+            dis.setSelected(true);
+        //dis.RefreshDebugger();
+        } catch (java.beans.PropertyVetoException e) {
+        }
+
+
+    }
 }//GEN-LAST:event_openMenuItemActionPerformed
 
 private void DisasemblerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DisasemblerActionPerformed
-        //TODO: ADD CHECK IF window is already open.
-    if(dis!=null){
-        dis.setLocation(300, 0); 
-        if(dis.isVisible())
-        dis.setVisible(false);
-        else
-          dis.setVisible(true);         
+
+    if (dis != null) {
+        dis.setLocation(300, 0);
+        if (dis.isVisible()) {
+            dis.setVisible(false);
+            Disasembler.setIcon(null);
+
+        } else {
+            dis.setVisible(true);
+            Disasembler.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
+        }
+
     }
- 
+
 }//GEN-LAST:event_DisasemblerActionPerformed
 
 private void WindowsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_WindowsActionPerformed
@@ -213,15 +225,35 @@ private void WindowsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
 private void ElfInfoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ElfInfoActionPerformed
 // TODO add your handling code here:
-    if(elfinfo!=null){
-         elfinfo.setLocation(0, 0); 
-        if(elfinfo.isVisible())
-        elfinfo.setVisible(false);
-        else
-          elfinfo.setVisible(true);       
+    if (elfinfo != null) {
+        elfinfo.setLocation(0, 0);
+        if (elfinfo.isVisible()) {
+            elfinfo.setVisible(false);
+            ElfInfo.setIcon(null);
+        } else {
+            elfinfo.setVisible(true);
+            ElfInfo.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
+        }
     }
- 
+
 }//GEN-LAST:event_ElfInfoActionPerformed
+
+private void WindowsMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_WindowsMousePressed
+// TODO add your handling code here:
+    if (elfinfo != null) 
+        if (elfinfo.isVisible()) 
+            ElfInfo.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
+         else 
+            ElfInfo.setIcon(null);
+        
+    
+    if (dis != null) 
+        if (dis.isVisible()) 
+            Disasembler.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
+         else 
+            Disasembler.setIcon(null);
+    
+}//GEN-LAST:event_WindowsMousePressed
 
     /**
     * @param args the command line arguments
