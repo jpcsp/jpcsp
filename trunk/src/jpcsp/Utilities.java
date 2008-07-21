@@ -39,4 +39,8 @@ public class Utilities {
   {
       return Integer.toHexString( 0x100 | value).substring(1).toUpperCase();
   }
+  public static String integerToHexShort(int value)
+  {
+       return Integer.toHexString( 0x10000 | value).substring(1).toUpperCase();
+  }
 }

@@ -18,12 +18,21 @@ package jpcsp.Debugger;
 
 import javax.swing.DefaultListModel;
 import jpcsp.Memory;
+import jpcsp.Utilities;
 
 /**
  *
  * @author  shadow
  */
 public class Disasembler extends javax.swing.JInternalFrame  {
+    
+  String[] cpuregs=
+  { 
+         "zr", "at", "v0", "v1", "a0", "a1", "a2", "a3",
+	 "t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7", 
+	 "s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7",
+	 "t8", "t9", "k0", "k1", "gp", "sp", "fp", "ra"
+  };
   long DebuggerPC;
   private DefaultListModel model_1 = new DefaultListModel();
     /** Creates new form Disasembler */
@@ -45,7 +54,8 @@ public class Disasembler extends javax.swing.JInternalFrame  {
         jScrollPane1 = new javax.swing.JScrollPane();
         jList1 = new javax.swing.JList(model_1);
 
-        setTitle("Disasembler");
+        setClosable(true);
+        setTitle("Disassembler");
 
         jList1.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         jScrollPane1.setViewportView(jList1);
@@ -62,9 +72,8 @@ public class Disasembler extends javax.swing.JInternalFrame  {
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 469, Short.MAX_VALUE)
-                .addContainerGap())
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 469, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
         pack();
@@ -87,10 +96,33 @@ public class Disasembler extends javax.swing.JInternalFrame  {
           }
           else
           {
-           model_1.addElement(String.format("%08x : [%08x]",t,memread));
+           model_1.addElement(String.format("%08x : [%08x] %s",t,memread,disasm(memread)));
           }
      }
         
+    }
+    String disasm(int value)
+    {
+      String s = new String();
+      
+      int rs = (value >> 21) & 0x1f;
+      int rt = (value >> 16) & 0x1f;
+      int rd = (value >> 11) & 0x1f;  
+       
+      int opcode = (value >>26) & 0x3f;
+
+      //s = Integer.toString(opcode);
+      switch(opcode)
+      {
+          case 15: 
+          s=s + "LUI " + cpuregs[rt] + " , 0x" + Utilities.integerToHexShort(value & 0xffff);
+          break;
+          default:
+	   break;
+          
+          
+      }
+        return s;        
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JList jList1;
