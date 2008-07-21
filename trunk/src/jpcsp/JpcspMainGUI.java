@@ -29,7 +29,7 @@ import jpcsp.Debugger.Disasembler;
  */
 public class JpcspMainGUI extends javax.swing.JFrame {
     ElfHeaderInfo elfinfo; 
-    Disasembler dis=new Disasembler();
+    Disasembler dis;
     /** Creates new form JpcspMainGUI */
     public JpcspMainGUI() {
         initComponents();
@@ -149,15 +149,20 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
        if(isloaded)
        {
         //TODO: ADD CHECK IF window is already open.
+        //elf info window
          elfinfo = new ElfHeaderInfo();
         elfinfo.setLocation(0, 0);      
         elfinfo.setVisible(true);
-       
+        
        desktopPane.add( elfinfo);
        try {
              elfinfo.setSelected(true);
         } catch (java.beans.PropertyVetoException e) {}
-       desktopPane.add( dis);
+       //disassembler window
+       dis=new Disasembler();
+       dis.setLocation(300, 0); 
+       dis.setVisible(true);
+       desktopPane.add(dis);
        try {
              dis.setSelected(true);
              dis.RefreshDebugger();
@@ -167,7 +172,7 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
 
 private void DisasemblerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DisasemblerActionPerformed
         //TODO: ADD CHECK IF window is already open.
-        dis.setLocation(100, 0); 
+        dis.setLocation(300, 0); 
         if(dis.isVisible())
         dis.setVisible(false);
         else
