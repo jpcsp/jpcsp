@@ -36,6 +36,7 @@ public class ElfHeaderInfo extends javax.swing.JInternalFrame {
         ELFInfoArea = new javax.swing.JTextArea();
 
         setClosable(true);
+        setDefaultCloseOperation(javax.swing.WindowConstants.HIDE_ON_CLOSE);
         setTitle("Elf Header Info");
 
         ELFInfoArea.setColumns(20);
@@ -53,7 +54,7 @@ public class ElfHeaderInfo extends javax.swing.JInternalFrame {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 313, Short.MAX_VALUE)
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 317, Short.MAX_VALUE)
         );
 
         pack();

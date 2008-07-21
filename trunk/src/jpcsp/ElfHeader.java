@@ -218,6 +218,7 @@ class ElfHeader {
   static String ElfInfo;
   static void readHeader(String file) throws IOException
   {
+    Memory.get_instance().NullMemory(); //re-initiate *test
     RandomAccessFile f = new RandomAccessFile (file, "r");
     /** Read pbp **/
     PBP_Header pbp = new PBP_Header();

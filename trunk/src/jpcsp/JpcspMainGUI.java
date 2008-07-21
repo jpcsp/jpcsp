@@ -51,6 +51,7 @@ public class JpcspMainGUI extends javax.swing.JFrame {
         exitMenuItem = new javax.swing.JMenuItem();
         Windows = new javax.swing.JMenu();
         Disasembler = new javax.swing.JMenuItem();
+        ElfInfo = new javax.swing.JMenuItem();
         helpMenu = new javax.swing.JMenu();
         aboutMenuItem = new javax.swing.JMenuItem();
 
@@ -94,6 +95,14 @@ public class JpcspMainGUI extends javax.swing.JFrame {
             }
         });
         Windows.add(Disasembler);
+
+        ElfInfo.setText("Elf Info");
+        ElfInfo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ElfInfoActionPerformed(evt);
+            }
+        });
+        Windows.add(ElfInfo);
 
         menuBar.add(Windows);
 
@@ -162,7 +171,7 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         elfinfo.setLocation(0, 0);      
         elfinfo.setVisible(true);
         
-       desktopPane.add( elfinfo);
+       desktopPane.add(elfinfo);
        try {
              elfinfo.setSelected(true);
         } catch (java.beans.PropertyVetoException e) {}
@@ -179,7 +188,7 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
        desktopPane.add(dis);
        try {
              dis.setSelected(true);
-             dis.RefreshDebugger();
+             //dis.RefreshDebugger();
         } catch (java.beans.PropertyVetoException e) {}
        
        
@@ -188,16 +197,31 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
 
 private void DisasemblerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DisasemblerActionPerformed
         //TODO: ADD CHECK IF window is already open.
+    if(dis!=null){
         dis.setLocation(300, 0); 
         if(dis.isVisible())
         dis.setVisible(false);
         else
-          dis.setVisible(true);  
+          dis.setVisible(true);         
+    }
+ 
 }//GEN-LAST:event_DisasemblerActionPerformed
 
 private void WindowsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_WindowsActionPerformed
 // TODO add your handling code here:
 }//GEN-LAST:event_WindowsActionPerformed
+
+private void ElfInfoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ElfInfoActionPerformed
+// TODO add your handling code here:
+    if(elfinfo!=null){
+         elfinfo.setLocation(0, 0); 
+        if(elfinfo.isVisible())
+        elfinfo.setVisible(false);
+        else
+          elfinfo.setVisible(true);       
+    }
+ 
+}//GEN-LAST:event_ElfInfoActionPerformed
 
     /**
     * @param args the command line arguments
@@ -218,6 +242,7 @@ private void WindowsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenuItem Disasembler;
+    private javax.swing.JMenuItem ElfInfo;
     private javax.swing.JMenu Windows;
     private javax.swing.JMenuItem aboutMenuItem;
     private javax.swing.JDesktopPane desktopPane;
