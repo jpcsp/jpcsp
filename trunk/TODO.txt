@@ -1,5 +1,0 @@
-
-Add Loader
-Finished the Elf loader and load it to memory
-Add PBP loader too
-Fix Strings appearence  ( byte should display with two digits etc..)
