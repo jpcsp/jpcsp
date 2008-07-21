@@ -24,7 +24,7 @@ import java.io.RandomAccessFile;
  *
  * @author George
  */
-class ElfHeader {
+public class ElfHeader {
     
   private static class PBP_Header
   {
@@ -215,7 +215,7 @@ class ElfHeader {
                 return value;
             }
    }
-  static String ElfInfo;
+  public static String ElfInfo;
   static void readHeader(String file) throws IOException
   {
     Memory.get_instance().NullMemory(); //re-initiate *test

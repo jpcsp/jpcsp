@@ -21,7 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import javax.swing.JFileChooser;
 import javax.swing.UIManager;
-import jpcsp.Debugger.Disasembler;
+import jpcsp.Debugger.*;
 
 /**
  *
