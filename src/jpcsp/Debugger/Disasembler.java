@@ -1,18 +1,18 @@
 /*
-    This file is part of jpcsp.
+This file is part of jpcsp.
 
-    Jpcsp is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-    Jpcsp is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Debugger;
 
@@ -24,22 +24,25 @@ import jpcsp.Utilities;
  *
  * @author  shadow
  */
-public class Disasembler extends javax.swing.JInternalFrame  {
-    
-  String[] cpuregs=
-  { 
-         "zr", "at", "v0", "v1", "a0", "a1", "a2", "a3",
-	 "t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7", 
-	 "s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7",
-	 "t8", "t9", "k0", "k1", "gp", "sp", "fp", "ra"
-  };
-  long DebuggerPC;
-  private DefaultListModel model_1 = new DefaultListModel();
+public class Disasembler extends javax.swing.JInternalFrame {
+
+    String[] cpuregs = {
+        "zr", "at", "v0", "v1", "a0", "a1", "a2", "a3",
+        "t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7",
+        "s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7",
+        "t8", "t9", "k0", "k1", "gp", "sp", "fp", "ra"
+    };
+    long DebuggerPC;
+    private DefaultListModel model_1 = new DefaultListModel();
+
     /** Creates new form Disasembler */
     public Disasembler() {
-        DebuggerPC=0;
-        RefreshDebugger();
+        
+        DebuggerPC = 0;
+        model_1 = new DefaultListModel();
         initComponents();
+        RefreshDebugger();
+        
     }
 
     /** This method is called from within the constructor to
@@ -55,6 +58,7 @@ public class Disasembler extends javax.swing.JInternalFrame  {
         jList1 = new javax.swing.JList(model_1);
 
         setClosable(true);
+        setDefaultCloseOperation(javax.swing.WindowConstants.HIDE_ON_CLOSE);
         setTitle("Disassembler");
 
         jList1.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
@@ -72,61 +76,56 @@ public class Disasembler extends javax.swing.JInternalFrame  {
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap(15, Short.MAX_VALUE)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 469, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    public void RefreshDebugger()
-    {
+    public void RefreshDebugger() {
         long t;
         long cnt;
-      if(DebuggerPC==0)
-        DebuggerPC= 0x08900000;//test
+        if (DebuggerPC == 0) {
+            DebuggerPC = 0x08900000;//test
+        }
         model_1.clear();
-     for (t = DebuggerPC, cnt = 0; t < (DebuggerPC + 0x00000074); t += 0x00000004, cnt++)
-     {
-          
-          int memread = Memory.get_instance().read32((int)t);
-          if(memread==0)
-          {
-              model_1.addElement(String.format("%08x : [%08x]:  NOP",t,memread));
-          }
-          else
-          {
-           model_1.addElement(String.format("%08x : [%08x] %s",t,memread,disasm(memread)));
-          }
-     }
         
-    }
-    String disasm(int value)
-    {
-      String s = new String();
-      
-      int rs = (value >> 21) & 0x1f;
-      int rt = (value >> 16) & 0x1f;
-      int rd = (value >> 11) & 0x1f;  
-       
-      int opcode = (value >>26) & 0x3f;
+        for (t = DebuggerPC  , cnt = 0; t < (DebuggerPC + 0x00000074); t += 0x00000004, cnt++) {
 
-      //s = Integer.toString(opcode);
-      switch(opcode)
-      {
-          case 15: 
-          s=s + "LUI " + cpuregs[rt] + " , 0x" + Utilities.integerToHexShort(value & 0xffff);
-          break;
-          default:
-	   break;
-          
-          
-      }
-        return s;        
+            int memread = Memory.get_instance().read32((int) t);
+            if (memread == 0) {
+                model_1.addElement(String.format("%08x : [%08x]:  NOP", t, memread));
+            } else {
+                model_1.addElement(String.format("%08x : [%08x] %s", t, memread, disasm(memread)));
+            }
+        }
+
+    }
+
+    String disasm(int value) {
+        String s = new String();
+
+        int rs = (value >> 21) & 0x1f;
+        int rt = (value >> 16) & 0x1f;
+        int rd = (value >> 11) & 0x1f;
+
+        int opcode = (value >> 26) & 0x3f;
+
+        //s = Integer.toString(opcode);
+        switch (opcode) {
+            case 15:
+                s = s + "LUI " + cpuregs[rt] + " , 0x" + Utilities.integerToHexShort(value & 0xffff);
+                break;
+            default:
+                break;
+
+
+        }
+        return s;
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JList jList1;
     private javax.swing.JScrollPane jScrollPane1;
     // End of variables declaration//GEN-END:variables
-
 }
