@@ -32,6 +32,7 @@
             <Property name="text" type="java.lang.String" value="Windows"/>
           </Properties>
           <Events>
+            <EventHandler event="mousePressed" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="WindowsMousePressed"/>
             <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="WindowsActionPerformed"/>
           </Events>
           <SubComponents>
