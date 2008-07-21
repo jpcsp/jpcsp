@@ -84,13 +84,8 @@ public class JpcspMainGUI extends javax.swing.JFrame {
 
         Windows.setText("Windows");
         Windows.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mousePressed(java.awt.event.MouseEvent evt) {
-                WindowsMousePressed(evt);
-            }
-        });
-        Windows.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                WindowsActionPerformed(evt);
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                WindowsMouseEntered(evt);
             }
         });
 
@@ -219,10 +214,6 @@ private void DisasemblerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
 
 }//GEN-LAST:event_DisasemblerActionPerformed
 
-private void WindowsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_WindowsActionPerformed
-// TODO add your handling code here:
-}//GEN-LAST:event_WindowsActionPerformed
-
 private void ElfInfoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ElfInfoActionPerformed
 // TODO add your handling code here:
     if (elfinfo != null) {
@@ -238,9 +229,9 @@ private void ElfInfoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
 }//GEN-LAST:event_ElfInfoActionPerformed
 
-private void WindowsMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_WindowsMousePressed
+private void WindowsMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_WindowsMouseEntered
 // TODO add your handling code here:
-    if (elfinfo != null) 
+        if (elfinfo != null) 
         if (elfinfo.isVisible()) 
             ElfInfo.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
          else 
@@ -253,7 +244,7 @@ private void WindowsMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:eve
          else 
             Disasembler.setIcon(null);
     
-}//GEN-LAST:event_WindowsMousePressed
+}//GEN-LAST:event_WindowsMouseEntered
 
     /**
     * @param args the command line arguments
