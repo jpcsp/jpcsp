@@ -130,29 +130,81 @@ private void jList1KeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jL
 
             int memread = Memory.get_instance().read32((int) t);
             if (memread == 0) {
-                model_1.addElement(String.format(":"+"%08x : [%08x]:  NOP", t, memread));
+                model_1.addElement(String.format("%08x : [%08x]: nop", t, memread));
             } else {
-                model_1.addElement(String.format(":"+"%08x : [%08x] %s", t, memread, disasm(memread)));
+                model_1.addElement(String.format("%08x : [%08x]: %s", t, memread, disasm(memread)));
             }
         }
 
     }
 
-    String disasm(int value) {
+   String disasm(int value) {
         String s = new String();
 
         int rs = (value >> 21) & 0x1f;
         int rt = (value >> 16) & 0x1f;
         int rd = (value >> 11) & 0x1f;
-
+        int imm = value & 0xffff;
+        if ((imm & 0x8000) == 0x8000) 
+        {
+	   imm |= 0xffff0000;
+	}
         int opcode = (value >> 26) & 0x3f;
-
+        
         //s = Integer.toString(opcode);
         switch (opcode) {
-            case 15:
-                s = s + "LUI " + cpuregs[rt] + " , 0x" + Utilities.integerToHexShort(value & 0xffff);
+            case  0: //Special table 
+                int specialop = (value & 0x3f);
+                switch(specialop) {
+                    case 12://syscall
+                        int code = (value >> 6) & 0xFFFFF;
+                                            
+                        for(syscalls.calls c : syscalls.calls.values())
+                        {
+                            //System.out.println(c.getValue());
+                            if(c.getValue() == code)
+                            {
+                                s=s + "syscall " + Integer.toHexString(code) + "     " + c;
+                                break;
+                            }
+                           // else
+                           // {
+                           ///     
+                           //     //break;
+                           // }
+                        }
+                        //s=s + "syscall " + Integer.toHexString(code);   
+                        break;
+                    case 33://addu
+                       if (rs==0 && rt==0)
+                        s= s+ "li " + cpuregs[rd] + " ,0"; 
+                       else if (rs == 0)
+                        s= s + "move " + cpuregs[rd] + " ," + cpuregs[rs];
+		       else if (rt == 0)
+                        s= s + "move " + cpuregs[rd] + " ," + cpuregs[rs];
+		       else
+                        s= s + "addu " + cpuregs[rd] + " ," + cpuregs[rs] + " , " + cpuregs[rt];
+                    break;   
+                    default:
+                    //s = "special + " + Integer.toString(specialop); 
+                    break;
+                }
+                break;
+            case  9: //addiu
+                if(rs==0)
+                {
+                    s  = s + "li " + cpuregs[rt] + " ," + imm;
+                }
+                else
+                {
+                 s= s + "addiu " + cpuregs[rt] + " ," + cpuregs[rs] + " , " + imm;
+                }
+                break;
+            case 15://lui
+                s = s + "lui " + cpuregs[rt] + " , " + imm;
                 break;
             default:
+               // s = Integer.toString(opcode);
                 break;
 
 

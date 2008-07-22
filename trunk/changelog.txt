@@ -1,3 +1,7 @@
+22/07/2008
+----------
+More decodes on disasembler. Basic syscall disasm implementation. (shadow)
+
 21/07/2008
 ----------
 More work in disasembler . Loading machine code now. minifire code seems okay (shadow)
