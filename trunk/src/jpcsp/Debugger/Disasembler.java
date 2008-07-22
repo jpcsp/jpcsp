@@ -62,6 +62,11 @@ public class Disasembler extends javax.swing.JInternalFrame {
         setTitle("Disassembler");
 
         jList1.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        jList1.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                jList1KeyPressed(evt);
+            }
+        });
         jScrollPane1.setViewportView(jList1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -76,12 +81,42 @@ public class Disasembler extends javax.swing.JInternalFrame {
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap(15, Short.MAX_VALUE)
+                .addContainerGap(23, Short.MAX_VALUE)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 469, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+private void jList1KeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jList1KeyPressed
+// TODO add your handling code here:
+
+        if(evt.getKeyCode() == java.awt.event.KeyEvent.VK_DOWN && jList1.getSelectedIndex() == jList1.getLastVisibleIndex())
+        {
+            DebuggerPC+=4;
+            RefreshDebugger();
+            evt.consume();
+            jList1.setSelectedIndex(jList1.getLastVisibleIndex());
+        }else if(evt.getKeyCode() == java.awt.event.KeyEvent.VK_UP && jList1.getSelectedIndex() == 0)
+        {
+            DebuggerPC-=4;
+            RefreshDebugger();
+            evt.consume();
+            jList1.setSelectedIndex(0);
+        }else if(evt.getKeyCode() == java.awt.event.KeyEvent.VK_PAGE_UP && jList1.getSelectedIndex() == 0)
+        {
+            DebuggerPC-=74;
+            RefreshDebugger();
+            evt.consume();
+            jList1.setSelectedIndex(0);
+        }else if(evt.getKeyCode() == java.awt.event.KeyEvent.VK_PAGE_DOWN && jList1.getSelectedIndex() == jList1.getLastVisibleIndex())
+        {
+            DebuggerPC+=74;
+            RefreshDebugger();
+            evt.consume();
+            jList1.setSelectedIndex(jList1.getLastVisibleIndex());
+        }
+}//GEN-LAST:event_jList1KeyPressed
 
     public void RefreshDebugger() {
         long t;
@@ -95,9 +130,9 @@ public class Disasembler extends javax.swing.JInternalFrame {
 
             int memread = Memory.get_instance().read32((int) t);
             if (memread == 0) {
-                model_1.addElement(String.format("%08x : [%08x]:  NOP", t, memread));
+                model_1.addElement(String.format(":"+"%08x : [%08x]:  NOP", t, memread));
             } else {
-                model_1.addElement(String.format("%08x : [%08x] %s", t, memread, disasm(memread)));
+                model_1.addElement(String.format(":"+"%08x : [%08x] %s", t, memread, disasm(memread)));
             }
         }
 
