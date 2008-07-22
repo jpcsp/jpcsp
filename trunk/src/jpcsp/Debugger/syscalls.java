@@ -25,7 +25,14 @@ public class syscalls {
                _sceKernelCreateThread(0x206d),
                _sceKernelStartThread(0x206f),
                _sceKernelExitThread(0x2071),
-               _sceKernelUtilsMt19937Init(0x20bf)/*using 1.5firmware */;
+               _sceKernelUtilsMt19937Init(0x20bf)/*using 1.5firmware */,
+               _sceKernelUtilsMt19937UInt(0x20c0),
+               _sceKernelExitGame(0x20eb),
+               _sceDisplaySetMode(0x213a),
+               _sceDisplaySetFrameBuf(0x213f),
+               _sceDisplayWaitVblankStart(0x2147),
+               _sceCtrlPeekBufferPositive(0x2150);
+               
     	
             //implement syscall
             private int value;
