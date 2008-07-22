@@ -1,5 +1,6 @@
 22/07/2008
 ----------
+All syscalls of minifire displays correctly in disasm. Added helper function in disasm + a lot new disopcodes (shadow).
 More decodes on disasembler. Basic syscall disasm implementation. (shadow)
 
 21/07/2008
