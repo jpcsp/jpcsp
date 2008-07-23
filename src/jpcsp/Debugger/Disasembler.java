@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.Debugger;
 
 import javax.swing.DefaultListModel;
+import javax.swing.JOptionPane;
 import jpcsp.Memory;
 import jpcsp.Processor;
 
@@ -58,6 +59,8 @@ public class Disasembler extends javax.swing.JInternalFrame {
 
         jScrollPane1 = new javax.swing.JScrollPane();
         jList1 = new javax.swing.JList(model_1);
+        jButton1 = new javax.swing.JButton();
+        jButton2 = new javax.swing.JButton();
 
         setClosable(true);
         setDefaultCloseOperation(javax.swing.WindowConstants.HIDE_ON_CLOSE);
@@ -76,20 +79,40 @@ public class Disasembler extends javax.swing.JInternalFrame {
         });
         jScrollPane1.setViewportView(jList1);
 
+        jButton1.setText("Reset to PC");
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton1ActionPerformed(evt);
+            }
+        });
+
+        jButton2.setText("Jump to Address");
+        jButton2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton2ActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 331, Short.MAX_VALUE)
-                .addContainerGap())
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 334, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jButton1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jButton2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 469, javax.swing.GroupLayout.PREFERRED_SIZE)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap(31, Short.MAX_VALUE)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 469, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(100, 100, 100)
+                .addComponent(jButton1)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jButton2))
         );
 
         pack();
@@ -144,6 +167,25 @@ private void jList1MouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GEN-FI
     }
 }//GEN-LAST:event_jList1MouseWheelMoved
 
+private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+     DebuggerPC = pcreg; 
+     RefreshDebugger();
+}//GEN-LAST:event_jButton1ActionPerformed
+
+private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+     String input = JOptionPane.showInternalInputDialog(this, "Enter the address to jump to (Hex)","Jpcsp",JOptionPane.QUESTION_MESSAGE);
+     int value;//GEN-LAST:event_jButton2ActionPerformed
+     try {
+       value= Integer.parseInt(input,16);
+     }catch(Exception e)
+     {
+       JOptionPane.showMessageDialog(this, "The Number you enter is not correct");   
+       return;
+     }
+     DebuggerPC = value;
+     RefreshDebugger();
+}
+
     public void RefreshDebugger() {
         long t;
         long cnt;
@@ -181,50 +223,86 @@ private void jList1MouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GEN-FI
             case 0: //Special table 
                 int specialop = (value & 0x3f);
                 switch (specialop) {
+                    case 0://sll
+                       s = s + Dis_RDRTSA("sll" , value);
+                       break;
+                    case 2://srl
+                       s = s + Dis_RDRTSA("srl" , value);
+                       break;
+                    case 3://sra
+                       s = s + Dis_RDRTSA("sra", value);
+                       break;
                     case 4: //sllv
-                        s = s + Dis_RDRSRT("sllv", value);
-                        break;
+                        s = s + Dis_RDRSRT("sllv" ,value);
+                        break; 
                     case 6://srlv
-                        s = s + Dis_RDRSRT("srlv", value);
+                        s = s + Dis_RDRSRT("srlv" ,value);
                         break;
                     case 7://srav
-                        s = s + Dis_RDRSRT("srav", value);
+                        s = s + Dis_RDRSRT("srav" ,value);
+                        break;
+                    case 8: //jr
+                        s = s + Dis_RS("jr" ,value);
                         break;
                     case 12://syscall
                         s = s + Dis_Syscall(value);
                         break;
+                    case 16: //mfhi
+                        s= s + Dis_RD("mfhi" ,value);
+                        break;      
+                    case 17: //mthi
+                        s= s + Dis_RS("mthi" ,value);
+                        break;
+                    case 18: //mflo
+                        s= s + Dis_RD("mflo" ,value);
+                        break; 
+                    case 19://mtlo
+                        s= s + Dis_RS("mtlo" ,value);
+                        break;
+                    case 24://mult
+                        s = s + Dis_RSRT("mult",value);
+                        break;
+                    case 25://multu
+                        s = s + Dis_RSRT("multu",value);
+                        break;
+                    case 26://div
+                        s = s + Dis_RSRT("div",value);
+                        break;
+                    case 27://divu
+                        s = s + Dis_RSRT("divu",value);
+                        break;
                     case 32://add
-                        s = s + Dis_RDRSRT("add", value);
+                        s = s + Dis_RDRSRT("add" ,value);
                         break;
                     case 33://addu
-                        s = s + Dis_RDRSRT("addu", value);
+                        s = s + Dis_RDRSRT("addu" ,value);
                         break;
                     case 34://sub
-                        s = s + Dis_RDRSRT("sub", value);
+                        s = s + Dis_RDRSRT("sub" ,value);
                         break;
                     case 35://subu
-                        s = s + Dis_RDRSRT("subu", value);
+                        s = s + Dis_RDRSRT("subu" ,value);
                         break;
                     case 36://and
-                        s = s + Dis_RDRSRT("and", value);
-                        break;
+                        s = s + Dis_RDRSRT("and" ,value);
+                        break;                        
                     case 37://or
-                        s = s + Dis_RDRSRT("or", value);
-                        break;
+                         s = s + Dis_RDRSRT("or" ,value);
+                        break;                       
                     case 38://xor
-                        s = s + Dis_RDRSRT("xor", value);
-                        break;
+                        s = s + Dis_RDRSRT("xor" ,value);
+                        break;                        
                     case 39://nor
-                        s = s + Dis_RDRSRT("nor", value);
-                        break;
+                        s = s + Dis_RDRSRT("nor" ,value);
+                        break;                        
                     case 42://slt
-                        s = s + Dis_RDRSRT("slt", value);
+                        s = s + Dis_RDRSRT("slt" ,value);
                         break;
                     case 43://sltu
-                        s = s + Dis_RDRSRT("sltu", value);
+                        s = s + Dis_RDRSRT("sltu" ,value);
                         break;
                     default:
-                        // s = "special + " + Integer.toString(specialop);
+                       // s = "special + " + Integer.toString(specialop);
                         break;
                 }
                 break;
@@ -242,10 +320,10 @@ private void jList1MouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GEN-FI
             s = s + "unimplement Bcond opcode";
             break;    */
             case 9: //addiu
-                s = s + Dis_RTRSIMM("addiu", value);
+                s = s + Dis_RTRSIMM("addiu",value);
                 break;
             case 13: //ori   
-                s = s + Dis_RTRSIMM("ori", value);
+                s = s + Dis_RTRSIMM("ori",value);
                 break;
             case 15://lui
                 s = s + "lui " + cpuregs[rt] + " , " + imm;
@@ -258,7 +336,7 @@ private void jList1MouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GEN-FI
         }
         return s;
     }
-
+    
     private String Dis_Syscall(int value) {  /* probably okay */
         String s = new String();
         int code = (value >> 6) & 0xFFFFF;
@@ -272,39 +350,73 @@ private void jList1MouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GEN-FI
         s = "syscall 0x" + Integer.toHexString(code) + " [unknown]";
         return s;
     }
-
-    private String Dis_RDRSRT(String opname, int value) {
-
+    private String Dis_RDRSRT(String opname,int value)
+    {
+        
         int rs = (value >> 21) & 0x1f;
         int rt = (value >> 16) & 0x1f;
         int rd = (value >> 11) & 0x1f;
-        if (rs == 0 && rt == 0) {
-            return "li " + cpuregs[rd] + " ,0";
-        } else if (rs == 0) {
-            return "move " + cpuregs[rd] + " ," + cpuregs[rs];
-        } else if (rt == 0) {
-            return "move " + cpuregs[rd] + " ," + cpuregs[rs];
-        } else {
-            return opname + " " + cpuregs[rd] + " ," + cpuregs[rs] + " , " + cpuregs[rt];
-        }
-
+        if (rs == 0 && rt == 0) 
+             return "li " + cpuregs[rd] + " ,0";
+         else if (rs == 0) 
+             return "move " + cpuregs[rd] + " ," + cpuregs[rs];
+         else if (rt == 0) {
+             return "move " + cpuregs[rd] + " ," + cpuregs[rs];
+         } else {
+             return opname + " " + cpuregs[rd] + " ," + cpuregs[rs] + " , " + cpuregs[rt];
+         }
+        
     }
-
-    private String Dis_RTRSIMM(String opname, int value) {
+    private String Dis_RTRSIMM(String opname,int value)
+    {
         int rs = (value >> 21) & 0x1f;
         int rt = (value >> 16) & 0x1f;
         int rd = (value >> 11) & 0x1f;
         int imm = value & 0xffff;
         if ((imm & 0x8000) == 0x8000) {
             imm |= 0xffff0000;
-        }
-        if (rs == 0) {
-            return "li " + cpuregs[rt] + " ," + imm;
-        } else {
-            return opname + " " + cpuregs[rt] + " ," + cpuregs[rs] + " , " + imm;
-        }
+        } 
+       if (rs == 0) 
+          return  "li " + cpuregs[rt] + " ," + imm;
+       else 
+          return  opname + " " + cpuregs[rt] + " ," + cpuregs[rs] + " , " + imm;
+              
+        
+    }
+    private String Dis_RDRTSA(String opname,int value)
+    {
+        int rt = (value >> 16) & 0x1f;
+        int rd = (value >> 11) & 0x1f;
+        int sa = (value >> 6) & 0x1f;
+
+       if (rd == 0) 
+          return  "nop";
+       else 
+          return  opname + " " + cpuregs[rd] + " ," + cpuregs[rt] + " , " + sa;
+              
+        
+        
+    }
+    private String Dis_RD(String opname,int value)
+    {
+        int rd = (value >> 11) & 0x1f;
+        return  opname + " " + cpuregs[rd];
+        
+    }
+    private String Dis_RS(String opname,int value)
+    {
+        int rs = (value >> 21) & 0x1f;
+        return  opname + " " + cpuregs[rs];
+    }
+    private String Dis_RSRT(String opname,int value)
+    {
+        int rs = (value >> 21) & 0x1f;
+        int rt = (value >> 16) & 0x1f;
+        return  opname + " " + cpuregs[rs] + " ," + cpuregs[rt];
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton jButton1;
+    private javax.swing.JButton jButton2;
     private javax.swing.JList jList1;
     private javax.swing.JScrollPane jScrollPane1;
     // End of variables declaration//GEN-END:variables
