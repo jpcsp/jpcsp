@@ -30,7 +30,9 @@ public class JpcspMainGUI extends javax.swing.JFrame {
 
     ElfHeaderInfo elfinfo;
     Disasembler dis;
-    Processor cpu ;
+    Processor cpu;
+    Registers regs;
+
     /** Creates new form JpcspMainGUI */
     public JpcspMainGUI() {
         initComponents();
@@ -54,6 +56,7 @@ public class JpcspMainGUI extends javax.swing.JFrame {
         Windows = new javax.swing.JMenu();
         Disasembler = new javax.swing.JMenuItem();
         ElfInfo = new javax.swing.JMenuItem();
+        Registers = new javax.swing.JMenuItem();
         helpMenu = new javax.swing.JMenu();
         aboutMenuItem = new javax.swing.JMenuItem();
 
@@ -106,6 +109,14 @@ public class JpcspMainGUI extends javax.swing.JFrame {
         });
         Windows.add(ElfInfo);
 
+        Registers.setText("Registers");
+        Registers.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                RegistersActionPerformed(evt);
+            }
+        });
+        Windows.add(Registers);
+
         menuBar.add(Windows);
 
         helpMenu.setText("Help");
@@ -147,7 +158,7 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
 
         //This is where a real application would open the file.   
         try {
-            ElfHeader.readHeader(file.getPath(),cpu);
+            ElfHeader.readHeader(file.getPath(), cpu);
             //System.out.println(Integer.toHexString(cpu.pc));
             isloaded = true; //TODO check if it a valid file
         } catch (IOException e) {
@@ -191,11 +202,24 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         Disasembler.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
         try {
             dis.setSelected(true);
-        //dis.RefreshDebugger();
         } catch (java.beans.PropertyVetoException e) {
         }
-
-
+        if (regs != null) {
+            //clear previously opened stuff
+            regs.setVisible(false);
+            Registers.setIcon(null);
+            desktopPane.remove(regs);
+            regs = null;
+        }
+        regs = new Registers();
+        regs.setLocation(200, 150);
+        regs.setVisible(true);
+        desktopPane.add(regs);
+        Registers.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
+        try {
+            regs.setSelected(true);
+        } catch (java.beans.PropertyVetoException e) {
+        }
     }
 }//GEN-LAST:event_openMenuItemActionPerformed
 
@@ -233,20 +257,44 @@ private void ElfInfoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
 private void WindowsMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_WindowsMouseEntered
 // TODO add your handling code here:
-        if (elfinfo != null) 
-        if (elfinfo.isVisible()) 
+    if (elfinfo != null) {
+        if (elfinfo.isVisible()) {
             ElfInfo.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
-         else 
+        } else {
             ElfInfo.setIcon(null);
-        
-    
-    if (dis != null) 
-        if (dis.isVisible()) 
+        }
+    }
+    if (dis != null) {
+        if (dis.isVisible()) {
             Disasembler.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
-         else 
+        } else {
             Disasembler.setIcon(null);
-    
+        }
+    }
+    if (regs != null) {
+        if (regs.isVisible()) {
+            Registers.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
+        } else {
+            Registers.setIcon(null);
+        }
+    }
 }//GEN-LAST:event_WindowsMouseEntered
+
+private void RegistersActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RegistersActionPerformed
+// TODO add your handling code here:
+    if (regs != null) {
+        regs.setLocation(200, 150);
+        if (regs.isVisible()) {
+            regs.setVisible(false);
+            Registers.setIcon(null);
+
+        } else {
+            regs.setVisible(true);
+            Registers.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
+        }
+
+    }
+}//GEN-LAST:event_RegistersActionPerformed
 
     /**
     * @param args the command line arguments
@@ -268,6 +316,7 @@ private void WindowsMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:eve
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenuItem Disasembler;
     private javax.swing.JMenuItem ElfInfo;
+    private javax.swing.JMenuItem Registers;
     private javax.swing.JMenu Windows;
     private javax.swing.JMenuItem aboutMenuItem;
     private javax.swing.JDesktopPane desktopPane;
