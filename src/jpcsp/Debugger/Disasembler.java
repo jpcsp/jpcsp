@@ -34,11 +34,12 @@ public class Disasembler extends javax.swing.JInternalFrame {
     };
     long DebuggerPC;
     private DefaultListModel model_1 = new DefaultListModel();
-
+    int pcreg;
     /** Creates new form Disasembler */
     public Disasembler(Processor c) {
 
-        DebuggerPC = c.pc; // set the Debugger pc according to pc register
+        DebuggerPC =0;
+        pcreg=c.pc;
         model_1 = new DefaultListModel();
         initComponents();
         RefreshDebugger();
@@ -118,7 +119,7 @@ private void jList1KeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jL
         long t;
         long cnt;
         if (DebuggerPC == 0) {
-            DebuggerPC = 0x08900000;//test
+            DebuggerPC = pcreg;//0x08900000;//test
         }
         model_1.clear();
 
