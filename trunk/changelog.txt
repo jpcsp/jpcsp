@@ -1,3 +1,10 @@
+23/07/2008
+----------
+Added startup Processor class (shadow)
+Pc register get the address from Elfheader e_entry and the same does the disasm. (shadow)
+Memory intialaze now in Processor class (shadow)
+
+
 22/07/2008
 ----------
 All syscalls of minifire displays correctly in disasm. Added helper function in disasm + a lot new disopcodes (shadow).
