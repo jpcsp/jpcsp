@@ -18,7 +18,7 @@ package jpcsp.Debugger;
 
 import javax.swing.DefaultListModel;
 import jpcsp.Memory;
-import jpcsp.Utilities;
+import jpcsp.Processor;
 
 /**
  *
@@ -36,9 +36,9 @@ public class Disasembler extends javax.swing.JInternalFrame {
     private DefaultListModel model_1 = new DefaultListModel();
 
     /** Creates new form Disasembler */
-    public Disasembler() {
+    public Disasembler(Processor c) {
 
-        DebuggerPC = 0;
+        DebuggerPC = c.pc; // set the Debugger pc according to pc register
         model_1 = new DefaultListModel();
         initComponents();
         RefreshDebugger();

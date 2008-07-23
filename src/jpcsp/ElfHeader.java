@@ -169,19 +169,7 @@ public class ElfHeader {
       sh_addralign = readWord (f);
       sh_entsize = readWord (f);
     }
-    public void printSectionHeader()
-    {
-             System.out.println("sh_name "  + sh_name);
-             System.out.println("sh_type " + sh_type);
-             System.out.println("sh_flags "  + Long.toHexString(sh_flags));
-             System.out.println("sh_addr "  + Long.toHexString(sh_addr));
-             System.out.println("sh_offset " + Long.toHexString(sh_offset));
-             System.out.println("sh_size " + Long.toHexString(sh_size));
-             System.out.println("sh_link " + sh_link);
-             System.out.println("sh_info " + sh_info);
-             System.out.println("sh_addralign " + sh_addralign);
-             System.out.println("sh_entsize "  + sh_entsize);
-    }
+
     public String toString() 
      {
        StringBuffer str = new StringBuffer();
@@ -253,7 +241,7 @@ public class ElfHeader {
             }
    }
   public static String ElfInfo,PbpInfo,SectInfo;
-  static void readHeader(String file) throws IOException
+  static void readHeader(String file,Processor p) throws IOException
   {
     Memory.get_instance().NullMemory(); //re-initiate *test
     RandomAccessFile f = new RandomAccessFile (file, "r");
@@ -282,17 +270,15 @@ public class ElfHeader {
         System.out.println("NOT A MIPS executable");
     }
     ElfInfo = ehdr.toString();
+    p.pc = (int)ehdr.e_entry; //set the pc register.
     Elf32_Shdr shdr = new Elf32_Shdr();
-    //shdr.read(f);
-    //Memory mem = new Memory();// intialaze memory. This probably should exist somewhere else! test for now...
-    Memory.get_instance();
-    
+
     for (int i = 0; i < ehdr.e_shnum; i++)
     {
        	// Read information about this section.
 	f.seek (ehdr.e_shoff + (i * ehdr.e_shentsize));
 	shdr.read (f);
-        shdr.printSectionHeader();
+        //shdr.printSectionHeader();
         if((shdr.sh_flags & ShFlags.Allocate.getValue())== ShFlags.Allocate.getValue())
         {
              
@@ -332,7 +318,6 @@ public class ElfHeader {
         }
         SectInfo = shdr.toString();
     }
-    System.out.println(Memory.get_instance().read32(0x08900010));//small test of memory. OKAY!
     
   }
 }

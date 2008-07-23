@@ -30,10 +30,11 @@ public class JpcspMainGUI extends javax.swing.JFrame {
 
     ElfHeaderInfo elfinfo;
     Disasembler dis;
-
+    Processor cpu ;
     /** Creates new form JpcspMainGUI */
     public JpcspMainGUI() {
         initComponents();
+        cpu = new Processor();//intialaze cpu
     }
 
     /** This method is called from within the constructor to
@@ -57,7 +58,7 @@ public class JpcspMainGUI extends javax.swing.JFrame {
         aboutMenuItem = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("Jpcsp v0.01");
+        setTitle("Jpcsp v0.02");
         setLocationByPlatform(true);
 
         desktopPane.setBackground(new java.awt.Color(204, 204, 255));
@@ -146,7 +147,8 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
 
         //This is where a real application would open the file.   
         try {
-            ElfHeader.readHeader(file.getPath());
+            ElfHeader.readHeader(file.getPath(),cpu);
+            //System.out.println(Integer.toHexString(cpu.pc));
             isloaded = true; //TODO check if it a valid file
         } catch (IOException e) {
             e.printStackTrace();
@@ -182,7 +184,7 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
             desktopPane.remove(dis);
             dis = null;
         }
-        dis = new Disasembler();
+        dis = new Disasembler(cpu);
         dis.setLocation(300, 0);
         dis.setVisible(true);
         desktopPane.add(dis);
