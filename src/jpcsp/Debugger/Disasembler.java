@@ -33,9 +33,10 @@ public class Disasembler extends javax.swing.JInternalFrame {
         "s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7",
         "t8", "t9", "k0", "k1", "gp", "sp", "fp", "ra"
     };
-    long DebuggerPC;
+    int DebuggerPC;
     private DefaultListModel model_1 = new DefaultListModel();
     int pcreg;
+    int opcode_address; // store the address of the opcode used for offsetdecode
 
     /** Creates new form Disasembler */
     public Disasembler(Processor c) {
@@ -187,8 +188,8 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
 }
 
     public void RefreshDebugger() {
-        long t;
-        long cnt;
+        int t;
+        int cnt;
         if (DebuggerPC == 0) {
             DebuggerPC = pcreg;//0x08900000;//test
         }
@@ -200,12 +201,13 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
             if (memread == 0) {
                 model_1.addElement(String.format("%08x : [%08x]: nop", t, memread));
             } else {
+                opcode_address = t;
                 model_1.addElement(String.format("%08x : [%08x]: %s", t, memread, disasm(memread)));
+                
             }
         }
 
     }
-
     String disasm(int value) {
         String s = new String();
 
@@ -219,11 +221,12 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
         int opcode = (value >> 26) & 0x3f;
 
         //s = Integer.toString(opcode);
+        
         switch (opcode) {
-            case 0: //Special table 
+            case 0: //Special table                
                 int specialop = (value & 0x3f);
                 switch (specialop) {
-                    case 0://sll
+                    case 0: //sll
                        s = s + Dis_RDRTSA("sll" , value);
                        break;
                     case 2://srl
@@ -302,25 +305,34 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
                         s = s + Dis_RDRSRT("sltu" ,value);
                         break;
                     default:
-                       // s = "special + " + Integer.toString(specialop);
+                        s = "unsupported special instruction + " + Integer.toString(specialop);
                         break;
                 }
                 break;
-            /*case  1: //Bcond table  //the immediate is not correct!
+            case  1: //Bcond table  
             int code = value & 0x1f0000;
             if (code == 0) 
-            s = s + "bltz " + cpuregs[rs] + ", " + (value & 0xffff)*0x04;
-            else if (code == 0x10000) 
-            s = s + "bgez " + cpuregs[rs] + ", " + Integer.toHexString((((value & 0xffff)<<2))*4);
-            else if (code == 0x100000) 
-            s = s + "bltzal " + cpuregs[rs] + ", " + imm*0x04;
+              s = s + "bltz " + cpuregs[rs] + ", " + Integer.toHexString(imm*4  + opcode_address + 4);
+            else if (code == 0x10000)
+              s = s + "bgez " + cpuregs[rs] + ", " + Integer.toHexString(imm*4  + opcode_address + 4);
+             else if (code == 0x100000) 
+              s = s + "bltzal " + cpuregs[rs] + ", " + Integer.toHexString(imm*4  + opcode_address + 4);
             else if (code == 0x110000) 
-            s = s + "bgezal " + cpuregs[rs] + ", " + imm*0x04;
+              s = s + "bgezal " + cpuregs[rs] + ", " + Integer.toHexString(imm*4  + opcode_address + 4);
             else
-            s = s + "unimplement Bcond opcode";
-            break;    */
+              s = s + "unimplement Bcond opcode";
+            break;    
+            case 8: //addi
+                s = s + Dis_RTRSIMM("addi",value);
+                break; 
             case 9: //addiu
                 s = s + Dis_RTRSIMM("addiu",value);
+                break;
+            case 10://slti
+                s = s + Dis_RTRSIMM("slti",value);
+                break;
+            case 11://sltiu
+                s = s + Dis_RTRSIMM("sltiu",value);
                 break;
             case 13: //ori   
                 s = s + Dis_RTRSIMM("ori",value);
@@ -328,8 +340,44 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
             case 15://lui
                 s = s + "lui " + cpuregs[rt] + " , " + imm;
                 break;
+            case 32: //lb
+                s = s + Dis_RTIMMRS("lb",value);
+                break;
+            case 33://lh
+                s = s + Dis_RTIMMRS("lh",value);
+                break;
+            case 34://lwl
+                s = s + Dis_RTIMMRS("lwl",value);
+                break;
+            case 35://lw
+                s = s + Dis_RTIMMRS("lw",value);
+                break;
+            case 36://lbu
+                s = s + Dis_RTIMMRS("lbu",value);
+                break;
+            case 37://lhu
+                s = s + Dis_RTIMMRS("lhu",value);
+                break;
+            case 38://lwr
+                s = s + Dis_RTIMMRS("lwr",value);
+                break;
+            case 40: //sb
+                s = s + Dis_RTIMMRS("sb",value);
+                break;
+            case 41: //sh
+                s = s + Dis_RTIMMRS("sh",value);
+                break;
+            case 42: //swl
+                s = s + Dis_RTIMMRS("swl",value);
+                break;
+            case 43: //sw
+                s = s + Dis_RTIMMRS("sw",value);
+                break;
+            case 46://swr
+                s = s + Dis_RTIMMRS("swr",value);
+                break;
             default:
-                //s = Integer.toString(opcode);
+                s = "Unsupported instruction " + Integer.toString(opcode);
                 break;
 
 
@@ -413,6 +461,16 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
         int rs = (value >> 21) & 0x1f;
         int rt = (value >> 16) & 0x1f;
         return  opname + " " + cpuregs[rs] + " ," + cpuregs[rt];
+    }
+    private String Dis_RTIMMRS(String opname, int value)
+    {
+        int rs = (value >> 21) & 0x1f;
+        int rt = (value >> 16) & 0x1f;
+        int imm = value & 0xffff;
+        if ((imm & 0x8000) == 0x8000) {
+            imm |= 0xffff0000;
+        } 
+        return opname + " " + cpuregs[rt] + "," + imm + " (" + cpuregs[rs] + ")";
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButton1;
