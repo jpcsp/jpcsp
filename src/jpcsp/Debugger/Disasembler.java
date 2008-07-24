@@ -238,6 +238,7 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
                     case 4: //sllv
                         s = s + Dis_RDRSRT("sllv" ,value);
                         break; 
+ 
                     case 6://srlv
                         s = s + Dis_RDRSRT("srlv" ,value);
                         break;
@@ -249,6 +250,9 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
                         break;
                     case 12://syscall
                         s = s + Dis_Syscall(value);
+                        break;
+                    case 13://break;
+                        s= s + Dis_Break(value);
                         break;
                     case 16: //mfhi
                         s= s + Dis_RD("mfhi" ,value);
@@ -321,7 +325,25 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
               s = s + "bgezal " + cpuregs[rs] + ", " + Integer.toHexString(imm*4  + opcode_address + 4);
             else
               s = s + "unimplement Bcond opcode";
-            break;    
+            break;
+            case 2: //J
+              s = s + Dis_JUMP("j",value);
+              break;
+            case 3://JAL
+             s = s + Dis_JUMP("jal",value);
+             break;
+            case 4: //beq
+              s = s + Dis_RSRTOFFSET("beq",value);
+              break;
+            case 5: //bne
+               s= s + Dis_RSRTOFFSET("bne",value);
+               break;
+            case 6://blez
+                s = s + Dis_RSOFFSET("blez",value);
+                break;
+            case 7://bgtz
+                s = s + Dis_RSOFFSET("bgtz",value);
+                break;
             case 8: //addi
                 s = s + Dis_RTRSIMM("addi",value);
                 break; 
@@ -339,6 +361,15 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
                 break;
             case 15://lui
                 s = s + "lui " + cpuregs[rt] + " , " + imm;
+                break;
+            case 21: //bnel
+                s = s + Dis_RSRTOFFSET("bnel",value);
+                break;
+            case 22: //blez
+                s = s + Dis_RSOFFSET("blez",value);
+                break;
+            case 23: //bgtzl
+                s = s + Dis_RSOFFSET("bgtzl",value);
                 break;
             case 32: //lb
                 s = s + Dis_RTIMMRS("lb",value);
@@ -398,6 +429,11 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
         s = "syscall 0x" + Integer.toHexString(code) + " [unknown]";
         return s;
     }
+    private String Dis_Break(int value)
+    {
+      int code = (value >> 6) & 0xFFFFF;  
+      return "break 0x" + Integer.toHexString(code);
+    }
     private String Dis_RDRSRT(String opname,int value)
     {
         
@@ -415,6 +451,7 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
          }
         
     }
+    
     private String Dis_RTRSIMM(String opname,int value)
     {
         int rs = (value >> 21) & 0x1f;
@@ -471,6 +508,33 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
             imm |= 0xffff0000;
         } 
         return opname + " " + cpuregs[rt] + "," + imm + " (" + cpuregs[rs] + ")";
+    }
+    private String Dis_RSRTOFFSET(String opname , int value)
+    {
+        int rs = (value >> 21) & 0x1f;
+        int rt = (value >> 16) & 0x1f;
+        int imm = value & 0xffff;
+        if ((imm & 0x8000) == 0x8000) {
+            imm |= 0xffff0000;
+        }
+        return opname + " " + cpuregs[rs] + "," + cpuregs[rt] + " " + Integer.toHexString(imm*4  + opcode_address + 4);
+         
+    }
+    private String Dis_RSOFFSET(String opname , int value)
+    {
+        int rs = (value >> 21) & 0x1f;
+        int imm = value & 0xffff;
+        if ((imm & 0x8000) == 0x8000) {
+            imm |= 0xffff0000;
+        }
+        return opname + " " + cpuregs[rs] + ", "  + Integer.toHexString(imm*4  + opcode_address + 4);
+         
+        
+    }
+    private String Dis_JUMP(String opname,int value)
+    {
+      int jump = (opcode_address & 0xf0000000)|((value&0x3ffffff)<<2); 
+      return opname + " 0x" + Integer.toHexString(jump);
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButton1;
