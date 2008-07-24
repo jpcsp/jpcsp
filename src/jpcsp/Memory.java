@@ -39,12 +39,72 @@ public class Memory {
         scratchpad = new byte[0x00003FFF]; //16kb scratchpad
         videoram = new byte[0x001FFFFF]; // 2mb videoram
     }
-
+    public int read8(int address)
+    {
+         if ((address >= 0x08000000) && (address <= 0x09ffffff)) {
+           int i = address - 0x08000000;
+           return mainmemory[i];
+          }
+        System.out.println("read8 to unsupported emulate memory ! " + address);
+        return 0;
+    }
+    public int read16(int address)
+    {
+       if ((address >= 0x08000000) && (address <= 0x09ffffff)) {
+           int i = address - 0x08000000;
+               return (short)(((short)mainmemory[i+1] << 8) | (((short)mainmemory[i])&0x00ff));
+          }
+        System.out.println("read16 to unsupported emulate memory ! " + address);
+        return 0;
+    }
     public int read32(int address) { //for testing supports only RAM!
-        int i = address - 0x08000000;
-        return (((int) mainmemory[i + 3] << 24) |
+        if ((address >= 0x08000000) && (address <= 0x09ffffff)) {
+           int i = address - 0x08000000;
+           return (((int) mainmemory[i + 3] << 24) |
                 (((int) mainmemory[i + 2] << 16) & 0x00ff0000) |
                 (((int) mainmemory[i + 1] << 8) & 0x0000ff00) |
                 (((int) mainmemory[i]) & 0x000000ff));
+        }
+        System.out.println("read32 to unsupported emulate memory ! " + address);
+        return 0;
+    }
+    public void write8(int address , byte data)
+    {
+         if ((address >= 0x08000000) && (address <= 0x09ffffff)) {
+           int i = address - 0x08000000;
+           mainmemory[i] = data;
+         }
+         else
+         {
+             System.out.println("unsupported write8 in addr= " + address + " data= " + data);
+         }
+         
+    }
+    public void write16(int address , short data)
+    {
+         if ((address >= 0x08000000) && (address <= 0x09ffffff)) {
+           int i = address - 0x08000000;
+           mainmemory[i+1] = (byte)(data >> 8);
+	   mainmemory[i] = (byte)(data & 0x00ff);
+         } 
+         else
+         {
+             System.out.println("unsupported write16 in addr= " + address + " data= " + data);
+         }
+    }
+    public void write32(int address, int data)
+    {
+         if ((address >= 0x08000000) && (address <= 0x09ffffff)) {
+           int i = address - 0x08000000;
+           mainmemory[i+3] = (byte)(data >> 24);
+	   mainmemory[i+2] = (byte)((data & 0x00ff0000) >> 16);
+	   mainmemory[i+1] = (byte)((data & 0x0000ff00) >> 8);
+	   mainmemory[i] = (byte)(data & 0x000000ff);
+         }
+         else
+         {
+             System.out.println("unsupported write32 in addr= " + address + " data= " + data);
+         }
+        
     }
 }
