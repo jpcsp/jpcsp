@@ -22,16 +22,16 @@ package jpcsp.Debugger;
  */
 public class syscalls {
      static enum calls { 
-               _sceKernelCreateThread(0x206d),
-               _sceKernelStartThread(0x206f),
-               _sceKernelExitThread(0x2071),
-               _sceKernelUtilsMt19937Init(0x20bf)/*using 1.5firmware */,
-               _sceKernelUtilsMt19937UInt(0x20c0),
-               _sceKernelExitGame(0x20eb),
-               _sceDisplaySetMode(0x213a),
-               _sceDisplaySetFrameBuf(0x213f),
-               _sceDisplayWaitVblankStart(0x2147),
-               _sceCtrlPeekBufferPositive(0x2150);
+               sceKernelCreateThread(0x206d),
+               sceKernelStartThread(0x206f),
+               sceKernelExitThread(0x2071),
+               sceKernelUtilsMt19937Init(0x20bf)/*using 1.5firmware */,
+               sceKernelUtilsMt19937UInt(0x20c0),
+               sceKernelExitGame(0x20eb),
+               sceDisplaySetMode(0x213a),
+               sceDisplaySetFrameBuf(0x213f),
+               sceDisplayWaitVblankStart(0x2147),
+               sceCtrlPeekBufferPositive(0x2150);
                
     	
             //implement syscall
