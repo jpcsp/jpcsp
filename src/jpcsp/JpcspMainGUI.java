@@ -32,11 +32,12 @@ public class JpcspMainGUI extends javax.swing.JFrame {
     Disasembler dis;
     Processor cpu;
     Registers regs;
-
+    final String  version= "Jpcsp v0.03";
     /** Creates new form JpcspMainGUI */
     public JpcspMainGUI() {
         initComponents();
         cpu = new Processor();//intialaze cpu
+        this.setTitle(version);
     }
 
     /** This method is called from within the constructor to
@@ -61,7 +62,6 @@ public class JpcspMainGUI extends javax.swing.JFrame {
         aboutMenuItem = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("Jpcsp v0.02");
         setLocationByPlatform(true);
 
         desktopPane.setBackground(new java.awt.Color(204, 204, 255));
@@ -161,6 +161,7 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
             ElfHeader.readHeader(file.getPath(), cpu);
             //System.out.println(Integer.toHexString(cpu.pc));
             isloaded = true; //TODO check if it a valid file
+            this.setTitle(version + " - " + file.getName());
         } catch (IOException e) {
             e.printStackTrace();
         }

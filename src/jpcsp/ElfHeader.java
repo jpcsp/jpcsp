@@ -245,18 +245,23 @@ public class ElfHeader {
   {
     Memory.get_instance().NullMemory(); //re-initiate *test
     RandomAccessFile f = new RandomAccessFile (file, "r");
+    long elfoffset = 0;
     /** Read pbp **/
     PBP_Header pbp = new PBP_Header();
     pbp.read(f);
     if(Long.toHexString(pbp.p_magic & 0xFFFFFFFFL).equals("50425000"))//file is pbp
     {
+        elfoffset = pbp.offset_psp_data;
         f.seek(pbp.offset_psp_data); //seek the new offset!
+        PbpInfo = pbp.toString();
     }
     else
     {
+        elfoffset = 0;
         f.seek(0); // start read from start file is not pbp check if it an elf;
+        PbpInfo = "-----NOT A PBP FILE---------\n";
     }
-    PbpInfo = pbp.toString();
+
     /** Read the ELF header. */
     Elf32_Ehdr ehdr = new Elf32_Ehdr ();
     ehdr.read (f);
@@ -276,7 +281,7 @@ public class ElfHeader {
     for (int i = 0; i < ehdr.e_shnum; i++)
     {
        	// Read information about this section.
-	f.seek (ehdr.e_shoff + (i * ehdr.e_shentsize));
+	f.seek (elfoffset + ehdr.e_shoff + (i * ehdr.e_shentsize));
 	shdr.read (f);
         //shdr.printSectionHeader();
         if((shdr.sh_flags & ShFlags.Allocate.getValue())== ShFlags.Allocate.getValue())
@@ -286,27 +291,11 @@ public class ElfHeader {
              {
                  case 1: //ShType.PROGBITS
                      System.out.println("FEED MEMORY WITH IT!");
-                     //f.seek(shdr.sh_offset);
-                     
-                     //f.readFully(b, (int)shdr.sh_offset, (int)shdr.sh_offset + (int)shdr.sh_size);
-                    // System.out.println(shdr.sh_offset);
-                     //System.out.println(shdr.sh_size);
-                     //f.readFully(b,0xb0,3);
-                    // int from = (int)shdr.sh_offset;
-                    // int to = (int)shdr.sh_offset + (int)shdr.sh_size-1;
-                     //byte[] b = new byte[to-from+1];//small test
-                   // byte[] b = new byte[ 0x01FFFFFF];
-                     f.seek(shdr.sh_offset);
+
+                     f.seek(elfoffset + shdr.sh_offset);
                      long rambase = Long.parseLong("08000000",16);//convert hex to integer..
                      int offsettoread = (int)shdr.sh_addr - (int)rambase;
-                     f.read(Memory.get_instance().mainmemory/*mem.mainmemory*/,offsettoread/*0x08900000-0x08000000*/,(int)shdr.sh_size+(int)shdr.sh_offset);//not sure if it proper... probably it will have a problem if 2 progfiles loaded it is probably okay for minifire.pbp
-                   //  for(int k=0; k<mem.mainmemory.length; k++)
-                    // {
-                      // System.out.println(mem.mainmemory[]);   
-                    // }
-                    
-                     
-                     //mem.write32(shdr.sh_addr, b);
+                     f.read(Memory.get_instance().mainmemory,offsettoread,(int)shdr.sh_size);
                      break;
                  case 8: // ShType.NOBITS
                      System.out.println("NO BITS");
