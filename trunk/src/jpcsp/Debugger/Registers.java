@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Debugger;
 
-
+import jpcsp.Processor;
 
 /**
  *
@@ -24,11 +24,11 @@ package jpcsp.Debugger;
  */
 public class Registers extends javax.swing.JInternalFrame {
 
-
-
+    Processor cpu;
 
     /** Creates new form Disasembler */
-    public Registers() {
+    public Registers(Processor c) {
+        cpu = c;
         initComponents();
         RefreshDebugger();
 
@@ -159,7 +159,12 @@ public class Registers extends javax.swing.JInternalFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     public void RefreshDebugger() {
-        
+        jTable1.setValueAt(Integer.toHexString(cpu.pc), 0, 1);
+        jTable1.setValueAt(Integer.toHexString(cpu.hi), 1, 1);
+        jTable1.setValueAt(Integer.toHexString(cpu.lo), 2, 1);
+        for (int i = 0; i < 32; i++) {
+            jTable1.setValueAt(Integer.toHexString(cpu.cpuregisters[i]), 3+i, 1);
+        }
     }
 
 
