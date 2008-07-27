@@ -19,8 +19,10 @@ package jpcsp;
 import java.io.File;
 import java.io.IOException;
 import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 import jpcsp.Debugger.*;
+import jpcsp.info.MetaInformation;
 
 /**
  *
@@ -32,7 +34,7 @@ public class JpcspMainGUI extends javax.swing.JFrame {
     Disasembler dis;
     Processor cpu;
     Registers regs;
-    final String  version= "Jpcsp v0.03";
+    final String  version= MetaInformation.FULL_NAME;
     /** Creates new form JpcspMainGUI */
     public JpcspMainGUI() {
         initComponents();
@@ -122,6 +124,11 @@ public class JpcspMainGUI extends javax.swing.JFrame {
         helpMenu.setText("Help");
 
         aboutMenuItem.setText("About");
+        aboutMenuItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                aboutMenuItemActionPerformed(evt);
+            }
+        });
         helpMenu.add(aboutMenuItem);
 
         menuBar.add(helpMenu);
@@ -296,6 +303,21 @@ private void RegistersActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
 
     }
 }//GEN-LAST:event_RegistersActionPerformed
+
+private void aboutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_aboutMenuItemActionPerformed
+// TODO add your handling code here:
+    StringBuilder message = new StringBuilder();
+    message.append("<html>")
+            .append("<h2>" + MetaInformation.FULL_NAME + "</h2>")
+            .append("<hr/>")
+            .append("Oficial site      : <a href='" + MetaInformation.OFICIAL_SITE + "'>"+MetaInformation.OFICIAL_SITE+"</a><br/>")
+            .append("Oficial forum     : <a href='" + MetaInformation.OFICIAL_FORUM + "'>"+MetaInformation.OFICIAL_FORUM+"</a><br/>")
+            .append("Oficial repository: <a href='" + MetaInformation.OFICIAL_REPOSITORY + "'>"+MetaInformation.OFICIAL_REPOSITORY+"</a><br/>")
+            .append("<hr/>")
+            .append("<i>Team:</i> <font color='gray'>" + MetaInformation.TEAM + "</font>")
+            .append("</html>");
+    JOptionPane.showMessageDialog(this, message.toString(), version,JOptionPane.INFORMATION_MESSAGE);
+}//GEN-LAST:event_aboutMenuItemActionPerformed
 
     /**
     * @param args the command line arguments
