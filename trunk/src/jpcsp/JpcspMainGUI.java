@@ -310,9 +310,9 @@ private void aboutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     message.append("<html>")
             .append("<h2>" + MetaInformation.FULL_NAME + "</h2>")
             .append("<hr/>")
-            .append("Oficial site      : <a href='" + MetaInformation.OFICIAL_SITE + "'>"+MetaInformation.OFICIAL_SITE+"</a><br/>")
-            .append("Oficial forum     : <a href='" + MetaInformation.OFICIAL_FORUM + "'>"+MetaInformation.OFICIAL_FORUM+"</a><br/>")
-            .append("Oficial repository: <a href='" + MetaInformation.OFICIAL_REPOSITORY + "'>"+MetaInformation.OFICIAL_REPOSITORY+"</a><br/>")
+            .append("Official site      : <a href='" + MetaInformation.OFFICIAL_SITE + "'>"+MetaInformation.OFFICIAL_SITE+"</a><br/>")
+            .append("Official forum     : <a href='" + MetaInformation.OFFICIAL_FORUM + "'>"+MetaInformation.OFFICIAL_FORUM+"</a><br/>")
+            .append("Official repository: <a href='" + MetaInformation.OFFICIAL_REPOSITORY + "'>"+MetaInformation.OFFICIAL_REPOSITORY+"</a><br/>")
             .append("<hr/>")
             .append("<i>Team:</i> <font color='gray'>" + MetaInformation.TEAM + "</font>")
             .append("</html>");
