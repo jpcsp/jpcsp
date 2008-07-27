@@ -220,8 +220,7 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
         }
         int opcode = (value >> 26) & 0x3f;
 
-        //s = Integer.toString(opcode);
-        
+        //s = Integer.toString(opcode);        
         switch (opcode) {
             case 0: //Special table                
                 int specialop = (value & 0x3f);
