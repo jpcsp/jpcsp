@@ -219,7 +219,7 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
             desktopPane.remove(regs);
             regs = null;
         }
-        regs = new Registers();
+        regs = new Registers(cpu);
         regs.setLocation(200, 150);
         regs.setVisible(true);
         desktopPane.add(regs);
