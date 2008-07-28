@@ -144,6 +144,7 @@ public class ElfHeader {
   private static class Elf32_Shdr
   {
     StringBuffer str = new StringBuffer();
+    private int SectionCounter=0;
     private long sh_name;
     private int sh_type;
     private int sh_flags;
@@ -174,7 +175,7 @@ public class ElfHeader {
     public String toString() 
      {
        //each section is added to the string buffer
-       str.append("-----SECTION HEADER---------" + "\n");
+       str.append("-----SECTION HEADER #"+SectionCounter+" -----" + "\n");
        str.append("sh_name " + "\t " +  Utilities.formatString("long", Long.toHexString(sh_name & 0xFFFFFFFFL).toUpperCase()) + "\n");
        str.append("sh_type " + "\t " +  Utilities.integerToHex(sh_type & 0xFF ) + "\n");
        str.append("sh_flags " + "\t " +  Utilities.integerToHex(sh_flags & 0xFF ) + "\n");
@@ -185,6 +186,7 @@ public class ElfHeader {
        str.append("sh_info " + "\t " +  Utilities.integerToHex(sh_info & 0xFF ) + "\n");
        str.append("sh_addralign " + "\t " +  Utilities.integerToHex(sh_addralign & 0xFF ) + "\n");
        str.append("sh_entsize " + "\t " +  Utilities.formatString("long", Long.toHexString(sh_entsize & 0xFFFFFFFFL).toUpperCase()) + "\n");
+       SectionCounter++;
        return str.toString();
      }
   }
