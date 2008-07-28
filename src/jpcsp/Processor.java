@@ -40,7 +40,7 @@ public class Processor {
     public void stepcpu()
     {
       int value = Memory.get_instance().read32(pc);
-      pc += 4;   
+         
       //System.out.println(pc);
       int rs = (value >> 21) & 0x1f;
       int rt = (value >> 16) & 0x1f;
@@ -52,13 +52,17 @@ public class Processor {
         int opcode = (value >> 26) & 0x3f;
         switch(opcode)
         {
-            case 15:
+            case 9: //addiu
+                cpuregisters[rt] = cpuregisters[rs] + imm;
+                break;
+            case 15: //LUI
                 cpuregisters[rt] = imm << 16 ; 
                 break;
             default:
                 System.out.println("Unsupported instruction " + Integer.toHexString(opcode));
                 break;
         }
-        
+      pc += 4;  
     }
+    
 }
