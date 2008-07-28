@@ -37,4 +37,28 @@ public class Processor {
         }
 
     }
+    public void stepcpu()
+    {
+      int value = Memory.get_instance().read32(pc);
+      pc += 4;   
+      //System.out.println(pc);
+      int rs = (value >> 21) & 0x1f;
+      int rt = (value >> 16) & 0x1f;
+      int rd = (value >> 11) & 0x1f;
+      int imm = value & 0xffff;
+      if ((imm & 0x8000) == 0x8000) {
+            imm |= 0xffff0000;
+        }
+        int opcode = (value >> 26) & 0x3f;
+        switch(opcode)
+        {
+            case 15:
+                cpuregisters[rt] = imm << 16 ; 
+                break;
+            default:
+                System.out.println("Unsupported instruction " + Integer.toHexString(opcode));
+                break;
+        }
+        
+    }
 }
