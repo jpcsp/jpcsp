@@ -165,6 +165,7 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
 
         //This is where a real application would open the file.   
         try {
+            cpu.reset();
             ElfHeader.readHeader(file.getPath(), cpu);
             //System.out.println(Integer.toHexString(cpu.pc));
             isloaded = true; //TODO check if it a valid file
