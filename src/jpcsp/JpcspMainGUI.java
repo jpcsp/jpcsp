@@ -195,23 +195,7 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
             elfinfo.setSelected(true);
         } catch (java.beans.PropertyVetoException e) {
         }
-        //disassembler window
-        if (dis != null) {
-            //clear previously opened stuff
-            dis.setVisible(false);
-            Disasembler.setIcon(null);
-            desktopPane.remove(dis);
-            dis = null;
-        }
-        dis = new Disasembler(cpu);
-        dis.setLocation(300, 0);
-        dis.setVisible(true);
-        desktopPane.add(dis);
-        Disasembler.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
-        try {
-            dis.setSelected(true);
-        } catch (java.beans.PropertyVetoException e) {
-        }
+        //registers window
         if (regs != null) {
             //clear previously opened stuff
             regs.setVisible(false);
@@ -228,6 +212,25 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
             regs.setSelected(true);
         } catch (java.beans.PropertyVetoException e) {
         }
+        //disassembler window
+        if (dis != null) {
+            //clear previously opened stuff
+            dis.setVisible(false);
+            Disasembler.setIcon(null);
+            desktopPane.remove(dis);
+            dis = null;
+        }
+        dis = new Disasembler(cpu,regs);
+        dis.setLocation(300, 0);
+        dis.setVisible(true);
+        desktopPane.add(dis);
+        Disasembler.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
+        try {
+            dis.setSelected(true);
+        } catch (java.beans.PropertyVetoException e) {
+        }
+        
+
     }
 }//GEN-LAST:event_openMenuItemActionPerformed
 

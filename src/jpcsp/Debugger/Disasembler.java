@@ -38,9 +38,12 @@ public class Disasembler extends javax.swing.JInternalFrame {
     //int pcreg;
     int opcode_address; // store the address of the opcode used for offsetdecode
     Processor c;
+    Registers regs;
+
     /** Creates new form Disasembler */
-    public Disasembler(Processor c) {
+    public Disasembler(Processor c, Registers regs) {
         this.c = c;
+        this.regs=regs;
         DebuggerPC = 0;
         //pcreg = c.pc;
         model_1 = new DefaultListModel();
@@ -97,6 +100,11 @@ public class Disasembler extends javax.swing.JInternalFrame {
         });
 
         jButton3.setText("Dump code");
+        jButton3.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton3ActionPerformed(evt);
+            }
+        });
 
         jButton4.setText("Step CPU");
         jButton4.addActionListener(new java.awt.event.ActionListener() {
@@ -124,7 +132,7 @@ public class Disasembler extends javax.swing.JInternalFrame {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 469, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(23, Short.MAX_VALUE))
             .addGroup(layout.createSequentialGroup()
                 .addGap(42, 42, 42)
                 .addComponent(jButton4)
@@ -132,7 +140,7 @@ public class Disasembler extends javax.swing.JInternalFrame {
                 .addComponent(jButton1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jButton2)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 235, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 247, Short.MAX_VALUE)
                 .addComponent(jButton3)
                 .addGap(65, 65, 65))
         );
@@ -170,7 +178,7 @@ private void jList1MouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GEN-FI
 // TODO add your handling code here:
     if (evt.getWheelRotation() < 0) {
         evt.consume();
-        if (jList1.getSelectedIndex() == 0 || jList1.getSelectedIndex() == -1){
+        if (jList1.getSelectedIndex() == 0 || jList1.getSelectedIndex() == -1) {
             DebuggerPC -= 4;
             RefreshDebugger();
             jList1.setSelectedIndex(0);
@@ -190,31 +198,46 @@ private void jList1MouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GEN-FI
 }//GEN-LAST:event_jList1MouseWheelMoved
 
 private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-     DebuggerPC = c.pc; 
-     RefreshDebugger();
+    DebuggerPC = c.pc;
+    RefreshDebugger();
 }//GEN-LAST:event_jButton1ActionPerformed
 
 private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-    String input = (String)JOptionPane.showInternalInputDialog(this, "Enter the address to which to jump (Hex)","Jpcsp",JOptionPane.QUESTION_MESSAGE, null, null, String.format("%08x", c.pc));
-    if (input==null)
-   	 return;
+    String input = (String) JOptionPane.showInternalInputDialog(this, "Enter the address to which to jump (Hex)", "Jpcsp", JOptionPane.QUESTION_MESSAGE, null, null, String.format("%08x", c.pc));
+    if (input == null) {
+        return;
+    }
     int value;//GEN-LAST:event_jButton2ActionPerformed
-     try {
-       value= Integer.parseInt(input,16);
-     }catch(Exception e)
-     {
-       JOptionPane.showMessageDialog(this, "The Number you enter is not correct");   
-       return;
-     }
-     DebuggerPC = value;
-     RefreshDebugger();
-}
+        try {
+            value = Integer.parseInt(input, 16);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "The Number you enter is not correct");
+            return;
+        }
+        DebuggerPC = value;
+        RefreshDebugger();
+    }
+
 private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
-   c.stepcpu();
-   DebuggerPC=0;
-   RefreshDebugger();
+    c.stepcpu();
+    DebuggerPC = 0;
+    RefreshDebugger();
+    regs.RefreshDebugger();
 }//GEN-LAST:event_jButton4ActionPerformed
 
+private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
+// TODO add your handling code here:
+    //System.out.println("dump code dialog created");
+    OptionPaneMultiple opt=new OptionPaneMultiple();
+    if(opt.completed){
+        //Here the input can be used to actually dump code
+        System.out.println("Start address: "+opt.getInput()[0]);
+        System.out.println("End address: "+opt.getInput()[1]);
+        System.out.println("File name: "+opt.getInput()[2]);
+    }
+    //System.out.println("dump code dialog done");
+    opt=null;
+}//GEN-LAST:event_jButton3ActionPerformed
 
     public void RefreshDebugger() {
         int t;
@@ -224,7 +247,7 @@ private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
         }
         model_1.clear();
 
-        for (t = DebuggerPC      , cnt = 0; t < (DebuggerPC + 0x00000074); t += 0x00000004, cnt++) {
+        for (t = DebuggerPC          , cnt = 0; t < (DebuggerPC + 0x00000074); t += 0x00000004, cnt++) {
 
             int memread = Memory.get_instance().read32((int) t);
             if (memread == 0) {
@@ -232,26 +255,27 @@ private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
             } else {
                 opcode_address = t;
                 model_1.addElement(String.format("%08x : [%08x]: %s", t, memread, disasm(memread)));
-                
+
             }
         }
 
     }
+
     String disasm(int value) {
         String s = new String();
-        
+
         //Opcodes of form:
-        
+
         // ooooo dddddddddddddddddddddddddd
         // 31 26 25						  0
         // where o..o = opcode
         // 		 d..d = data
-        
+
         //e.g. for a register op:
         //op 	 rs    rt 	 rd    shamt func 
         //oooooo sssss ttttt ddddd aaaaa ffffff 
         //31  26 25 21 20 16 15 11 10  6 5    0
-        
+
         //So we read out rs/rt/rd/immediate
         //And switch on opcode
         //opcode = 00000b -> special code
@@ -271,223 +295,225 @@ private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
                 int specialop = (value & 0x3f);
                 switch (specialop) {
                     case 0: //sll
-                       s = s + Dis_RDRTSA("sll" , value);
-                       break;
+                        s = s + Dis_RDRTSA("sll", value);
+                        break;
                     case 2://srl
-                       s = s + Dis_RDRTSA("srl" , value);
-                       break;
+                        s = s + Dis_RDRTSA("srl", value);
+                        break;
                     case 3://sra
-                       s = s + Dis_RDRTSA("sra", value);
-                       break;
+                        s = s + Dis_RDRTSA("sra", value);
+                        break;
                     case 4: //sllv
-                        s = s + Dis_RDRSRT("sllv" ,value);
-                        break; 
- 
+                        s = s + Dis_RDRSRT("sllv", value);
+                        break;
+
                     case 6://srlv
-                        s = s + Dis_RDRSRT("srlv" ,value);
+                        s = s + Dis_RDRSRT("srlv", value);
                         break;
                     case 7://srav
-                        s = s + Dis_RDRSRT("srav" ,value);
+                        s = s + Dis_RDRSRT("srav", value);
                         break;
                     case 8: //jr
-                        s = s + Dis_RS("jr" ,value);
+                        s = s + Dis_RS("jr", value);
                         break;
                     case 9: //jalr
-                        s = s + Dis_RS("jalr" ,value);
+                        s = s + Dis_RS("jalr", value);
                         break;
                     case 11://movn
-                    	s = s + Dis_RDRSRT("movn",value);
-                    	break;
+                        s = s + Dis_RDRSRT("movn", value);
+                        break;
                     case 12://syscall
                         s = s + Dis_Syscall(value);
                         break;
                     case 13://break;
-                        s= s + Dis_Break(value);
+                        s = s + Dis_Break(value);
                         break;
                     case 16: //mfhi
-                        s= s + Dis_RD("mfhi" ,value);
-                        break;      
+                        s = s + Dis_RD("mfhi", value);
+                        break;
                     case 17: //mthi
-                        s= s + Dis_RS("mthi" ,value);
+                        s = s + Dis_RS("mthi", value);
                         break;
                     case 18: //mflo
-                        s= s + Dis_RD("mflo" ,value);
-                        break; 
+                        s = s + Dis_RD("mflo", value);
+                        break;
                     case 19://mtlo
-                        s= s + Dis_RS("mtlo" ,value);
+                        s = s + Dis_RS("mtlo", value);
                         break;
                     case 24://mult
-                        s = s + Dis_RSRT("mult",value);
+                        s = s + Dis_RSRT("mult", value);
                         break;
                     case 25://multu
-                        s = s + Dis_RSRT("multu",value);
+                        s = s + Dis_RSRT("multu", value);
                         break;
                     case 26://div
-                        s = s + Dis_RSRT("div",value);
+                        s = s + Dis_RSRT("div", value);
                         break;
                     case 27://divu
-                        s = s + Dis_RSRT("divu",value);
+                        s = s + Dis_RSRT("divu", value);
                         break;
                     case 32://add
-                        s = s + Dis_RDRSRT("add" ,value);
+                        s = s + Dis_RDRSRT("add", value);
                         break;
                     case 33://addu
-                        s = s + Dis_RDRSRT("addu" ,value);
+                        s = s + Dis_RDRSRT("addu", value);
                         break;
                     case 34://sub
-                        s = s + Dis_RDRSRT("sub" ,value);
+                        s = s + Dis_RDRSRT("sub", value);
                         break;
                     case 35://subu
-                        s = s + Dis_RDRSRT("subu" ,value);
+                        s = s + Dis_RDRSRT("subu", value);
                         break;
                     case 36://and
-                        s = s + Dis_RDRSRT("and" ,value);
-                        break;                        
+                        s = s + Dis_RDRSRT("and", value);
+                        break;
                     case 37://or
-                         s = s + Dis_RDRSRT("or" ,value);
-                        break;                       
+                        s = s + Dis_RDRSRT("or", value);
+                        break;
                     case 38://xor
-                        s = s + Dis_RDRSRT("xor" ,value);
-                        break;                        
+                        s = s + Dis_RDRSRT("xor", value);
+                        break;
                     case 39://nor
-                        s = s + Dis_RDRSRT("nor" ,value);
-                        break;                        
+                        s = s + Dis_RDRSRT("nor", value);
+                        break;
                     case 42://slt
-                        s = s + Dis_RDRSRT("slt" ,value);
+                        s = s + Dis_RDRSRT("slt", value);
                         break;
                     case 43://sltu
-                        s = s + Dis_RDRSRT("sltu" ,value);
+                        s = s + Dis_RDRSRT("sltu", value);
                         break;
                     case 44://max
-                    	s = s + Dis_RDRSRT("max",value);
-                    	break;
+                        s = s + Dis_RDRSRT("max", value);
+                        break;
                     default:
                         s = "unsupported special instruction + " + Integer.toString(specialop);
                         break;
                 }
                 break;
-            case  1: //Bcond table  
-            int code = value & 0x1f0000;
-            if (code == 0) 
-              s = s + "bltz " + cpuregs[rs] + ", " + Integer.toHexString(imm*4  + opcode_address + 4);
-            else if (code == 0x10000)
-              s = s + "bgez " + cpuregs[rs] + ", " + Integer.toHexString(imm*4  + opcode_address + 4);
-             else if (code == 0x100000) 
-              s = s + "bltzal " + cpuregs[rs] + ", " + Integer.toHexString(imm*4  + opcode_address + 4);
-            else if (code == 0x110000) 
-              s = s + "bgezal " + cpuregs[rs] + ", " + Integer.toHexString(imm*4  + opcode_address + 4);
-            else
-              s = s + "unimplement Bcond opcode";
-            break;
+            case 1: //Bcond table  
+                int code = value & 0x1f0000;
+                if (code == 0) {
+                    s = s + "bltz " + cpuregs[rs] + ", " + Integer.toHexString(imm * 4 + opcode_address + 4);
+                } else if (code == 0x10000) {
+                    s = s + "bgez " + cpuregs[rs] + ", " + Integer.toHexString(imm * 4 + opcode_address + 4);
+                } else if (code == 0x100000) {
+                    s = s + "bltzal " + cpuregs[rs] + ", " + Integer.toHexString(imm * 4 + opcode_address + 4);
+                } else if (code == 0x110000) {
+                    s = s + "bgezal " + cpuregs[rs] + ", " + Integer.toHexString(imm * 4 + opcode_address + 4);
+                } else {
+                    s = s + "unimplement Bcond opcode";
+                }
+                break;
             case 2: //J
-              s = s + Dis_JUMP("j",value);
-              break;
+                s = s + Dis_JUMP("j", value);
+                break;
             case 3://JAL
-             s = s + Dis_JUMP("jal",value);
-             break;
+                s = s + Dis_JUMP("jal", value);
+                break;
             case 4: //beq
-              s = s + Dis_RSRTOFFSET("beq",value);
-              break;
+                s = s + Dis_RSRTOFFSET("beq", value);
+                break;
             case 5: //bne
-               s= s + Dis_RSRTOFFSET("bne",value);
-               break;
+                s = s + Dis_RSRTOFFSET("bne", value);
+                break;
             case 6://blez
-                s = s + Dis_RSOFFSET("blez",value);
+                s = s + Dis_RSOFFSET("blez", value);
                 break;
             case 7://bgtz
-                s = s + Dis_RSOFFSET("bgtz",value);
+                s = s + Dis_RSOFFSET("bgtz", value);
                 break;
             case 8: //addi
-                s = s + Dis_RTRSIMM("addi",value);
-                break; 
+                s = s + Dis_RTRSIMM("addi", value);
+                break;
             case 9: //addiu
-                s = s + Dis_RTRSIMM("addiu",value);
+                s = s + Dis_RTRSIMM("addiu", value);
                 break;
             case 10://slti
-                s = s + Dis_RTRSIMM("slti",value);
+                s = s + Dis_RTRSIMM("slti", value);
                 break;
             case 11://sltiu
-                s = s + Dis_RTRSIMM("sltiu",value);
+                s = s + Dis_RTRSIMM("sltiu", value);
                 break;
             case 12://ANDI
-            	s = s + Dis_RTRSIMM("andi",value);
-            	break;
+                s = s + Dis_RTRSIMM("andi", value);
+                break;
             case 13: //ori   
-                s = s + Dis_RTRSIMM("ori",value);
+                s = s + Dis_RTRSIMM("ori", value);
                 break;
             case 14: //xori
-            	s = s + Dis_RTRSIMM("xori",value);
-            	break;
+                s = s + Dis_RTRSIMM("xori", value);
+                break;
             case 15://lui
                 s = s + "lui " + cpuregs[rt] + " , " + imm;
                 break;
             case 16://mc0 commands
-            	int argCode = ( (value >> 21) & 0x1f ); //bits 21-25
-                if (argCode == 0) 
+                int argCode = ((value >> 21) & 0x1f); //bits 21-25
+                if (argCode == 0) {
                     s = s + "MFC0 " + cpuregs[rt] + ", " + cpuregs[rd];
-                else if (argCode == 0x00100)
+                } else if (argCode == 0x00100) {
                     s = s + "MTC0 " + cpuregs[rs] + ", " + cpuregs[rd];
-                else
+                } else {
                     s = s + "unimplemented mc0 opcode";
-            	break;
+                }
+                break;
             case 17:
-            	s = s + Dis_17opcode(value);
-            	break;
+                s = s + Dis_17opcode(value);
+                break;
             case 20: //beql
-            	s = s + Dis_RSRTOFFSET("beql",value);
-            	break;
+                s = s + Dis_RSRTOFFSET("beql", value);
+                break;
             case 21: //bnel
-                s = s + Dis_RSRTOFFSET("bnel",value);
+                s = s + Dis_RSRTOFFSET("bnel", value);
                 break;
             case 22: //blez
-                s = s + Dis_RSOFFSET("blez",value);
+                s = s + Dis_RSOFFSET("blez", value);
                 break;
             case 23: //bgtzl
-                s = s + Dis_RSOFFSET("bgtzl",value);
+                s = s + Dis_RSOFFSET("bgtzl", value);
                 break;
             case 32: //lb
-                s = s + Dis_RTIMMRS("lb",value);
+                s = s + Dis_RTIMMRS("lb", value);
                 break;
             case 33://lh
-                s = s + Dis_RTIMMRS("lh",value);
+                s = s + Dis_RTIMMRS("lh", value);
                 break;
             case 34://lwl
-                s = s + Dis_RTIMMRS("lwl",value);
+                s = s + Dis_RTIMMRS("lwl", value);
                 break;
             case 35://lw
-                s = s + Dis_RTIMMRS("lw",value);
+                s = s + Dis_RTIMMRS("lw", value);
                 break;
             case 36://lbu
-                s = s + Dis_RTIMMRS("lbu",value);
+                s = s + Dis_RTIMMRS("lbu", value);
                 break;
             case 37://lhu
-                s = s + Dis_RTIMMRS("lhu",value);
+                s = s + Dis_RTIMMRS("lhu", value);
                 break;
             case 38://lwr
-                s = s + Dis_RTIMMRS("lwr",value);
+                s = s + Dis_RTIMMRS("lwr", value);
                 break;
             //case 39=nor
             case 40: //sb
-                s = s + Dis_RTIMMRS("sb",value);
+                s = s + Dis_RTIMMRS("sb", value);
                 break;
             case 41: //sh
-                s = s + Dis_RTIMMRS("sh",value);
+                s = s + Dis_RTIMMRS("sh", value);
                 break;
             case 42: //swl
-                s = s + Dis_RTIMMRS("swl",value);
+                s = s + Dis_RTIMMRS("swl", value);
                 break;
             case 43: //sw
-                s = s + Dis_RTIMMRS("sw",value);
+                s = s + Dis_RTIMMRS("sw", value);
                 break;
             case 46://swr
-                s = s + Dis_RTIMMRS("swr",value);
+                s = s + Dis_RTIMMRS("swr", value);
                 break;
             case 49://lwc1
-            	s = s + Dis_BASEFTOFFSET("lwc1", value);
-            	break;
+                s = s + Dis_BASEFTOFFSET("lwc1", value);
+                break;
             case 57://swc1
-            	s = s + Dis_BASEFTOFFSET("swc1", value);
-            	break;
+                s = s + Dis_BASEFTOFFSET("swc1", value);
+                break;
             default:
                 s = "Unsupported instruction " + Integer.toString(opcode);
                 break;
@@ -496,7 +522,7 @@ private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
         }
         return s;
     }
-    
+
     private String Dis_Syscall(int value) {  /* probably okay */
         String s = new String();
         int code = (value >> 6) & 0xFFFFF;
@@ -510,235 +536,230 @@ private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
         s = "syscall 0x" + Integer.toHexString(code) + " [unknown]";
         return s;
     }
-    
-    private String Dis_17opcode(int value)
-    {
-    	//note; for opcodes with only two arguments, ft ought to be 0
-    	//17 opcodes of form:
-    	//opcode fmt   ft    fs    fd    ident
-    	//pppppp mmmmm iiiii sssss ddddd tttttt
-    	
-    	//also note, in pspemulator, these are denoted with the suffix .s rather than .fmt
-    	
-    	if (((value >> 21) & 0x1f) == 8)
-    	{	//These are the BC opcodes
-    		int offset=value&0x1FFFF;
-    		switch ((value >> 16) & 0x1f)
-    		{
-    		case 0:
-    			return "bc1f "+offset;
-    		case 1:
-    			return "bc1t "+offset;
-    		case 2:
-    			return "bc1fl "+offset;
-    		case 3:
-    			return "bc1tl "+offset;
-    		default:
-    			return "Unhandled BC opcode "+((value >> 16) & 0x1f);
-    		}
-    	}
 
-    	int ident = value & 0x3f; //These bits identify separate '17' opcodes, so switch amongst them
-    	int fd = (value >> 6) & 0x1f;
-    	int fs = (value >> 11) & 0x1f;
-    	int ft = (value >> 16) & 0x1f;
-    	int fmt = (value >> 21) & 0x1f;
-    	int args=2; //The majority of opcodes take 2 args; this will be altered only if 3 are taken
-    	String opname="";
-    	switch(ident)
-    	{
-    	case 5:
-    		opname="abs.fmt";
-    		break;
-    	case 0:
-    		args=3;
-    		opname="add.fmt";
-    		break;
-    	case 10:
-    		opname="ceil.l.fmt";
-    		break;
-    	case 14:
-    		opname="ceil.w.fmt";
-    		break;
-    	case 33:
-    		opname="cvt.d.fmt";
-    		break;
-    	case 37:
-    		opname="cvt.l.fmt";
-    		break;
-    	case 32:
-    		opname="cvt.d.fmt";
-    		break;
-    	case 36:
-    		opname="cvt.w.fmt";
-    		break;
-    	case 3:
-    		args=3;
-    		opname="div.fmt";
-    		break;
-    	case 11:
-    		opname="floor.l.fmt";
-    		break;
-    	case 15:
-    		opname="floor.w.fmt";
-    		break;
-    	case 6:
-    		opname="mov.fmt";
-    		break;
-    	case 2:
-    		args=3;
-    		opname="mul.fmt";
-    		break;
-    	case 7:
-    		opname="neg.fmt";
-    		break;
-    	case 8:
-    		opname="round.l.fmt";
-    		break;
-    	case 12:
-    		opname="round.w.fmt";
-    		break;
-    	case 4:
-    		opname="sqrt.fmt";
-    		break;
-    	case 1:
-    		args=3;
-    		opname="sub.fmt";
-    		break;
-    	case 9:
-    		opname="trunc.l.fmt";
-    		break;
-    	case 13:
-    		opname="trunc.w.fmt";
-    		break;
-    	default:
-    		return "Unhandled '17' instruction. ident:" + Integer.toString(ident);
-    	}
+    private String Dis_17opcode(int value) {
+        //note; for opcodes with only two arguments, ft ought to be 0
+        //17 opcodes of form:
+        //opcode fmt   ft    fs    fd    ident
+        //pppppp mmmmm iiiii sssss ddddd tttttt
 
-    	if (args==2)
-    		return opname + " f" + Integer.toString(fd) + ", f" + Integer.toString(fs);
-    	if (args==3)
-    		return opname + " f" + Integer.toString(fd) + ", f" + Integer.toString(fs) + ", f" + Integer.toString(ft);
-    	
-    	return "Unhandled number of arguments: " + Integer.toString(args) + ", for opcode 17: " + opname;
+        //also note, in pspemulator, these are denoted with the suffix .s rather than .fmt
+
+        if (((value >> 21) & 0x1f) == 8) {	//These are the BC opcodes
+            int offset = value & 0x1FFFF;
+            switch ((value >> 16) & 0x1f) {
+                case 0:
+                    return "bc1f " + offset;
+                case 1:
+                    return "bc1t " + offset;
+                case 2:
+                    return "bc1fl " + offset;
+                case 3:
+                    return "bc1tl " + offset;
+                default:
+                    return "Unhandled BC opcode " + ((value >> 16) & 0x1f);
+            }
+        }
+
+        int ident = value & 0x3f; //These bits identify separate '17' opcodes, so switch amongst them
+        int fd = (value >> 6) & 0x1f;
+        int fs = (value >> 11) & 0x1f;
+        int ft = (value >> 16) & 0x1f;
+        int fmt = (value >> 21) & 0x1f;
+        int args = 2; //The majority of opcodes take 2 args; this will be altered only if 3 are taken
+        String opname = "";
+        switch (ident) {
+            case 5:
+                opname = "abs.fmt";
+                break;
+            case 0:
+                args = 3;
+                opname = "add.fmt";
+                break;
+            case 10:
+                opname = "ceil.l.fmt";
+                break;
+            case 14:
+                opname = "ceil.w.fmt";
+                break;
+            case 33:
+                opname = "cvt.d.fmt";
+                break;
+            case 37:
+                opname = "cvt.l.fmt";
+                break;
+            case 32:
+                opname = "cvt.d.fmt";
+                break;
+            case 36:
+                opname = "cvt.w.fmt";
+                break;
+            case 3:
+                args = 3;
+                opname = "div.fmt";
+                break;
+            case 11:
+                opname = "floor.l.fmt";
+                break;
+            case 15:
+                opname = "floor.w.fmt";
+                break;
+            case 6:
+                opname = "mov.fmt";
+                break;
+            case 2:
+                args = 3;
+                opname = "mul.fmt";
+                break;
+            case 7:
+                opname = "neg.fmt";
+                break;
+            case 8:
+                opname = "round.l.fmt";
+                break;
+            case 12:
+                opname = "round.w.fmt";
+                break;
+            case 4:
+                opname = "sqrt.fmt";
+                break;
+            case 1:
+                args = 3;
+                opname = "sub.fmt";
+                break;
+            case 9:
+                opname = "trunc.l.fmt";
+                break;
+            case 13:
+                opname = "trunc.w.fmt";
+                break;
+            default:
+                return "Unhandled '17' instruction. ident:" + Integer.toString(ident);
+        }
+
+        if (args == 2) {
+            return opname + " f" + Integer.toString(fd) + ", f" + Integer.toString(fs);
+        }
+        if (args == 3) {
+            return opname + " f" + Integer.toString(fd) + ", f" + Integer.toString(fs) + ", f" + Integer.toString(ft);
+        }
+        return "Unhandled number of arguments: " + Integer.toString(args) + ", for opcode 17: " + opname;
     }
 
-    private String Dis_Break(int value)
-    {
-      int code = (value >> 6) & 0xFFFFF;  
-      return "break 0x" + Integer.toHexString(code);
+    private String Dis_Break(int value) {
+        int code = (value >> 6) & 0xFFFFF;
+        return "break 0x" + Integer.toHexString(code);
     }
-    private String Dis_RDRSRT(String opname,int value)
-    {
-        
+
+    private String Dis_RDRSRT(String opname, int value) {
+
         int rs = (value >> 21) & 0x1f;
         int rt = (value >> 16) & 0x1f;
         int rd = (value >> 11) & 0x1f;
-        if (rs == 0 && rt == 0) 
-             return "li " + cpuregs[rd] + " ,0";
-         else if (rs == 0) 
-             return "move " + cpuregs[rd] + " ," + cpuregs[rs];
-         else if (rt == 0) {
-             return "move " + cpuregs[rd] + " ," + cpuregs[rs];
-         } else {
-             return opname + " " + cpuregs[rd] + " ," + cpuregs[rs] + " , " + cpuregs[rt];
-         }
-        
+        if (rs == 0 && rt == 0) {
+            return "li " + cpuregs[rd] + " ,0";
+        } else if (rs == 0) {
+            return "move " + cpuregs[rd] + " ," + cpuregs[rs];
+        } else if (rt == 0) {
+            return "move " + cpuregs[rd] + " ," + cpuregs[rs];
+        } else {
+            return opname + " " + cpuregs[rd] + " ," + cpuregs[rs] + " , " + cpuregs[rt];
+        }
+
     }
-    private String Dis_BASEFTOFFSET(String opname,int value)
-    {
-    	int base = (value >> 21) & 0x1f;
-    	int ft = (value >> 16) & 0x1f;
-    	int offset = value & 0xffff;
-    	if (opname=="swc1")
-    		return opname + " f" + Integer.toString(ft) + ", sp[" + Integer.toString(offset) + "]";
-    	if (opname=="lwc1")
-    		return opname + " f" + Integer.toString(ft) + ", v1[" + Integer.toString(offset) + "]";
-    	return "Opcode 0x" + opname + "unhandled in Dis_BASEFTOFFSET";
+
+    private String Dis_BASEFTOFFSET(String opname, int value) {
+        int base = (value >> 21) & 0x1f;
+        int ft = (value >> 16) & 0x1f;
+        int offset = value & 0xffff;
+        if (opname == "swc1") {
+            return opname + " f" + Integer.toString(ft) + ", sp[" + Integer.toString(offset) + "]";
+        }
+        if (opname == "lwc1") {
+            return opname + " f" + Integer.toString(ft) + ", v1[" + Integer.toString(offset) + "]";
+        }
+        return "Opcode 0x" + opname + "unhandled in Dis_BASEFTOFFSET";
     }
-    private String Dis_RTRSIMM(String opname,int value)
-    {
+
+    private String Dis_RTRSIMM(String opname, int value) {
         int rs = (value >> 21) & 0x1f;
         int rt = (value >> 16) & 0x1f;
         int rd = (value >> 11) & 0x1f;
         int imm = value & 0xffff;
         if ((imm & 0x8000) == 0x8000) {
             imm |= 0xffff0000;
-        } 
-       if (rs == 0) 
-          return  "li " + cpuregs[rt] + " ," + imm;
-       else 
-          return  opname + " " + cpuregs[rt] + " ," + cpuregs[rs] + " , " + imm;
-              
-        
+        }
+        if (rs == 0) {
+            return "li " + cpuregs[rt] + " ," + imm;
+        } else {
+            return opname + " " + cpuregs[rt] + " ," + cpuregs[rs] + " , " + imm;
+        }
     }
-    private String Dis_RDRTSA(String opname,int value)
-    {
+
+    private String Dis_RDRTSA(String opname, int value) {
         int rt = (value >> 16) & 0x1f;
         int rd = (value >> 11) & 0x1f;
         int sa = (value >> 6) & 0x1f;
 
-       if (rd == 0) 
-          return  "nop";
-       else 
-          return  opname + " " + cpuregs[rd] + " ," + cpuregs[rt] + " , " + sa;
-              
-        
-        
+        if (rd == 0) {
+            return "nop";
+        } else {
+            return opname + " " + cpuregs[rd] + " ," + cpuregs[rt] + " , " + sa;
+        }
     }
-    private String Dis_RD(String opname,int value)
-    {
+
+    private String Dis_RD(String opname, int value) {
         int rd = (value >> 11) & 0x1f;
-        return  opname + " " + cpuregs[rd];
-        
+        return opname + " " + cpuregs[rd];
+
     }
-    private String Dis_RS(String opname,int value)
-    {
+
+    private String Dis_RS(String opname, int value) {
         int rs = (value >> 21) & 0x1f;
-        return  opname + " " + cpuregs[rs];
+        return opname + " " + cpuregs[rs];
     }
-    private String Dis_RSRT(String opname,int value)
-    {
+
+    private String Dis_RSRT(String opname, int value) {
         int rs = (value >> 21) & 0x1f;
         int rt = (value >> 16) & 0x1f;
-        return  opname + " " + cpuregs[rs] + " ," + cpuregs[rt];
+        return opname + " " + cpuregs[rs] + " ," + cpuregs[rt];
     }
-    private String Dis_RTIMMRS(String opname, int value)
-    {
+
+    private String Dis_RTIMMRS(String opname, int value) {
         int rs = (value >> 21) & 0x1f;
         int rt = (value >> 16) & 0x1f;
         int imm = value & 0xffff;
         if ((imm & 0x8000) == 0x8000) {
             imm |= 0xffff0000;
-        } 
+        }
         return opname + " " + cpuregs[rt] + "," + imm + " (" + cpuregs[rs] + ")";
     }
-    private String Dis_RSRTOFFSET(String opname , int value)
-    {
+
+    private String Dis_RSRTOFFSET(String opname, int value) {
         int rs = (value >> 21) & 0x1f;
         int rt = (value >> 16) & 0x1f;
         int imm = value & 0xffff;
         if ((imm & 0x8000) == 0x8000) {
             imm |= 0xffff0000;
         }
-        return opname + " " + cpuregs[rs] + "," + cpuregs[rt] + " " + Integer.toHexString(imm*4  + opcode_address + 4);
-         
+        return opname + " " + cpuregs[rs] + "," + cpuregs[rt] + " " + Integer.toHexString(imm * 4 + opcode_address + 4);
+
     }
-    private String Dis_RSOFFSET(String opname , int value)
-    {
+
+    private String Dis_RSOFFSET(String opname, int value) {
         int rs = (value >> 21) & 0x1f;
         int imm = value & 0xffff;
         if ((imm & 0x8000) == 0x8000) {
             imm |= 0xffff0000;
         }
-        return opname + " " + cpuregs[rs] + ", "  + Integer.toHexString(imm*4  + opcode_address + 4);
-         
-        
+        return opname + " " + cpuregs[rs] + ", " + Integer.toHexString(imm * 4 + opcode_address + 4);
+
+
     }
-    private String Dis_JUMP(String opname,int value)
-    {
-      int jump = (opcode_address & 0xf0000000)|((value&0x3ffffff)<<2); 
-      return opname + " 0x" + Integer.toHexString(jump);
+
+    private String Dis_JUMP(String opname, int value) {
+        int jump = (opcode_address & 0xf0000000) | ((value & 0x3ffffff) << 2);
+        return opname + " 0x" + Integer.toHexString(jump);
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButton1;
