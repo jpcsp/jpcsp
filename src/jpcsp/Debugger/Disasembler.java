@@ -16,6 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Debugger;
 
+import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
 import javax.swing.DefaultListModel;
 import javax.swing.JOptionPane;
 import jpcsp.Memory;
@@ -234,6 +238,47 @@ private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
         System.out.println("Start address: "+opt.getInput()[0]);
         System.out.println("End address: "+opt.getInput()[1]);
         System.out.println("File name: "+opt.getInput()[2]);
+        
+        BufferedWriter bufferedWriter = null;
+        try {
+            
+            //Construct the BufferedWriter object
+            bufferedWriter = new BufferedWriter(new FileWriter(opt.getInput()[2]));
+            
+            //Start writing to the output stream
+            bufferedWriter.write("-------JPCSP DISASM-----------");
+            bufferedWriter.newLine();
+            int Start = Integer.parseInt(opt.getInput()[0],16);
+            int End = Integer.parseInt(opt.getInput()[1],16);
+            for(int i =Start; i<=End; i+=4)
+            {
+               int memread = Memory.get_instance().read32((int) i);
+             if (memread == 0) {
+                bufferedWriter.write(String.format("%08x : [%08x]: nop", i, memread));
+                bufferedWriter.newLine();
+             } else {
+                //opcode_address = i;
+                bufferedWriter.write(String.format("%08x : [%08x]: %s", i, memread, disasm(memread)));
+                bufferedWriter.newLine();
+             }
+            }
+                
+                      
+        } catch (FileNotFoundException ex) {
+            ex.printStackTrace();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        } finally {
+            //Close the BufferedWriter
+            try {
+                if (bufferedWriter != null) {
+                    bufferedWriter.flush();
+                    bufferedWriter.close();
+                }
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
     }
     //System.out.println("dump code dialog done");
     opt=null;
