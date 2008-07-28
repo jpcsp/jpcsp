@@ -34,6 +34,7 @@ public class JpcspMainGUI extends javax.swing.JFrame {
     Disasembler dis;
     Processor cpu;
     Registers regs;
+    MemoryViewer memview;
     final String  version= MetaInformation.FULL_NAME;
     /** Creates new form JpcspMainGUI */
     public JpcspMainGUI() {
@@ -60,6 +61,7 @@ public class JpcspMainGUI extends javax.swing.JFrame {
         Disasembler = new javax.swing.JMenuItem();
         ElfInfo = new javax.swing.JMenuItem();
         Registers = new javax.swing.JMenuItem();
+        MemView = new javax.swing.JMenuItem();
         helpMenu = new javax.swing.JMenu();
         aboutMenuItem = new javax.swing.JMenuItem();
 
@@ -118,6 +120,14 @@ public class JpcspMainGUI extends javax.swing.JFrame {
             }
         });
         Windows.add(Registers);
+
+        MemView.setText("Memory");
+        MemView.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                MemViewActionPerformed(evt);
+            }
+        });
+        Windows.add(MemView);
 
         menuBar.add(Windows);
 
@@ -230,6 +240,22 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
             dis.setSelected(true);
         } catch (java.beans.PropertyVetoException e) {
         }
+        if (memview != null) {
+            //clear previously opened stuff
+            memview .setVisible(false);
+            MemView.setIcon(null);
+            desktopPane.remove(memview );
+            memview  = null;
+        }
+        memview  = new MemoryViewer(cpu);
+        memview .setLocation(70, 150);
+        memview .setVisible(true);
+        desktopPane.add(memview );
+        MemView.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
+        try {
+            memview .setSelected(true);
+        } catch (java.beans.PropertyVetoException e) {
+        }
         
 
     }
@@ -290,6 +316,13 @@ private void WindowsMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:eve
             Registers.setIcon(null);
         }
     }
+    if (memview != null) {
+        if (memview.isVisible()) {
+            MemView.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
+        } else {
+            MemView.setIcon(null);
+        }
+    }
 }//GEN-LAST:event_WindowsMouseEntered
 
 private void RegistersActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RegistersActionPerformed
@@ -323,6 +356,21 @@ private void aboutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     JOptionPane.showMessageDialog(this, message.toString(), version,JOptionPane.INFORMATION_MESSAGE);
 }//GEN-LAST:event_aboutMenuItemActionPerformed
 
+private void MemViewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MemViewActionPerformed
+    if (memview != null) {
+        memview.setLocation(70, 150);
+        if (memview.isVisible()) {
+            memview.setVisible(false);
+            MemView.setIcon(null);
+
+        } else {
+            memview.setVisible(true);
+            MemView.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
+        }
+
+    }
+}//GEN-LAST:event_MemViewActionPerformed
+
     /**
     * @param args the command line arguments
     */
@@ -343,6 +391,7 @@ private void aboutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenuItem Disasembler;
     private javax.swing.JMenuItem ElfInfo;
+    private javax.swing.JMenuItem MemView;
     private javax.swing.JMenuItem Registers;
     private javax.swing.JMenu Windows;
     private javax.swing.JMenuItem aboutMenuItem;
