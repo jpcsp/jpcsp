@@ -174,8 +174,10 @@ private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
 }//GEN-LAST:event_jButton1ActionPerformed
 
 private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-     String input = JOptionPane.showInternalInputDialog(this, "Enter the address to jump to (Hex)","Jpcsp",JOptionPane.QUESTION_MESSAGE);
-     int value;//GEN-LAST:event_jButton2ActionPerformed
+    String input = (String)JOptionPane.showInternalInputDialog(this, "Enter the address to which to jump (Hex)","Jpcsp",JOptionPane.QUESTION_MESSAGE, null, null, String.format("%08x", pcreg));
+    if (input==null)
+   	 return;
+    int value;//GEN-LAST:event_jButton2ActionPerformed
      try {
        value= Integer.parseInt(input,16);
      }catch(Exception e)
@@ -210,6 +212,22 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     }
     String disasm(int value) {
         String s = new String();
+        
+        //Opcodes of form:
+        
+        // ooooo dddddddddddddddddddddddddd
+        // 31 26 25						  0
+        // where o..o = opcode
+        // 		 d..d = data
+        
+        //e.g. for a register op:
+        //op 	 rs    rt 	 rd    shamt func 
+        //oooooo sssss ttttt ddddd aaaaa ffffff 
+        //31  26 25 21 20 16 15 11 10  6 5    0
+        
+        //So we read out rs/rt/rd/immediate
+        //And switch on opcode
+        //opcode = 00000b -> special code
 
         int rs = (value >> 21) & 0x1f;
         int rt = (value >> 16) & 0x1f;
@@ -247,6 +265,12 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
                     case 8: //jr
                         s = s + Dis_RS("jr" ,value);
                         break;
+                    case 9: //jalr
+                        s = s + Dis_RS("jalr" ,value);
+                        break;
+                    case 11://movn
+                    	s = s + Dis_RDRSRT("movn",value);
+                    	break;
                     case 12://syscall
                         s = s + Dis_Syscall(value);
                         break;
@@ -307,6 +331,9 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
                     case 43://sltu
                         s = s + Dis_RDRSRT("sltu" ,value);
                         break;
+                    case 44://max
+                    	s = s + Dis_RDRSRT("max",value);
+                    	break;
                     default:
                         s = "unsupported special instruction + " + Integer.toString(specialop);
                         break;
@@ -355,12 +382,33 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
             case 11://sltiu
                 s = s + Dis_RTRSIMM("sltiu",value);
                 break;
+            case 12://ANDI
+            	s = s + Dis_RTRSIMM("andi",value);
+            	break;
             case 13: //ori   
                 s = s + Dis_RTRSIMM("ori",value);
                 break;
+            case 14: //xori
+            	s = s + Dis_RTRSIMM("xori",value);
+            	break;
             case 15://lui
                 s = s + "lui " + cpuregs[rt] + " , " + imm;
                 break;
+            case 16://mc0 commands
+            	int argCode = ( (value >> 21) & 0x1f ); //bits 21-25
+                if (argCode == 0) 
+                    s = s + "MFC0 " + cpuregs[rt] + ", " + cpuregs[rd];
+                else if (argCode == 0x00100)
+                    s = s + "MTC0 " + cpuregs[rs] + ", " + cpuregs[rd];
+                else
+                    s = s + "unimplemented mc0 opcode";
+            	break;
+            case 17:
+            	s = s + Dis_17opcode(value);
+            	break;
+            case 20: //beql
+            	s = s + Dis_RSRTOFFSET("beql",value);
+            	break;
             case 21: //bnel
                 s = s + Dis_RSRTOFFSET("bnel",value);
                 break;
@@ -391,6 +439,7 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
             case 38://lwr
                 s = s + Dis_RTIMMRS("lwr",value);
                 break;
+            //case 39=nor
             case 40: //sb
                 s = s + Dis_RTIMMRS("sb",value);
                 break;
@@ -406,6 +455,12 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
             case 46://swr
                 s = s + Dis_RTIMMRS("swr",value);
                 break;
+            case 49://lwc1
+            	s = s + Dis_BASEFTOFFSET("lwc1", value);
+            	break;
+            case 57://swc1
+            	s = s + Dis_BASEFTOFFSET("swc1", value);
+            	break;
             default:
                 s = "Unsupported instruction " + Integer.toString(opcode);
                 break;
@@ -428,6 +483,119 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
         s = "syscall 0x" + Integer.toHexString(code) + " [unknown]";
         return s;
     }
+    
+    private String Dis_17opcode(int value)
+    {
+    	//note; for opcodes with only two arguments, ft ought to be 0
+    	//17 opcodes of form:
+    	//opcode fmt   ft    fs    fd    ident
+    	//pppppp mmmmm iiiii sssss ddddd tttttt
+    	
+    	//also note, in pspemulator, these are denoted with the suffix .s rather than .fmt
+    	
+    	if (((value >> 21) & 0x1f) == 8)
+    	{	//These are the BC opcodes
+    		int offset=value&0x1FFFF;
+    		switch ((value >> 16) & 0x1f)
+    		{
+    		case 0:
+    			return "bc1f "+offset;
+    		case 1:
+    			return "bc1t "+offset;
+    		case 2:
+    			return "bc1fl "+offset;
+    		case 3:
+    			return "bc1tl "+offset;
+    		default:
+    			return "Unhandled BC opcode "+((value >> 16) & 0x1f);
+    		}
+    	}
+
+    	int ident = value & 0x3f; //These bits identify separate '17' opcodes, so switch amongst them
+    	int fd = (value >> 6) & 0x1f;
+    	int fs = (value >> 11) & 0x1f;
+    	int ft = (value >> 16) & 0x1f;
+    	int fmt = (value >> 21) & 0x1f;
+    	int args=2; //The majority of opcodes take 2 args; this will be altered only if 3 are taken
+    	String opname="";
+    	switch(ident)
+    	{
+    	case 5:
+    		opname="abs.fmt";
+    		break;
+    	case 0:
+    		args=3;
+    		opname="add.fmt";
+    		break;
+    	case 10:
+    		opname="ceil.l.fmt";
+    		break;
+    	case 14:
+    		opname="ceil.w.fmt";
+    		break;
+    	case 33:
+    		opname="cvt.d.fmt";
+    		break;
+    	case 37:
+    		opname="cvt.l.fmt";
+    		break;
+    	case 32:
+    		opname="cvt.d.fmt";
+    		break;
+    	case 36:
+    		opname="cvt.w.fmt";
+    		break;
+    	case 3:
+    		args=3;
+    		opname="div.fmt";
+    		break;
+    	case 11:
+    		opname="floor.l.fmt";
+    		break;
+    	case 15:
+    		opname="floor.w.fmt";
+    		break;
+    	case 6:
+    		opname="mov.fmt";
+    		break;
+    	case 2:
+    		args=3;
+    		opname="mul.fmt";
+    		break;
+    	case 7:
+    		opname="neg.fmt";
+    		break;
+    	case 8:
+    		opname="round.l.fmt";
+    		break;
+    	case 12:
+    		opname="round.w.fmt";
+    		break;
+    	case 4:
+    		opname="sqrt.fmt";
+    		break;
+    	case 1:
+    		args=3;
+    		opname="sub.fmt";
+    		break;
+    	case 9:
+    		opname="trunc.l.fmt";
+    		break;
+    	case 13:
+    		opname="trunc.w.fmt";
+    		break;
+    	default:
+    		return "Unhandled '17' instruction. ident:" + Integer.toString(ident);
+    	}
+
+    	if (args==2)
+    		return opname + " f" + Integer.toString(fd) + ", f" + Integer.toString(fs);
+    	if (args==3)
+    		return opname + " f" + Integer.toString(fd) + ", f" + Integer.toString(fs) + ", f" + Integer.toString(ft);
+    	
+    	return "Unhandled number of arguments: " + Integer.toString(args) + ", for opcode 17: " + opname;
+    }
+
     private String Dis_Break(int value)
     {
       int code = (value >> 6) & 0xFFFFF;  
@@ -450,7 +618,17 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
          }
         
     }
-    
+    private String Dis_BASEFTOFFSET(String opname,int value)
+    {
+    	int base = (value >> 21) & 0x1f;
+    	int ft = (value >> 16) & 0x1f;
+    	int offset = value & 0xffff;
+    	if (opname=="swc1")
+    		return opname + " f" + Integer.toString(ft) + ", sp[" + Integer.toString(offset) + "]";
+    	if (opname=="lwc1")
+    		return opname + " f" + Integer.toString(ft) + ", v1[" + Integer.toString(offset) + "]";
+    	return "Opcode 0x" + opname + "unhandled in Dis_BASEFTOFFSET";
+    }
     private String Dis_RTRSIMM(String opname,int value)
     {
         int rs = (value >> 21) & 0x1f;
