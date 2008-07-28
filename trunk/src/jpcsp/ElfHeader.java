@@ -143,6 +143,7 @@ public class ElfHeader {
   
   private static class Elf32_Shdr
   {
+    StringBuffer str = new StringBuffer();
     private long sh_name;
     private int sh_type;
     private int sh_flags;
@@ -172,7 +173,7 @@ public class ElfHeader {
 
     public String toString() 
      {
-       StringBuffer str = new StringBuffer();
+       //each section is added to the string buffer
        str.append("-----SECTION HEADER---------" + "\n");
        str.append("sh_name " + "\t " +  Utilities.formatString("long", Long.toHexString(sh_name & 0xFFFFFFFFL).toUpperCase()) + "\n");
        str.append("sh_type " + "\t " +  Utilities.integerToHex(sh_type & 0xFF ) + "\n");
@@ -284,6 +285,8 @@ public class ElfHeader {
 	f.seek (elfoffset + ehdr.e_shoff + (i * ehdr.e_shentsize));
 	shdr.read (f);
         //shdr.printSectionHeader();
+        SectInfo = shdr.toString();
+        //System.out.println(shdr.toString());
         if((shdr.sh_flags & ShFlags.Allocate.getValue())== ShFlags.Allocate.getValue())
         {
              
@@ -305,7 +308,7 @@ public class ElfHeader {
                  
              }
         }
-        SectInfo = shdr.toString();
+        
     }
     f.close();
   }

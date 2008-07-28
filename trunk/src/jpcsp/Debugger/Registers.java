@@ -164,6 +164,7 @@ public class Registers extends javax.swing.JInternalFrame {
         jTable1.setValueAt(Integer.toHexString(cpu.lo), 2, 1);
         for (int i = 0; i < 32; i++) {
             jTable1.setValueAt(Integer.toHexString(cpu.cpuregisters[i]), 3+i, 1);
+            
         }
     }
 
