@@ -28,7 +28,7 @@ public class Processor {
 
     }
 
-    private void reset() {
+    public void reset() {
         //intialaze psp
         pc = 0x00000000;
         hi = lo = 0;
