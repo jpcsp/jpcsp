@@ -15,10 +15,13 @@ public class OptionPaneMultiple extends JFrame {
     JTextField endaddr;
     JTextField filename;
     boolean completed=false;
-    public OptionPaneMultiple() {
+    public OptionPaneMultiple(String start,String end) {
         startaddr = new JTextField(5);
         endaddr = new JTextField(5);
         filename = new JTextField(5);
+        filename.setText("dump.txt");
+        startaddr.setText(start);
+        endaddr.setText(end);
         Object[] msg = {"Start address:", startaddr, "End address:", endaddr, "File name:", filename};
 
         Object[] options = {"Ok", "Cancel"};
