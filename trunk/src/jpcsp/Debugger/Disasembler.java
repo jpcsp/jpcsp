@@ -35,14 +35,14 @@ public class Disasembler extends javax.swing.JInternalFrame {
     };
     int DebuggerPC;
     private DefaultListModel model_1 = new DefaultListModel();
-    int pcreg;
+    //int pcreg;
     int opcode_address; // store the address of the opcode used for offsetdecode
-
+    Processor c;
     /** Creates new form Disasembler */
     public Disasembler(Processor c) {
-
+        this.c = c;
         DebuggerPC = 0;
-        pcreg = c.pc;
+        //pcreg = c.pc;
         model_1 = new DefaultListModel();
         initComponents();
         RefreshDebugger();
@@ -62,6 +62,8 @@ public class Disasembler extends javax.swing.JInternalFrame {
         jList1 = new javax.swing.JList(model_1);
         jButton1 = new javax.swing.JButton();
         jButton2 = new javax.swing.JButton();
+        jButton3 = new javax.swing.JButton();
+        jButton4 = new javax.swing.JButton();
 
         setClosable(true);
         setDefaultCloseOperation(javax.swing.WindowConstants.HIDE_ON_CLOSE);
@@ -94,6 +96,15 @@ public class Disasembler extends javax.swing.JInternalFrame {
             }
         });
 
+        jButton3.setText("Dump code");
+
+        jButton4.setText("Step CPU");
+        jButton4.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton4ActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -101,19 +112,29 @@ public class Disasembler extends javax.swing.JInternalFrame {
             .addGroup(layout.createSequentialGroup()
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 334, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jButton1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jButton2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                        .addComponent(jButton1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jButton2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(jButton3, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 113, Short.MAX_VALUE)
+                    .addComponent(jButton4, javax.swing.GroupLayout.DEFAULT_SIZE, 113, Short.MAX_VALUE))
+                .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 469, javax.swing.GroupLayout.PREFERRED_SIZE)
             .addGroup(layout.createSequentialGroup()
-                .addGap(100, 100, 100)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 469, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGroup(layout.createSequentialGroup()
+                .addGap(42, 42, 42)
+                .addComponent(jButton4)
+                .addGap(35, 35, 35)
                 .addComponent(jButton1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jButton2))
+                .addComponent(jButton2)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 235, Short.MAX_VALUE)
+                .addComponent(jButton3)
+                .addGap(65, 65, 65))
         );
 
         pack();
@@ -169,12 +190,12 @@ private void jList1MouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GEN-FI
 }//GEN-LAST:event_jList1MouseWheelMoved
 
 private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-     DebuggerPC = pcreg; 
+     DebuggerPC = c.pc; 
      RefreshDebugger();
 }//GEN-LAST:event_jButton1ActionPerformed
 
 private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-    String input = (String)JOptionPane.showInternalInputDialog(this, "Enter the address to which to jump (Hex)","Jpcsp",JOptionPane.QUESTION_MESSAGE, null, null, String.format("%08x", pcreg));
+    String input = (String)JOptionPane.showInternalInputDialog(this, "Enter the address to which to jump (Hex)","Jpcsp",JOptionPane.QUESTION_MESSAGE, null, null, String.format("%08x", c.pc));
     if (input==null)
    	 return;
     int value;//GEN-LAST:event_jButton2ActionPerformed
@@ -188,12 +209,18 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
      DebuggerPC = value;
      RefreshDebugger();
 }
+private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
+   c.stepcpu();
+   DebuggerPC=0;
+   RefreshDebugger();
+}//GEN-LAST:event_jButton4ActionPerformed
+
 
     public void RefreshDebugger() {
         int t;
         int cnt;
         if (DebuggerPC == 0) {
-            DebuggerPC = pcreg;//0x08900000;//test
+            DebuggerPC = c.pc;//0x08900000;//test
         }
         model_1.clear();
 
@@ -716,6 +743,8 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
+    private javax.swing.JButton jButton3;
+    private javax.swing.JButton jButton4;
     private javax.swing.JList jList1;
     private javax.swing.JScrollPane jScrollPane1;
     // End of variables declaration//GEN-END:variables
