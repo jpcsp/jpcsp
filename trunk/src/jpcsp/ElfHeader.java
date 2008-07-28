@@ -307,6 +307,6 @@ public class ElfHeader {
         }
         SectInfo = shdr.toString();
     }
-    
+    f.close();
   }
 }
