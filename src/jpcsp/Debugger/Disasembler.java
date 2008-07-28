@@ -149,7 +149,7 @@ private void jList1MouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GEN-FI
 // TODO add your handling code here:
     if (evt.getWheelRotation() < 0) {
         evt.consume();
-        if (jList1.getSelectedIndex() == 0) {
+        if (jList1.getSelectedIndex() == 0 || jList1.getSelectedIndex() == -1){
             DebuggerPC -= 4;
             RefreshDebugger();
             jList1.setSelectedIndex(0);
