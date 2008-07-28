@@ -205,7 +205,7 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
             regs = null;
         }
         regs = new Registers(cpu);
-        regs.setLocation(200, 150);
+        regs.setLocation(70, 150);
         regs.setVisible(true);
         desktopPane.add(regs);
         Registers.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
@@ -295,7 +295,7 @@ private void WindowsMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:eve
 private void RegistersActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RegistersActionPerformed
 // TODO add your handling code here:
     if (regs != null) {
-        regs.setLocation(200, 150);
+        regs.setLocation(70, 150);
         if (regs.isVisible()) {
             regs.setVisible(false);
             Registers.setIcon(null);
