@@ -1,7 +1,18 @@
 /*
- * MemoryViewer.java
- *
- * Created on 28 Ιούλιος 2008, 7:19 μμ
+This file is part of jpcsp.
+
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package jpcsp.Debugger;
@@ -24,32 +35,65 @@ public class MemoryViewer extends javax.swing.JInternalFrame {
         
         RefreshMemory();
     }
+    public char converttochar(int address)
+    {
+        int character = Memory.get_instance().read8(address);
+      //char newone = (char)Memory.get_instance().read8(address);
+      //if(newone <32 || newone >127)
+      //    return (byte)32;
+     // else
+        if (character < 0x020 || character >= 0x07f && character <= 0x0a0 ||character == 0x0ad)
+            return (char)'.';
+        else
+          return (char)(character & 0x0ff);
+      
+    }
     public void RefreshMemory()
     {
-      for(int y=0; y<21; y++)//21 lines
+      int addr = startaddress;
+      for(int y=0; y<22; y++)//21 lines
       {
-                memoryview.append(String.format("%08x : %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x", startaddress,
-                                               (byte)Memory.get_instance().read8(startaddress),
-                                               (byte)Memory.get_instance().read8(startaddress+1),
-                                               (byte)Memory.get_instance().read8(startaddress+2),
-                                               (byte)Memory.get_instance().read8(startaddress+3),
-                                               (byte)Memory.get_instance().read8(startaddress+4),
-                                               (byte)Memory.get_instance().read8(startaddress+5),
-                                               (byte)Memory.get_instance().read8(startaddress+6),
-                                               (byte)Memory.get_instance().read8(startaddress+7),
-                                               (byte)Memory.get_instance().read8(startaddress+8),
-                                               (byte)Memory.get_instance().read8(startaddress+9),
-                                               (byte)Memory.get_instance().read8(startaddress+10),
-                                               (byte)Memory.get_instance().read8(startaddress+11),
-                                               (byte)Memory.get_instance().read8(startaddress+12),
-                                               (byte)Memory.get_instance().read8(startaddress+13),
-                                               (byte)Memory.get_instance().read8(startaddress+14),
-                                               (byte)Memory.get_instance().read8(startaddress+15)
+                memoryview.append(String.format("%08x : %02x %02x %02x %02x %02x %02x " +
+                                  "%02x %02x %02x %02x %02x %02x %02x %02x " +
+                                   "%02x %02x %c %c %c %c %c %c %c %c %c %c %c %c %c %c %c %c", addr,
+                                               (byte)Memory.get_instance().read8(addr),
+                                               (byte)Memory.get_instance().read8(addr+1),
+                                               (byte)Memory.get_instance().read8(addr+2),
+                                               (byte)Memory.get_instance().read8(addr+3),
+                                               (byte)Memory.get_instance().read8(addr+4),
+                                               (byte)Memory.get_instance().read8(addr+5),
+                                               (byte)Memory.get_instance().read8(addr+6),
+                                               (byte)Memory.get_instance().read8(addr+7),
+                                               (byte)Memory.get_instance().read8(addr+8),
+                                               (byte)Memory.get_instance().read8(addr+9),
+                                               (byte)Memory.get_instance().read8(addr+10),
+                                               (byte)Memory.get_instance().read8(addr+11),
+                                               (byte)Memory.get_instance().read8(addr+12),
+                                               (byte)Memory.get_instance().read8(addr+13),
+                                               (byte)Memory.get_instance().read8(addr+14),
+                                               (byte)Memory.get_instance().read8(addr+15),
+                                               converttochar(addr),
+                                               converttochar(addr+1),
+                                               converttochar(addr+2),
+                                               converttochar(addr+3),
+                                               converttochar(addr+4),
+                                               converttochar(addr+5),
+                                               converttochar(addr+6),
+                                               converttochar(addr+7),
+                                               converttochar(addr+8),
+                                               converttochar(addr+9),
+                                               converttochar(addr+10),
+                                               converttochar(addr+11),
+                                               converttochar(addr+12),
+                                               converttochar(addr+13),
+                                               converttochar(addr+14),
+                                               converttochar(addr+15)
+                                               
                                                )
                                                );
-                if(y !=20) memoryview.append("\n");
+                if(y !=21) memoryview.append("\n");
            // }
-            startaddress +=16;
+            addr +=16;
           
       }
         
@@ -74,23 +118,48 @@ public class MemoryViewer extends javax.swing.JInternalFrame {
         memoryview.setEditable(false);
         memoryview.setFont(new java.awt.Font("Courier New", 0, 12)); // NOI18N
         memoryview.setRows(5);
+        memoryview.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                memoryviewKeyPressed(evt);
+            }
+        });
         jScrollPane1.setViewportView(memoryview);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 632, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 646, Short.MAX_VALUE)
+                .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap(30, Short.MAX_VALUE)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 328, javax.swing.GroupLayout.PREFERRED_SIZE))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap(50, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 314, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+private void memoryviewKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_memoryviewKeyPressed
+   if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_DOWN){
+       startaddress +=16;
+       System.out.println(Integer.toHexString(startaddress));
+       evt.consume();
+       memoryview.setText("");
+       RefreshMemory();
+   }
+   if(evt.getKeyCode() == java.awt.event.KeyEvent.VK_UP){
+       startaddress -=16;
+       evt.consume();
+       memoryview.setText("");
+       RefreshMemory();
+   }
+}//GEN-LAST:event_memoryviewKeyPressed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
