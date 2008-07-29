@@ -25,10 +25,10 @@ import java.io.RandomAccessFile;
  * @author George
  */
 public class ElfHeader {
-    
+
   private static class PBP_Header
   {
-     private long p_magic; 
+     private long p_magic;
      private long p_version;
      private long p_offset_param_sfo;
      private long p_icon0_png;
@@ -40,7 +40,7 @@ public class ElfHeader {
      private long offset_psar_data;
     private void read (RandomAccessFile f) throws IOException
     {
-     p_magic = readUWord(f); 
+     p_magic = readUWord(f);
      p_version = readUWord(f);
      p_offset_param_sfo = readUWord(f);
      p_icon0_png = readUWord(f);
@@ -51,29 +51,29 @@ public class ElfHeader {
      offset_psp_data = readUWord(f);
      offset_psar_data = readUWord(f);
     }
-    
+
         @Override
-         public String toString() 
+         public String toString()
      {
        StringBuffer str = new StringBuffer();
        str.append("-----PBP HEADER---------" + "\n");
-       str.append("p_magic " + "\t\t " +  Utilities.formatString("long", Long.toHexString(p_magic & 0xFFFFFFFFL).toUpperCase()) + "\n");
-       str.append("p_version " + "\t\t " +  Utilities.formatString("long", Long.toHexString(p_version & 0xFFFFFFFFL).toUpperCase()) + "\n");
-       str.append("p_offset_param_sfo " + "\t " +  Utilities.formatString("long", Long.toHexString(p_offset_param_sfo & 0xFFFFFFFFL).toUpperCase()) + "\n");
-       str.append("p_icon0_png " + "\t\t " +  Utilities.formatString("long", Long.toHexString(p_icon0_png & 0xFFFFFFFFL).toUpperCase()) + "\n");
-       str.append("offset_icon1_pmf " + "\t " +  Utilities.formatString("long", Long.toHexString(offset_icon1_pmf & 0xFFFFFFFFL).toUpperCase()) + "\n");
-       str.append("offset_pic0_png " + "\t " +  Utilities.formatString("long", Long.toHexString(offset_pic0_png & 0xFFFFFFFFL).toUpperCase()) + "\n");
-       str.append("offset_pic1_png " + "\t " +  Utilities.formatString("long", Long.toHexString(offset_pic1_png & 0xFFFFFFFFL).toUpperCase()) + "\n");
-       str.append("offset_snd0_at3 " + "\t " +  Utilities.formatString("long", Long.toHexString(offset_snd0_at3 & 0xFFFFFFFFL).toUpperCase()) + "\n");
-       str.append("offset_psp_data " + "\t " +  Utilities.formatString("long", Long.toHexString(offset_psp_data & 0xFFFFFFFFL).toUpperCase()) + "\n");
-       str.append("offset_psar_data " + "\t " +  Utilities.formatString("long", Long.toHexString(offset_psar_data & 0xFFFFFFFFL).toUpperCase()) + "\n");
-       
-      
+       str.append("p_magic " + "\t\t" +  Utilities.formatString("long", Long.toHexString(p_magic & 0xFFFFFFFFL).toUpperCase()) + "\n");
+       str.append("p_version " + "\t\t" +  Utilities.formatString("long", Long.toHexString(p_version & 0xFFFFFFFFL).toUpperCase()) + "\n");
+       str.append("p_offset_param_sfo " + "\t" +  Utilities.formatString("long", Long.toHexString(p_offset_param_sfo & 0xFFFFFFFFL).toUpperCase()) + "\n");
+       str.append("p_icon0_png " + "\t\t" +  Utilities.formatString("long", Long.toHexString(p_icon0_png & 0xFFFFFFFFL).toUpperCase()) + "\n");
+       str.append("offset_icon1_pmf " + "\t" +  Utilities.formatString("long", Long.toHexString(offset_icon1_pmf & 0xFFFFFFFFL).toUpperCase()) + "\n");
+       str.append("offset_pic0_png " + "\t" +  Utilities.formatString("long", Long.toHexString(offset_pic0_png & 0xFFFFFFFFL).toUpperCase()) + "\n");
+       str.append("offset_pic1_png " + "\t" +  Utilities.formatString("long", Long.toHexString(offset_pic1_png & 0xFFFFFFFFL).toUpperCase()) + "\n");
+       str.append("offset_snd0_at3 " + "\t" +  Utilities.formatString("long", Long.toHexString(offset_snd0_at3 & 0xFFFFFFFFL).toUpperCase()) + "\n");
+       str.append("offset_psp_data " + "\t" +  Utilities.formatString("long", Long.toHexString(offset_psp_data & 0xFFFFFFFFL).toUpperCase()) + "\n");
+       str.append("offset_psar_data " + "\t" +  Utilities.formatString("long", Long.toHexString(offset_psar_data & 0xFFFFFFFFL).toUpperCase()) + "\n");
+
+
        return str.toString();
      }
   }
   private static class Elf32_Ehdr
-  { 
+  {
     private long e_magic;
     private int e_class;
     private int e_data;
@@ -85,14 +85,14 @@ public class ElfHeader {
     private long e_entry;
     private long e_phoff;
     private long e_shoff;
-    private long e_flags; 
+    private long e_flags;
     private int e_ehsize;
     private int e_phentsize;
     private int e_phnum;
     private int e_shentsize;
     private int e_shnum;
     private int e_shstrndx;
-    
+
     private void read (RandomAccessFile f) throws IOException
     {
       e_magic = readUWord(f);
@@ -113,18 +113,18 @@ public class ElfHeader {
       e_shentsize = readUHalf (f);
       e_shnum = readUHalf (f);
       e_shstrndx = readUHalf (f);
-    }   
+    }
         @Override
-     public String toString() 
+     public String toString()
      {
        StringBuffer str = new StringBuffer();
        str.append("-----ELF HEADER---------" + "\n");
        str.append("e_magic " + "\t " +  Utilities.formatString("long", Long.toHexString(e_magic & 0xFFFFFFFFL).toUpperCase()) + "\n");
-      str.append("e_class " + "\t " +  Utilities.integerToHex(e_class & 0xFF ) + "\n");
+       str.append("e_class " + "\t " +  Utilities.integerToHex(e_class & 0xFF ) + "\n");
        // str.append("e_class " + "\t " +  Utilities.formatString("byte", Integer.toHexString(e_class & 0xFF ).toUpperCase())+ "\n");
-       str.append("e_data " + "\t " + Utilities.formatString("byte", Integer.toHexString(e_data & 0xFF ).toUpperCase())+ "\n");
+       str.append("e_data " + "\t\t " + Utilities.formatString("byte", Integer.toHexString(e_data & 0xFF ).toUpperCase())+ "\n");
        str.append("e_idver " + "\t " + Utilities.formatString("byte", Integer.toHexString(e_idver & 0xFF).toUpperCase())+ "\n");
-       str.append("e_type " + "\t " + Utilities.formatString("short",Integer.toHexString(e_type & 0xFFFF).toUpperCase())+ "\n");
+       str.append("e_type " + "\t\t " + Utilities.formatString("short",Integer.toHexString(e_type & 0xFFFF).toUpperCase())+ "\n");
        str.append("e_machine " + "\t " + Utilities.formatString("short",Integer.toHexString(e_machine & 0xFFFF).toUpperCase())+ "\n");
        str.append("e_version " + "\t " + Utilities.formatString("long",Long.toHexString(e_version & 0xFFFFFFFFL).toUpperCase())+ "\n");
        str.append("e_entry " + "\t " + Utilities.formatString("long",Long.toHexString(e_entry & 0xFFFFFFFFL).toUpperCase())+ "\n");
@@ -140,7 +140,7 @@ public class ElfHeader {
        return str.toString();
      }
   }
-  
+
   private static class Elf32_Shdr
   {
     StringBuffer str = new StringBuffer();
@@ -155,7 +155,7 @@ public class ElfHeader {
     private int sh_info;
     private int sh_addralign;
     private long sh_entsize;
-    
+
 
     private static int sizeof () { return 40; }
     private void read (RandomAccessFile f) throws IOException
@@ -172,39 +172,37 @@ public class ElfHeader {
       sh_entsize = readWord (f);
     }
 
-    public String toString() 
-     {
-       //each section is added to the string buffer
-       str.append("-----SECTION HEADER #"+SectionCounter+" -----" + "\n");
-       str.append("sh_name " + "\t " +  Utilities.formatString("long", Long.toHexString(sh_name & 0xFFFFFFFFL).toUpperCase()) + "\n");
-       str.append("sh_type " + "\t " +  Utilities.integerToHex(sh_type & 0xFF ) + "\n");
-       str.append("sh_flags " + "\t " +  Utilities.integerToHex(sh_flags & 0xFF ) + "\n");
-       str.append("sh_addr " + "\t " +  Utilities.formatString("long", Long.toHexString(sh_addr & 0xFFFFFFFFL).toUpperCase()) + "\n");
-       str.append("sh_offset " + "\t " +  Utilities.formatString("long", Long.toHexString(sh_offset & 0xFFFFFFFFL).toUpperCase()) + "\n");
-       str.append("sh_size " + "\t " +  Utilities.formatString("long", Long.toHexString(sh_size & 0xFFFFFFFFL).toUpperCase()) + "\n");
-       str.append("sh_link " + "\t " +  Utilities.integerToHex(sh_link & 0xFF ) + "\n");
-       str.append("sh_info " + "\t " +  Utilities.integerToHex(sh_info & 0xFF ) + "\n");
-       str.append("sh_addralign " + "\t " +  Utilities.integerToHex(sh_addralign & 0xFF ) + "\n");
-       str.append("sh_entsize " + "\t " +  Utilities.formatString("long", Long.toHexString(sh_entsize & 0xFFFFFFFFL).toUpperCase()) + "\n");
-       SectionCounter++;
-       return str.toString();
-     }
+    public String toString()
+    {
+      //each section is added to the string buffer
+      str.append("-----SECTION HEADER #"+SectionCounter+" -----" + "\n");
+      str.append("sh_name " + "\t " +  Utilities.formatString("long", Long.toHexString(sh_name & 0xFFFFFFFFL).toUpperCase()) + "\n");
+      str.append("sh_type " + "\t " +  Utilities.formatString("long", Long.toHexString(sh_type & 0xFFFFFFFFL).toUpperCase()) + "\n");
+      str.append("sh_flags " + "\t " +  Utilities.integerToHex(sh_flags & 0xFF ) + "\n");
+      str.append("sh_addr " + "\t " +  Utilities.formatString("long", Long.toHexString(sh_addr & 0xFFFFFFFFL).toUpperCase()) + "\n");
+      str.append("sh_offset " + "\t " +  Utilities.formatString("long", Long.toHexString(sh_offset & 0xFFFFFFFFL).toUpperCase()) + "\n");
+      str.append("sh_size " + "\t " +  Utilities.formatString("long", Long.toHexString(sh_size & 0xFFFFFFFFL).toUpperCase()) + "\n");
+      str.append("sh_link " + "\t " +  Utilities.integerToHex(sh_link & 0xFF ) + "\n");
+      str.append("sh_info " + "\t " +  Utilities.integerToHex(sh_info & 0xFF ) + "\n");
+      str.append("sh_addralign " + "\t " +  Utilities.integerToHex(sh_addralign & 0xFF ) + "\n");
+      str.append("sh_entsize " + "\t " +  Utilities.formatString("long", Long.toHexString(sh_entsize & 0xFFFFFFFFL).toUpperCase()) + "\n");
+      SectionCounter++;
+      return str.toString();
+    }
   }
 
   private static int readUByte (RandomAccessFile f) throws IOException
   {
-    return f.readUnsignedByte();   
+    return f.readUnsignedByte();
   }
+
   private static int readUHalf (RandomAccessFile f) throws IOException
   {
       return f.readUnsignedByte () | (f.readUnsignedByte () << 8);
-      
   }
 
   private static int readWord (RandomAccessFile f) throws IOException
   {
-
-
       return (f.readUnsignedByte () | (f.readUnsignedByte () << 8)
 	      | (f.readUnsignedByte () << 16) | (f.readUnsignedByte () << 24));
   }
@@ -215,10 +213,9 @@ public class ElfHeader {
 	long l = (f.readUnsignedByte () | (f.readUnsignedByte () << 8)
 		  | (f.readUnsignedByte () << 16) | (f.readUnsignedByte () << 24));
 	return (l & 0xFFFFFFFFL);
-      
-   
    }
-   enum ShFlags { None(0) , Write(1) , Allocate(2) , Execute(4); 
+
+   enum ShFlags { None(0) , Write(1) , Allocate(2) , Execute(4);
             private int value;
             ShFlags(int val)
             {
@@ -228,8 +225,9 @@ public class ElfHeader {
             {
                 return value;
             }
-    
+
     }
+
    enum ShType { NULL(0), PROGBITS(1) ,SYMTAB(2) ,STRTAB(3),
 		 RELA(4),HASH(5),DYNAMIC(6),NOTE(7),NOBITS(8)
 		 ,REL(9),SHLIB(10),DYNSYM(11);
@@ -243,6 +241,7 @@ public class ElfHeader {
                 return value;
             }
    }
+
   public static String ElfInfo,PbpInfo,SectInfo;
   static void readHeader(String file,Processor p) throws IOException
   {
@@ -271,7 +270,7 @@ public class ElfHeader {
     if(!Long.toHexString(ehdr.e_magic & 0xFFFFFFFFL).toUpperCase().equals("464C457F"))
     {
         System.out.println("NOT AN ELF FILE");
-        
+
     }
     if(!Integer.toHexString(ehdr.e_machine & 0xFFFF).equals("8"))
     {
@@ -283,15 +282,15 @@ public class ElfHeader {
 
     for (int i = 0; i < ehdr.e_shnum; i++)
     {
-       	// Read information about this section.
-	f.seek (elfoffset + ehdr.e_shoff + (i * ehdr.e_shentsize));
-	shdr.read (f);
+        // Read information about this section.
+        f.seek (elfoffset + ehdr.e_shoff + (i * ehdr.e_shentsize));
+        shdr.read (f);
         //shdr.printSectionHeader();
         SectInfo = shdr.toString();
         //System.out.println(shdr.toString());
         if((shdr.sh_flags & ShFlags.Allocate.getValue())== ShFlags.Allocate.getValue())
         {
-             
+
              switch(shdr.sh_type)
              {
                  case 1: //ShType.PROGBITS
@@ -305,12 +304,8 @@ public class ElfHeader {
                  case 8: // ShType.NOBITS
                      System.out.println("NO BITS");
                      break;
-                 
-                 
-                 
              }
         }
-        
     }
     f.close();
   }
