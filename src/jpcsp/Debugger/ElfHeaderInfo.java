@@ -47,7 +47,7 @@ public class ElfHeaderInfo extends javax.swing.JInternalFrame {
 
         ELFInfoArea.setColumns(20);
         ELFInfoArea.setEditable(false);
-        ELFInfoArea.setFont(new java.awt.Font("Times New Roman", 0, 12)); // NOI18N
+        ELFInfoArea.setFont(new java.awt.Font("Courier New", 0, 12)); // NOI18N
         ELFInfoArea.setLineWrap(true);
         ELFInfoArea.setRows(5);
         jScrollPane1.setViewportView(ELFInfoArea);
@@ -60,7 +60,7 @@ public class ElfHeaderInfo extends javax.swing.JInternalFrame {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 317, Short.MAX_VALUE)
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 325, Short.MAX_VALUE)
         );
 
         pack();

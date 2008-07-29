@@ -72,7 +72,7 @@ public class MemoryViewer extends javax.swing.JInternalFrame {
 
         memoryview.setColumns(20);
         memoryview.setEditable(false);
-        memoryview.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
+        memoryview.setFont(new java.awt.Font("Courier New", 0, 12)); // NOI18N
         memoryview.setRows(5);
         jScrollPane1.setViewportView(memoryview);
 
