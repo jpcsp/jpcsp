@@ -19,6 +19,9 @@ package jpcsp;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.List;
+import java.util.LinkedList;
+
 
 /**
  *
@@ -141,10 +144,53 @@ public class ElfHeader {
      }
   }
 
-  private static class Elf32_Shdr
+  //http://www.caldera.com/developers/devspecs/abi386-4.pdf
+  //System V ABI, IA32 Supplement
+  private static class Elf32_Phdr
   {
     StringBuffer str = new StringBuffer();
-    private int SectionCounter=0;
+    private int SegmentCounter=0;
+    private long p_type;
+    private long p_offset;
+    private long p_vaddr;
+    private long p_paddr;
+    private long p_filesz;
+    private long p_memsz;
+    private long p_flags;
+    private long p_align;
+
+    private static int sizeof () { return 32; }
+    private void read (RandomAccessFile f) throws IOException
+    {
+      p_type = readUWord (f);
+      p_offset = readUWord (f);
+      p_vaddr = readUWord (f);
+      p_paddr = readUWord (f);
+      p_filesz = readUWord (f);
+      p_memsz = readUWord (f);
+      p_flags = readUWord (f);
+      p_align = readUWord (f);
+    }
+
+    public String toString()
+    {
+      //each section is added to the string buffer
+      str.append("-----PROGRAM HEADER #"+SegmentCounter+"-----" + "\n");
+      str.append("p_type " + "\t\t " +  Utilities.formatString("long", Long.toHexString(p_type & 0xFFFFFFFFL).toUpperCase()) + "\n");
+      str.append("p_offset " + "\t " +  Utilities.formatString("long", Long.toHexString(p_offset & 0xFFFFFFFFL).toUpperCase()) + "\n");
+      str.append("p_vaddr " + "\t " +  Utilities.formatString("long", Long.toHexString(p_vaddr & 0xFFFFFFFFL).toUpperCase()) + "\n");
+      str.append("p_paddr " + "\t " +  Utilities.formatString("long", Long.toHexString(p_paddr & 0xFFFFFFFFL).toUpperCase()) + "\n");
+      str.append("p_filesz " + "\t " +  Utilities.formatString("long", Long.toHexString(p_filesz & 0xFFFFFFFFL).toUpperCase()) + "\n");
+      str.append("p_memsz " + "\t " +  Utilities.formatString("long", Long.toHexString(p_memsz & 0xFFFFFFFFL).toUpperCase()) + "\n");
+      str.append("p_flags " + "\t " +  Utilities.formatString("long", Long.toHexString(p_flags & 0xFFFFFFFFL).toUpperCase()) + "\n");
+      str.append("p_align " + "\t " +  Utilities.formatString("long", Long.toHexString(p_align & 0xFFFFFFFFL).toUpperCase()) + "\n");
+      SegmentCounter++;
+      return str.toString();
+    }
+  }
+
+  private static class Elf32_Shdr
+  {
     private long sh_name;
     private int sh_type;
     private int sh_flags;
@@ -155,7 +201,6 @@ public class ElfHeader {
     private int sh_info;
     private int sh_addralign;
     private long sh_entsize;
-
 
     private static int sizeof () { return 40; }
     private void read (RandomAccessFile f) throws IOException
@@ -174,8 +219,7 @@ public class ElfHeader {
 
     public String toString()
     {
-      //each section is added to the string buffer
-      str.append("-----SECTION HEADER #"+SectionCounter+" -----" + "\n");
+      StringBuffer str = new StringBuffer();
       str.append("sh_name " + "\t " +  Utilities.formatString("long", Long.toHexString(sh_name & 0xFFFFFFFFL).toUpperCase()) + "\n");
       str.append("sh_type " + "\t " +  Utilities.formatString("long", Long.toHexString(sh_type & 0xFFFFFFFFL).toUpperCase()) + "\n");
       str.append("sh_flags " + "\t " +  Utilities.integerToHex(sh_flags & 0xFF ) + "\n");
@@ -186,7 +230,27 @@ public class ElfHeader {
       str.append("sh_info " + "\t " +  Utilities.integerToHex(sh_info & 0xFF ) + "\n");
       str.append("sh_addralign " + "\t " +  Utilities.integerToHex(sh_addralign & 0xFF ) + "\n");
       str.append("sh_entsize " + "\t " +  Utilities.formatString("long", Long.toHexString(sh_entsize & 0xFFFFFFFFL).toUpperCase()) + "\n");
-      SectionCounter++;
+      return str.toString();
+    }
+  }
+
+  private static class Elf32_Rel
+  {
+    private long r_offset;
+    private long r_info;
+
+    private static int sizeof () { return 8; }
+    private void read (RandomAccessFile f) throws IOException
+    {
+      r_offset = readUWord (f);
+      r_info = readUWord (f);
+    }
+
+    public String toString()
+    {
+      StringBuffer str = new StringBuffer();
+      str.append("r_offset " + "\t " +  Utilities.formatString("long", Long.toHexString(r_offset & 0xFFFFFFFFL).toUpperCase()) + "\n");
+      str.append("r_info " + "\t\t " +  Utilities.formatString("long", Long.toHexString(r_info & 0xFFFFFFFFL).toUpperCase()) + "\n");
       return str.toString();
     }
   }
@@ -209,11 +273,23 @@ public class ElfHeader {
 
   private static long readUWord (RandomAccessFile f) throws IOException
   {
-
 	long l = (f.readUnsignedByte () | (f.readUnsignedByte () << 8)
 		  | (f.readUnsignedByte () << 16) | (f.readUnsignedByte () << 24));
 	return (l & 0xFFFFFFFFL);
    }
+
+  private static String readStringZ (RandomAccessFile f) throws IOException
+  {
+      StringBuffer sb = new StringBuffer();
+      int b;
+      for(;;)
+      {
+        b = f.readUnsignedByte();
+        if (b == 0) break;
+        sb.append((char)b);
+      }
+    return sb.toString();
+  }
 
    enum ShFlags { None(0) , Write(1) , Allocate(2) , Execute(4);
             private int value;
@@ -248,6 +324,7 @@ public class ElfHeader {
     Memory.get_instance().NullMemory(); //re-initiate *test
     RandomAccessFile f = new RandomAccessFile (file, "r");
     long elfoffset = 0;
+    long baseoffset = 0;
     /** Read pbp **/
     PBP_Header pbp = new PBP_Header();
     pbp.read(f);
@@ -278,35 +355,139 @@ public class ElfHeader {
     }
     ElfInfo = ehdr.toString();
     p.pc = (int)ehdr.e_entry; //set the pc register.
-    Elf32_Shdr shdr = new Elf32_Shdr();
+    if ((ehdr.e_type & 0xFFFF) == 0xFFA0)
+    {
+        System.out.println("PRX detected");
+        baseoffset = 0x08900000;
+        p.pc += baseoffset;
+    }
 
+    /** Read the ELF program headers */
+    Elf32_Phdr phdr = new Elf32_Phdr();
+    for (int i = 0; i < ehdr.e_phnum; i++)
+    {
+        // Read information about this section.
+        f.seek(elfoffset + ehdr.e_phoff + (i * ehdr.e_phentsize));
+        phdr.read(f);
+
+        // yapspd: if the PRX file is a kernel module then the most significant
+        // bit must be set in the phsyical address of the first program header.
+        if (i == 0 && (phdr.p_paddr & 0x80000000L) == 0x80000000L)
+        {
+            // kernel mode prx
+            System.out.println("Kernel mode PRX detected");
+        }
+    }
+    //SegInfo = phdr.toString();
+    ElfInfo += phdr.toString();
+
+    /** Read the ELF section headers (1st pass) */
+    List<Elf32_Shdr> sectionheaders = new LinkedList<Elf32_Shdr>();
+    Elf32_Shdr shstrtab = null;
     for (int i = 0; i < ehdr.e_shnum; i++)
     {
+        Elf32_Shdr shdr = new Elf32_Shdr();
+        sectionheaders.add(shdr);
+
         // Read information about this section.
         f.seek (elfoffset + ehdr.e_shoff + (i * ehdr.e_shentsize));
         shdr.read (f);
-        //shdr.printSectionHeader();
-        SectInfo = shdr.toString();
         //System.out.println(shdr.toString());
+
+        if (shdr.sh_type == 3) //ShType.STRTAB
+            shstrtab = shdr;
+
+        // Load some sections into memory
         if((shdr.sh_flags & ShFlags.Allocate.getValue())== ShFlags.Allocate.getValue())
         {
-
              switch(shdr.sh_type)
              {
                  case 1: //ShType.PROGBITS
-                     System.out.println("FEED MEMORY WITH IT!");
-
+                     //System.out.println("FEED MEMORY WITH IT!");
                      f.seek(elfoffset + shdr.sh_offset);
                      long rambase = Long.parseLong("08000000",16);//convert hex to integer..
-                     int offsettoread = (int)shdr.sh_addr - (int)rambase;
+                     int offsettoread = (int)baseoffset + (int)shdr.sh_addr - (int)rambase;
                      f.read(Memory.get_instance().mainmemory,offsettoread,(int)shdr.sh_size);
                      break;
                  case 8: // ShType.NOBITS
                      System.out.println("NO BITS");
+                     // zero out this memory(?), from shdr.sh_addr to shdr.sh_addr + shdr.sh_size
                      break;
              }
         }
     }
+
+    // 2nd pass generate info string for the GUI
+    StringBuffer str = new StringBuffer();
+    int SectionCounter = 0;
+    for (Elf32_Shdr shdr: sectionheaders)
+    {
+        // Number the section
+        str.append("-----SECTION HEADER #"+SectionCounter+"-----" + "\n");
+
+        // Resolve section name (if possible)
+        if (shstrtab != null && shdr.sh_name != 0)
+        {
+            f.seek(elfoffset + shstrtab.sh_offset + shdr.sh_name);
+            String SectionName = readStringZ(f);
+            if (SectionName.length() > 0)
+                str.append(SectionName + "\n");
+        }
+
+        // Add the normal info
+        str.append(shdr.toString());
+        SectionCounter++;
+    }
+    SectInfo = str.toString();
+
+    // 3rd pass relocate PRX
+    if ((ehdr.e_type & 0xFFFF) == 0xFFA0) // PRX magic
+    {
+        for (Elf32_Shdr shdr: sectionheaders)
+        {
+            if (shdr.sh_type == 0x700000A0) // PRX reloc magic
+            {
+                Elf32_Rel rel = new Elf32_Rel();
+
+                f.seek(elfoffset + shdr.sh_offset);
+
+                int RelCount = (int)shdr.sh_size / Elf32_Shdr.sizeof();
+                //System.out.println("relocating " + RelCount + " entries");
+
+                for (int i = 0; i < RelCount; i++)
+                {
+                    rel.read(f);
+
+                    int R_TYPE = (int)(rel.r_info & 0xFF);
+                    int OFS_BASE = (int)((rel.r_info >> 8) & 0xFF);
+                    int ADDR_BASE = (int)((rel.r_info >> 16) & 0xFF);
+
+                    /* TODO
+                    System.out.println("type=" + R_TYPE + ",base=" + OFS_BASE + ",addr=" + ADDR_BASE + "");
+
+                    int data = Memory.get_instance().read32((int)baseoffset + (int)rel.r_offset);
+
+                    switch(R_TYPE)
+                    {
+                        case 0: //R_MIPS_NONE
+                            break;
+                        case 5: //R_MIPS_HI16
+                            break;
+                        case 6: //R_MIPS_LO16
+                            break;
+                        case 4: //R_MIPS_26
+                            break;
+                        case 2: //R_MIPS_32
+                            break;
+                    }
+
+                    Memory.get_instance().write32((int)baseoffset + (int)rel.r_offset, data);
+                    */
+                }
+            }
+        }
+    }
+
     f.close();
   }
 }
