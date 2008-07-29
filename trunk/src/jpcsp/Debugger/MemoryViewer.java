@@ -28,16 +28,23 @@ public class MemoryViewer extends javax.swing.JInternalFrame {
     {
       for(int y=0; y<21; y++)//21 lines
       {
-            int memread = Memory.get_instance().read32((int) startaddress);
-            //if (memread == 0) {
-            //    memoryview.append(String.format("%08x : 00 ", startaddress));
-            //    if(y !=20) memoryview.append("\n");
-               
-           // } else {
-                //int memread8 = Memory.get_instance().read8(startaddress);
-                memoryview.append(String.format("%08x : %02x %02x", startaddress,
-                                               Memory.get_instance().read8(startaddress),
-                                               Memory.get_instance().read8(startaddress+1)
+                memoryview.append(String.format("%08x : %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x", startaddress,
+                                               (byte)Memory.get_instance().read8(startaddress),
+                                               (byte)Memory.get_instance().read8(startaddress+1),
+                                               (byte)Memory.get_instance().read8(startaddress+2),
+                                               (byte)Memory.get_instance().read8(startaddress+3),
+                                               (byte)Memory.get_instance().read8(startaddress+4),
+                                               (byte)Memory.get_instance().read8(startaddress+5),
+                                               (byte)Memory.get_instance().read8(startaddress+6),
+                                               (byte)Memory.get_instance().read8(startaddress+7),
+                                               (byte)Memory.get_instance().read8(startaddress+8),
+                                               (byte)Memory.get_instance().read8(startaddress+9),
+                                               (byte)Memory.get_instance().read8(startaddress+10),
+                                               (byte)Memory.get_instance().read8(startaddress+11),
+                                               (byte)Memory.get_instance().read8(startaddress+12),
+                                               (byte)Memory.get_instance().read8(startaddress+13),
+                                               (byte)Memory.get_instance().read8(startaddress+14),
+                                               (byte)Memory.get_instance().read8(startaddress+15)
                                                )
                                                );
                 if(y !=20) memoryview.append("\n");
