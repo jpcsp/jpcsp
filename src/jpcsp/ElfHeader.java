@@ -170,10 +170,7 @@ public class ElfHeader {
       p_memsz = readUWord (f);
       p_flags = readUWord (f);
       p_align = readUWord (f);
-    }
 
-    public String toString()
-    {
       //each section is added to the string buffer
       str.append("-----PROGRAM HEADER #"+SegmentCounter+"-----" + "\n");
       str.append("p_type " + "\t\t " +  Utilities.formatString("long", Long.toHexString(p_type & 0xFFFFFFFFL).toUpperCase()) + "\n");
@@ -185,6 +182,10 @@ public class ElfHeader {
       str.append("p_flags " + "\t " +  Utilities.formatString("long", Long.toHexString(p_flags & 0xFFFFFFFFL).toUpperCase()) + "\n");
       str.append("p_align " + "\t " +  Utilities.formatString("long", Long.toHexString(p_align & 0xFFFFFFFFL).toUpperCase()) + "\n");
       SegmentCounter++;
+    }
+
+    public String toString()
+    {
       return str.toString();
     }
   }
@@ -254,30 +255,30 @@ public class ElfHeader {
       return str.toString();
     }
   }
-  private static class PSPModuleInfo
-  {
-    	private long m_flags;
+    private static class PSPModuleInfo
+    {
+        private int m_attr;
+        private int m_version;
         private byte[] m_name = new byte[28];
         private long m_gp;
         private long m_exports;
         private long m_exp_end;
         private long m_imports;
-	private long m_imp_end;   
-        
+        private long m_imp_end;
+
         private void read (RandomAccessFile f) throws IOException
         {
-             m_flags = readUWord (f);
-             f.readFully(m_name); 
-             m_gp = readUWord (f);
-             m_exports =readUWord (f);
-             m_exp_end = readUWord (f);
-             m_imports = readUWord (f);
-	     m_imp_end = readUWord (f);
-            
+            m_attr = readUHalf (f);
+            m_version = readUHalf (f);
+            f.readFully(m_name);
+            m_gp = readUWord (f);
+            m_exports = readUWord (f); // .lib.ent
+            m_exp_end = readUWord (f);
+            m_imports = readUWord (f); // .lib.stub
+            m_imp_end = readUWord (f);
         }
-      
-      
-  }
+    }
+
   private static int readUByte (RandomAccessFile f) throws IOException
   {
     return f.readUnsignedByte();
@@ -377,12 +378,10 @@ public class ElfHeader {
         System.out.println("NOT A MIPS executable");
     }
     ElfInfo = ehdr.toString();
-    p.pc = (int)ehdr.e_entry; //set the pc register.
     if ((ehdr.e_type & 0xFFFF) == 0xFFA0)
     {
         System.out.println("PRX detected");
         baseoffset = 0x08900000;
-        p.pc += baseoffset;
     }
 
     /** Read the ELF program headers */
@@ -440,7 +439,7 @@ public class ElfHeader {
         }
     }
 
-    // 2nd pass generate info string for the GUI
+    // 2nd pass generate info string for the GUI and get module infos
     PSPModuleInfo moduleinfo = new PSPModuleInfo();
     StringBuffer str = new StringBuffer();
     int SectionCounter = 0;
@@ -450,22 +449,30 @@ public class ElfHeader {
         str.append("-----SECTION HEADER #"+SectionCounter+"-----" + "\n");
 
         // Resolve section name (if possible)
-        if (shstrtab != null && shdr.sh_name != 0)
+        if (shstrtab != null)
         {
             f.seek(elfoffset + shstrtab.sh_offset + shdr.sh_name);
             String SectionName = readStringZ(f);
             if (SectionName.length() > 0)
-                str.append(SectionName + "\n");
-            if (SectionName.matches(".rodata.sceModuleInfo"))
             {
-              System.out.println("Found ModuleInfo");
-              f.seek(elfoffset +  shdr.sh_offset); //that should be correct but check needs check anyway
-              
-              moduleinfo.read(f);
-              //System.out.println(Long.toHexString(moduleinfo.m_gp));
-                
+                str.append(SectionName + "\n");
+
+                // Get module infos
+                if (SectionName.matches(".rodata.sceModuleInfo"))
+                {
+                    f.seek(elfoffset + shdr.sh_offset);
+                    moduleinfo.read(f);
+                    //System.out.println(Long.toHexString(moduleinfo.m_gp));
+
+                    System.out.println("Found ModuleInfo name:'" + new String(moduleinfo.m_name)
+                        + "' version:" + Utilities.formatString("short", Integer.toHexString(moduleinfo.m_version & 0xFFFF).toUpperCase()));
+
+                    if ((moduleinfo.m_attr & 0x1000) != 0)
+                    {
+                        System.out.println("Kernel mode module detected");
+                    }
+                }
             }
-                
         }
 
         // Add the normal info
@@ -521,15 +528,16 @@ public class ElfHeader {
             }
         }
     }
-    //4th pass get module infos
-    
-    
+
     //set the default values for registers not sure if they are correct and UNTESTED!!
-    p.cpuregisters[31] = 0x08000004;
-    p.cpuregisters[5] = (int)ehdr.e_entry; // argumentsPointer a1 reg
-    p.cpuregisters[28] =  (int)moduleinfo.m_gp;//gp reg    gp register should get the GlobalPointer!!!
-    p.cpuregisters[29] = 0x09F00000;
+    // from soywiz/pspemulator
+    p.pc = (int)baseoffset + (int)ehdr.e_entry; //set the pc register.
+    p.cpuregisters[31] = 0x08000004; //ra
+    p.cpuregisters[5] = (int)baseoffset + (int)ehdr.e_entry; // argumentsPointer a1 reg
+    p.cpuregisters[28] =  (int)moduleinfo.m_gp; //gp reg    gp register should get the GlobalPointer!!!
+    p.cpuregisters[29] = 0x09F00000; //sp
     p.cpuregisters[26] = 0x09F00000; //k0
+
     f.close();
   }
 }
