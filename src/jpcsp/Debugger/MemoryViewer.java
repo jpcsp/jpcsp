@@ -119,8 +119,13 @@ public class MemoryViewer extends javax.swing.JInternalFrame {
 
         memoryview.setColumns(20);
         memoryview.setEditable(false);
-        memoryview.setFont(new java.awt.Font("Courier New", 0, 12));
+        memoryview.setFont(new java.awt.Font("Courier New", 0, 12)); // NOI18N
         memoryview.setRows(5);
+        memoryview.addMouseWheelListener(new java.awt.event.MouseWheelListener() {
+            public void mouseWheelMoved(java.awt.event.MouseWheelEvent evt) {
+                memoryviewMouseWheelMoved(evt);
+            }
+        });
         memoryview.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyPressed(java.awt.event.KeyEvent evt) {
                 memoryviewKeyPressed(evt);
@@ -152,7 +157,7 @@ public class MemoryViewer extends javax.swing.JInternalFrame {
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addContainerGap(24, Short.MAX_VALUE)
+                .addContainerGap(28, Short.MAX_VALUE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(AddressField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(GoToButton))
@@ -206,6 +211,22 @@ private void GoToButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
          memoryview.setText("");
          RefreshMemory();
 }//GEN-LAST:event_GoToButtonActionPerformed
+
+private void memoryviewMouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GEN-FIRST:event_memoryviewMouseWheelMoved
+// TODO add your handling code here:
+       if (evt.getWheelRotation() > 0){
+       startaddress +=16;
+       evt.consume();
+       memoryview.setText("");
+       RefreshMemory();
+   }
+   else {
+       startaddress -=16;
+       evt.consume();
+       memoryview.setText("");
+       RefreshMemory();
+   }
+}//GEN-LAST:event_memoryviewMouseWheelMoved
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

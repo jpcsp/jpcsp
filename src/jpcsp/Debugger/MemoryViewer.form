@@ -40,7 +40,7 @@
     <DimensionLayout dim="1">
       <Group type="103" groupAlignment="0" attributes="0">
           <Group type="102" alignment="1" attributes="0">
-              <EmptySpace pref="24" max="32767" attributes="0"/>
+              <EmptySpace pref="28" max="32767" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
                   <Component id="AddressField" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="GoToButton" alignment="3" min="-2" max="-2" attributes="0"/>
@@ -70,6 +70,7 @@
             <Property name="rows" type="int" value="5"/>
           </Properties>
           <Events>
+            <EventHandler event="mouseWheelMoved" listener="java.awt.event.MouseWheelListener" parameters="java.awt.event.MouseWheelEvent" handler="memoryviewMouseWheelMoved"/>
             <EventHandler event="keyPressed" listener="java.awt.event.KeyListener" parameters="java.awt.event.KeyEvent" handler="memoryviewKeyPressed"/>
           </Events>
         </Component>
