@@ -254,7 +254,30 @@ public class ElfHeader {
       return str.toString();
     }
   }
-
+  private static class PSPModuleInfo
+  {
+    	private long m_flags;
+        private byte[] m_name = new byte[28];
+        private long m_gp;
+        private long m_exports;
+        private long m_exp_end;
+        private long m_imports;
+	private long m_imp_end;   
+        
+        private void read (RandomAccessFile f) throws IOException
+        {
+             m_flags = readUWord (f);
+             f.readFully(m_name); 
+             m_gp = readUWord (f);
+             m_exports =readUWord (f);
+             m_exp_end = readUWord (f);
+             m_imports = readUWord (f);
+	     m_imp_end = readUWord (f);
+            
+        }
+      
+      
+  }
   private static int readUByte (RandomAccessFile f) throws IOException
   {
     return f.readUnsignedByte();
@@ -418,6 +441,7 @@ public class ElfHeader {
     }
 
     // 2nd pass generate info string for the GUI
+    PSPModuleInfo moduleinfo = new PSPModuleInfo();
     StringBuffer str = new StringBuffer();
     int SectionCounter = 0;
     for (Elf32_Shdr shdr: sectionheaders)
@@ -432,6 +456,16 @@ public class ElfHeader {
             String SectionName = readStringZ(f);
             if (SectionName.length() > 0)
                 str.append(SectionName + "\n");
+            if (SectionName.matches(".rodata.sceModuleInfo"))
+            {
+              System.out.println("Found ModuleInfo");
+              f.seek(elfoffset +  shdr.sh_offset); //that should be correct but check needs check anyway
+              
+              moduleinfo.read(f);
+              //System.out.println(Long.toHexString(moduleinfo.m_gp));
+                
+            }
+                
         }
 
         // Add the normal info
@@ -487,7 +521,15 @@ public class ElfHeader {
             }
         }
     }
-
+    //4th pass get module infos
+    
+    
+    //set the default values for registers not sure if they are correct and UNTESTED!!
+    p.cpuregisters[31] = 0x08000004;
+    p.cpuregisters[5] = (int)ehdr.e_entry; // argumentsPointer a1 reg
+    p.cpuregisters[28] =  (int)moduleinfo.m_gp;//gp reg    gp register should get the GlobalPointer!!!
+    p.cpuregisters[29] = 0x09F00000;
+    p.cpuregisters[26] = 0x09F00000; //k0
     f.close();
   }
 }
