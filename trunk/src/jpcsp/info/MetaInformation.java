@@ -19,7 +19,7 @@ package jpcsp.info;
 
 public class MetaInformation {
     public static String NAME = "Jpcsp";
-    public static String VERSION = "v0.03";
+    public static String VERSION = "v0.04";
     public static String FULL_NAME = NAME + " " + VERSION;
     public static String OFFICIAL_SITE = "http://jpcsp.org/";
     public static String OFFICIAL_FORUM = "http://jpcsp.org/forum/";
