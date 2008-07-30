@@ -152,7 +152,7 @@ public class Registers extends javax.swing.JInternalFrame {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 345, Short.MAX_VALUE)
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 357, Short.MAX_VALUE)
         );
 
         pack();
@@ -163,16 +163,9 @@ public class Registers extends javax.swing.JInternalFrame {
         jTable1.setValueAt(Integer.toHexString(cpu.hi), 1, 1);
         jTable1.setValueAt(Integer.toHexString(cpu.lo), 2, 1);
         for (int i = 0; i < 32; i++) {
-            jTable1.setValueAt(Integer.toHexString(cpu.cpuregisters[i]), 3+i, 1);
-            
+            jTable1.setValueAt(Integer.toHexString(cpu.cpuregisters[i]), 3 + i, 1);
         }
     }
-
-
-
-
-
-
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable jTable1;

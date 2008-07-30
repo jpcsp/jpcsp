@@ -35,12 +35,95 @@ public class JpcspMainGUI extends javax.swing.JFrame {
     Processor cpu;
     Registers regs;
     MemoryViewer memview;
-    final String  version= MetaInformation.FULL_NAME;
+    final String version = MetaInformation.FULL_NAME;
+
     /** Creates new form JpcspMainGUI */
     public JpcspMainGUI() {
         initComponents();
         cpu = new Processor();//intialaze cpu
+
         this.setTitle(version);
+    }
+
+    private void createDisassemblerWindow() {
+        //disassembler window
+        if (dis != null) {
+            //clear previously opened stuff
+            dis.setVisible(false);
+            Disasembler.setIcon(null);
+            desktopPane.remove(dis);
+            dis = null;
+        }
+        dis = new Disasembler(cpu, regs);
+        dis.setLocation(300, 0);
+        dis.setVisible(true);
+        desktopPane.add(dis);
+        Disasembler.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
+        try {
+            dis.setSelected(true);
+        } catch (java.beans.PropertyVetoException e) {
+        }
+    }
+
+    private void createELFWindow() {
+
+        //elf info window
+        if (elfinfo != null) {
+            //clear previously opened stuff
+            elfinfo.setVisible(false);
+            desktopPane.remove(elfinfo);
+            elfinfo = null;
+        }
+
+        elfinfo = new ElfHeaderInfo();
+        elfinfo.setLocation(0, 0);
+        elfinfo.setVisible(true);
+
+        desktopPane.add(elfinfo);
+        ElfInfo.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
+        try {
+            elfinfo.setSelected(true);
+        } catch (java.beans.PropertyVetoException e) {
+        }
+    }
+
+    private void createMemoryViewWindow() {
+        if (memview != null) {
+            //clear previously opened stuff
+            memview.setVisible(false);
+            MemView.setIcon(null);
+            desktopPane.remove(memview);
+            memview = null;
+        }
+        memview = new MemoryViewer(cpu);
+        memview.setLocation(70, 150);
+        memview.setVisible(true);
+        desktopPane.add(memview);
+        MemView.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
+        try {
+            memview.setSelected(true);
+        } catch (java.beans.PropertyVetoException e) {
+        }
+    }
+
+    private void createRegistersWindow() {
+        //registers window
+        if (regs != null) {
+            //clear previously opened stuff
+            regs.setVisible(false);
+            Registers.setIcon(null);
+            desktopPane.remove(regs);
+            regs = null;
+        }
+        regs = new Registers(cpu);
+        regs.setLocation(70, 150);
+        regs.setVisible(true);
+        desktopPane.add(regs);
+        Registers.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
+        try {
+            regs.setSelected(true);
+        } catch (java.beans.PropertyVetoException e) {
+        }
     }
 
     /** This method is called from within the constructor to
@@ -163,14 +246,19 @@ public class JpcspMainGUI extends javax.swing.JFrame {
         System.exit(0);
     }//GEN-LAST:event_exitMenuItemActionPerformed
 
+    private JFileChooser makeJFileChooser() {
+        final JFileChooser fc = new JFileChooser();
+        fc.setDialogTitle("Open Elf File");
+        fc.setCurrentDirectory(new java.io.File("."));
+        return fc;
+    }
+
 private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openMenuItemActionPerformed
     boolean isloaded = false; // variable to check if user at least choose something  
-
-    final JFileChooser fc = new JFileChooser();
-    fc.setDialogTitle("Open Elf File");
-    fc.setCurrentDirectory(new java.io.File("."));
+    final JFileChooser fc = makeJFileChooser();
     int returnVal = fc.showOpenDialog(desktopPane);
-    if (returnVal == JFileChooser.APPROVE_OPTION) {
+
+    if (userChooseSomething(returnVal)) {
         File file = fc.getSelectedFile();
 
         //This is where a real application would open the file.   
@@ -181,83 +269,17 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
             isloaded = true; //TODO check if it a valid file
             this.setTitle(version + " - " + file.getName());
         } catch (IOException e) {
-            e.printStackTrace();
+            e.printStackTrace();            
+            JpcspDialogManager.showError(this, "IO Error : " + e.getMessage());
         }
     } else {
-        //user cancel the action
+        return; //user cancel the action        
     }
     if (isloaded) {
-
-        //elf info window
-        if (elfinfo != null) {
-            //clear previously opened stuff
-            elfinfo.setVisible(false);
-            desktopPane.remove(elfinfo);
-            elfinfo = null;
-        }
-
-        elfinfo = new ElfHeaderInfo();
-        elfinfo.setLocation(0, 0);
-        elfinfo.setVisible(true);
-
-        desktopPane.add(elfinfo);
-        ElfInfo.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
-        try {
-            elfinfo.setSelected(true);
-        } catch (java.beans.PropertyVetoException e) {
-        }
-        //registers window
-        if (regs != null) {
-            //clear previously opened stuff
-            regs.setVisible(false);
-            Registers.setIcon(null);
-            desktopPane.remove(regs);
-            regs = null;
-        }
-        regs = new Registers(cpu);
-        regs.setLocation(70, 150);
-        regs.setVisible(true);
-        desktopPane.add(regs);
-        Registers.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
-        try {
-            regs.setSelected(true);
-        } catch (java.beans.PropertyVetoException e) {
-        }
-        //disassembler window
-        if (dis != null) {
-            //clear previously opened stuff
-            dis.setVisible(false);
-            Disasembler.setIcon(null);
-            desktopPane.remove(dis);
-            dis = null;
-        }
-        dis = new Disasembler(cpu,regs);
-        dis.setLocation(300, 0);
-        dis.setVisible(true);
-        desktopPane.add(dis);
-        Disasembler.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
-        try {
-            dis.setSelected(true);
-        } catch (java.beans.PropertyVetoException e) {
-        }
-        if (memview != null) {
-            //clear previously opened stuff
-            memview .setVisible(false);
-            MemView.setIcon(null);
-            desktopPane.remove(memview );
-            memview  = null;
-        }
-        memview  = new MemoryViewer(cpu);
-        memview .setLocation(70, 150);
-        memview .setVisible(true);
-        desktopPane.add(memview );
-        MemView.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
-        try {
-            memview .setSelected(true);
-        } catch (java.beans.PropertyVetoException e) {
-        }
-        
-
+        createELFWindow();
+        createRegistersWindow();
+        createDisassemblerWindow();
+        createMemoryViewWindow();
     }
 }//GEN-LAST:event_openMenuItemActionPerformed
 
@@ -344,16 +366,8 @@ private void RegistersActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
 private void aboutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_aboutMenuItemActionPerformed
 // TODO add your handling code here:
     StringBuilder message = new StringBuilder();
-    message.append("<html>")
-            .append("<h2>" + MetaInformation.FULL_NAME + "</h2>")
-            .append("<hr/>")
-            .append("Official site      : <a href='" + MetaInformation.OFFICIAL_SITE + "'>"+MetaInformation.OFFICIAL_SITE+"</a><br/>")
-            .append("Official forum     : <a href='" + MetaInformation.OFFICIAL_FORUM + "'>"+MetaInformation.OFFICIAL_FORUM+"</a><br/>")
-            .append("Official repository: <a href='" + MetaInformation.OFFICIAL_REPOSITORY + "'>"+MetaInformation.OFFICIAL_REPOSITORY+"</a><br/>")
-            .append("<hr/>")
-            .append("<i>Team:</i> <font color='gray'>" + MetaInformation.TEAM + "</font>")
-            .append("</html>");
-    JOptionPane.showMessageDialog(this, message.toString(), version,JOptionPane.INFORMATION_MESSAGE);
+    message.append("<html>").append("<h2>" + MetaInformation.FULL_NAME + "</h2>").append("<hr/>").append("Official site      : <a href='" + MetaInformation.OFFICIAL_SITE + "'>" + MetaInformation.OFFICIAL_SITE + "</a><br/>").append("Official forum     : <a href='" + MetaInformation.OFFICIAL_FORUM + "'>" + MetaInformation.OFFICIAL_FORUM + "</a><br/>").append("Official repository: <a href='" + MetaInformation.OFFICIAL_REPOSITORY + "'>" + MetaInformation.OFFICIAL_REPOSITORY + "</a><br/>").append("<hr/>").append("<i>Team:</i> <font color='gray'>" + MetaInformation.TEAM + "</font>").append("</html>");
+    JOptionPane.showMessageDialog(this, message.toString(), version, JOptionPane.INFORMATION_MESSAGE);
 }//GEN-LAST:event_aboutMenuItemActionPerformed
 
 private void MemViewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MemViewActionPerformed
@@ -372,16 +386,16 @@ private void MemViewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 }//GEN-LAST:event_MemViewActionPerformed
 
     /**
-    * @param args the command line arguments
-    */
+     * @param args the command line arguments
+     */
     public static void main(String args[]) {
-      try {
-        UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-      }
-       catch (Exception e) {
-          e.printStackTrace();
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         java.awt.EventQueue.invokeLater(new Runnable() {
+
             public void run() {
                 new JpcspMainGUI().setVisible(true);
             }
@@ -403,4 +417,7 @@ private void MemViewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
     private javax.swing.JMenuItem openMenuItem;
     // End of variables declaration//GEN-END:variables
 
+    private boolean userChooseSomething(int returnVal) {
+        return returnVal == JFileChooser.APPROVE_OPTION;
+    }
 }
