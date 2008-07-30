@@ -116,7 +116,7 @@ public class JpcspMainGUI extends javax.swing.JFrame {
             regs = null;
         }
         regs = new Registers(cpu);
-        regs.setLocation(70, 150);
+        regs.setLocation(70, 0);
         regs.setVisible(true);
         desktopPane.add(regs);
         Registers.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
@@ -236,7 +236,7 @@ public class JpcspMainGUI extends javax.swing.JFrame {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(desktopPane, javax.swing.GroupLayout.DEFAULT_SIZE, 557, Short.MAX_VALUE)
+            .addComponent(desktopPane, javax.swing.GroupLayout.DEFAULT_SIZE, 666, Short.MAX_VALUE)
         );
 
         pack();
@@ -350,7 +350,7 @@ private void WindowsMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:eve
 private void RegistersActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RegistersActionPerformed
 // TODO add your handling code here:
     if (regs != null) {
-        regs.setLocation(70, 150);
+        regs.setLocation(70, 0);
         if (regs.isVisible()) {
             regs.setVisible(false);
             Registers.setIcon(null);

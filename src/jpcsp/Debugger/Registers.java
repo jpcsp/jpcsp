@@ -86,39 +86,7 @@ public class Registers extends javax.swing.JInternalFrame {
                 {"gp", null},
                 {"sp", null},
                 {"fp", null},
-                {"ra", null},
-                {"f0", null},
-                {"f1", null},
-                {"f2", null},
-                {"f3", null},
-                {"f4", null},
-                {"f5", null},
-                {"f6", null},
-                {"f7", null},
-                {"f8", null},
-                {"f9", null},
-                {"f10", null},
-                {"f11", null},
-                {"f12", null},
-                {"f13", null},
-                {"f14", null},
-                {"f15", null},
-                {"f16", null},
-                {"f17", null},
-                {"f18", null},
-                {"f19", null},
-                {"f20", null},
-                {"f21", null},
-                {"f22", null},
-                {"f23", null},
-                {"f24", null},
-                {"f25", null},
-                {"f26", null},
-                {"f27", null},
-                {"f28", null},
-                {"f29", null},
-                {"f30", null},
-                {"f31", null}
+                {"ra", null}
             },
             new String [] {
                 "REG", "HEX"
@@ -152,7 +120,7 @@ public class Registers extends javax.swing.JInternalFrame {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 357, Short.MAX_VALUE)
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 588, Short.MAX_VALUE)
         );
 
         pack();

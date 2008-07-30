@@ -28,7 +28,7 @@
     </DimensionLayout>
     <DimensionLayout dim="1">
       <Group type="103" groupAlignment="0" attributes="0">
-          <Component id="jScrollPane1" alignment="0" pref="357" max="32767" attributes="0"/>
+          <Component id="jScrollPane1" alignment="0" pref="588" max="32767" attributes="0"/>
       </Group>
     </DimensionLayout>
   </Layout>
@@ -43,7 +43,7 @@
         <Component class="javax.swing.JTable" name="jTable1">
           <Properties>
             <Property name="model" type="javax.swing.table.TableModel" editor="org.netbeans.modules.form.editors2.TableModelEditor">
-              <Table columnCount="2" rowCount="67">
+              <Table columnCount="2" rowCount="35">
                 <Column editable="false" title="REG" type="java.lang.String">
                   <Data value="PC"/>
                   <Data value="HI"/>
@@ -80,73 +80,9 @@
                   <Data value="sp"/>
                   <Data value="fp"/>
                   <Data value="ra"/>
-                  <Data value="f0"/>
-                  <Data value="f1"/>
-                  <Data value="f2"/>
-                  <Data value="f3"/>
-                  <Data value="f4"/>
-                  <Data value="f5"/>
-                  <Data value="f6"/>
-                  <Data value="f7"/>
-                  <Data value="f8"/>
-                  <Data value="f9"/>
-                  <Data value="f10"/>
-                  <Data value="f11"/>
-                  <Data value="f12"/>
-                  <Data value="f13"/>
-                  <Data value="f14"/>
-                  <Data value="f15"/>
-                  <Data value="f16"/>
-                  <Data value="f17"/>
-                  <Data value="f18"/>
-                  <Data value="f19"/>
-                  <Data value="f20"/>
-                  <Data value="f21"/>
-                  <Data value="f22"/>
-                  <Data value="f23"/>
-                  <Data value="f24"/>
-                  <Data value="f25"/>
-                  <Data value="f26"/>
-                  <Data value="f27"/>
-                  <Data value="f28"/>
-                  <Data value="f29"/>
-                  <Data value="f30"/>
-                  <Data value="f31"/>
                 </Column>
                 <Column editable="true" title="HEX" type="java.lang.Object">
                   <Data value=""/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
-                  <Data value="null"/>
                   <Data value="null"/>
                   <Data value="null"/>
                   <Data value="null"/>
