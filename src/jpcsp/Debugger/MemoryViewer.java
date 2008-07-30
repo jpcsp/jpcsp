@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.Debugger;
 
+import javax.swing.JOptionPane;
 import jpcsp.Memory;
 import jpcsp.Processor;
 
@@ -109,6 +110,8 @@ public class MemoryViewer extends javax.swing.JInternalFrame {
 
         jScrollPane1 = new javax.swing.JScrollPane();
         memoryview = new javax.swing.JTextArea();
+        AddressField = new javax.swing.JTextField();
+        GoToButton = new javax.swing.JButton();
 
         setClosable(true);
         setDefaultCloseOperation(javax.swing.WindowConstants.HIDE_ON_CLOSE);
@@ -116,7 +119,7 @@ public class MemoryViewer extends javax.swing.JInternalFrame {
 
         memoryview.setColumns(20);
         memoryview.setEditable(false);
-        memoryview.setFont(new java.awt.Font("Courier New", 0, 12)); // NOI18N
+        memoryview.setFont(new java.awt.Font("Courier New", 0, 12));
         memoryview.setRows(5);
         memoryview.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyPressed(java.awt.event.KeyEvent evt) {
@@ -125,19 +128,35 @@ public class MemoryViewer extends javax.swing.JInternalFrame {
         });
         jScrollPane1.setViewportView(memoryview);
 
+        GoToButton.setText("Go to Address");
+        GoToButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                GoToButtonActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 646, Short.MAX_VALUE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(AddressField, javax.swing.GroupLayout.PREFERRED_SIZE, 216, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(GoToButton))
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 646, Short.MAX_VALUE))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addContainerGap(50, Short.MAX_VALUE)
+                .addContainerGap(24, Short.MAX_VALUE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(AddressField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(GoToButton))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 314, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
@@ -148,21 +167,50 @@ public class MemoryViewer extends javax.swing.JInternalFrame {
 private void memoryviewKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_memoryviewKeyPressed
    if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_DOWN){
        startaddress +=16;
-       System.out.println(Integer.toHexString(startaddress));
        evt.consume();
        memoryview.setText("");
        RefreshMemory();
    }
-   if(evt.getKeyCode() == java.awt.event.KeyEvent.VK_UP){
+   else if(evt.getKeyCode() == java.awt.event.KeyEvent.VK_UP){
        startaddress -=16;
        evt.consume();
        memoryview.setText("");
        RefreshMemory();
    }
+    else if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_PAGE_UP)
+    {
+       startaddress -=352;
+       evt.consume();
+       memoryview.setText("");
+       RefreshMemory();
+    }
+    else if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_PAGE_DOWN)
+    {
+       startaddress +=352;
+       evt.consume();
+       memoryview.setText("");
+       RefreshMemory();
+    }
 }//GEN-LAST:event_memoryviewKeyPressed
+
+private void GoToButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_GoToButtonActionPerformed
+         String gettext = AddressField.getText();
+         int value;
+         try {
+            value = Integer.parseInt(gettext, 16);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "The Number you enter is not correct");
+            return;
+        }
+         startaddress = value;
+         memoryview.setText("");
+         RefreshMemory();
+}//GEN-LAST:event_GoToButtonActionPerformed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JTextField AddressField;
+    private javax.swing.JButton GoToButton;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTextArea memoryview;
     // End of variables declaration//GEN-END:variables
