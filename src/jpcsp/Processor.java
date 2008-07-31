@@ -46,13 +46,13 @@ public class Processor {
       }
       return value;
    }
-    
+
     public void stepcpu()
     {
       long temp;
       long longA, longB;
       int value = Memory.get_instance().read32(pc);
-      longA = longB = 0; 
+      longA = longB = 0;
       int rs = (value >> 21) & 0x1f;
       int rt = (value >> 16) & 0x1f;
       int rd = (value >> 11) & 0x1f;
@@ -68,23 +68,26 @@ public class Processor {
                     case SLL: //last update 31/07/2008 - should be okay (shadow)
                         cpuregisters[rd] = cpuregisters[rt] << sa;
                         break;
-                    case SRL://last update 31/07/2008 - should be okay (shadow)
+                    case SRL:
+                        //last update 31/07/2008 - should be okay (shadow)
+                        //last update 31/07/2008 - >>> does not sign extend (fiveofhearts)
+                        cpuregisters[rd] = cpuregisters[rt] >>> sa;
+                        break;
+                    case SRA:
+                        //last update 31/07/2008 - >> sign extension is automatic (fiveofhearts)
                         cpuregisters[rd] = cpuregisters[rt] >> sa;
                         break;
-                    //case SRA:
-                   /* TODO: sign extend */
-                  //cpuregisters[rd] = cpuregisters[rt] >> sa;
-                   // break;
-                   case SLLV: 
+                   case SLLV:
                         cpuregisters[rd] = cpuregisters[rt] << (cpuregisters[rs] & 0x3F);
                         break;
                    case SRLV:
-                       cpuregisters[rd] = cpuregisters[rt] >> (cpuregisters[rs] & 0x3F);
+                        //last update 31/07/2008 - >>> does not sign extend (fiveofhearts)
+                       cpuregisters[rd] = cpuregisters[rt] >>> (cpuregisters[rs] & 0x3F);
                        break;
-                   /*case SRAV:
-                  /* TODO: sign extend */
-                  //cpuregisters[rd] = cpuregisters[rt] >> (cpuregisters[rs] & 0x3F);
-                   //break;
+                   case SRAV:
+                        //last update 31/07/2008 - >> sign extension is automatic (fiveofhearts)
+                        cpuregisters[rd] = cpuregisters[rt] >> (cpuregisters[rs] & 0x3F);
+                        break;
                   case JR:
                     pc = cpuregisters[rs];
                     /* TODO: delay one cycle */
@@ -179,7 +182,7 @@ public class Processor {
                     } else {
                     cpuregisters[rd] = 0;
                     }
-                    break;               
+                    break;
                 default:
                   System.out.println("Unsupported special instruction " + Integer.toHexString(special));
                   break;
@@ -195,23 +198,23 @@ public class Processor {
                 cpuregisters[rt] = (int) (longA + longB);
                 break;
           case SLTI://slti
-                if (cpuregisters[rs] < signExtend(imm)) 
+                if (cpuregisters[rs] < signExtend(imm))
                   cpuregisters[rd] = 1;
-                else 
+                else
                  cpuregisters[rd] = 0;
                 break;
           case SLTIU://sltiu
                 longA |= cpuregisters[rs];
                 longB |= signExtend(imm);
-                if (longA < longB) 
+                if (longA < longB)
                 cpuregisters[rd] = 1;
-                else 
+                else
                 cpuregisters[rd] = 0;
                 break;
          case ANDI://ANDI
                 cpuregisters[rt] = cpuregisters[rs] & imm;
                 break;
-         case ORI: //ori   
+         case ORI: //ori
                 cpuregisters[rt] = cpuregisters[rs] | imm;
                 break;
          case XORI: //xori
@@ -224,7 +227,7 @@ public class Processor {
                 System.out.println("Unsupported instruction " + Integer.toHexString(opcode));
                 break;
         }
-      pc += 4;  
+      pc += 4;
     }
-    
+
 }
