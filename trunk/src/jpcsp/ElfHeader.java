@@ -70,11 +70,10 @@ public class ElfHeader {
        str.append("offset_snd0_at3 " + "\t" +  Utilities.formatString("long", Long.toHexString(offset_snd0_at3 & 0xFFFFFFFFL).toUpperCase()) + "\n");
        str.append("offset_psp_data " + "\t" +  Utilities.formatString("long", Long.toHexString(offset_psp_data & 0xFFFFFFFFL).toUpperCase()) + "\n");
        str.append("offset_psar_data " + "\t" +  Utilities.formatString("long", Long.toHexString(offset_psar_data & 0xFFFFFFFFL).toUpperCase()) + "\n");
-
-
        return str.toString();
      }
   }
+
   private static class Elf32_Ehdr
   {
     private long e_magic;
@@ -148,8 +147,6 @@ public class ElfHeader {
   //System V ABI, IA32 Supplement
   private static class Elf32_Phdr
   {
-    StringBuffer str = new StringBuffer();
-    private int SegmentCounter=0;
     private long p_type;
     private long p_offset;
     private long p_vaddr;
@@ -170,9 +167,11 @@ public class ElfHeader {
       p_memsz = readUWord (f);
       p_flags = readUWord (f);
       p_align = readUWord (f);
+    }
 
-      //each section is added to the string buffer
-      str.append("-----PROGRAM HEADER #"+SegmentCounter+"-----" + "\n");
+    public String toString()
+    {
+      StringBuffer str = new StringBuffer();
       str.append("p_type " + "\t\t " +  Utilities.formatString("long", Long.toHexString(p_type & 0xFFFFFFFFL).toUpperCase()) + "\n");
       str.append("p_offset " + "\t " +  Utilities.formatString("long", Long.toHexString(p_offset & 0xFFFFFFFFL).toUpperCase()) + "\n");
       str.append("p_vaddr " + "\t " +  Utilities.formatString("long", Long.toHexString(p_vaddr & 0xFFFFFFFFL).toUpperCase()) + "\n");
@@ -181,17 +180,13 @@ public class ElfHeader {
       str.append("p_memsz " + "\t " +  Utilities.formatString("long", Long.toHexString(p_memsz & 0xFFFFFFFFL).toUpperCase()) + "\n");
       str.append("p_flags " + "\t " +  Utilities.formatString("long", Long.toHexString(p_flags & 0xFFFFFFFFL).toUpperCase()) + "\n");
       str.append("p_align " + "\t " +  Utilities.formatString("long", Long.toHexString(p_align & 0xFFFFFFFFL).toUpperCase()) + "\n");
-      SegmentCounter++;
-    }
-
-    public String toString()
-    {
       return str.toString();
     }
   }
 
   private static class Elf32_Shdr
   {
+    private String sh_namez = "";
     private long sh_name;
     private int sh_type;
     private int sh_flags;
@@ -392,12 +387,19 @@ public class ElfHeader {
     }
 
     /** Read the ELF program headers */
-    Elf32_Phdr phdr = new Elf32_Phdr();
+    List<Elf32_Phdr> programheaders = new LinkedList<Elf32_Phdr>();
+    StringBuffer phsb = new StringBuffer();
     for (int i = 0; i < ehdr.e_phnum; i++)
     {
+        Elf32_Phdr phdr = new Elf32_Phdr();
+        programheaders.add(phdr);
+
         // Read information about this section.
         f.seek(elfoffset + ehdr.e_phoff + (i * ehdr.e_phentsize));
         phdr.read(f);
+
+        phsb.append("-----PROGRAM HEADER #"+i+"-----" + "\n");
+        phsb.append(phdr.toString());
 
         // yapspd: if the PRX file is a kernel module then the most significant
         // bit must be set in the phsyical address of the first program header.
@@ -407,8 +409,8 @@ public class ElfHeader {
             System.out.println("Kernel mode PRX detected");
         }
     }
-    //SegInfo = phdr.toString();
-    ElfInfo += phdr.toString();
+    //SegInfo = phsb.toString();
+    ElfInfo += phsb.toString();
 
     /** Read the ELF section headers (1st pass) */
     List<Elf32_Shdr> sectionheaders = new LinkedList<Elf32_Shdr>();
@@ -448,12 +450,12 @@ public class ElfHeader {
 
     // 2nd pass generate info string for the GUI and get module infos
     PSPModuleInfo moduleinfo = new PSPModuleInfo();
-    StringBuffer str = new StringBuffer();
+    StringBuffer shsb = new StringBuffer();
     int SectionCounter = 0;
     for (Elf32_Shdr shdr: sectionheaders)
     {
         // Number the section
-        str.append("-----SECTION HEADER #"+SectionCounter+"-----" + "\n");
+        shsb.append("-----SECTION HEADER #"+SectionCounter+"-----" + "\n");
 
         // Resolve section name (if possible)
         if (shstrtab != null)
@@ -462,7 +464,8 @@ public class ElfHeader {
             String SectionName = readStringZ(f);
             if (SectionName.length() > 0)
             {
-                str.append(SectionName + "\n");
+                shdr.sh_namez = SectionName;
+                shsb.append(SectionName + "\n");
 
                 // Get module infos
                 if (SectionName.matches(".rodata.sceModuleInfo"))
@@ -483,10 +486,10 @@ public class ElfHeader {
         }
 
         // Add the normal info
-        str.append(shdr.toString());
+        shsb.append(shdr.toString());
         SectionCounter++;
     }
-    SectInfo = str.toString();
+    SectInfo = shsb.toString();
 
     // 3rd pass relocate PRX
     if ((ehdr.e_type & 0xFFFF) == 0xFFA0) // PRX magic
@@ -499,16 +502,16 @@ public class ElfHeader {
 
                 f.seek(elfoffset + shdr.sh_offset);
 
-                int RelCount = (int)shdr.sh_size / Elf32_Shdr.sizeof();
-                //System.out.println("relocating " + RelCount + " entries");
+                int RelCount = (int)shdr.sh_size / Elf32_Rel.sizeof();
+                System.out.println(shdr.sh_namez + ": relocating " + RelCount + " entries");
 
                 int AHL = 0; // (AHI << 16) | (ALO & 0xFFFF)
-                int HI_addr = 0; // We'll use this to write to relocate R_MIPS_HI16 when we get a R_MIPS_LO16
+                int HI_addr = 0; // We'll use this to relocate R_MIPS_HI16 when we get a R_MIPS_LO16
 
-				// Relocation modes, only 1 is allowed at a time
-				boolean external = true; // copied from soywiz/pspemulator
-				boolean local = false;
-				boolean _gp_disp = false;
+                // Relocation modes, only 1 is allowed at a time
+                boolean external = true; // copied from soywiz/pspemulator
+                boolean local = false;
+                boolean _gp_disp = false;
 
                 for (int i = 0; i < RelCount; i++)
                 {
@@ -547,7 +550,7 @@ public class ElfHeader {
                     switch(R_TYPE)
                     {
                         case 0: //R_MIPS_NONE
-							// Don't do anything
+                            // Don't do anything
                             break;
 
                         case 5: //R_MIPS_HI16
@@ -614,7 +617,7 @@ public class ElfHeader {
                                 // docs say "sign-extend(A < 2)", but is it meant to be A << 2? if so then there's no point sign extending
                                 //result = (sign-extend(A < 2) + S) >> 2;
                                 //result = (((A < 2) ? 0xFFFFFFFF : 0x00000000) + S) >> 2;
-								result = ((A << 2) + S) >> 2; // copied from soywiz/pspemulator
+                                result = ((A << 2) + S) >> 2; // copied from soywiz/pspemulator
 
                                 data &= ~0x03FFFFFF;
                                 data |= (int)(result & 0x03FFFFFF); // truncate
@@ -622,7 +625,7 @@ public class ElfHeader {
                             break;
 
                         case 2: //R_MIPS_32
-							// This doesn't match soywiz/pspemulator but it generates more sensible instructions (fiveofhearts)
+                            // This doesn't match soywiz/pspemulator but it generates more sensible addresses (fiveofhearts)
                             A = word32;
                             result = S + A;
                             data &= ~0xFFFFFFFF;
@@ -630,7 +633,7 @@ public class ElfHeader {
                             break;
 
                         case 7: //R_MIPS_GPREL16
-							// 31/07/08 untested (fiveofhearts)
+                            // 31/07/08 untested (fiveofhearts)
                             if (external)
                             {
                                 A = rel16;
@@ -678,7 +681,7 @@ public class ElfHeader {
     p.pc = (int)baseoffset + (int)ehdr.e_entry; //set the pc register.
     p.cpuregisters[31] = 0x08000004; //ra
     p.cpuregisters[5] = (int)baseoffset + (int)ehdr.e_entry; // argumentsPointer a1 reg
-    p.cpuregisters[28] =  (int)moduleinfo.m_gp; //gp reg    gp register should get the GlobalPointer!!!
+    p.cpuregisters[28] = (int)baseoffset + (int)moduleinfo.m_gp; //gp reg    gp register should get the GlobalPointer!!!
     p.cpuregisters[29] = 0x09F00000; //sp
     p.cpuregisters[26] = 0x09F00000; //k0
 

@@ -197,7 +197,7 @@ public class Disasembler extends javax.swing.JInternalFrame implements Clipboard
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-   
+
 private void jList1KeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jList1KeyPressed
 // TODO add your handling code here:
 
@@ -212,12 +212,12 @@ private void jList1KeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jL
         evt.consume();
         jList1.setSelectedIndex(0);
     } else if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_PAGE_UP && jList1.getSelectedIndex() == 0) {
-        DebuggerPC -= 74;
+        DebuggerPC -= 72;
         RefreshDebugger();
         evt.consume();
         jList1.setSelectedIndex(0);
     } else if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_PAGE_DOWN && jList1.getSelectedIndex() == jList1.getLastVisibleIndex()) {
-        DebuggerPC += 74;
+        DebuggerPC += 72;
         RefreshDebugger();
         evt.consume();
         jList1.setSelectedIndex(jList1.getLastVisibleIndex());
@@ -284,13 +284,13 @@ private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
         System.out.println("Start address: "+opt.getInput()[0]);
         System.out.println("End address: "+opt.getInput()[1]);
         System.out.println("File name: "+opt.getInput()[2]);
-        
+
         BufferedWriter bufferedWriter = null;
         try {
-            
+
             //Construct the BufferedWriter object
             bufferedWriter = new BufferedWriter(new FileWriter(opt.getInput()[2]));
-            
+
             //Start writing to the output stream
             bufferedWriter.write("-------JPCSP DISASM-----------");
             bufferedWriter.newLine();
@@ -308,8 +308,8 @@ private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
                 bufferedWriter.newLine();
              }
             }
-                
-                      
+
+
         } catch (FileNotFoundException ex) {
             ex.printStackTrace();
         } catch (IOException ex) {
@@ -340,7 +340,7 @@ private void CopyAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
 
 private void jList1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jList1MouseClicked
        BranchOrJump.setEnabled(false);
-       if (SwingUtilities.isRightMouseButton(evt) && !jList1.isSelectionEmpty() && jList1.locationToIndex(evt.getPoint()) == jList1.getSelectedIndex()) 
+       if (SwingUtilities.isRightMouseButton(evt) && !jList1.isSelectionEmpty() && jList1.locationToIndex(evt.getPoint()) == jList1.getSelectedIndex())
        {
            //check if we can enable branch or jump address copy
            String line = (String)jList1.getSelectedValue();
@@ -352,7 +352,7 @@ private void jList1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:even
            }
             DisMenu.show(jList1, evt.getX(), evt.getY());
        }
-          
+
 }//GEN-LAST:event_jList1MouseClicked
 
 private void CopyAllActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CopyAllActionPerformed
@@ -376,7 +376,7 @@ private void BranchOrJumpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
       StringSelection stringSelection = new StringSelection(add);
       Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
       clipboard.setContents(stringSelection, this);
-        
+
     }
 }//GEN-LAST:event_BranchOrJumpActionPerformed
 
@@ -413,8 +413,8 @@ private void BranchOrJumpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         // 		 d..d = data
 
         //e.g. for a register op:
-        //op 	 rs    rt 	 rd    shamt func 
-        //oooooo sssss ttttt ddddd aaaaa ffffff 
+        //op 	 rs    rt 	 rd    shamt func
+        //oooooo sssss ttttt ddddd aaaaa ffffff
         //31  26 25 21 20 16 15 11 10  6 5    0
 
         //So we read out rs/rt/rd/immediate
@@ -430,9 +430,9 @@ private void BranchOrJumpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         }
         int opcode = (value >> 26) & 0x3f;
 
-        //s = Integer.toString(opcode);        
+        //s = Integer.toString(opcode);
         switch (opcode) {
-            case SPECIAL: //Special table                
+            case SPECIAL: //Special table
                 int specialop = (value & 0x3f);
                 switch (specialop) {
                     case SLL: //sll
@@ -463,7 +463,7 @@ private void BranchOrJumpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
                     case 11://movn
                         s = s + Dis_RDRSRT("movn", value);
                         break;
-                    case SYSCALL://syscall                       
+                    case SYSCALL://syscall
                         s = s + Dis_Syscall(value);
                         break;
                     case BREAK://break;
@@ -531,7 +531,7 @@ private void BranchOrJumpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
                         break;
                 }
                 break;
-            case 1: //Bcond table  
+            case 1: //Bcond table
                 int code = value & 0x1f0000;
                 if (code == 0) {
                     s = s + "bltz " + cpuregs[rs] + ", 0x" + Integer.toHexString(imm * 4 + opcode_address + 4);
@@ -578,7 +578,7 @@ private void BranchOrJumpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
             case ANDI://ANDI
                 s = s + Dis_RTRSIMM("andi", value);
                 break;
-            case ORI: //ori   
+            case ORI: //ori
                 s = s + Dis_RTRSIMM("ori", value);
                 break;
             case XORI: //xori
@@ -901,8 +901,8 @@ private void BranchOrJumpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         int jump = (opcode_address & 0xf0000000) | ((value & 0x3ffffff) << 2);
         return opname + " 0x" + Integer.toHexString(jump);
     }
-    
-    
+
+
     /**
    * Empty implementation of the ClipboardOwner interface.
    */
