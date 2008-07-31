@@ -503,13 +503,14 @@ public class ElfHeader {
                     int OFS_BASE = (int)((rel.r_info >> 8) & 0xFF);
                     int ADDR_BASE = (int)((rel.r_info >> 16) & 0xFF);
 
-                    /* TODO
-                    System.out.println("type=" + R_TYPE + ",base=" + OFS_BASE + ",addr=" + ADDR_BASE + "");
+
+                    //System.out.println("type=" + R_TYPE + ",base=" + OFS_BASE + ",addr=" + ADDR_BASE + "");
 
                     int data = Memory.get_instance().read32((int)baseoffset + (int)rel.r_offset);
 
                     switch(R_TYPE)
                     {
+                        /* TODO
                         case 0: //R_MIPS_NONE
                             break;
                         case 5: //R_MIPS_HI16
@@ -520,10 +521,15 @@ public class ElfHeader {
                             break;
                         case 2: //R_MIPS_32
                             break;
+                        case 7: //R_MIPS_GPREL16
+                            break;
+                        */
+                        default:
+                            System.out.println("Unhandled relocation type " + R_TYPE);
+                            break;
                     }
 
                     Memory.get_instance().write32((int)baseoffset + (int)rel.r_offset, data);
-                    */
                 }
             }
         }
