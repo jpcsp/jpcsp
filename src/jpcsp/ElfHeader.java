@@ -156,7 +156,7 @@ public class ElfHeader {
     private long p_paddr;
     private long p_filesz;
     private long p_memsz;
-    private long p_flags;
+    private long p_flags; // Bits: 0x1=executable, 0x2=writable, 0x4=readable, demo PRX's were found to be not writable
     private long p_align;
 
     private static int sizeof () { return 32; }
@@ -265,6 +265,7 @@ public class ElfHeader {
         private long m_exp_end;
         private long m_imports;
         private long m_imp_end;
+        private String m_namez = ""; // String version of m_name
 
         private void read (RandomAccessFile f) throws IOException
         {
@@ -276,6 +277,12 @@ public class ElfHeader {
             m_exp_end = readUWord (f);
             m_imports = readUWord (f); // .lib.stub
             m_imp_end = readUWord (f);
+
+            // Convert the array of bytes used for the module name to a Java String
+            // If we don't do it this way then there will be too many nul-bytes on the end, and some shells print them all!
+            int len;
+            for (len = 0; len < 28 && m_name[len] != 0; len++);
+            m_namez = new String(m_name, 0, len);
         }
     }
 
@@ -464,7 +471,7 @@ public class ElfHeader {
                     moduleinfo.read(f);
                     //System.out.println(Long.toHexString(moduleinfo.m_gp));
 
-                    System.out.println("Found ModuleInfo name:'" + new String(moduleinfo.m_name)
+                    System.out.println("Found ModuleInfo name:'" + moduleinfo.m_namez
                         + "' version:" + Utilities.formatString("short", Integer.toHexString(moduleinfo.m_version & 0xFFFF).toUpperCase()));
 
                     if ((moduleinfo.m_attr & 0x1000) != 0)
@@ -495,6 +502,14 @@ public class ElfHeader {
                 int RelCount = (int)shdr.sh_size / Elf32_Shdr.sizeof();
                 //System.out.println("relocating " + RelCount + " entries");
 
+                int AHL = 0; // (AHI << 16) | (ALO & 0xFFFF)
+                int HI_addr = 0; // We'll use this to write to relocate R_MIPS_HI16 when we get a R_MIPS_LO16
+
+				// Relocation modes, only 1 is allowed at a time
+				boolean external = true; // copied from soywiz/pspemulator
+				boolean local = false;
+				boolean _gp_disp = false;
+
                 for (int i = 0; i < RelCount; i++)
                 {
                     rel.read(f);
@@ -502,33 +517,156 @@ public class ElfHeader {
                     int R_TYPE = (int)(rel.r_info & 0xFF);
                     int OFS_BASE = (int)((rel.r_info >> 8) & 0xFF);
                     int ADDR_BASE = (int)((rel.r_info >> 16) & 0xFF);
-
-
                     //System.out.println("type=" + R_TYPE + ",base=" + OFS_BASE + ",addr=" + ADDR_BASE + "");
 
                     int data = Memory.get_instance().read32((int)baseoffset + (int)rel.r_offset);
+                    long result = 0; // Used to hold the result of relocation, OR this back into data
+
+                    // these are the addends?
+                    // SysV ABI MIPS quote: "Because MIPS uses only Elf32_Rel re-location entries, the relocated field holds the addend."
+                    int half16 = data & 0x0000FFFF; // 31/07/08 unused (fiveofhearts)
+                    int word32 = data & 0xFFFFFFFF;
+                    int targ26 = data & 0x03FFFFFF;
+                    int hi16 = data & 0x0000FFFF;
+                    int lo16 = data & 0x0000FFFF;
+                    int rel16 = data & 0x0000FFFF;
+                    int lit16 = data & 0x0000FFFF; // 31/07/08 unused (fiveofhearts)
+                    int pc = data & 0x0000FFFF; // 31/07/08 unused (fiveofhearts)
+
+                    int A = 0; // addend
+                    // moved outside the loop so context is saved
+                    //int AHL = 0; // (AHI << 16) | (ALO & 0xFFFF)
+                    int P = (int)baseoffset + (int)rel.r_offset; // address of instruction being relocated? 31/07/08 unused when external=true (fiveofhearts)
+                    int S = (int)baseoffset; // ? copied from soywiz/pspemulator, but doesn't match the docs (fiveofhearts)
+                    int G = 0; // ? 31/07/08 unused (fiveofhearts)
+                    int GP = (int)baseoffset + (int)moduleinfo.m_gp; // final gp value, computed correctly? 31/07/08 only used in R_MIPS_GPREL16 which is untested (fiveofhearts)
+                    int GP0 = (int)moduleinfo.m_gp; // gp value, computed correctly? 31/07/08 unused when external=true (fiveofhearts)
+                    int EA = 0; // ? 31/07/08 unused (fiveofhearts)
+                    int L = 0; // ? 31/07/08 unused (fiveofhearts)
 
                     switch(R_TYPE)
                     {
-                        /* TODO
                         case 0: //R_MIPS_NONE
+							// Don't do anything
                             break;
+
                         case 5: //R_MIPS_HI16
+                            A = hi16;
+                            AHL = A << 16;
+                            HI_addr = (int)baseoffset + (int)rel.r_offset;
                             break;
+
                         case 6: //R_MIPS_LO16
+                            A = lo16;
+                            AHL &= ~0x0000FFFF; // delete lower bits, since many R_MIPS_LO16 can follow one R_MIPS_HI16
+                            AHL |= A & 0x0000FFFF;
+
+                            if (external || local)
+                            {
+                                result = AHL + S;
+                                data &= ~0x0000FFFF;
+                                data |= result & 0x0000FFFF; // truncate
+
+                                // Process deferred R_MIPS_HI16
+                                int data2 = Memory.get_instance().read32(HI_addr);
+                                data2 &= ~0x0000FFFF;
+                                data2 |= (result >> 16) & 0x0000FFFF; // truncate
+                                Memory.get_instance().write32(HI_addr, data2);
+                            }
+                            else if (_gp_disp)
+                            {
+                                result = AHL + GP - P + 4;
+
+                                // verify
+                                if ((result & ~0xFFFFFFFF) != 0)
+                                    throw new IOException("Relocation overflow (R_MIPS_LO16)");
+
+                                data &= ~0x0000FFFF;
+                                data |= result & 0x0000FFFF;
+
+                                // Process deferred R_MIPS_HI16
+                                int data2 = Memory.get_instance().read32(HI_addr);
+
+                                result = AHL + GP - P;
+
+                                // verify
+                                if ((result & ~0xFFFFFFFF) != 0)
+                                    throw new IOException("Relocation overflow (R_MIPS_HI16)");
+
+                                data2 &= ~0x0000FFFF;
+                                data2 |= (result >> 16) & 0x0000FFFF;
+                                Memory.get_instance().write32(HI_addr, data2);
+                            }
                             break;
+
                         case 4: //R_MIPS_26
+                            if (local)
+                            {
+                                A = targ26;
+                                result = ((A << 2) | (P & 0xf0000000) + S) >> 2;
+                                data &= ~0x03FFFFFF;
+                                data |= (int)(result & 0x03FFFFFF); // truncate
+                            }
+                            else if (external)
+                            {
+                                A = targ26;
+
+                                // docs say "sign-extend(A < 2)", but is it meant to be A << 2? if so then there's no point sign extending
+                                //result = (sign-extend(A < 2) + S) >> 2;
+                                //result = (((A < 2) ? 0xFFFFFFFF : 0x00000000) + S) >> 2;
+								result = ((A << 2) + S) >> 2; // copied from soywiz/pspemulator
+
+                                data &= ~0x03FFFFFF;
+                                data |= (int)(result & 0x03FFFFFF); // truncate
+                            }
                             break;
+
                         case 2: //R_MIPS_32
+							// This doesn't match soywiz/pspemulator but it generates more sensible instructions (fiveofhearts)
+                            A = word32;
+                            result = S + A;
+                            data &= ~0xFFFFFFFF;
+                            data |= (int)(result & 0xFFFFFFFF); // truncate
                             break;
+
                         case 7: //R_MIPS_GPREL16
+							// 31/07/08 untested (fiveofhearts)
+                            if (external)
+                            {
+                                A = rel16;
+
+                                //result = sign-extend(A) + S + GP;
+                                result = (((A & 0x00008000) != 0) ? A & 0xFFFF0000 : A) + S + GP;
+
+                                // verify
+                                if ((result & ~0x0000FFFF) != 0)
+                                    throw new IOException("Relocation overflow (R_MIPS_GPREL16)");
+
+                                data &= ~0x0000FFFF;
+                                data |= (int)(result & 0x0000FFFF);
+                            }
+                            else if (local)
+                            {
+                                A = rel16;
+
+                                //result = sign-extend(A) + S + GP;
+                                result = (((A & 0x00008000) != 0) ? A & 0xFFFF0000 : A) + S + GP0 - GP;
+
+                                // verify
+                                if ((result & ~0x0000FFFF) != 0)
+                                    throw new IOException("Relocation overflow (R_MIPS_GPREL16)");
+
+                                data &= ~0x0000FFFF;
+                                data |= (int)(result & 0x0000FFFF);
+                            }
                             break;
-                        */
+
                         default:
                             System.out.println("Unhandled relocation type " + R_TYPE);
                             break;
                     }
 
+                    //System.out.println("Relocation type " + R_TYPE + " at " + String.format("%08x", (int)baseoffset + (int)rel.r_offset));
                     Memory.get_instance().write32((int)baseoffset + (int)rel.r_offset, data);
                 }
             }
