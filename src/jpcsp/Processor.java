@@ -15,6 +15,7 @@ You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp;
+import static jpcsp.R4000OpCodes.*;
 
 public class Processor {
 
@@ -49,13 +50,13 @@ public class Processor {
       if ((imm & 0x8000) == 0x8000) {
             imm |= 0xffff0000;
         }
-        int opcode = (value >> 26) & 0x3f;
+        byte opcode =(byte)((value >> 26) & 0x3f);
         switch(opcode)
         {
-            case 9: //addiu
+            case ADDIU: //addiu
                 cpuregisters[rt] = cpuregisters[rs] + imm;
                 break;
-            case 15: //LUI
+            case LUI: //LUI
                 cpuregisters[rt] = imm << 16 ; 
                 break;
             default:
