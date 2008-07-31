@@ -53,10 +53,10 @@ public class Processor {
         byte opcode =(byte)((value >> 26) & 0x3f);
         switch(opcode)
         {
-            case ADDIU: //addiu
+            case ADDIU:
                 cpuregisters[rt] = cpuregisters[rs] + imm;
                 break;
-            case LUI: //LUI
+            case LUI:
                 cpuregisters[rt] = imm << 16 ; 
                 break;
             default:

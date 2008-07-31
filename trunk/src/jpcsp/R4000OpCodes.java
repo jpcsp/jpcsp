@@ -19,28 +19,28 @@ package jpcsp;
 public class R4000OpCodes {
 
     //Load and Store Instructions
-    public static final byte LB = 0x0; //Load Byte
-    public static final byte LBU = 0x0; // Load Byte Unsigned
-    public static final byte LH = 0x0; // Load Halfword
-    public static final byte LHU = 0x0; // Load Halfword Unsigned
-    public static final byte LW = 0x0; // Load Word
-    public static final byte LWL = 0x0; // Load Word Left
-    public static final byte LWR = 0x0; // Load Word Right
-    public static final byte SB = 0x0; // Store Byte
-    public static final byte SH = 0x0; // Store Halfword
-    public static final byte SW = 0x0; // Store Word
-    public static final byte SWL = 0x0; // Store Word Left
-    public static final byte SWR = 0x0; // Store Word Right
+    public static final byte LB = 0x20; //Load Byte
+    public static final byte LBU = 0x24; // Load Byte Unsigned
+    public static final byte LH = 0x21; // Load Halfword
+    public static final byte LHU = 0x25; // Load Halfword Unsigned
+    public static final byte LW = 0x23; // Load Word
+    public static final byte LWL = 0x22; // Load Word Left
+    public static final byte LWR = 0x26; // Load Word Right
+    public static final byte SB = 0x28; // Store Byte
+    public static final byte SH = 0x29; // Store Halfword
+    public static final byte SW = 0x2B; // Store Word
+    public static final byte SWL = 0x2A; // Store Word Left
+    public static final byte SWR = 0x2E; // Store Word Right
 
     //Arithmetic Instructions (ALU Immediate)
     public static final byte ADDI = 0x8; // Add Immediate
     public static final byte ADDIU = 0x9; // Add Immediate Unsigned
-    public static final byte SLTI = 0x0; // Set on Less Than Immediate
-    public static final byte SLTIU = 0x0; // Set on Less Than Immediate Unsigned
-    public static final byte ANDI = 0x0; // AND Immediate
-    public static final byte ORI = 0x0; // OR Immediate
-    public static final byte XORI = 0x0; // Exclusive OR Immediate
-    public static final byte LUI = 0x15; // Load Upper Immediate
+    public static final byte SLTI = 0xA; // Set on Less Than Immediate
+    public static final byte SLTIU = 0xB; // Set on Less Than Immediate Unsigned
+    public static final byte ANDI = 0xC; // AND Immediate
+    public static final byte ORI = 0xD; // OR Immediate
+    public static final byte XORI = 0xE; // Exclusive OR Immediate
+    public static final byte LUI = 0xF; // Load Upper Immediate
     
     
     //Arithmetic (3-Operand, R-Type)
@@ -68,18 +68,18 @@ public class R4000OpCodes {
     
     
     //Jump and Branch Instructions
-    public static final byte J = 0x0; // Jump
-    public static final byte JAL = 0x0; // Jump And Link
+    public static final byte J = 0x2; // Jump
+    public static final byte JAL = 0x3; // Jump And Link
     public static final byte JR = 0x0; // Jump Register
     public static final byte JALR = 0x0; // Jump And Link Register
-    public static final byte BEQ = 0x0; // Branch on Equal
-    public static final byte BNE = 0x0; // Branch on Not Equal
-    public static final byte BLEZ = 0x0; // Branch on Less Than or Equal to Zero
-    public static final byte BGTZ = 0x0; // Branch on Greater Than Zero
-    public static final byte BLTZ = 0x0; // Branch on Less Than Zero
-    public static final byte BGEZ = 0x0; // Branch on Greater Than or Equal to Zero
-    public static final byte BLTZAL = 0x0; // Branch on Less Than Zero And Link
-    public static final byte BGEZAL = 0x0; // Branch on Greater Than or Equal to Zero And Link
+    public static final byte BEQ = 0x4; // Branch on Equal
+    public static final byte BNE = 0x5; // Branch on Not Equal
+    public static final byte BLEZ = 0x6; // Branch on Less Than or Equal to Zero
+    public static final byte BGTZ = 0x7; // Branch on Greater Than Zero
+    public static final byte BLTZ = 0x1; // Branch on Less Than Zero
+    public static final byte BGEZ = 0x1; // Branch on Greater Than or Equal to Zero
+    public static final byte BLTZAL = 0x1; // Branch on Less Than Zero And Link
+    public static final byte BGEZAL = 0x1; // Branch on Greater Than or Equal to Zero And Link
     
     
     //Shift Instructions
@@ -110,23 +110,23 @@ public class R4000OpCodes {
     
     
     //Extensions to the ISA: Load and Store Instructions
-    public static final byte LD = 0x0; // Load Doubleword
-    public static final byte LDL = 0x0; // Load Doubleword Left
-    public static final byte LDR = 0x0; // Load Doubleword Right
-    public static final byte LL = 0x0; // Load Linked
-    public static final byte LLD = 0x0; // Load Linked Doubleword
-    public static final byte LWU = 0x0; // Load Word Unsigned
-    public static final byte SC = 0x0; // Store Conditional
-    public static final byte SCD = 0x0; // Store Conditional Doubleword
-    public static final byte SD = 0x0; // Store Doubleword
-    public static final byte SDL = 0x0; // Store Doubleword Left
-    public static final byte SDR = 0x0; // Store Doubleword Right
+    public static final byte LD = 0x37; // Load Doubleword
+    public static final byte LDL = 0x1a; // Load Doubleword Left
+    public static final byte LDR = 0x1b; // Load Doubleword Right
+    public static final byte LL = 0x30; // Load Linked
+    public static final byte LLD = 0x34; // Load Linked Doubleword
+    public static final byte LWU = 0x27; // Load Word Unsigned
+    public static final byte SC = 0x38; // Store Conditional
+    public static final byte SCD = 0x3c; // Store Conditional Doubleword
+    public static final byte SD = 0x3f; // Store Doubleword
+    public static final byte SDL = 0x2c; // Store Doubleword Left
+    public static final byte SDR = 0x2d; // Store Doubleword Right
     public static final byte SYNC = 0x0; // Sync
     
     
     //Extensions to the ISA: Arithmetic Instructions (ALU Immediate)
-    public static final byte DADDI = 0x0; // Doubleword Add Immediate
-    public static final byte DADDIU = 0x0; // Doubleword Add Immediate Unsigned
+    public static final byte DADDI = 0x18; // Doubleword Add Immediate
+    public static final byte DADDIU = 0x19; // Doubleword Add Immediate Unsigned
             
     //Extensions to the ISA: Multiply and Divide Instructions
     public static final byte DMULT = 0x0; // Doubleword Multiply
@@ -136,14 +136,14 @@ public class R4000OpCodes {
     
     
     //Extensions to the ISA: Branch Instructions
-    public static final byte BEQL = 0x0; // Branch on Equal Likely
-    public static final byte BNEL = 0x0; // Branch on Not Equal Likely
-    public static final byte BLEZL = 0x0; // Branch on Less Than or Equal to Zero Likely
-    public static final byte BGTZL = 0x0; // Branch on Greater Than Zero Likely
-    public static final byte BLTZL = 0x0; // Branch on Less Than Zero Likely
-    public static final byte BGEZL = 0x0; // Branch on Greater Than or Equal to Zero Likely
-    public static final byte BLTZALL = 0x0; // Branch on Less Than Zero And Link Likely
-    public static final byte BGEZALL = 0x0; // Branch on Greater Than or Equal to Zero And Link Likely
+    public static final byte BEQL = 0x14; // Branch on Equal Likely
+    public static final byte BNEL = 0x15; // Branch on Not Equal Likely
+    public static final byte BLEZL = 0x16; // Branch on Less Than or Equal to Zero Likely
+    public static final byte BGTZL = 0x17; // Branch on Greater Than Zero Likely
+    public static final byte BLTZL = 0x1; // Branch on Less Than Zero Likely
+    public static final byte BGEZL = 0x1; // Branch on Greater Than or Equal to Zero Likely
+    public static final byte BLTZALL = 0x1; // Branch on Less Than Zero And Link Likely
+    public static final byte BGEZALL = 0x1; // Branch on Greater Than or Equal to Zero And Link Likely
     public static final byte BCzTL = 0x0; // Branch on Coprocessor z True Likely
     public static final byte BCzFL = 0x0; // Branch on Coprocessor z False Likely
             
@@ -173,12 +173,12 @@ public class R4000OpCodes {
     public static final byte TLTU = 0x0; // Trap if Less Than Unsigned
     public static final byte TEQ = 0x0; // Trap if Equal
     public static final byte TNE = 0x0; // Trap if Not Equal
-    public static final byte TGEI = 0x0; // Trap if Greater Than or Equal Immediate
-    public static final byte TGEIU = 0x0; // Trap if Greater Than or Equal Immediate Unsigned
-    public static final byte TLTI = 0x0; // Trap if Less Than Immediate
-    public static final byte TLTIU = 0x0; // Trap if Less Than Immediate Unsigned
-    public static final byte TEQI = 0x0; // Trap if Equal Immediate
-    public static final byte TNEI = 0x0; // Trap if Not Equal Immediate
+    public static final byte TGEI = 0x1; // Trap if Greater Than or Equal Immediate
+    public static final byte TGEIU = 0x1; // Trap if Greater Than or Equal Immediate Unsigned
+    public static final byte TLTI = 0x1; // Trap if Less Than Immediate
+    public static final byte TLTIU = 0x1; // Trap if Less Than Immediate Unsigned
+    public static final byte TEQI = 0x1; // Trap if Equal Immediate
+    public static final byte TNEI = 0x1; // Trap if Not Equal Immediate
     
     
     //Extensions to the ISA: Coprocessor Instructions
@@ -189,14 +189,14 @@ public class R4000OpCodes {
     
     
     //CP0 Instructions
-    public static final byte DMFC0 = 0x0; // Doubleword Move From CP0
-    public static final byte DMTC0 = 0x0; // Doubleword Move To CP0
-    public static final byte MTC0 = 0x0; // Move to CP0
-    public static final byte MFC0 = 0x0; // Move from CP0
-    public static final byte TLBR = 0x0; // Read Indexed TLB Entry
-    public static final byte TLBWI = 0x0; // Write Indexed TLB Entry
-    public static final byte TLBWR = 0x0; // Write Random TLB Entry
-    public static final byte TLBP = 0x0; // Probe TLB for Matching Entry
-    public static final byte CACHE = 0x0; // Cache Operation
-    public static final byte ERET = 0x0; // Exception Return            
+    public static final byte DMFC0 = 0x10; // Doubleword Move From CP0
+    public static final byte DMTC0 = 0x10; // Doubleword Move To CP0
+    public static final byte MTC0 = 0x10; // Move to CP0
+    public static final byte MFC0 = 0x10; // Move from CP0
+    public static final byte TLBR = 0x10; // Read Indexed TLB Entry
+    public static final byte TLBWI = 0x10; // Write Indexed TLB Entry
+    public static final byte TLBWR = 0x10; // Write Random TLB Entry
+    public static final byte TLBP = 0x10; // Probe TLB for Matching Entry
+    public static final byte CACHE = 0x2f; // Cache Operation
+    public static final byte ERET = 0x10; // Exception Return            
 }
