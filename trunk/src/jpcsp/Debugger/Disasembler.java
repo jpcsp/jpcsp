@@ -16,12 +16,18 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Debugger;
 
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.ClipboardOwner;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
 import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import javax.swing.DefaultListModel;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 import jpcsp.Memory;
 import jpcsp.Processor;
 
@@ -29,7 +35,7 @@ import jpcsp.Processor;
  *
  * @author  shadow
  */
-public class Disasembler extends javax.swing.JInternalFrame {
+public class Disasembler extends javax.swing.JInternalFrame implements ClipboardOwner{
 
     String[] cpuregs = {
         "zr", "at", "v0", "v1", "a0", "a1", "a2", "a3",
@@ -65,6 +71,9 @@ public class Disasembler extends javax.swing.JInternalFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        DisMenu = new javax.swing.JPopupMenu();
+        CopyAddress = new javax.swing.JMenuItem();
+        CopyAll = new javax.swing.JMenuItem();
         jScrollPane1 = new javax.swing.JScrollPane();
         jList1 = new javax.swing.JList(model_1);
         jButton1 = new javax.swing.JButton();
@@ -72,15 +81,36 @@ public class Disasembler extends javax.swing.JInternalFrame {
         jButton3 = new javax.swing.JButton();
         jButton4 = new javax.swing.JButton();
 
+        CopyAddress.setText("Copy Address");
+        CopyAddress.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                CopyAddressActionPerformed(evt);
+            }
+        });
+        DisMenu.add(CopyAddress);
+
+        CopyAll.setText("Copy All");
+        CopyAll.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                CopyAllActionPerformed(evt);
+            }
+        });
+        DisMenu.add(CopyAll);
+
         setClosable(true);
         setDefaultCloseOperation(javax.swing.WindowConstants.HIDE_ON_CLOSE);
         setTitle("Disassembler");
 
-        jList1.setFont(new java.awt.Font("Courier New", 0, 11)); // NOI18N
+        jList1.setFont(new java.awt.Font("Courier New", 0, 11));
         jList1.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         jList1.addMouseWheelListener(new java.awt.event.MouseWheelListener() {
             public void mouseWheelMoved(java.awt.event.MouseWheelEvent evt) {
                 jList1MouseWheelMoved(evt);
+            }
+        });
+        jList1.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jList1MouseClicked(evt);
             }
         });
         jList1.addKeyListener(new java.awt.event.KeyAdapter() {
@@ -149,12 +179,13 @@ public class Disasembler extends javax.swing.JInternalFrame {
                     .addGroup(layout.createSequentialGroup()
                         .addContainerGap()
                         .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 469, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(31, Short.MAX_VALUE))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+   
 private void jList1KeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jList1KeyPressed
 // TODO add your handling code here:
 
@@ -286,6 +317,31 @@ private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     //System.out.println("dump code dialog done");
     opt=null;
 }//GEN-LAST:event_jButton3ActionPerformed
+
+private void CopyAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CopyAddressActionPerformed
+    String value = (String)jList1.getSelectedValue();
+    String address = value.substring(0, 8);
+    StringSelection stringSelection = new StringSelection( address);
+    Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+    clipboard.setContents(stringSelection, this);
+}//GEN-LAST:event_CopyAddressActionPerformed
+
+private void jList1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jList1MouseClicked
+       if (SwingUtilities.isRightMouseButton(evt)
+           && !jList1.isSelectionEmpty()
+           && jList1.locationToIndex(evt.getPoint())
+              == jList1.getSelectedIndex()) {
+               DisMenu.show(jList1, evt.getX(), evt.getY());
+               }
+          
+}//GEN-LAST:event_jList1MouseClicked
+
+private void CopyAllActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CopyAllActionPerformed
+    String value = (String)jList1.getSelectedValue();
+    StringSelection stringSelection = new StringSelection( value);
+    Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+    clipboard.setContents(stringSelection, this);
+}//GEN-LAST:event_CopyAllActionPerformed
 
     public void RefreshDebugger() {
         int t;
@@ -809,7 +865,18 @@ private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
         int jump = (opcode_address & 0xf0000000) | ((value & 0x3ffffff) << 2);
         return opname + " 0x" + Integer.toHexString(jump);
     }
+    
+    
+    /**
+   * Empty implementation of the ClipboardOwner interface.
+   */
+   public void lostOwnership( Clipboard aClipboard, Transferable aContents) {
+     //do nothing
+   }
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JMenuItem CopyAddress;
+    private javax.swing.JMenuItem CopyAll;
+    private javax.swing.JPopupMenu DisMenu;
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton3;
