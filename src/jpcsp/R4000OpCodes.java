@@ -35,6 +35,8 @@ public class R4000OpCodes {
      *1 = SPECIAL, see SPECIAL list    *2 = REGIMM, see REGIMM list
      *3 = COP0                         *4 = COP1     
 */
+    public static final byte SPECIAL = 0x0;
+    public static final byte REGIMM = 0x1;
     public static final byte J = 0x2; // Jump
     public static final byte JAL = 0x3; // Jump And Link
     public static final byte BEQ = 0x4; // Branch on Equal
