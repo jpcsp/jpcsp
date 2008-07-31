@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Debugger;
 
+
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.ClipboardOwner;
@@ -28,9 +29,10 @@ import java.io.IOException;
 import javax.swing.DefaultListModel;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
+import jpcsp.JpcspDialogManager;
 import jpcsp.Memory;
 import jpcsp.Processor;
-
+import static jpcsp.R4000OpCodes.*;
 /**
  *
  * @author  shadow
@@ -74,6 +76,7 @@ public class Disasembler extends javax.swing.JInternalFrame implements Clipboard
         DisMenu = new javax.swing.JPopupMenu();
         CopyAddress = new javax.swing.JMenuItem();
         CopyAll = new javax.swing.JMenuItem();
+        BranchOrJump = new javax.swing.JMenuItem();
         jScrollPane1 = new javax.swing.JScrollPane();
         jList1 = new javax.swing.JList(model_1);
         jButton1 = new javax.swing.JButton();
@@ -96,6 +99,15 @@ public class Disasembler extends javax.swing.JInternalFrame implements Clipboard
             }
         });
         DisMenu.add(CopyAll);
+
+        BranchOrJump.setText("Copy Branch Or Jump address");
+        BranchOrJump.setEnabled(false); //disable as default
+        BranchOrJump.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                BranchOrJumpActionPerformed(evt);
+            }
+        });
+        DisMenu.add(BranchOrJump);
 
         setClosable(true);
         setDefaultCloseOperation(javax.swing.WindowConstants.HIDE_ON_CLOSE);
@@ -327,12 +339,19 @@ private void CopyAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
 }//GEN-LAST:event_CopyAddressActionPerformed
 
 private void jList1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jList1MouseClicked
-       if (SwingUtilities.isRightMouseButton(evt)
-           && !jList1.isSelectionEmpty()
-           && jList1.locationToIndex(evt.getPoint())
-              == jList1.getSelectedIndex()) {
-               DisMenu.show(jList1, evt.getX(), evt.getY());
-               }
+       BranchOrJump.setEnabled(false);
+       if (SwingUtilities.isRightMouseButton(evt) && !jList1.isSelectionEmpty() && jList1.locationToIndex(evt.getPoint()) == jList1.getSelectedIndex()) 
+       {
+           //check if we can enable branch or jump address copy
+           String line = (String)jList1.getSelectedValue();
+           int finddot = line.indexOf("]:");
+           String opcode = line.substring(finddot+3,line.length());
+           if(opcode.startsWith("b") || opcode.startsWith("j"))//it is definately a branch or jump opcode
+           {
+               BranchOrJump.setEnabled(true);
+           }
+            DisMenu.show(jList1, evt.getX(), evt.getY());
+       }
           
 }//GEN-LAST:event_jList1MouseClicked
 
@@ -342,6 +361,24 @@ private void CopyAllActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
     Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
     clipboard.setContents(stringSelection, this);
 }//GEN-LAST:event_CopyAllActionPerformed
+
+private void BranchOrJumpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BranchOrJumpActionPerformed
+    String value = (String)jList1.getSelectedValue();
+    int address = value.indexOf("0x");
+    if(address==-1)
+    {
+      JpcspDialogManager.showError(this, "Can't find the jump or branch address");
+      return;
+    }
+    else
+    {
+      String add = value.substring(address+2,value.length());
+      StringSelection stringSelection = new StringSelection(add);
+      Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+      clipboard.setContents(stringSelection, this);
+        
+    }
+}//GEN-LAST:event_BranchOrJumpActionPerformed
 
     public void RefreshDebugger() {
         int t;
@@ -395,100 +432,100 @@ private void CopyAllActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
         //s = Integer.toString(opcode);        
         switch (opcode) {
-            case 0: //Special table                
+            case SPECIAL: //Special table                
                 int specialop = (value & 0x3f);
                 switch (specialop) {
-                    case 0: //sll
+                    case SLL: //sll
                         s = s + Dis_RDRTSA("sll", value);
                         break;
-                    case 2://srl
+                    case SRL://srl
                         s = s + Dis_RDRTSA("srl", value);
                         break;
-                    case 3://sra
+                    case SRA://sra
                         s = s + Dis_RDRTSA("sra", value);
                         break;
-                    case 4: //sllv
+                    case SLLV: //sllv
                         s = s + Dis_RDRSRT("sllv", value);
                         break;
 
-                    case 6://srlv
+                    case SRLV://srlv
                         s = s + Dis_RDRSRT("srlv", value);
                         break;
-                    case 7://srav
+                    case SRAV://srav
                         s = s + Dis_RDRSRT("srav", value);
                         break;
-                    case 8: //jr
+                    case JR: //jr
                         s = s + Dis_RS("jr", value);
                         break;
-                    case 9: //jalr
+                    case JALR: //jalr
                         s = s + Dis_RS("jalr", value);
                         break;
                     case 11://movn
                         s = s + Dis_RDRSRT("movn", value);
                         break;
-                    case 12://syscall
+                    case SYSCALL://syscall                       
                         s = s + Dis_Syscall(value);
                         break;
-                    case 13://break;
+                    case BREAK://break;
                         s = s + Dis_Break(value);
                         break;
-                    case 16: //mfhi
+                    case MFHI: //mfhi
                         s = s + Dis_RD("mfhi", value);
                         break;
-                    case 17: //mthi
+                    case MTHI: //mthi
                         s = s + Dis_RS("mthi", value);
                         break;
-                    case 18: //mflo
+                    case MFLO: //mflo
                         s = s + Dis_RD("mflo", value);
                         break;
-                    case 19://mtlo
+                    case MTLO://mtlo
                         s = s + Dis_RS("mtlo", value);
                         break;
-                    case 24://mult
+                    case MULT://mult
                         s = s + Dis_RSRT("mult", value);
                         break;
-                    case 25://multu
+                    case MULTU://multu
                         s = s + Dis_RSRT("multu", value);
                         break;
-                    case 26://div
+                    case DIV://div
                         s = s + Dis_RSRT("div", value);
                         break;
-                    case 27://divu
+                    case DIVU://divu
                         s = s + Dis_RSRT("divu", value);
                         break;
-                    case 32://add
+                    case ADD://add
                         s = s + Dis_RDRSRT("add", value);
                         break;
-                    case 33://addu
+                    case ADDU://addu
                         s = s + Dis_RDRSRT("addu", value);
                         break;
-                    case 34://sub
+                    case SUB://sub
                         s = s + Dis_RDRSRT("sub", value);
                         break;
-                    case 35://subu
+                    case SUBU://subu
                         s = s + Dis_RDRSRT("subu", value);
                         break;
-                    case 36://and
+                    case AND://and
                         s = s + Dis_RDRSRT("and", value);
                         break;
-                    case 37://or
+                    case OR://or
                         s = s + Dis_RDRSRT("or", value);
                         break;
-                    case 38://xor
+                    case XOR://xor
                         s = s + Dis_RDRSRT("xor", value);
                         break;
-                    case 39://nor
+                    case NOR://nor
                         s = s + Dis_RDRSRT("nor", value);
                         break;
-                    case 42://slt
+                    case SLT://slt
                         s = s + Dis_RDRSRT("slt", value);
                         break;
-                    case 43://sltu
+                    case SLTU://sltu
                         s = s + Dis_RDRSRT("sltu", value);
                         break;
-                    case 44://max
-                        s = s + Dis_RDRSRT("max", value);
-                        break;
+                    //case 44://max (31/07/2008) NOT SURE IF THAT EXISTS (shadow)
+                   //     s = s + Dis_RDRSRT("max", value);
+                    //    break;
                     default:
                         s = "unsupported special instruction + " + Integer.toString(specialop);
                         break;
@@ -497,60 +534,60 @@ private void CopyAllActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             case 1: //Bcond table  
                 int code = value & 0x1f0000;
                 if (code == 0) {
-                    s = s + "bltz " + cpuregs[rs] + ", " + Integer.toHexString(imm * 4 + opcode_address + 4);
+                    s = s + "bltz " + cpuregs[rs] + ", 0x" + Integer.toHexString(imm * 4 + opcode_address + 4);
                 } else if (code == 0x10000) {
-                    s = s + "bgez " + cpuregs[rs] + ", " + Integer.toHexString(imm * 4 + opcode_address + 4);
+                    s = s + "bgez " + cpuregs[rs] + ", 0x" + Integer.toHexString(imm * 4 + opcode_address + 4);
                 } else if (code == 0x100000) {
-                    s = s + "bltzal " + cpuregs[rs] + ", " + Integer.toHexString(imm * 4 + opcode_address + 4);
+                    s = s + "bltzal " + cpuregs[rs] + ", 0x" + Integer.toHexString(imm * 4 + opcode_address + 4);
                 } else if (code == 0x110000) {
-                    s = s + "bgezal " + cpuregs[rs] + ", " + Integer.toHexString(imm * 4 + opcode_address + 4);
+                    s = s + "bgezal " + cpuregs[rs] + ", 0x" + Integer.toHexString(imm * 4 + opcode_address + 4);
                 } else {
                     s = s + "unimplement Bcond opcode";
                 }
                 break;
-            case 2: //J
+            case J: //J
                 s = s + Dis_JUMP("j", value);
                 break;
-            case 3://JAL
+            case JAL://JAL
                 s = s + Dis_JUMP("jal", value);
                 break;
-            case 4: //beq
+            case BEQ: //beq
                 s = s + Dis_RSRTOFFSET("beq", value);
                 break;
-            case 5: //bne
+            case BNE: //bne
                 s = s + Dis_RSRTOFFSET("bne", value);
                 break;
-            case 6://blez
+            case BLEZ://blez
                 s = s + Dis_RSOFFSET("blez", value);
                 break;
-            case 7://bgtz
+            case BGTZ://bgtz
                 s = s + Dis_RSOFFSET("bgtz", value);
                 break;
-            case 8: //addi
+            case ADDI: //addi
                 s = s + Dis_RTRSIMM("addi", value);
                 break;
-            case 9: //addiu
+            case ADDIU: //addiu
                 s = s + Dis_RTRSIMM("addiu", value);
                 break;
-            case 10://slti
+            case SLTI://slti
                 s = s + Dis_RTRSIMM("slti", value);
                 break;
-            case 11://sltiu
+            case SLTIU://sltiu
                 s = s + Dis_RTRSIMM("sltiu", value);
                 break;
-            case 12://ANDI
+            case ANDI://ANDI
                 s = s + Dis_RTRSIMM("andi", value);
                 break;
-            case 13: //ori   
+            case ORI: //ori   
                 s = s + Dis_RTRSIMM("ori", value);
                 break;
-            case 14: //xori
+            case XORI: //xori
                 s = s + Dis_RTRSIMM("xori", value);
                 break;
-            case 15://lui
+            case LUI://lui
                 s = s + "lui " + cpuregs[rt] + " , " + imm;
                 break;
-            case 16://mc0 commands
+            case COP0://mc0 commands
                 int argCode = ((value >> 21) & 0x1f); //bits 21-25
                 if (argCode == 0) {
                     s = s + "MFC0 " + cpuregs[rt] + ", " + cpuregs[rd];
@@ -560,66 +597,65 @@ private void CopyAllActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
                     s = s + "unimplemented mc0 opcode";
                 }
                 break;
-            case 17:
+            case COP1:
                 s = s + Dis_17opcode(value);
                 break;
-            case 20: //beql
+            case BEQL: //beql
                 s = s + Dis_RSRTOFFSET("beql", value);
                 break;
-            case 21: //bnel
+            case BNEL: //bnel
                 s = s + Dis_RSRTOFFSET("bnel", value);
                 break;
-            case 22: //blez
-                s = s + Dis_RSOFFSET("blez", value);
+            case BLEZL: //BLEZL
+                s = s + Dis_RSOFFSET("BLEZL", value);
                 break;
-            case 23: //bgtzl
+            case BGTZL: //bgtzl
                 s = s + Dis_RSOFFSET("bgtzl", value);
                 break;
-            case 32: //lb
+            case LB: //lb
                 s = s + Dis_RTIMMRS("lb", value);
                 break;
-            case 33://lh
+            case LH://lh
                 s = s + Dis_RTIMMRS("lh", value);
                 break;
-            case 34://lwl
+            case LWL://lwl
                 s = s + Dis_RTIMMRS("lwl", value);
                 break;
-            case 35://lw
+            case LW://lw
                 s = s + Dis_RTIMMRS("lw", value);
                 break;
-            case 36://lbu
+            case LBU://lbu
                 s = s + Dis_RTIMMRS("lbu", value);
                 break;
-            case 37://lhu
+            case LHU://lhu
                 s = s + Dis_RTIMMRS("lhu", value);
                 break;
-            case 38://lwr
+            case LWR://lwr
                 s = s + Dis_RTIMMRS("lwr", value);
                 break;
-            //case 39=nor
-            case 40: //sb
+            case SB: //sb
                 s = s + Dis_RTIMMRS("sb", value);
                 break;
-            case 41: //sh
+            case SH: //sh
                 s = s + Dis_RTIMMRS("sh", value);
                 break;
-            case 42: //swl
+            case SWL: //swl
                 s = s + Dis_RTIMMRS("swl", value);
                 break;
-            case 43: //sw
+            case SW: //sw
                 s = s + Dis_RTIMMRS("sw", value);
                 break;
-            case 46://swr
+            case SWR://swr
                 s = s + Dis_RTIMMRS("swr", value);
                 break;
-            case 49://lwc1
+            case LWC1://lwc1
                 s = s + Dis_BASEFTOFFSET("lwc1", value);
                 break;
-            case 57://swc1
+            case SWC1://swc1
                 s = s + Dis_BASEFTOFFSET("swc1", value);
                 break;
             default:
-                s = "Unsupported instruction " + Integer.toString(opcode);
+                s = "Unsupported instruction " + Integer.toHexString(opcode);
                 break;
 
 
@@ -776,10 +812,10 @@ private void CopyAllActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         int base = (value >> 21) & 0x1f;
         int ft = (value >> 16) & 0x1f;
         int offset = value & 0xffff;
-        if (opname == "swc1") {
+        if (opname.matches("swc1")) {
             return opname + " f" + Integer.toString(ft) + ", sp[" + Integer.toString(offset) + "]";
         }
-        if (opname == "lwc1") {
+        if (opname.matches("lwc1")) {
             return opname + " f" + Integer.toString(ft) + ", v1[" + Integer.toString(offset) + "]";
         }
         return "Opcode 0x" + opname + "unhandled in Dis_BASEFTOFFSET";
@@ -846,7 +882,7 @@ private void CopyAllActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         if ((imm & 0x8000) == 0x8000) {
             imm |= 0xffff0000;
         }
-        return opname + " " + cpuregs[rs] + "," + cpuregs[rt] + " " + Integer.toHexString(imm * 4 + opcode_address + 4);
+        return opname + " " + cpuregs[rs] + "," + cpuregs[rt] + " 0x" + Integer.toHexString(imm * 4 + opcode_address + 4);
 
     }
 
@@ -856,7 +892,7 @@ private void CopyAllActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         if ((imm & 0x8000) == 0x8000) {
             imm |= 0xffff0000;
         }
-        return opname + " " + cpuregs[rs] + ", " + Integer.toHexString(imm * 4 + opcode_address + 4);
+        return opname + " " + cpuregs[rs] + ", 0x" + Integer.toHexString(imm * 4 + opcode_address + 4);
 
 
     }
@@ -874,6 +910,7 @@ private void CopyAllActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
      //do nothing
    }
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JMenuItem BranchOrJump;
     private javax.swing.JMenuItem CopyAddress;
     private javax.swing.JMenuItem CopyAll;
     private javax.swing.JPopupMenu DisMenu;
