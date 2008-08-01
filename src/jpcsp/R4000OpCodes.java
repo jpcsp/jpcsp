@@ -109,16 +109,16 @@ public class R4000OpCodes {
     public static final byte MULTU = 0x19; // Multiply Unsigned
     public static final byte DIV = 0x1a; // Divide
     public static final byte DIVU = 0x1b; // Divide Unsigned
-    public static final byte ADD = 0x21; // Add
-    public static final byte ADDU = 0x22; // Add Unsigned
-    public static final byte SUB = 0x23; // Subtract
-    public static final byte SUBU = 0x24; // Subtract Unsigned
-    public static final byte AND = 0x25; // AND
-    public static final byte OR = 0x26; // OR
-    public static final byte XOR = 0x27; // Exclusive OR
-    public static final byte NOR = 0x28; // NOR   
-    public static final byte SLT = 0x2b; // Set on Less Than
-    public static final byte SLTU = 0x2c; // Set on Less Than Unsigned
+    public static final byte ADD = 0x20; // Add
+    public static final byte ADDU = 0x21; // Add Unsigned
+    public static final byte SUB = 0x22; // Subtract
+    public static final byte SUBU = 0x23; // Subtract Unsigned
+    public static final byte AND = 0x24; // AND
+    public static final byte OR = 0x25; // OR
+    public static final byte XOR = 0x26; // Exclusive OR
+    public static final byte NOR = 0x27; // NOR   
+    public static final byte SLT = 0x2a; // Set on Less Than
+    public static final byte SLTU = 0x2b; // Set on Less Than Unsigned
  /*
     REGIMM: Instructions encoded by the rt field when opcode field = REGIMM.  NOT COMPLETE!!! (31/07/2008) shadow
     31---------26----------20-------16------------------------------0

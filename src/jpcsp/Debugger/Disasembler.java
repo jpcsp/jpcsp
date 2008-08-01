@@ -527,7 +527,7 @@ private void BranchOrJumpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
                    //     s = s + Dis_RDRSRT("max", value);
                     //    break;
                     default:
-                        s = "unsupported special instruction + " + Integer.toString(specialop);
+                        s = "unsupported special instruction + " + Integer.toHexString(specialop);
                         break;
                 }
                 break;
