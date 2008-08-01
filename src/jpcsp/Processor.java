@@ -99,12 +99,12 @@ public class Processor {
                         cpuregisters[rd] = cpuregisters[rt] >> (cpuregisters[rs] & 0x3F);
                         break;
                   case JR:
-                    pc = cpuregisters[rs];
+                    pc = cpuregisters[rs] -4;
                     /* TODO: delay one cycle */
                     break;
                   case JALR:
                    cpuregisters[rd] = pc + 4; //or +8
-                   pc = cpuregisters[rs];
+                   pc = cpuregisters[rs] -4;
                    /* TODO: delay one cycle */
                    break;
                 /*case 11://movn
@@ -204,6 +204,31 @@ public class Processor {
                   break;
                 }
                   break;
+                case J:
+                    pc = ((pc & 0xF0000000) | ((value & 0x3FFFFFF) << 2)) -4;
+                    /*TODO: delay one cycle */
+                    break;
+                case JAL:
+                    cpuregisters[31] = pc + 4; //or +8?
+                    pc = ((pc & 0xF0000000) | ((value & 0x3FFFFFF) << 2)) -4;
+                    break;
+                case BEQ:
+                    if (cpuregisters[rs] == cpuregisters[rt])
+                        pc += (signExtend(imm) << 2) -4;
+                     break;
+                case BNE:
+                    if (cpuregisters[rs] != cpuregisters[rt])
+                        pc += (signExtend(imm) << 2) -4;
+                    break;
+                case BLEZ:
+                     if (cpuregisters[rs] <= 0)
+                            pc += (signExtend(imm) << 2) -4;
+                     break;
+                case BGTZ:
+                    if (cpuregisters[rs] > 0)
+                        pc += (signExtend(imm) << 2) -4;
+                    break;
+                     
             case ADDI: //addi
                 if (couldRaiseOverflowOnAdd(cpuregisters[rs], signExtend(imm))){
                     // TODO set exception overflow and break or continue?????
@@ -242,6 +267,28 @@ public class Processor {
          case LUI://lui
                 cpuregisters[rt] = imm << 16;
                 break;
+         case LH:
+            int virtAddr;
+            virtAddr = cpuregisters[rs] + signExtend(imm);
+            cpuregisters[rt]  = signExtend(Memory.get_instance().read16(virtAddr));
+            break;
+        case LHU:
+            virtAddr = cpuregisters[rs] + signExtend(imm);
+            cpuregisters[rt]  = Memory.get_instance().read16(virtAddr);
+            break;
+        case LW:
+            virtAddr = cpuregisters[rs] + signExtend(imm);
+            cpuregisters[rt] = Memory.get_instance().read32(virtAddr);
+            break;
+        case SH:
+             virtAddr = cpuregisters[rs] + signExtend(imm);
+             Memory.get_instance().write16(virtAddr, (short)(cpuregisters[rt] & 0xFFFF));
+             break;
+        case SW:
+             virtAddr = cpuregisters[rs] + signExtend(imm);
+             Memory.get_instance().write16(virtAddr, (short)(cpuregisters[rt] & 0xFFFF));
+             break;
+               
             default:
                 System.out.println("Unsupported instruction " + Integer.toHexString(opcode));
                 break;
