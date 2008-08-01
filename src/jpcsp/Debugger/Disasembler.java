@@ -303,7 +303,7 @@ private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
                 bufferedWriter.write(String.format("%08x : [%08x]: nop", i, memread));
                 bufferedWriter.newLine();
              } else {
-                //opcode_address = i;
+                opcode_address = i;
                 bufferedWriter.write(String.format("%08x : [%08x]: %s", i, memread, disasm(memread)));
                 bufferedWriter.newLine();
              }
