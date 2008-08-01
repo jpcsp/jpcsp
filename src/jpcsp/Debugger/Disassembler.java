@@ -532,7 +532,7 @@ private void BranchOrJumpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
                 }
                 break;
             case 1: //Bcond table
-                int code = value & 0x1f0000;
+               /* int code = value & 0x1f0000;
                 if (code == 0) {
                     s = s + "bltz " + cpuregs[rs] + ", 0x" + Integer.toHexString(imm * 4 + opcode_address + 4);
                 } else if (code == 0x10000) {
@@ -543,6 +543,38 @@ private void BranchOrJumpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
                     s = s + "bgezal " + cpuregs[rs] + ", 0x" + Integer.toHexString(imm * 4 + opcode_address + 4);
                 } else {
                     s = s + "unimplement Bcond opcode";
+                }
+                break;*/
+                int regimmcode = (value >> 16) & 0x1f;
+                switch(regimmcode)
+                {
+                    case BLTZ:
+                        s = s + Dis_RSOFFSET("bltz",value);
+                        break;
+                    case BGEZ: 
+                        s = s + Dis_RSOFFSET("bgez",value);
+                        break;
+                    case BLTZL:
+                        s = s + Dis_RSOFFSET("bltzl",value);
+                        break;
+                    case BGEZL:
+                        s = s + Dis_RSOFFSET("bgezl",value);
+                        break;
+                    case BLTZAL:
+                        s = s + Dis_RSOFFSET("bltzal",value);
+                        break;
+                    case BGEZAL:
+                        s = s + Dis_RSOFFSET("bgezal",value);
+                        break;
+                    case BLTZALL:
+                        s = s + Dis_RSOFFSET("bltzall",value);
+                        break;
+                    case BGEZALL:
+                        s = s + Dis_RSOFFSET("bgezall",value);
+                        break;
+                    default:
+                       s = s + "Unknown regimm instruction " + Integer.toHexString(regimmcode); 
+                       break;
                 }
                 break;
             case J: //J
@@ -607,10 +639,29 @@ private void BranchOrJumpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
                 s = s + Dis_RSRTOFFSET("bnel", value);
                 break;
             case BLEZL: //BLEZL
-                s = s + Dis_RSOFFSET("BLEZL", value);
+                s = s + Dis_RSOFFSET("blezl", value);
                 break;
             case BGTZL: //bgtzl
                 s = s + Dis_RSOFFSET("bgtzl", value);
+                break;
+            case ALLEGREX:
+                int allegrexop = (value & 0x3f);
+                //s = s + Integer.toHexString(allegrexop);
+                switch(allegrexop)
+                {
+                    case HALT:
+                        s = s + "halt";
+                        break;
+                    case MFIC:
+                        s = s + "mfic" + " " + cpuregs[rt] + " ," + cpuregs[rd];
+                        break;
+                    case MTIC:
+                        s = s + "mtic" + " " + cpuregs[rt] + " ," + cpuregs[rd];
+                        break;
+                    default:
+                        s = s + "Unknown Allegrex instruction " + Integer.toHexString(allegrexop);
+                        break;
+                }
                 break;
             case LB: //lb
                 s = s + Dis_RTIMMRS("lb", value);
