@@ -26,14 +26,15 @@ public class R4000OpCodes {
 000 | *1    | *2    | J     | JAL   | BEQ   | BNE   | BLEZ  | BGTZ  |
 001 | ADDI  | ADDIU | SLTI  | SLTIU | ANDI  | ORI   | XORI  | LUI   |
 010 | *3    | *4    | ---   | ---   | BEQL  | BNEL  | BLEZL | BGTZL |
-011 | ---   | ---   | ---   | ---   | ---   |  ---  | ---   | ---   |
+011 | ---   | ---   | ---   | ---   | * 5   |  ---  | ---   | ---   |
 100 | LB    | LH    | LWL   | LW    | LBU   | LHU   | LWR   | ---   |
 101 | SB    | SH    | SWL   | SW    | ---   | ---   | SWR   | CACHE |
 110 | ---   | LWC1  | ---   | PREF  | ---   | ---   | ---   | ---   |
 111 | ---   | SWC1  | ---   | ---   | ---   | ---   | ---   | ---   |
  hi |-------|-------|-------|-------|-------|-------|-------|-------|
      *1 = SPECIAL, see SPECIAL list    *2 = REGIMM, see REGIMM list
-     *3 = COP0                         *4 = COP1     
+     *3 = COP0                         *4 = COP1  
+     *5 = ALLEGREX , see ALLEGREX   
 */
     public static final byte SPECIAL = 0x0;
     public static final byte REGIMM = 0x1;
@@ -63,7 +64,7 @@ public class R4000OpCodes {
     /*  0x19 reserved or unsupported */
     /*  0x1a reserved or unsupported */
     /*  0x1b reserved or unsupported */
-    /*  0x1c reserved or unsupported */
+    public static final byte ALLEGREX = 0x1c; // Allegrex table
     /*  0x1d reserved or unsupported */
     /*  0x1e reserved or unsupported */
     /*  0x1f reserved or unsupported */
@@ -110,6 +111,7 @@ public class R4000OpCodes {
 111 | ---   |  ---  | ---   | ---   | ---   |  ---  | ---   | ---   |
  hi |-------|-------|-------|-------|-------|-------|-------|-------|
 */
+    
     public static final byte SLL = 0x0; // Shift Left Logical
     /*  0x1 reserved or unsupported */
     public static final byte SRL = 0x2; // Shift Right Logical
@@ -187,6 +189,26 @@ public class R4000OpCodes {
     public static final byte BGEZAL = 0x11; // Branch on Greater Than or Equal to Zero And Link    
     public static final byte BLTZALL = 0x12; // Branch on Less Than Zero And Link Likely
     public static final byte BGEZALL = 0x13; // Branch on Greater Than or Equal to Zero And Link Likely
+    
+        	  /*
+     ALLEGREX: Instr. encoded by function field when opcode field = ALLEGREX  probably complete!!! (1/08/2008) shadow
+    31---------26------------------------------------------5--------0
+    | = ALLEGREX |                                         | function|
+    ------6----------------------------------------------------6-----
+    |--000--|--001--|--010--|--011--|--100--|--101--|--110--|--111--| lo
+000 | HALT  | ---   | ---   | ---   | ---   |  ---  |  ---  | ---   |
+001 | --    | ---   | ---   | ---   | ---   |  ---  |  ---  | ---   |
+010 | ---   | ---   | ---   | ---   | ---   |  ---  |  ---  | ---   |
+011 | ---   | ---   | ---   | ---   | ----  |  ---  | ----  | ----- |
+100 | ---   | ---   | ---   | ----  | MFIC  |  ---  | MTIC  | ---   |
+101 | ---   |  ---  | ---   | ---   | ---   | ---   | ---   | ---   |
+110 | ---   |  ---  | ---   | ---   | ---   |  ---  | ---   | ---   |
+111 | ---   |  ---  | ---   | ---   | ---   |  ---  | ---   | ---   |
+ hi |-------|-------|-------|-------|-------|-------|-------|-------|
+*/
+    public static final byte HALT = 0x0; //halt execution until next interrupt
+    public static final byte MFIC = 0x24; //move from IC (Interrupt) register
+    public static final byte MTIC = 0x26; //move to IC (Interrupt) register
     
     
     
