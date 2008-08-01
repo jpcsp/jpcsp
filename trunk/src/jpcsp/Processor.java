@@ -286,7 +286,7 @@ public class Processor {
              break;
         case SW:
              virtAddr = cpuregisters[rs] + signExtend(imm);
-             Memory.get_instance().write16(virtAddr, (short)(cpuregisters[rt] & 0xFFFF));
+             Memory.get_instance().write32(virtAddr, cpuregisters[rt]);
              break;
                
             default:
