@@ -49,12 +49,12 @@ public class Processor {
 
     private boolean couldRaiseOverflowOnAdd(int value0,int value1){
         boolean v1 = ( ((long)value0 + (long)value1) >= Integer.MAX_VALUE);
-        boolean v2 = ( ((long)value0 + (long)value1) <= Integer.MIN_VALUE); //or underflow????        
+        boolean v2 = ( ((long)value0 + (long)value1) <= Integer.MIN_VALUE); //or underflow????
         return v1 | v2;
     }
     private boolean couldRaiseOverflowOnSub(int value0,int value1){
         boolean v1 = ( ((long)value0 - (long)value1) >= Integer.MAX_VALUE);
-        boolean v2 = ( ((long)value0 - (long)value1) <= Integer.MIN_VALUE); //or underflow????        
+        boolean v2 = ( ((long)value0 - (long)value1) <= Integer.MIN_VALUE); //or underflow????
         return v1 | v2;
     }
     public void stepcpu()
@@ -103,7 +103,7 @@ public class Processor {
                     /* TODO: delay one cycle */
                     break;
                   case JALR:
-                   cpuregisters[rd] = pc + 4; //or +8
+                   cpuregisters[rd] = pc + 8; // second instruction after
                    pc = cpuregisters[rs] -4;
                    /* TODO: delay one cycle */
                    break;
@@ -152,7 +152,7 @@ public class Processor {
                 case ADD://add
                     if (couldRaiseOverflowOnAdd(cpuregisters[rs],cpuregisters[rt])){
                         // TODO set exception overflow and break or continue?????
-                    }            
+                    }
                     cpuregisters[rd] = cpuregisters[rs] + cpuregisters[rt];
                     /*TODO: integer overflow exception */
                     break;
@@ -164,7 +164,7 @@ public class Processor {
                 case SUB://sub
                     if (couldRaiseOverflowOnSub(cpuregisters[rs],cpuregisters[rt])){
                         // TODO set exception overflow and break or continue?????
-                    }  
+                    }
                      cpuregisters[rd] = cpuregisters[rs] - cpuregisters[rt];
                     /* TODO: add integer overflow exception */
                      break;
@@ -209,26 +209,26 @@ public class Processor {
                     /*TODO: delay one cycle */
                     break;
                 case JAL:
-                    cpuregisters[31] = pc + 4; //or +8?
+                    cpuregisters[31] = pc + 8; // second instruction after
                     pc = ((pc & 0xF0000000) | ((value & 0x3FFFFFF) << 2)) -4;
                     break;
                 case BEQ:
                     if (cpuregisters[rs] == cpuregisters[rt])
-                        pc += (signExtend(imm) << 2) -4;
+                        pc += (signExtend(imm) << 2) +4 -4; // relative to address of first instruction after
                      break;
                 case BNE:
                     if (cpuregisters[rs] != cpuregisters[rt])
-                        pc += (signExtend(imm) << 2) -4;
+                        pc += (signExtend(imm) << 2) +4 -4;
                     break;
                 case BLEZ:
                      if (cpuregisters[rs] <= 0)
-                            pc += (signExtend(imm) << 2) -4;
+                            pc += (signExtend(imm) << 2) +4 -4;
                      break;
                 case BGTZ:
                     if (cpuregisters[rs] > 0)
-                        pc += (signExtend(imm) << 2) -4;
+                        pc += (signExtend(imm) << 2) +4 -4;
                     break;
-                     
+
             case ADDI: //addi
                 if (couldRaiseOverflowOnAdd(cpuregisters[rs], signExtend(imm))){
                     // TODO set exception overflow and break or continue?????
@@ -288,7 +288,7 @@ public class Processor {
              virtAddr = cpuregisters[rs] + signExtend(imm);
              Memory.get_instance().write32(virtAddr, cpuregisters[rt]);
              break;
-               
+
             default:
                 System.out.println("Unsupported instruction " + Integer.toHexString(opcode));
                 break;
