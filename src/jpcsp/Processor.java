@@ -47,6 +47,16 @@ public class Processor {
       return value;
    }
 
+    private boolean couldRaiseOverflowOnAdd(int value0,int value1){
+        boolean v1 = ( ((long)value0 + (long)value1) >= Integer.MAX_VALUE);
+        boolean v2 = ( ((long)value0 + (long)value1) <= Integer.MIN_VALUE); //or underflow????        
+        return v1 | v2;
+    }
+    private boolean couldRaiseOverflowOnSub(int value0,int value1){
+        boolean v1 = ( ((long)value0 - (long)value1) >= Integer.MAX_VALUE);
+        boolean v2 = ( ((long)value0 - (long)value1) <= Integer.MIN_VALUE); //or underflow????        
+        return v1 | v2;
+    }
     public void stepcpu()
     {
       long temp;
@@ -140,6 +150,9 @@ public class Processor {
                     hi = (int) (longA % longB);
                     break;
                 case ADD://add
+                    if (couldRaiseOverflowOnAdd(cpuregisters[rs],cpuregisters[rt])){
+                        // TODO set exception overflow and break or continue?????
+                    }            
                     cpuregisters[rd] = cpuregisters[rs] + cpuregisters[rt];
                     /*TODO: integer overflow exception */
                     break;
@@ -149,6 +162,9 @@ public class Processor {
                     cpuregisters[rd] = (int) (longA + longB);
                     break;
                 case SUB://sub
+                    if (couldRaiseOverflowOnSub(cpuregisters[rs],cpuregisters[rt])){
+                        // TODO set exception overflow and break or continue?????
+                    }  
                      cpuregisters[rd] = cpuregisters[rs] - cpuregisters[rt];
                     /* TODO: add integer overflow exception */
                      break;
@@ -189,6 +205,9 @@ public class Processor {
                 }
                   break;
             case ADDI: //addi
+                if (couldRaiseOverflowOnAdd(cpuregisters[rs], signExtend(imm))){
+                    // TODO set exception overflow and break or continue?????
+                }
                  cpuregisters[rs] = cpuregisters[rs] + signExtend(imm);
                  /*TODO: integer overflow exception */
                 break;

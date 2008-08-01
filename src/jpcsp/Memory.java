@@ -15,6 +15,7 @@ You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp;
+import static jpcsp.MemoryMap.*;
 
 public class Memory {
     //21/07/08 memory using singleton pattern
@@ -41,7 +42,7 @@ public class Memory {
     }
     public int read8(int address)
     {
-         if ((address >= 0x08000000) && (address <= 0x09ffffff)) {
+         if ((address >= START_RAM) && (address <= END_RAM)) {
            int i = address - 0x08000000;
            return mainmemory[i];
           }
@@ -50,7 +51,7 @@ public class Memory {
     }
     public int read16(int address)
     {
-       if ((address >= 0x08000000) && (address <= 0x09ffffff)) {
+       if ((address >= START_RAM) && (address <= END_RAM)) {
            int i = address - 0x08000000;
                return (short)(((short)mainmemory[i+1] << 8) | (((short)mainmemory[i])&0x00ff));
           }
@@ -58,7 +59,7 @@ public class Memory {
         return 0;
     }
     public int read32(int address) { //for testing supports only RAM!
-        if ((address >= 0x08000000) && (address <= 0x09ffffff)) {
+        if ((address >= START_RAM) && (address <= END_RAM)) {
            int i = address - 0x08000000;
            return (((int) mainmemory[i + 3] << 24) |
                 (((int) mainmemory[i + 2] << 16) & 0x00ff0000) |
@@ -70,7 +71,7 @@ public class Memory {
     }
     public void write8(int address , byte data)
     {
-         if ((address >= 0x08000000) && (address <= 0x09ffffff)) {
+         if ((address >= START_RAM) && (address <= END_RAM)) {
            int i = address - 0x08000000;
            mainmemory[i] = data;
          }
@@ -82,7 +83,7 @@ public class Memory {
     }
     public void write16(int address , short data)
     {
-         if ((address >= 0x08000000) && (address <= 0x09ffffff)) {
+         if ((address >= START_RAM) && (address <= END_RAM)) {
            int i = address - 0x08000000;
            mainmemory[i+1] = (byte)(data >> 8);
 	   mainmemory[i] = (byte)(data & 0x00ff);
@@ -94,7 +95,7 @@ public class Memory {
     }
     public void write32(int address, int data)
     {
-         if ((address >= 0x08000000) && (address <= 0x09ffffff)) {
+         if ((address >= START_RAM) && (address <= END_RAM)) {
            int i = address - 0x08000000;
            mainmemory[i+3] = (byte)(data >> 24);
 	   mainmemory[i+2] = (byte)((data & 0x00ff0000) >> 16);

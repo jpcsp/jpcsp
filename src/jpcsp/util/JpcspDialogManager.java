@@ -14,16 +14,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp;
+package jpcsp.util;
 
 import java.awt.Component;
 import javax.swing.JOptionPane;
-import jpcsp.info.MetaInformation;
 
-/**
- *
- * @author Leandro
- */
 public class JpcspDialogManager {
 
     public static void showInformation(Component compo, String message) {
