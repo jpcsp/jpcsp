@@ -37,7 +37,7 @@ import static jpcsp.R4000OpCodes.*;
  *
  * @author  shadow
  */
-public class Disasembler extends javax.swing.JInternalFrame implements ClipboardOwner{
+public class Disassembler extends javax.swing.JInternalFrame implements ClipboardOwner{
 
     String[] cpuregs = {
         "zr", "at", "v0", "v1", "a0", "a1", "a2", "a3",
@@ -53,7 +53,7 @@ public class Disasembler extends javax.swing.JInternalFrame implements Clipboard
     Registers regs;
 
     /** Creates new form Disasembler */
-    public Disasembler(Processor c, Registers regs) {
+    public Disassembler(Processor c, Registers regs) {
         this.c = c;
         this.regs=regs;
         DebuggerPC = 0;
@@ -191,7 +191,7 @@ public class Disasembler extends javax.swing.JInternalFrame implements Clipboard
                     .addGroup(layout.createSequentialGroup()
                         .addContainerGap()
                         .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 469, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(31, Short.MAX_VALUE))
+                .addContainerGap(35, Short.MAX_VALUE))
         );
 
         pack();
