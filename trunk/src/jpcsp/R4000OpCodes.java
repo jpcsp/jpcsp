@@ -53,10 +53,20 @@ public class R4000OpCodes {
     public static final byte LUI = 0xf; // Load Upper Immediate
     public static final byte COP0 = 0x10; // Coprocessor Operation 
     public static final byte COP1 = 0x11; // Coprocessor Operation 
+    /*  0x12 reserved or unsupported */
+    /*  0x13 reserved or unsupported */
     public static final byte BEQL = 0x14; // Branch on Equal Likely
     public static final byte BNEL = 0x15; // Branch on Not Equal Likely
     public static final byte BLEZL = 0x16; // Branch on Less Than or Equal to Zero Likely
     public static final byte BGTZL = 0x17; // Branch on Greater Than Zero Likely
+    /*  0x18 reserved or unsupported */
+    /*  0x19 reserved or unsupported */
+    /*  0x1a reserved or unsupported */
+    /*  0x1b reserved or unsupported */
+    /*  0x1c reserved or unsupported */
+    /*  0x1d reserved or unsupported */
+    /*  0x1e reserved or unsupported */
+    /*  0x1f reserved or unsupported */
     public static final byte LB = 0x20; //Load Byte
     public static final byte LH = 0x21; // Load Halfword
     public static final byte LWL = 0x22; // Load Word Left
@@ -64,14 +74,24 @@ public class R4000OpCodes {
     public static final byte LBU = 0x24; // Load Byte Unsigned
     public static final byte LHU = 0x25; // Load Halfword Unsigned
     public static final byte LWR = 0x26; // Load Word Right
+    /*  0x27 reserved or unsupported */
     public static final byte SB = 0x28; // Store Byte
     public static final byte SH = 0x29; // Store Halfword
     public static final byte SWL = 0x2A; // Store Word Left
     public static final byte SW = 0x2B; // Store Word
+    /*  0x2c reserved or unsupported */
+    /*  0x2d reserved or unsupported */
     public static final byte SWR = 0x2E; // Store Word Right
     public static final byte CACHE = 0x2f; // Cache Operation
+    /*  0x30 reserved or unsupported */
     public static final byte LWC1 = 0x31;
+    /*  0x32 reserved or unsupported */
     public static final byte PREF = 0x33;
+    /*  0x34 reserved or unsupported */
+    /*  0x35 reserved or unsupported */
+    /*  0x36 reserved or unsupported */
+    /*  0x37 reserved or unsupported */
+    /*  0x38 reserved or unsupported */
     public static final byte SWC1 = 0x39;
     
     	  /*
@@ -91,24 +111,37 @@ public class R4000OpCodes {
  hi |-------|-------|-------|-------|-------|-------|-------|-------|
 */
     public static final byte SLL = 0x0; // Shift Left Logical
+    /*  0x1 reserved or unsupported */
     public static final byte SRL = 0x2; // Shift Right Logical
     public static final byte SRA = 0x3; // Shift Right Arithmetic
     public static final byte SLLV = 0x4; // Shift Left Logical Variable
+    /*  0x5 reserved or unsupported */
     public static final byte SRLV = 0x6; // Shift Right Logical Variable
     public static final byte SRAV = 0x7; // Shift Right Arithmetic Variable
-    public static final byte JR = 0x08; // Jump Register
-    public static final byte JALR = 0x09; // Jump And Link Register
+    public static final byte JR = 0x8; // Jump Register
+    public static final byte JALR = 0x9; // Jump And Link Register
+    /*  0xa reserved or unsupported */
+    /*  0xb reserved or unsupported */
     public static final byte SYSCALL = 0xc; // System Call
     public static final byte BREAK = 0xd; // Break
+    /*  0xe reserved or unsupported */
     public static final byte SYNC = 0xf; // Sync
     public static final byte MFHI = 0x10; // Move From HI
     public static final byte MTHI = 0x11; // Move To HI
     public static final byte MFLO = 0x12; // Move From LO
     public static final byte MTLO = 0x13; // Move To LO
+    /*  0x14 reserved or unsupported */
+    /*  0x15 reserved or unsupported */
+    /*  0x16 reserved or unsupported */
+    /*  0x17 reserved or unsupported */
     public static final byte MULT = 0x18; // Multiply
     public static final byte MULTU = 0x19; // Multiply Unsigned
     public static final byte DIV = 0x1a; // Divide
     public static final byte DIVU = 0x1b; // Divide Unsigned
+    /*  0x1c reserved or unsupported */
+    /*  0x1d reserved or unsupported */
+    /*  0x1e reserved or unsupported */
+    /*  0x1f reserved or unsupported */
     public static final byte ADD = 0x20; // Add
     public static final byte ADDU = 0x21; // Add Unsigned
     public static final byte SUB = 0x22; // Subtract
@@ -117,6 +150,8 @@ public class R4000OpCodes {
     public static final byte OR = 0x25; // OR
     public static final byte XOR = 0x26; // Exclusive OR
     public static final byte NOR = 0x27; // NOR   
+    /*  0x28 reserved or unsupported */
+    /*  0x29 reserved or unsupported */
     public static final byte SLT = 0x2a; // Set on Less Than
     public static final byte SLTU = 0x2b; // Set on Less Than Unsigned
  /*
@@ -136,6 +171,18 @@ public class R4000OpCodes {
     public static final byte BGEZ = 0x1; // Branch on Greater Than or Equal to Zero
     public static final byte BLTZL = 0x2; // Branch on Less Than Zero Likely
     public static final byte BGEZL = 0x3; // Branch on Greater Than or Equal to Zero Likely
+    /*  0x4 reserved or unsupported */
+    /*  0x5 reserved or unsupported */
+    /*  0x6 reserved or unsupported */
+    /*  0x7 reserved or unsupported */
+    /*  0x8 reserved or unsupported */
+    /*  0x9 reserved or unsupported */
+    /*  0xa reserved or unsupported */
+    /*  0xb reserved or unsupported */
+    /*  0xc reserved or unsupported */
+    /*  0xd reserved or unsupported */
+    /*  0xe reserved or unsupported */
+    /*  0xf reserved or unsupported */
     public static final byte BLTZAL = 0x10; // Branch on Less Than Zero And Link
     public static final byte BGEZAL = 0x11; // Branch on Greater Than or Equal to Zero And Link    
     public static final byte BLTZALL = 0x12; // Branch on Less Than Zero And Link Likely
