@@ -31,7 +31,7 @@ import jpcsp.info.MetaInformation;
 public class JpcspMainGUI extends javax.swing.JFrame {
 
     ElfHeaderInfo elfinfo;
-    Disasembler dis;
+    Disassembler dis;
     Processor cpu;
     Registers regs;
     MemoryViewer memview;
@@ -54,7 +54,7 @@ public class JpcspMainGUI extends javax.swing.JFrame {
             desktopPane.remove(dis);
             dis = null;
         }
-        dis = new Disasembler(cpu, regs);
+        dis = new Disassembler(cpu, regs);
         dis.setLocation(300, 0);
         dis.setVisible(true);
         desktopPane.add(dis);
