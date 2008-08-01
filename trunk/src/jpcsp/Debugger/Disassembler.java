@@ -29,9 +29,9 @@ import java.io.IOException;
 import javax.swing.DefaultListModel;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
-import jpcsp.JpcspDialogManager;
 import jpcsp.Memory;
 import jpcsp.Processor;
+import jpcsp.util.JpcspDialogManager;
 import static jpcsp.R4000OpCodes.*;
 /**
  *
