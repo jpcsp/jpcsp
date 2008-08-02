@@ -22,13 +22,26 @@ public class Processor {
     public int pc;
     public int hi,  lo;
     public int cpuregisters[] = new int[32];//32 base registers
-
+    private static byte[] cyclesPer;
     Processor() {
         Memory.get_instance(); //intialaze memory
+        initCycleCost();
         reset();
 
     }
 
+    private void initCycleCost() {        
+        cyclesPer = new byte[0xff];
+        cyclesPer[MULT] = 12;
+        cyclesPer[MULTU] = 12;
+        cyclesPer[DIV] = 75;
+        cyclesPer[DIVU] = 75;
+        //cyclesPer[DMULT] = 20;
+        //cyclesPer[DMULTU] = 20;
+        //cyclesPer[DDIV] = 139;
+        //cyclesPer[DDIVU] = 139;
+    }
+    
     public void reset() {
         //intialaze psp
         pc = 0x00000000;
@@ -48,13 +61,13 @@ public class Processor {
    }
 
     private boolean couldRaiseOverflowOnAdd(int value0,int value1){
-        boolean v1 = ( ((long)value0 + (long)value1) >= Integer.MAX_VALUE);
-        boolean v2 = ( ((long)value0 + (long)value1) <= Integer.MIN_VALUE); //or underflow????
+        boolean v1 = ( ((long)value0 + (long)value1) > Integer.MAX_VALUE);
+        boolean v2 = ( ((long)value0 + (long)value1) < Integer.MIN_VALUE); //or underflow????
         return v1 | v2;
     }
     private boolean couldRaiseOverflowOnSub(int value0,int value1){
-        boolean v1 = ( ((long)value0 - (long)value1) >= Integer.MAX_VALUE);
-        boolean v2 = ( ((long)value0 - (long)value1) <= Integer.MIN_VALUE); //or underflow????
+        boolean v1 = ( ((long)value0 - (long)value1) > Integer.MAX_VALUE);
+        boolean v2 = ( ((long)value0 - (long)value1) < Integer.MIN_VALUE); //or underflow????
         return v1 | v2;
     }
     public void stepcpu()
@@ -151,7 +164,7 @@ public class Processor {
                     break;
                 case ADD://add
                     if (couldRaiseOverflowOnAdd(cpuregisters[rs],cpuregisters[rt])){
-                        // TODO set exception overflow and break or continue?????
+                        // TODO set exception overflow and break !!! (rd cannot be modify)
                     }
                     cpuregisters[rd] = cpuregisters[rs] + cpuregisters[rt];
                     /*TODO: integer overflow exception */
@@ -231,9 +244,11 @@ public class Processor {
 
             case ADDI: //addi
                 if (couldRaiseOverflowOnAdd(cpuregisters[rs], signExtend(imm))){
-                    // TODO set exception overflow and break or continue?????
+                    // TODO set exception overflow and break !!! (rt cannot be modify)
                 }
-                 cpuregisters[rs] = cpuregisters[rs] + signExtend(imm);
+                 //cpuregisters[rs] = cpuregisters[rs] + signExtend(imm); 
+                 //(dreampeppers99) isn't? cpuregisters[rt] = cpuregisters[rs] + signExtend(imm); 
+                cpuregisters[rt] = cpuregisters[rs] + signExtend(imm); 
                  /*TODO: integer overflow exception */
                 break;
             case ADDIU: //addiu
