@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.Debugger.DisassemblerModule;
 
 
+import java.awt.Point;
 import jpcsp.Debugger.*;
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
@@ -32,6 +33,7 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import jpcsp.Memory;
 import jpcsp.Processor;
+import jpcsp.Settings;
 import jpcsp.util.JpcspDialogManager;
 import static jpcsp.R4000OpCodes.*;
 import static jpcsp.Debugger.DisassemblerModule.DisHelper.*;
@@ -111,6 +113,23 @@ public class Disassembler extends javax.swing.JInternalFrame implements Clipboar
         setClosable(true);
         setDefaultCloseOperation(javax.swing.WindowConstants.HIDE_ON_CLOSE);
         setTitle("Disassembler");
+        addInternalFrameListener(new javax.swing.event.InternalFrameListener() {
+            public void internalFrameActivated(javax.swing.event.InternalFrameEvent evt) {
+            }
+            public void internalFrameClosed(javax.swing.event.InternalFrameEvent evt) {
+            }
+            public void internalFrameClosing(javax.swing.event.InternalFrameEvent evt) {
+                formInternalFrameClosing(evt);
+            }
+            public void internalFrameDeactivated(javax.swing.event.InternalFrameEvent evt) {
+            }
+            public void internalFrameDeiconified(javax.swing.event.InternalFrameEvent evt) {
+            }
+            public void internalFrameIconified(javax.swing.event.InternalFrameEvent evt) {
+            }
+            public void internalFrameOpened(javax.swing.event.InternalFrameEvent evt) {
+            }
+        });
 
         jList1.setFont(new java.awt.Font("Courier New", 0, 11));
         jList1.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
@@ -190,7 +209,7 @@ public class Disassembler extends javax.swing.JInternalFrame implements Clipboar
                     .addGroup(layout.createSequentialGroup()
                         .addContainerGap()
                         .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 469, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(15, Short.MAX_VALUE))
+                .addContainerGap(27, Short.MAX_VALUE))
         );
 
         pack();
@@ -378,6 +397,17 @@ private void BranchOrJumpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
 
     }
 }//GEN-LAST:event_BranchOrJumpActionPerformed
+
+private void formInternalFrameClosing(javax.swing.event.InternalFrameEvent evt) {//GEN-FIRST:event_formInternalFrameClosing
+   // System.out.println(this.getLocation());
+    Point location = getLocation();
+    //location.x
+    String[] coord = new String[2];
+    coord[0]=Integer.toString(location.x);
+    coord[1]=Integer.toString(location.y);
+    Settings.get_instance().writeWindowPos("disassembler", coord);
+    
+}//GEN-LAST:event_formInternalFrameClosing
 
     public void RefreshDebugger() {
         int t;

@@ -16,6 +16,7 @@
  */
 package jpcsp.Debugger;
 
+import java.awt.Point;
 import jpcsp.*;
 
 public class ElfHeaderInfo extends javax.swing.JInternalFrame {
@@ -44,10 +45,27 @@ public class ElfHeaderInfo extends javax.swing.JInternalFrame {
         setClosable(true);
         setDefaultCloseOperation(javax.swing.WindowConstants.HIDE_ON_CLOSE);
         setTitle("Elf Header Info");
+        addInternalFrameListener(new javax.swing.event.InternalFrameListener() {
+            public void internalFrameActivated(javax.swing.event.InternalFrameEvent evt) {
+            }
+            public void internalFrameClosed(javax.swing.event.InternalFrameEvent evt) {
+            }
+            public void internalFrameClosing(javax.swing.event.InternalFrameEvent evt) {
+                formInternalFrameClosing(evt);
+            }
+            public void internalFrameDeactivated(javax.swing.event.InternalFrameEvent evt) {
+            }
+            public void internalFrameDeiconified(javax.swing.event.InternalFrameEvent evt) {
+            }
+            public void internalFrameIconified(javax.swing.event.InternalFrameEvent evt) {
+            }
+            public void internalFrameOpened(javax.swing.event.InternalFrameEvent evt) {
+            }
+        });
 
         ELFInfoArea.setColumns(20);
         ELFInfoArea.setEditable(false);
-        ELFInfoArea.setFont(new java.awt.Font("Courier New", 0, 12)); // NOI18N
+        ELFInfoArea.setFont(new java.awt.Font("Courier New", 0, 12));
         ELFInfoArea.setLineWrap(true);
         ELFInfoArea.setRows(5);
         jScrollPane1.setViewportView(ELFInfoArea);
@@ -60,11 +78,21 @@ public class ElfHeaderInfo extends javax.swing.JInternalFrame {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 325, Short.MAX_VALUE)
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 329, Short.MAX_VALUE)
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+private void formInternalFrameClosing(javax.swing.event.InternalFrameEvent evt) {//GEN-FIRST:event_formInternalFrameClosing
+   // System.out.println(this.getLocation());
+    Point location = getLocation();
+    //location.x
+    String[] coord = new String[2];
+    coord[0]=Integer.toString(location.x);
+    coord[1]=Integer.toString(location.y);
+    Settings.get_instance().writeWindowPos("elfheader", coord);
+}//GEN-LAST:event_formInternalFrameClosing
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
