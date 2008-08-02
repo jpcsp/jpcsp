@@ -35,18 +35,37 @@ is divided into following sections:
         <property file="nbproject/private/configs/${config}.properties"/>
         <property file="nbproject/private/private.properties"/>
     </target>
-    <target depends="-pre-init,-init-private" name="-init-user">
+    <target depends="-pre-init,-init-private" name="-init-libraries">
+        <property location=".\lib\nblibraries.properties" name="libraries.1.path"/>
+        <dirname file="${libraries.1.path}" property="libraries.1.dir.nativedirsep"/>
+        <pathconvert dirsep="/" property="libraries.1.dir">
+            <path path="${libraries.1.dir.nativedirsep}"/>
+        </pathconvert>
+        <basename file="${libraries.1.path}" property="libraries.1.basename" suffix=".properties"/>
+        <touch file="${libraries.1.dir}/${libraries.1.basename}-private.properties"/>
+        <loadproperties srcfile="${libraries.1.dir}/${libraries.1.basename}-private.properties">
+            <filterchain>
+                <replacestring from="$${base}" to="${libraries.1.dir}"/>
+            </filterchain>
+        </loadproperties>
+        <loadproperties srcfile="${libraries.1.path}">
+            <filterchain>
+                <replacestring from="$${base}" to="${libraries.1.dir}"/>
+            </filterchain>
+        </loadproperties>
+    </target>
+    <target depends="-pre-init,-init-private,-init-libraries" name="-init-user">
         <property file="${user.properties.file}"/>
         <!-- The two properties below are usually overridden -->
         <!-- by the active platform. Just a fallback. -->
         <property name="default.javac.source" value="1.4"/>
         <property name="default.javac.target" value="1.4"/>
     </target>
-    <target depends="-pre-init,-init-private,-init-user" name="-init-project">
+    <target depends="-pre-init,-init-private,-init-libraries,-init-user" name="-init-project">
         <property file="nbproject/configs/${config}.properties"/>
         <property file="nbproject/project.properties"/>
     </target>
-    <target depends="-pre-init,-init-private,-init-user,-init-project,-init-macrodef-property" name="-do-init">
+    <target depends="-pre-init,-init-private,-init-libraries,-init-user,-init-project,-init-macrodef-property" name="-do-init">
         <j2seproject1:property name="platform.home" value="platforms.${platform.active}.home"/>
         <j2seproject1:property name="platform.bootcp" value="platforms.${platform.active}.bootclasspath"/>
         <j2seproject1:property name="platform.compiler" value="platforms.${platform.active}.compile"/>
@@ -160,7 +179,7 @@ is divided into following sections:
         <!-- Empty placeholder for easier customization. -->
         <!-- You can override this target in the ../build.xml file. -->
     </target>
-    <target depends="-pre-init,-init-private,-init-user,-init-project,-do-init" name="-init-check">
+    <target depends="-pre-init,-init-private,-init-libraries,-init-user,-init-project,-do-init" name="-init-check">
         <fail unless="src.dir">Must set src.dir</fail>
         <fail unless="test.src.dir">Must set test.src.dir</fail>
         <fail unless="build.dir">Must set build.dir</fail>
@@ -346,7 +365,7 @@ is divided into following sections:
             </jar>
         </presetdef>
     </target>
-    <target depends="-pre-init,-init-private,-init-user,-init-project,-do-init,-post-init,-init-check,-init-macrodef-property,-init-macrodef-javac,-init-macrodef-junit,-init-macrodef-nbjpda,-init-macrodef-debug,-init-macrodef-java,-init-presetdef-jar" name="init"/>
+    <target depends="-pre-init,-init-private,-init-libraries,-init-user,-init-project,-do-init,-post-init,-init-check,-init-macrodef-property,-init-macrodef-javac,-init-macrodef-junit,-init-macrodef-nbjpda,-init-macrodef-debug,-init-macrodef-java,-init-presetdef-jar" name="init"/>
     <!--
                 ===================
                 COMPILATION SECTION

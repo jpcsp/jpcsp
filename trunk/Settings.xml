@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SETTINGS>
+  <guisettings>
+
+    <windowspos>
+
+       <disassembler>
+           <x>300</x>
+           <y>0</y>
+       </disassembler>
+       <elfheader>
+           <x>0</x>
+           <y>0</y>
+       </elfheader>
+       <memoryview>
+           <x>70</x>
+           <y>150</y>
+       </memoryview>
+       <registers>
+           <x>70</x>
+           <y>0</y>
+       </registers>
+
+    </windowspos>
+
+  </guisettings>
+</SETTINGS>
