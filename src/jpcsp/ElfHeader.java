@@ -294,6 +294,7 @@ public class ElfHeader {
 
   private static int readWord (RandomAccessFile f) throws IOException
   {
+      //readByte() isn't more correct? (already exists one readUWord() method to unsign values)
       return (f.readUnsignedByte () | (f.readUnsignedByte () << 8)
 	      | (f.readUnsignedByte () << 16) | (f.readUnsignedByte () << 24));
   }
@@ -356,7 +357,8 @@ public class ElfHeader {
     /** Read pbp **/
     PBP_Header pbp = new PBP_Header();
     pbp.read(f);
-    if(Long.toHexString(pbp.p_magic & 0xFFFFFFFFL).equals("50425000"))//file is pbp
+    if(Long.toHexString(pbp.p_magic & 0xFFFFFFFFL).equals("50425000"))//file is pbp 50425000 == 0x3016CA8??? the comparison is made by hexa
+        // TODO : check the documentation ...
     {
         elfoffset = pbp.offset_psp_data;
         f.seek(pbp.offset_psp_data); //seek the new offset!
