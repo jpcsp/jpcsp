@@ -26,15 +26,19 @@ public class R4000OpCodes {
 000 | *1    | *2    | J     | JAL   | BEQ   | BNE   | BLEZ  | BGTZ  |
 001 | ADDI  | ADDIU | SLTI  | SLTIU | ANDI  | ORI   | XORI  | LUI   |
 010 | *3    | *4    | ---   | ---   | BEQL  | BNEL  | BLEZL | BGTZL |
-011 | ---   | ---   | ---   | ---   | * 5   |  ---  | ---   | *6    |
+011 | VFPU0 | VFPU1 | ---   | VFPU3 | * 5   |  ---  | ---   | *6    |
 100 | LB    | LH    | LWL   | LW    | LBU   | LHU   | LWR   | ---   |
 101 | SB    | SH    | SWL   | SW    | ---   | ---   | SWR   | CACHE |
 110 | ---   | LWC1  | ---   | PREF  | ---   | ---   | ---   | ---   |
-111 | ---   | SWC1  | ---   | ---   | ---   | ---   | ---   | ---   |
+111 | ---   | SWC1  | ---   | ---   | VFPU6 | ---   | ---   | ---   |
  hi |-------|-------|-------|-------|-------|-------|-------|-------|
      *1 = SPECIAL, see SPECIAL list    *2 = REGIMM, see REGIMM list
      *3 = COP0                         *4 = COP1  
-     *5 = ALLEGREX , see ALLEGREX      *6 = SPECAIL3 , see SPECIAL 3
+     *5 = SPECIAL2 , see SPECIAL2      *6 = SPECAIL3 , see SPECIAL 3
+     *VFPU0 check VFPU0 table
+     *VFPU1 check VFPU1 table
+     *VFPU3 check VFPU3 table
+     *VFPU6 check VFPU6 table
 */
     public static final byte SPECIAL = 0x0;
     public static final byte REGIMM = 0x1;
@@ -61,10 +65,11 @@ public class R4000OpCodes {
     public static final byte BLEZL = 0x16; // Branch on Less Than or Equal to Zero Likely
     public static final byte BGTZL = 0x17; // Branch on Greater Than Zero Likely
     /*  0x18 reserved or unsupported */
-    /*  0x19 reserved or unsupported */
-    /*  0x1a reserved or unsupported */
+    public static final byte VFPU0=0x19;
+    public static final byte VFPU1=0x1a;
     /*  0x1b reserved or unsupported */
-    public static final byte ALLEGREX = 0x1c; // Allegrex table
+    public static final byte VFPU3 =0x1b;
+    public static final byte SPECIAL2 = 0x1c; // Allegrex table
     /*  0x1d reserved or unsupported */
     /*  0x1e reserved or unsupported */
     public static final byte SPECIAL3 = 0x1f; //special3 table
@@ -94,7 +99,7 @@ public class R4000OpCodes {
     /*  0x37 reserved or unsupported */
     /*  0x38 reserved or unsupported */
     public static final byte SWC1 = 0x39;
-    
+    public static final byte VFPU6 = 0x3c;
     	  /*
      SPECIAL: Instr. encoded by function field when opcode field = SPECIAL  NOT COMPLETE!!! (31/07/2008) shadow
     31---------26------------------------------------------5--------0
@@ -192,9 +197,9 @@ public class R4000OpCodes {
     public static final byte BGEZALL = 0x13; // Branch on Greater Than or Equal to Zero And Link Likely
     
         	  /*
-     ALLEGREX: Instr. encoded by function field when opcode field = ALLEGREX  probably complete!!! (1/08/2008) shadow
+     SPECIAL2 : Instr. encoded by function field when opcode field = SPECIAL2  probably complete!!! (1/08/2008) shadow
     31---------26------------------------------------------5--------0
-    | = ALLEGREX |                                         | function|
+    | = SPECIAL2 |                                         | function|
     ------6----------------------------------------------------6-----
     |--000--|--001--|--010--|--011--|--100--|--101--|--110--|--111--| lo
 000 | HALT  | ---   | ---   | ---   | ---   |  ---  |  ---  | ---   |
