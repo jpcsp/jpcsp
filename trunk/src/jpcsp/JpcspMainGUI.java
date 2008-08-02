@@ -22,7 +22,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 import jpcsp.Debugger.*;
-import jpcsp.Debugger.Disassembler.Disassembler;
+import jpcsp.Debugger.DisassemblerModule.Disassembler;
 import jpcsp.util.JpcspDialogManager;
 import jpcsp.util.MetaInformation;
 

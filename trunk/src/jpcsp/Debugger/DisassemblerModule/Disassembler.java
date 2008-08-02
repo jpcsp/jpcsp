@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.Debugger.Disassembler;
+package jpcsp.Debugger.DisassemblerModule;
 
 
 import jpcsp.Debugger.*;
@@ -34,7 +34,7 @@ import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.util.JpcspDialogManager;
 import static jpcsp.R4000OpCodes.*;
-import static jpcsp.Debugger.Disassembler.DisHelper.*;
+import static jpcsp.Debugger.DisassemblerModule.DisHelper.*;
 /**
  *
  * @author  shadow
