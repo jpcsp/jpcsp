@@ -19,8 +19,8 @@ package jpcsp;
 public class MemoryMap {
     public static final int START_SCRATCHPAD = 0x00010000;
     public static final int END_SCRATCHPAD = 0x00013fff;
-    public static final int START_VRAM = 0x04000000;
-    public static final int END_VRAM = 0x041fffff;
+    public static final int START_VRAM = 0x04000000; //KU0 
+    public static final int END_VRAM = 0x041fffff; //KU0
     public static final int START_RAM = 0x08000000;
     public static final int END_RAM = 0x09ffffff;
     public static final int START_IO_0 = 0x1c000000;
@@ -29,4 +29,8 @@ public class MemoryMap {
     public static final int END_IO_1 = 0x1fffffff;
     public static final int START_EXCEPTIO_VEC = 0x1fc00000;
     public static final int END_EXCEPTIO_VEC = 0x1fcfffff;
+    public static final int START_KERNEL = 0x88000000 ; //K0
+    public static final int END_KERNEL = 0x887fffff ; //K0
+    public static final int START_USERSPACE = 0x08800000 ; //KU0
+    public static final int END_USERSPACE = 0x09ffffff ; //KU0
 }
