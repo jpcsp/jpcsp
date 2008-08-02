@@ -28,16 +28,18 @@ public class DisCOP0 {
        int rt = (value >> 16) & 0x1f;
        int rd = (value >> 11) & 0x1f;
        int cop0 = ((value >> 21) & 0x1f); //bits 21-25
+       int base = (value >> 21) & 0x1f;
+       int cacheOp = (value >> 16) & 0x1f;
        switch(cop0)
        { 
           case MFC0:
-          return "mfc0 " + cpuregs[rt] + ", " + cop0regs[rd];
+            return "mfc0 " + cpuregs[rt] + ", " + cop0regs[rd];
           case MTC0:
-          return "mtc0 " + cpuregs[rt] + ", " + cop0regs[rd];
+            return "mtc0 " + cpuregs[rt] + ", " + cop0regs[rd];
+          case CACHE: //TODO: CACHE op, offset(base); op is at [20-16];
+            return "cache " + cacheOp + ", offset(" + base + ")";
           default:
-          return "unknown cop0 opcode " + Integer.toHexString(cop0);
-          
+            return "unknown cop0 opcode " + Integer.toHexString(cop0);
          }
-                
     }
 }
