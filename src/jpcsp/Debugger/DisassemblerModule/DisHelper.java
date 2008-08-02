@@ -28,9 +28,9 @@ public class DisHelper {
         "s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7",
         "t8", "t9", "k0", "k1", "gp", "sp", "fp", "ra"
     };
-   static String[] cop0regs = 
+   static String[] cop0regs =
    {
-	"cop0reg0", "cop0reg1", "cop0reg2", "cop0reg3", "cop0reg4", "cop0reg5", "cop0reg6", "cop0reg7", 
+	"cop0reg0", "cop0reg1", "cop0reg2", "cop0reg3", "cop0reg4", "cop0reg5", "cop0reg6", "cop0reg7",
 	"BadVaddr", "Count", "cop0reg10", "Compare", "Status", "Cause", "EPC", "PrID",
 	"Config", "cop0reg17", "cop0reg18", "cop0reg19", "cop0reg20", "cop0reg21", "cop0reg22", "cop0reg23",
 	"cop0reg24", "EBase", "cop0reg26", "cop0reg37", "TagLo", "TagHi", "ErrorPC", "cop0reg31"
@@ -97,7 +97,7 @@ public class DisHelper {
         return opname + " " + cpuregs[rd];
 
     }
-    
+
     public static String Dis_RS(String opname, int value) {
         int rs = (value >> 21) & 0x1f;
         return opname + " " + cpuregs[rs];
@@ -121,7 +121,7 @@ public class DisHelper {
         if ((imm & 0x8000) == 0x8000) {
             imm |= 0xffff0000;
         }
-        return opname + " " + cpuregs[rt] + "," + imm + " (" + cpuregs[rs] + ")";
+        return opname + " " + cpuregs[rt] + ", " + imm + " (" + cpuregs[rs] + ")";
     }
 
 
