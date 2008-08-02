@@ -15,7 +15,7 @@ You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package jpcsp.Debugger.Disassembler;
+package jpcsp.Debugger.DisassemblerModule;
 
 /**
  *
