@@ -1,0 +1,83 @@
+#labels R4000,Phase-Design
+=CPU - R4000 The psp processor=
+
+R4000 is a RISC MIPS processor, has 32 registers of general purpose (R0 to R31) 
+and 3 for special purpose (PC, HI and LO).
+The clock is clocked from 1 to 333MHz
+
+==Registers==
+32 general purpose (r0 to r31)
+PC a program counter register
+HI holds the higher results from divide or multiply operation
+LO holds the lower results from divide or multiply operation
+
+_At Multiply operation_
+The product of integer multiply operation. (HI and LO)
+
+_At Divide operation_
+The quotient is stored on LO and the remainder is stored on HI.
+
+*from 32 general purpose:*
+r0 = hardwired to value of zero, can be used as source when zero value is needed.
+r31 = is used as link by Jump and Link instructions. (it should not be used by others instructions)
+
+ps: Almost all processor has the status regiter(s), but that one uses the coprocessor (CP0) to control stuffs.
+
+==Instructions==
+
+Each instruction (opcode+...) is a single 4Bytes (32bits) word.
+ex:
+[31][30][29][28][27][26][25][24][23][22][21][20][19][18][17][16][15][14][13][12][11][10][09][08][07][06][05][04][03][02][01][00]
+
+The opcode is 6 bites. [31][30][29][28][27][26]
+
+===Types of instructions===
+
+There is a three types of instructions format: (AKA addressing modes)
+1 - Immediate (imm)
+2 - Jump (j)
+3 - Register (r)
+
+When is Immediate (imm)
+
+[31][30][29][28][27][26][25][24][23][22][21][20][19][18][17][16][15][14][13][12][11][10][09][08][07][06][05][04][03][02][01][00]
+|	opcode	       |        rs         |        rt         |                     immediate                                 |   
+
+opcode = instruction number 	(6bites)
+rs = register source 		(5bites) (one of 32 general propurse)
+rt = register target 		(5bites) (one of 32 general propurse)
+imm = immediate value 		(16bites)
+
+ex:
+ADDI R2,R5,0x11; (see and show a sample)
+
+
+When is Jump (j)
+
+[31][30][29][28][27][26][25][24][23][22][21][20][19][18][17][16][15][14][13][12][11][10][09][08][07][06][05][04][03][02][01][00]
+|	opcode	       |        					target                                                 |   
+
+opcode = instruction number 	(6bites)
+target = address to jump	(26bites)
+
+ex: (see and show a sample)
+
+When is Register (r)
+
+[31][30][29][28][27][26][25][24][23][22][21][20][19][18][17][16][15][14][13][12][11][10][09][08][07][06][05][04][03][02][01][00]
+|	opcode	       |        rs         |        rt         |          rd       |          sa       |    funct              |   
+
+opcode = instruction number 	(6bites)
+rs = register source 		(5bites) (one of 32 general propurse)
+rt = register target 		(5bites) (one of 32 general propurse)
+rd = register destination	(5bites) (one of 32 general propurse)
+sa = shift amount 		(5bites)
+funct = function filed 		(6bites)
+
+ex: (see and shows a sample)
+
+
+ * All Load and Store instructions uses the immediate way. (same for coprocessor)
+ * Instructions that peforms: arithmetic, logical, shift, multiply and divide uses register and immediate way.
+ * Special instructions performs system calls and breakpoint and these are always regiter way.
+ * Excpetions instructions occurs in both way immediate and register.
