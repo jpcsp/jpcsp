@@ -26,7 +26,7 @@ public class R4000OpCodes {
 000 | *1    | *2    | J     | JAL   | BEQ   | BNE   | BLEZ  | BGTZ  |
 001 | ADDI  | ADDIU | SLTI  | SLTIU | ANDI  | ORI   | XORI  | LUI   |
 010 | *3    | *4    | ---   | ---   | BEQL  | BNEL  | BLEZL | BGTZL |
-011 | ---   | ---   | ---   | ---   | * 5   |  ---  | ---   | ---   |
+011 | ---   | ---   | ---   | ---   | * 5   |  ---  | ---   | *6    |
 100 | LB    | LH    | LWL   | LW    | LBU   | LHU   | LWR   | ---   |
 101 | SB    | SH    | SWL   | SW    | ---   | ---   | SWR   | CACHE |
 110 | ---   | LWC1  | ---   | PREF  | ---   | ---   | ---   | ---   |
@@ -34,7 +34,7 @@ public class R4000OpCodes {
  hi |-------|-------|-------|-------|-------|-------|-------|-------|
      *1 = SPECIAL, see SPECIAL list    *2 = REGIMM, see REGIMM list
      *3 = COP0                         *4 = COP1  
-     *5 = ALLEGREX , see ALLEGREX   
+     *5 = ALLEGREX , see ALLEGREX      *6 = SPECAIL3 , see SPECIAL 3
 */
     public static final byte SPECIAL = 0x0;
     public static final byte REGIMM = 0x1;
@@ -67,7 +67,7 @@ public class R4000OpCodes {
     public static final byte ALLEGREX = 0x1c; // Allegrex table
     /*  0x1d reserved or unsupported */
     /*  0x1e reserved or unsupported */
-    /*  0x1f reserved or unsupported */
+    public static final byte SPECIAL3 = 0x1f; //special3 table
     public static final byte LB = 0x20; //Load Byte
     public static final byte LH = 0x21; // Load Halfword
     public static final byte LWL = 0x22; // Load Word Left
@@ -106,7 +106,7 @@ public class R4000OpCodes {
 010 | MFHI  | MTHI  | MFLO  | MTLO  | ---   |  ---  |  ---  | ---   |
 011 | MULT  | MULTU | DIV   | DIVU  | ----  |  ---  | ----  | ----- |
 100 | ADD   | ADDU  | SUB   | SUBU  | AND   | OR    | XOR   | NOR   |
-101 | ---   |  ---  | SLT   | SLTU  | ---   | ---   | ---   | ---   |
+101 | ---   |  ---  | SLT   | SLTU  | MAX   | ---   | ---   | ---   |
 110 | ---   |  ---  | ---   | ---   | ---   |  ---  | ---   | ---   |
 111 | ---   |  ---  | ---   | ---   | ---   |  ---  | ---   | ---   |
  hi |-------|-------|-------|-------|-------|-------|-------|-------|
@@ -156,6 +156,7 @@ public class R4000OpCodes {
     /*  0x29 reserved or unsupported */
     public static final byte SLT = 0x2a; // Set on Less Than
     public static final byte SLTU = 0x2b; // Set on Less Than Unsigned
+    public static final byte MAX = 0x2c;
  /*
     REGIMM: Instructions encoded by the rt field when opcode field = REGIMM.  NOT COMPLETE!!! (31/07/2008) shadow
     31---------26----------20-------16------------------------------0
@@ -209,8 +210,55 @@ public class R4000OpCodes {
     public static final byte HALT = 0x0; //halt execution until next interrupt
     public static final byte MFIC = 0x24; //move from IC (Interrupt) register
     public static final byte MTIC = 0x26; //move to IC (Interrupt) register
+     /*
+     SPECIAL 3: Instr. encoded by function field when opcode field = SPECIAL 3  NOT COMPLETE (1/08/2008) shadow
+    31---------26------------------------------------------5--------0
+    | = SPECIAL 3 |                                         | function|
+    ------6----------------------------------------------------6-----
+    |--000--|--001--|--010--|--011--|--100--|--101--|--110--|--111--| lo
+000 |  EXT  | ---   | ---   | ---   | ---   |  ---  |  ---  | ---   |
+001 | --    | ---   | ---   | ---   | ---   |  ---  |  ---  | ---   |
+010 | ---   | ---   | ---   | ---   | ---   |  ---  |  ---  | ---   |
+011 | ---   | ---   | ---   | ---   | ----  |  ---  | ----  | ----- |
+100 |  *1   | ---   | ---   | ----  | ---   |  ---  | ---   | ---   |
+101 | ---   |  ---  | ---   | ---   | ---   | ---   | ---   | ---   |
+110 | ---   |  ---  | ---   | ---   | ---   |  ---  | ---   | ---   |
+111 | ---   |  ---  | ---   | ---   | ---   |  ---  | ---   | ---   |
+ hi |-------|-------|-------|-------|-------|-------|-------|-------|
+      * 1 BSHFL encoding based on sa field
+*/    
+    public static final byte EXT=0x0; // extract bit field
+    public static final byte BSHFL=0x20;  //BSHFL table
+  
+   /*
+    BSHFL: Instructions encoded by the sa field .  probably complete!!! (2/08/2008) shadow
+    31---------26----------20-------16--------------8---6-----------0
+    |          |          |         |               | sa|           |
+    ------6---------------------5------------------------------------
+    |--000--|--001--|--010--|--011--|--100--|--101--|--110--|--111--| lo
+ 00 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
+ 01 | ----  | ----  | ----  | ----  |  ---- |  ---  | ---   |  ---  |
+ 10 |  SEB  |  ---  |  ---  |  ---- |  ---  |  ---  |  ---  |  ---  |
+ 11 |  SEH  | ----  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
+ hi |-------|-------|-------|-------|-------|-------|-------|-------|
+*/  
+    public static final byte SEB =0x10;//Sign-Extend Byte
+    public static final byte SEH =0x18;//Sign-Extend HalfWord
     
-    
+     /*
+    COP0: Instructions encoded by the rs field when opcode field = COP0.  NOT COMPLETE!!! (02/08/2008) shadow
+    31---------26----------23-------31------------------------------0
+    | = COP0    |          |   rs    |                              |
+    ------6---------------------5------------------------------------
+    |--000--|--001--|--010--|--011--|--100--|--101--|--110--|--111--| lo
+ 00 |  MFC0 |  ---  |  ---  |  ---- |  MTC0 |  ---  |  ---  |  ---  |
+ 01 | ----  | ----  | ----  | ----  |  ---- |  ---  | ---   |  ---  |
+ 10 | ----- |  ---  |  ---- | ----  |  ---  |  ---  |  ---  |  ---  |
+ 11 | ----  | ----  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
+ hi |-------|-------|-------|-------|-------|-------|-------|-------|
+*/
+    public static final byte MFC0 =0x0;//Move from Coprocessor 0
+    public static final byte MTC0 =0x4;//Move to Coprocessor 0
     
     //These are not sure they exist and will be add later when emu will become more advance. (shadow)
    /* 
