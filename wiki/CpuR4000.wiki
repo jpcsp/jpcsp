@@ -6,17 +6,20 @@ and 3 for special purpose (PC, HI and LO).
 The clock is clocked from 1 to 333MHz
 
 ==Registers==
-32 general purpose (*r0 to r31*)
-*PC* a program counter register
-*HI* holds the higher results from divide or multiply operation
-*LO* holds the lower results from divide or multiply operation
+ # 32 general purpose (*r0 to r31*)
+ # *PC* a program counter register
+ # *HI* holds the higher results from divide or multiply operation
+ # *LO* holds the lower results from divide or multiply operation
 
+----
 _At Multiply operation_
+
 The product of integer multiply operation. (*HI* and *LO*)
 
 _At Divide operation_
-The quotient is stored on *LO* and the remainder is stored on *HI*.
 
+The quotient is stored on *LO* and the remainder is stored on *HI*.
+----
 *from 32 general purpose:*
 *r0* = hardwired to value of zero, can be used as source when zero value is needed.
 *r31* = is used as link by Jump and Link instructions. (it should not be used by others instructions)
