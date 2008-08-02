@@ -3,7 +3,7 @@
 
 R4000 is a RISC MIPS processor, has 32 registers of general purpose (R0 to R31) 
 and 3 for special purpose (PC, HI and LO).
-The clock is clocked from 1 to 333MHz
+The clock is clocked from 1 to 333MHz, the processor counts with helpers CoProcessors.
 
 ==Registers==
  # 32 general purpose (*r0 to r31*)
