@@ -49,16 +49,16 @@ handle the change modes: *kernel, supervisor* and *user* mode.
 ||31= [Reserved]||
 
 ====The CP0 Instructions====
-DMFC0 - Doubleword Move From CP0
-DMTC0 - Doubleword Move To CP0
-MTC0 - Move to CP0
-MFC0 - Move from CP0
-TLBR - Read Indexed TLB Entry
-TLBWI - Write Indexed TLB Entry
-TLBWR - Write Random TLB Entry
-TLBP - Probe TLB for Matching Entry
-CACHE - Cache Operation
-ERET - Exception Return
+ * DMFC0 - Doubleword Move From CP0
+ * DMTC0 - Doubleword Move To CP0
+ * MTC0 - Move to CP0
+ * MFC0 - Move from CP0
+ * TLBR - Read Indexed TLB Entry
+ * TLBWI - Write Indexed TLB Entry
+ * TLBWR - Write Random TLB Entry
+ * TLBP - Probe TLB for Matching Entry
+ * CACHE - Cache Operation
+ * ERET - Exception Return
 
 
 
