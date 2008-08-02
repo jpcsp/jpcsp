@@ -22,7 +22,7 @@ public class Processor {
     public int pc;
     public int hi,  lo;
     public int cpuregisters[] = new int[32];//32 base registers
-    private static byte[] cyclesPer;
+    private byte[] cyclesPer;
     Processor() {
         Memory.get_instance(); //intialaze memory
         initCycleCost();
@@ -176,7 +176,7 @@ public class Processor {
                     break;
                 case SUB://sub
                     if (couldRaiseOverflowOnSub(cpuregisters[rs],cpuregisters[rt])){
-                        // TODO set exception overflow and break or continue?????
+                        // TODO set exception overflow and break !!! (rd cannot be modify)
                     }
                      cpuregisters[rd] = cpuregisters[rs] - cpuregisters[rt];
                     /* TODO: add integer overflow exception */
@@ -247,7 +247,6 @@ public class Processor {
                     // TODO set exception overflow and break !!! (rt cannot be modify)
                 }
                  //cpuregisters[rs] = cpuregisters[rs] + signExtend(imm); 
-                 //(dreampeppers99) isn't? cpuregisters[rt] = cpuregisters[rs] + signExtend(imm); 
                 cpuregisters[rt] = cpuregisters[rs] + signExtend(imm); 
                  /*TODO: integer overflow exception */
                 break;
