@@ -30,10 +30,10 @@ public class DisHelper {
     };
    static String[] cop0regs =
    {
-	"cop0reg0", "cop0reg1", "cop0reg2", "cop0reg3", "cop0reg4", "cop0reg5", "cop0reg6", "cop0reg7",
-	"BadVaddr", "Count", "cop0reg10", "Compare", "Status", "Cause", "EPC", "PrID",
-	"Config", "cop0reg17", "cop0reg18", "cop0reg19", "cop0reg20", "cop0reg21", "cop0reg22", "cop0reg23",
-	"cop0reg24", "EBase", "cop0reg26", "cop0reg37", "TagLo", "TagHi", "ErrorPC", "cop0reg31"
+	"Index", "Random", "EntryLo0", "EntryLo1", "Context", "PageMask", "Wired", "cop0reg7", 
+	"BadVaddr", "Count", "EntryHi", "Compare", "Status", "Cause", "EPC", "PrID",
+	"Config", "LLAddr", "WatchLo", "WatchHi", "XContext", "cop0reg21", "cop0reg22", "cop0reg23",
+	"cop0reg24", "EBase", "ECC", "CacheErr", "TagLo", "TagHi", "ErrorPC", "cop0reg31"
     };
        public static String Dis_RDRSRT(String opname, int value) {
 
