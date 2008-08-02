@@ -76,13 +76,13 @@ There is a three types of instructions format: (AKA addressing modes)
 
 ||31||||30||||29||||28||||27||||26||||25||||24||||23||||22||||21||||20||||19||||18||||17||||16||||15||||14||||13||||12||||11||||10||||09||||08||||07||||06||||05||||04||||03||||02||||01||||00||
 
-opcode = between 31 - 26 (include)
+*opcode* = between 31 - 26 (include)
 
-rs = between 25 - 21 (include)    
+*rs* = between 25 - 21 (include)    
 
-rt = between 20 - 16 (include)   
+*rt* = between 20 - 16 (include)   
 
-immediate = between 15 - 0 (include)                                    
+*immediate* = between 15 - 0 (include)                                    
 
 
  # opcode = instruction number 	        (6bites)
@@ -98,30 +98,30 @@ ADDI R2,R5,0x11; (see and show a sample)
 
 ||31||||30||||29||||28||||27||||26||||25||||24||||23||||22||||21||||20||||19||||18||||17||||16||||15||||14||||13||||12||||11||||10||||09||||08||||07||||06||||05||||04||||03||||02||||01||||00||
 
-opcode = between 31 - 26 (include)
+*opcode* = between 31 - 26 (include)
 
-target = between 25 - 0 (include)
+*target* = between 25 - 0 (include)
 
  # opcode = instruction number 	(6bites)
  # target = address to jump	(26bites)
 
 ex: (see and show a sample)
 
-*When is Register* (r)  Format: *opcode* + *register[rs]* + *register[rt]* + *register[rd]* + *sa* + *funct*
+*When is Register* (r)  Format: *opcode* + *register [ rs ] * + *register [ rt ] * + *register [ rd ] * + *sa* + *funct*
 
 ||31||||30||||29||||28||||27||||26||||25||||24||||23||||22||||21||||20||||19||||18||||17||||16||||15||||14||||13||||12||||11||||10||||09||||08||||07||||06||||05||||04||||03||||02||||01||||00||
 
-opcode = between 31 - 26 (include)
+*opcode* = between 31 - 26 (include)
 
-rs = between 25 - 21 (include)
+*rs* = between 25 - 21 (include)
 
-rt = between 20 - 16 (include)
+*rt* = between 20 - 16 (include)
 
-rd = between 15 - 11 (include)
+*rd* = between 15 - 11 (include)
 
-sa = between 10 - 6 (include)
+*sa* = between 10 - 6 (include)
 
-funct = between 5 - 0 (include)
+*funct* = between 5 - 0 (include)
 
  # opcode = instruction number 	(6bites)
  # rs = register source 		(5bites) (one of 32 general propurse)
