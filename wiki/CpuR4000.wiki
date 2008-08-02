@@ -23,67 +23,36 @@ The quotient is stored on *LO* and the remainder is stored on *HI*.
 *from 32 general purpose:*
 
 ||*r0* = hardwired to value of zero, can be used as source when zero value is needed.||
-
 ||*r1* = assembler temp||
-
 ||*r2* = return value||
-
 ||*r3* = return value||
-
 ||*r4* = argument registers||
-
 ||*r5* = argument registers||
-
 ||*r6* = argument registers||
-
 ||*r7* = argument registers||
-
 ||*r8* = caller saved (o32 old style names: default)||
-
 ||*r9* = 	t1 	 ||
-
 ||*r10* =	t2 	 ||
-
 ||*r11* =	t3 	 ||
-
 ||*r12* =	t4 	caller saved||
-
 ||*r13* =	t5 	 ||
-
 ||*r14* =	t6 	 ||
-
 ||*r15* =	t7 	 ||
-
 ||*r16* =	s0 	callee saved||
-
 ||*r17* =	s1 	 ||
-
 ||*r18* =	s2 	 ||
-
 ||*r19* =	s3 	 ||
-
 ||*r20* =	s4 	 ||
-
 ||*r21* =	s5 	 ||
-
 ||*r22* =	s6 	 ||
-
 ||*r23* =	s7 	 ||
-
 ||*r24* = caller saved||
-
 ||*r25* = caller saved||
-
 ||*r26* = kernel temporary k0||
-
 ||*r27* = kernel temporary k0||
-
 ||*r28* = global pointer||
-
 ||*r29* = stack pointer||
-
 ||*r30* = frame pointer||
-
 ||*r31* = is used as link by Jump and Link instructions. (it should not be used by others instructions)||
 
 ps: Almost all processor has the status regiter(s), but that one uses the coprocessor (*CP0*) to control stuffs.
