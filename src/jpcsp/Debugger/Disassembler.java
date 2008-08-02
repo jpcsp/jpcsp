@@ -45,6 +45,14 @@ public class Disassembler extends javax.swing.JInternalFrame implements Clipboar
         "s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7",
         "t8", "t9", "k0", "k1", "gp", "sp", "fp", "ra"
     };
+   String[] cop0regs = 
+   {
+	"cop0reg0", "cop0reg1", "cop0reg2", "cop0reg3", "cop0reg4", "cop0reg5", "cop0reg6", "cop0reg7", 
+	"BadVaddr", "Count", "cop0reg10", "Compare", "Status", "Cause", "EPC", "PrID",
+	"Config", "cop0reg17", "cop0reg18", "cop0reg19", "cop0reg20", "cop0reg21", "cop0reg22", "cop0reg23",
+	"cop0reg24", "EBase", "cop0reg26", "cop0reg37", "TagLo", "TagHi", "ErrorPC", "cop0reg31"
+    };
+  
     int DebuggerPC;
     private DefaultListModel model_1 = new DefaultListModel();
     //int pcreg;
@@ -523,28 +531,20 @@ private void BranchOrJumpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
                     case SLTU://sltu
                         s = s + Dis_RDRSRT("sltu", value);
                         break;
-                    //case 44://max (31/07/2008) NOT SURE IF THAT EXISTS (shadow)
-                   //     s = s + Dis_RDRSRT("max", value);
-                    //    break;
+                    case MAX:
+                        s = s + Dis_RDRSRT("max", value);
+                        break;
+                   /* case 1:
+                    case 5:
+                    case 48:
+                        s = s + "invalid ?";
+                        break;*/
                     default:
                         s = "unsupported special instruction + " + Integer.toHexString(specialop);
                         break;
                 }
                 break;
-            case 1: //Bcond table
-               /* int code = value & 0x1f0000;
-                if (code == 0) {
-                    s = s + "bltz " + cpuregs[rs] + ", 0x" + Integer.toHexString(imm * 4 + opcode_address + 4);
-                } else if (code == 0x10000) {
-                    s = s + "bgez " + cpuregs[rs] + ", 0x" + Integer.toHexString(imm * 4 + opcode_address + 4);
-                } else if (code == 0x100000) {
-                    s = s + "bltzal " + cpuregs[rs] + ", 0x" + Integer.toHexString(imm * 4 + opcode_address + 4);
-                } else if (code == 0x110000) {
-                    s = s + "bgezal " + cpuregs[rs] + ", 0x" + Integer.toHexString(imm * 4 + opcode_address + 4);
-                } else {
-                    s = s + "unimplement Bcond opcode";
-                }
-                break;*/
+            case REGIMM: //Bcond table
                 int regimmcode = (value >> 16) & 0x1f;
                 switch(regimmcode)
                 {
@@ -619,14 +619,19 @@ private void BranchOrJumpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
             case LUI://lui
                 s = s + "lui " + cpuregs[rt] + " , " + imm;
                 break;
-            case COP0://mc0 commands
-                int argCode = ((value >> 21) & 0x1f); //bits 21-25
-                if (argCode == 0) {
-                    s = s + "MFC0 " + cpuregs[rt] + ", " + cpuregs[rd];
-                } else if (argCode == 0x00100) {
-                    s = s + "MTC0 " + cpuregs[rs] + ", " + cpuregs[rd];
-                } else {
-                    s = s + "unimplemented mc0 opcode";
+            case COP0:
+                int cop0 = ((value >> 21) & 0x1f); //bits 21-25
+                switch(cop0)
+                { 
+                    case MFC0:
+                        s = s + "mfc0 " + cpuregs[rt] + ", " + cop0regs[rd];
+                        break;
+                    case MTC0:
+                        s = s + "mtc0 " + cpuregs[rt] + ", " + cop0regs[rd];
+                        break;
+                    default:
+                        s=s +"unknown cop0 opcode " + Integer.toHexString(cop0);
+                        break;
                 }
                 break;
             case COP1:
@@ -653,14 +658,46 @@ private void BranchOrJumpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
                         s = s + "halt";
                         break;
                     case MFIC:
-                        s = s + "mfic" + " " + cpuregs[rt] + " ," + cpuregs[rd];
+                        s = s + "mfic" + " " + cpuregs[rt] + ", " + cpuregs[rd];
                         break;
                     case MTIC:
-                        s = s + "mtic" + " " + cpuregs[rt] + " ," + cpuregs[rd];
+                        s = s + "mtic" + " " + cpuregs[rt] + ", " + cpuregs[rd];
                         break;
+                    /*case 21: case 37: case 46: case 51:
+                        s= s + "invalid ?";
+                        break;*/
                     default:
                         s = s + "Unknown Allegrex instruction " + Integer.toHexString(allegrexop);
                         break;
+                }
+                break;
+            case SPECIAL3:
+                int special3 = (value & 0x3f);
+                switch(special3)
+                {
+                    case EXT:
+                        int ext_size = (value >>11) & 0x1f;
+                        int ext_pos = (value >>6) & 0x1f;
+                        s = s + "ext " + cpuregs[rt] + ", " + cpuregs[rs] + ", " + ext_pos + ", " + ext_size+1 ;
+                        break;
+                    case BSHFL:
+                        int bshfl = (value >> 6) & 0x1f;
+                        switch(bshfl)
+                        {
+                            case SEB:
+                                s=s + Dis_RDRT("seb",value);
+                                break;
+                            case SEH:
+                                s=s+ Dis_RDRT("seh",value);
+                                break;
+                            default:
+                                s = s + "Unknown bshfl table instruction " + Integer.toHexString(bshfl);
+                                break;
+                         }
+                        break;
+                    default:
+                    s = s + "Unknown Special 3 instruction " + Integer.toHexString(special3);
+                    break;
                 }
                 break;
             case LB: //lb
@@ -705,6 +742,10 @@ private void BranchOrJumpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
             case SWC1://swc1
                 s = s + Dis_BASEFTOFFSET("swc1", value);
                 break;
+            /*case 19:
+            case 29:
+                s=s+ "invalid ?";
+                break;*/
             default:
                 s = "Unsupported instruction " + Integer.toHexString(opcode);
                 break;
@@ -848,13 +889,13 @@ private void BranchOrJumpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         int rt = (value >> 16) & 0x1f;
         int rd = (value >> 11) & 0x1f;
         if (rs == 0 && rt == 0) {
-            return "li " + cpuregs[rd] + " ,0";
+            return "li " + cpuregs[rd] + ", 0";
         } else if (rs == 0) {
-            return "move " + cpuregs[rd] + " ," + cpuregs[rs];
+            return "move " + cpuregs[rd] + ", " + cpuregs[rs];
         } else if (rt == 0) {
-            return "move " + cpuregs[rd] + " ," + cpuregs[rs];
+            return "move " + cpuregs[rd] + ", " + cpuregs[rs];
         } else {
-            return opname + " " + cpuregs[rd] + " ," + cpuregs[rs] + " , " + cpuregs[rt];
+            return opname + " " + cpuregs[rd] + ", " + cpuregs[rs] + ", " + cpuregs[rt];
         }
 
     }
@@ -877,13 +918,13 @@ private void BranchOrJumpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         int rt = (value >> 16) & 0x1f;
         int rd = (value >> 11) & 0x1f;
         int imm = value & 0xffff;
-        if ((imm & 0x8000) == 0x8000) {
+        if (!opname.equals("andi") && !opname.equals("ori") && !opname.equals("xori") && (imm & 0x8000) == 0x8000) {
             imm |= 0xffff0000;
         }
         if (rs == 0) {
-            return "li " + cpuregs[rt] + " ," + imm;
+            return "li " + cpuregs[rt] + ", " + imm;
         } else {
-            return opname + " " + cpuregs[rt] + " ," + cpuregs[rs] + " , " + imm;
+            return opname + " " + cpuregs[rt] + ", " + cpuregs[rs] + ", " + imm;
         }
     }
 
@@ -895,7 +936,7 @@ private void BranchOrJumpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         if (rd == 0) {
             return "nop";
         } else {
-            return opname + " " + cpuregs[rd] + " ," + cpuregs[rt] + " , " + sa;
+            return opname + " " + cpuregs[rd] + ", " + cpuregs[rt] + ", " + sa;
         }
     }
 
@@ -904,16 +945,21 @@ private void BranchOrJumpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         return opname + " " + cpuregs[rd];
 
     }
-
+    
     private String Dis_RS(String opname, int value) {
         int rs = (value >> 21) & 0x1f;
         return opname + " " + cpuregs[rs];
     }
-
+    private String Dis_RDRT(String opname,int value)
+    {
+        int rd = (value >> 11) & 0x1f;
+        int rt = (value >> 16) & 0x1f;
+        return opname + " " + cpuregs[rd] + ", " + cpuregs[rt];
+    }
     private String Dis_RSRT(String opname, int value) {
         int rs = (value >> 21) & 0x1f;
         int rt = (value >> 16) & 0x1f;
-        return opname + " " + cpuregs[rs] + " ," + cpuregs[rt];
+        return opname + " " + cpuregs[rs] + ", " + cpuregs[rt];
     }
 
     private String Dis_RTIMMRS(String opname, int value) {
@@ -933,7 +979,7 @@ private void BranchOrJumpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         if ((imm & 0x8000) == 0x8000) {
             imm |= 0xffff0000;
         }
-        return opname + " " + cpuregs[rs] + "," + cpuregs[rt] + " 0x" + Integer.toHexString(imm * 4 + opcode_address + 4);
+        return opname + " " + cpuregs[rs] + ", " + cpuregs[rt] + " 0x" + Integer.toHexString(imm * 4 + opcode_address + 4);
 
     }
 
