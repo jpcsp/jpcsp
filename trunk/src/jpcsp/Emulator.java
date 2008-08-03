@@ -37,7 +37,7 @@ public class Emulator {
     }
     
     private void futureLoad() throws IIOException{
-        String rom ="";
+        String rom ="path";
         
         initNewPsp();
         romManager = new FileManager(rom, getProcessor()); //here cpu already reset
