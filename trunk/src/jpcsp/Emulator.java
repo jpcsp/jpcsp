@@ -17,7 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp;
 
 import java.io.IOException;
-import javax.imageio.IIOException;
 
 public class Emulator {
 
@@ -32,13 +31,13 @@ public class Emulator {
         // TODO: here will load rom, iso or etc...
 
         getProcessor().reset(); //
-        ElfHeader.readHeader(rom, getProcessor()); 
+        ElfHeader.readHeader(rom, getProcessor());
         // load after implemented futureLoad()
     }
-    
-    private void futureLoad() throws IIOException{
+
+    private void futureLoad() throws IOException{
         String rom ="path";
-        
+
         initNewPsp();
         romManager = new FileManager(rom, getProcessor()); //here cpu already reset
 
@@ -52,7 +51,7 @@ public class Emulator {
             case FileManager.FORMAT_UMD:
                 break;
             default:
-                throw new IIOException("Is not an acceptable format, please choose the rigth file.");
+                throw new IOException("Is not an acceptable format, please choose the rigth file.");
         }
     }
 
@@ -77,7 +76,7 @@ public class Emulator {
     public Processor getProcessor() {
         return cpu;
     }
-    
+
     public Memory getMemory(){
         return Memory.get_instance();
     }
