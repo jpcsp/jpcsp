@@ -25,13 +25,14 @@ import org.jdom.Element;
 import org.jdom.input.SAXBuilder;
 import org.jdom.output.XMLOutputter;
 
-
 /**
  *
  * @author shadow
  */
 public class Settings {
- private static Settings instance = null;
+
+    private static Settings instance = null;
+
     public static Settings get_instance() {
         if (instance == null) {
             instance = new Settings();
@@ -42,10 +43,10 @@ public class Settings {
     public void NullSettings() {
         instance = null;
     }
-    public int[] readWindowPos(String windowname)
-    {
-       int[] coord = new int[2];
-       try {
+
+    public int[] readWindowPos(String windowname) {
+        int[] coord = new int[2];
+        try {
             // Build the document with SAX and Xerces, no validation
             SAXBuilder builder = new SAXBuilder();
             // Create the document
@@ -57,33 +58,28 @@ public class Settings {
             e.printStackTrace();
         }
         return coord;
-         
+
     }
-    public void writeWindowPos(String windowname,String[] pos)
-    {
-            try {
-           
+
+    public void writeWindowPos(String windowname, String[] pos) {
+        try {
+
             SAXBuilder builder = new SAXBuilder();
             Document doc = builder.build(new File("settings.xml"));
             Element webapp = doc.getRootElement();
             webapp.getChild("guisettings").getChild("windowspos").getChild(windowname).getChild("x").setText(pos[0]);
             webapp.getChild("guisettings").getChild("windowspos").getChild(windowname).getChild("y").setText(pos[1]);
             XMLOutputter xmloutputter = new XMLOutputter();
-            try
-            {
+            try {
                 FileOutputStream fileOutputStream = new FileOutputStream("settings.xml");
                 xmloutputter.output(doc, fileOutputStream);
                 fileOutputStream.close();
-            }
-            catch (FileNotFoundException e)
-            {
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
                 e.printStackTrace();
             }
-            catch (IOException e)
-            {
-                e.printStackTrace();
-            }
-         } catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

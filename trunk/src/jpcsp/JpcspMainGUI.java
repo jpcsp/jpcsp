@@ -19,6 +19,8 @@ package jpcsp;
 import java.awt.Point;
 import java.io.File;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
@@ -35,7 +37,7 @@ public class JpcspMainGUI extends javax.swing.JFrame {
 
     ElfHeaderInfo elfinfo;
     Disassembler dis;
-    Processor cpu;
+    Emulator emulator;
     Registers regs;
     MemoryViewer memview;
     final String version = MetaInformation.FULL_NAME;
@@ -43,8 +45,7 @@ public class JpcspMainGUI extends javax.swing.JFrame {
     /** Creates new form JpcspMainGUI */
     public JpcspMainGUI() {
         initComponents();
-        cpu = new Processor();//intialaze cpu
-
+        emulator = new Emulator(); //maybe pass the container drawndable
         this.setTitle(version);
     }
 
@@ -57,9 +58,9 @@ public class JpcspMainGUI extends javax.swing.JFrame {
             desktopPane.remove(dis);
             dis = null;
         }
-        dis = new Disassembler(cpu, regs);
+        dis = new Disassembler(emulator.getProcessor(), regs);
         //dis.setLocation(300, 0);
-        dis.setLocation(Settings.get_instance().readWindowPos("disassembler")[0],Settings.get_instance().readWindowPos("disassembler")[1]);
+        dis.setLocation(Settings.get_instance().readWindowPos("disassembler")[0], Settings.get_instance().readWindowPos("disassembler")[1]);
         dis.setVisible(true);
         desktopPane.add(dis);
         Disasembler.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
@@ -81,7 +82,7 @@ public class JpcspMainGUI extends javax.swing.JFrame {
 
         elfinfo = new ElfHeaderInfo();
         //elfinfo.setLocation(0, 0);
-        elfinfo.setLocation(Settings.get_instance().readWindowPos("elfheader")[0],Settings.get_instance().readWindowPos("elfheader")[1]);
+        elfinfo.setLocation(Settings.get_instance().readWindowPos("elfheader")[0], Settings.get_instance().readWindowPos("elfheader")[1]);
         elfinfo.setVisible(true);
 
         desktopPane.add(elfinfo);
@@ -100,9 +101,9 @@ public class JpcspMainGUI extends javax.swing.JFrame {
             desktopPane.remove(memview);
             memview = null;
         }
-        memview = new MemoryViewer(cpu);
-       // memview.setLocation(70, 150);
-        memview.setLocation(Settings.get_instance().readWindowPos("memoryview")[0],Settings.get_instance().readWindowPos("memoryview")[1]);
+        memview = new MemoryViewer(emulator.getProcessor());
+        // memview.setLocation(70, 150);
+        memview.setLocation(Settings.get_instance().readWindowPos("memoryview")[0], Settings.get_instance().readWindowPos("memoryview")[1]);
         memview.setVisible(true);
         desktopPane.add(memview);
         MemView.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
@@ -121,9 +122,9 @@ public class JpcspMainGUI extends javax.swing.JFrame {
             desktopPane.remove(regs);
             regs = null;
         }
-        regs = new Registers(cpu);
+        regs = new Registers(emulator.getProcessor());
         //regs.setLocation(70, 0);
-        regs.setLocation(Settings.get_instance().readWindowPos("registers")[0],Settings.get_instance().readWindowPos("registers")[1]);
+        regs.setLocation(Settings.get_instance().readWindowPos("registers")[0], Settings.get_instance().readWindowPos("registers")[1]);
         regs.setVisible(true);
         desktopPane.add(regs);
         Registers.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
@@ -168,7 +169,7 @@ public class JpcspMainGUI extends javax.swing.JFrame {
 
         fileMenu.setText("File");
 
-        openMenuItem.setText("Open Elf File");
+        openMenuItem.setText("Open File (ELF,PBP)");
         openMenuItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 openMenuItemActionPerformed(evt);
@@ -270,32 +271,37 @@ public class JpcspMainGUI extends javax.swing.JFrame {
 
     private JFileChooser makeJFileChooser() {
         final JFileChooser fc = new JFileChooser();
-        fc.setDialogTitle("Open Elf File");
+        fc.setDialogTitle("Open Elf/Pbp File");
         fc.setCurrentDirectory(new java.io.File("."));
         return fc;
     }
 
 private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openMenuItemActionPerformed
     boolean isloaded = false; // variable to check if user at least choose something  
+
     final JFileChooser fc = makeJFileChooser();
     int returnVal = fc.showOpenDialog(desktopPane);
 
     if (userChooseSomething(returnVal)) {
         File file = fc.getSelectedFile();
-
         //This is where a real application would open the file.   
         try {
-            cpu.reset();
-            ElfHeader.readHeader(file.getPath(), cpu);
-            //System.out.println(Integer.toHexString(cpu.pc));
+            emulator.load(file.getPath());
+            emulator.run(); //don't do nothing for while
+
             isloaded = true; //TODO check if it a valid file
+
             this.setTitle(version + " - " + file.getName());
         } catch (IOException e) {
-            e.printStackTrace();            
+            e.printStackTrace();
             JpcspDialogManager.showError(this, "IO Error : " + e.getMessage());
+        } catch (GeneralJpcspException ex) {
+            ex.printStackTrace();
+            JpcspDialogManager.showError(this, "General Error : " + ex.getMessage());
         }
     } else {
         return; //user cancel the action        
+
     }
     if (isloaded) {
         createELFWindow();
@@ -308,8 +314,8 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
 private void DisasemblerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DisasemblerActionPerformed
 
     if (dis != null) {
-       // dis.setLocation(300, 0);
-          dis.setLocation(Settings.get_instance().readWindowPos("disassembler")[0],Settings.get_instance().readWindowPos("disassembler")[1]);
+        // dis.setLocation(300, 0);
+        dis.setLocation(Settings.get_instance().readWindowPos("disassembler")[0], Settings.get_instance().readWindowPos("disassembler")[1]);
         if (dis.isVisible()) {
             dis.setVisible(false);
             Disasembler.setIcon(null);
@@ -327,7 +333,7 @@ private void ElfInfoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 // TODO add your handling code here:
     if (elfinfo != null) {
         //elfinfo.setLocation(0, 0);
-         elfinfo.setLocation(Settings.get_instance().readWindowPos("elfheader")[0],Settings.get_instance().readWindowPos("elfheader")[1]);
+        elfinfo.setLocation(Settings.get_instance().readWindowPos("elfheader")[0], Settings.get_instance().readWindowPos("elfheader")[1]);
         if (elfinfo.isVisible()) {
             elfinfo.setVisible(false);
             ElfInfo.setIcon(null);
@@ -375,7 +381,7 @@ private void RegistersActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
 // TODO add your handling code here:
     if (regs != null) {
         //regs.setLocation(70, 0);
-        regs.setLocation(Settings.get_instance().readWindowPos("registers")[0],Settings.get_instance().readWindowPos("registers")[1]);
+        regs.setLocation(Settings.get_instance().readWindowPos("registers")[0], Settings.get_instance().readWindowPos("registers")[1]);
         if (regs.isVisible()) {
             regs.setVisible(false);
             Registers.setIcon(null);
@@ -398,7 +404,7 @@ private void aboutMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 private void MemViewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MemViewActionPerformed
     if (memview != null) {
         //memview.setLocation(70, 150);
-         memview.setLocation(Settings.get_instance().readWindowPos("memoryview")[0],Settings.get_instance().readWindowPos("memoryview")[1]);
+        memview.setLocation(Settings.get_instance().readWindowPos("memoryview")[0], Settings.get_instance().readWindowPos("memoryview")[1]);
         if (memview.isVisible()) {
             memview.setVisible(false);
             MemView.setIcon(null);
@@ -419,56 +425,60 @@ private void WindowsPosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
     memview.setLocation(70, 150);
     regs.setLocation(70, 0);
     //write them to xml
-    String dispos[] = { "300" ,"0" };
-    String elfpos[] = { "0","0"};
-    String mempos[] = { "70","150"};
-    String regpos[] = { "70","0"};
+    String dispos[] = {"300", "0"};
+    String elfpos[] = {"0", "0"};
+    String mempos[] = {"70", "150"};
+    String regpos[] = {"70", "0"};
     Settings.get_instance().writeWindowPos("elfheader", elfpos);
     Settings.get_instance().writeWindowPos("registers", regpos);
     Settings.get_instance().writeWindowPos("disassembler", dispos);
     Settings.get_instance().writeWindowPos("memoryview", mempos);
-    
+
 }//GEN-LAST:event_WindowsPosActionPerformed
 
 private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
-      saveWinPos();
+    saveWinPos();
 }//GEN-LAST:event_formWindowClosing
-private void saveWinPos()
-{
-        if(dis.isVisible())
-    {
-        Point location = dis.getLocation();
-        String[] coord = new String[2];
-        coord[0]=Integer.toString(location.x);
-        coord[1]=Integer.toString(location.y);
-        Settings.get_instance().writeWindowPos("disassembler", coord);
+    private void saveWinPos() {
+
+        if (dis != null) {
+            if (dis.isVisible()) {
+                Point location = dis.getLocation();
+                String[] coord = new String[2];
+                coord[0] = Integer.toString(location.x);
+                coord[1] = Integer.toString(location.y);
+                Settings.get_instance().writeWindowPos("disassembler", coord);
+            }
+        }
+        if (elfinfo != null) {
+            if (elfinfo.isVisible()) {
+                Point location = elfinfo.getLocation();
+                String[] coord = new String[2];
+                coord[0] = Integer.toString(location.x);
+                coord[1] = Integer.toString(location.y);
+                Settings.get_instance().writeWindowPos("elfheader", coord);
+            }
+        }
+        if (regs != null) {
+            if (regs.isVisible()) {
+                Point location = regs.getLocation();
+                String[] coord = new String[2];
+                coord[0] = Integer.toString(location.x);
+                coord[1] = Integer.toString(location.y);
+                Settings.get_instance().writeWindowPos("registers", coord);
+            }
+        }
+        if (memview != null) {
+            if (memview.isVisible()) {
+                Point location = memview.getLocation();
+                String[] coord = new String[2];
+                coord[0] = Integer.toString(location.x);
+                coord[1] = Integer.toString(location.y);
+                Settings.get_instance().writeWindowPos("memoryview", coord);
+            }
+        }
     }
-    if(elfinfo.isVisible())
-    {
-        Point location = elfinfo.getLocation();
-        String[] coord = new String[2];
-        coord[0]=Integer.toString(location.x);
-        coord[1]=Integer.toString(location.y);
-        Settings.get_instance().writeWindowPos("elfheader", coord);
-    }
-    if(regs.isVisible())
-    {
-        Point location = regs.getLocation();
-        String[] coord = new String[2];
-        coord[0]=Integer.toString(location.x);
-        coord[1]=Integer.toString(location.y);
-        Settings.get_instance().writeWindowPos("registers", coord);
-    }
-    if(memview.isVisible())
-    {
-        Point location = memview.getLocation();
-        String[] coord = new String[2];
-        coord[0]=Integer.toString(location.x);
-        coord[1]=Integer.toString(location.y);
-        Settings.get_instance().writeWindowPos("memoryview", coord);
-    }
-    
-}
+
     /**
      * @param args the command line arguments
      */
