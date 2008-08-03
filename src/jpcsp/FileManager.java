@@ -31,7 +31,9 @@ import jpcsp.format.Elf32Rel;
 import jpcsp.util.Utilities;
 
 public class FileManager {
-
+    // TODO : Define a way to use this insteast ElfHeader.ElfInfo; ElfHeader.PbpInfo; ElfHeader.SectInfo
+    public static String ElfInfo,  PbpInfo,  SectInfo;
+    
     private Processor cpu;
     private String filePath;
     public final static int FORMAT_ELF = 0;
@@ -47,21 +49,9 @@ public class FileManager {
         this.filePath = filePath;
         this.cpu = cpu;
         this.cpu.reset();
-    //loadAndDefine(filePath);
+        //loadAndDefine(filePath);
     }
 
-    private void initializeCpu(Elf32Ehdr elf32, PSPModuleInfo moduleinfo) {
-        // I can set the type for FORMAT_ELF ???
-
-        //set the default values for registers not sure if they are correct and UNTESTED!!
-        // from soywiz/pspemulator
-        cpu.pc = (int) baseoffset + (int) elf32.getE_entry(); //set the pc register.
-        cpu.cpuregisters[31] = 0x08000004; //ra, should this be 0?
-        cpu.cpuregisters[5] = (int) baseoffset + (int) elf32.getE_entry(); // argumentsPointer a1 reg
-        cpu.cpuregisters[28] = (int) baseoffset + (int) moduleinfo.getM_gp(); //gp reg    gp register should get the GlobalPointer!!!
-        cpu.cpuregisters[29] = 0x09F00000; //sp
-        cpu.cpuregisters[26] = 0x09F00000; //k0
-    }
 
     private void loadAndDefine(String filePath) throws FileNotFoundException, IOException {
         RandomAccessFile f = new RandomAccessFile(filePath, "r");
@@ -81,11 +71,22 @@ public class FileManager {
         f.close();
 
     }
+    private void initializeCpu(Elf32Ehdr elf32, PSPModuleInfo moduleinfo) {
+        // I can set the type for FORMAT_ELF ???
+
+        //set the default values for registers not sure if they are correct and UNTESTED!!
+        // from soywiz/pspemulator
+        cpu.pc = (int) baseoffset + (int) elf32.getE_entry(); //set the pc register.
+        cpu.cpuregisters[31] = 0x08000004; //ra, should this be 0?
+        cpu.cpuregisters[5] = (int) baseoffset + (int) elf32.getE_entry(); // argumentsPointer a1 reg
+        cpu.cpuregisters[28] = (int) baseoffset + (int) moduleinfo.getM_gp(); //gp reg    gp register should get the GlobalPointer!!!
+        cpu.cpuregisters[29] = 0x09F00000; //sp
+        cpu.cpuregisters[26] = 0x09F00000; //k0
+    }
 
     public int getType() {
         return type;
     }
-    public static String ElfInfo,  PbpInfo,  SectInfo;
 
     private void firstStep(Elf32Ehdr elf32, RandomAccessFile f, List<Elf32Shdr> sectionheaders, Elf32Shdr shstrtab) throws IOException {
         /** Read the ELF section headers (1st pass) */
