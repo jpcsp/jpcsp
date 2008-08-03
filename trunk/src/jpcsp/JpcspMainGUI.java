@@ -301,7 +301,6 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         }
     } else {
         return; //user cancel the action        
-
     }
     if (isloaded) {
         createELFWindow();
