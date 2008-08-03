@@ -19,10 +19,6 @@ package jpcsp;
 import java.io.IOException;
 import javax.imageio.IIOException;
 
-/**
- *
- * @author Leandro
- */
 public class Emulator {
 
     private Processor cpu;
@@ -47,13 +43,13 @@ public class Emulator {
         romManager = new FileManager(rom, getProcessor()); //here cpu already reset
 
         switch (romManager.getType()) {
-            case FileManager.ELF:
+            case FileManager.FORMAT_ELF:
                 break;
-            case FileManager.ISO:
+            case FileManager.FORMAT_ISO:
                 break;
-            case FileManager.PBP:
+            case FileManager.FORMAT_PBP:
                 break;
-            case FileManager.UMD:
+            case FileManager.FORMAT_UMD:
                 break;
             default:
                 throw new IIOException("Is not an acceptable format, please choose the rigth file.");

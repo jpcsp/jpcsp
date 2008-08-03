@@ -54,4 +54,12 @@ public class Utilities {
         long l = (f.readUnsignedByte() | (f.readUnsignedByte() << 8) | (f.readUnsignedByte() << 16) | (f.readUnsignedByte() << 24));
         return (l & 0xFFFFFFFFL);
     }
+
+    public static int readUByte(RandomAccessFile f) throws IOException {
+        return f.readUnsignedByte();
+    }
+
+    public static int readUHalf(RandomAccessFile f) throws IOException {
+        return f.readUnsignedByte() | (f.readUnsignedByte() << 8);
+    }
 }
