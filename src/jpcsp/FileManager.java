@@ -19,6 +19,8 @@ package jpcsp;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.LinkedList;
+import java.util.List;
 import jpcsp.format.Elf32Ehdr;
 import jpcsp.format.PBP;
 
@@ -57,8 +59,8 @@ public class FileManager {
         processPbp(pbp, f);
 
         Elf32Ehdr elf32 = new Elf32Ehdr(f);
-        processElf32Ehdr(elf32); //when I know that it is an elf32 format valid?
-
+        processElf32Ehdr(elf32); // TODO: I must set the type of media; when I know that it is an elf32 format valid? 
+        readElfProgramHeaders(elf32,f);
     }
 
     private void processElf32Ehdr(Elf32Ehdr elf32) {
@@ -98,6 +100,29 @@ public class FileManager {
             elfoffset = 0;
             f.seek(0);
             PBP.setInfo("-----NOT A PBP FILE---------\n");
+        }
+    }
+
+    private void readElfProgramHeaders(Elf32Ehdr elf32,RandomAccessFile f) throws IOException {
+        List<Elf32Phdr> programheaders = new LinkedList<Elf32Phdr>();
+        StringBuffer phsb = new StringBuffer();
+
+        for (int i = 0; i < elf32.getE_phnum(); i++) {
+            f.seek(elfoffset + elf32.getE_phoff()  + (i * elf32.getE_phentsize()));
+            Elf32Phdr phdr = new Elf32Phdr(f);
+            programheaders.add(phdr);
+
+            phsb.append("-----PROGRAM HEADER #" + i + "-----" + "\n");
+            phsb.append(phdr.toString());
+
+            // yapspd: if the PRX file is a kernel module then the most significant
+            // bit must be set in the phsyical address of the first program header.
+            if (i == 0 && (phdr.getP_paddr() & 0x80000000L) == 0x80000000L) {
+                // kernel mode prx
+                System.out.println("Kernel mode PRX detected");
+            }
+            //SegInfo = phsb.toString();
+            ElfInfo += phsb.toString();
         }
     }
 }
