@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package jpcsp;
+package jpcsp.format;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import jpcsp.util.Utilities;
@@ -23,7 +23,7 @@ public class Elf32Phdr {
         return 32;
     }
 
-    Elf32Phdr(RandomAccessFile f) throws IOException {
+    public Elf32Phdr(RandomAccessFile f) throws IOException {
         read(f);
     }
 

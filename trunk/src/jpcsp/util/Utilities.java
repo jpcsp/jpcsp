@@ -62,4 +62,22 @@ public class Utilities {
     public static int readUHalf(RandomAccessFile f) throws IOException {
         return f.readUnsignedByte() | (f.readUnsignedByte() << 8);
     }
+
+    public static int readWord(RandomAccessFile f) throws IOException {
+        //readByte() isn't more correct? (already exists one readUWord() method to unsign values)
+        return (f.readUnsignedByte() | (f.readUnsignedByte() << 8) | (f.readUnsignedByte() << 16) | (f.readUnsignedByte() << 24));
+    }
+
+    public static String readStringZ(RandomAccessFile f) throws IOException {
+        StringBuffer sb = new StringBuffer();
+        int b;
+        for (;;) {
+            b = f.readUnsignedByte();
+            if (b == 0) {
+                break;
+            }
+            sb.append((char) b);
+        }
+        return sb.toString();
+    }
 }

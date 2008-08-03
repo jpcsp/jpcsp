@@ -16,13 +16,18 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp;
 
+import jpcsp.format.Elf32Phdr;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.LinkedList;
 import java.util.List;
+import jpcsp.ElfHeader.ShFlags;
 import jpcsp.format.Elf32Ehdr;
+import jpcsp.format.Elf32Shdr;
 import jpcsp.format.PBP;
+import jpcsp.format.PSPModuleInfo;
+import jpcsp.util.Utilities;
 
 public class FileManager {
 
@@ -49,6 +54,38 @@ public class FileManager {
     }
     public static String ElfInfo,  PbpInfo,  SectInfo;
 
+    private void firstStep(Elf32Ehdr elf32,RandomAccessFile f,List<Elf32Shdr> sectionheaders,Elf32Shdr shstrtab) throws IOException {
+    /** Read the ELF section headers (1st pass) */
+    sectionheaders = new LinkedList<Elf32Shdr>();
+    for (int i = 0; i < elf32.getE_shnum(); i++)
+    {
+        f.seek (elfoffset + elf32.getE_shoff() + (i * elf32.getE_shentsize()));
+        Elf32Shdr shdr = new Elf32Shdr(f);
+        sectionheaders.add(shdr);
+        
+        if (shdr.getSh_type() == 3 && shstrtab == null) //ShType.STRTAB
+            shstrtab = shdr;
+
+        // Load some sections into memory
+        if((shdr.getSh_flags() & ShFlags.Allocate.getValue())== ShFlags.Allocate.getValue())
+        {
+             switch(shdr.getSh_type())
+             {
+                 case 1: //ShType.PROGBITS
+                     //System.out.println("FEED MEMORY WITH IT!");
+                     f.seek(elfoffset + shdr.getSh_offset());
+                     int offsettoread = (int)baseoffset + (int)shdr.getSh_addr() - MemoryMap.START_RAM;
+                     f.read(Memory.get_instance().mainmemory,offsettoread,(int)shdr.getSh_size());
+                     break;
+                 case 8: // ShType.NOBITS
+                     System.out.println("NO BITS");
+                     // zero out this memory(?), from shdr.sh_addr to shdr.sh_addr + shdr.sh_size
+                     break;
+             }
+        }
+    }
+    }
+
     private void loadAndDefine(String filePath) throws FileNotFoundException, IOException {
         RandomAccessFile f = new RandomAccessFile(filePath, "r");
         elfoffset = 0;
@@ -61,6 +98,7 @@ public class FileManager {
         Elf32Ehdr elf32 = new Elf32Ehdr(f);
         processElf32Ehdr(elf32); // TODO: I must set the type of media; when I know that it is an elf32 format valid? 
         readElfProgramHeaders(elf32,f);
+        readElfSectionHeaders(elf32,f); // I can set the type for FORMAT_ELF
     }
 
     private void processElf32Ehdr(Elf32Ehdr elf32) {
@@ -125,4 +163,63 @@ public class FileManager {
             ElfInfo += phsb.toString();
         }
     }
+
+    private void readElfSectionHeaders(Elf32Ehdr elf32,RandomAccessFile f) throws IOException {
+        List<Elf32Shdr> sectionheaders = new LinkedList<Elf32Shdr>(); //used on all steps
+        Elf32Shdr shstrtab = null; //use in more than one step
+        
+        firstStep(elf32,f,sectionheaders,shstrtab);
+        secondStep(sectionheaders,shstrtab,f);
+    }
+
+    private void secondStep(List<Elf32Shdr> sectionheaders,Elf32Shdr shstrtab,RandomAccessFile f) throws IOException {
+        // 2nd pass generate info string for the GUI and get module infos
+    PSPModuleInfo moduleinfo = new PSPModuleInfo();
+    StringBuffer shsb = new StringBuffer();
+    int SectionCounter = 0;
+    for (Elf32Shdr shdr: sectionheaders)
+    {
+        // Number the section
+        shsb.append("-----SECTION HEADER #"+SectionCounter+"-----" + "\n");
+
+        // Resolve section name (if possible)
+        if (shstrtab != null)
+        {
+            f.seek(elfoffset + shstrtab.getSh_offset() + shdr.getSh_name());
+            String SectionName = Utilities.readStringZ(f);
+            if (SectionName.length() > 0)
+            {
+                shdr.setSh_namez(SectionName);
+                shsb.append(SectionName + "\n");
+
+                // Get module infos
+                if (SectionName.matches(".rodata.sceModuleInfo"))
+                {
+                    f.seek(elfoffset + shdr.getSh_offset());
+                    moduleinfo.read(f);
+                    //System.out.println(Long.toHexString(moduleinfo.m_gp));
+
+                    System.out.println("Found ModuleInfo name:'" + moduleinfo.getM_namez()
+                        + "' version:" + Utilities.formatString("short", Integer.toHexString(moduleinfo.getM_version() & 0xFFFF).toUpperCase()));
+
+                    if ((moduleinfo.getM_attr() & 0x1000) != 0)
+                    {
+                        System.out.println("Kernel mode module detected");
+                    }
+                    if ((moduleinfo.getM_attr() & 0x0800) != 0)
+                    {
+                        System.out.println("VSH mode module detected");
+                    }
+                }
+            }
+        }
+
+        // Add the normal info
+        shsb.append(shdr.toString());
+        SectionCounter++;
+    }
+    SectInfo = shsb.toString();
+
+    }
+     
 }
