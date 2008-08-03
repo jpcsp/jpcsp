@@ -419,10 +419,14 @@ private void MemViewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 private void WindowsPosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_WindowsPosActionPerformed
 // TODO add your handling code here:
     //reset windows Pos to default
-    dis.setLocation(300, 0);
-    elfinfo.setLocation(0, 0);
-    memview.setLocation(70, 150);
-    regs.setLocation(70, 0);
+    if (dis != null) 
+        dis.setLocation(300, 0);
+    if (elfinfo != null) 
+        elfinfo.setLocation(0, 0);
+    if (memview != null) 
+        memview.setLocation(70, 150);
+    if (regs != null) 
+        regs.setLocation(70, 0);
     //write them to xml
     String dispos[] = {"300", "0"};
     String elfpos[] = {"0", "0"};
