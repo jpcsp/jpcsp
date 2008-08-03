@@ -46,7 +46,7 @@ public class ElfHeader {
      private long offset_psar_data;
      
      
-     //private long pbp_size;
+     private long pbp_size;
     private void read (RandomAccessFile f) throws IOException
     {
      p_magic = readUWord(f);
@@ -59,7 +59,7 @@ public class ElfHeader {
      offset_snd0_at3 = readUWord(f);
      offset_psp_data = readUWord(f);
      offset_psar_data = readUWord(f);
-     //pbp_size = f.length();
+     pbp_size = f.length();
      
      
     }
@@ -88,7 +88,7 @@ public class ElfHeader {
     private long size_offset_pic1_png;
     private long size_offset_snd0_at3;
     private long size_offset_psp_data;
-    //private long size_offset_psar_data;
+    private long size_offset_psar_data;
     public static boolean deleteDir(File dir) {
         if (dir.isDirectory()) {
         String[] children = dir.list();
@@ -111,7 +111,7 @@ public class ElfHeader {
          size_offset_pic1_png    = offset_snd0_at3 -   offset_pic1_png;
          size_offset_snd0_at3    = offset_psp_data - offset_snd0_at3;
         size_offset_psp_data     = offset_psar_data - offset_psp_data;
-         //size_offset_psar_data   =  pbp_size -  size_offset_psar_data; //not needed?
+         size_offset_psar_data   =  pbp_size -  offset_psar_data; //not needed?
         
         File dir = new File("unpacked-pbp");
         deleteDir(dir);//delete all files and directory
@@ -179,7 +179,15 @@ public class ElfHeader {
           f1.write(data);
           f1.close();          
         }
-
+        if(size_offset_psar_data  >0)
+        {
+          byte[] data = new byte[(int)size_offset_psar_data  ];
+          f.seek(offset_psar_data);
+          f.readFully(data);
+          FileOutputStream f1 = new FileOutputStream("unpacked-pbp/data.psar");
+          f1.write(data);
+          f1.close();          
+        }
     }     
   }
 
