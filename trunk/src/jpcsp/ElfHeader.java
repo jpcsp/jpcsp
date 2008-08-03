@@ -17,6 +17,8 @@
 
 package jpcsp;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import jpcsp.util.Utilities;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -42,6 +44,9 @@ public class ElfHeader {
      private long offset_snd0_at3;
      private long offset_psp_data;
      private long offset_psar_data;
+     
+     
+     //private long pbp_size;
     private void read (RandomAccessFile f) throws IOException
     {
      p_magic = readUWord(f);
@@ -54,6 +59,9 @@ public class ElfHeader {
      offset_snd0_at3 = readUWord(f);
      offset_psp_data = readUWord(f);
      offset_psar_data = readUWord(f);
+     //pbp_size = f.length();
+     
+     
     }
 
         @Override
@@ -73,6 +81,106 @@ public class ElfHeader {
        str.append("offset_psar_data " + "\t" +  Utilities.formatString("long", Long.toHexString(offset_psar_data & 0xFFFFFFFFL).toUpperCase()) + "\n");
        return str.toString();
      }
+        private long size_p_offset_param_sfo;
+    private long size_p_icon0_png;
+    private long size_offset_icon1_pmf;
+    private long size_offset_pic0_png;
+    private long size_offset_pic1_png;
+    private long size_offset_snd0_at3;
+    private long size_offset_psp_data;
+    //private long size_offset_psar_data;
+    public static boolean deleteDir(File dir) {
+        if (dir.isDirectory()) {
+        String[] children = dir.list();
+        for (int i=0; i<children.length; i++) {
+        boolean success = deleteDir(new File(dir, children[i]));
+        if (!success) {
+        return false;
+        }
+        }
+        }
+        // The directory is now empty so delete it
+        return dir.delete();
+    }
+    public void unpackPBP(RandomAccessFile f)throws IOException
+    {
+         size_p_offset_param_sfo = p_icon0_png - p_offset_param_sfo;
+         size_p_icon0_png        = offset_icon1_pmf - p_icon0_png;
+         size_offset_icon1_pmf   = offset_pic0_png -offset_icon1_pmf;
+         size_offset_pic0_png    = offset_pic1_png - offset_pic0_png;
+         size_offset_pic1_png    = offset_snd0_at3 -   offset_pic1_png;
+         size_offset_snd0_at3    = offset_psp_data - offset_snd0_at3;
+        size_offset_psp_data     = offset_psar_data - offset_psp_data;
+         //size_offset_psar_data   =  pbp_size -  size_offset_psar_data; //not needed?
+        
+        File dir = new File("unpacked-pbp");
+        deleteDir(dir);//delete all files and directory
+        dir.mkdir();
+        if(size_p_offset_param_sfo >0)//correct
+        {
+          byte[] data = new byte[(int)size_p_offset_param_sfo];
+          f.seek(p_offset_param_sfo);
+          f.readFully(data);
+          FileOutputStream f1 = new FileOutputStream("unpacked-pbp/param.sfo");
+          f1.write(data);
+          f1.close();          
+        }
+        if(size_p_icon0_png>0)
+        {
+          byte[] data = new byte[(int)size_p_icon0_png];
+          f.seek(p_icon0_png);
+          f.readFully(data);
+          FileOutputStream f1 = new FileOutputStream("unpacked-pbp/icon0.png");
+          f1.write(data);
+          f1.close();   
+        }
+        if(size_offset_icon1_pmf>0)
+        {
+          byte[] data = new byte[(int)size_offset_icon1_pmf];
+          f.seek(offset_icon1_pmf);
+          f.readFully(data);
+          FileOutputStream f1 = new FileOutputStream("unpacked-pbp/icon1.pmf");
+          f1.write(data);
+          f1.close();   
+        }
+        if(size_offset_pic0_png>0)
+        {
+          byte[] data = new byte[(int)size_offset_pic0_png];
+          f.seek(offset_pic0_png);
+          f.readFully(data);
+          FileOutputStream f1 = new FileOutputStream("unpacked-pbp/pic0.png");
+          f1.write(data);
+          f1.close();   
+        }
+        if(size_offset_pic1_png>0)
+        {
+          byte[] data = new byte[(int)size_offset_pic1_png];
+          f.seek(offset_pic1_png);
+          f.readFully(data);
+          FileOutputStream f1 = new FileOutputStream("unpacked-pbp/pic1.png");
+          f1.write(data);
+          f1.close();   
+        }
+        if(size_offset_snd0_at3>0)
+        {
+          byte[] data = new byte[(int)size_offset_snd0_at3];
+          f.seek(offset_snd0_at3);
+          f.readFully(data);
+          FileOutputStream f1 = new FileOutputStream("unpacked-pbp/snd0.at3");
+          f1.write(data);
+          f1.close();   
+        }
+        if(size_offset_psp_data >0)
+        {
+          byte[] data = new byte[(int)size_offset_psp_data ];
+          f.seek(offset_psp_data);
+          f.readFully(data);
+          FileOutputStream f1 = new FileOutputStream("unpacked-pbp/data.psp");
+          f1.write(data);
+          f1.close();          
+        }
+
+    }     
   }
 
   private static class Elf32_Ehdr
@@ -360,6 +468,8 @@ public class ElfHeader {
     if(Long.toHexString(pbp.p_magic & 0xFFFFFFFFL).equals("50425000"))//file is pbp 50425000 == 0x3016CA8??? the comparison is made by hexa
         // TODO : check the documentation ...
     {
+        if(Settings.get_instance().readBoolEmuoptions("pbpunpack")) 
+            pbp.unpackPBP(f);
         elfoffset = pbp.offset_psp_data;
         f.seek(pbp.offset_psp_data); //seek the new offset!
         PbpInfo = pbp.toString();
@@ -707,4 +817,5 @@ public class ElfHeader {
 
     f.close();
   }
+
 }

@@ -13,8 +13,8 @@
            <y>0</y>
        </elfheader>
        <memoryview>
-           <x>70</x>
-           <y>150</y>
+           <x>62</x>
+           <y>111</y>
        </memoryview>
        <registers>
            <x>70</x>
@@ -24,4 +24,8 @@
     </windowspos>
 
   </guisettings>
+  
+  <emuoptions>
+      <pbpunpack>1</pbpunpack>
+  </emuoptions>
 </SETTINGS>
