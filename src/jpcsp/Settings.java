@@ -83,4 +83,47 @@ public class Settings {
             e.printStackTrace();
         }
     }
+    public boolean readBoolEmuoptions(String option)
+    {
+        int value=0;
+        try {
+            // Build the document with SAX and Xerces, no validation
+            SAXBuilder builder = new SAXBuilder();
+            // Create the document
+            Document doc = builder.build(new File("settings.xml"));
+            Element webapp = doc.getRootElement();
+            value =Integer.parseInt(webapp.getChild("emuoptions").getChild(option).getText());
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if(value==1) return true;
+        else return false;
+    }
+    public void writeBoolEmuoptions(String option,boolean value)
+    {
+            String state = "0";
+            if(value) state = "1";
+            try {
+
+            SAXBuilder builder = new SAXBuilder();
+            Document doc = builder.build(new File("settings.xml"));
+            Element webapp = doc.getRootElement();
+            webapp.getChild("emuoptions").getChild(option).setText(state);  
+            XMLOutputter xmloutputter = new XMLOutputter();
+            try {
+                FileOutputStream fileOutputStream = new FileOutputStream("settings.xml");
+                xmloutputter.output(doc, fileOutputStream);
+                fileOutputStream.close();
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+    }
+    
 }

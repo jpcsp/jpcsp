@@ -40,6 +40,7 @@ public class JpcspMainGUI extends javax.swing.JFrame {
     Emulator emulator;
     Registers regs;
     MemoryViewer memview;
+    SettingsGUI setgui;
     final String version = MetaInformation.FULL_NAME;
 
     /** Creates new form JpcspMainGUI */
@@ -148,6 +149,12 @@ public class JpcspMainGUI extends javax.swing.JFrame {
         fileMenu = new javax.swing.JMenu();
         openMenuItem = new javax.swing.JMenuItem();
         exitMenuItem = new javax.swing.JMenuItem();
+        Emulation = new javax.swing.JMenu();
+        Run = new javax.swing.JMenuItem();
+        Stop = new javax.swing.JMenuItem();
+        Reset = new javax.swing.JMenuItem();
+        Options = new javax.swing.JMenu();
+        SettingsMenu = new javax.swing.JMenuItem();
         Windows = new javax.swing.JMenu();
         Disasembler = new javax.swing.JMenuItem();
         ElfInfo = new javax.swing.JMenuItem();
@@ -186,6 +193,31 @@ public class JpcspMainGUI extends javax.swing.JFrame {
         fileMenu.add(exitMenuItem);
 
         menuBar.add(fileMenu);
+
+        Emulation.setText("Emulation");
+
+        Run.setText("Run");
+        Emulation.add(Run);
+
+        Stop.setText("Stop");
+        Emulation.add(Stop);
+
+        Reset.setText("Reset");
+        Emulation.add(Reset);
+
+        menuBar.add(Emulation);
+
+        Options.setText("Options");
+
+        SettingsMenu.setText("Settings");
+        SettingsMenu.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                SettingsMenuActionPerformed(evt);
+            }
+        });
+        Options.add(SettingsMenu);
+
+        menuBar.add(Options);
 
         Windows.setText("Windows");
         Windows.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -278,7 +310,7 @@ public class JpcspMainGUI extends javax.swing.JFrame {
 
 private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openMenuItemActionPerformed
     boolean isloaded = false; // variable to check if user at least choose something  
-
+    saveWinPos();//same windows before open something
     final JFileChooser fc = makeJFileChooser();
     int returnVal = fc.showOpenDialog(desktopPane);
 
@@ -442,6 +474,18 @@ private void WindowsPosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
 private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
     saveWinPos();
 }//GEN-LAST:event_formWindowClosing
+
+private void SettingsMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SettingsMenuActionPerformed
+      setgui = new SettingsGUI();
+      setgui.setLocation(200,50);
+      desktopPane.add(setgui);
+      setgui.setVisible(true);
+      try {
+            setgui.setSelected(true);
+        } catch (java.beans.PropertyVetoException e) {
+        }
+      
+}//GEN-LAST:event_SettingsMenuActionPerformed
     private void saveWinPos() {
 
         if (dis != null) {
@@ -502,8 +546,14 @@ private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:even
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenuItem Disasembler;
     private javax.swing.JMenuItem ElfInfo;
+    private javax.swing.JMenu Emulation;
     private javax.swing.JMenuItem MemView;
+    private javax.swing.JMenu Options;
     private javax.swing.JMenuItem Registers;
+    private javax.swing.JMenuItem Reset;
+    private javax.swing.JMenuItem Run;
+    private javax.swing.JMenuItem SettingsMenu;
+    private javax.swing.JMenuItem Stop;
     private javax.swing.JMenu Windows;
     private javax.swing.JMenuItem WindowsPos;
     private javax.swing.JMenuItem aboutMenuItem;
