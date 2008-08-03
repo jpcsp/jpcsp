@@ -33,7 +33,7 @@ public class Emulator {
 
         getProcessor().reset(); //
         ElfHeader.readHeader(rom, getProcessor()); 
-        //future load futureLoad()
+        // load after implemented futureLoad()
     }
     
     private void futureLoad() throws IIOException{
