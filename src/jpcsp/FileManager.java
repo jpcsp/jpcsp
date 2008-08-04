@@ -39,7 +39,6 @@ public class FileManager {
     private PSPModuleInfo moduleInfo;
     private PBP pbp;
     private Elf32 elf;
-    private Processor cpu;
     private RandomAccessFile actualFile;
     private String filePath;
     public final static int FORMAT_ELF = 0;
@@ -51,10 +50,8 @@ public class FileManager {
     private long baseoffset = 0;
     private boolean relocate = false;
 
-    public FileManager(String filePath, Processor cpu) throws FileNotFoundException, IOException {
+    public FileManager(String filePath) throws FileNotFoundException, IOException {
         this.filePath = filePath;
-        this.cpu = cpu; // I want to move this... the cpu behavior can't be here
-        this.cpu.reset();
         loadAndDefine(filePath);
     }
 
