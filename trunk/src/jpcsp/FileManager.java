@@ -86,7 +86,7 @@ public class FileManager {
             moduleInfo = new PSPModuleInfo();
 
             //makes sense put the more used first...
-            
+
             /*try pbp format*/
             pbp = new PBP(getActualFile());
             processPbp();
@@ -94,23 +94,23 @@ public class FileManager {
                 return;
             }
             /*end try pbp format*/
-            
+
             /*try elf32 format*/
             elf = new Elf32(getActualFile());
             processElf();
             if (getType() == FORMAT_ELF) {
-                return; 
+                return;
             }
             /*end try elf32 format*/
-            
-            
+
+
             /*try xxxx format*/
             /*try xxxx format*/
-            
-            
-            //NONE FORMAT SELECTED OR DETECTED :( 
+
+
+            //NONE FORMAT SELECTED OR DETECTED :(
         } finally {
-           // f.close(); // close or let it open... 
+           // f.close(); // close or let it open...
 
         }
     }
@@ -118,9 +118,9 @@ public class FileManager {
     public int getType() {
         return type;
     }
-   
+
     private void processElf() throws IOException {
-        readElf32Header(); 
+        readElf32Header();
         readElfProgramHeaders();
         readElfSectionHeaders();
     }
@@ -134,7 +134,7 @@ public class FileManager {
         if (!getElf32().getHeader().isMIPSExecutable()) {
             System.out.println("NOT A MIPS executable");
         }
-        ElfInfo = getElf32().getHeader().toString(); //better use Elf32Header.getInfo()...    
+        ElfInfo = getElf32().getHeader().toString(); //better use Elf32Header.getInfo()...
 
 
 
@@ -153,18 +153,18 @@ public class FileManager {
     private void processPbp() throws IOException {
 
         if (getPBP().isValid()) {
-            
+
             if (Settings.get_instance().readBoolEmuoptions("pbpunpack")){
                 getPBP().unpackPBP(getActualFile());
             }
-            elfoffset = getPBP().getOffset_psp_data();
+            elfoffset = getPBP().getOffsetPspData();
             getActualFile().seek(elfoffset); //seek the new offset
             PbpInfo = getPBP().toString(); //inteast this use PBP.getInfo()
             type = FORMAT_PBP;
         } else {
             elfoffset = 0;
             getActualFile().seek(0);
-            PBP.setInfo("-----NOT A PBP FILE---------\n");
+            getPBP().setInfo("-----NOT A PBP FILE---------\n");
         }
     }
 
@@ -190,7 +190,7 @@ public class FileManager {
             ElfInfo += phsb.toString();
         }
     }
-    
+
     private void readElfSectionHeaders() throws IOException {
         List<Elf32SectionHeader> sectionheaders = new LinkedList<Elf32SectionHeader>(); //use in more than one step
         Elf32SectionHeader shstrtab = null; //use in more than one step
@@ -202,7 +202,7 @@ public class FileManager {
         /** Read the ELF section headers (1st pass) */
         sectionheaders = new LinkedList<Elf32SectionHeader>();
         getElf32().setListSectionHeader(sectionheaders); //make the connection
-        
+
         Elf32SectionHeader shstrtab = null;
         for (int i = 0; i < elf32.getE_shnum(); i++) {
             f.seek(elfoffset + elf32.getE_shoff() + (i * elf32.getE_shentsize()));
@@ -235,7 +235,7 @@ public class FileManager {
 
         return shstrtab;
     }
-    
+
     private void secondStep(List<Elf32SectionHeader> sectionheaders, Elf32SectionHeader shstrtab, RandomAccessFile f,PSPModuleInfo moduleinfo) throws IOException {
         // 2nd pass generate info string for the GUI and get module infos
         //moduleinfo = new PSPModuleInfo(); moved to loadAndDefine()
@@ -282,7 +282,7 @@ public class FileManager {
     public long getBaseoffset() {
         return baseoffset;
     }
-    
+
     public long getElfoffset(){
         return elfoffset;
     }

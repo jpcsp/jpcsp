@@ -21,6 +21,7 @@ import jpcsp.format.Elf32;
 import jpcsp.format.Elf32Relocate;
 import jpcsp.format.Elf32SectionHeader;
 import jpcsp.format.PBP;
+import jpcsp.format.ELFLoader;
 
 public class Emulator {
 
@@ -31,11 +32,12 @@ public class Emulator {
         cpu = new Processor();
     }
 
-    public void load(String rom) throws IOException {
-        // TODO: here will load rom, iso or etc...        
+    public void load(String filename) throws IOException {
+        // TODO: here will load rom, iso or etc...
         getProcessor().reset(); //
 
-        ElfHeader.readHeader(rom, getProcessor());
+        //ElfHeader.readHeader(filename, getProcessor());
+        ELFLoader.LoadPBPELF(filename, getProcessor());
     // load after implemented : move the content from futureLoad() to load()
 
     }
@@ -75,7 +77,7 @@ public class Emulator {
     }
 
     private void initRamByElf32() throws IOException {
-        // 3rd pass relocate 
+        // 3rd pass relocate
         // is load the ram???
         if (romManager.getElf32().getHeader().requiresRelocation()) {
             for (Elf32SectionHeader shdr : romManager.getElf32().getListSectionHeader()) {
@@ -232,32 +234,32 @@ public class Emulator {
                             case 7: //R_MIPS_GPREL16
                             // 31/07/08 untested (fiveofhearts)
                             System.out.println("Untested relocation type " + R_TYPE + " at " + String.format("%08x", (int)baseoffset + (int)rel.r_offset));
-                            
+
                             if (external)
                             {
                             A = rel16;
-                            
+
                             //result = sign-extend(A) + S + GP;
                             result = (((A & 0x00008000) != 0) ? A & 0xFFFF0000 : A) + S + GP;
-                            
+
                             // verify
                             if ((result & ~0x0000FFFF) != 0)
                             throw new IOException("Relocation overflow (R_MIPS_GPREL16)");
-                            
+
                             data &= ~0x0000FFFF;
                             data |= (int)(result & 0x0000FFFF);
                             }
                             else if (local)
                             {
                             A = rel16;
-                            
+
                             //result = sign-extend(A) + S + GP;
                             result = (((A & 0x00008000) != 0) ? A & 0xFFFF0000 : A) + S + GP0 - GP;
-                            
+
                             // verify
                             if ((result & ~0x0000FFFF) != 0)
                             throw new IOException("Relocation overflow (R_MIPS_GPREL16)");
-                            
+
                             data &= ~0x0000FFFF;
                             data |= (int)(result & 0x0000FFFF);
                             }

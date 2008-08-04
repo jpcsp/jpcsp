@@ -20,9 +20,9 @@ import static jpcsp.MemoryMap.*;
 public class Memory {
     //21/07/08 memory using singleton pattern
     private static Memory instance = null;
-    byte[] mainmemory;
-    byte[] scratchpad;
-    byte[] videoram;
+    public byte[] mainmemory;
+    public byte[] scratchpad;
+    public byte[] videoram;
 
     public static Memory get_instance() {
         if (instance == null) {
@@ -79,7 +79,7 @@ public class Memory {
          {
              System.out.println("unsupported write8 in addr= " + address + " data= " + data);
          }
-         
+
     }
     public void write16(int address , short data)
     {
@@ -87,7 +87,7 @@ public class Memory {
            int i = address - 0x08000000;
            mainmemory[i+1] = (byte)(data >> 8);
 	   mainmemory[i] = (byte)(data & 0x00ff);
-         } 
+         }
          else
          {
              System.out.println("unsupported write16 in addr= " + address + " data= " + data);
@@ -106,6 +106,6 @@ public class Memory {
          {
              System.out.println("unsupported write32 in addr= " + address + " data= " + data);
          }
-        
+
     }
 }
