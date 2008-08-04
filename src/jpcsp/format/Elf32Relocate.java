@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import static jpcsp.util.Utilities.*;
 
-public class Elf32Rel {
+public class Elf32Relocate {
 
     private long r_offset;
     private long r_info;
