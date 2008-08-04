@@ -34,23 +34,23 @@ public class Emulator {
     public void load(String rom) throws IOException {
         // TODO: here will load rom, iso or etc...        
         getProcessor().reset(); //
+
         ElfHeader.readHeader(rom, getProcessor());
-        // load after implemented : move the content from futureLoad() to load()
+    // load after implemented : move the content from futureLoad() to load()
 
     }
 
-    
-
-    private void futureLoad() throws IOException{
-        String rom ="path";
+    private void futureLoad() throws IOException {
+        String rom = "path";
 
         initNewPsp();
         //filemanager take care the file stuffs (just it) (define, load headers..)
-        romManager = new FileManager(rom); 
+        romManager = new FileManager(rom);
 
         switch (romManager.getType()) {
             case FileManager.FORMAT_ELF:
                 init(romManager.getElf32()); // init RAM, CPU, GPU... the only one working by now!?!
+
                 break;
             case FileManager.FORMAT_ISO:
                 break;
@@ -67,14 +67,13 @@ public class Emulator {
     //elf32 init
     private void init(Elf32 elf32) throws IOException {
         initRamByElf32();
-        initCpuByElf32(); 
+        initCpuByElf32();
     }
 
     private void init(PBP pBP) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
-    
-    
+
     private void initRamByElf32() throws IOException {
         // 3rd pass relocate 
         // is load the ram???
@@ -278,15 +277,22 @@ public class Emulator {
         }
 
     }
+
     private void initCpuByElf32() {
         //set the default values for registers not sure if they are correct and UNTESTED!!
         // from soywiz/pspemulator
         cpu.pc = (int) romManager.getBaseoffset() + (int) romManager.getElf32().getHeader().getE_entry(); //set the pc register.
+
         cpu.cpuregisters[31] = 0x08000004; //ra, should this be 0?
+
         cpu.cpuregisters[5] = (int) romManager.getBaseoffset() + (int) romManager.getElf32().getHeader().getE_entry(); // argumentsPointer a1 reg
+
         cpu.cpuregisters[28] = (int) romManager.getBaseoffset() + (int) romManager.getPSPModuleInfo().getM_gp(); //gp reg    gp register should get the GlobalPointer!!!
+
         cpu.cpuregisters[29] = 0x09F00000; //sp
+
         cpu.cpuregisters[26] = 0x09F00000; //k0
+
     }
 
     private void initNewPsp() {
@@ -311,9 +317,7 @@ public class Emulator {
         return cpu;
     }
 
-    public static Memory getMemory(){
+    public static Memory getMemory() {
         return Memory.get_instance();
     }
-
-
 }
