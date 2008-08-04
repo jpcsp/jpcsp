@@ -45,7 +45,8 @@ public class Emulator {
         String rom ="path";
 
         initNewPsp();
-        romManager = new FileManager(rom, getProcessor()); //here cpu already reset
+        //filemanager take care the file stuffs (just it) (define, load headers..)
+        romManager = new FileManager(rom); 
 
         switch (romManager.getType()) {
             case FileManager.FORMAT_ELF:
