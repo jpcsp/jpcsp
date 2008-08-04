@@ -6,6 +6,7 @@ package jpcsp.format;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.List;
 
 public class Elf32 {
 
@@ -13,7 +14,12 @@ public class Elf32 {
     private Elf32ProgramHeader programHeader;
     private Elf32SectionHeader sectionHeader;
     private Elf32Relocate relocate;
-
+    private List<Elf32SectionHeader> sectionheaders;
+    
+    public List<Elf32SectionHeader> getListSectionHeader(){
+        return sectionheaders;
+    }
+    
     public Elf32(RandomAccessFile f) throws IOException {
         header = new Elf32Header(f);
     }
@@ -28,6 +34,10 @@ public class Elf32 {
 
     public Elf32ProgramHeader getProgramHeader() {
         return programHeader;
+    }
+
+    public void setListSectionHeader(List<Elf32SectionHeader> sectionheaders) {
+        this.sectionheaders = sectionheaders;
     }
 
     public void setProgramHeader(Elf32ProgramHeader programHeader) {
