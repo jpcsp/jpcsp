@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.Debugger.DisassemblerModule;
 
 
+import jpcsp.util.OptionPaneMultiple;
 import java.awt.Point;
 import jpcsp.Debugger.*;
 import java.awt.Toolkit;
@@ -297,7 +298,7 @@ private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
 // TODO add your handling code here:
     //System.out.println("dump code dialog created");
     OptionPaneMultiple opt=new OptionPaneMultiple(Integer.toHexString(DebuggerPC),Integer.toHexString(DebuggerPC + 0x00000070));
-    if(opt.completed){
+    if(opt.completed()){
         //Here the input can be used to actually dump code
         System.out.println("Start address: "+opt.getInput()[0]);
         System.out.println("End address: "+opt.getInput()[1]);
