@@ -9,7 +9,7 @@ import java.io.RandomAccessFile;
 import jpcsp.util.Utilities;
 import static jpcsp.util.Utilities.*;
 
-public class Elf32Shdr {
+public class Elf32SectionHeader {
 
     private String sh_namez = "";
     private long sh_name;
@@ -26,7 +26,7 @@ public class Elf32Shdr {
     private static int sizeof() {
         return 40;
     }
-    public Elf32Shdr(RandomAccessFile f) throws IOException {
+    public Elf32SectionHeader(RandomAccessFile f) throws IOException {
         read(f);
     }
     private void read(RandomAccessFile f) throws IOException {

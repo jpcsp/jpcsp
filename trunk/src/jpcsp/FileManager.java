@@ -16,25 +16,31 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp;
 
-import jpcsp.format.Elf32Phdr;
+import jpcsp.format.Elf32ProgramHeader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.LinkedList;
 import java.util.List;
 import jpcsp.ElfHeader.ShFlags;
-import jpcsp.format.Elf32Ehdr;
-import jpcsp.format.Elf32Shdr;
+import jpcsp.format.Elf32;
+import jpcsp.format.Elf32Header;
+import jpcsp.format.Elf32SectionHeader;
 import jpcsp.format.PBP;
 import jpcsp.format.PSPModuleInfo;
-import jpcsp.format.Elf32Rel;
+import jpcsp.format.Elf32Relocate;
 import jpcsp.util.Utilities;
 
 public class FileManager {
     // TODO : Define a way to use this insteast ElfHeader.ElfInfo; ElfHeader.PbpInfo; ElfHeader.SectInfo
-    public static String ElfInfo,  PbpInfo,  SectInfo;
 
+    public static String ElfInfo,  PbpInfo,  SectInfo; // TODO : think a better way
+
+    private PSPModuleInfo moduleInfo;
+    private PBP pbp;
+    private Elf32 elf;
     private Processor cpu;
+    private RandomAccessFile actualFile;
     private String filePath;
     public final static int FORMAT_ELF = 0;
     public final static int FORMAT_PBP = 10;
@@ -45,56 +51,84 @@ public class FileManager {
     private long baseoffset = 0;
     private boolean relocate = false;
 
-    public FileManager(String filePath, Processor cpu) {
+    public FileManager(String filePath, Processor cpu) throws FileNotFoundException, IOException {
         this.filePath = filePath;
-        this.cpu = cpu;
+        this.cpu = cpu; // I want to move this... the cpu behavior can't be here
         this.cpu.reset();
-        //loadAndDefine(filePath);
+        loadAndDefine(filePath);
     }
 
+    public PSPModuleInfo getPSPModuleInfo() {
+        return moduleInfo;
+    }
+
+    public PBP getPBP() {
+        return pbp;
+    }
+
+    public Elf32 getElf32() {
+        return elf;
+    }
+
+    private RandomAccessFile getActualFile() {
+        return actualFile;
+    }
+
+    private void setActualFile(RandomAccessFile f) {
+        actualFile = f;
+    }
 
     private void loadAndDefine(String filePath) throws FileNotFoundException, IOException {
         RandomAccessFile f = new RandomAccessFile(filePath, "r");
-        elfoffset = 0;
-        baseoffset = 0;
-        relocate = false;
+        setActualFile(f);
+        try {
+            elfoffset = 0;
+            baseoffset = 0;
+            relocate = false;
 
-        PSPModuleInfo moduleinfo = new PSPModuleInfo();
+            moduleInfo = new PSPModuleInfo();
 
-        PBP pbp = new PBP(f);
-        processPbp(pbp, f);
+            //makes sense put the more used first...
+            
+            /*try pbp format*/
+            pbp = new PBP(getActualFile());
+            processPbp();
+            if (getType() == FORMAT_PBP) {
+                return;
+            }
+            /*end try pbp format*/
+            
+            /*try elf32 format*/
+            elf = new Elf32(getActualFile());
+            processElf();
+            if (getType() == FORMAT_ELF) {
+                return; 
+            }
+            /*end try elf32 format*/
+            
+            
+            /*try xxxx format*/
+            /*try xxxx format*/
+            
+            
+            //NONE FORMAT SELECTED OR DETECTED :( 
+        } finally {
+            f.close(); // close or let it open... 
 
-        Elf32Ehdr elf32 = new Elf32Ehdr(f);
-        processElf(elf32, f, moduleinfo); // I can set the type for FORMAT_ELF ???
-
-        initializeCpu(elf32, moduleinfo); //k0
-        f.close();
-
-    }
-    private void initializeCpu(Elf32Ehdr elf32, PSPModuleInfo moduleinfo) {
-        // I can set the type for FORMAT_ELF ???
-
-        //set the default values for registers not sure if they are correct and UNTESTED!!
-        // from soywiz/pspemulator
-        cpu.pc = (int) baseoffset + (int) elf32.getE_entry(); //set the pc register.
-        cpu.cpuregisters[31] = 0x08000004; //ra, should this be 0?
-        cpu.cpuregisters[5] = (int) baseoffset + (int) elf32.getE_entry(); // argumentsPointer a1 reg
-        cpu.cpuregisters[28] = (int) baseoffset + (int) moduleinfo.getM_gp(); //gp reg    gp register should get the GlobalPointer!!!
-        cpu.cpuregisters[29] = 0x09F00000; //sp
-        cpu.cpuregisters[26] = 0x09F00000; //k0
+        }
     }
 
     public int getType() {
         return type;
     }
-
-    private Elf32Shdr firstStep(Elf32Ehdr elf32, RandomAccessFile f, List<Elf32Shdr> sectionheaders) throws IOException {
+ 
+    private Elf32SectionHeader firstStep(Elf32Header elf32, RandomAccessFile f, List<Elf32SectionHeader> sectionheaders) throws IOException {
         /** Read the ELF section headers (1st pass) */
-        sectionheaders = new LinkedList<Elf32Shdr>();
-        Elf32Shdr shstrtab = null;
+        sectionheaders = new LinkedList<Elf32SectionHeader>();
+        Elf32SectionHeader shstrtab = null;
         for (int i = 0; i < elf32.getE_shnum(); i++) {
             f.seek(elfoffset + elf32.getE_shoff() + (i * elf32.getE_shentsize()));
-            Elf32Shdr shdr = new Elf32Shdr(f);
+            Elf32SectionHeader shdr = new Elf32SectionHeader(f);
             sectionheaders.add(shdr);
 
             if (shdr.getSh_type() == 3 && shstrtab == null) //ShType.STRTAB
@@ -109,7 +143,7 @@ public class FileManager {
                         //System.out.println("FEED MEMORY WITH IT!");
 
                         f.seek(elfoffset + shdr.getSh_offset());
-                        int offsettoread = (int) baseoffset + (int) shdr.getSh_addr() - MemoryMap.START_RAM;
+                        int offsettoread = (int) getBaseoffset() + (int) shdr.getSh_addr() - MemoryMap.START_RAM;
                         f.read(Memory.get_instance().mainmemory, offsettoread, (int) shdr.getSh_size());
                         break;
                     case 8: // ShType.NOBITS
@@ -124,13 +158,13 @@ public class FileManager {
         return shstrtab;
     }
 
-    private void processElf(Elf32Ehdr elf32, RandomAccessFile f, PSPModuleInfo moduleinfo) throws IOException {
-        processElf32Ehdr(elf32); // TODO: I must set the type of media; when I know that it is an elf32 format valid?
-        readElfProgramHeaders(elf32, f);
-        readElfSectionHeaders(elf32, f, moduleinfo); // I can set the type for FORMAT_ELF
+    private void processElf() throws IOException {
+        readElf32Header(getElf32().getHeader()); // TODO: I must set the type of media; when I know that it is an elf32 format valid?
+        readElfProgramHeaders(getElf32().getHeader(), getActualFile());
+        readElfSectionHeaders(getElf32().getHeader(), getActualFile(), getPSPModuleInfo()); // I can set the type for FORMAT_ELF
     }
 
-    private void processElf32Ehdr(Elf32Ehdr elf32) {
+    private void readElf32Header(Elf32Header elf32) {
         if (!elf32.isValid()) {
             System.out.println("NOT AN ELF FILE");
         } else {
@@ -139,7 +173,8 @@ public class FileManager {
         if (!elf32.isMIPSExecutable()) {
             System.out.println("NOT A MIPS executable");
         }
-        ElfInfo = elf32.toString(); //better use Elf32Ehdr.getInfo()...
+        ElfInfo = elf32.toString(); //better use Elf32Header.getInfo()...    
+
 
 
         if (elf32.isPRXDetected()) {
@@ -154,29 +189,31 @@ public class FileManager {
         }
     }
 
-    private void processPbp(PBP pbp, RandomAccessFile f) throws IOException {
+    private void processPbp() throws IOException {
 
-        if (pbp.isValid()) {
-            elfoffset = pbp.getOffset_psp_data();
-            f.seek(elfoffset); //seek the new offset
-
-            PbpInfo = pbp.toString(); //inteast this use PBP.getInfo()
-
+        if (getPBP().isValid()) {
+            
+            if (Settings.get_instance().readBoolEmuoptions("pbpunpack")){
+                getPBP().unpackPBP(getActualFile());
+            }
+            elfoffset = getPBP().getOffset_psp_data();
+            getActualFile().seek(elfoffset); //seek the new offset
+            PbpInfo = getPBP().toString(); //inteast this use PBP.getInfo()
             type = FORMAT_PBP;
         } else {
             elfoffset = 0;
-            f.seek(0);
+            getActualFile().seek(0);
             PBP.setInfo("-----NOT A PBP FILE---------\n");
         }
     }
 
-    private void readElfProgramHeaders(Elf32Ehdr elf32, RandomAccessFile f) throws IOException {
-        List<Elf32Phdr> programheaders = new LinkedList<Elf32Phdr>();
+    private void readElfProgramHeaders(Elf32Header elf32, RandomAccessFile f) throws IOException {
+        List<Elf32ProgramHeader> programheaders = new LinkedList<Elf32ProgramHeader>();
         StringBuffer phsb = new StringBuffer();
 
         for (int i = 0; i < elf32.getE_phnum(); i++) {
             f.seek(elfoffset + elf32.getE_phoff() + (i * elf32.getE_phentsize()));
-            Elf32Phdr phdr = new Elf32Phdr(f);
+            Elf32ProgramHeader phdr = new Elf32ProgramHeader(f);
             programheaders.add(phdr);
 
             phsb.append("-----PROGRAM HEADER #" + i + "-----" + "\n");
@@ -192,22 +229,21 @@ public class FileManager {
             ElfInfo += phsb.toString();
         }
     }
-
-    private void readElfSectionHeaders(Elf32Ehdr elf32, RandomAccessFile f, PSPModuleInfo moduleinfo) throws IOException {
-        List<Elf32Shdr> sectionheaders = new LinkedList<Elf32Shdr>(); //use in more than one step
-        Elf32Shdr shstrtab = null; //use in more than one step
-
+    
+    private void readElfSectionHeaders(Elf32Header elf32, RandomAccessFile f,PSPModuleInfo moduleinfo) throws IOException {
+        List<Elf32SectionHeader> sectionheaders = new LinkedList<Elf32SectionHeader>(); //use in more than one step
+        Elf32SectionHeader shstrtab = null; //use in more than one step
         shstrtab = firstStep(elf32, f, sectionheaders);
         secondStep(sectionheaders, shstrtab, f, moduleinfo);
-        thirdStep(sectionheaders, f, moduleinfo);
+        thirdStep(sectionheaders, f, moduleinfo); //load the main memory?
     }
 
-    private void secondStep(List<Elf32Shdr> sectionheaders, Elf32Shdr shstrtab, RandomAccessFile f, PSPModuleInfo moduleinfo) throws IOException {
+    private void secondStep(List<Elf32SectionHeader> sectionheaders, Elf32SectionHeader shstrtab, RandomAccessFile f,PSPModuleInfo moduleinfo) throws IOException {
         // 2nd pass generate info string for the GUI and get module infos
         //moduleinfo = new PSPModuleInfo(); moved to loadAndDefine()
-        StringBuffer shsb = new StringBuffer();
+         StringBuffer shsb = new StringBuffer();
         int SectionCounter = 0;
-        for (Elf32Shdr shdr : sectionheaders) {
+        for (Elf32SectionHeader shdr : sectionheaders) {
             // Number the section
             shsb.append("-----SECTION HEADER #" + SectionCounter + "-----" + "\n");
 
@@ -245,17 +281,17 @@ public class FileManager {
 
     }
 
-    private void thirdStep(List<Elf32Shdr> sectionheaders, RandomAccessFile f, PSPModuleInfo moduleinfo) throws IOException {
-    // 3rd pass relocate
+    private void thirdStep(List<Elf32SectionHeader> sectionheaders, RandomAccessFile f,PSPModuleInfo moduleinfo) throws IOException {
+        // 3rd pass relocate
         if (relocate) {
-            for (Elf32Shdr shdr : sectionheaders) {
+            for (Elf32SectionHeader shdr : sectionheaders) {
                 if (shdr.getSh_type() == 0x700000A0 || // PRX reloc magic
                         shdr.getSh_type() == 0x00000009) //ShType.REL
                 {
-                    Elf32Rel rel = new Elf32Rel();
+                    Elf32Relocate rel = new Elf32Relocate();
                     f.seek(elfoffset + shdr.getSh_offset());
 
-                    int RelCount = (int) shdr.getSh_size() / Elf32Rel.sizeof();
+                    int RelCount = (int) shdr.getSh_size() / Elf32Relocate.sizeof();
                     System.out.println(shdr.getSh_namez() + ": relocating " + RelCount + " entries");
 
                     int AHL = 0; // (AHI << 16) | (ALO & 0xFFFF)
@@ -276,7 +312,7 @@ public class FileManager {
                         int ADDR_BASE = (int) ((rel.getR_info() >> 16) & 0xFF);
                         //System.out.println("type=" + R_TYPE + ",base=" + OFS_BASE + ",addr=" + ADDR_BASE + "");
 
-                        int data = Memory.get_instance().read32((int) baseoffset + (int) rel.getR_offset());
+                        int data = Memory.get_instance().read32((int) getBaseoffset() + (int) rel.getR_offset());
                         long result = 0; // Used to hold the result of relocation, OR this back into data
 
                         // these are the addends?
@@ -296,13 +332,13 @@ public class FileManager {
                         // moved outside the loop so context is saved
                         //int AHL = 0; // (AHI << 16) | (ALO & 0xFFFF)
 
-                        int P = (int) baseoffset + (int) rel.getR_offset(); // address of instruction being relocated? 31/07/08 unused when external=true (fiveofhearts)
+                        int P = (int) getBaseoffset() + (int) rel.getR_offset(); // address of instruction being relocated? 31/07/08 unused when external=true (fiveofhearts)
 
-                        int S = (int) baseoffset; // ? copied from soywiz/pspemulator, but doesn't match the docs (fiveofhearts)
+                        int S = (int) getBaseoffset(); // ? copied from soywiz/pspemulator, but doesn't match the docs (fiveofhearts)
 
                         int G = 0; // ? 31/07/08 unused (fiveofhearts)
 
-                        int GP = (int) baseoffset + (int) moduleinfo.getM_gp(); // final gp value, computed correctly? 31/07/08 only used in R_MIPS_GPREL16 which is untested (fiveofhearts)
+                        int GP = (int) getBaseoffset() + (int) moduleinfo.getM_gp(); // final gp value, computed correctly? 31/07/08 only used in R_MIPS_GPREL16 which is untested (fiveofhearts)
 
                         int GP0 = (int) moduleinfo.getM_gp(); // gp value, computed correctly? 31/07/08 unused when external=true (fiveofhearts)
 
@@ -320,7 +356,7 @@ public class FileManager {
 
                                 A = hi16;
                                 AHL = A << 16;
-                                HI_addr = (int) baseoffset + (int) rel.getR_offset();
+                                HI_addr = (int) getBaseoffset() + (int) rel.getR_offset();
                                 break;
 
                             case 6: //R_MIPS_LO16
@@ -400,51 +436,55 @@ public class FileManager {
 
                             /* sample before relocation: 0x00015020: 0x8F828008 '....' - lw         $v0, -32760($gp)
                             case 7: //R_MIPS_GPREL16
-                                // 31/07/08 untested (fiveofhearts)
-                                System.out.println("Untested relocation type " + R_TYPE + " at " + String.format("%08x", (int)baseoffset + (int)rel.r_offset));
-
-                                if (external)
-                                {
-                                A = rel16;
-
-                                //result = sign-extend(A) + S + GP;
-                                result = (((A & 0x00008000) != 0) ? A & 0xFFFF0000 : A) + S + GP;
-
-                                // verify
-                                if ((result & ~0x0000FFFF) != 0)
-                                throw new IOException("Relocation overflow (R_MIPS_GPREL16)");
-
-                                data &= ~0x0000FFFF;
-                                data |= (int)(result & 0x0000FFFF);
-                                }
-                                else if (local)
-                                {
-                                A = rel16;
-
-                                //result = sign-extend(A) + S + GP;
-                                result = (((A & 0x00008000) != 0) ? A & 0xFFFF0000 : A) + S + GP0 - GP;
-
-                                // verify
-                                if ((result & ~0x0000FFFF) != 0)
-                                throw new IOException("Relocation overflow (R_MIPS_GPREL16)");
-
-                                data &= ~0x0000FFFF;
-                                data |= (int)(result & 0x0000FFFF);
-                                }
-                                break;
+                            // 31/07/08 untested (fiveofhearts)
+                            System.out.println("Untested relocation type " + R_TYPE + " at " + String.format("%08x", (int)baseoffset + (int)rel.r_offset));
+                            
+                            if (external)
+                            {
+                            A = rel16;
+                            
+                            //result = sign-extend(A) + S + GP;
+                            result = (((A & 0x00008000) != 0) ? A & 0xFFFF0000 : A) + S + GP;
+                            
+                            // verify
+                            if ((result & ~0x0000FFFF) != 0)
+                            throw new IOException("Relocation overflow (R_MIPS_GPREL16)");
+                            
+                            data &= ~0x0000FFFF;
+                            data |= (int)(result & 0x0000FFFF);
+                            }
+                            else if (local)
+                            {
+                            A = rel16;
+                            
+                            //result = sign-extend(A) + S + GP;
+                            result = (((A & 0x00008000) != 0) ? A & 0xFFFF0000 : A) + S + GP0 - GP;
+                            
+                            // verify
+                            if ((result & ~0x0000FFFF) != 0)
+                            throw new IOException("Relocation overflow (R_MIPS_GPREL16)");
+                            
+                            data &= ~0x0000FFFF;
+                            data |= (int)(result & 0x0000FFFF);
+                            }
+                            break;
                              */
 
                             default:
-                                System.out.println("Unhandled relocation type " + R_TYPE + " at " + String.format("%08x", (int) baseoffset + (int) rel.getR_offset()));
+                                System.out.println("Unhandled relocation type " + R_TYPE + " at " + String.format("%08x", (int) getBaseoffset() + (int) rel.getR_offset()));
                                 break;
                         }
 
                         //System.out.println("Relocation type " + R_TYPE + " at " + String.format("%08x", (int)baseoffset + (int)rel.r_offset));
-                        Memory.get_instance().write32((int) baseoffset + (int) rel.getR_offset(), data);
+                        Memory.get_instance().write32((int) getBaseoffset() + (int) rel.getR_offset(), data);
                     }
                 }
             }
         }
 
+    }
+
+    public long getBaseoffset() {
+        return baseoffset;
     }
 }

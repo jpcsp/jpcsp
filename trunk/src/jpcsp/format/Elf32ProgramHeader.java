@@ -8,7 +8,7 @@ import java.io.RandomAccessFile;
 import jpcsp.util.Utilities;
 import static jpcsp.util.Utilities.*;
 
-public class Elf32Phdr {
+public class Elf32ProgramHeader {
 
     private long p_type;
     private long p_offset;
@@ -23,7 +23,7 @@ public class Elf32Phdr {
         return 32;
     }
 
-    public Elf32Phdr(RandomAccessFile f) throws IOException {
+    public Elf32ProgramHeader(RandomAccessFile f) throws IOException {
         read(f);
     }
 
