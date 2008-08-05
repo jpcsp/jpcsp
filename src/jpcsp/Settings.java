@@ -50,7 +50,7 @@ public class Settings {
             // Build the document with SAX and Xerces, no validation
             SAXBuilder builder = new SAXBuilder();
             // Create the document
-            Document doc = builder.build(new File("settings.xml"));
+            Document doc = builder.build(new File("Settings.xml"));
             Element webapp = doc.getRootElement();
             coord[0] = Integer.parseInt(webapp.getChild("guisettings").getChild("windowspos").getChild(windowname).getChild("x").getText());
             coord[1] = Integer.parseInt(webapp.getChild("guisettings").getChild("windowspos").getChild(windowname).getChild("y").getText());
@@ -65,13 +65,13 @@ public class Settings {
         try {
 
             SAXBuilder builder = new SAXBuilder();
-            Document doc = builder.build(new File("settings.xml"));
+            Document doc = builder.build(new File("Settings.xml"));
             Element webapp = doc.getRootElement();
             webapp.getChild("guisettings").getChild("windowspos").getChild(windowname).getChild("x").setText(pos[0]);
             webapp.getChild("guisettings").getChild("windowspos").getChild(windowname).getChild("y").setText(pos[1]);
             XMLOutputter xmloutputter = new XMLOutputter();
             try {
-                FileOutputStream fileOutputStream = new FileOutputStream("settings.xml");
+                FileOutputStream fileOutputStream = new FileOutputStream("Settings.xml");
                 xmloutputter.output(doc, fileOutputStream);
                 fileOutputStream.close();
             } catch (FileNotFoundException e) {
@@ -90,7 +90,7 @@ public class Settings {
             // Build the document with SAX and Xerces, no validation
             SAXBuilder builder = new SAXBuilder();
             // Create the document
-            Document doc = builder.build(new File("settings.xml"));
+            Document doc = builder.build(new File("Settings.xml"));
             Element webapp = doc.getRootElement();
             value =Integer.parseInt(webapp.getChild("emuoptions").getChild(option).getText());
             
@@ -107,7 +107,7 @@ public class Settings {
             try {
 
             SAXBuilder builder = new SAXBuilder();
-            Document doc = builder.build(new File("settings.xml"));
+            Document doc = builder.build(new File("Settings.xml"));
             Element webapp = doc.getRootElement();
             webapp.getChild("emuoptions").getChild(option).setText(state);  
             XMLOutputter xmloutputter = new XMLOutputter();
