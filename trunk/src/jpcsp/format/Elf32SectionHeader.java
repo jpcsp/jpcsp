@@ -22,12 +22,24 @@ public class Elf32SectionHeader {
     private int sh_info;
     private int sh_addralign;
     private long sh_entsize;
-
+    private String info;
+    
     private static int sizeof() {
         return 40;
     }
+
     public Elf32SectionHeader(RandomAccessFile f) throws IOException {
         read(f);
+    }
+    
+    public Elf32SectionHeader()  {
+    }
+
+    public String getInfo(){
+        return info;
+    }
+    public void setInfo(String SectInfo) {
+        info = SectInfo; 
     }
     private void read(RandomAccessFile f) throws IOException {
         sh_name = readUWord(f);
