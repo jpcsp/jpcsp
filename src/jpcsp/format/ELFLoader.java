@@ -24,6 +24,7 @@ import java.io.RandomAccessFile;
 import java.util.List;
 import java.util.LinkedList;
 import jpcsp.ElfHeader;
+import jpcsp.FileManager;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Processor;
@@ -598,8 +599,13 @@ public class ELFLoader {
         // All other registers are uninitialised/random values
     }
 
-    public static void LoadPBPELF(String filename, Processor p) throws IOException
+    // returns one of:
+    // -1
+    // FileManager.FORMAT_ELF
+    // FileManager.FORMAT_PBP
+    public static int LoadPBPELF(String filename, Processor p) throws IOException
     {
+        int type = -1;
         System.out.println("LoadPBPELF: " + filename);
 
         Memory.get_instance().NullMemory(); //re-initiate *test
@@ -610,6 +616,7 @@ public class ELFLoader {
         PBP pbp = new PBP(f);
         if (pbp.isValid())
         {
+            type = FileManager.FORMAT_PBP;
             if (Settings.get_instance().readBoolEmuoptions("pbpunpack"))
                 PBP.unpackPBP(f);
 
@@ -627,6 +634,10 @@ public class ELFLoader {
         Elf32_Ehdr ehdr = new Elf32_Ehdr(f);
         if (ehdr.isValid())
         {
+            // make sure it is "raw" ELF otherwise we overwrite FORMAT_PBP
+            if (type == -1)
+                type = FileManager.FORMAT_ELF;
+
             LoadELF(p, f, elfoffset);
             ElfInfo = ehdr.toString();
         }
@@ -638,9 +649,11 @@ public class ELFLoader {
 
         f.close();
 
-		// TODO delete ElfHeader.java and fix up refs to Info strings
+        // TODO delete ElfHeader.java and fix up refs to Info strings
         ElfHeader.PbpInfo = PbpInfo;
         ElfHeader.ElfInfo = ElfInfo;
         ElfHeader.SectInfo = SectInfo;
+
+        return type;
     }
 }

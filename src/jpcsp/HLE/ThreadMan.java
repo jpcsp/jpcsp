@@ -27,7 +27,10 @@ package jpcsp.HLE;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import jpcsp.Emulator;
 import jpcsp.GeneralJpcspException;
+import jpcsp.Processor;
+
 
 public class ThreadMan {
     private static ThreadMan instance;
@@ -54,8 +57,7 @@ public class ThreadMan {
         current_thread.status = PspThreadStatus.PSP_THREAD_RUNNING;
 
         // Switch in this thread
-        // TODO set pcreg to entry
-        // TODO set spreg from current_thread.stack_addr
+        newthread.restoreContext();
     }
 
     /** to be called from the main emulation loop */
@@ -73,7 +75,8 @@ public class ThreadMan {
         while(it.hasNext()) {
             SceKernelThreadInfo thread = it.next();
             if (thread.status == PspThreadStatus.PSP_THREAD_WAITING) {
-                current_thread.delaysteps--;
+                if (current_thread.delaysteps > 0)
+                    current_thread.delaysteps--;
                 if (current_thread.delaysteps == 0)
                     thread.status = PspThreadStatus.PSP_THREAD_READY;
             }
@@ -84,16 +87,16 @@ public class ThreadMan {
         if (current_thread != null) {
             // Switch out old thread
             current_thread.status = PspThreadStatus.PSP_THREAD_READY;
-            current_thread.pcreg = 0; // TODO save pcreg
-            // TODO save all other registers
+            // save registers
+            newthread.saveContext();
         }
 
         if (newthread != null) {
             // Switch in new thread
             newthread.status = PspThreadStatus.PSP_THREAD_RUNNING;
             newthread.wakeupCount++; // check
-            // TODO set pcreg = newthread.pcreg
-            // TODO restore all other registers
+            // restore registers
+            newthread.restoreContext();
         }
 
         current_thread = newthread;
@@ -163,8 +166,15 @@ public class ThreadMan {
 
     public int ThreadMan_sceKernelDeleteThread(int a0) throws GeneralJpcspException {
         SceUIDMan.get_instance().checkUidPurpose(a0, "ThreadMan");
+        SceKernelThreadInfo thread = threadlist.get(a0);
+
+        // If we're deleting the current thread switch to another first
         if (a0 == current_thread.uid)
             contextSwitch(nextThread());
+
+        // TODO cleanup thread, example: free the stack, anything else?
+        // MemoryMan.free(thread.stack_addr);
+
         threadlist.remove(a0);
         SceUIDMan.get_instance().releaseUid(a0, "ThreadMan");
         return 0;
@@ -238,8 +248,8 @@ public class ThreadMan {
 
         // internal variables
         private int uid;
-        private int pcreg;
-        private int spreg;
+        private int pcreg, hi, lo;
+        private int[] cpuregisters;
         private int delaysteps;
 
         public SceKernelThreadInfo(String name, int entry_addr, int initPriority, int stackSize, int attr) {
@@ -249,8 +259,8 @@ public class ThreadMan {
             this.stackSize = stackSize;
             this.attr = attr;
 
-            status = PspThreadStatus.PSP_THREAD_WAITING;
-            stack_addr = 0x08f00000; // TODO MemoryMan.malloc(stackSize);
+            status = PspThreadStatus.PSP_THREAD_SUSPEND;
+            stack_addr = 0x09f00000; // TODO MemoryMan.malloc(stackSize);
             gpReg_addr = 0; // ?
             currentPriority = initPriority;
             waitType = 0; // ?
@@ -266,10 +276,37 @@ public class ThreadMan {
             uid = SceUIDMan.get_instance().getNewUid("ThreadMan");
             threadlist.put(uid, this);
 
+            saveContext();
+            // Thread specific registers
             pcreg = entry_addr;
-            spreg = stack_addr;
+            cpuregisters[29] = stack_addr; //sp
+
+            // TODO hook "jr ra" where ra = 0,
+            // then set current_thread.exitStatus = v0 and current_thread.status = PSP_THREAD_STOPPED,
+            // finally contextSwitch(nextThread())
+            cpuregisters[31] = 0; // ra
 
             delaysteps = 0;
+        }
+
+        public void saveContext() {
+            Processor cpu = Emulator.getProcessor();
+            pcreg = cpu.pc;
+            hi = cpu.hi;
+            lo = cpu.lo;
+            for (int i = 0; i < 32; i++) {
+                cpuregisters[i] = cpu.cpuregisters[i];
+            }
+        }
+
+        public void restoreContext() {
+            Processor cpu = Emulator.getProcessor();
+            cpu.pc = pcreg;
+            cpu.hi = hi;
+            cpu.lo = lo;
+            for (int i = 0; i < 32; i++) {
+                cpu.cpuregisters[i] = cpuregisters[i];
+            }
         }
     }
 }
