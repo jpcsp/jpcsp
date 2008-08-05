@@ -14,29 +14,43 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.Debugger.DisassemblerModule;
 
 /**
  *
- * @author shadow
+ * @author shadow, hlide
  */
 public class DisVFPU {
-        
-        public String DisVFPU6(int value)
-        {
-            return "Unsupported VFPU6 instruction " + value;           
-        }
-        public String DisVFPU3(int value)
-        {
-            return "Unsupported VFPU3 instruction " + value;  
-        }
-        public String DisVFPU0(int value)
-        {
-            return "Unsupported VFPU0 instruction " + value;  
-        }
-        public String DisVFPU1(int value)
-        {
-            return "Unsupported VFPU1 instruction " + value;  
-        }
+
+    public String DisVFPU0(int value) {
+        return "Unsupported VFPU0 instruction " + value;
+    }
+
+    public String DisVFPU1(int value) {
+        return "Unsupported VFPU1 instruction " + value;
+    }
+
+    public String DisVFPU2(int value) {
+        return "Unsupported VFPU2 instruction " + value;
+    }
+
+    public String DisVFPU3(int value) {
+        return "Unsupported VFPU3 instruction " + value;
+    }
+
+    public String DisVFPU4(int value) {
+        return "Unsupported VFPU4 instruction " + value;
+    }
+
+    public String DisVFPU5(int value) {
+        return "Unsupported VFPU5 instruction " + value;
+    }
+
+    public String DisVFPU6(int value) {
+        return "Unsupported VFPU6 instruction " + value;
+    }
+
+    public String DisVFPU7(int value) {
+        return "Unsupported VFPU7 instruction " + value;
+    }
 }
