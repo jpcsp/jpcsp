@@ -96,7 +96,7 @@ public class PBP {
         str.append("p_magic " + "\t\t" + formatString("long", Long.toHexString(p_magic & 0xFFFFFFFFL).toUpperCase()) + "\n");
         str.append("p_version " + "\t\t" + formatString("long", Long.toHexString(p_version & 0xFFFFFFFFL).toUpperCase()) + "\n");
         str.append("p_offset_param_sfo " + "\t" + formatString("long", Long.toHexString(p_offset_param_sfo & 0xFFFFFFFFL).toUpperCase()) + "\n");
-        str.append("p_offset_icon0_png " + "\t\t" + formatString("long", Long.toHexString(p_offset_icon0_png & 0xFFFFFFFFL).toUpperCase()) + "\n");
+        str.append("p_offset_icon0_png " + "\t" + formatString("long", Long.toHexString(p_offset_icon0_png & 0xFFFFFFFFL).toUpperCase()) + "\n");
         str.append("p_offset_icon1_pmf " + "\t" + formatString("long", Long.toHexString(p_offset_icon1_pmf & 0xFFFFFFFFL).toUpperCase()) + "\n");
         str.append("p_offset_pic0_png " + "\t" + formatString("long", Long.toHexString(p_offset_pic0_png & 0xFFFFFFFFL).toUpperCase()) + "\n");
         str.append("p_offset_pic1_png " + "\t" + formatString("long", Long.toHexString(p_offset_pic1_png & 0xFFFFFFFFL).toUpperCase()) + "\n");

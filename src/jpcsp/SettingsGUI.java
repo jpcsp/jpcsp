@@ -1,7 +1,18 @@
 /*
- * SettingsGUI.java
- *
- * Created on 3 Αύγουστος 2008, 7:44 μμ
+This file is part of jpcsp.
+
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package jpcsp;
@@ -86,7 +97,7 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
 }//GEN-LAST:event_jButton2ActionPerformed
 
 private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-   
+
    Settings.get_instance().writeBoolEmuoptions("pbpunpack", pbpunpackcheck.isSelected());
    dispose();
 }//GEN-LAST:event_jButton1ActionPerformed
