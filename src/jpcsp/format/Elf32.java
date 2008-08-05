@@ -22,6 +22,7 @@ public class Elf32 {
     
     public Elf32(RandomAccessFile f) throws IOException {
         header = new Elf32Header(f);
+        sectionHeader = new Elf32SectionHeader();
     }
 
     public Elf32Header getHeader() {

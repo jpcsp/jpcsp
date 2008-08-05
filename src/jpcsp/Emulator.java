@@ -17,47 +17,44 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp;
 
 import java.io.IOException;
-import jpcsp.format.Elf32;
 import jpcsp.format.Elf32Relocate;
 import jpcsp.format.Elf32SectionHeader;
 import jpcsp.format.PBP;
-import jpcsp.format.ELFLoader;
 
 public class Emulator {
 
     private static Processor cpu;
     private FileManager romManager;
+    private boolean mediaImplemented = false;
 
     public Emulator() {
         cpu = new Processor();
     }
 
     public void load(String filename) throws IOException {
-        // TODO: here will load rom, iso or etc...
-        getProcessor().reset(); //
-
-        //ElfHeader.readHeader(filename, getProcessor());
-        ELFLoader.LoadPBPELF(filename, getProcessor());
-    // load after implemented : move the content from futureLoad() to load()
-
+        // TODO: here will load fileName, iso or etc...
+        //getProcessor().reset();
+        //ELFLoader.LoadPBPELF(filename, getProcessor());
+        processLoading(filename);
+        if (!mediaImplemented) {
+            throw new IOException("This kind of file format still not supported.");
+        }
     }
 
-    private void futureLoad() throws IOException {
-        String rom = "path";
-
+    private void processLoading(String fileName) throws IOException {
         initNewPsp();
         //filemanager take care the file stuffs (just it) (define, load headers..)
-        romManager = new FileManager(rom);
+        romManager = new FileManager(fileName);
 
         switch (romManager.getType()) {
             case FileManager.FORMAT_ELF:
-                init(romManager.getElf32()); // init RAM, CPU, GPU... the only one working by now!?!
+                initElf32(); // initElf32 RAM, CPU, GPU... the only one working by now!?!
 
                 break;
             case FileManager.FORMAT_ISO:
                 break;
             case FileManager.FORMAT_PBP:
-                init(romManager.getPBP());
+                initPbp();
                 break;
             case FileManager.FORMAT_UMD:
                 break;
@@ -66,14 +63,17 @@ public class Emulator {
         }
     }
 
-    //elf32 init
-    private void init(Elf32 elf32) throws IOException {
+    //elf32 initElf32
+    private void initElf32() throws IOException {
+        mediaImplemented = true;
         initRamByElf32();
         initCpuByElf32();
+        initDebugWindowsByElf32();
     }
 
-    private void init(PBP pBP) {
-        throw new UnsupportedOperationException("Not yet implemented");
+    private void initPbp() {
+        mediaImplemented = false;
+        initDebugWindowsByPbp();
     }
 
     private void initRamByElf32() throws IOException {
@@ -234,32 +234,32 @@ public class Emulator {
                             case 7: //R_MIPS_GPREL16
                             // 31/07/08 untested (fiveofhearts)
                             System.out.println("Untested relocation type " + R_TYPE + " at " + String.format("%08x", (int)baseoffset + (int)rel.r_offset));
-
+                            
                             if (external)
                             {
                             A = rel16;
-
+                            
                             //result = sign-extend(A) + S + GP;
                             result = (((A & 0x00008000) != 0) ? A & 0xFFFF0000 : A) + S + GP;
-
+                            
                             // verify
                             if ((result & ~0x0000FFFF) != 0)
                             throw new IOException("Relocation overflow (R_MIPS_GPREL16)");
-
+                            
                             data &= ~0x0000FFFF;
                             data |= (int)(result & 0x0000FFFF);
                             }
                             else if (local)
                             {
                             A = rel16;
-
+                            
                             //result = sign-extend(A) + S + GP;
                             result = (((A & 0x00008000) != 0) ? A & 0xFFFF0000 : A) + S + GP0 - GP;
-
+                            
                             // verify
                             if ((result & ~0x0000FFFF) != 0)
                             throw new IOException("Relocation overflow (R_MIPS_GPREL16)");
-
+                            
                             data &= ~0x0000FFFF;
                             data |= (int)(result & 0x0000FFFF);
                             }
@@ -295,6 +295,17 @@ public class Emulator {
 
         cpu.cpuregisters[26] = 0x09F00000; //k0
 
+    }
+
+    private void initDebugWindowsByPbp() {
+        ElfHeader.PbpInfo = romManager.getPBP().getInfo();
+    }
+
+    private void initDebugWindowsByElf32() {
+        // TODO delete ElfHeader.java and fix up refs to Info strings
+        ElfHeader.PbpInfo = romManager.getPBP().getInfo(); //weird pbp info on elf header...
+        ElfHeader.ElfInfo = romManager.getElf32().getHeader().getInfo();
+        ElfHeader.SectInfo = romManager.getElf32().getSectionHeader().getInfo();
     }
 
     private void initNewPsp() {

@@ -19,8 +19,6 @@ package jpcsp;
 import java.awt.Point;
 import java.io.File;
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
@@ -328,6 +326,9 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
             e.printStackTrace();
             JpcspDialogManager.showError(this, "IO Error : " + e.getMessage());
         } catch (GeneralJpcspException ex) {
+            ex.printStackTrace();
+            JpcspDialogManager.showError(this, "General Error : " + ex.getMessage());
+        } catch (Exception ex) {
             ex.printStackTrace();
             JpcspDialogManager.showError(this, "General Error : " + ex.getMessage());
         }

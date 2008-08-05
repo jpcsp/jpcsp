@@ -134,8 +134,9 @@ public class FileManager {
         if (!getElf32().getHeader().isMIPSExecutable()) {
             System.out.println("NOT A MIPS executable");
         }
-        ElfInfo = getElf32().getHeader().toString(); //better use Elf32Header.getInfo()...
-
+        ElfInfo = getElf32().getHeader().toString();
+        getElf32().getHeader().setInfo(ElfInfo);
+                
 
 
         if (getElf32().getHeader().isPRXDetected()) {
@@ -188,6 +189,7 @@ public class FileManager {
             }
             //SegInfo = phsb.toString();
             ElfInfo += phsb.toString();
+            getElf32().getHeader().setInfo(ElfInfo);
         }
     }
 
@@ -276,6 +278,8 @@ public class FileManager {
             SectionCounter++;
         }
         SectInfo = shsb.toString();
+        
+        getElf32().getSectionHeader().setInfo(SectInfo);
 
     }
 
