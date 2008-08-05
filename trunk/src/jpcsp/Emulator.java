@@ -19,16 +19,24 @@ package jpcsp;
 import java.io.IOException;
 import jpcsp.format.Elf32Relocate;
 import jpcsp.format.Elf32SectionHeader;
-import jpcsp.format.PBP;
 
 public class Emulator {
 
     private static Processor cpu;
+    private Gpu gpu;
+    private Controller controller;
     private FileManager romManager;
     private boolean mediaImplemented = false;
+    
+    private boolean run = false;
+    private boolean pause = false;
+    private boolean stop = false;
+    private boolean resume = false;
 
     public Emulator() {
         cpu = new Processor();
+        gpu = new Gpu();
+        controller = new Controller();
     }
 
     public void load(String filename) throws IOException {
@@ -39,6 +47,10 @@ public class Emulator {
         if (!mediaImplemented) {
             throw new IOException("This kind of file format still not supported.");
         }
+    }
+
+    private void delay(long numberCyclesDelay) {
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     private void processLoading(String fileName) throws IOException {
@@ -304,6 +316,7 @@ public class Emulator {
     private void initDebugWindowsByElf32() {
         // TODO delete ElfHeader.java and fix up refs to Info strings
         ElfHeader.PbpInfo = romManager.getPBP().getInfo(); //weird pbp info on elf header...
+
         ElfHeader.ElfInfo = romManager.getElf32().getHeader().getInfo();
         ElfHeader.SectInfo = romManager.getElf32().getSectionHeader().getInfo();
     }
@@ -314,16 +327,30 @@ public class Emulator {
     }
 
     public void run() throws GeneralJpcspException {
-        // for while nothing...
+        // basic code, just one thread by now... it's just a view
+        run = false;
+        while (run == true) {
+            cpu.stepcpu();
+            gpu.draw();
+            controller.checkControllerState();
+            delay(cpu.numberCyclesDelay());
+        }
     }
 
     public void pause() {
+        pause = true;
+        run = resume = stop = false;
     }
 
     public void resume() {
+        resume = true;
+        run = pause = stop = false;
     }
 
     public void stop() {
+        //probally make more and more!!!... stuffs here
+        stop = true ;
+        run = resume = pause = false;
     }
 
     public static Processor getProcessor() {

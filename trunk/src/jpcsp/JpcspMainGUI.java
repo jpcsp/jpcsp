@@ -45,6 +45,7 @@ public class JpcspMainGUI extends javax.swing.JFrame {
     public JpcspMainGUI() {
         initComponents();
         emulator = new Emulator(); //maybe pass the container drawndable
+
         this.setTitle(version);
     }
 
@@ -130,6 +131,45 @@ public class JpcspMainGUI extends javax.swing.JFrame {
         try {
             regs.setSelected(true);
         } catch (java.beans.PropertyVetoException e) {
+        }
+    }
+
+    private void hideDisassemblerWindow() {
+        if (dis != null) {
+            //clear previously opened stuff
+            dis.setVisible(false);
+            Disasembler.setIcon(null);
+            desktopPane.remove(dis);
+            dis = null;
+        }
+    }
+
+    private void hideELFWindow() {
+        if (elfinfo != null) {
+            //clear previously opened stuff
+            elfinfo.setVisible(false);
+            desktopPane.remove(elfinfo);
+            elfinfo = null;
+        }
+    }
+
+    private void hideMemoryViewWindow() {
+        if (memview != null) {
+            //clear previously opened stuff
+            memview.setVisible(false);
+            MemView.setIcon(null);
+            desktopPane.remove(memview);
+            memview = null;
+        }
+    }
+
+    private void hideRegistersWindow() {
+        if (regs != null) {
+            //clear previously opened stuff
+            regs.setVisible(false);
+            Registers.setIcon(null);
+            desktopPane.remove(regs);
+            regs = null;
         }
     }
 
@@ -308,7 +348,9 @@ public class JpcspMainGUI extends javax.swing.JFrame {
 
 private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openMenuItemActionPerformed
     boolean isloaded = false; // variable to check if user at least choose something  
+
     saveWinPos();//same windows before open something
+
     final JFileChooser fc = makeJFileChooser();
     int returnVal = fc.showOpenDialog(desktopPane);
 
@@ -317,9 +359,9 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         //This is where a real application would open the file.   
         try {
             emulator.load(file.getPath());
-            emulator.run(); //don't do nothing for while
-
+            emulator.run();
             isloaded = true; //TODO check if it a valid file
+            // maybe change the name isloaded to isDebugMode
 
             this.setTitle(version + " - " + file.getName());
         } catch (IOException e) {
@@ -334,12 +376,18 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         }
     } else {
         return; //user cancel the action        
+
     }
     if (isloaded) {
         createELFWindow();
         createRegistersWindow();
         createDisassemblerWindow();
         createMemoryViewWindow();
+    } else {
+        hideELFWindow();
+        hideRegistersWindow();
+        hideDisassemblerWindow();
+        hideMemoryViewWindow();
     }
 }//GEN-LAST:event_openMenuItemActionPerformed
 
@@ -452,15 +500,19 @@ private void MemViewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 private void WindowsPosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_WindowsPosActionPerformed
 // TODO add your handling code here:
     //reset windows Pos to default
-    if (dis != null) 
+    if (dis != null) {
         dis.setLocation(300, 0);
-    if (elfinfo != null) 
+    }
+    if (elfinfo != null) {
         elfinfo.setLocation(0, 0);
-    if (memview != null) 
+    }
+    if (memview != null) {
         memview.setLocation(70, 150);
-    if (regs != null) 
+    }
+    if (regs != null) {
         regs.setLocation(70, 0);
     //write them to xml
+    }
     String dispos[] = {"300", "0"};
     String elfpos[] = {"0", "0"};
     String mempos[] = {"70", "150"};
@@ -477,15 +529,15 @@ private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:even
 }//GEN-LAST:event_formWindowClosing
 
 private void SettingsMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SettingsMenuActionPerformed
-      setgui = new SettingsGUI();
-      setgui.setLocation(200,50);
-      desktopPane.add(setgui);
-      setgui.setVisible(true);
-      try {
-            setgui.setSelected(true);
-        } catch (java.beans.PropertyVetoException e) {
-        }
-      
+    setgui = new SettingsGUI();
+    setgui.setLocation(200, 50);
+    desktopPane.add(setgui);
+    setgui.setVisible(true);
+    try {
+        setgui.setSelected(true);
+    } catch (java.beans.PropertyVetoException e) {
+    }
+
 }//GEN-LAST:event_SettingsMenuActionPerformed
     private void saveWinPos() {
 
