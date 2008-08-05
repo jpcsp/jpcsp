@@ -57,7 +57,7 @@ public class ThreadMan {
         current_thread.status = PspThreadStatus.PSP_THREAD_RUNNING;
 
         // Switch in this thread
-        newthread.restoreContext();
+        current_thread.restoreContext();
     }
 
     /** to be called from the main emulation loop */
@@ -297,6 +297,8 @@ public class ThreadMan {
             for (int i = 0; i < 32; i++) {
                 cpuregisters[i] = cpu.cpuregisters[i];
             }
+
+            // TODO check attr for PSP_THREAD_ATTR_VFPU and save vfpu registers
         }
 
         public void restoreContext() {
@@ -307,6 +309,8 @@ public class ThreadMan {
             for (int i = 0; i < 32; i++) {
                 cpu.cpuregisters[i] = cpuregisters[i];
             }
+
+            // TODO check attr for PSP_THREAD_ATTR_VFPU and restore vfpu registers
         }
     }
 }
