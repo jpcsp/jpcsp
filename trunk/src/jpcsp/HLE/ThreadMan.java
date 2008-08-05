@@ -249,7 +249,9 @@ public class ThreadMan {
         // internal variables
         private int uid;
         private int pcreg, hi, lo;
-        private int[] cpuregisters;
+        private int[] gpr;
+        private float[] fpr;
+        private float[] vpr;
         private int delaysteps;
 
         public SceKernelThreadInfo(String name, int entry_addr, int initPriority, int stackSize, int attr) {
@@ -279,12 +281,12 @@ public class ThreadMan {
             saveContext();
             // Thread specific registers
             pcreg = entry_addr;
-            cpuregisters[29] = stack_addr; //sp
+            gpr[29] = stack_addr; //sp
 
             // TODO hook "jr ra" where ra = 0,
             // then set current_thread.exitStatus = v0 and current_thread.status = PSP_THREAD_STOPPED,
             // finally contextSwitch(nextThread())
-            cpuregisters[31] = 0; // ra
+            gpr[31] = 0; // ra
 
             delaysteps = 0;
         }
@@ -295,7 +297,7 @@ public class ThreadMan {
             hi = cpu.hi;
             lo = cpu.lo;
             for (int i = 0; i < 32; i++) {
-                cpuregisters[i] = cpu.cpuregisters[i];
+                gpr[i] = cpu.gpr[i];
             }
 
             // TODO check attr for PSP_THREAD_ATTR_VFPU and save vfpu registers
@@ -307,7 +309,7 @@ public class ThreadMan {
             cpu.hi = hi;
             cpu.lo = lo;
             for (int i = 0; i < 32; i++) {
-                cpu.cpuregisters[i] = cpuregisters[i];
+                cpu.gpr[i] = gpr[i];
             }
 
             // TODO check attr for PSP_THREAD_ATTR_VFPU and restore vfpu registers
