@@ -817,11 +817,11 @@ public class ElfHeader {
     //set the default values for registers not sure if they are correct and UNTESTED!!
     // from soywiz/pspemulator
     p.pc = (int)baseoffset + (int)ehdr.e_entry; //set the pc register.
-    p.cpuregisters[31] = 0x08000004; //ra, should this be 0?
-    p.cpuregisters[5] = (int)baseoffset + (int)ehdr.e_entry; // argumentsPointer a1 reg
-    p.cpuregisters[28] = (int)baseoffset + (int)moduleinfo.m_gp; //gp reg    gp register should get the GlobalPointer!!!
-    p.cpuregisters[29] = 0x09F00000; //sp
-    p.cpuregisters[26] = 0x09F00000; //k0
+    p.gpr[31] = 0x08000004; //ra, should this be 0?
+    p.gpr[5] = (int)baseoffset + (int)ehdr.e_entry; // argumentsPointer a1 reg
+    p.gpr[28] = (int)baseoffset + (int)moduleinfo.m_gp; //gp reg    gp register should get the GlobalPointer!!!
+    p.gpr[29] = 0x09F00000; //sp
+    p.gpr[26] = 0x09F00000; //k0
 
     f.close();
   }

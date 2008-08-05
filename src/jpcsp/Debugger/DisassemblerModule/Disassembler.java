@@ -288,7 +288,7 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     }
 
 private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
-    c.stepcpu();
+    c.stepCpu();
     DebuggerPC = 0;
     RefreshDebugger();
     regs.RefreshDebugger();
@@ -639,7 +639,7 @@ private void formInternalFrameClosing(javax.swing.event.InternalFrameEvent evt) 
                 s = s + Dis_RTRSIMM("xori", value);
                 break;
             case LUI://lui
-                s = s + "lui " + cpuregs[rt] + " , " + imm;
+                s = s + "lui " + gprNames[rt] + " , " + imm;
                 break;
             case COP0:
                 s = s + cop0.DisCop0(value);
@@ -867,7 +867,7 @@ private void formInternalFrameClosing(javax.swing.event.InternalFrameEvent evt) 
         if ((imm & 0x8000) == 0x8000) {
             imm |= 0xffff0000;
         }
-        return opname + " " + cpuregs[rs] + ", " + cpuregs[rt] + " 0x" + Integer.toHexString(imm * 4 + opcode_address + 4);
+        return opname + " " + gprNames[rs] + ", " + gprNames[rt] + " 0x" + Integer.toHexString(imm * 4 + opcode_address + 4);
 
     }
 
@@ -877,7 +877,7 @@ private void formInternalFrameClosing(javax.swing.event.InternalFrameEvent evt) 
         if ((imm & 0x8000) == 0x8000) {
             imm |= 0xffff0000;
         }
-        return opname + " " + cpuregs[rs] + ", 0x" + Integer.toHexString(imm * 4 + opcode_address + 4);
+        return opname + " " + gprNames[rs] + ", 0x" + Integer.toHexString(imm * 4 + opcode_address + 4);
 
 
     }

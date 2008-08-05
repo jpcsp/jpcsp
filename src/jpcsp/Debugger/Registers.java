@@ -159,7 +159,7 @@ private void formInternalFrameClosing(javax.swing.event.InternalFrameEvent evt) 
         jTable1.setValueAt(Integer.toHexString(cpu.hi), 1, 1);
         jTable1.setValueAt(Integer.toHexString(cpu.lo), 2, 1);
         for (int i = 0; i < 32; i++) {
-            jTable1.setValueAt(Integer.toHexString(cpu.cpuregisters[i]), 3 + i, 1);
+            jTable1.setValueAt(Integer.toHexString(cpu.gpr[i]), 3 + i, 1);
         }
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables

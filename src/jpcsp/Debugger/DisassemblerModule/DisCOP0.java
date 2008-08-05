@@ -14,32 +14,41 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.Debugger.DisassemblerModule;
-import static jpcsp.R4000OpCodes.*;
+
+import static jpcsp.AllegrexOpcodes.*;
 import static jpcsp.Debugger.DisassemblerModule.DisHelper.*;
+
 /**
  *
- * @author shadow
+ * @author shadow, hlide
  */
 public class DisCOP0 {
-    public String DisCop0(int value)
-    {
-       int rt = (value >> 16) & 0x1f;
-       int rd = (value >> 11) & 0x1f;
-       int cop0 = ((value >> 21) & 0x1f); //bits 21-25
-       int base = (value >> 21) & 0x1f;
-       int cacheOp = (value >> 16) & 0x1f;
-       switch(cop0)
-       { 
-          case MFC0:
-            return "mfc0 " + cpuregs[rt] + ", " + cop0regs[rd];
-          case MTC0:
-            return "mtc0 " + cpuregs[rt] + ", " + cop0regs[rd];
-          case CACHE: //TODO: CACHE op, offset(base); op is at [20-16];
-            return "cache " + cacheOp + ", offset(" + base + ")";
-          default:
-            return "unknown cop0 opcode " + Integer.toHexString(cop0);
-         }
+
+    // (hlide) CACHE is not a COP0 instruction
+    public String DisCache(int value) {
+        int rs = (value >> 21) & 0x1f;
+        int rd = (value >> 11) & 0x1f;
+        int imm = ((value & 0xffff) << 16) >> 16;
+        int cacheOp = (value >> 16) & 0x1f;
+        
+        return "cache " + Integer.toHexString(cacheOp) + ", " + imm + "(" + gprNames[rs] + ")";
+    }
+
+    public String DisCop0(int value) {
+        int rt = (value >> 16) & 0x1f;
+        int rd = (value >> 11) & 0x1f;
+        int cop0 = ((value >> 21) & 0x1f); //bits 21-25
+
+        switch (cop0) {
+            case MFC0:
+                return "mfc0 " + gprNames[rt] + ", " + cop0Names[rd];
+            
+            case MTC0:
+                return "mtc0 " + gprNames[rt] + ", " + cop0Names[rd];
+        
+            default:
+                return "unknown cop0 opcode " + Integer.toHexString(cop0);
+        }
     }
 }

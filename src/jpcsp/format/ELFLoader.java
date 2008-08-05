@@ -589,13 +589,13 @@ public class ELFLoader {
         // Not sure if they are correct and UNTESTED!!
         // From soywiz/pspemulator
         p.pc = (int)(loadoffset + ehdr.e_entry); //pc, set the pc register.
-        p.cpuregisters[4] = 0; //a0
-        p.cpuregisters[5] = (int)(loadoffset + ehdr.e_entry); //a1, argumentsPointer reg
-        p.cpuregisters[6] = 0; //a2
-        p.cpuregisters[26] = 0x09F00000; //k0
-        p.cpuregisters[28] = (int)(loadoffset + moduleinfo.m_gp); //gp, should get the GlobalPointer!!!
-        p.cpuregisters[29] = 0x09F00000; //sp
-        p.cpuregisters[31] = 0x08000004; //ra, should this be 0?
+        p.gpr[4] = 0; //a0
+        p.gpr[5] = (int)(loadoffset + ehdr.e_entry); //a1, argumentsPointer reg
+        p.gpr[6] = 0; //a2
+        p.gpr[26] = 0x09F00000; //k0
+        p.gpr[28] = (int)(loadoffset + moduleinfo.m_gp); //gp, should get the GlobalPointer!!!
+        p.gpr[29] = 0x09F00000; //sp
+        p.gpr[31] = 0x08000004; //ra, should this be 0?
         // All other registers are uninitialised/random values
     }
 

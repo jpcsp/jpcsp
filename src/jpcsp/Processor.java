@@ -16,59 +16,76 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp;
 
-import static jpcsp.R4000OpCodes.*;
+import static jpcsp.AllegrexOpcodes.*;
 
 public class Processor {
 
     public int pc;
     public int hi,  lo;
-    public int cpuregisters[] = new int[32];//32 base registers
+    public int gpr[] = new int[32];    //  32 x 32-bit general purpose registers
+
+    public float fpr[] = new float[32];  //  32 x 32-bit float point registers
+
+    public float vpr[] = new float[128]; // 128 x 32-bit float point registers
+
     private byte[] cyclesPer;
 
     Processor() {
-        Memory.get_instance(); //intialaze memory
+        Memory.get_instance(); //intialize memory
 
-        initCycleCost();
+        setupCycleCost();
         reset();
-
     }
 
-    private void initCycleCost() {
+    private void setupCycleCost() {
         cyclesPer = new byte[0xff];
-        cyclesPer[MULT] = 12;
-        cyclesPer[MULTU] = 12;
-        cyclesPer[DIV] = 75;
-        cyclesPer[DIVU] = 75;
-    //cyclesPer[DMULT] = 20;
-    //cyclesPer[DMULTU] = 20;
-    //cyclesPer[DDIV] = 139;
-    //cyclesPer[DDIVU] = 139;
+        cyclesPer[MULT] = 5;
+        cyclesPer[MULTU] = 5;
+        cyclesPer[MADD] = 5;
+        cyclesPer[MADDU] = 5;
+        cyclesPer[MSUB] = 5;
+        cyclesPer[MSUBU] = 5;
+        cyclesPer[DIV] = 36;
+        cyclesPer[DIVU] = 36;
     }
 
     public void reset() {
-        //intialaze psp
-        pc = 0x00000000;
-        hi = lo = 0;
-        for (int i = 0; i < 32; i++) {
-            cpuregisters[i] = 0;//reset registers
 
+        // intialize psp register
+        pc = 0x00000000;
+
+        hi = lo = 0;
+
+        for (int i = 0; i < 32; i++) {
+            gpr[i] = 0;
+        }
+
+        for (int i = 0; i < 32; i++) {
+            fpr[i] = 0;
+        }
+
+        for (int i = 0; i < 128; i++) {
+            vpr[i] = 0;
         }
 
     }
 
     public int signExtend(int value) {
-        /* Moves the sign bit
-         * making a 16bit value a valid 32bit value */
-        if ((value & 0x8000) != 0) {
-            value |= 0xFFFF0000;
-        }
-        return value;
+        return (value << 16) >> 16;
     }
 
     public long numberCyclesDelay() {
         return 0l;
     }
 
+    private int countLeadingZero(int value) {
+        return 0; // TO DO
+    }
+            
+    private int countLeadingOne(int value) {
+        return 0; // TO DO
+    }
+            
     private boolean couldRaiseOverflowOnAdd(int value0, int value1) {
         boolean v1 = (((long) value0 + (long) value1) > Integer.MAX_VALUE);
         boolean v2 = (((long) value0 + (long) value1) < Integer.MIN_VALUE); //or underflow????
@@ -83,7 +100,7 @@ public class Processor {
         return v1 | v2;
     }
 
-    public void stepcpu() {
+    public void stepCpu() {
         long temp;
         long longA, longB;
         int value = Memory.get_instance().read32(pc);
@@ -99,253 +116,426 @@ public class Processor {
                 byte special = (byte) (value & 0x3f);
                 switch (special) {
                     case SLL: //last update 31/07/2008 - should be okay (shadow)
-
-                        cpuregisters[rd] = cpuregisters[rt] << sa;
+                        gpr[rd] = gpr[rt] << sa;
                         break;
-                    case SRL:
+
+                    case SRLROR:
+                        //last update 5/08/2008 - added ROTR (hlide)
                         //last update 31/07/2008 - should be okay (shadow)
                         //last update 31/07/2008 - >>> does not sign extend (fiveofhearts)
-                        cpuregisters[rd] = cpuregisters[rt] >>> sa;
+                        if (rs == ROTR) {
+                            gpr[rd] = (gpr[rt] >>> sa) | (gpr[rt] << (32 - sa));
+                        } else {
+                            gpr[rd] = gpr[rt] >>> sa;
+                        }
                         break;
+
                     case SRA:
                         //last update 31/07/2008 - >> sign extension is automatic (fiveofhearts)
-                        cpuregisters[rd] = cpuregisters[rt] >> sa;
+                        gpr[rd] = gpr[rt] >> sa;
                         break;
+
                     case SLLV:
-                        cpuregisters[rd] = cpuregisters[rt] << (cpuregisters[rs] & 0x3F);
+                        gpr[rd] = gpr[rt] << (gpr[rs] & 0x3F);
                         break;
-                    case SRLV:
+
+                    case SRLRORV:
+                        //last update 5/08/2008 - added ROTR (hlide)
+                        //last update 31/07/2008 - should be okay (shadow)
                         //last update 31/07/2008 - >>> does not sign extend (fiveofhearts)
-                        cpuregisters[rd] = cpuregisters[rt] >>> (cpuregisters[rs] & 0x3F);
+                        sa = (gpr[rs] & 0x3F);
+                        if (rs == ROTRV) {
+                            gpr[rd] = (gpr[rt] >>> sa) | (gpr[rt] << (32 - sa));
+                        } else {
+                            gpr[rd] = gpr[rt] >>> sa;
+                        }
                         break;
+
                     case SRAV:
                         //last update 31/07/2008 - >> sign extension is automatic (fiveofhearts)
-                        cpuregisters[rd] = cpuregisters[rt] >> (cpuregisters[rs] & 0x3F);
+                        gpr[rd] = gpr[rt] >> (gpr[rs] & 0x3F);
                         break;
+
                     case JR:
-                        pc = cpuregisters[rs] - 4;
+                        pc = gpr[rs] - 4;
                         /* TODO: delay one cycle */
                         break;
+
                     case JALR:
-                        cpuregisters[rd] = pc + 8; // second instruction after
+                        gpr[rd] = pc + 8; // second instruction after
 
-                        pc = cpuregisters[rs] - 4;
+                        pc = gpr[rs] - 4;
                         /* TODO: delay one cycle */
                         break;
-                    /*case 11://movn
-                    break;
-                    case 12://syscall
-                    break;
-                    case 13://break;
-                    break;*/
 
-                    case MFHI: //mfhi
-
-                        cpuregisters[rd] = hi;
+                    case MOVZ:
+                        if (gpr[rs] == 0) {
+                            gpr[rd] = gpr[rt];
+                        }
                         break;
-                    case MTHI: //mthi
 
-                        hi = cpuregisters[rs];
+                    case MOVN:
+                        if (gpr[rs] != 0) {
+                            gpr[rd] = gpr[rt];
+                        }
                         break;
-                    case MFLO: //mflo
 
-                        cpuregisters[rd] = lo;
+                    case SYSCALL:
+                        // not implemented
                         break;
-                    case MTLO://mtlo
 
-                        lo = cpuregisters[rs];
+                    case BREAK:
+                        // not implemented
                         break;
-                    case MULT://mult
 
-                        temp = (long) cpuregisters[rs] * (long) cpuregisters[rt];
+                    case SYNC:
+                        // not implemented
+                        break;
+
+                    case MFHI:
+                        gpr[rd] = hi;
+                        break;
+                    case MTHI:
+                        hi = gpr[rs];
+                        break;
+
+                    case MFLO:
+                        gpr[rd] = lo;
+                        break;
+
+                    case MTLO:
+                        lo = gpr[rs];
+                        break;
+
+                    case CLZ:
+                        gpr[rd] = countLeadingZero(gpr[rs]);
+                        break;
+
+                    case CLO:
+                        gpr[rd] = countLeadingOne(gpr[rs]);
+                        break;
+
+                    case MULT:
+                        temp = (long) gpr[rs] * (long) gpr[rt];
                         hi = (int) ((temp >> 32) & 0xFFFFFFFF);
                         lo = (int) (temp & 0xFFFFFFFF);
                         break;
-                    case MULTU://multu
-                    /* We OR the bit so we are sure the sign bit isnt set */
-                        longA |= cpuregisters[rs];
-                        longB |= cpuregisters[rt];
+
+                    case MULTU:
+                        /* We OR the bit so we are sure the sign bit isnt set */
+                        longA |= gpr[rs];
+                        longB |= gpr[rt];
                         temp = longA * longB;
                         hi = (int) ((temp >> 32) & 0xFFFFFFFF);
                         lo = (int) (temp & 0xFFFFFFFF);
                         break;
-                    case DIV://div
 
-                        lo = cpuregisters[rs] / cpuregisters[rt];
-                        hi = cpuregisters[rs] % cpuregisters[rt];
+                    case DIV:
+                        lo = gpr[rs] / gpr[rt];
+                        hi = gpr[rs] % gpr[rt];
                         break;
-                    case DIVU://divu
 
-                        longA |= cpuregisters[rs];
-                        longB |= cpuregisters[rt];
+                    case DIVU:
+                        longA |= gpr[rs];
+                        longB |= gpr[rt];
                         lo = (int) (longA / longB);
                         hi = (int) (longA % longB);
                         break;
-                    case ADD://add
 
-                        if (couldRaiseOverflowOnAdd(cpuregisters[rs], cpuregisters[rt])) {
+                    case MADD:
+                        temp = ((long) hi) << 32 + (long) lo;
+                        temp += (long) gpr[rs] * (long) gpr[rt];
+                        hi = (int) ((temp >> 32) & 0xFFFFFFFF);
+                        lo = (int) (temp & 0xFFFFFFFF);
+                        break;
+
+                    case MADDU:
+                        /* We OR the bit so we are sure the sign bit isnt set */
+                        longA |= gpr[rs];
+                        longB |= gpr[rt];
+                        temp = ((long) hi) << 32 + (long) lo;
+                        temp += longA * longB;
+                        hi = (int) ((temp >> 32) & 0xFFFFFFFF);
+                        lo = (int) (temp & 0xFFFFFFFF);
+                        break;
+
+                    case ADD:
+                        // (hlide) this instruction is never used and never generated by GCC
+                        if (couldRaiseOverflowOnAdd(gpr[rs], gpr[rt])) {
                             // TODO set exception overflow and break !!! (rd cannot be modify)
                         }
-                        cpuregisters[rd] = cpuregisters[rs] + cpuregisters[rt];
+                        gpr[rd] = gpr[rs] + gpr[rt];
                         /*TODO: integer overflow exception */
                         break;
-                    case ADDU://addu
 
-                        longA |= cpuregisters[rs];
-                        longB |= cpuregisters[rt];
-                        cpuregisters[rd] = (int) (longA + longB);
+                    case ADDU:
+                        longA |= gpr[rs];
+                        longB |= gpr[rt];
+                        gpr[rd] = (int) (longA + longB);
                         break;
-                    case SUB://sub
-
-                        if (couldRaiseOverflowOnSub(cpuregisters[rs], cpuregisters[rt])) {
+                        
+                    case SUB:
+                        // (hlide) this instruction is never used and never generated by GCC
+                        if (couldRaiseOverflowOnSub(gpr[rs], gpr[rt])) {
                             // TODO set exception overflow and break !!! (rd cannot be modify)
                         }
-                        cpuregisters[rd] = cpuregisters[rs] - cpuregisters[rt];
+                        gpr[rd] = gpr[rs] - gpr[rt];
                         /* TODO: add integer overflow exception */
                         break;
-                    case SUBU://subu
-
-                        cpuregisters[rd] = cpuregisters[rs] - cpuregisters[rt];
+                        
+                    case SUBU:
+                        gpr[rd] = gpr[rs] - gpr[rt];
                         break;
-                    case AND://and
-
-                        cpuregisters[rd] = cpuregisters[rs] & cpuregisters[rt];
+                        
+                    case AND:
+                        gpr[rd] = gpr[rs] & gpr[rt];
                         break;
-                    case OR://or
 
-                        cpuregisters[rd] = cpuregisters[rs] | cpuregisters[rt];
+                    case OR:
+                        gpr[rd] = gpr[rs] | gpr[rt];
                         break;
-                    case XOR://xor
 
-                        cpuregisters[rd] = cpuregisters[rs] ^ cpuregisters[rt];
+                    case XOR:
+                        gpr[rd] = gpr[rs] ^ gpr[rt];
                         break;
-                    case NOR://nor
+                        
+                    case NOR:
+                        gpr[rd] = ~(gpr[rs] | gpr[rt]);
+                        break;
 
-                        cpuregisters[rd] = ~cpuregisters[rs] | cpuregisters[rt];
+                    case SLT:
+                        gpr[rd] = (gpr[rs] < gpr[rt]) ? 1 : 0;
                         break;
-                    case SLT://slt
 
-                        if (cpuregisters[rs] < cpuregisters[rt]) {
-                            cpuregisters[rd] = 1;
-                        } else {
-                            cpuregisters[rd] = 0;
-                        }
+                    case SLTU:
+                        longA |= gpr[rs];
+                        longB |= gpr[rt];
+                        gpr[rd] = (longA < longB) ? 1 : 0;
                         break;
-                    case SLTU://sltu
+                        
+                    case MAX:
+                        gpr[rd] = (gpr[rs] > gpr[rt]) ? gpr[rs] : gpr[rt];
+                        break;
 
-                        longA |= cpuregisters[rs];
-                        longB |= cpuregisters[rt];
-                        if (longA < longB) {
-                            cpuregisters[rd] = 1;
-                        } else {
-                            cpuregisters[rd] = 0;
-                        }
+                    case MIN:
+                        gpr[rd] = (gpr[rs] < gpr[rt]) ? gpr[rs] : gpr[rt];
                         break;
+
+                    case MSUB:
+                        temp = ((long) hi) << 32 + (long) lo;
+                        temp -= (long) gpr[rs] * (long) gpr[rt];
+                        hi = (int) ((temp >> 32) & 0xFFFFFFFF);
+                        lo = (int) (temp & 0xFFFFFFFF);
+                        break;
+
+                    case MSUBU:
+                        /* We OR the bit so we are sure the sign bit isnt set */
+                        longA |= gpr[rs];
+                        longB |= gpr[rt];
+                        temp = ((long) hi) << 32 + (long) lo;
+                        temp -= longA * longB;
+                        hi = (int) ((temp >> 32) & 0xFFFFFFFF);
+                        lo = (int) (temp & 0xFFFFFFFF);
+                        break;
+                       
                     default:
                         System.out.println("Unsupported special instruction " + Integer.toHexString(special));
                         break;
                 }
                 break;
+
             case J:
                 pc = ((pc & 0xF0000000) | ((value & 0x3FFFFFF) << 2)) - 4;
                 /*TODO: delay one cycle */
                 break;
+
             case JAL:
-                cpuregisters[31] = pc + 8; // second instruction after
+                gpr[31] = pc + 8; // second instruction after
 
                 pc = ((pc & 0xF0000000) | ((value & 0x3FFFFFF) << 2)) - 4;
                 break;
+
             case BEQ:
-                if (cpuregisters[rs] == cpuregisters[rt]) {
+                if (gpr[rs] == gpr[rt]) {
                     pc += (signExtend(imm) << 2) + 4 - 4; // relative to address of first instruction after
 
                 }
                 break;
+
             case BNE:
-                if (cpuregisters[rs] != cpuregisters[rt]) {
+                if (gpr[rs] != gpr[rt]) {
                     pc += (signExtend(imm) << 2) + 4 - 4;
                 }
                 break;
+
             case BLEZ:
-                if (cpuregisters[rs] <= 0) {
+                if (gpr[rs] <= 0) {
                     pc += (signExtend(imm) << 2) + 4 - 4;
                 }
                 break;
+
             case BGTZ:
-                if (cpuregisters[rs] > 0) {
+                if (gpr[rs] > 0) {
                     pc += (signExtend(imm) << 2) + 4 - 4;
                 }
                 break;
 
-            case ADDI: //addi
-
-                if (couldRaiseOverflowOnAdd(cpuregisters[rs], signExtend(imm))) {
+            case ADDI:
+                // (hlide) this instruction is never used and generated by GCC
+                if (couldRaiseOverflowOnAdd(gpr[rs], signExtend(imm))) {
                     // TODO set exception overflow and break !!! (rt cannot be modify)
                 }
-                //cpuregisters[rs] = cpuregisters[rs] + signExtend(imm); 
-                cpuregisters[rt] = cpuregisters[rs] + signExtend(imm);
+                gpr[rt] = gpr[rs] + signExtend(imm);
                 /*TODO: integer overflow exception */
                 break;
-            case ADDIU: //addiu
 
-                longA |= cpuregisters[rs];
+            case ADDIU:
+                // (hlide) no need to put it in a long variable
+                gpr[rt] = gpr[rs] + signExtend(imm);
+                break;
+
+            case SLTI:
+                gpr[rt] = (gpr[rs] < signExtend(imm)) ? 1 : 0;
+                break;
+
+            case SLTIU:
+                longA |= gpr[rs];
                 longB |= signExtend(imm);
-                cpuregisters[rt] = (int) (longA + longB);
+                gpr[rt] = (longA < longB) ? 1 : 0;
                 break;
-            case SLTI://slti
 
-                if (cpuregisters[rs] < signExtend(imm)) {
-                    cpuregisters[rd] = 1;
-                } else {
-                    cpuregisters[rd] = 0;
-                }
-                break;
-            case SLTIU://sltiu
-
-                longA |= cpuregisters[rs];
-                longB |= signExtend(imm);
-                if (longA < longB) {
-                    cpuregisters[rd] = 1;
-                } else {
-                    cpuregisters[rd] = 0;
-                }
-                break;
             case ANDI://ANDI
-
-                cpuregisters[rt] = cpuregisters[rs] & imm;
+                gpr[rt] = gpr[rs] & imm;
                 break;
+
             case ORI: //ori
-
-                cpuregisters[rt] = cpuregisters[rs] | imm;
+                gpr[rt] = gpr[rs] | imm;
                 break;
+
             case XORI: //xori
-
-                cpuregisters[rt] = cpuregisters[rs] ^ imm;
+                gpr[rt] = gpr[rs] ^ imm;
                 break;
+
             case LUI://lui
-
-                cpuregisters[rt] = imm << 16;
+                gpr[rt] = imm << 16;
                 break;
+
+            case SPECIAL3:
+                byte special3 = (byte) (value & 0x3f);
+                switch (special3) {
+
+                    case EXT: {
+                        int mask = ~(~1 << rd);
+                        gpr[rd] = (gpr[rt] >> sa) & mask;
+                    }
+                    break;
+                        
+                    case INS: {
+                        int mask1 = ~(~0 << sa);
+                        int mask2 = (~0 << rd);
+                        int mask3 = mask1 | mask2;
+                        gpr[rd] = (gpr[rt] & mask3) | ((gpr[rs] >> sa) & mask2);
+                    }
+                    break;
+                    
+                    case BSHFL:
+                        switch (sa) {
+                            case WSBH: {
+                                int tmp  = gpr[rt];
+                                gpr[rd]  = (tmp & 256) <<  8; tmp >>= 8;
+                                gpr[rd] |= (tmp & 256) <<  0; tmp >>= 8;
+                                gpr[rd] |= (tmp & 256) << 24; tmp >>= 8;
+                                gpr[rd] |= (tmp & 256) << 16;
+                                break;
+                            }
+                                
+                            case WSBW: {
+                                int tmp  = gpr[rt];
+                                gpr[rd]  = (tmp & 256) << 24; tmp >>= 8;
+                                gpr[rd] |= (tmp & 256) << 16; tmp >>= 8;
+                                gpr[rd] |= (tmp & 256) <<  8; tmp >>= 8;
+                                gpr[rd] |= (tmp & 256) <<  0;
+                                break;
+                            }
+                                
+                            case SEB:
+                                gpr[rd] = (gpr[rt] << 24) >> 24;
+                                break;
+
+                            case BITREV: {
+                                int tmp  = gpr[rt];
+                                gpr[rd]  = (tmp & 1) << 31; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) << 30; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) << 29; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) << 28; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) << 27; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) << 26; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) << 25; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) << 24; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) << 23; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) << 22; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) << 21; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) << 20; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) << 19; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) << 18; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) << 17; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) << 16; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) << 15; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) << 14; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) << 13; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) << 12; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) << 11; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) << 10; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) <<  9; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) <<  8; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) <<  7; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) <<  6; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) <<  5; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) <<  3; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) <<  2; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1) <<  1; tmp >>= 1;
+                                gpr[rd] |= (tmp & 1);
+                                break;
+                            }
+
+                            case SEH:
+                                gpr[rd] = (gpr[rt] << 16) >> 16;
+                                break;
+                                
+                            default:
+                                System.out.println("Unsupported BSHFL instruction " + Integer.toHexString(opcode));
+                                break;
+                        }
+
+                    default:
+                        System.out.println("Unsupported SPECIAL3 instruction " + Integer.toHexString(opcode));
+                        break;
+                }
+                
             case LH:
                 int virtAddr;
-                virtAddr = cpuregisters[rs] + signExtend(imm);
-                cpuregisters[rt] = signExtend(Memory.get_instance().read16(virtAddr));
+                virtAddr = gpr[rs] + signExtend(imm);
+                gpr[rt] = signExtend(Memory.get_instance().read16(virtAddr));
                 break;
+                
             case LHU:
-                virtAddr = cpuregisters[rs] + signExtend(imm);
-                cpuregisters[rt] = Memory.get_instance().read16(virtAddr);
+                virtAddr = gpr[rs] + signExtend(imm);
+                gpr[rt] = Memory.get_instance().read16(virtAddr);
                 break;
+                
             case LW:
-                virtAddr = cpuregisters[rs] + signExtend(imm);
-                cpuregisters[rt] = Memory.get_instance().read32(virtAddr);
+                virtAddr = gpr[rs] + signExtend(imm);
+                gpr[rt] = Memory.get_instance().read32(virtAddr);
                 break;
+                
             case SH:
-                virtAddr = cpuregisters[rs] + signExtend(imm);
-                Memory.get_instance().write16(virtAddr, (short) (cpuregisters[rt] & 0xFFFF));
+                virtAddr = gpr[rs] + signExtend(imm);
+                Memory.get_instance().write16(virtAddr, (short) (gpr[rt] & 0xFFFF));
                 break;
+                
             case SW:
-                virtAddr = cpuregisters[rs] + signExtend(imm);
-                Memory.get_instance().write32(virtAddr, cpuregisters[rt]);
+                virtAddr = gpr[rs] + signExtend(imm);
+                Memory.get_instance().write32(virtAddr, gpr[rt]);
                 break;
 
             default:

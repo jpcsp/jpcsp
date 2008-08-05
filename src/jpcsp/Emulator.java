@@ -297,15 +297,15 @@ public class Emulator {
         // from soywiz/pspemulator
         cpu.pc = (int) romManager.getBaseoffset() + (int) romManager.getElf32().getHeader().getE_entry(); //set the pc register.
 
-        cpu.cpuregisters[31] = 0x08000004; //ra, should this be 0?
+        cpu.gpr[31] = 0x08000004; //ra, should this be 0?
 
-        cpu.cpuregisters[5] = (int) romManager.getBaseoffset() + (int) romManager.getElf32().getHeader().getE_entry(); // argumentsPointer a1 reg
+        cpu.gpr[5] = (int) romManager.getBaseoffset() + (int) romManager.getElf32().getHeader().getE_entry(); // argumentsPointer a1 reg
 
-        cpu.cpuregisters[28] = (int) romManager.getBaseoffset() + (int) romManager.getPSPModuleInfo().getM_gp(); //gp reg    gp register should get the GlobalPointer!!!
+        cpu.gpr[28] = (int) romManager.getBaseoffset() + (int) romManager.getPSPModuleInfo().getM_gp(); //gp reg    gp register should get the GlobalPointer!!!
 
-        cpu.cpuregisters[29] = 0x09F00000; //sp
+        cpu.gpr[29] = 0x09F00000; //sp
 
-        cpu.cpuregisters[26] = 0x09F00000; //k0
+        cpu.gpr[26] = 0x09F00000; //k0
 
     }
 
@@ -330,7 +330,7 @@ public class Emulator {
         // basic code, just one thread by now... it's just a view
         run = false;
         while (run == true) {
-            cpu.stepcpu();
+            cpu.stepCpu();
             gpu.draw();
             controller.checkControllerState();
             delay(cpu.numberCyclesDelay());
