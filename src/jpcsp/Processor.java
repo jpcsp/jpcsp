@@ -97,11 +97,11 @@ public class Processor {
     public static int unsignedCompare(int i, int j) {
         return ((i - j) ^ i ^ j) >> 31;
     }
-    
+
     private static int countLeadingZero(int value) {
         return 0; // TO DO
     }
-            
+
     private static int countLeadingOne(int value) {
         return 0; // TO DO
     }
@@ -110,7 +110,7 @@ public class Processor {
         long tmp = value << (62-31);
         return ((tmp >>> 1) == (tmp & 1));
     }
-    
+
     private boolean couldRaiseOverflowOnAdd(int value0, int value1) {
         boolean v1 = (((long) value0 + (long) value1) > Integer.MAX_VALUE);
         boolean v2 = (((long) value0 + (long) value1) < Integer.MIN_VALUE); //or underflow????
@@ -176,7 +176,7 @@ public class Processor {
                         }
                         break;
                     }
-                    
+
                     case SRAV:
                         //last update 31/07/2008 - >> sign extension is automatic (fiveofhearts)
                         gpr[rd] = gpr[rt] >> (gpr[rs] & 0x3F);
@@ -287,7 +287,7 @@ public class Processor {
 
                     case ADD: {
                         long result = (long) gpr[rs] + (long) gpr[rt];
-                        
+
                         if (addSubOverflow(result)) {
                             // TODO set exception overflow and break !!! (rd cannot be modify)
                             break;
@@ -301,10 +301,10 @@ public class Processor {
                         longB |= gpr[rt];
                         gpr[rd] = (int) (longA + longB);
                         break;
-                        
+
                     case SUB: {
                         long result = (long) gpr[rs] - (long) gpr[rt];
-                        
+
                         if (addSubOverflow(result)) {
                             // TODO set exception overflow and break !!! (rd cannot be modify)
                             break;
@@ -312,11 +312,11 @@ public class Processor {
                         gpr[rd] = (int) result;
                         break;
                     }
-                    
+
                     case SUBU:
                         gpr[rd] = gpr[rs] - gpr[rt];
                         break;
-                        
+
                     case AND:
                         gpr[rd] = gpr[rs] & gpr[rt];
                         break;
@@ -328,7 +328,7 @@ public class Processor {
                     case XOR:
                         gpr[rd] = gpr[rs] ^ gpr[rt];
                         break;
-                        
+
                     case NOR:
                         gpr[rd] = ~(gpr[rs] | gpr[rt]);
                         break;
@@ -340,7 +340,7 @@ public class Processor {
                     case SLTU:
                         gpr[rd] = unsignedCompare(gpr[rs], gpr[rt]);
                         break;
-                        
+
                     case MAX:
                         gpr[rd] = (gpr[rs] > gpr[rt]) ? gpr[rs] : gpr[rt];
                         break;
@@ -365,7 +365,7 @@ public class Processor {
                         hi = (int) ((temp >> 32) & 0xFFFFFFFF);
                         lo = (int) (temp & 0xFFFFFFFF);
                         break;
-                       
+
                     default:
                         System.out.println("Unsupported special instruction " + Integer.toHexString(special));
                         break;
@@ -410,7 +410,7 @@ public class Processor {
 
             case ADDI: {
                 long result = (long) gpr[rs] + (long) signExtend(imm);
-                        
+
                 if (addSubOverflow(result)) {
                     // TODO set exception overflow and break !!! (rd cannot be modify)
                     break;
@@ -456,7 +456,7 @@ public class Processor {
                         gpr[rd] = (gpr[rt] >> sa) & mask;
                     }
                     break;
-                        
+
                     case INS: {
                         int mask1 = ~(~0 << sa);
                         int mask2 = (~0 << rd);
@@ -464,7 +464,7 @@ public class Processor {
                         gpr[rd] = (gpr[rt] & mask3) | ((gpr[rs] >> sa) & mask2);
                     }
                     break;
-                    
+
                     case BSHFL:
                         switch (sa) {
                             case WSBH: {
@@ -475,7 +475,7 @@ public class Processor {
                                 gpr[rd] |= (tmp & 256) << 16;
                                 break;
                             }
-                                
+
                             case WSBW: {
                                 int tmp  = gpr[rt];
                                 gpr[rd]  = (tmp & 256) << 24; tmp >>= 8;
@@ -484,7 +484,7 @@ public class Processor {
                                 gpr[rd] |= (tmp & 256) <<  0;
                                 break;
                             }
-                                
+
                             case SEB:
                                 gpr[rd] = (gpr[rt] << 24) >> 24;
                                 break;
@@ -528,7 +528,7 @@ public class Processor {
                             case SEH:
                                 gpr[rd] = (gpr[rt] << 16) >> 16;
                                 break;
-                                
+
                             default:
                                 System.out.println("Unsupported BSHFL instruction " + Integer.toHexString(opcode));
                                 break;
@@ -538,28 +538,33 @@ public class Processor {
                         System.out.println("Unsupported SPECIAL3 instruction " + Integer.toHexString(opcode));
                         break;
                 }
-                
+
             case LH:
                 int virtAddr;
                 virtAddr = gpr[rs] + signExtend(imm);
                 gpr[rt] = signExtend(Memory.get_instance().read16(virtAddr));
                 break;
-                
+
             case LHU:
                 virtAddr = gpr[rs] + signExtend(imm);
                 gpr[rt] = Memory.get_instance().read16(virtAddr);
                 break;
-                
+
             case LW:
                 virtAddr = gpr[rs] + signExtend(imm);
                 gpr[rt] = Memory.get_instance().read32(virtAddr);
                 break;
-                
+
+            case SB:
+                virtAddr = gpr[rs] + signExtend(imm);
+                Memory.get_instance().write8(virtAddr, (byte) (gpr[rt] & 0xFF));
+                break;
+
             case SH:
                 virtAddr = gpr[rs] + signExtend(imm);
                 Memory.get_instance().write16(virtAddr, (short) (gpr[rt] & 0xFFFF));
                 break;
-                
+
             case SW:
                 virtAddr = gpr[rs] + signExtend(imm);
                 Memory.get_instance().write32(virtAddr, gpr[rt]);

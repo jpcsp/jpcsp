@@ -32,10 +32,9 @@ public class Registers extends javax.swing.JInternalFrame {
     public Registers(Processor c) {
         cpu = c;
         initComponents();
-        RefreshDebugger();
-
+        RefreshRegisters();
     }
-    
+
     /** This method is called from within the constructor to
      * initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is
@@ -154,7 +153,7 @@ private void formInternalFrameClosing(javax.swing.event.InternalFrameEvent evt) 
     Settings.get_instance().writeWindowPos("registers", coord);
 }//GEN-LAST:event_formInternalFrameClosing
 
-    public void RefreshDebugger() {
+    public void RefreshRegisters() {
         jTable1.setValueAt(Integer.toHexString(cpu.pc), 0, 1);
         jTable1.setValueAt(Integer.toHexString(cpu.hi), 1, 1);
         jTable1.setValueAt(Integer.toHexString(cpu.lo), 2, 1);

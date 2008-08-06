@@ -29,13 +29,13 @@ import jpcsp.Settings;
  */
 public class MemoryViewer extends javax.swing.JInternalFrame {
     Processor cpu;
-    int startaddress; 
+    int startaddress;
     /** Creates new form MemoryViewer */
     public MemoryViewer(Processor c) {
         this.cpu = c;
         startaddress=c.pc;
         initComponents();
-        
+
         RefreshMemory();
     }
     public char converttochar(int address)
@@ -49,11 +49,12 @@ public class MemoryViewer extends javax.swing.JInternalFrame {
             return (char)'.';
         else
           return (char)(character & 0x0ff);
-      
+
     }
     public void RefreshMemory()
     {
       int addr = startaddress;
+      memoryview.setText("");
       for(int y=0; y<22; y++)//21 lines
       {
                 memoryview.append(String.format("%08x : %02x %02x %02x %02x %02x %02x " +
@@ -91,15 +92,15 @@ public class MemoryViewer extends javax.swing.JInternalFrame {
                                                converttochar(addr+13),
                                                converttochar(addr+14),
                                                converttochar(addr+15)
-                                               
+
                                                )
                                                );
                 if(y !=21) memoryview.append("\n");
            // }
             addr +=16;
-          
+
       }
-        
+
     }
     /** This method is called from within the constructor to
      * initialize the form.
@@ -192,27 +193,23 @@ private void memoryviewKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:even
    if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_DOWN){
        startaddress +=16;
        evt.consume();
-       memoryview.setText("");
        RefreshMemory();
    }
    else if(evt.getKeyCode() == java.awt.event.KeyEvent.VK_UP){
        startaddress -=16;
        evt.consume();
-       memoryview.setText("");
        RefreshMemory();
    }
     else if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_PAGE_UP)
     {
        startaddress -=352;
        evt.consume();
-       memoryview.setText("");
        RefreshMemory();
     }
     else if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_PAGE_DOWN)
     {
        startaddress +=352;
        evt.consume();
-       memoryview.setText("");
        RefreshMemory();
     }
 }//GEN-LAST:event_memoryviewKeyPressed
@@ -227,7 +224,6 @@ private void GoToButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
             return;
         }
          startaddress = value;
-         memoryview.setText("");
          RefreshMemory();
 }//GEN-LAST:event_GoToButtonActionPerformed
 
@@ -236,13 +232,11 @@ private void memoryviewMouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GE
        if (evt.getWheelRotation() > 0){
        startaddress +=16;
        evt.consume();
-       memoryview.setText("");
        RefreshMemory();
    }
    else {
        startaddress -=16;
        evt.consume();
-       memoryview.setText("");
        RefreshMemory();
    }
 }//GEN-LAST:event_memoryviewMouseWheelMoved

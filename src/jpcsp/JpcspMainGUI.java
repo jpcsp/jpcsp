@@ -58,7 +58,7 @@ public class JpcspMainGUI extends javax.swing.JFrame {
             desktopPane.remove(dis);
             dis = null;
         }
-        dis = new Disassembler(emulator.getProcessor(), regs);
+        dis = new Disassembler(emulator.getProcessor(), regs, memview);
         //dis.setLocation(300, 0);
         dis.setLocation(Settings.get_instance().readWindowPos("disassembler")[0], Settings.get_instance().readWindowPos("disassembler")[1]);
         dis.setVisible(true);
@@ -347,7 +347,7 @@ public class JpcspMainGUI extends javax.swing.JFrame {
     }
 
 private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openMenuItemActionPerformed
-    boolean isloaded = false; // variable to check if user at least choose something  
+    boolean isloaded = false; // variable to check if user at least choose something
 
     saveWinPos();//same windows before open something
 
@@ -356,7 +356,7 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
 
     if (userChooseSomething(returnVal)) {
         File file = fc.getSelectedFile();
-        //This is where a real application would open the file.   
+        //This is where a real application would open the file.
         try {
             emulator.load(file.getPath());
             emulator.run();
@@ -375,14 +375,14 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
             JpcspDialogManager.showError(this, "Critical Error : " + ex.getMessage());
         }
     } else {
-        return; //user cancel the action        
+        return; //user cancel the action
 
     }
     if (isloaded) {
         createELFWindow();
         createRegistersWindow();
-        createDisassemblerWindow();
         createMemoryViewWindow();
+        createDisassemblerWindow();
     } else {
         hideELFWindow();
         hideRegistersWindow();
