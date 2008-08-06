@@ -105,19 +105,9 @@ public class Processor {
     private static int countLeadingOne(int value) {
         return 0; // TO DO
     }
-/*
-    private static boolean addOverflow(int i, int j) {
-        long tmp = ((long)i + (long)j) << 62;
-        return ((tmp >>> 1) == (tmp & 1));
-    }
-    
-    private static boolean subOverflow(int i, int j) {
-        long tmp = ((long)i - (long)j) << 62;
-        return ((tmp >>> 1) == (tmp & 1));
-    }
- */   
+
     private static boolean addSubOverflow(long value) {
-        long tmp = value << 62;
+        long tmp = value << (62-31);
         return ((tmp >>> 1) == (tmp & 1));
     }
     
