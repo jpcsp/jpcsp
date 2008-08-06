@@ -44,7 +44,7 @@ public class Elf32Header {
     private int e_shnum;
     private int e_shstrndx;
     private static String info;
-    
+
     private void read(RandomAccessFile f) throws IOException {
         e_magic = readUWord(f);
         e_class = readUByte(f);
@@ -66,12 +66,12 @@ public class Elf32Header {
         e_shstrndx = readUHalf(f);
     }
 
-    
+
      public Elf32Header(RandomAccessFile f) throws IOException {
         read(f);
     }
-    
-     
+
+
     public static String getInfo() {
         return info;
     }
@@ -79,23 +79,23 @@ public class Elf32Header {
     public static void setInfo(String aInfo) {
         info = aInfo;
     }
-     
+
      public boolean isValid(){
         return (Long.toHexString( getE_magic() & 0xFFFFFFFFL).toUpperCase().equals("464C457F"));
      }
-     
+
      public boolean isMIPSExecutable(){
         return (Integer.toHexString(getE_machine() & 0xFFFF).equals("8"));
      }
-     
+
      public boolean isPRXDetected(){
         return ((getE_type() & 0xFFFF) == 0xFFA0);
      }
-     
+
      public boolean requiresRelocation(){
-        return (getE_entry() < MemoryMap.START_RAM);
+        return (isPRXDetected() || (getE_entry() < MemoryMap.START_RAM));
      }
-     
+
     @Override
     public String toString() {
         StringBuffer str = new StringBuffer();
