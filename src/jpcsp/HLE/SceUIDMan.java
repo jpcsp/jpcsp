@@ -25,7 +25,7 @@ public class SceUIDMan {
 
     private SceUIDMan() {
         uids = new HashMap<Integer, SceUID>();
-        uidnext = 1000;
+        uidnext = 0x1000;
     }
 
     /** classes should call getUid to get a new unique SceUID */
