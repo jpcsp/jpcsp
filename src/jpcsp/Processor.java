@@ -164,18 +164,19 @@ public class Processor {
                         gpr[rd] = gpr[rt] << (gpr[rs] & 0x3F);
                         break;
 
-                    case SRLRORV:
+                    case SRLRORV: {
                         //last update 5/08/2008 - added ROTR (hlide)
                         //last update 31/07/2008 - should be okay (shadow)
                         //last update 31/07/2008 - >>> does not sign extend (fiveofhearts)
-                        sa = (gpr[rs] & 0x3F);
-                        if (rs == ROTRV) {
-                            gpr[rd] = (gpr[rt] >>> sa) | (gpr[rt] << (32 - sa));
+                        int shift = (gpr[rs] & 0x3F);
+                        if (sa == ROTRV) {
+                            gpr[rd] = (gpr[rt] >>> shift) | (gpr[rt] << (32 - shift));
                         } else {
-                            gpr[rd] = gpr[rt] >>> sa;
+                            gpr[rd] = gpr[rt] >>> shift;
                         }
                         break;
-
+                    }
+                    
                     case SRAV:
                         //last update 31/07/2008 - >> sign extension is automatic (fiveofhearts)
                         gpr[rd] = gpr[rt] >> (gpr[rs] & 0x3F);
