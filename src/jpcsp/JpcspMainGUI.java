@@ -372,7 +372,7 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
             JpcspDialogManager.showError(this, "General Error : " + ex.getMessage());
         } catch (Exception ex) {
             ex.printStackTrace();
-            JpcspDialogManager.showError(this, "General Error : " + ex.getMessage());
+            JpcspDialogManager.showError(this, "Critical Error : " + ex.getMessage());
         }
     } else {
         return; //user cancel the action        

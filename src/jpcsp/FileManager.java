@@ -28,7 +28,6 @@ import jpcsp.format.Elf32Header;
 import jpcsp.format.Elf32SectionHeader;
 import jpcsp.format.PBP;
 import jpcsp.format.PSPModuleInfo;
-import jpcsp.format.Elf32Relocate;
 import jpcsp.util.Utilities;
 
 public class FileManager {
@@ -161,6 +160,11 @@ public class FileManager {
             elfoffset = getPBP().getOffsetPspData();
             getActualFile().seek(elfoffset); //seek the new offset
             PbpInfo = getPBP().toString(); //inteast this use PBP.getInfo()
+            
+            elf = new Elf32(getActualFile()); //the elf of pbp
+            getPBP().setElf32(elf); //composite the pbp...
+            processElf();
+            
             type = FORMAT_PBP;
         } else {
             elfoffset = 0;

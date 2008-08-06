@@ -48,9 +48,18 @@ public class PBP {
     private long p_offset_snd0_at3;
     private long p_offset_psp_data;
     private long p_offset_psar_data;
+    private Elf32 elf32;
 
     public boolean isValid() {
         return ((p_magic & 0xFFFFFFFFL) == PBP_MAGIC);
+    }
+
+    public void setElf32(Elf32 elf) {
+        elf32 = elf;
+    }
+    
+    public Elf32 getElf32() {
+        return elf32;
     }
 
     public void setInfo(String msg) {

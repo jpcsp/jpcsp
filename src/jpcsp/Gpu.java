@@ -10,4 +10,7 @@ public class Gpu {
         public void draw(){
             
         }
+
+    void clean() {
+    }
 }
