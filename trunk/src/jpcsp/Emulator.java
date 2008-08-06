@@ -532,6 +532,8 @@ public class Emulator {
 
     private void initDebugWindowsByPbp() {
         ElfHeader.PbpInfo = romManager.getPBP().getInfo();
+        ElfHeader.ElfInfo = romManager.getPBP().getElf32().getHeader().getInfo();
+        ElfHeader.SectInfo = romManager.getPBP().getElf32().getSectionHeader().getInfo();
     }
 
     private void initDebugWindowsByElf32() {
