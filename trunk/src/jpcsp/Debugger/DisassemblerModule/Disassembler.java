@@ -43,21 +43,23 @@ import static jpcsp.Debugger.DisassemblerModule.DisHelper.*;
  * @author  shadow
  */
 public class Disassembler extends javax.swing.JInternalFrame implements ClipboardOwner{
-  
+
     int DebuggerPC;
     private DefaultListModel model_1 = new DefaultListModel();
     //int pcreg;
     int opcode_address; // store the address of the opcode used for offsetdecode
     Processor c;
     Registers regs;
+    MemoryViewer memview;
     DisVFPU dvfpu = new DisVFPU();
     DisSpecial2 special2 =new DisSpecial2();
     DisCOP0 cop0 = new DisCOP0();
     DisSpecial3 special3 = new DisSpecial3();
     /* Creates new form Disasembler */
-    public Disassembler(Processor c, Registers regs) {
+    public Disassembler(Processor c, Registers regs, MemoryViewer memview) {
         this.c = c;
         this.regs=regs;
+        this.memview=memview;
         DebuggerPC = 0;
         //pcreg = c.pc;
         model_1 = new DefaultListModel();
@@ -291,7 +293,8 @@ private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     c.stepCpu();
     DebuggerPC = 0;
     RefreshDebugger();
-    regs.RefreshDebugger();
+    regs.RefreshRegisters();
+    memview.RefreshMemory();
 }//GEN-LAST:event_jButton4ActionPerformed
 
 private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
@@ -407,7 +410,7 @@ private void formInternalFrameClosing(javax.swing.event.InternalFrameEvent evt) 
     coord[0]=Integer.toString(location.x);
     coord[1]=Integer.toString(location.y);
     Settings.get_instance().writeWindowPos("disassembler", coord);
-    
+
 }//GEN-LAST:event_formInternalFrameClosing
 
     public void RefreshDebugger() {
@@ -573,7 +576,7 @@ private void formInternalFrameClosing(javax.swing.event.InternalFrameEvent evt) 
                     case BLTZ:
                         s = s + Dis_RSOFFSET("bltz",value);
                         break;
-                    case BGEZ: 
+                    case BGEZ:
                         s = s + Dis_RSOFFSET("bgez",value);
                         break;
                     case BLTZL:
@@ -595,7 +598,7 @@ private void formInternalFrameClosing(javax.swing.event.InternalFrameEvent evt) 
                         s = s + Dis_RSOFFSET("bgezall",value);
                         break;
                     default:
-                       s = s + "Unknown regimm instruction " + Integer.toHexString(regimmcode); 
+                       s = s + "Unknown regimm instruction " + Integer.toHexString(regimmcode);
                        break;
                 }
                 break;
@@ -890,7 +893,7 @@ private void formInternalFrameClosing(javax.swing.event.InternalFrameEvent evt) 
     /**
    * Empty implementation of the ClipboardOwner interface.
    */
-    
+
    public void lostOwnership( Clipboard aClipboard, Transferable aContents) {
      //do nothing
    }
