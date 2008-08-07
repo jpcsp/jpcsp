@@ -20,16 +20,20 @@ import static jpcsp.AllegrexOpcodes.*;
 
 public class Processor {
 
-    public int pc;
-    public int hi,  lo;
-    public int gpr[] = new int[32];    //  32 x 32-bit general purpose registers
+    public int     gpr[] = new int[32];    //  32 x 32-bit general purpose registers
 
-    public float fpr[] = new float[32];  //  32 x 32-bit float point registers
+    public float   fpr[] = new float[32];  //  32 x 32-bit float point registers
 
-    public float vpr[] = new float[128]; // 128 x 32-bit float point registers
+    public float   vpr[] = new float[128]; // 128 x 32-bit float point registers
 
+    private long   hilo;
+    public int     hi,  lo;
+    public int     pc;
+    
     private byte[] cyclesPer;
 
+    public int cycles;
+    
     Processor() {
         Memory.get_instance(); //intialize memory
 
@@ -129,6 +133,7 @@ public class Processor {
         long temp;
         long longA, longB;
         int value = Memory.get_instance().read32(pc);
+        pc += 4;
         longA = longB = 0;
         int rs = (value >> 21) & 0x1f;
         int rt = (value >> 16) & 0x1f;
@@ -140,149 +145,133 @@ public class Processor {
             case SPECIAL:
                 byte special = (byte) (value & 0x3f);
                 switch (special) {
-                    case SLL: //last update 31/07/2008 - should be okay (shadow)
-                        gpr[rd] = gpr[rt] << sa;
+                    case SLL:
+                        if (value == 0)
+                            doNOP();
+                        else
+                            doSLL(rd, rt, sa);
                         break;
 
                     case SRLROR:
-                        //last update 5/08/2008 - added ROTR (hlide)
-                        //last update 31/07/2008 - should be okay (shadow)
-                        //last update 31/07/2008 - >>> does not sign extend (fiveofhearts)
                         if (rs == ROTR) {
-                            gpr[rd] = (gpr[rt] >>> sa) | (gpr[rt] << (32 - sa));
+                            doSLL(rd, rt, sa);
                         } else {
-                            gpr[rd] = gpr[rt] >>> sa;
+                            doROTR(rd, rt, sa);
                         }
                         break;
 
                     case SRA:
-                        //last update 31/07/2008 - >> sign extension is automatic (fiveofhearts)
-                        gpr[rd] = gpr[rt] >> sa;
+                        doSRA(rd, rt, sa);
                         break;
 
                     case SLLV:
-                        gpr[rd] = gpr[rt] << (gpr[rs] & 0x3F);
+                        doSLLV(rd, rt, sa);
                         break;
 
                     case SRLRORV: {
-                        //last update 5/08/2008 - added ROTR (hlide)
-                        //last update 31/07/2008 - should be okay (shadow)
-                        //last update 31/07/2008 - >>> does not sign extend (fiveofhearts)
-                        int shift = (gpr[rs] & 0x3F);
                         if (sa == ROTRV) {
-                            gpr[rd] = (gpr[rt] >>> shift) | (gpr[rt] << (32 - shift));
+                            doSLLV(rd, rt, rs);
                         } else {
-                            gpr[rd] = gpr[rt] >>> shift;
+                            doROTRV(rd, rt, rs);
                         }
                         break;
                     }
 
                     case SRAV:
-                        //last update 31/07/2008 - >> sign extension is automatic (fiveofhearts)
-                        gpr[rd] = gpr[rt] >> (gpr[rs] & 0x3F);
+                        doSRAV(rd, rt, sa);
                         break;
 
                     case JR:
-                        pc = gpr[rs] - 4;
-                        /* TODO: delay one cycle */
-                        break;
+                        doJR(rs);
+                        break;                        
 
                     case JALR:
-                        gpr[rd] = pc + 8; // second instruction after
-
-                        pc = gpr[rs] - 4;
-                        /* TODO: delay one cycle */
-                        break;
+                        doJALR(rd, rs);
+                        break;                        
 
                     case MOVZ:
-                        if (gpr[rs] == 0) {
-                            gpr[rd] = gpr[rt];
-                        }
+                        doMOVZ(rd, rs, rt);
                         break;
 
                     case MOVN:
-                        if (gpr[rs] != 0) {
-                            gpr[rd] = gpr[rt];
-                        }
+                        doMOVN(rd, rs, rt);
                         break;
 
-                    case SYSCALL:
-                        // not implemented
+                    case SYSCALL: {
+                        int code = (value >> 6) & 0x000fffff;
+                        doSYSCALL(code);
                         break;
+                    }
 
-                    case BREAK:
-                        // not implemented
+                    case BREAK: {
+                        int code = (value >> 6) & 0x000fffff;
+                        doBREAK(code);
                         break;
-
+                    }
                     case SYNC:
-                        // not implemented
+                        doSYNC();
                         break;
 
                     case MFHI:
-                        gpr[rd] = hi;
+                        doMFHI(rd);
                         break;
+                        
                     case MTHI:
-                        hi = gpr[rs];
+                        doMTHI(rs);
                         break;
 
                     case MFLO:
-                        gpr[rd] = lo;
+                        doMFLO(rd);
                         break;
 
                     case MTLO:
-                        lo = gpr[rs];
+                        doMTLO(rs);
                         break;
 
                     case CLZ:
-                        gpr[rd] = countLeadingZero(gpr[rs]);
+                        doCLZ(rd, rs);
                         break;
 
                     case CLO:
-                        gpr[rd] = countLeadingOne(gpr[rs]);
+                        doCLO(rd, rs);
                         break;
 
                     case MULT:
-                        temp = (long) gpr[rs] * (long) gpr[rt];
-                        hi = (int) ((temp >> 32) & 0xFFFFFFFF);
-                        lo = (int) (temp & 0xFFFFFFFF);
+                        hilo = (long) gpr[rs] * (long) gpr[rt];
+                        hi = (int) (hilo >>> 32);
+                        lo = (int) (hilo & 0xFFFFFFFF);
                         break;
 
                     case MULTU:
                         /* We OR the bit so we are sure the sign bit isnt set */
                         longA |= gpr[rs];
                         longB |= gpr[rt];
-                        temp = longA * longB;
-                        hi = (int) ((temp >> 32) & 0xFFFFFFFF);
-                        lo = (int) (temp & 0xFFFFFFFF);
+                        hilo = longA * longB;
+                        hi = (int) (hilo >>> 32);
+                        lo = (int) (hilo & 0xFFFFFFFF);
                         break;
 
                     case DIV:
                         lo = gpr[rs] / gpr[rt];
                         hi = gpr[rs] % gpr[rt];
+                        hilo = ((long) hi) << 32 | (((long) lo) & 0xffffffff);
                         break;
 
-                    case DIVU:
+                    case DIVU: {
                         longA |= gpr[rs];
                         longB |= gpr[rt];
                         lo = (int) (longA / longB);
                         hi = (int) (longA % longB);
+                        hilo = ((long) hi) << 32 | (((long) lo) & 0xffffffff);
                         break;
+                    }
 
                     case MADD:
-                        temp = ((long) hi) << 32 + (long) lo;
-                        temp += (long) gpr[rs] * (long) gpr[rt];
-                        hi = (int) ((temp >> 32) & 0xFFFFFFFF);
-                        lo = (int) (temp & 0xFFFFFFFF);
+                        doMADD(rs, rt);
                         break;
 
                     case MADDU:
-                        /* We OR the bit so we are sure the sign bit isnt set */
-                        longA |= gpr[rs];
-                        longB |= gpr[rt];
-                        temp = ((long) hi) << 32 + (long) lo;
-                        temp += longA * longB;
-                        hi = (int) ((temp >> 32) & 0xFFFFFFFF);
-                        lo = (int) (temp & 0xFFFFFFFF);
+                        doMADDU(rs, rt);
                         break;
 
                     case ADD: {
@@ -350,20 +339,11 @@ public class Processor {
                         break;
 
                     case MSUB:
-                        temp = ((long) hi) << 32 + (long) lo;
-                        temp -= (long) gpr[rs] * (long) gpr[rt];
-                        hi = (int) ((temp >> 32) & 0xFFFFFFFF);
-                        lo = (int) (temp & 0xFFFFFFFF);
+                        doMSUB(rs, rt);
                         break;
 
                     case MSUBU:
-                        /* We OR the bit so we are sure the sign bit isnt set */
-                        longA |= gpr[rs];
-                        longB |= gpr[rt];
-                        temp = ((long) hi) << 32 + (long) lo;
-                        temp -= longA * longB;
-                        hi = (int) ((temp >> 32) & 0xFFFFFFFF);
-                        lo = (int) (temp & 0xFFFFFFFF);
+                        doMSUBU(rs, rt);
                         break;
 
                     default:
@@ -372,41 +352,55 @@ public class Processor {
                 }
                 break;
 
-            case J:
-                pc = ((pc & 0xF0000000) | ((value & 0x3FFFFFF) << 2)) - 4;
-                /*TODO: delay one cycle */
+            case J: {
+                stepCpu();
+                pc = ((pc & 0xF0000000) | ((value & 0x3FFFFFF) << 2));
                 break;
+            }
 
-            case JAL:
-                gpr[31] = pc + 8; // second instruction after
-
-                pc = ((pc & 0xF0000000) | ((value & 0x3FFFFFF) << 2)) - 4;
+            case JAL: {
+                int target = pc + 4;
+                stepCpu();
+                gpr[31] = target;
+                pc = ((pc & 0xF0000000) | ((value & 0x3FFFFFF) << 2));
                 break;
+            }                
 
-            case BEQ:
-                if (gpr[rs] == gpr[rt]) {
-                    pc += (signExtend(imm) << 2) + 4 - 4; // relative to address of first instruction after
-
+            case BEQ: {
+                boolean t = (gpr[rs] == gpr[rt]);
+                stepCpu();
+                if (t) {
+                    pc += (signExtend(imm) << 2);
                 }
                 break;
+            }
 
-            case BNE:
-                if (gpr[rs] != gpr[rt]) {
-                    pc += (signExtend(imm) << 2) + 4 - 4;
+            case BNE: {
+                boolean t = (gpr[rs] != gpr[rt]);
+                stepCpu();
+                if (t) {
+                    pc += (signExtend(imm) << 2);
                 }
                 break;
+            }
 
-            case BLEZ:
-                if (gpr[rs] <= 0) {
-                    pc += (signExtend(imm) << 2) + 4 - 4;
+            case BLEZ: {
+                boolean t = (gpr[rs]  <= 0);
+                stepCpu();
+                if (t) {
+                    pc += (signExtend(imm) << 2);
                 }
                 break;
+            }
 
-            case BGTZ:
-                if (gpr[rs] > 0) {
-                    pc += (signExtend(imm) << 2) + 4 - 4;
+            case BGTZ: {
+                boolean t = (gpr[rs] > 0);
+                stepCpu();
+                if (t) {
+                    pc += (signExtend(imm) << 2);
                 }
                 break;
+            }
 
             case ADDI: {
                 long result = (long) gpr[rs] + (long) signExtend(imm);
@@ -486,7 +480,7 @@ public class Processor {
                             }
 
                             case SEB:
-                                gpr[rd] = (gpr[rt] << 24) >> 24;
+                                gpr[rd] = signExtend8(gpr[rt]);
                                 break;
 
                             case BITREV: {
@@ -526,7 +520,7 @@ public class Processor {
                             }
 
                             case SEH:
-                                gpr[rd] = (gpr[rt] << 16) >> 16;
+                                gpr[rd] = signExtend(gpr[rt]);
                                 break;
 
                             default:
@@ -574,6 +568,993 @@ public class Processor {
                 System.out.println("Unsupported instruction " + Integer.toHexString(opcode));
                 break;
         }
-        pc += 4;
     }
+    
+    private void doNOP()
+    {
+        cycles += 1;
+    }
+
+    private void doSLL(int rd, int rt, int sa)
+    {
+        if (rd != 0) gpr[rd] = (gpr[rt] << sa);
+        
+        cycles += 1;
+    }
+
+    private void doSRL(int rd, int rt, int sa)
+    {
+        if (rd != 0) gpr[rd] = (gpr[rt] >>> sa);
+        
+        cycles += 1;
+    }
+
+    private void doSRA(int rd, int rt, int sa)
+    {
+        if (rd != 0) gpr[rd] = (gpr[rt] >> sa);
+        
+        cycles += 1;
+    }
+
+    private void doSLLV(int rd, int rt, int rs)
+    {
+        if (rd != 0) gpr[rd] = (gpr[rt] << (gpr[rs]&31));
+        
+        cycles += 1;
+    }
+
+    private void doSRLV(int rd, int rt, int rs)
+    {
+        if (rd != 0) gpr[rd] = (gpr[rt] >>> (gpr[rs]&31));
+        
+        cycles += 1;
+    }
+
+    private void doSRAV(int rd, int rt, int rs)
+    {
+        if (rd != 0) gpr[rd] = (gpr[rt] >>> (gpr[rs]&31));
+        
+        cycles += 1;
+    }
+
+    private void doJR(int rs)
+    {
+        int target = gpr[rs];
+        cycles += 2;
+        stepCpu();
+        pc = target;
+    }
+
+    private void doJALR(int rd, int rs)
+    {
+        if (rd != 0) gpr[rd] = pc + 4;
+        int target = gpr[rs];
+        cycles += 2;
+        stepCpu();
+        pc = target;
+    }
+    
+    private void doMFHI(int rd)
+    {
+        if (rd != 0) gpr[rd] = hi;
+
+        cycles += 1; // ?
+    }
+
+    private void doMTHI(int rs)
+    {
+        hi = gpr[rs];
+        hilo = (((long)lo) << 32) | (hilo & 0xffffffff);
+
+        cycles += 1; // ?
+    }
+
+    private void doMFLO(int rd)
+    {
+        if (rd != 0) gpr[rd] = lo;
+
+        cycles += 1; // ?
+    }
+
+    private void doMTLO(int rs)
+    {
+        lo = gpr[rs];
+        hilo = ((hilo >>> 32) << 32) | (((long)lo) & 0xffffffff);
+
+        cycles += 1; // ?
+    }
+
+/*
+    mult(000000:rs:rt:0000000000011000)
+    {
+        cycles="5"
+        operation=
+        "
+            1: result:64 = s64(GPR[rs]) * s64(GPR[rs])
+               LO = result[31..0]
+               HI = result[63..32]
+        "
+    }
+
+    multu(000000:rs:rt:0000000000011001)
+    {
+        cycles="5"
+        operation=
+        "
+            1: result:64 = u64(GPR[rs]) * u64(GPR[rs])
+               LO = result[31..0]
+               HI = result[63..32]
+        "
+    }
+
+    div(000000:rs:rt:0000000000011010)
+    {
+        cycles="36"
+        operation=
+        "
+            1: LO = s32(GPR[rs]) / s32(GPR[rs])
+               HI = s32(GPR[rs]) % s32(GPR[rs])
+        "
+    }
+
+    divu(000000:rs:rt:0000000000011011)
+    {
+        cycles="36"
+        operation=
+        "
+            1: LO = u32(GPR[rs]) / u32(GPR[rs])
+               HI = u32(GPR[rs]) % u32(GPR[rs])
+        "
+    }
+
+    add(000000:rs:rt:rd:00000100000)
+    {
+        cycles="1"
+        operation=
+        "
+            1: result:33 = ((GPR[rs][31]) << 32) | GPR[rs]) + ((GPR[rt][31]) << 32) | GPR[rt])
+               if (result[32] == result[31])
+                 GPR[rd] = result[31..0]
+               else
+                 raise integer overflow exception
+        "
+    }
+
+    addu(000000:rs:rt:rd:00000100001)
+    {
+        cycles="1"
+        operation=
+        "
+            1: GPR[rd] = GPR[rs] + GPR[rt]
+        "
+    }
+
+    sub(000000:rs:rt:rd:00000100010)
+    {
+        cycles="1"
+        operation=
+        "
+            1: result:33 = ((GPR[rs][31]) << 32) | GPR[rs]) - ((GPR[rt][31]) << 32) | GPR[rt])
+               if (result[32] == result[31])
+                 GPR[rd] = result[31..0]
+               else
+                 raise integer overflow exception
+        "
+    }
+
+    subu(000000:rs:rt:rd:00000100011)
+    {
+        cycles="1"
+        operation=
+        "
+            1: GPR[rd] = GPR[rs] - GPR[rt]
+        "
+    }
+
+    and(000000:rs:rt:rd:00000100100)
+    {
+        cycles="1"
+        operation=
+        "
+            1: GPR[rd] = GPR[rs] & GPR[rt]
+        "
+    }
+
+    or(000000:rs:rt:rd:00000100101)
+    {
+        cycles="1"
+        operation=
+        "
+            1: GPR[rd] = GPR[rs] | GPR[rt]
+        "
+    }
+
+    xor(000000:rs:rt:rd:00000100110)
+    {
+        cycles="1"
+        operation=
+        "
+            1: GPR[rd] = GPR[rs] ^ GPR[rt]
+        "
+    }
+
+    nor(000000:rs:rt:rd:00000100111)
+    {
+        cycles="1"
+        operation=
+        "
+            1: GPR[rd] = ~(GPR[rs] | GPR[rt])
+        "
+    }
+
+    slt(000000:rs:rt:rd:00000101010)
+    {
+        cycles="1"
+        operation=
+        "
+            1: GPR[rd] = s32(GPR[rs]) < s32(GPR[rt])
+        "
+    }
+
+    sltu(000000:rs:rt:rd:00000101011)
+    {
+        cycles="1"
+        operation=
+        "
+            1: GPR[rd] = u32(GPR[rs]) + u32(GPR[rt])
+        "
+    }
+
+    // REGIMM
+   
+    bltz(000001:rs:00000:imm16)
+    {
+        cycles="3"
+        operation=
+        "
+            1: ct = (s32(GPR[rs]) < 0)
+               execute instruction at PC+4
+            2: if (ct)
+                 PC = PC + (s16(imm16) << 2)
+        "
+        delayslot="1"
+    }
+
+    bgez(000001:rs:00001:imm16)
+    {
+        cycles="3"
+        operation=
+        "
+            1: ct = (s32(GPR[rs]) >= 0)
+               execute instruction at PC+4
+            2: if (ct)
+                 PC = PC + (s16(imm16) << 2)
+        "
+        delayslot="1"
+    }
+
+    bltzl(000001:rs:00010:imm16)
+    {
+        cycles="3"
+        operation=
+        "
+            1: ct = (s32(GPR[rs]) < 0)
+               if (ct)
+                 execute instruction at PC+4
+            2: if (ct)
+                 PC = PC + (s16(imm16) << 2)
+        "
+        delayslot="1"
+    }
+
+    bgezl(000001:rs:00011:imm16)
+    {
+        cycles="3"
+        operation=
+        "
+            1: ct = (s32(GPR[rs]) >= 0)
+               if (ct)
+                 execute instruction at PC+4
+            2: if (ct)
+                 PC = PC + (s16(imm16) << 2)
+        "
+        delayslot="1"
+    }
+
+    bltzal(000001:rs:10000:imm16)
+    {
+        cycles="3"
+        operation=
+        "
+            1: ct = (s32(GPR[rs]) < 0)
+               execute instruction at PC+4
+               if (ct)
+                 GPR(31) = PC+8
+            2: if (ct)
+                 PC = PC + (s16(imm16) << 2)
+        "
+        delayslot="1"
+    }
+
+    bgezal(000001:rs:10001:imm16)
+    {
+        cycles="3"
+        operation=
+        "
+            1: ct = (s32(GPR[rs]) >= 0)
+               execute instruction at PC+4
+               if (ct)
+                 GPR(31) = PC+8
+            2: if (ct)
+                 PC = PC + (s16(imm16) << 2)
+        "
+        delayslot="1"
+    }
+
+    bltzall(000001:rs:10010:imm16)
+    {
+        cycles="3"
+        operation=
+        "
+            1: ct = (s32(GPR[rs]) < 0)
+               if (ct)
+                 execute instruction at PC+4
+               if (ct)
+                 GPR(31) = PC+8
+            2: if (ct)
+                 PC = PC + (s16(imm16) << 2)
+        "
+        delayslot="1"
+    }
+
+    bgezall(000001:rs:10011:imm16)
+    {
+        cycles="3"
+        operation=
+        "
+            1: ct = (s32(GPR[rs]) >= 0)
+               if (ct)
+                 execute instruction at PC+4
+               if (ct)
+                 GPR(31) = PC+8
+            2: if (ct)
+                 PC = PC + (s16(imm16) << 2)
+        "
+        delayslot="1"
+    }
+
+    // OPCODE #1
+   
+    j(000010:imm26)
+    {
+        cycles="2"
+        operation=
+        "
+            1: execute instruction at PC+4
+            2: PC = PC[31..28] | (u32(imm26) << 2)
+        "
+        delayslot="1"
+    }
+
+    jal(000011:imm26)
+    {
+        cycles="2"
+        operation=
+        "
+            1: GPR(31) = PC+8
+               execute instruction at PC+4
+            2: PC = PC[31..28] | (u32(imm26) << 2)
+        "
+        delayslot="1"
+    }
+
+    beq(000100:rs:rt:imm16)
+    {
+        cycles="3"
+        operation=
+        "
+            1: ct = (GPR[rs] == GPR[rt])
+               execute instruction at PC+4
+            2: if (ct)
+                 PC = PC + (s16(imm16) << 2)
+        "
+        delayslot="1"
+    }
+
+    bne(000101:rs:rt:imm16)
+    {
+        cycles="3"
+        operation=
+        "
+            1: ct = (GPR[rs] <> GPR[rt])
+               execute instruction at PC+4
+            2: if (ct)
+                 PC = PC + (s16(imm16) << 2)
+        "
+        delayslot="1"
+    }
+
+    blez(000110:rs:00000:imm16)
+    {
+        cycles="3"
+        operation=
+        "
+            1: ct = (s32(GPR[rs]) <= 0)
+               execute instruction at PC+4
+            2: if (ct)
+                 PC = PC + (s16(imm16) << 2)
+        "
+        delayslot="1"
+    }
+
+    bgtz(000111:rs:00000:imm16)
+    {
+        cycles="3"
+        operation=
+        "
+            1: ct = (s32(GPR[rs]) > 0)
+               execute instruction at PC+4
+            2: if (ct)
+                 PC = PC + (s16(imm16) << 2)
+        "
+        delayslot="1"
+    }
+
+    addi(001000:rs:rt:imm16)
+    {
+        cycles="1"
+        operation=
+        "
+            1: result:33 = ((GPR[rs][31]) << 32) | GPR[rs]) + s32(imm16)
+               if (result[32] == result[31])
+                 GPR[rt] = result[31..0]
+               else
+                 raise integer overflow exception
+        "
+    }
+
+    addiu(001001:rs:rt:imm16)
+    {
+        cycles="1"
+        operation=
+        "
+            1: GPR[rt] = GPR[rs] + s32(imm16)
+        "
+    }
+
+    slti(001010:rs:rt:imm16)
+    {
+        cycles="1"
+        operation=
+        "
+            1: GPR[rt] = s32(GPR[rs]) < s32(imm16)
+        "
+    }
+
+    sltiu(001011:rs:rt:imm16)
+    {
+        cycles="1"
+        operation=
+        "
+            1: GPR[rt] = u32(GPR[rs]) < u32(s32(imm16))
+        "
+    }
+
+    andi(001100:rs:rt:imm16)
+    {
+        cycles="1"
+        operation=
+        "
+            1: GPR[rt] = s32(GPR[rs]) & u32(imm16)
+        "
+    }
+
+    ori(001101:rs:rt:imm16)
+    {
+        cycles="1"
+        operation=
+        "
+            1: GPR[rt] = s32(GPR[rs]) | u32(imm16)
+        "
+    }
+
+    xori(001110:rs:rt:imm16)
+    {
+        cycles="1"
+        operation=
+        "
+            1: GPR[rt] = s32(GPR[rs]) ^ u32(imm16)
+        "
+    }
+
+    lui(00111100000:rt:imm16)
+    {
+        cycles="1"
+        operation=
+        "
+            1: GPR[rt] = s32(GPR[rs]) | (u32(imm16) << 16)
+        "
+    }
+   
+    // COP0
+
+    mfc0(01000000000:rt:c0dr:00000000000)
+    {
+        cycles="?"
+        operation=
+        "
+            1: GPR[rt] = C0DR(c0dr)
+        "
+    }
+
+    cfc0(01000000010:rt:c0cr:00000000000)
+    {
+        cycles="?"
+        operation=
+        "
+            1: GPR[rt] = C0CR(c0cr)
+        "
+    }
+
+    mtc0(01000000100:rt:c0dr:00000000000)
+    {
+        cycles="?"
+        operation=
+        "
+            1: C0DR(c0dr) = GPR[rt]
+        "
+    }
+
+    ctc0(01000100110:rt:c0cr:00000000000)
+    {
+        cycles="?"
+        operation=
+        "
+            1: C0CR(c0dr) = GPR[rt]
+        "
+    }
+
+    eret(01000000000000000000000000011000)
+    {
+        cycles="?"
+        operation=
+        "
+            1: if (ERL == 1)
+                 PC = ErrorEPC
+               else
+                 PC = RPC
+               if (ERL == 0)
+                 EXL = 0
+               LLBit = 0
+        "      
+    }
+   
+    // OPCODE #2
+
+    beql(010100:rs:rt:imm16)
+    {
+        cycles="3"
+        operation=
+        "
+            1: ct = (GPR[rs] == GPR[rt])
+               if (ct)
+                 execute instruction at PC+4
+            2: if (ct)
+                 PC = PC + (s16(imm16) << 2)
+        "
+        delayslot="1"
+    }
+
+    bnel(010101:rs:rt:imm16)
+    {
+        cycles="3"
+        operation=
+        "
+            1: ct = (GPR[rs] <> GPR[rt])
+               if (ct)
+                 execute instruction at PC+4
+            2: if (ct)
+                 PC = PC + (s16(imm16) << 2)
+        "
+        delayslot="1"
+    }
+
+    blezl(010110:rs:00000:imm16)
+    {
+        cycles="3"
+        operation=
+        "
+            1: ct = (s32(GPR[rs]) <= 0)
+               if (ct)
+                 execute instruction at PC+4
+               if (ct)
+                 PC = PC + (s16(imm16) << 2)
+        "
+        delayslot="1"
+    }
+
+    bgtzl(010111:rs:00000:imm16)
+    {
+        cycles="3"
+        operation=
+        "
+            1: ct = (s32(GPR[rs]) > 0)
+               if (ct)
+                 execute instruction at PC+4
+            2: if (ct)
+                 PC = PC + (s16(imm16) << 2)
+        "
+        delayslot="1"
+    }
+
+    lb(100000:rs:rt:imm16)
+    {
+        cycles="?"
+        operation=
+        "
+            1: address = GPR[rs] + s32(imm16)
+               GPR[rt] = s32(MemoryRead8(address))
+        "
+    }
+
+    lh(100001:rs:rt:imm16)
+    {
+        cycles="?"
+        operation=
+        "
+            1: address = GPR[rs] + s32(imm16)
+               if (address & 1)
+                 raise address error exception
+               else
+                 GPR[rt] = s32(MemoryRead16(address))
+        "
+    }
+
+    lwl(100010:rs:rt:imm16)
+    {
+        cycles="?"
+    }
+
+    lw(100011:rs:rt:imm16)
+    {
+        cycles="?"
+        operation=
+        "
+            1: address = GPR[rs] + s32(imm16)
+               if (address & 3)
+                 raise address error exception
+               else
+                 GPR[rt] = MemoryRead32(address)
+        "
+    }
+
+    lbu(100100:rs:rt:imm16)
+    {
+        cycles="?"
+        operation=
+        "
+            1: address = GPR[rs] + s32(imm16)
+               GPR[rt] = u32(MemoryRead8(address))
+        "
+    }
+
+    lhu(100101:rs:rt:imm16)
+    {
+        cycles="?"
+        operation=
+        "
+            1: address = GPR[rs] + s32(imm16)
+               if (address & 1)
+                 raise address error exception
+               else
+                 GPR[rt] = u32(MemoryRead16(address))
+        "
+    }
+
+    lwr(100110:rs:rt:imm16)
+    {
+        cycles="?"
+    }
+
+    sb(101000:rs:rt:imm16)
+    {
+        cycles="?"
+        operation=
+        "
+            1: address = GPR[rs] + s32(imm16)
+               MemoryWrite8(address, GPR[rt][7..0])
+        "
+    }
+
+    sh(101001:rs:rt:imm16)
+    {
+        cycles="?"
+        operation=
+        "
+            1: address = GPR[rs] + s32(imm16)
+               if (address & 1)
+                 raise address error exception
+               else
+                 MemoryWrite16(address, GPR[rt][15..0])
+        "
+    }
+
+    swl(101010:rs:rt:imm16)
+    {
+        cycles="?"
+    }
+
+    sw(101011:rs:rt:imm16)
+    {
+        cycles="?"
+        operation=
+        "
+            1: address = GPR[rs] + s32(imm16)
+               if (address & 3)
+                 raise address error exception
+               else
+                 MemoryWrite32(address, GPR[rt])
+        "
+    }
+
+    swr(101110:rs:rt:imm16)
+    {
+        cycles="?"
+    }
+
+    ll(110000:rs:rt:imm16)
+    {
+        cycles="?"
+        operation=
+        "
+            1: address = GPR[rs] + s32(imm16)
+               if (address & 3)
+                 raise address error exception
+               else
+                 GPR[rt] = MemoryRead32(address)
+               LLBit = 1
+        "
+    }
+
+    sc(111000:rs:rt:imm16)
+    {
+        cycles="?"
+        operation=
+        "
+            1: address = GPR[rs] + s32(imm16)
+               if (address & 3)
+                 raise address error exception
+               else if (LLBit == 1)
+                 MemoryWrite32(address, GPR[rt])
+               GPR[rt] = u32(LLBit)
+        "
+    }
+*/
+    private void doROTR(int rd, int rt, int sa)
+    {
+        cycles += 1;
+        
+        if (rd != 0) {
+            int at = gpr[rt];
+    
+            gpr[rd] = (at >>> sa) | (at << (32 - sa));
+        }
+    }
+
+    private void doROTRV(int rd, int rt, int rs)
+    {
+        doROTR(rd, rt, (gpr[rs]&31));
+    }
+
+    private void doMOVZ(int rd, int rs, int rt)
+    {
+        cycles += 1;
+        
+        if ((rd != 0) && (gpr[rt] == 0))
+            gpr[rd] = gpr[rs];
+    }
+   
+    private void doMOVN(int rd, int rs, int rt)
+    {       
+        cycles += 1;
+
+        if ((rd != 0) && (gpr[rt] != 0))
+            gpr[rd] = gpr[rs];
+    }
+   
+    private void doSYSCALL(int code)
+    {
+        // TODO
+        cycles += 1;
+    }
+
+    private void doBREAK(int code)
+    {
+        // TODO
+        cycles += 1;
+    }
+   
+    private void doSYNC()
+    {
+        cycles += 7;
+    }
+
+    private void doCLZ(int rd, int rs)
+    {
+        cycles += 1;
+        
+        if (rd != 0) {
+            int count = 32;
+            int value = gpr[rs];
+            int i = 31;
+        
+            do {
+                if (((value >>> i) & 1) == 1)
+                    count = 31 - i;
+            } while (count == 32 && i-- != 0);
+        
+            gpr[rd] = count;
+        }
+    }
+   
+    private void doCLO(int rd, int rs)
+    {
+        cycles += 1;
+        
+        if (rd != 0) {
+            int count = 32;
+            int value = gpr[rs];
+            int i = 31;
+        
+            do {
+                if (((value >>> i) & 1) == 0)
+                    count = 31 - i;
+            } while (count == 32 && i-- != 0);
+        
+            gpr[rd] = count;
+        }
+    }
+   
+    private void doMADD(int rs, int rt)
+    {
+        cycles += 5;
+               
+        hilo += ((long)gpr[rs]) * ((long)gpr[rs]);
+        hi = (int)(hilo >>> 32);
+        lo = (int)(hilo & 0xffffffff);
+    }
+   
+    private void doMADDU(int rs, int rt)
+    {
+        cycles += 5;
+               
+        hilo += (((long)gpr[rs]) & 0xffffffff) * (((long)gpr[rs]) & 0xffffffff);
+        hi = (int)(hilo >>> 32);
+        lo = (int)(hilo & 0xffffffff);
+    }
+   
+    private void doMAX(int rd, int rs, int rt)
+    {
+        cycles += 1;
+        
+        if (rd != 0) {
+            int x = gpr[rs];
+            int y = gpr[rt];
+            gpr[rd] = (x > y) ? x : y;
+        }
+    }
+   
+    private void doMIN(int rd, int rs, int rt)
+    {
+        cycles += 1;
+
+        if (rd != 0) {
+            int x = gpr[rs];
+            int y = gpr[rt];
+            gpr[rd] = (x < y) ? x : y;
+        }
+    }
+   
+    private void doMSUB(int rs, int rt)
+    {
+        cycles += 5;
+               
+        hilo -= ((long)gpr[rs]) * ((long)gpr[rs]);
+        hi = (int)(hilo >>> 32);
+        lo = (int)(hilo & 0xffffffff);
+    }
+   
+    private void doMSUBU(int rs, int rt)
+    {
+        cycles += 5;
+               
+        hilo -= (((long)gpr[rs]) & 0xffffffff) * (((long)gpr[rs]) & 0xffffffff);
+        hi = (int)(hilo >>> 32);
+        lo = (int)(hilo & 0xffffffff);
+    }
+   
+    private void doHALT()
+    {
+        // TODO
+        cycles += 1;
+    }
+
+ /*
+    ext(011111:rs:rt:(msb-lsb):lsb:000000)
+    {
+        cycles="1"
+        operation=
+        "
+            1: GPR[rt] = GPR[rs][msb..lsb];
+        "      
+    }
+
+    ins(011111:rs:rt:msb:lsb:000100)
+    {
+        cycles="1"
+        operation=
+        "
+            1: GPR[rt][msb..lsb] = GPR[rs][msb-lsb..0];
+        "      
+    }
+
+    wsbh(01111100000:rt:rd:00010100000)
+    {
+        cycles="1"
+        operation=
+        "
+            1: GPR[rd][ 7.. 0] = GPR[rt][15.. 8];
+               GPR[rd][15.. 8] = GPR[rt][ 7.. 0];
+               GPR[rd][23..16] = GPR[rt][31..24];
+               GPR[rd][31..24] = GPR[rt][23..16];
+        "      
+    }
+
+    wsbw(01111100000:rt:rd:00011100000)
+    {
+        cycles="1"
+        operation=
+        "
+            1: GPR[rd][ 7.. 0] = GPR[rt][15.. 8];
+               GPR[rd][15.. 8] = GPR[rt][23..16];
+               GPR[rd][23..16] = GPR[rt][15.. 8];
+               GPR[rd][31..24] = GPR[rt][ 7.. 0];
+        "      
+    }
+
+    seb(01111100000:rt:rd:10000100001)
+    {
+        cycles="1"
+        operation=
+        "
+            1: GPR[rd] = s32(GPR[rt][7..0]);
+        "      
+    }
+
+    bitrev(01111100000:rt:rd:10100100000)
+    {
+        cycles="1"
+        operation=
+        "
+            1: for each i in [31..0]
+                 GPR[rd][i] = GPR[rt][31-i];
+        "      
+    }
+
+    seh(01111100000:rt:rd:11000100000)
+    {
+        cycles="1"
+        operation=
+        "
+            1: GPR[rd] = s32(GPR[rt][15..0]);
+        "      
+    }
+
+    // OPCODE #2
+   
+    cache(101111:rs:func:imm16)
+    {
+        cycles="?"
+    }
+*/
 }
