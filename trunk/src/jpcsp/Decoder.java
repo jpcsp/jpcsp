@@ -23,7 +23,7 @@ import static jpcsp.AllegrexOpcodes.*;
  * @author hli
  */
 
-public class Decoder< P extends AllegrexInstructions > {
+public class Decoder {
 
     public int rs(int instruction) {
         return (instruction >> 21) & 31;
@@ -57,7 +57,7 @@ public class Decoder< P extends AllegrexInstructions > {
         return (instruction >> 6) & 0x000fffff;
     }
 
-    public void process(P that, int insn) {
+    public < P extends AllegrexInstructions > void process(P that, int insn) {
 
         byte opcode = (byte) (insn >>> 26);
 
@@ -75,7 +75,7 @@ public class Decoder< P extends AllegrexInstructions > {
 
                     case SRLROR:
                         if (rs(insn) == ROTR) {
-                            that.doSLL(rd(insn), rt(insn), sa(insn));
+                            that.doSRL(rd(insn), rt(insn), sa(insn));
                         } else {
                             that.doROTR(rd(insn), rt(insn), sa(insn));
                         }
@@ -89,14 +89,13 @@ public class Decoder< P extends AllegrexInstructions > {
                         that.doSLLV(rd(insn), rt(insn), sa(insn));
                         break;
 
-                    case SRLRORV: {
+                    case SRLRORV:
                         if (sa(insn) == ROTRV) {
                             that.doSRLV(rd(insn), rt(insn), rs(insn));
                         } else {
                             that.doROTRV(rd(insn), rt(insn), rs(insn));
                         }
                         break;
-                    }
 
                     case SRAV:
                         that.doSRAV(rd(insn), rt(insn), sa(insn));
