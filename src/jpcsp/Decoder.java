@@ -398,11 +398,11 @@ public class Decoder {
                 switch ((byte) func(insn)) {
 
                     case EXT:
-                        that.doEXT(rd(insn), rt(insn), rs(insn), sa(insn));
+                        that.doEXT(rt(insn), rs(insn), rd(insn), sa(insn));
                         break;
 
                     case INS:
-                        that.doINS(rd(insn), rt(insn), rs(insn), sa(insn));
+                        that.doINS(rt(insn), rs(insn), rd(insn), sa(insn));
                         break;
 
                     case BSHFL:

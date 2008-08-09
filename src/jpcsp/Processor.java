@@ -792,14 +792,14 @@ public class Processor implements AllegrexInstructions {
 
     public void doEXT(int rt, int rs, int rd, int sa) {
         int mask = ~(~1 << rd);
-        gpr[rd] = (gpr[rt] >> sa) & mask;
+        gpr[rt] = (gpr[rs] >> sa) & mask;
     }
 
     public void doINS(int rt, int rs, int rd, int sa) {
         int mask1 = ~(~0 << sa);
         int mask2 = (~0 << rd);
         int mask3 = mask1 | mask2;
-        gpr[rd] = (gpr[rt] & mask3) | ((gpr[rs] >> sa) & mask2);
+        gpr[rt] = (gpr[rt] & mask3) | ((gpr[rs] >> sa) & mask2);
     }
 
     public void doWSBH(int rd, int rt) {

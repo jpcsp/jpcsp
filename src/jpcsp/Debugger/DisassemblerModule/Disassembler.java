@@ -471,7 +471,7 @@ private void formInternalFrameClosing(javax.swing.event.InternalFrameEvent evt) 
                     case SLL: //sll
                         s = s + Dis_RDRTSA("sll", value);
                         break;
-                    case SRL://srl
+                    case SRLROR://srl
                         s = s + Dis_RDRTSA("srl", value);
                         break;
                     case SRA://sra
@@ -481,7 +481,7 @@ private void formInternalFrameClosing(javax.swing.event.InternalFrameEvent evt) 
                         s = s + Dis_RDRSRT("sllv", value);
                         break;
 
-                    case SRLV://srlv
+                    case SRLRORV://srlv
                         s = s + Dis_RDRSRT("srlv", value);
                         break;
                     case SRAV://srav
