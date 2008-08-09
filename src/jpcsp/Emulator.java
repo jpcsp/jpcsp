@@ -84,6 +84,7 @@ public class Emulator {
         initDebugWindowsByElf32();
     }
 
+    //init initPbp
     private void initPbp() throws IOException {
         mediaImplemented = true;
         initRamBy(romManager.getPBP().getElf32());
@@ -93,8 +94,6 @@ public class Emulator {
     }
     
     private void initRamBy(Elf32 elf) throws IOException {
-        // 3rd pass relocate
-        // is load the ram???
         if (elf.getHeader().requiresRelocation()) {
             for (Elf32SectionHeader shdr : elf.getListSectionHeader()) {
                 if (shdr.getSh_type() == 0x700000A0 || // PRX reloc magic

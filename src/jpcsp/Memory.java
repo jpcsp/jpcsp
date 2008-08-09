@@ -35,7 +35,7 @@ public class Memory {
         instance = null;
     }
 
-    public Memory() {
+    private Memory() { //no one can instantiate it, except itself
         mainmemory = new byte[0x01FFFFFF]; //32mb main ram
         scratchpad = new byte[0x00003FFF]; //16kb scratchpad
         videoram = new byte[0x001FFFFF]; // 2mb videoram
