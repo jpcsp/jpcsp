@@ -20,11 +20,9 @@ import static jpcsp.AllegrexOpcodes.*;
 
 public class Processor {
 
-    public int     gpr[] = new int[32];    //  32 x 32-bit general purpose registers
-
-    public float   fpr[] = new float[32];  //  32 x 32-bit float point registers
-
-    public float   vpr[] = new float[128]; // 128 x 32-bit float point registers
+    public int[]     gpr;
+    public float[]   fpr;
+    public float[]   vpr; 
 
     private long   hilo;
     public int     hi,  lo;
@@ -36,7 +34,6 @@ public class Processor {
     
     Processor() {
         Memory.get_instance(); //intialize memory
-
         setupCycleCost();
         reset();
     }
@@ -54,24 +51,12 @@ public class Processor {
     }
 
     public void reset() {
-
         // intialize psp register
         pc = 0x00000000;
-
         hi = lo = 0;
-
-        for (int i = 0; i < 32; i++) {
-            gpr[i] = 0;
-        }
-
-        for (int i = 0; i < 32; i++) {
-            fpr[i] = 0;
-        }
-
-        for (int i = 0; i < 128; i++) {
-            vpr[i] = 0;
-        }
-
+        gpr = new int[32]; 
+        fpr = new float[32];
+        vpr = new float[128];
     }
 
     public long numberCyclesDelay() {
