@@ -36,7 +36,7 @@ import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Settings;
 import jpcsp.util.JpcspDialogManager;
-import static jpcsp.R4000OpCodes.*;
+import static jpcsp.AllegrexOpcodes.*;
 import static jpcsp.Debugger.DisassemblerModule.DisHelper.*;
 /**
  *

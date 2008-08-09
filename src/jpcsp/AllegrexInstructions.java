@@ -95,6 +95,14 @@ public interface AllegrexInstructions {
     
     public void doBGTZ(int rs, int simm16);
     
+    public void doBEQL(int rs, int rt, int simm16);
+    
+    public void doBNEL(int rs, int rt, int simm16);
+    
+    public void doBLEZL(int rs, int simm16);
+
+    public void doBGTZL(int rs, int simm16);
+
     public void doADDI(int rt, int rs, int simm16);
     
     public void doADDIU(int rt, int rs, int simm16);
@@ -111,6 +119,12 @@ public interface AllegrexInstructions {
     
     public void doLUI(int rt, int uimm16);
 
+    public void doHALT();
+    
+    public void doMFIC(int rt);
+
+    public void doMTIC(int rt);
+
     public void doMFC0(int rt, int c0dr);
     
     public void doCFC0(int rt, int c0cr);
@@ -120,14 +134,6 @@ public interface AllegrexInstructions {
     public void doCTC0(int rt, int c0cr);
 
     public void doERET();
-
-    public void doBEQL(int rs, int rt, int simm16);
-    
-    public void doBNEL(int rs, int rt, int simm16);
-    
-    public void doBLEZL(int rs, int simm16);
-
-    public void doBGTZL(int rs, int simm16);
 
     public void doLB(int rt, int rs, int simm16);
 
@@ -152,6 +158,8 @@ public interface AllegrexInstructions {
     public void doSW(int rt, int rs, int simm16);
 
     public void doSWR(int rt, int rs, int simm16);
+
+    public void doCACHE(int rt, int rs, int simm16);
 
     public void doLL(int rt, int rs, int simm16);
 
@@ -187,8 +195,6 @@ public interface AllegrexInstructions {
     
     public void doMSUBU(int rs, int rt);
     
-    public void doHALT();
-    
     public void doEXT(int rt, int rs, int rd, int sa);
 
     public void doINS(int rt, int rs, int rd, int sa);
@@ -202,6 +208,5 @@ public interface AllegrexInstructions {
     public void doBITREV(int rd, int rt);
     
     public void doSEH(int rd, int rt);
-    
-    public void doCACHE(int code, int rs, int simm16); 
+   
 }
