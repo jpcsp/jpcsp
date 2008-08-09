@@ -243,7 +243,39 @@ public class AllegrexOpcodes {
     public static final byte BLTZALL = 0x12; // Branch on Less Than Zero And Link Likely
     public static final byte BGEZALL = 0x13; // Branch on Greater Than or Equal to Zero And Link Likely
     
-//      SPECIAL2 : Instr. encoded by function field when opcode field = SPECIAL2
+//     COP0: encoded by the rs field when opcode field = COP0.
+//     31---------26----------23-------31------------------------------0
+//     |=      COP0|          |   rs    |                              |
+//     ------6---------------------5------------------------------------
+//     |--000--|--001--|--010--|--011--|--100--|--101--|--110--|--111--| lo
+//  00 |  MFC0 |  ---  |  CFC0 |  ---  |  MTC0 |  ---  |  CTC0 |  ---  |
+//  01 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
+//  10 |  *1   |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
+//  11 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
+//  hi |-------|-------|-------|-------|-------|-------|-------|-------|
+//
+//     *1 COP0 func
+    
+    public static final byte MFC0 =0x0; // Move from Coprocessor 0
+    public static final byte CFC0 =0x2; // Move from Coprocessor 0
+    public static final byte MTC0 =0x4; // Move to Coprocessor 0
+    public static final byte CTC0 =0x6; // Move to Coprocessor 0
+    public static final byte COP0ERET =0x10; // Move to Coprocessor 0
+     
+//     COP0: encoded by the func field when opcode/rs field = COP0/10000.
+//     31---------26------------------------------------------5--------0
+//     |=      COP0|                                         | function|
+//     ------6----------------------------------------------------6-----
+//     |--000--|--001--|--010--|--011--|--100--|--101--|--110--|--111--| lo
+//  00 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
+//  01 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
+//  10 |  ERET |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
+//  11 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
+//  hi |-------|-------|-------|-------|-------|-------|-------|-------|
+
+    public static final byte ERET = 0x10; // Exception Return            */
+
+//     SPECIAL2 : encoded by function field when opcode field = SPECIAL2
 //     31---------26------------------------------------------5--------0
 //     |=  SPECIAL2|                                         | function|
 //     ------6----------------------------------------------------6-----
@@ -262,7 +294,7 @@ public class AllegrexOpcodes {
     public static final byte MFIC = 0x24; // move from IC (Interrupt) register
     public static final byte MTIC = 0x26; // move to IC (Interrupt) register
 
-//  SPECIAL 3: Instr. encoded by function field when opcode field = SPECIAL 3  NOT COMPLETE (1/08/2008) shadow
+//     SPECIAL3: encoded by function field when opcode field = SPECIAL3
 //     31---------26------------------------------------------5--------0
 //     |=  SPECIAL3|                                         | function|
 //     ------6----------------------------------------------------6-----
@@ -298,36 +330,4 @@ public class AllegrexOpcodes {
     public static final byte BITREV = 0x0c; // Revert Bits In Word
     public static final byte SEB = 0x10; // Sign-Extend Byte
     public static final byte SEH = 0x18; // Sign-Extend HalfWord
-    
-//     COP0: encoded by the rs field when opcode field = COP0.
-//     31---------26----------23-------31------------------------------0
-//     |=      COP0|          |   rs    |                              |
-//     ------6---------------------5------------------------------------
-//     |--000--|--001--|--010--|--011--|--100--|--101--|--110--|--111--| lo
-//  00 |  MFC0 |  ---  |  CFC0 |  ---  |  MTC0 |  ---  |  CTC0 |  ---  |
-//  01 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
-//  10 |  *1   |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
-//  11 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
-//  hi |-------|-------|-------|-------|-------|-------|-------|-------|
-//
-//     *1 COP0 func
-    
-    public static final byte MFC0 =0x0; // Move from Coprocessor 0
-    public static final byte CFC0 =0x2; // Move from Coprocessor 0
-    public static final byte MTC0 =0x4; // Move to Coprocessor 0
-    public static final byte CTC0 =0x6; // Move to Coprocessor 0
-    public static final byte COP0ERET =0x10; // Move to Coprocessor 0
-     
-//     COP0: encoded by the func field when opcode/rs field = COP0/10000.
-//     31---------26------------------------------------------5--------0
-//     |=      COP0|                                         | function|
-//     ------6----------------------------------------------------6-----
-//     |--000--|--001--|--010--|--011--|--100--|--101--|--110--|--111--| lo
-//  00 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
-//  01 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
-//  10 |  ERET |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
-//  11 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
-//  hi |-------|-------|-------|-------|-------|-------|-------|-------|
-
-    public static final byte ERET = 0x10; // Exception Return            */
 }

@@ -335,7 +335,7 @@ public class Emulator {
             cpu.stepCpu();
             gpu.draw();
             controller.checkControllerState();
-            delay(cpu.numberCyclesDelay());
+            //delay(cpu.numberCyclesDelay());
         }
     }
 

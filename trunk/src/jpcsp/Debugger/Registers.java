@@ -155,8 +155,8 @@ private void formInternalFrameClosing(javax.swing.event.InternalFrameEvent evt) 
 
     public void RefreshRegisters() {
         jTable1.setValueAt(Integer.toHexString(cpu.pc), 0, 1);
-        jTable1.setValueAt(Integer.toHexString(cpu.hi), 1, 1);
-        jTable1.setValueAt(Integer.toHexString(cpu.lo), 2, 1);
+        jTable1.setValueAt(Integer.toHexString(cpu.hi()), 1, 1);
+        jTable1.setValueAt(Integer.toHexString(cpu.lo()), 2, 1);
         for (int i = 0; i < 32; i++) {
             jTable1.setValueAt(Integer.toHexString(cpu.gpr[i]), 3 + i, 1);
         }

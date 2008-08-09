@@ -41,6 +41,10 @@ public class Decoder {
         return (instruction >> 6) & 31;
     }
 
+    public int func(int instruction) {
+        return (instruction & 63);
+    }
+
     public int simm16(int instruction) {
         return (instruction << 16) >> 16;
     }
@@ -63,8 +67,7 @@ public class Decoder {
 
         switch (opcode) {
             case SPECIAL:
-                byte special = (byte) (insn & 0x3f);
-                switch (special) {
+                switch ((byte) func(insn)) {
                     case SLL:
                         if (insn == 0) {
                             that.doNOP();
@@ -236,11 +239,52 @@ public class Decoder {
                         break;
 
                     default:
-                        that.doUNK("Unsupported special instruction " + Integer.toHexString(special));
+                        that.doUNK("Unsupported SPECIAL instruction " + Integer.toHexString(func(insn)));
                         break;
                 }
                 break;
 
+            case REGIMM:
+                switch ((byte) rt(insn))
+                {
+                    case BLTZ:
+                        that.doBLTZ(rs(insn), simm16(insn));
+                        break;
+                        
+                    case BGEZ:
+                        that.doBGEZ(rs(insn), simm16(insn));
+                        break;
+                        
+                    case BLTZL:
+                        that.doBLTZL(rs(insn), simm16(insn));
+                        break;
+                        
+                    case BGEZL:
+                        that.doBGEZL(rs(insn), simm16(insn));
+                        break;
+                        
+                    case BLTZAL:
+                        that.doBLTZAL(rs(insn), simm16(insn));
+                        break;
+                        
+                    case BGEZAL:
+                        that.doBLTZAL(rs(insn), simm16(insn));
+                        break;
+                        
+                    case BLTZALL:
+                        that.doBLTZALL(rs(insn), simm16(insn));
+                        break;
+                        
+                    case BGEZALL:
+                        that.doBLTZALL(rs(insn), simm16(insn));
+                        break;                       
+                           
+                    default:
+                        that.doUNK("Unsupported REGIMM instruction " + Integer.toHexString(rt(insn)));
+                        break;
+                }
+                break;
+                
             case J:
                 that.doJ(uimm26(insn));
                 break;
@@ -297,10 +341,61 @@ public class Decoder {
                 that.doLUI(rt(insn), simm16(insn));
                 break;
 
-            case SPECIAL3:
-                byte special3 = (byte) (insn & 0x3f);
+            case COP0:
+                switch ((byte) rs(insn))
+                {
+                    case MFC0:
+                        that.doMFC0(rt(insn), rd(insn));
+                        break;
+                        
+                    case CFC0:
+                        that.doCFC0(rt(insn), rd(insn));
+                        break;
+                        
+                    case MTC0:
+                        that.doMFC0(rt(insn), rd(insn));
+                        break;
+                        
+                    case CTC0:
+                        that.doCFC0(rt(insn), rd(insn));
+                        break;
+                        
+                    case COP0ERET:
+                        if (func(insn) == ERET)
+                            that.doERET();
+                        else
+                            that.doUNK("Unsupported COP0ERET instruction " + Integer.toHexString(func(insn)));
+                        break;
+                        
+                    default:
+                        that.doUNK("Unsupported COP0 instruction " + Integer.toHexString(rs(insn)));
+                        break;
+                }
+                break;
                 
-                switch (special3) {
+            case SPECIAL2:
+                switch ((byte) func(insn))
+                {
+                    case HALT:
+                        that.doHALT();
+                        break;
+                        
+                    case MFIC:
+                        that.doMFIC(rt(insn));
+                        break;
+                        
+                    case MTIC:
+                        that.doMTIC(rt(insn));
+                        break;
+                        
+                    default:
+                        that.doUNK("Unsupported SPECIAL2 instruction " + Integer.toHexString(opcode));
+                        break;
+                }
+                break;
+                
+            case SPECIAL3:
+                switch ((byte) func(insn)) {
 
                     case EXT:
                         that.doEXT(rd(insn), rt(insn), rs(insn), sa(insn));
@@ -334,12 +429,12 @@ public class Decoder {
                                 break;
 
                             default:
-                                System.out.println("Unsupported BSHFL instruction " + Integer.toHexString(opcode));
+                                that.doUNK("Unsupported BSHFL instruction " + Integer.toHexString(sa(insn)));
                                 break;
                         }
 
                     default:
-                        that.doUNK("Unsupported SPECIAL3 instruction " + Integer.toHexString(opcode));
+                        that.doUNK("Unsupported SPECIAL3 instruction " + Integer.toHexString(func(insn)));
                         break;
                 }
 
@@ -391,6 +486,10 @@ public class Decoder {
                 that.doSWR(rt(insn), rs(insn), simm16(insn));
                 break;
 
+            case CACHE:
+                that.doCACHE(rt(insn), rs(insn), simm16(insn));
+                break;
+                
             default:
                 that.doUNK("Unsupported instruction " + Integer.toHexString(opcode));
                 break;

@@ -311,8 +311,8 @@ public class ThreadMan {
         public void saveContext() {
             Processor cpu = Emulator.getProcessor();
             pcreg = cpu.pc;
-            hi = cpu.hi;
-            lo = cpu.lo;
+            hi = cpu.hi();
+            lo = cpu.lo();
             for (int i = 0; i < 32; i++) {
                 gpr[i] = cpu.gpr[i];
             }
@@ -323,8 +323,7 @@ public class ThreadMan {
         public void restoreContext() {
             Processor cpu = Emulator.getProcessor();
             cpu.pc = pcreg;
-            cpu.hi = hi;
-            cpu.lo = lo;
+            cpu.hilo = (((long)hi)<<32)|((long)lo);
             for (int i = 0; i < 32; i++) {
                 cpu.gpr[i] = gpr[i];
             }
