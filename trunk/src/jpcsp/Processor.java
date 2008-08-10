@@ -74,7 +74,7 @@ public class Processor implements AllegrexInstructions {
     }
 
     public static int branchTarget(int npc, int simm16) {
-        return npc - 4 + (simm16 << 2);
+        return npc + (simm16 << 2);
     }
 
     public static int jumpTarget(int npc, int uimm26) {
@@ -88,7 +88,22 @@ public class Processor implements AllegrexInstructions {
 
     private final Decoder interpreter = new Decoder();
 
-    public void stepCpu() {
+    public void step() {
+        npc = pc + 4;
+        
+        int insn = Memory.get_instance().read32(pc);
+
+        // by default, any Allegrex instruction takes 1 cycle at least
+        cycles += 1;
+
+        // by default, the next instruction to emulate is at the next address
+        pc = npc;
+
+        // process the current instruction
+        interpreter.process(this, insn);
+    }
+
+    public void stepDelayslot() {
         int insn = Memory.get_instance().read32(pc);
 
         // by default, any Allegrex instruction takes 1 cycle at least
@@ -100,13 +115,8 @@ public class Processor implements AllegrexInstructions {
         // process the current instruction
         interpreter.process(this, insn);
 
-        // handle delayslot instruction if any
-        if (npc == pc) {
-            npc = pc + 4;
-        } else {
-            pc = npc;
-            npc = pc + 4;
-        }
+        pc = npc;
+        npc = pc + 4;
     }
 
     @Override
@@ -164,7 +174,7 @@ public class Processor implements AllegrexInstructions {
     public void doJR(int rs) {
         int previous_cycles = cycles;
         npc = gpr[rs];
-        stepCpu();
+        stepDelayslot();
         if (cycles - previous_cycles < 2) {
             cycles = previous_cycles + 2;
         }
@@ -177,7 +187,7 @@ public class Processor implements AllegrexInstructions {
             gpr[rd] = pc + 4;
         }
         npc = gpr[rs];
-        stepCpu();
+        stepDelayslot();
         if (cycles - previous_cycles < 2) {
             cycles = previous_cycles + 2;
         }
@@ -259,7 +269,7 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doADDU(int rd, int rs, int rt) {
         if (rd != 0) {
-            gpr[rd] = (int) ((((long) gpr[rs]) & 0xffffffff) + (((long) gpr[rt]) & 0xffffffff));
+            gpr[rd] = gpr[rs] + gpr[rt];
         }
     }
 
@@ -328,10 +338,8 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doBLTZ(int rs, int simm16) {
         int previous_cycles = cycles;
-        if (gpr[rs] < 0) {
-            npc = branchTarget(pc, simm16);
-        }
-        stepCpu();
+        npc = (gpr[rs] < 0) ? branchTarget(pc, simm16) : (pc + 4);
+        stepDelayslot();
         if (cycles - previous_cycles < 3) {
             cycles = previous_cycles + 3;
         }
@@ -340,10 +348,8 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doBGEZ(int rs, int simm16) {
         int previous_cycles = cycles;
-        if (gpr[rs] >= 0) {
-            npc = branchTarget(pc, simm16);
-        }
-        stepCpu();
+        npc = (gpr[rs] >= 0) ? branchTarget(pc, simm16) : (pc + 4);
+        stepDelayslot();
         if (cycles - previous_cycles < 3) {
             cycles = previous_cycles + 3;
         }
@@ -354,13 +360,12 @@ public class Processor implements AllegrexInstructions {
         int previous_cycles = cycles;
         if (gpr[rs] < 0) {
             npc = branchTarget(pc, simm16);
-            stepCpu();
+            stepDelayslot();
             if (cycles - previous_cycles < 3) {
                 cycles = previous_cycles + 3;
             }
         } else {
             pc += 4;
-            npc = pc + 4;
             cycles += 3;
         }
     }
@@ -370,13 +375,12 @@ public class Processor implements AllegrexInstructions {
         int previous_cycles = cycles;
         if (gpr[rs] >= 0) {
             npc = branchTarget(pc, simm16);
-            stepCpu();
+            stepDelayslot();
             if (cycles - previous_cycles < 3) {
                 cycles = previous_cycles + 3;
             }
         } else {
             pc += 4;
-            npc = pc + 4;
             cycles += 3;
         }
     }
@@ -384,12 +388,11 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doBLTZAL(int rs, int simm16) {
         int previous_cycles = cycles;
+        int target = pc + 4;
         boolean t = (gpr[rs] < 0);
-        gpr[31] = pc + 4;
-        if (t) {
-            npc = branchTarget(pc, simm16);
-        }
-        stepCpu();
+        gpr[31] = target;
+        npc = t ? branchTarget(pc, simm16) : target;
+        stepDelayslot();
         if (cycles - previous_cycles < 3) {
             cycles = previous_cycles + 3;
         }
@@ -401,10 +404,8 @@ public class Processor implements AllegrexInstructions {
         int target = pc + 4;
         boolean t = (gpr[rs] >= 0);
         gpr[31] = target;
-        if (t) {
-            npc = branchTarget(pc, simm16);
-        }
-        stepCpu();
+        npc = t ? branchTarget(pc, simm16) : target;
+        stepDelayslot();
         if (cycles - previous_cycles < 3) {
             cycles = previous_cycles + 3;
         }
@@ -417,13 +418,12 @@ public class Processor implements AllegrexInstructions {
         gpr[31] = pc + 4;
         if (t) {
             npc = branchTarget(pc, simm16);
-            stepCpu();
+            stepDelayslot();
             if (cycles - previous_cycles < 3) {
                 cycles = previous_cycles + 3;
             }
         } else {
             pc += 4;
-            npc = pc + 4;
             cycles += 3;
         }
     }
@@ -434,14 +434,13 @@ public class Processor implements AllegrexInstructions {
         boolean t = (gpr[rs] >= 0);
         gpr[31] = pc + 4;
         if (t) {
-            stepCpu();
+            npc = branchTarget(pc, simm16);
+            stepDelayslot();
             if (cycles - previous_cycles < 3) {
                 cycles = previous_cycles + 3;
             }
-            npc = branchTarget(pc, simm16);
         } else {
             pc += 4;
-            npc = pc + 4;
             cycles += 3;
         }
     }
@@ -450,7 +449,7 @@ public class Processor implements AllegrexInstructions {
     public void doJ(int uimm26) {
         int previous_cycles = cycles;
         npc = jumpTarget(pc, uimm26);
-        stepCpu();
+        stepDelayslot();
         if (cycles - previous_cycles < 2) {
             cycles = previous_cycles + 2;
         }
@@ -461,7 +460,7 @@ public class Processor implements AllegrexInstructions {
         int previous_cycles = cycles;
         gpr[31] = pc + 4;
         npc = jumpTarget(pc, uimm26);
-        stepCpu();
+        stepDelayslot();
         if (cycles - previous_cycles < 2) {
             cycles = previous_cycles + 2;
         }
@@ -470,10 +469,8 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doBEQ(int rs, int rt, int simm16) {
         int previous_cycles = cycles;
-        if (gpr[rs] == gpr[rt]) {
-            npc = branchTarget(pc, simm16);
-        }
-        stepCpu();
+        npc = (gpr[rs] == gpr[rt]) ? branchTarget(pc, simm16) : (pc + 4);
+        stepDelayslot();
         if (cycles - previous_cycles < 3) {
             cycles = previous_cycles + 3;
         }
@@ -482,10 +479,8 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doBNE(int rs, int rt, int simm16) {
         int previous_cycles = cycles;
-        if (gpr[rs] != gpr[rt]) {
-            npc = branchTarget(pc, simm16);
-        }
-        stepCpu();
+        npc = (gpr[rs] != gpr[rt]) ? branchTarget(pc, simm16) : (pc + 4);
+        stepDelayslot();
         if (cycles - previous_cycles < 3) {
             cycles = previous_cycles + 3;
         }
@@ -494,10 +489,8 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doBLEZ(int rs, int simm16) {
         int previous_cycles = cycles;
-        if (gpr[rs] <= 0) {
-            npc = branchTarget(pc, simm16);
-        }
-        stepCpu();
+        npc = (gpr[rs] <= 0) ? branchTarget(pc, simm16) : (pc + 4);
+        stepDelayslot();
         if (cycles - previous_cycles < 3) {
             cycles = previous_cycles + 3;
         }
@@ -506,10 +499,8 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doBGTZ(int rs, int simm16) {
         int previous_cycles = cycles;
-        if (gpr[rs] > 0) {
-            npc = branchTarget(pc, simm16);
-        }
-        stepCpu();
+        npc = (gpr[rs] > 0) ? branchTarget(pc, simm16) : (pc + 4);
+        stepDelayslot();
         if (cycles - previous_cycles < 3) {
             cycles = previous_cycles + 3;
         }
@@ -520,13 +511,12 @@ public class Processor implements AllegrexInstructions {
         int previous_cycles = cycles;
         if (gpr[rs] == gpr[rt]) {
             npc = branchTarget(pc, simm16);
-            stepCpu();
+            stepDelayslot();
             if (cycles - previous_cycles < 3) {
                 cycles = previous_cycles + 3;
             }
         } else {
             pc += 4;
-            npc = pc + 4;
             cycles += 3;
         }
     }
@@ -536,13 +526,12 @@ public class Processor implements AllegrexInstructions {
         int previous_cycles = cycles;
         if (gpr[rs] != gpr[rt]) {
             npc = branchTarget(pc, simm16);
-            stepCpu();
+            stepDelayslot();
             if (cycles - previous_cycles < 3) {
                 cycles = previous_cycles + 3;
             }
         } else {
             pc += 4;
-            npc = pc + 4;
             cycles += 3;
         }
     }
@@ -552,13 +541,12 @@ public class Processor implements AllegrexInstructions {
         int previous_cycles = cycles;
         if (gpr[rs] <= 0) {
             npc = branchTarget(pc, simm16);
-            stepCpu();
+            stepDelayslot();
             if (cycles - previous_cycles < 3) {
                 cycles = previous_cycles + 3;
             }
         } else {
             pc += 4;
-            npc = pc + 4;
             cycles += 3;
         }
     }
@@ -568,13 +556,12 @@ public class Processor implements AllegrexInstructions {
         int previous_cycles = cycles;
         if (gpr[rs] > 0) {
             npc = branchTarget(pc, simm16);
-            stepCpu();
+            stepDelayslot();
             if (cycles - previous_cycles < 3) {
                 cycles = previous_cycles + 3;
             }
         } else {
             pc += 4;
-            npc = pc + 4;
             cycles += 3;
         }
     }
@@ -595,7 +582,7 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doADDIU(int rt, int rs, int simm16) {
         if (rt != 0) {
-            gpr[rt] = (int) ((((long) gpr[rs]) & 0xffffffff) + (((long) simm16) & 0xffffffff));
+            gpr[rt] = gpr[rs] + simm16;
         }
     }
 
