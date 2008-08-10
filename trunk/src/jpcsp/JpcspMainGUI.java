@@ -58,7 +58,7 @@ public class JpcspMainGUI extends javax.swing.JFrame {
             desktopPane.remove(dis);
             dis = null;
         }
-        dis = new Disassembler(emulator.getProcessor(), regs, memview);
+        dis = new Disassembler(emulator, regs, memview);
         //dis.setLocation(300, 0);
         dis.setLocation(Settings.get_instance().readWindowPos("disassembler")[0], Settings.get_instance().readWindowPos("disassembler")[1]);
         dis.setVisible(true);
@@ -359,7 +359,7 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         //This is where a real application would open the file.
         try {
             emulator.load(file.getPath());
-            emulator.run();
+           // emulator.run();
             isloaded = true; //TODO check if it a valid file
             // maybe change the name isloaded to isDebugMode
 
@@ -367,9 +367,9 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         } catch (IOException e) {
             e.printStackTrace();
             JpcspDialogManager.showError(this, "IO Error : " + e.getMessage());
-        } catch (GeneralJpcspException ex) {
-            ex.printStackTrace();
-            JpcspDialogManager.showError(this, "General Error : " + ex.getMessage());
+       // } catch (GeneralJpcspException ex) {
+          //  ex.printStackTrace();
+          //  JpcspDialogManager.showError(this, "General Error : " + ex.getMessage());
         } catch (Exception ex) {
             ex.printStackTrace();
             JpcspDialogManager.showError(this, "Critical Error : " + ex.getMessage());

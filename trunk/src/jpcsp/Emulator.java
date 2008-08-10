@@ -29,10 +29,10 @@ public class Emulator {
     private FileManager romManager;
     private boolean mediaImplemented = false;
     
-    private boolean run = false;
-    private boolean pause = false;
-    private boolean stop = false;
-    private boolean resume = false;
+    public boolean run = false;
+    public boolean pause = false;
+    public boolean stop = false;
+    public boolean resume = false;
 
     public Emulator() {
         cpu = new Processor();
@@ -329,7 +329,7 @@ public class Emulator {
 
     public void run() throws GeneralJpcspException {
         // basic code, just one thread by now... it's just a view
-        run = false;
+        run = true;
         while (run == true) {
             cpu.stepCpu();
             gpu.draw();
