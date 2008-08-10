@@ -589,6 +589,7 @@ public class ELFLoader {
         // Not sure if they are correct and UNTESTED!!
         // From soywiz/pspemulator
         p.pc = (int)(loadoffset + ehdr.e_entry); //pc, set the pc register.
+        p.npc = p.pc + 4;
         p.gpr[4] = 0; //a0
         p.gpr[5] = (int)(loadoffset + ehdr.e_entry); //a1, argumentsPointer reg
         p.gpr[6] = 0; //a2

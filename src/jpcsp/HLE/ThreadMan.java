@@ -261,7 +261,7 @@ public class ThreadMan {
 
         // internal variables
         private int uid;
-        private int pcreg, hi, lo;
+        private int pcreg, npcreg, hi, lo;
         private int[] gpr;
         private float[] fpr;
         private float[] vpr;
@@ -311,6 +311,7 @@ public class ThreadMan {
         public void saveContext() {
             Processor cpu = Emulator.getProcessor();
             pcreg = cpu.pc;
+            npcreg = cpu.npc;
             hi = cpu.hi();
             lo = cpu.lo();
             for (int i = 0; i < 32; i++) {
@@ -323,6 +324,7 @@ public class ThreadMan {
         public void restoreContext() {
             Processor cpu = Emulator.getProcessor();
             cpu.pc = pcreg;
+            cpu.npc = npcreg;
             cpu.hilo = (((long)hi)<<32)|((long)lo);
             for (int i = 0; i < 32; i++) {
                 cpu.gpr[i] = gpr[i];
