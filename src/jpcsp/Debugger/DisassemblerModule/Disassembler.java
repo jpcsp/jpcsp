@@ -32,6 +32,9 @@ import java.io.IOException;
 import javax.swing.DefaultListModel;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
+import jpcsp.Emulator;
+import jpcsp.GeneralJpcspException;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Settings;
@@ -43,12 +46,12 @@ import static jpcsp.Debugger.DisassemblerModule.DisHelper.*;
  * @author  shadow
  */
 public class Disassembler extends javax.swing.JInternalFrame implements ClipboardOwner{
-
+    Emulator emu;
     int DebuggerPC;
     private DefaultListModel model_1 = new DefaultListModel();
     //int pcreg;
     int opcode_address; // store the address of the opcode used for offsetdecode
-    Processor c;
+   // Processor c;
     Registers regs;
     MemoryViewer memview;
     DisVFPU dvfpu = new DisVFPU();
@@ -56,10 +59,11 @@ public class Disassembler extends javax.swing.JInternalFrame implements Clipboar
     DisCOP0 cop0 = new DisCOP0();
     DisSpecial3 special3 = new DisSpecial3();
     /* Creates new form Disasembler */
-    public Disassembler(Processor c, Registers regs, MemoryViewer memview) {
-        this.c = c;
+    public Disassembler(Emulator emu, Registers regs, MemoryViewer memview) {
+        //this.c = c;
         this.regs=regs;
         this.memview=memview;
+        this.emu=emu;
         DebuggerPC = 0;
         //pcreg = c.pc;
         model_1 = new DefaultListModel();
@@ -87,6 +91,8 @@ public class Disassembler extends javax.swing.JInternalFrame implements Clipboar
         jButton2 = new javax.swing.JButton();
         jButton3 = new javax.swing.JButton();
         jButton4 = new javax.swing.JButton();
+        jButton5 = new javax.swing.JButton();
+        jButton6 = new javax.swing.JButton();
 
         CopyAddress.setText("Copy Address");
         CopyAddress.addActionListener(new java.awt.event.ActionListener() {
@@ -181,6 +187,20 @@ public class Disassembler extends javax.swing.JInternalFrame implements Clipboar
             }
         });
 
+        jButton5.setText("Run ");
+        jButton5.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton5ActionPerformed(evt);
+            }
+        });
+
+        jButton6.setText("Stop");
+        jButton6.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton6ActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -188,31 +208,35 @@ public class Disassembler extends javax.swing.JInternalFrame implements Clipboar
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 458, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addComponent(jButton3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jButton2, 0, 0, Short.MAX_VALUE)
+                    .addComponent(jButton5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jButton6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jButton1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jButton4, javax.swing.GroupLayout.DEFAULT_SIZE, 109, Short.MAX_VALUE))
-                .addContainerGap())
+                    .addComponent(jButton2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jButton4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addGap(45, 45, 45)
+                        .addComponent(jButton5)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jButton6)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jButton4)
-                        .addGap(35, 35, 35)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jButton1)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jButton2)
                         .addGap(255, 255, 255)
                         .addComponent(jButton3))
-                    .addGroup(layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 469, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(27, Short.MAX_VALUE))
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 469, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(35, Short.MAX_VALUE))
         );
 
         pack();
@@ -269,12 +293,12 @@ private void jList1MouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GEN-FI
 }//GEN-LAST:event_jList1MouseWheelMoved
 
 private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-    DebuggerPC = c.pc;
+    DebuggerPC = emu.getProcessor().pc;//c.pc;//
     RefreshDebugger();
 }//GEN-LAST:event_jButton1ActionPerformed
 
 private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-    String input = (String) JOptionPane.showInternalInputDialog(this, "Enter the address to which to jump (Hex)", "Jpcsp", JOptionPane.QUESTION_MESSAGE, null, null, String.format("%08x", c.pc));
+    String input = (String) JOptionPane.showInternalInputDialog(this, "Enter the address to which to jump (Hex)", "Jpcsp", JOptionPane.QUESTION_MESSAGE, null, null, String.format("%08x", emu.getProcessor().pc));
     if (input == null) {
         return;
     }
@@ -290,7 +314,8 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     }
 
 private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
-    c.stepCpu();
+    //c.stepCpu();
+    emu.getProcessor().stepCpu();
     DebuggerPC = 0;
     RefreshDebugger();
     regs.RefreshRegisters();
@@ -412,12 +437,50 @@ private void formInternalFrameClosing(javax.swing.event.InternalFrameEvent evt) 
     Settings.get_instance().writeWindowPos("disassembler", coord);
 
 }//GEN-LAST:event_formInternalFrameClosing
+   final SwingWorker<Integer,Void> worker = new SwingWorker<Integer,Void>() {
+   @Override
+    public Integer doInBackground() { //start emulator
+       System.out.println("HEY");
+       try {
+           if(emu.pause)//emu is paused
+           {
+               emu.resume();
+           }
+           else
+           {
+             emu.run();
+           }
+       }catch(GeneralJpcspException e)
+       {
+           
+       }
+        return 0;
+    }
+
+    @Override
+    public void done() {
+        emu.pause();
+    }
+  };
+private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
+
+  worker.execute();
+  
+}//GEN-LAST:event_jButton5ActionPerformed
+
+private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
+     
+     DebuggerPC = 0;
+    RefreshDebugger();
+    regs.RefreshRegisters();
+    memview.RefreshMemory();
+}//GEN-LAST:event_jButton6ActionPerformed
 
     public void RefreshDebugger() {
         int t;
         int cnt;
         if (DebuggerPC == 0) {
-            DebuggerPC = c.pc;//0x08900000;//test
+            DebuggerPC = emu.getProcessor().pc;//0x08900000;//test
         }
         model_1.clear();
 
@@ -906,6 +969,8 @@ private void formInternalFrameClosing(javax.swing.event.InternalFrameEvent evt) 
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton3;
     private javax.swing.JButton jButton4;
+    private javax.swing.JButton jButton5;
+    private javax.swing.JButton jButton6;
     private javax.swing.JList jList1;
     private javax.swing.JScrollPane jScrollPane1;
     // End of variables declaration//GEN-END:variables
