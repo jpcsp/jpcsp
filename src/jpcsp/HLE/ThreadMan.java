@@ -51,6 +51,8 @@ public class ThreadMan {
      * @param entry from ELF header
      * @param attr from sceModuleInfo ELF section header */
     public void Initialise(int entry_addr, int attr) {
+        System.out.println("ThreadMan: Initialise");
+
         threadlist = new HashMap<Integer, SceKernelThreadInfo>();
 
         current_thread = new SceKernelThreadInfo("root", entry_addr, 0x20, 0x40000, attr);
@@ -99,7 +101,7 @@ public class ThreadMan {
             newthread.wakeupCount++; // check
             // restore registers
             newthread.restoreContext();
-            System.out.println("ThreadMan: switched to thread " + newthread.uid);
+            System.out.println("ThreadMan: switched to thread SceUID=" + newthread.uid);
         }
 
         current_thread = newthread;
@@ -156,6 +158,8 @@ public class ThreadMan {
         // TODO use t1/SceKernelThreadOptParam?
 
         SceKernelThreadInfo thread = new SceKernelThreadInfo(name, a1, a2, a3, t0);
+
+        System.out.println("sceKernelCreateThread SceUID=" + Integer.toHexString(thread.uid) + " PC=" + Integer.toHexString(thread.pcreg));
 
         Emulator.getProcessor().gpr[2] = thread.uid;
         //return thread.uid;
@@ -298,6 +302,7 @@ public class ThreadMan {
             saveContext();
             // Thread specific registers
             pcreg = entry_addr;
+            npcreg = entry_addr;
             gpr[29] = stack_addr; //sp
 
             // TODO hook "jr ra" where ra = 0,
