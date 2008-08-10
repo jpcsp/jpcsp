@@ -299,6 +299,7 @@ public class Emulator {
         //set the default values for registers not sure if they are correct and UNTESTED!!
         // from soywiz/pspemulator
         cpu.pc = (int) romManager.getBaseoffset() + (int) elf.getHeader().getE_entry(); //set the pc register.
+        cpu.npc = cpu.pc + 4;
         cpu.gpr[31] = 0x08000004; //ra, should this be 0?
         cpu.gpr[5] = (int) romManager.getBaseoffset() + (int) elf.getHeader().getE_entry(); // argumentsPointer a1 reg
         cpu.gpr[28] = (int) romManager.getBaseoffset() + (int) romManager.getPSPModuleInfo().getM_gp(); //gp reg    gp register should get the GlobalPointer!!!
