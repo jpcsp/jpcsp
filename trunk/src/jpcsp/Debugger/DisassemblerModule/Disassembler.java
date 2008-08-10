@@ -456,7 +456,7 @@ private void formInternalFrameClosing(javax.swing.event.InternalFrameEvent evt) 
            }
        }catch(GeneralJpcspException e)
        {
-           
+
        }
         return 0;
     }
@@ -469,7 +469,7 @@ private void formInternalFrameClosing(javax.swing.event.InternalFrameEvent evt) 
 private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
 
   worker.execute();
-  
+
 }//GEN-LAST:event_jButton5ActionPerformed
 
 private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
