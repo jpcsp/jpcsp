@@ -330,7 +330,7 @@ public class Emulator {
 
     public void run() throws GeneralJpcspException {
         // basic code, just one thread by now... it's just a view
-        run = true;
+       // run = true;
         while (run == true) {
             cpu.stepCpu();
             gpu.draw();
