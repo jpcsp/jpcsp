@@ -46,7 +46,7 @@ public class Memory {
            int i = address - 0x08000000;
            return mainmemory[i];
           }
-        System.out.println("read8 to unsupported emulate memory ! " + address);
+        System.out.println("read8 to unsupported emulate memory ! " + Integer.toHexString(address));
         return 0;
     }
     public int read16(int address)
@@ -55,7 +55,7 @@ public class Memory {
            int i = address - 0x08000000;
                return (short)(((short)mainmemory[i+1] << 8) | (((short)mainmemory[i])&0x00ff));
           }
-        System.out.println("read16 to unsupported emulate memory ! " + address);
+        System.out.println("read16 to unsupported emulate memory ! " + Integer.toHexString(address));
         return 0;
     }
     public int read32(int address) { //for testing supports only RAM!
@@ -66,7 +66,7 @@ public class Memory {
                 (((int) mainmemory[i + 1] << 8) & 0x0000ff00) |
                 (((int) mainmemory[i]) & 0x000000ff));
         }
-        System.out.println("read32 to unsupported emulate memory ! " + address);
+        System.out.println("read32 to unsupported emulate memory ! " + Integer.toHexString(address));
         return 0;
     }
     public void write8(int address , byte data)
@@ -77,7 +77,7 @@ public class Memory {
          }
          else
          {
-             System.out.println("unsupported write8 in addr= " + address + " data= " + data);
+             System.out.println("unsupported write8 in addr= " + Integer.toHexString(address) + " data= " + data);
          }
 
     }
@@ -90,7 +90,7 @@ public class Memory {
          }
          else
          {
-             System.out.println("unsupported write16 in addr= " + address + " data= " + data);
+             System.out.println("unsupported write16 in addr= " + Integer.toHexString(address) + " data= " + data);
          }
     }
     public void write32(int address, int data)
@@ -102,9 +102,16 @@ public class Memory {
 	   mainmemory[i+1] = (byte)((data & 0x0000ff00) >> 8);
 	   mainmemory[i] = (byte)(data & 0x000000ff);
          }
+         else if ((address >= 0x44000000) && (address <= 0x441fffff)) {
+           int i = address - 0x44000000;
+           videoram[i+3] = (byte)(data >> 24);
+	   videoram[i+2] = (byte)((data & 0x00ff0000) >> 16);
+	   videoram[i+1] = (byte)((data & 0x0000ff00) >> 8);
+	   videoram[i] = (byte)(data & 0x000000ff);
+         }
          else
          {
-             System.out.println("unsupported write32 in addr= " + address + " data= " + data);
+             System.out.println("unsupported write32 in addr= " + Integer.toHexString(address) + " data= " + data);
          }
 
     }
