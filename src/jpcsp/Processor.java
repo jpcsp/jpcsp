@@ -17,12 +17,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp;
 
 import static jpcsp.AllegrexInstructions.*;
+import jpcsp.HLE.SyscallHandler;
 
 public class Processor implements AllegrexInstructions {
 
     public int[]     gpr;
     public float[]   fpr;
-    public float[]   vpr; 
+    public float[]   vpr;
     public long      hilo;
     public int       pc, npc;
     public int       cycles;
@@ -36,7 +37,7 @@ public class Processor implements AllegrexInstructions {
         // intialize psp register
         pc = npc = 0x00000000;
         hilo = 0;
-        gpr = new int[32]; 
+        gpr = new int[32];
         fpr = new float[32];
         vpr = new float[128];
     }
@@ -90,7 +91,7 @@ public class Processor implements AllegrexInstructions {
 
     public void step() {
         npc = pc + 4;
-        
+
         int insn = Memory.get_instance().read32(pc);
 
         // by default, any Allegrex instruction takes 1 cycle at least
@@ -783,7 +784,8 @@ public class Processor implements AllegrexInstructions {
         // TODO
         // cop0.epc = pc - 4;
         // cop0.cause.exc |= SYSCALL_EXC;
-        // npc = cop0.exception_handler; 
+        // npc = cop0.exception_handler;
+        SyscallHandler.syscall(code);
     }
 
     @Override
@@ -791,7 +793,7 @@ public class Processor implements AllegrexInstructions {
         // TODO
         // cop0.debug_epc = pc - 4;
         // cop0.cause.exc |= BREAK_EXC;
-        // npc = cop0.exception_handler; 
+        // npc = cop0.exception_handler;
     }
 
     @Override

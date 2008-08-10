@@ -51,14 +51,14 @@ public class ThreadMan {
      * @param entry from ELF header
      * @param attr from sceModuleInfo ELF section header */
     public void Initialise(int entry_addr, int attr) {
-        System.out.println("ThreadMan: Initialise");
+        //System.out.println("ThreadMan: Initialise");
 
         threadlist = new HashMap<Integer, SceKernelThreadInfo>();
 
         current_thread = new SceKernelThreadInfo("root", entry_addr, 0x20, 0x40000, attr);
-        current_thread.status = PspThreadStatus.PSP_THREAD_RUNNING;
 
         // Switch in this thread
+        current_thread.status = PspThreadStatus.PSP_THREAD_RUNNING;
         current_thread.restoreContext();
     }
 
@@ -101,7 +101,7 @@ public class ThreadMan {
             newthread.wakeupCount++; // check
             // restore registers
             newthread.restoreContext();
-            System.out.println("ThreadMan: switched to thread SceUID=" + newthread.uid);
+            System.out.println("ThreadMan: switched to thread SceUID=" + Integer.toHexString(newthread.uid));
         }
 
         current_thread = newthread;
@@ -265,7 +265,8 @@ public class ThreadMan {
 
         // internal variables
         private int uid;
-        private int pcreg, npcreg, hi, lo;
+        private int pcreg, npcreg;
+        private long hilo;
         private int[] gpr;
         private float[] fpr;
         private float[] vpr;
@@ -302,7 +303,7 @@ public class ThreadMan {
             saveContext();
             // Thread specific registers
             pcreg = entry_addr;
-            npcreg = entry_addr;
+            npcreg = entry_addr + 4;
             gpr[29] = stack_addr; //sp
 
             // TODO hook "jr ra" where ra = 0,
@@ -317,8 +318,7 @@ public class ThreadMan {
             Processor cpu = Emulator.getProcessor();
             pcreg = cpu.pc;
             npcreg = cpu.npc;
-            hi = cpu.hi();
-            lo = cpu.lo();
+            hilo = cpu.hilo;
             for (int i = 0; i < 32; i++) {
                 gpr[i] = cpu.gpr[i];
             }
@@ -330,7 +330,7 @@ public class ThreadMan {
             Processor cpu = Emulator.getProcessor();
             cpu.pc = pcreg;
             cpu.npc = npcreg;
-            cpu.hilo = (((long)hi)<<32)|((long)lo);
+            cpu.hilo = hilo;
             for (int i = 0; i < 32; i++) {
                 cpu.gpr[i] = gpr[i];
             }
