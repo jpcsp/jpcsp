@@ -11,18 +11,21 @@ import java.util.List;
 public class Elf32 {
 
     private Elf32Header header;
-    private Elf32ProgramHeader programHeader;
-    private Elf32SectionHeader sectionHeader;
-    private Elf32Relocate relocate;
+    private String ElfInfo; // ELF header
+    private String ProgInfo; // ELF program headers
+    private String SectInfo; // ELF section headers
+    private List<Elf32ProgramHeader> programheaders;
     private List<Elf32SectionHeader> sectionheaders;
-    
+
     public List<Elf32SectionHeader> getListSectionHeader(){
         return sectionheaders;
     }
-    
+
     public Elf32(RandomAccessFile f) throws IOException {
         header = new Elf32Header(f);
-        sectionHeader = new Elf32SectionHeader();
+        ElfInfo = header.toString();
+        ProgInfo = "";
+        SectInfo = "";
     }
 
     public Elf32Header getHeader() {
@@ -33,31 +36,35 @@ public class Elf32 {
         this.header = header;
     }
 
-    public Elf32ProgramHeader getProgramHeader() {
-        return programHeader;
+    public void setListProgramHeader(List<Elf32ProgramHeader> programheaders) {
+        this.programheaders = programheaders;
     }
 
     public void setListSectionHeader(List<Elf32SectionHeader> sectionheaders) {
         this.sectionheaders = sectionheaders;
     }
 
-    public void setProgramHeader(Elf32ProgramHeader programHeader) {
-        this.programHeader = programHeader;
+    public String getElfInfo() {
+        return ElfInfo;
     }
 
-    public Elf32SectionHeader getSectionHeader() {
-        return sectionHeader;
+    public void setElfInfo(String ElfInfo) {
+        this.ElfInfo = ElfInfo;
     }
 
-    public void setSectionHeader(Elf32SectionHeader sectionHeader) {
-        this.sectionHeader = sectionHeader;
+    public String getProgInfo() {
+        return ProgInfo;
     }
 
-    public Elf32Relocate getRelocate() {
-        return relocate;
+    public void setProgInfo(String ProgInfo) {
+        this.ProgInfo = ProgInfo;
     }
 
-    public void setRelocate(Elf32Relocate relocate) {
-        this.relocate = relocate;
+    public String getSectInfo() {
+        return SectInfo;
+    }
+
+    public void setSectInfo(String SectInfo) {
+        this.SectInfo = SectInfo;
     }
 }

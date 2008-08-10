@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.List;
 import java.util.LinkedList;
-import jpcsp.ElfHeader;
+import java.util.Iterator;
 import jpcsp.FileManager;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
@@ -217,7 +217,7 @@ public class ELFLoader {
         private long sh_entsize;
 
         private static int sizeof() { return 40; }
-        private Elf32_Shdr(RandomAccessFile f) throws IOException
+        public Elf32_Shdr(RandomAccessFile f) throws IOException
         {
             sh_name = readUWord(f);
             sh_type = readWord(f);
@@ -229,6 +229,20 @@ public class ELFLoader {
             sh_info = readWord(f);
             sh_addralign = readWord(f);
             sh_entsize = readWord(f);
+        }
+
+        public Elf32_Shdr(Memory mem, int address)
+        {
+            sh_name = mem.read32(address);
+            sh_type = mem.read32(address + 4);
+            sh_flags = mem.read32(address + 8);
+            sh_addr = mem.read32(address + 12);
+            sh_offset = mem.read32(address + 16);
+            sh_size = mem.read32(address + 20);
+            sh_link = mem.read32(address + 24);
+            sh_info = mem.read32(address + 28);
+            sh_addralign = mem.read32(address + 32);
+            sh_entsize = mem.read32(address + 36);
         }
 
         public String toString()
@@ -299,6 +313,62 @@ public class ELFLoader {
             int len;
             for (len = 0; len < 28 && m_name[len] != 0; len++);
             m_namez = new String(m_name, 0, len);
+        }
+    }
+
+    private static class Elf32_Stub
+    {
+        // Resolved version of s_modulename and in a Java String
+        private String s_modulenamez;
+
+        private long s_modulename;
+        private int s_version;
+        private int s_flags;
+        private int s_size;
+        private int s_imports;
+        private long s_nid;
+        private long s_text;
+
+        private static int sizeof() { return 20; }
+        public Elf32_Stub(RandomAccessFile f) throws IOException
+        {
+            s_modulenamez = "";
+
+            s_modulename = readUWord(f);
+            s_version = readUHalf(f);
+            s_flags = readUHalf(f);
+            s_size = readUHalf(f);
+            s_imports = readUHalf(f);
+            s_nid = readUWord(f);
+            s_text = readUWord(f);
+        }
+
+        public Elf32_Stub(Memory mem, int address)
+        {
+            s_modulenamez = "";
+
+            s_modulename = mem.read32(address);
+            s_version = mem.read16(address + 4);
+            s_flags = mem.read16(address + 6);
+            s_size = mem.read16(address + 8);
+            s_imports = mem.read16(address + 10);
+            s_nid = mem.read32(address + 12);
+            s_text = mem.read32(address + 16);
+        }
+
+        public String toString()
+        {
+            StringBuffer str = new StringBuffer();
+            if (s_modulenamez != null && s_modulenamez.length() > 0)
+                str.append(s_modulenamez + "\n");
+            str.append("s_modulename" + "\t" +  formatString("long", Long.toHexString(s_modulename & 0xFFFFFFFFL).toUpperCase()) + "\n");
+            str.append("s_version" + "\t\t" +  formatString("short", Long.toHexString(s_version & 0xFFFF).toUpperCase()) + "\n");
+            str.append("s_flags" + "\t\t\t" +  formatString("short", Long.toHexString(s_flags & 0xFFFF).toUpperCase()) + "\n");
+            str.append("s_size" + "\t\t\t" +  formatString("short", Long.toHexString(s_size & 0xFFFF).toUpperCase()) + "\n");
+            str.append("s_imports" + "\t\t" +  formatString("short", Long.toHexString(s_imports & 0xFFFF).toUpperCase()) + "\n");
+            str.append("s_nid" + "\t\t\t" +  formatString("long", Long.toHexString(s_nid & 0xFFFFFFFFL).toUpperCase()) + "\n");
+            str.append("s_text" + "\t\t\t" +  formatString("long", Long.toHexString(s_text & 0xFFFFFFFFL).toUpperCase()) + "\n");
+            return str.toString();
         }
     }
 
@@ -374,6 +444,30 @@ public class ELFLoader {
         return shstrtab;
     }
 
+    private static PSPModuleInfo processModuleInfo(RandomAccessFile f, long elfoffset, Elf32_Shdr shdr) throws IOException
+    {
+        PSPModuleInfo moduleinfo = null;
+
+        f.seek(elfoffset + shdr.sh_offset);
+        moduleinfo = new PSPModuleInfo(f);
+        //System.out.println(Long.toHexString(moduleinfo.m_gp));
+
+        System.out.println("Found ModuleInfo name:'" + moduleinfo.m_namez
+            + "' version:" + formatString("short", Integer.toHexString(moduleinfo.m_version & 0xFFFF).toUpperCase()));
+
+        // Print some interesting infos
+        if ((moduleinfo.m_attr & 0x1000) != 0)
+        {
+            System.out.println("Kernel mode module detected");
+        }
+        if ((moduleinfo.m_attr & 0x0800) != 0)
+        {
+            System.out.println("VSH mode module detected");
+        }
+
+        return moduleinfo;
+    }
+
     // 2nd pass:
     // - generate SectInfo GUI string
     // - resolve section names using shstrtab
@@ -400,25 +494,10 @@ public class ELFLoader {
                     shdr.sh_namez = SectionName;
                     shsb.append(SectionName + "\n");
 
-                    // Process sceModuleInfo
-                    if (SectionName.matches(".rodata.sceModuleInfo"))
+                    if (SectionName.equals(".rodata.sceModuleInfo"))
                     {
-                        f.seek(elfoffset + shdr.sh_offset);
-                        moduleinfo = new PSPModuleInfo(f);
-                        //System.out.println(Long.toHexString(moduleinfo.m_gp));
-
-                        System.out.println("Found ModuleInfo name:'" + moduleinfo.m_namez
-                            + "' version:" + formatString("short", Integer.toHexString(moduleinfo.m_version & 0xFFFF).toUpperCase()));
-
-                        // Print some interesting infos
-                        if ((moduleinfo.m_attr & 0x1000) != 0)
-                        {
-                            System.out.println("Kernel mode module detected");
-                        }
-                        if ((moduleinfo.m_attr & 0x0800) != 0)
-                        {
-                            System.out.println("VSH mode module detected");
-                        }
+                        // Process sceModuleInfo
+                        moduleinfo = processModuleInfo(f, elfoffset, shdr);
                     }
                 }
             }
@@ -535,6 +614,119 @@ public class ELFLoader {
         }
     }
 
+
+    // overwrites (stubAddress+4) with "syscall <code>" (previous value "nop")
+    private static void fixupStubWithSyscall(int stubAddress, int code)
+    {
+        int instruction = // syscall <code>
+            ((jpcsp.AllegrexOpcodes.SPECIAL & 0x3f) << 26)
+            | (jpcsp.AllegrexOpcodes.SYSCALL & 0x3f)
+            | ((code & 0x000fffff) << 6);
+
+        Memory mem = Memory.get_instance();
+        mem.write32(stubAddress + 4, instruction);
+    }
+
+    // overwrites stubAddress with "j <jumpaddress>" (previous value "jr ra")
+    private static void fixupStubWithJump(int stubAddress, int jumpAddress)
+    {
+        int instruction = // j <jumpAddress>
+            ((jpcsp.AllegrexOpcodes.J & 0x3f) << 26)
+            | ((jumpAddress >>> 2) & 0x03ffffff);
+
+        Memory mem = Memory.get_instance();
+        mem.write32(stubAddress, instruction);
+    }
+
+    private static class DeferredStub {
+        public String moduleName;
+        public int importAddress;
+        public int nid;
+        public DeferredStub(String moduleName, int importAddress, int nid) {
+            this.moduleName = moduleName;
+            this.importAddress = importAddress;
+            this.nid = nid;
+        }
+    }
+
+    private static void processDeferredStubs(List<DeferredStub> stubs)
+    {
+        NIDMapper nidMapper = NIDMapper.get_instance();
+        Iterator<DeferredStub> it = stubs.iterator();
+        while(it.hasNext()) {
+            DeferredStub stub = it.next();
+            int exportAddress = nidMapper.moduleNidToAddress(stub.moduleName, stub.nid);
+            if (exportAddress != -1)
+            {
+                fixupStubWithJump(stub.importAddress, exportAddress);
+                stubs.remove(stub);
+                System.out.println("Mapped NID " + Integer.toHexString(stub.nid) + " to export (deferred)");
+            }
+        }
+    }
+
+    // 4th pass, process stubs/imports
+    // - we are assuming nids are globally unique, not unique per module
+    // - TODO unresolved imports should be rechecked each time a new module is loaded
+    // - returns a List of DeferredStub objects, for use in processDeferredStubs()
+    private static List processStubs(Memory mem, int stubsAddress, int stubsCount)
+    {
+        //Elf32_Shdr shdr = new Elf32_Shdr(mem, stubsAddress);
+        Elf32_Stub stub;
+        List<DeferredStub> deferred = new LinkedList<DeferredStub>();
+        NIDMapper nidMapper = NIDMapper.get_instance();
+
+        //System.out.println(shdr.sh_namez + ": " + stubsCount + " module entries");
+
+        // TODO move this to reset function
+        nidMapper.Initialise("syscalls.txt", "FW 1.50");
+
+        for (int i = 0; i < stubsCount; i++)
+        {
+            stub = new Elf32_Stub(mem, stubsAddress);
+            stub.s_modulenamez = readStringZ(mem.mainmemory, (int)(stub.s_modulename - MemoryMap.START_RAM));
+            stubsAddress += stub.s_size * 4;
+            //System.out.println(stub.toString());
+
+            for (int j = 0; j < stub.s_imports; j++)
+            {
+                int nid = mem.read32((int)(stub.s_nid + j * 4));
+                int importAddress = (int)(stub.s_text + j * 8);
+                int exportAddress;
+                int code;
+
+                // Attempt to fixup stub to point to an already loaded module export
+                exportAddress = nidMapper.moduleNidToAddress(stub.s_modulenamez, nid);
+                if (exportAddress != -1)
+                {
+                    fixupStubWithJump(importAddress, exportAddress);
+                    System.out.println("Mapped NID " + Integer.toHexString(nid) + " to export");
+                }
+
+                // Attempt to fixup stub to known syscalls
+                else
+                {
+                    code = nidMapper.nidToSyscall(nid);
+                    if (code != -1)
+                    {
+                        // Fixup stub, replacing nop with syscall
+                        fixupStubWithSyscall(importAddress, code);
+
+                        //System.out.println("Mapped NID " + Integer.toHexString(nid) + " to syscall " + Integer.toHexString(code));
+                    }
+                    else
+                    {
+                        // Save nid for deferred fixup
+                        deferred.add(new DeferredStub(stub.s_modulenamez, importAddress, nid));
+                        System.out.println("Failed to map NID " + Integer.toHexString(nid) + " (load time)");
+                    }
+                }
+            }
+        }
+
+        return deferred;
+    }
+
     private static void LoadELF(Processor p, RandomAccessFile f, long elfoffset) throws IOException
     {
         Elf32_Ehdr ehdr = null;
@@ -585,6 +777,17 @@ public class ELFLoader {
         if (relocate)
             processRelocationSections(f, elfoffset, sectionheaders, loadoffset, (int)moduleinfo.m_gp);
 
+        /** Fixup imports */
+        for (Elf32_Shdr shdr: sectionheaders)
+        {
+            if (shdr.sh_namez.equals(".lib.stub"))
+            {
+                processStubs(Memory.get_instance(),
+                    (int)(loadoffset + shdr.sh_addr),
+                    (int)(shdr.sh_size / Elf32_Stub.sizeof()));
+            }
+        }
+
         /** set the default values for registers */
         // Not sure if they are correct and UNTESTED!!
         // From soywiz/pspemulator
@@ -598,6 +801,9 @@ public class ELFLoader {
         p.gpr[29] = 0x09F00000; //sp
         p.gpr[31] = 0x08000004; //ra, should this be 0?
         // All other registers are uninitialised/random values
+
+        jpcsp.HLE.ThreadMan.get_instance().Initialise(p.pc, moduleinfo.m_attr);
+        jpcsp.HLE.Utils.get_instance().Initialise();
     }
 
     // returns one of:
@@ -650,10 +856,10 @@ public class ELFLoader {
 
         f.close();
 
-        // TODO delete ElfHeader.java and fix up refs to Info strings
-        ElfHeader.PbpInfo = PbpInfo;
-        ElfHeader.ElfInfo = ElfInfo;
-        ElfHeader.SectInfo = SectInfo;
+        // TODO find a better way of storing the Info Strings
+        FileManager.PbpInfo = PbpInfo;
+        FileManager.ElfInfo = ElfInfo;
+        FileManager.SectInfo = SectInfo;
 
         return type;
     }

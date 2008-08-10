@@ -6,7 +6,7 @@ package jpcsp.format;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import jpcsp.util.Utilities;
+import jpcsp.Memory;
 import static jpcsp.util.Utilities.*;
 
 public class Elf32SectionHeader {
@@ -22,26 +22,12 @@ public class Elf32SectionHeader {
     private int sh_info;
     private int sh_addralign;
     private long sh_entsize;
-    private String info;
-    
+
     private static int sizeof() {
         return 40;
     }
 
     public Elf32SectionHeader(RandomAccessFile f) throws IOException {
-        read(f);
-    }
-    
-    public Elf32SectionHeader()  {
-    }
-
-    public String getInfo(){
-        return info;
-    }
-    public void setInfo(String SectInfo) {
-        info = SectInfo; 
-    }
-    private void read(RandomAccessFile f) throws IOException {
         sh_name = readUWord(f);
         sh_type = readWord(f);
         sh_flags = readWord(f);
@@ -54,18 +40,31 @@ public class Elf32SectionHeader {
         sh_entsize = readWord(f);
     }
 
+    public Elf32SectionHeader(Memory mem, int address) {
+        sh_name = mem.read32(address);
+        sh_type = mem.read32(address + 4);
+        sh_flags = mem.read32(address + 8);
+        sh_addr = mem.read32(address + 12);
+        sh_offset = mem.read32(address + 16);
+        sh_size = mem.read32(address + 20);
+        sh_link = mem.read32(address + 24);
+        sh_info = mem.read32(address + 28);
+        sh_addralign = mem.read32(address + 32);
+        sh_entsize = mem.read32(address + 36);
+    }
+
     public String toString() {
         StringBuffer str = new StringBuffer();
-        str.append("sh_name " + "\t " + Utilities.formatString("long", Long.toHexString(getSh_name() & 0xFFFFFFFFL).toUpperCase()) + "\n");
-        str.append("sh_type " + "\t " + Utilities.formatString("long", Long.toHexString(getSh_type() & 0xFFFFFFFFL).toUpperCase()) + "\n");
-        str.append("sh_flags " + "\t " + Utilities.integerToHex(getSh_flags() & 0xFF) + "\n");
-        str.append("sh_addr " + "\t " + Utilities.formatString("long", Long.toHexString(getSh_addr() & 0xFFFFFFFFL).toUpperCase()) + "\n");
-        str.append("sh_offset " + "\t " + Utilities.formatString("long", Long.toHexString(getSh_offset() & 0xFFFFFFFFL).toUpperCase()) + "\n");
-        str.append("sh_size " + "\t " + Utilities.formatString("long", Long.toHexString(getSh_size() & 0xFFFFFFFFL).toUpperCase()) + "\n");
-        str.append("sh_link " + "\t " + Utilities.integerToHex(getSh_link() & 0xFF) + "\n");
-        str.append("sh_info " + "\t " + Utilities.integerToHex(getSh_info() & 0xFF) + "\n");
-        str.append("sh_addralign " + "\t " + Utilities.integerToHex(getSh_addralign() & 0xFF) + "\n");
-        str.append("sh_entsize " + "\t " + Utilities.formatString("long", Long.toHexString(getSh_entsize() & 0xFFFFFFFFL).toUpperCase()) + "\n");
+        str.append("sh_name " + "\t " + formatString("long", Long.toHexString(getSh_name() & 0xFFFFFFFFL).toUpperCase()) + "\n");
+        str.append("sh_type " + "\t " + formatString("long", Long.toHexString(getSh_type() & 0xFFFFFFFFL).toUpperCase()) + "\n");
+        str.append("sh_flags " + "\t " + integerToHex(getSh_flags() & 0xFF) + "\n");
+        str.append("sh_addr " + "\t " + formatString("long", Long.toHexString(getSh_addr() & 0xFFFFFFFFL).toUpperCase()) + "\n");
+        str.append("sh_offset " + "\t " + formatString("long", Long.toHexString(getSh_offset() & 0xFFFFFFFFL).toUpperCase()) + "\n");
+        str.append("sh_size " + "\t " + formatString("long", Long.toHexString(getSh_size() & 0xFFFFFFFFL).toUpperCase()) + "\n");
+        str.append("sh_link " + "\t " + integerToHex(getSh_link() & 0xFF) + "\n");
+        str.append("sh_info " + "\t " + integerToHex(getSh_info() & 0xFF) + "\n");
+        str.append("sh_addralign " + "\t " + integerToHex(getSh_addralign() & 0xFF) + "\n");
+        str.append("sh_entsize " + "\t " + formatString("long", Long.toHexString(getSh_entsize() & 0xFFFFFFFFL).toUpperCase()) + "\n");
         return str.toString();
     }
 
@@ -115,5 +114,48 @@ public class Elf32SectionHeader {
 
     public long getSh_entsize() {
         return sh_entsize;
+    }
+
+    public enum ShFlags {
+        None(0),
+        Write(1),
+        Allocate(2),
+        Execute(4);
+
+        private int value;
+        private ShFlags(int val)
+        {
+            value=val;
+        }
+        public int getValue()
+        {
+            return value;
+        }
+    }
+
+    public enum ShType {
+        NULL(0x00000000),
+        PROGBITS(0x00000001),
+        SYMTAB(0x00000002),
+        STRTAB(0x00000003),
+        RELA(0x00000004),
+        HASH(0x00000005),
+        DYNAMIC(0x00000006),
+        NOTE(0x00000007),
+        NOBITS(0x00000008),
+        REL(0x00000009),
+        SHLIB(0x0000000a),
+        DYNSYM(0x0000000b),
+        PRXREL(0x700000A0);
+
+        private int value;
+        private ShType(int val)
+        {
+            value=val;
+        }
+        public int getValue()
+        {
+            return value;
+        }
     }
 }

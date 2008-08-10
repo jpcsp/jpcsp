@@ -22,18 +22,16 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.LinkedList;
 import java.util.List;
-import jpcsp.ElfHeader.ShFlags;
 import jpcsp.format.Elf32;
 import jpcsp.format.Elf32Header;
 import jpcsp.format.Elf32SectionHeader;
+import jpcsp.format.Elf32SectionHeader.ShFlags;
 import jpcsp.format.PBP;
 import jpcsp.format.PSPModuleInfo;
 import jpcsp.util.Utilities;
 
 public class FileManager {
-    // TODO : Define a way to use this insteast ElfHeader.ElfInfo; ElfHeader.PbpInfo; ElfHeader.SectInfo
-
-    public static String ElfInfo,  PbpInfo,  SectInfo; // TODO : think a better way
+    public static String ElfInfo, ProgInfo, PbpInfo, SectInfo; // TODO : think a better way
 
     private PSPModuleInfo moduleInfo;
     private PBP pbp;
@@ -98,14 +96,14 @@ public class FileManager {
             if (getType() == FORMAT_ELF) {
                 return;
             }
-        /*end try elf32 format*/
+            /*end try elf32 format*/
 
 
-        /*try xxxx format*/
-        /*try xxxx format*/
+            /*try xxxx format*/
+            /*try xxxx format*/
 
 
-        //NONE FORMAT SELECTED OR DETECTED :(
+            //NONE FORMAT SELECTED OR DETECTED :(
         } finally {
             // f.close(); // close or let it open...
         }
@@ -131,8 +129,6 @@ public class FileManager {
         if (!getElf32().getHeader().isMIPSExecutable()) {
             System.out.println("NOT A MIPS executable");
         }
-        ElfInfo = getElf32().getHeader().toString();
-        getElf32().getHeader().setInfo(ElfInfo);
 
         if (getElf32().getHeader().isPRXDetected()) {
             System.out.println("PRX detected, requires relocation");
@@ -142,6 +138,8 @@ public class FileManager {
             System.out.println("ELF requires relocation");
             baseoffset = 0x08900000;
         }
+
+        ElfInfo = getElf32().getElfInfo();
     }
 
     private void processPbp() throws IOException {
@@ -188,9 +186,10 @@ public class FileManager {
                 // kernel mode prx
                 System.out.println("Kernel mode PRX detected");
             }
-            //SegInfo = phsb.toString();
-            ElfInfo += phsb.toString();
-            getElf32().getHeader().setInfo(ElfInfo);
+            ProgInfo = phsb.toString();
+
+            getElf32().setProgInfo(ProgInfo);
+            getElf32().setListProgramHeader(programheaders);
         }
     }
 
@@ -203,13 +202,13 @@ public class FileManager {
         secondStep(sectionheaders, shstrtab, getActualFile(), getPSPModuleInfo());
     }
 
-    private Elf32SectionHeader firstStep(Elf32Header elf32, RandomAccessFile f, List<Elf32SectionHeader> sectionheaders) throws IOException {
+    private Elf32SectionHeader firstStep(Elf32Header ehdr, RandomAccessFile f, List<Elf32SectionHeader> sectionheaders) throws IOException {
         /** Read the ELF section headers (1st pass) */
         getElf32().setListSectionHeader(sectionheaders); //make the connection
 
         Elf32SectionHeader shstrtab = null;
-        for (int i = 0; i < elf32.getE_shnum(); i++) {
-            f.seek(elfoffset + elf32.getE_shoff() + (i * elf32.getE_shentsize()));
+        for (int i = 0; i < ehdr.getE_shnum(); i++) {
+            f.seek(elfoffset + ehdr.getE_shoff() + (i * ehdr.getE_shentsize()));
             Elf32SectionHeader shdr = new Elf32SectionHeader(f);
             sectionheaders.add(shdr);
 
@@ -281,8 +280,7 @@ public class FileManager {
         }
         SectInfo = shsb.toString();
 
-        getElf32().getSectionHeader().setInfo(SectInfo);
-
+        getElf32().setSectInfo(SectInfo);
     }
 
     public long getBaseoffset() {
