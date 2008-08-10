@@ -5,20 +5,20 @@
     <windowspos>
 
        <disassembler>
-           <x>300</x>
-           <y>0</y>
+           <x>258</x>
+           <y>55</y>
        </disassembler>
        <elfheader>
-           <x>0</x>
-           <y>0</y>
+           <x>399</x>
+           <y>325</y>
        </elfheader>
        <memoryview>
-           <x>62</x>
-           <y>111</y>
+           <x>7</x>
+           <y>231</y>
        </memoryview>
        <registers>
-           <x>70</x>
-           <y>0</y>
+           <x>23</x>
+           <y>1</y>
        </registers>
 
     </windowspos>
