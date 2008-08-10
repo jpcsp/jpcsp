@@ -5,8 +5,8 @@
     <windowspos>
 
        <disassembler>
-           <x>258</x>
-           <y>55</y>
+           <x>243</x>
+           <y>44</y>
        </disassembler>
        <elfheader>
            <x>399</x>
@@ -17,8 +17,8 @@
            <y>231</y>
        </memoryview>
        <registers>
-           <x>23</x>
-           <y>1</y>
+           <x>15</x>
+           <y>-13</y>
        </registers>
 
     </windowspos>

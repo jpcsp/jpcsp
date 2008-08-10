@@ -373,6 +373,22 @@ public class Decoder {
                 }
                 break;
 
+            case BEQL:
+                that.doBEQL(rs(insn), rt(insn), simm16(insn));
+                break;
+
+            case BNEL:
+                that.doBNEL(rs(insn), rt(insn), simm16(insn));
+                break;
+
+            case BLEZL:
+                that.doBLEZ(rs(insn), simm16(insn));
+                break;
+
+            case BGTZL:
+                that.doBGTZ(rs(insn), simm16(insn));
+                break;
+
             case SPECIAL2:
                 switch ((byte) func(insn))
                 {

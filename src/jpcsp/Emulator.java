@@ -329,7 +329,7 @@ public class Emulator {
         // basic code, just one thread by now... it's just a view
        // run = true;
         while (run == true) {
-            cpu.stepCpu();
+            cpu.step();
             gpu.draw();
             controller.checkControllerState();
             //delay(cpu.numberCyclesDelay());
