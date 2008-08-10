@@ -28,7 +28,7 @@ public class Emulator {
     private Controller controller;
     private FileManager romManager;
     private boolean mediaImplemented = false;
-    
+
     public boolean run = false;
     public boolean pause = false;
     public boolean stop = false;
@@ -53,8 +53,8 @@ public class Emulator {
     private void delay(long numberCyclesDelay) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
-    
-    
+
+
 
     private void processLoading(String fileName) throws IOException {
         initNewPsp();
@@ -84,7 +84,6 @@ public class Emulator {
         initDebugWindowsByElf32();
     }
 
-    //init initPbp
     private void initPbp() throws IOException {
         mediaImplemented = true;
         initRamBy(romManager.getPBP().getElf32());
@@ -92,7 +91,7 @@ public class Emulator {
         initDebugWindowsByPbp();
         //RAM, CPU, GPU...
     }
-    
+
     private void initRamBy(Elf32 elf) throws IOException {
         if (elf.getHeader().requiresRelocation()) {
             for (Elf32SectionHeader shdr : elf.getListSectionHeader()) {
@@ -249,32 +248,32 @@ public class Emulator {
                             case 7: //R_MIPS_GPREL16
                             // 31/07/08 untested (fiveofhearts)
                             System.out.println("Untested relocation type " + R_TYPE + " at " + String.format("%08x", (int)baseoffset + (int)rel.r_offset));
-                            
+
                             if (external)
                             {
                             A = rel16;
-                            
+
                             //result = sign-extend(A) + S + GP;
                             result = (((A & 0x00008000) != 0) ? A & 0xFFFF0000 : A) + S + GP;
-                            
+
                             // verify
                             if ((result & ~0x0000FFFF) != 0)
                             throw new IOException("Relocation overflow (R_MIPS_GPREL16)");
-                            
+
                             data &= ~0x0000FFFF;
                             data |= (int)(result & 0x0000FFFF);
                             }
                             else if (local)
                             {
                             A = rel16;
-                            
+
                             //result = sign-extend(A) + S + GP;
                             result = (((A & 0x00008000) != 0) ? A & 0xFFFF0000 : A) + S + GP0 - GP;
-                            
+
                             // verify
                             if ((result & ~0x0000FFFF) != 0)
                             throw new IOException("Relocation overflow (R_MIPS_GPREL16)");
-                            
+
                             data &= ~0x0000FFFF;
                             data |= (int)(result & 0x0000FFFF);
                             }
@@ -294,32 +293,30 @@ public class Emulator {
         }
 
     }
-    
+
     private void initCpuBy(Elf32 elf) {
         //set the default values for registers not sure if they are correct and UNTESTED!!
-        // from soywiz/pspemulator
+        //some settings from soywiz/pspemulator
         cpu.pc = (int) romManager.getBaseoffset() + (int) elf.getHeader().getE_entry(); //set the pc register.
         cpu.npc = cpu.pc + 4;
-        cpu.gpr[31] = 0x08000004; //ra, should this be 0?
+        cpu.gpr[4] = 0; //a0
         cpu.gpr[5] = (int) romManager.getBaseoffset() + (int) elf.getHeader().getE_entry(); // argumentsPointer a1 reg
+        cpu.gpr[6] = 0; //a2
+        cpu.gpr[26] = 0x09F00000; //k0
+        cpu.gpr[27] = 0; //k1 should probably be 0
         cpu.gpr[28] = (int) romManager.getBaseoffset() + (int) romManager.getPSPModuleInfo().getM_gp(); //gp reg    gp register should get the GlobalPointer!!!
         cpu.gpr[29] = 0x09F00000; //sp
-        cpu.gpr[26] = 0x09F00000; //k0
+        cpu.gpr[31] = 0x08000004; //ra, should this be 0?
+        // All other registers are uninitialised/random values
 
+        jpcsp.HLE.ThreadMan.get_instance().Initialise(cpu.pc, romManager.getPSPModuleInfo().getM_attr());
+        jpcsp.HLE.Utils.get_instance().Initialise();
     }
 
     private void initDebugWindowsByPbp() {
-        // TODO delete ElfHeader.java and fix up refs to Info strings
-        ElfHeader.PbpInfo = romManager.getPBP().getInfo();
-        ElfHeader.ElfInfo = romManager.getPBP().getElf32().getHeader().getInfo();
-        ElfHeader.SectInfo = romManager.getPBP().getElf32().getSectionHeader().getInfo();
     }
 
     private void initDebugWindowsByElf32() {
-        // TODO delete ElfHeader.java and fix up refs to Info strings
-        ElfHeader.PbpInfo = romManager.getPBP().getInfo(); //weird pbp info on elf header...
-        ElfHeader.ElfInfo = romManager.getElf32().getHeader().getInfo();
-        ElfHeader.SectInfo = romManager.getElf32().getSectionHeader().getInfo();
     }
 
     private void initNewPsp() {

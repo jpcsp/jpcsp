@@ -76,7 +76,20 @@ public class Utilities {
             if (b == 0) {
                 break;
             }
-            sb.append((char) b);
+            sb.append((char)b);
+        }
+        return sb.toString();
+    }
+
+    public static String readStringZ(byte[] mem, int offset) {
+        StringBuffer sb = new StringBuffer();
+        int b;
+        for (;;) {
+            b = mem[offset++];
+            if (b == 0) {
+                break;
+            }
+            sb.append((char)b);
         }
         return sb.toString();
     }

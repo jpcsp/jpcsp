@@ -43,7 +43,6 @@ public class Elf32Header {
     private int e_shentsize;
     private int e_shnum;
     private int e_shstrndx;
-    private static String info;
 
     private void read(RandomAccessFile f) throws IOException {
         e_magic = readUWord(f);
@@ -69,15 +68,6 @@ public class Elf32Header {
 
      public Elf32Header(RandomAccessFile f) throws IOException {
         read(f);
-    }
-
-
-    public static String getInfo() {
-        return info;
-    }
-
-    public static void setInfo(String aInfo) {
-        info = aInfo;
     }
 
      public boolean isValid(){
