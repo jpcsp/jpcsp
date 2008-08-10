@@ -384,8 +384,9 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doBLTZAL(int rs, int simm16) {
         int previous_cycles = cycles;
+        boolean t = (gpr[rs] < 0);
         gpr[31] = pc + 4;
-        if (gpr[rs] < 0) {
+        if (t) {
             npc = branchTarget(pc, simm16);
         }
         stepCpu();
