@@ -29,6 +29,7 @@ import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import javax.swing.DefaultListModel;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
@@ -36,7 +37,6 @@ import javax.swing.SwingWorker;
 import jpcsp.Emulator;
 import jpcsp.GeneralJpcspException;
 import jpcsp.Memory;
-import jpcsp.Processor;
 import jpcsp.Settings;
 import jpcsp.util.JpcspDialogManager;
 import static jpcsp.AllegrexOpcodes.*;
@@ -58,6 +58,8 @@ public class Disassembler extends javax.swing.JInternalFrame implements Clipboar
     DisSpecial2 special2 =new DisSpecial2();
     DisCOP0 cop0 = new DisCOP0();
     DisSpecial3 special3 = new DisSpecial3();
+    
+    ArrayList<Integer> breakpoints = new ArrayList<Integer>();
     /* Creates new form Disasembler */
     public Disassembler(Emulator emu, Registers regs, MemoryViewer memview) {
         //this.c = c;
@@ -85,14 +87,17 @@ public class Disassembler extends javax.swing.JInternalFrame implements Clipboar
         CopyAddress = new javax.swing.JMenuItem();
         CopyAll = new javax.swing.JMenuItem();
         BranchOrJump = new javax.swing.JMenuItem();
-        jScrollPane1 = new javax.swing.JScrollPane();
         jList1 = new javax.swing.JList(model_1);
-        jButton1 = new javax.swing.JButton();
-        jButton2 = new javax.swing.JButton();
+        ResetToPC = new javax.swing.JButton();
+        JumpTo = new javax.swing.JButton();
         jButton3 = new javax.swing.JButton();
-        jButton4 = new javax.swing.JButton();
-        jButton5 = new javax.swing.JButton();
-        jButton6 = new javax.swing.JButton();
+        StepEmu = new javax.swing.JButton();
+        RunEmu = new javax.swing.JButton();
+        StopEmu = new javax.swing.JButton();
+        AddBreakpoint = new javax.swing.JButton();
+        RemoveBreakpoint = new javax.swing.JButton();
+        ClearBreakpoints = new javax.swing.JButton();
+        RunWithBreakPoints = new javax.swing.JButton();
 
         CopyAddress.setText("Copy Address");
         CopyAddress.addActionListener(new java.awt.event.ActionListener() {
@@ -157,19 +162,18 @@ public class Disassembler extends javax.swing.JInternalFrame implements Clipboar
                 jList1KeyPressed(evt);
             }
         });
-        jScrollPane1.setViewportView(jList1);
 
-        jButton1.setText("Reset to PC");
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
+        ResetToPC.setText("Reset to PC");
+        ResetToPC.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton1ActionPerformed(evt);
+                ResetToPCActionPerformed(evt);
             }
         });
 
-        jButton2.setText("Jump to Address");
-        jButton2.addActionListener(new java.awt.event.ActionListener() {
+        JumpTo.setText("Jump to Address");
+        JumpTo.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton2ActionPerformed(evt);
+                JumpToActionPerformed(evt);
             }
         });
 
@@ -180,24 +184,52 @@ public class Disassembler extends javax.swing.JInternalFrame implements Clipboar
             }
         });
 
-        jButton4.setText("Step CPU");
-        jButton4.addActionListener(new java.awt.event.ActionListener() {
+        StepEmu.setText("Step CPU");
+        StepEmu.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton4ActionPerformed(evt);
+                StepEmuActionPerformed(evt);
             }
         });
 
-        jButton5.setText("Run ");
-        jButton5.addActionListener(new java.awt.event.ActionListener() {
+        RunEmu.setText("Run ");
+        RunEmu.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton5ActionPerformed(evt);
+                RunEmuActionPerformed(evt);
             }
         });
 
-        jButton6.setText("Stop");
-        jButton6.addActionListener(new java.awt.event.ActionListener() {
+        StopEmu.setText("Stop");
+        StopEmu.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton6ActionPerformed(evt);
+                StopEmuActionPerformed(evt);
+            }
+        });
+
+        AddBreakpoint.setText("Add Breakpoint");
+        AddBreakpoint.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                AddBreakpointActionPerformed(evt);
+            }
+        });
+
+        RemoveBreakpoint.setText("Remove Breakpoint");
+        RemoveBreakpoint.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                RemoveBreakpointActionPerformed(evt);
+            }
+        });
+
+        ClearBreakpoints.setText("Clear Breakpoints");
+        ClearBreakpoints.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ClearBreakpointsActionPerformed(evt);
+            }
+        });
+
+        RunWithBreakPoints.setText("Run With Breakpoints");
+        RunWithBreakPoints.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                RunWithBreakPointsActionPerformed(evt);
             }
         });
 
@@ -206,17 +238,20 @@ public class Disassembler extends javax.swing.JInternalFrame implements Clipboar
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 458, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(12, 12, 12)
+                .addComponent(jList1, javax.swing.GroupLayout.PREFERRED_SIZE, 456, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                        .addComponent(jButton5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jButton6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jButton1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jButton2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jButton4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                    .addComponent(jButton3, javax.swing.GroupLayout.DEFAULT_SIZE, 113, Short.MAX_VALUE))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(RunEmu, javax.swing.GroupLayout.DEFAULT_SIZE, 135, Short.MAX_VALUE)
+                    .addComponent(StopEmu, javax.swing.GroupLayout.DEFAULT_SIZE, 135, Short.MAX_VALUE)
+                    .addComponent(StepEmu, javax.swing.GroupLayout.DEFAULT_SIZE, 135, Short.MAX_VALUE)
+                    .addComponent(RunWithBreakPoints, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jButton3, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 135, Short.MAX_VALUE)
+                    .addComponent(ClearBreakpoints, javax.swing.GroupLayout.DEFAULT_SIZE, 135, Short.MAX_VALUE)
+                    .addComponent(RemoveBreakpoint, javax.swing.GroupLayout.DEFAULT_SIZE, 135, Short.MAX_VALUE)
+                    .addComponent(AddBreakpoint, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 135, Short.MAX_VALUE)
+                    .addComponent(JumpTo, javax.swing.GroupLayout.DEFAULT_SIZE, 135, Short.MAX_VALUE)
+                    .addComponent(ResetToPC, javax.swing.GroupLayout.DEFAULT_SIZE, 135, Short.MAX_VALUE))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -224,22 +259,28 @@ public class Disassembler extends javax.swing.JInternalFrame implements Clipboar
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jList1, javax.swing.GroupLayout.PREFERRED_SIZE, 407, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 409, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addContainerGap())
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(jButton5)
+                        .addComponent(RunEmu)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButton6)
+                        .addComponent(RunWithBreakPoints)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButton4)
+                        .addComponent(StopEmu)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButton1)
+                        .addComponent(StepEmu)
+                        .addGap(30, 30, 30)
+                        .addComponent(ResetToPC)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButton2)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 161, Short.MAX_VALUE)
-                        .addComponent(jButton3)
-                        .addGap(105, 105, 105))))
+                        .addComponent(JumpTo)
+                        .addGap(19, 19, 19)
+                        .addComponent(AddBreakpoint)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(RemoveBreakpoint)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(ClearBreakpoints)
+                        .addGap(33, 33, 33)
+                        .addComponent(jButton3)))
+                .addContainerGap())
         );
 
         pack();
@@ -295,18 +336,18 @@ private void jList1MouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GEN-FI
     }
 }//GEN-LAST:event_jList1MouseWheelMoved
 
-private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+private void ResetToPCActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetToPCActionPerformed
     DebuggerPC = emu.getProcessor().pc;//c.pc;//
     RefreshDebugger();
-}//GEN-LAST:event_jButton1ActionPerformed
+}//GEN-LAST:event_ResetToPCActionPerformed
 
-private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+private void JumpToActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_JumpToActionPerformed
     String input = (String) JOptionPane.showInternalInputDialog(this, "Enter the address to which to jump (Hex)", "Jpcsp", JOptionPane.QUESTION_MESSAGE, null, null, String.format("%08x", emu.getProcessor().pc));
     if (input == null) {
         return;
     }
-    int value;//GEN-LAST:event_jButton2ActionPerformed
-        try {
+    int value=0;
+         try {
             value = Integer.parseInt(input, 16);
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "The Number you enter is not correct");
@@ -314,16 +355,18 @@ private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
         }
         DebuggerPC = value;
         RefreshDebugger();
-    }
+    
+}//GEN-LAST:event_JumpToActionPerformed
+   
 
-private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
+private void StepEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_StepEmuActionPerformed
     //c.stepCpu();
     emu.getProcessor().step();
     DebuggerPC = 0;
     RefreshDebugger();
     regs.RefreshRegisters();
     memview.RefreshMemory();
-}//GEN-LAST:event_jButton4ActionPerformed
+}//GEN-LAST:event_StepEmuActionPerformed
 
 private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
 // TODO add your handling code here:
@@ -382,7 +425,11 @@ private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
 
 private void CopyAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CopyAddressActionPerformed
     String value = (String)jList1.getSelectedValue();
-    String address = value.substring(0, 8);
+    String address;
+    if(value.startsWith("<br>"))
+      address = value.substring(4, 12);
+    else
+      address = value.substring(0, 8);
     StringSelection stringSelection = new StringSelection( address);
     Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
     clipboard.setContents(stringSelection, this);
@@ -466,19 +513,96 @@ private void formInternalFrameClosing(javax.swing.event.InternalFrameEvent evt) 
         emu.pause();
     }
   };
-private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
+private void RunEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RunEmuActionPerformed
 
   worker.execute();
 
-}//GEN-LAST:event_jButton5ActionPerformed
+}//GEN-LAST:event_RunEmuActionPerformed
 
-private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
+private void StopEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_StopEmuActionPerformed
      worker.cancel(false);
      DebuggerPC = 0;
     RefreshDebugger();
     regs.RefreshRegisters();
     memview.RefreshMemory();
-}//GEN-LAST:event_jButton6ActionPerformed
+}//GEN-LAST:event_StopEmuActionPerformed
+
+private void AddBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddBreakpointActionPerformed
+          String value =(String)jList1.getSelectedValue();
+          if(value.length()>0)
+          {
+            String address = value.substring(0, 8);
+            int addr = Integer.parseInt(address,16);
+            breakpoints.add(addr);
+            DebuggerPC = 0;
+            RefreshDebugger();
+          }
+}//GEN-LAST:event_AddBreakpointActionPerformed
+
+private void RemoveBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RemoveBreakpointActionPerformed
+          String value =(String)jList1.getSelectedValue();
+          if(value.length()>0)
+          {
+            boolean breakpointexists = value.startsWith("<br>");
+            if(breakpointexists)
+            {
+              String address = value.substring(4, 12);
+              int addr = Integer.parseInt(address,16);
+              int b = breakpoints.indexOf(addr);
+              breakpoints.remove(b);
+              DebuggerPC = 0;
+              RefreshDebugger();
+            }
+          }
+}//GEN-LAST:event_RemoveBreakpointActionPerformed
+
+private void ClearBreakpointsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ClearBreakpointsActionPerformed
+         if(!breakpoints.isEmpty())
+            breakpoints.clear();
+}//GEN-LAST:event_ClearBreakpointsActionPerformed
+     final SwingWorker<Integer,Void> worker2 = new SwingWorker<Integer,Void>() {
+   @Override
+    public Integer doInBackground() { //start emulator
+       try {
+           if(emu.pause)//emu is paused
+           {
+               emu.resume();
+           }
+           else
+           {
+              
+             emu.run=true;
+             while(emu.run)
+             {
+                 if(breakpoints.indexOf(emu.getProcessor().pc) != -1)
+                 {
+                     emu.run=false;
+                          DebuggerPC = 0;
+                    RefreshDebugger();
+                     regs.RefreshRegisters();
+                    memview.RefreshMemory();
+                 }
+                 else
+                  emu.getProcessor().step();
+             }
+             
+           }
+       }catch(GeneralJpcspException e)
+       {
+
+       }
+        return 0;
+    }
+
+    @Override
+    public void done() {
+        emu.pause();
+    }
+  };
+private void RunWithBreakPointsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RunWithBreakPointsActionPerformed
+   worker2.execute();
+  
+}//GEN-LAST:event_RunWithBreakPointsActionPerformed
 
     public void RefreshDebugger() {
         int t;
@@ -491,11 +615,18 @@ private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
         for (t = DebuggerPC          , cnt = 0; t < (DebuggerPC + 0x00000074); t += 0x00000004, cnt++) {
 
             int memread = Memory.get_instance().read32((int) t);
+
             if (memread == 0) {
-                model_1.addElement(String.format("%08x:[%08x]: nop", t, memread));
+                 if(breakpoints.indexOf(t)!=-1)
+                      model_1.addElement(String.format("<br>%08x:[%08x]: nop", t, memread));
+                 else
+                  model_1.addElement(String.format("%08x:[%08x]: nop", t, memread));
             } else {
                 opcode_address = t;
-                model_1.addElement(String.format("%08x:[%08x]: %s", t, memread, disasm(memread)));
+                if(breakpoints.indexOf(t)!=-1)
+                   model_1.addElement(String.format("<br>%08x:[%08x]: %s", t, memread, disasm(memread)));
+                else
+                   model_1.addElement(String.format("%08x:[%08x]: %s", t, memread, disasm(memread)));
 
             }
         }
@@ -965,17 +1096,20 @@ private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
      //do nothing
    }
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton AddBreakpoint;
     private javax.swing.JMenuItem BranchOrJump;
+    private javax.swing.JButton ClearBreakpoints;
     private javax.swing.JMenuItem CopyAddress;
     private javax.swing.JMenuItem CopyAll;
     private javax.swing.JPopupMenu DisMenu;
-    private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2;
+    private javax.swing.JButton JumpTo;
+    private javax.swing.JButton RemoveBreakpoint;
+    private javax.swing.JButton ResetToPC;
+    private javax.swing.JButton RunEmu;
+    private javax.swing.JButton RunWithBreakPoints;
+    private javax.swing.JButton StepEmu;
+    private javax.swing.JButton StopEmu;
     private javax.swing.JButton jButton3;
-    private javax.swing.JButton jButton4;
-    private javax.swing.JButton jButton5;
-    private javax.swing.JButton jButton6;
     private javax.swing.JList jList1;
-    private javax.swing.JScrollPane jScrollPane1;
     // End of variables declaration//GEN-END:variables
 }
