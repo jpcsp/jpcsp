@@ -250,41 +250,41 @@ public class Decoder {
                     case BLTZ:
                         that.doBLTZ(rs(insn), simm16(insn));
                         break;
-                        
+
                     case BGEZ:
                         that.doBGEZ(rs(insn), simm16(insn));
                         break;
-                        
+
                     case BLTZL:
                         that.doBLTZL(rs(insn), simm16(insn));
                         break;
-                        
+
                     case BGEZL:
                         that.doBGEZL(rs(insn), simm16(insn));
                         break;
-                        
+
                     case BLTZAL:
                         that.doBLTZAL(rs(insn), simm16(insn));
                         break;
-                        
+
                     case BGEZAL:
                         that.doBLTZAL(rs(insn), simm16(insn));
                         break;
-                        
+
                     case BLTZALL:
                         that.doBLTZALL(rs(insn), simm16(insn));
                         break;
-                        
+
                     case BGEZALL:
                         that.doBLTZALL(rs(insn), simm16(insn));
-                        break;                       
-                           
+                        break;
+
                     default:
                         that.doUNK("Unsupported REGIMM instruction " + Integer.toHexString(rt(insn)));
                         break;
                 }
                 break;
-                
+
             case J:
                 that.doJ(uimm26(insn));
                 break;
@@ -326,15 +326,15 @@ public class Decoder {
                 break;
 
             case ANDI:
-                that.doANDI(rt(insn), rs(insn), simm16(insn));
+                that.doANDI(rt(insn), rs(insn), uimm16(insn));
                 break;
 
             case ORI:
-                that.doORI(rt(insn), rs(insn), simm16(insn));
+                that.doORI(rt(insn), rs(insn), uimm16(insn));
                 break;
 
             case XORI:
-                that.doXORI(rt(insn), rs(insn), simm16(insn));
+                that.doXORI(rt(insn), rs(insn), uimm16(insn));
                 break;
 
             case LUI:
@@ -347,53 +347,53 @@ public class Decoder {
                     case MFC0:
                         that.doMFC0(rt(insn), rd(insn));
                         break;
-                        
+
                     case CFC0:
                         that.doCFC0(rt(insn), rd(insn));
                         break;
-                        
+
                     case MTC0:
                         that.doMFC0(rt(insn), rd(insn));
                         break;
-                        
+
                     case CTC0:
                         that.doCFC0(rt(insn), rd(insn));
                         break;
-                        
+
                     case COP0ERET:
                         if (func(insn) == ERET)
                             that.doERET();
                         else
                             that.doUNK("Unsupported COP0ERET instruction " + Integer.toHexString(func(insn)));
                         break;
-                        
+
                     default:
                         that.doUNK("Unsupported COP0 instruction " + Integer.toHexString(rs(insn)));
                         break;
                 }
                 break;
-                
+
             case SPECIAL2:
                 switch ((byte) func(insn))
                 {
                     case HALT:
                         that.doHALT();
                         break;
-                        
+
                     case MFIC:
                         that.doMFIC(rt(insn));
                         break;
-                        
+
                     case MTIC:
                         that.doMTIC(rt(insn));
                         break;
-                        
+
                     default:
                         that.doUNK("Unsupported SPECIAL2 instruction " + Integer.toHexString(opcode));
                         break;
                 }
                 break;
-                
+
             case SPECIAL3:
                 switch ((byte) func(insn)) {
 
@@ -489,7 +489,7 @@ public class Decoder {
             case CACHE:
                 that.doCACHE(rt(insn), rs(insn), simm16(insn));
                 break;
-                
+
             default:
                 that.doUNK("Unsupported instruction " + Integer.toHexString(opcode));
                 break;
