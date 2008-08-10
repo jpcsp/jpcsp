@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp;
 
-import jpcsp.format.Elf32ProgramHeader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -24,8 +23,10 @@ import java.util.LinkedList;
 import java.util.List;
 import jpcsp.format.Elf32;
 import jpcsp.format.Elf32Header;
+import jpcsp.format.Elf32ProgramHeader;
 import jpcsp.format.Elf32SectionHeader;
 import jpcsp.format.Elf32SectionHeader.ShFlags;
+import jpcsp.format.Elf32SectionHeader.ShType;
 import jpcsp.format.PBP;
 import jpcsp.format.PSPModuleInfo;
 import jpcsp.util.Utilities;
@@ -212,7 +213,8 @@ public class FileManager {
             Elf32SectionHeader shdr = new Elf32SectionHeader(f);
             sectionheaders.add(shdr);
 
-            if (shdr.getSh_type() == 3 && shstrtab == null) //ShType.STRTAB
+            // Find the shstrtab
+            if (shdr.getSh_type() == ShType.STRTAB.getValue() && shstrtab == null) // 0x00000003
             {
                 shstrtab = shdr;
             }
@@ -228,9 +230,12 @@ public class FileManager {
                         f.read(Memory.get_instance().mainmemory, offsettoread, (int) shdr.getSh_size());
                         break;
                     case 8: // ShType.NOBITS
-
-                        System.out.println("NO BITS");
-                        // zero out this memory(?), from shdr.sh_addr to shdr.sh_addr + shdr.sh_size
+                        //System.out.println("NO BITS");
+                        // zero out this memory
+                        offsettoread = (int)(getBaseoffset() + shdr.getSh_addr() - MemoryMap.START_RAM);
+                        byte[] mainmemory = Memory.get_instance().mainmemory;
+                        for (int j = 0; j < (int)shdr.getSh_size(); j++)
+                            mainmemory[offsettoread + j] = 0;
                         break;
                 }
             }
@@ -274,7 +279,7 @@ public class FileManager {
                 }
             }
 
-            // Add the normal info
+            // Add this section header's info
             shsb.append(shdr.toString());
             SectionCounter++;
         }

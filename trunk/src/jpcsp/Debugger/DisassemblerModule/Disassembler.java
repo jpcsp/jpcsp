@@ -58,7 +58,7 @@ public class Disassembler extends javax.swing.JInternalFrame implements Clipboar
     DisSpecial2 special2 =new DisSpecial2();
     DisCOP0 cop0 = new DisCOP0();
     DisSpecial3 special3 = new DisSpecial3();
-    
+
     ArrayList<Integer> breakpoints = new ArrayList<Integer>();
     /* Creates new form Disasembler */
     public Disassembler(Emulator emu, Registers regs, MemoryViewer memview) {
@@ -355,9 +355,9 @@ private void JumpToActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:
         }
         DebuggerPC = value;
         RefreshDebugger();
-    
+
 }//GEN-LAST:event_JumpToActionPerformed
-   
+
 
 private void StepEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_StepEmuActionPerformed
     //c.stepCpu();
@@ -570,7 +570,7 @@ private void ClearBreakpointsActionPerformed(java.awt.event.ActionEvent evt) {//
            }
            else
            {
-              
+
              emu.run=true;
              while(emu.run)
              {
@@ -585,7 +585,7 @@ private void ClearBreakpointsActionPerformed(java.awt.event.ActionEvent evt) {//
                  else
                   emu.getProcessor().step();
              }
-             
+
            }
        }catch(GeneralJpcspException e)
        {
@@ -601,7 +601,7 @@ private void ClearBreakpointsActionPerformed(java.awt.event.ActionEvent evt) {//
   };
 private void RunWithBreakPointsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RunWithBreakPointsActionPerformed
    worker2.execute();
-  
+
 }//GEN-LAST:event_RunWithBreakPointsActionPerformed
 
     public void RefreshDebugger() {
@@ -840,7 +840,7 @@ private void RunWithBreakPointsActionPerformed(java.awt.event.ActionEvent evt) {
                 s = s + Dis_RTRSIMM("xori", value);
                 break;
             case LUI://lui
-                s = s + "lui " + gprNames[rt] + " , " + imm;
+                s = s + "lui " + gprNames[rt] + ", " + imm;
                 break;
             case COP0:
                 s = s + cop0.DisCop0(value);

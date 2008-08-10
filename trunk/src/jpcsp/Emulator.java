@@ -20,6 +20,7 @@ import java.io.IOException;
 import jpcsp.format.Elf32;
 import jpcsp.format.Elf32Relocate;
 import jpcsp.format.Elf32SectionHeader;
+import jpcsp.format.Elf32SectionHeader.ShType;
 
 public class Emulator {
 
@@ -95,8 +96,8 @@ public class Emulator {
     private void initRamBy(Elf32 elf) throws IOException {
         if (elf.getHeader().requiresRelocation()) {
             for (Elf32SectionHeader shdr : elf.getListSectionHeader()) {
-                if (shdr.getSh_type() == 0x700000A0 || // PRX reloc magic
-                        shdr.getSh_type() == 0x00000009) //ShType.REL
+                if (shdr.getSh_type() == ShType.PRXREL.getValue() || // 0x700000A0
+                        shdr.getSh_type() == ShType.REL.getValue()) // 0x00000009
                 {
                     Elf32Relocate rel = new Elf32Relocate();
                     romManager.getActualFile().seek(romManager.getElfoffset() + shdr.getSh_offset());
