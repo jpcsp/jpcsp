@@ -666,8 +666,6 @@ public class ELFLoader {
     }
 
     // 4th pass, process stubs/imports
-    // - we are assuming nids are globally unique, not unique per module
-    // - TODO unresolved imports should be rechecked each time a new module is loaded
     // - returns a List of DeferredStub objects, for use in processDeferredStubs()
     private static List processStubs(Memory mem, int stubsAddress, int stubsCount)
     {
