@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.LinkedList;
 import java.util.List;
+import jpcsp.format.DeferredStub;
 import jpcsp.format.Elf32;
 import jpcsp.format.Elf32Header;
 import jpcsp.format.Elf32ProgramHeader;
@@ -46,6 +47,7 @@ public class FileManager {
     private int type = -1;
     private long elfoffset = 0;
     private long baseoffset = 0;
+    private List<DeferredStub> deferredImports;
 
     public FileManager(String filePath) throws FileNotFoundException, IOException {
         this.filePath = filePath;
@@ -80,6 +82,7 @@ public class FileManager {
             baseoffset = 0;
 
             moduleInfo = new PSPModuleInfo();
+            deferredImports = new LinkedList<DeferredStub>();
 
             //makes sense put the more used first...
 
@@ -294,5 +297,10 @@ public class FileManager {
 
     public long getElfoffset() {
         return elfoffset;
+    }
+
+    // TODO process deferred imports each time a new module is loaded
+    public void addDeferredImports(List<DeferredStub> list) {
+        deferredImports.addAll(list);
     }
 }
