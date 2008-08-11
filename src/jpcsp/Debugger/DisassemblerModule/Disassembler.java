@@ -259,7 +259,9 @@ public class Disassembler extends javax.swing.JInternalFrame implements Clipboar
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jList1, javax.swing.GroupLayout.PREFERRED_SIZE, 407, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jList1, javax.swing.GroupLayout.DEFAULT_SIZE, 419, Short.MAX_VALUE)
+                        .addContainerGap())
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(RunEmu)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -279,8 +281,8 @@ public class Disassembler extends javax.swing.JInternalFrame implements Clipboar
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(ClearBreakpoints)
                         .addGap(33, 33, 33)
-                        .addComponent(jButton3)))
-                .addContainerGap())
+                        .addComponent(jButton3)
+                        .addGap(69, 69, 69))))
         );
 
         pack();
@@ -632,7 +634,6 @@ private void RunWithBreakPointsActionPerformed(java.awt.event.ActionEvent evt) {
         }
 
     }
-
     String disasm(int value) {
         String s = new String();
 
@@ -661,6 +662,7 @@ private void RunWithBreakPointsActionPerformed(java.awt.event.ActionEvent evt) {
         }
         int opcode = (value >> 26) & 0x3f;
 
+        
         //s = Integer.toString(opcode);
         switch (opcode) {
             case SPECIAL: //Special table
@@ -762,7 +764,7 @@ private void RunWithBreakPointsActionPerformed(java.awt.event.ActionEvent evt) {
                     case 48:
                         s = s + "invalid ?";
                         break;*/
-                    default:
+                   default:
                         s = "unsupported special instruction + " + Integer.toHexString(specialop);
                         break;
                 }
@@ -1095,6 +1097,7 @@ private void RunWithBreakPointsActionPerformed(java.awt.event.ActionEvent evt) {
    public void lostOwnership( Clipboard aClipboard, Transferable aContents) {
      //do nothing
    }
+  
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton AddBreakpoint;
     private javax.swing.JMenuItem BranchOrJump;
