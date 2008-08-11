@@ -303,12 +303,12 @@ private void jList1KeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jL
         evt.consume();
         jList1.setSelectedIndex(0);
     } else if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_PAGE_UP && jList1.getSelectedIndex() == 0) {
-        DebuggerPC -= 72;
+        DebuggerPC -= 0x68;
         RefreshDebugger();
         evt.consume();
         jList1.setSelectedIndex(0);
     } else if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_PAGE_DOWN && jList1.getSelectedIndex() == jList1.getLastVisibleIndex()) {
-        DebuggerPC += 72;
+        DebuggerPC += 0x68;
         RefreshDebugger();
         evt.consume();
         jList1.setSelectedIndex(jList1.getLastVisibleIndex());
@@ -373,7 +373,7 @@ private void StepEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
 // TODO add your handling code here:
     //System.out.println("dump code dialog created");
-    OptionPaneMultiple opt=new OptionPaneMultiple(Integer.toHexString(DebuggerPC),Integer.toHexString(DebuggerPC + 0x00000070));
+    OptionPaneMultiple opt=new OptionPaneMultiple(Integer.toHexString(DebuggerPC),Integer.toHexString(DebuggerPC + 0x00000068));
     if(opt.completed()){
         //Here the input can be used to actually dump code
         System.out.println("Start address: "+opt.getInput()[0]);
@@ -614,7 +614,7 @@ private void RunWithBreakPointsActionPerformed(java.awt.event.ActionEvent evt) {
         }
         model_1.clear();
 
-        for (t = DebuggerPC          , cnt = 0; t < (DebuggerPC + 0x00000074); t += 0x00000004, cnt++) {
+        for (t = DebuggerPC          , cnt = 0; t < (DebuggerPC + 0x00000068); t += 0x00000004, cnt++) {
 
             int memread = Memory.get_instance().read32((int) t);
 
@@ -662,7 +662,7 @@ private void RunWithBreakPointsActionPerformed(java.awt.event.ActionEvent evt) {
         }
         int opcode = (value >> 26) & 0x3f;
 
-        
+
         //s = Integer.toString(opcode);
         switch (opcode) {
             case SPECIAL: //Special table
@@ -1097,7 +1097,7 @@ private void RunWithBreakPointsActionPerformed(java.awt.event.ActionEvent evt) {
    public void lostOwnership( Clipboard aClipboard, Transferable aContents) {
      //do nothing
    }
-  
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton AddBreakpoint;
     private javax.swing.JMenuItem BranchOrJump;
