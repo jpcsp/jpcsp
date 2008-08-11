@@ -17,10 +17,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.LinkedList;
+import jpcsp.format.DeferredStub;
 import jpcsp.format.Elf32;
 import jpcsp.format.Elf32Relocate;
 import jpcsp.format.Elf32SectionHeader;
 import jpcsp.format.Elf32SectionHeader.ShType;
+import jpcsp.format.Elf32StubHeader;
+import static jpcsp.util.Utilities.*;
 
 public class Emulator {
 
@@ -94,6 +99,7 @@ public class Emulator {
     }
 
     private void initRamBy(Elf32 elf) throws IOException {
+        // Relocation
         if (elf.getHeader().requiresRelocation()) {
             for (Elf32SectionHeader shdr : elf.getListSectionHeader()) {
                 if (shdr.getSh_type() == ShType.PRXREL.getValue() || // 0x700000A0
@@ -247,39 +253,39 @@ public class Emulator {
 
                             /* sample before relocation: 0x00015020: 0x8F828008 '....' - lw         $v0, -32760($gp)
                             case 7: //R_MIPS_GPREL16
-                            // 31/07/08 untested (fiveofhearts)
-                            System.out.println("Untested relocation type " + R_TYPE + " at " + String.format("%08x", (int)baseoffset + (int)rel.r_offset));
+                                // 31/07/08 untested (fiveofhearts)
+                                System.out.println("Untested relocation type " + R_TYPE + " at " + String.format("%08x", (int)baseoffset + (int)rel.r_offset));
 
-                            if (external)
-                            {
-                            A = rel16;
+                                if (external)
+                                {
+                                    A = rel16;
 
-                            //result = sign-extend(A) + S + GP;
-                            result = (((A & 0x00008000) != 0) ? A & 0xFFFF0000 : A) + S + GP;
+                                    //result = sign-extend(A) + S + GP;
+                                    result = (((A & 0x00008000) != 0) ? A & 0xFFFF0000 : A) + S + GP;
 
-                            // verify
-                            if ((result & ~0x0000FFFF) != 0)
-                            throw new IOException("Relocation overflow (R_MIPS_GPREL16)");
+                                    // verify
+                                    if ((result & ~0x0000FFFF) != 0)
+                                        throw new IOException("Relocation overflow (R_MIPS_GPREL16)");
 
-                            data &= ~0x0000FFFF;
-                            data |= (int)(result & 0x0000FFFF);
-                            }
-                            else if (local)
-                            {
-                            A = rel16;
+                                    data &= ~0x0000FFFF;
+                                    data |= (int)(result & 0x0000FFFF);
+                                }
+                                else if (local)
+                                {
+                                    A = rel16;
 
-                            //result = sign-extend(A) + S + GP;
-                            result = (((A & 0x00008000) != 0) ? A & 0xFFFF0000 : A) + S + GP0 - GP;
+                                    //result = sign-extend(A) + S + GP;
+                                    result = (((A & 0x00008000) != 0) ? A & 0xFFFF0000 : A) + S + GP0 - GP;
 
-                            // verify
-                            if ((result & ~0x0000FFFF) != 0)
-                            throw new IOException("Relocation overflow (R_MIPS_GPREL16)");
+                                    // verify
+                                    if ((result & ~0x0000FFFF) != 0)
+                                        throw new IOException("Relocation overflow (R_MIPS_GPREL16)");
 
-                            data &= ~0x0000FFFF;
-                            data |= (int)(result & 0x0000FFFF);
-                            }
-                            break;
-                             */
+                                    data &= ~0x0000FFFF;
+                                    data |= (int)(result & 0x0000FFFF);
+                                }
+                                break;
+                            */
 
                             default:
                                 System.out.println("Unhandled relocation type " + R_TYPE + " at " + String.format("%08x", (int) romManager.getBaseoffset() + (int) rel.getR_offset()));
@@ -293,6 +299,78 @@ public class Emulator {
             }
         }
 
+        // Imports
+        for (Elf32SectionHeader shdr : elf.getListSectionHeader()) {
+            if (shdr.getSh_namez().equals(".lib.stub")) {
+                Memory mem = Memory.get_instance();
+                int stubHeadersAddress = (int)(romManager.getBaseoffset() + shdr.getSh_addr());
+                int stubHeadersCount = (int)(shdr.getSh_size() / Elf32StubHeader.sizeof());
+
+                Elf32StubHeader stubHeader;
+                List<DeferredStub> deferred = new LinkedList<DeferredStub>();
+                NIDMapper nidMapper = NIDMapper.get_instance();
+
+                //System.out.println(shdr.getSh_namez() + ":" + stubsCount + " module entries");
+
+                // TODO move this to reset function
+                nidMapper.Initialise("syscalls.txt", "FW 1.50");
+
+                for (int i = 0; i < stubHeadersCount; i++)
+                {
+                    stubHeader = new Elf32StubHeader(mem, stubHeadersAddress);
+                    stubHeader.setModuleNamez(readStringZ(mem.mainmemory, (int)(stubHeader.getOffsetModuleName() - MemoryMap.START_RAM)));
+                    stubHeadersAddress += Elf32StubHeader.sizeof(); //stubHeader.s_size * 4;
+                    //System.out.println(stubHeader.toString());
+
+                    for (int j = 0; j < stubHeader.getImports(); j++)
+                    {
+                        int nid = mem.read32((int)(stubHeader.getOffsetNid() + j * 4));
+                        int importAddress = (int)(stubHeader.getOffsetText() + j * 8);
+                        int exportAddress;
+                        int code;
+
+                        // Attempt to fixup stub to point to an already loaded module export
+                        exportAddress = nidMapper.moduleNidToAddress(stubHeader.getModuleNamez(), nid);
+                        if (exportAddress != -1)
+                        {
+                            int instruction = // j <jumpAddress>
+                                ((jpcsp.AllegrexOpcodes.J & 0x3f) << 26)
+                                | ((exportAddress >>> 2) & 0x03ffffff);
+
+                            mem.write32(importAddress, instruction);
+
+                            System.out.println("Mapped NID " + Integer.toHexString(nid) + " to export");
+                        }
+
+                        // Attempt to fixup stub to known syscalls
+                        else
+                        {
+                            code = nidMapper.nidToSyscall(nid);
+                            if (code != -1)
+                            {
+                                // Fixup stub, replacing nop with syscall
+                                int instruction = // syscall <code>
+                                    ((jpcsp.AllegrexOpcodes.SPECIAL & 0x3f) << 26)
+                                    | (jpcsp.AllegrexOpcodes.SYSCALL & 0x3f)
+                                    | ((code & 0x000fffff) << 6);
+
+                                mem.write32(importAddress + 4, instruction);
+
+                                //System.out.println("Mapped NID " + Integer.toHexString(nid) + " to syscall " + Integer.toHexString(code));
+                            }
+                            else
+                            {
+                                // Save nid for deferred fixup
+                                deferred.add(new DeferredStub(stubHeader.getModuleNamez(), importAddress, nid));
+                                System.out.println("Failed to map NID " + Integer.toHexString(nid) + " (load time)");
+                            }
+                        }
+                    }
+                }
+
+                romManager.addDeferredImports(deferred);
+            }
+        }
     }
 
     private void initCpuBy(Elf32 elf) {

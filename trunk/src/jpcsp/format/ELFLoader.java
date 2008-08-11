@@ -27,6 +27,7 @@ import java.util.Iterator;
 import jpcsp.FileManager;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.NIDMapper;
 import jpcsp.Processor;
 import jpcsp.Settings;
 import static jpcsp.util.Utilities.*;
@@ -667,23 +668,22 @@ public class ELFLoader {
 
     // 4th pass, process stubs/imports
     // - returns a List of DeferredStub objects, for use in processDeferredStubs()
-    private static List processStubs(Memory mem, int stubsAddress, int stubsCount)
+    private static List processStubs(Memory mem, int stubHeadersAddress, int stubHeadersCount)
     {
-        //Elf32_Shdr shdr = new Elf32_Shdr(mem, stubsAddress);
         Elf32_Stub stub;
         List<DeferredStub> deferred = new LinkedList<DeferredStub>();
         NIDMapper nidMapper = NIDMapper.get_instance();
 
-        //System.out.println(shdr.sh_namez + ": " + stubsCount + " module entries");
+        //System.out.println(stubsCount + " module entries");
 
         // TODO move this to reset function
         nidMapper.Initialise("syscalls.txt", "FW 1.50");
 
-        for (int i = 0; i < stubsCount; i++)
+        for (int i = 0; i < stubHeadersCount; i++)
         {
-            stub = new Elf32_Stub(mem, stubsAddress);
+            stub = new Elf32_Stub(mem, stubHeadersAddress);
             stub.s_modulenamez = readStringZ(mem.mainmemory, (int)(stub.s_modulename - MemoryMap.START_RAM));
-            stubsAddress += stub.s_size * 4;
+            stubHeadersAddress += stub.s_size * 4;
             //System.out.println(stub.toString());
 
             for (int j = 0; j < stub.s_imports; j++)

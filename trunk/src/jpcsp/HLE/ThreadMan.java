@@ -196,6 +196,8 @@ public class ThreadMan {
         SceUIDMan.get_instance().checkUidPurpose(a0, "ThreadMan");
         SceKernelThreadInfo thread = threadlist.get(a0);
 
+        // Set return value before context switch!
+        Emulator.getProcessor().gpr[2] = 0;
 
         //thread.status = PspThreadStatus.PSP_THREAD_READY;
         // We will start the thread immediately so we don't have to save a1 and a2 somewhere
@@ -204,7 +206,6 @@ public class ThreadMan {
         Emulator.getProcessor().gpr[4] = a1; // a0 = a1;
         Emulator.getProcessor().gpr[5] = a2; // a1 = a2;
 
-        Emulator.getProcessor().gpr[2] = 0;
         //return 0;
     }
 
