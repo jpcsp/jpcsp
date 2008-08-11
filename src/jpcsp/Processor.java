@@ -43,11 +43,11 @@ public class Processor implements AllegrexInstructions {
     }
 
     public int hi() {
-        return (int) (hilo & 0xffffffff);
+        return (int) (hilo >>> 32);
     }
 
     public int lo() {
-        return (int) (hilo >>> 32);
+        return (int) (hilo & 0xffffffff);
     }
 
     public static int signExtend(int value) {
