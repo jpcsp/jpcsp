@@ -1077,4 +1077,12 @@ public class Processor implements AllegrexInstructions {
     public void doSEH(int rd, int rt) {
         gpr[rd] = (gpr[rt] << 16) >> 16;
     }
+    @Override
+    public void doMFC1(int rt, int c1dr){System.out.println("Interpreter: Unsupported mfc1 instruction");}
+    @Override
+    public void doCFC1(int rt, int c1cr){System.out.println("Interpreter: Unsupported cfc1 instruction");}
+    @Override
+    public void doMTC1(int rt, int c1dr){System.out.println("Interpreter: Unsupported mtc1 instruction");}  
+    @Override
+    public void doCTC1(int rt, int c1cr){System.out.println("Interpreter: Unsupported ctc1 instruction");}
 }

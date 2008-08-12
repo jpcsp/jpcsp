@@ -260,7 +260,7 @@ public class AllegrexOpcodes {
     public static final byte CFC0 =0x2; // Move from Coprocessor 0
     public static final byte MTC0 =0x4; // Move to Coprocessor 0
     public static final byte CTC0 =0x6; // Move to Coprocessor 0
-    public static final byte COP0ERET =0x10; // Move to Coprocessor 0
+    public static final byte COP0ERET =0x10; 
      
 //     COP0: encoded by the func field when opcode/rs field = COP0/10000.
 //     31---------26------------------------------------------5--------0
@@ -330,4 +330,39 @@ public class AllegrexOpcodes {
     public static final byte BITREV = 0x0c; // Revert Bits In Word
     public static final byte SEB = 0x10; // Sign-Extend Byte
     public static final byte SEH = 0x18; // Sign-Extend HalfWord
-}
+
+//     COP1: encoded by the rs field when opcode field = COP1.
+//     31---------26----------23-------31------------------------------0
+//     |=      COP1|          |   rs    |                              |
+//     ------6---------------------5------------------------------------
+//     |--000--|--001--|--010--|--011--|--100--|--101--|--110--|--111--| lo
+//  00 |  MFC1 |  ---  |  CFC1 |  ---  |  MTC1 |  ---  |  CTC1 |  ---  |
+//  01 |  *1   |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
+//  10 |  *2   |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
+//  11 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
+//  hi |-------|-------|-------|-------|-------|-------|-------|-------|
+//    *1 check COP1 BC table
+//    *2 check COP1 Function table;
+    public static final byte MFC1 = 0x00;
+    public static final byte CFC1 = 0x02;
+    public static final byte MTC1 = 0x04;
+    public static final byte CTC1 = 0x06;
+    public static final byte COP1BC = 0x08;
+    public static final byte COP1F = 0x10;
+    //     COP1BC: encoded by the rt field
+//     31---------26----------21-------16------------------------------0
+//     |=    COP1BC|          |   rt    |                              |
+//     ------6---------------------5------------------------------------
+//     |--000--|--001--|--010--|--011--|--100--|--101--|--110--|--111--| lo
+//  00 |  BC1F |  BC1T | BC1FL |  BC1TL|  ---  |  ---  |  ---  |  ---  |
+//  01 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
+//  10 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
+//  11 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
+//  hi |-------|-------|-------|-------|-------|-------|-------|-------|
+    public static final byte BC1F = 0x00;
+    public static final byte BC1T = 0x01;
+    public static final byte BC1FL = 0x02;
+    public static final byte BC1TL = 0x03;
+    
+            
+}            

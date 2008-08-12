@@ -138,15 +138,15 @@ public class DisasmOpcodes implements AllegrexInstructions {
     @Override
     public void doMTIC(int rt){ returnString = Dis_RT("mtic",rt); }
     @Override
-    public void doMFC0(int rt, int c0dr){  }  //TODO
+    public void doMFC0(int rt, int c0dr){ returnString = "mfc0 " + gprNames[rt] + ", " + cop0Names[c0dr]; }  
     @Override
-    public void doCFC0(int rt, int c0cr){  }  //TODO
+    public void doCFC0(int rt, int c0cr){ returnString = "cfc0 ???"; /*+ gprNames[rt] + ", " + cop0Names[c0cr]; */}  //does that actually exists??
     @Override
-    public void doMTC0(int rt, int c0dr){  }   //TODO
+    public void doMTC0(int rt, int c0dr){ returnString = "mtc0 " + gprNames[rt] + ", " + cop0Names[c0dr]; }   
     @Override
-    public void doCTC0(int rt, int c0cr){  } //TODO
+    public void doCTC0(int rt, int c0cr){ returnString = "ctc0 ???"; /* + gprNames[rt] + ", " + cop0Names[c0cr]; */} //does that actually exists??
     @Override
-    public void doERET(){  } //TODO
+    public void doERET(){ returnString= "eret"; } 
     @Override
     public void doLB(int rt, int rs, int simm16){ returnString = Dis_RTIMMRS("lb",rt,rs,simm16); }
     @Override
@@ -172,7 +172,10 @@ public class DisasmOpcodes implements AllegrexInstructions {
     @Override
     public void doSWR(int rt, int rs, int simm16){ returnString = Dis_RTIMMRS("swr",rt,rs,simm16); }
     @Override
-    public void doCACHE(int rt, int rs, int simm16){ returnString = "cache"; } //TODO!
+    public void doCACHE(int rt, int rs, int simm16)
+    {        
+        returnString = "cache " + Integer.toHexString(rt) + ", " + simm16 + "(" + gprNames[rs] + ")"; 
+    } 
     @Override
     public void doLL(int rt, int rs, int simm16){ returnString = Dis_RTIMMRS("ll",rt,rs,simm16); }
     @Override
@@ -227,5 +230,13 @@ public class DisasmOpcodes implements AllegrexInstructions {
     public void doBITREV(int rd, int rt){ returnString = Dis_RDRT("bitrev",rd,rt); }  
     @Override
     public void doSEH(int rd, int rt){ returnString = Dis_RDRT("seh",rd,rt); }
-   
+        //COP1 instructions
+    @Override
+    public void doMFC1(int rt, int c1dr){returnString = "mtc1 " + gprNames[rt] + ", " + fprNames[c1dr];}
+    @Override
+    public void doCFC1(int rt, int c1cr){returnString = "cfc1 " + gprNames[rt] + ", " + fcrNames[c1cr];}
+    @Override
+    public void doMTC1(int rt, int c1dr){returnString = "mtc1 " + gprNames[rt] + ", " + fprNames[c1dr];}  
+    @Override
+    public void doCTC1(int rt, int c1cr){returnString = "ctc1 " + gprNames[rt] + ", " + fcrNames[c1cr];}
 }
