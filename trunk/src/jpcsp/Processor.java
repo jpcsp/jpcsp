@@ -1085,4 +1085,12 @@ public class Processor implements AllegrexInstructions {
     public void doMTC1(int rt, int c1dr){System.out.println("Interpreter: Unsupported mtc1 instruction");}  
     @Override
     public void doCTC1(int rt, int c1cr){System.out.println("Interpreter: Unsupported ctc1 instruction");}
+    @Override
+    public void doBC1F(int simm16){System.out.println("Interpreter: Unsupported bc1f instruction");}
+    @Override
+    public void doBC1T (int simm16){System.out.println("Interpreter: Unsupported bc1t instruction");}
+    @Override
+    public void doBC1FL(int simm16){System.out.println("Interpreter: Unsupported bc1fl instruction");}
+    @Override
+    public void doBC1TL(int simm16){System.out.println("Interpreter: Unsupported bc1tl instruction");}
 }

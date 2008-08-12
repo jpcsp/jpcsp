@@ -213,4 +213,8 @@ public interface AllegrexInstructions {
     public void doCFC1(int rt, int c1cr);
     public void doMTC1(int rt, int c1dr);    
     public void doCTC1(int rt, int c1cr);
+    public void doBC1F(int simm16);
+    public void doBC1T (int simm16);
+    public void doBC1FL(int simm16);
+    public void doBC1TL(int simm16);
 }

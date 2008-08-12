@@ -390,10 +390,31 @@ public class Decoder {
                     case CTC1:
                         that.doCFC1(rt(insn), rd(insn));
                         break;
+                    case COP1BC:
+                        switch((byte)rt(insn))
+                        {
+                            case BC1F :
+                                that.doBC1F(simm16(insn));
+                                break;
+                            case BC1T :
+                                that.doBC1T (simm16(insn));
+                                break;
+                            case BC1FL:
+                                that.doBC1FL(simm16(insn));
+                                break;
+                            case BC1TL: 
+                                that.doBC1TL(simm16(insn));
+                                break;
+                            default:
+                                that.doUNK("Unsupported COP1BC instruction " + Integer.toHexString(rs(insn)));
+                                break;
+                        }
+                        break;        
                     default:
-                        that.doUNK("Unsupported COP0 instruction " + Integer.toHexString(rs(insn)));
+                        that.doUNK("Unsupported COP1 instruction " + Integer.toHexString(rs(insn)));
                         break;
                 }
+                break;
             case BEQL:
                 that.doBEQL(rs(insn), rt(insn), simm16(insn));
                 break;
