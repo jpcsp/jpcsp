@@ -208,5 +208,9 @@ public interface AllegrexInstructions {
     public void doBITREV(int rd, int rt);
     
     public void doSEH(int rd, int rt);
-   
+    //COP1 instructions
+    public void doMFC1(int rt, int c1dr);
+    public void doCFC1(int rt, int c1cr);
+    public void doMTC1(int rt, int c1dr);    
+    public void doCTC1(int rt, int c1cr);
 }

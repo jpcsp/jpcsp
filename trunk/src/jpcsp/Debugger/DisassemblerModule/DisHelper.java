@@ -34,7 +34,12 @@ public class DisHelper {
         "$f16", "$f17", "$f18", "$f19", "$f20", "$f21", "$f22", "$f23",
         "$f24", "$f25", "$f26", "$f27", "$f28", "$f29", "$f30", "$f31"
     };
-    
+    static String[] fcrNames = {
+        "$fcsr0",  "$fcsr1",  "$fcsr2",  "$fcsr3",  "$fcsr4",  "$fcsr5",  "$fcsr6",  "$fcsr7",
+        "$fcsr8",  "$fcsr9",  "$fcsr10", "$fcsr11", "$fcsr12", "$fcsr13", "$fcsr14", "$fcsr15",
+        "$fcsr16", "$fcsr17", "$fcsr18", "$fcsr19", "$fcsr20", "$fcsr21", "$fcsr22", "$fcsr23",
+        "$fcsr24", "$fcsr25", "$fcsr26", "$fcsr27", "$fcsr28", "$fcsr29", "$fcsr30", "$fcsr31"
+    };
     static String[] cop0Names = {
         "Index", "Random", "EntryLo0", "EntryLo1", "Context", "PageMask", "Wired", "cop0reg7",
         "BadVaddr", "Count", "EntryHi", "Compare", "Status", "Cause", "EPC", "PrID",

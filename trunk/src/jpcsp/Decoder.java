@@ -372,7 +372,28 @@ public class Decoder {
                         break;
                 }
                 break;
+            case COP1:
+                switch ((byte) rs(insn))
+                {
+                    case MFC1:
+                        that.doMFC1(rt(insn), rd(insn));
+                        break;
 
+                    case CFC1:
+                        that.doCFC1(rt(insn), rd(insn));
+                        break;
+
+                    case MTC1:
+                        that.doMFC1(rt(insn), rd(insn));
+                        break;
+
+                    case CTC1:
+                        that.doCFC1(rt(insn), rd(insn));
+                        break;
+                    default:
+                        that.doUNK("Unsupported COP0 instruction " + Integer.toHexString(rs(insn)));
+                        break;
+                }
             case BEQL:
                 that.doBEQL(rs(insn), rt(insn), simm16(insn));
                 break;
