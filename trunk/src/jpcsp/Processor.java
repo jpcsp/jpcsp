@@ -632,41 +632,49 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doHALT() {
         // TODO
+        System.out.println("Interpreter: Unsupported HALT instruction");
     }
 
     @Override
     public void doMFIC(int rt) {
         // TODO
+        System.out.println("Interpreter: Unsupported mfic instruction");
     }
 
     @Override
     public void doMTIC(int rt) {
         // TODO
+        System.out.println("Interpreter: Unsupported mtic instruction");
     }
 
     @Override
     public void doMFC0(int rt, int c0dr) {
         // TODO
+        System.out.println("Interpreter: Unsupported mfc0 instruction");
     }
 
     @Override
     public void doCFC0(int rt, int c0cr) {
         // TODO
+        System.out.println("Interpreter: Unsupported cfc0 instruction");
     }
 
     @Override
     public void doMTC0(int rt, int c0dr) {
         // TODO
+        System.out.println("Interpreter: Unsupported mtc0 instruction");
     }
 
     @Override
     public void doCTC0(int rt, int c0cr) {
         // TODO
+        System.out.println("Interpreter: Unsupported ctc0 instruction");
     }
 
     @Override
     public void doERET() {
         // TODO
+        System.out.println("Interpreter: Unsupported eret instruction");
     }
 
     @Override
@@ -695,7 +703,31 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doLWL(int rt, int rs, int simm16) {
-        // TODO
+      int virtAddr = gpr[rs] + simm16;
+      int offset = virtAddr & 0x3;
+      int reg = gpr[rt];
+
+      int word = Memory.get_instance().read32(virtAddr & 0xfffffffc);
+
+      switch (offset)
+      {
+      case 0:
+          word = ((word & 0xff) << 24) | (reg & 0xffffff);
+          break;
+
+        case 1:
+          word = ((word & 0xffff) << 16) | (reg & 0xffff);
+          break;
+
+        case 2:
+          word = ((word & 0xffffff) << 8) | (reg & 0xff);
+          break;
+
+        case 3:
+          break;
+      }
+      
+      gpr[rt] = word;
     }
 
     @Override
@@ -706,7 +738,31 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doLWR(int rt, int rs, int simm16) {
-        // TODO
+      int virtAddr = gpr[rs] + simm16;
+      int offset = virtAddr & 0x3;
+      int reg = gpr[rt];
+
+      int word = Memory.get_instance().read32(virtAddr & 0xfffffffc);
+
+      switch (offset)
+      {
+      case 0:
+          break;
+      
+      case 1:
+          word = (reg & 0xff000000) | ((word & 0xffffff00) >> 8);
+          break;
+      
+      case 2:
+          word = (reg & 0xffff0000) | ((word & 0xffff0000) >> 16);
+          break;
+      
+      case 3:
+          word = (reg & 0xffffff00) | ((word & 0xff000000) >> 24);
+          break;
+      }
+      
+      gpr[rt] = word;
     }
 
     @Override
@@ -723,7 +779,31 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doSWL(int rt, int rs, int simm16) {
-        // TODO
+       int virtAddr = gpr[rs] + simm16;
+      int offset = virtAddr & 0x3;
+      int reg = gpr[rt];
+      int data = Memory.get_instance().read32(virtAddr & 0xfffffffc);
+
+      switch (offset)
+        {
+        case 0:
+          data = (data & 0xffffff00) | (reg >> 24 & 0xff);
+          break;
+
+        case 1:
+          data = (data & 0xffff0000) | (reg >> 16 & 0xffff);
+          break;
+
+        case 2:
+          data = (data & 0xff000000) | (reg >> 8 & 0xffffff);
+          break;
+
+        case 3:
+          data = reg;
+          break;
+        }
+
+      Memory.get_instance().write32(virtAddr & 0xfffffffc, data);
     }
 
     @Override
@@ -734,22 +814,49 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doSWR(int rt, int rs, int simm16) {
-        // TODO
+      int virtAddr = gpr[rs] + simm16;
+      int offset = virtAddr & 0x3;
+      int reg = gpr[rt];
+      int data = Memory.get_instance().read32(virtAddr & 0xfffffffc);
+
+      switch (offset)
+        {
+        case 0:
+          data = reg;
+          break;
+
+        case 1:
+          data = ((reg << 8) & 0xffffff00) | (data & 0xff) ;
+          break;
+
+        case 2:
+          data = ((reg << 16) & 0xffff0000) | (data & 0xffff);
+          break;
+
+        case 3:
+          data = ((reg << 24) & 0xff000000) | (data & 0xffffff);
+          break;
+        }
+
+      Memory.get_instance().write32(virtAddr & 0xfffffffc, data);
     }
 
     @Override
     public void doCACHE(int code, int rs, int simm16) {
         // TODO
+        System.out.println("Interpreter: Unsupported cache instruction");
     }
 
     @Override
     public void doLL(int rt, int rs, int simm16) {
         // TODO
+        System.out.println("Interpreter: Unsupported ll instruction");
     }
 
     @Override
     public void doSC(int rt, int rs, int simm16) {
         // TODO
+        System.out.println("Interpreter: Unsupported sc instruction");
     }
 
     @Override
@@ -794,6 +901,7 @@ public class Processor implements AllegrexInstructions {
         // cop0.debug_epc = pc - 4;
         // cop0.cause.exc |= BREAK_EXC;
         // npc = cop0.exception_handler;
+        System.out.println("Interpreter: Unsupported break instruction");
     }
 
     @Override

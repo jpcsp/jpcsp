@@ -318,7 +318,7 @@ public class Decoder {
                 break;
 
             case SLTI:
-                that.doSLT(rt(insn), rs(insn), simm16(insn));
+                that.doSLTI(rt(insn), rs(insn), simm16(insn));
                 break;
 
             case SLTIU:

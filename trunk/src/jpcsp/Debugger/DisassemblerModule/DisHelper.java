@@ -41,13 +41,36 @@ public class DisHelper {
         "Config", "LLAddr", "WatchLo", "WatchHi", "XContext", "cop0reg21", "cop0reg22", "cop0reg23",
         "cop0reg24", "EBase", "ECC", "CacheErr", "TagLo", "TagHi", "ErrorPC", "cop0reg31"
     };
-
-    public static String Dis_RDRSRT(String opname, int value) {
-
-        int rs = (value >> 21) & 0x1f;
-        int rt = (value >> 16) & 0x1f;
-        int rd = (value >> 11) & 0x1f;
-        
+    //New helpers
+     public static String Dis_RDRTSA(String opname, int rd,int rt, int sa) {
+        if (rd == 0) {
+            return "nop";
+        } else {
+            return opname + " " + gprNames[rd] + ", " + gprNames[rt] + ", " + sa;
+        }
+    }
+    public static String Dis_RDRTRS(String opname,int rd,int rt,int rs)
+    {
+        //TODO CHECK IF rt  rs  =0
+        return opname + " " + gprNames[rd] + ", " + gprNames[rt] + ", " + gprNames[rs];
+    }
+    public static String Dis_RS(String opname, int rs) {
+        return opname + " " + gprNames[rs];
+    }
+    public static String Dis_RT(String opname, int rt) {
+        return opname + " " + gprNames[rt];
+    }
+    public static String Dis_RDRS(String opname, int rd,int rs) {
+        return opname + " " + gprNames[rd] + ", " + gprNames[rs];
+    }
+    public static String Dis_RD(String opname, int rd) {
+        return opname + " " + gprNames[rd];
+    }
+    public static String Dis_RSRT(String opname, int rs , int rt) {
+        return opname + " " + gprNames[rs] + ", " + gprNames[rt];
+    }
+    public static String Dis_RDRSRT(String opname, int rd,int rs , int rt) 
+    {      
         if (rs == 0 && rt == 0) {
             
             if (opname.equals("xor") || opname.equals("nor")) {
@@ -88,86 +111,58 @@ public class DisHelper {
         
         return opname + " " + gprNames[rd] + ", " + gprNames[rs] + ", " + gprNames[rt];
     }
-
-    public static String Dis_BASEFTOFFSET(String opname, int value) {
-        int rs = (value >> 21) & 0x1f;
-        int ft = (value >> 16) & 0x1f;
-        int offset = ((value & 0xffff) << 16) >> 16;
-        if (opname.matches("swc1")) {
-            return opname + " " + fprNames[ft] + ", " + Integer.toString(offset) + "(" + gprNames[rs] + ")";
-        }
-        if (opname.matches("lwc1")) {
-            return opname + " " + fprNames[ft] + ", " + Integer.toString(offset) + "(" + gprNames[rs] + ")";
-        }
-        return "Opcode 0x" + opname + "unhandled in Dis_BASEFTOFFSET";
+    public static String Dis_RSOFFSET(String opname, int rs, int simm16, int opcode_address) {
+        return opname + " " + gprNames[rs] + ", 0x" + Integer.toHexString(simm16 * 4 + opcode_address + 4);
     }
-
-    public static String Dis_RTRSIMM(String opname, int value) {
-        int rs = (value >> 21) & 0x1f;
-        int rt = (value >> 16) & 0x1f;
-        int rd = (value >> 11) & 0x1f;
-        int imm = value & 0xffff;
-        
-        if (!opname.equals("andi") && !opname.equals("ori") && !opname.equals("xori")) {
+    public static String Dis_RSRTOFFSET(String opname, int rs , int rt ,int simm16, int opcode_address) {
+        return opname + " " + gprNames[rs] + ", " + gprNames[rt] + " 0x" + Integer.toHexString(simm16 * 4 + opcode_address + 4);
+    }
+    public static String Dis_RTRSIMM(String opname, int rt,int rs , int simm16) {
+       
+       /* if (!opname.equals("andi") && !opname.equals("ori") && !opname.equals("xori")) {
             imm = (imm << 16) >> 16;
-        }
+        } NOT Needed??? */
         
         if (rs == 0) {
             
             if (opname.equals("andi")) {
                 return "li " + gprNames[rt] + ", 0";
             } else if (opname.matches("slti")) {
-                return "li " + gprNames[rt] + ", " + imm;
+                return "li " + gprNames[rt] + ", " + simm16;
             }
 
         }
         
-        return opname + " " + gprNames[rt] + ", " + gprNames[rs] + ", " + imm;
+        return opname + " " + gprNames[rt] + ", " + gprNames[rs] + ", " + simm16;
     }
+    public static String Dis_Syscall(int code) {  /* probably okay */
+        String s = new String();
+        for (syscalls.calls c : syscalls.calls.values()) {
+            if (c.getValue() == code) {
+                s = "syscall " + Integer.toHexString(code) + "     " + c;
+                return s;
 
-    public static String Dis_RDRTSA(String opname, int value) {
-        int rt = (value >> 16) & 0x1f;
-        int rd = (value >> 11) & 0x1f;
-        int sa = (value >> 6) & 0x1f;
-
-        if (rd == 0) {
-            return "nop";
-        } else {
-            return opname + " " + gprNames[rd] + ", " + gprNames[rt] + ", " + sa;
+            }
         }
+        s = "syscall 0x" + Integer.toHexString(code) + " [unknown]";
+        return s;
     }
-
-    public static String Dis_RD(String opname, int value) {
-        int rd = (value >> 11) & 0x1f;
-        
-        return opname + " " + gprNames[rd];
+   public static String Dis_Break(int code) {
+        return "break 0x" + Integer.toHexString(code);
     }
-
-    public static String Dis_RS(String opname, int value) {
-        int rs = (value >> 21) & 0x1f;
-        
-        return opname + " " + gprNames[rs];
+    public static String Dis_JUMP(String opname, int uimm26, int opcode_address) {
+        int jump = (opcode_address & 0xf0000000) | ((uimm26 & 0x3ffffff) << 2);
+        return opname + " 0x" + Integer.toHexString(jump);
     }
-
-    public static String Dis_RDRT(String opname, int value) {
-        int rd = (value >> 11) & 0x1f;
-        int rt = (value >> 16) & 0x1f;
-        
-        return opname + " " + gprNames[rd] + ", " + gprNames[rt];
+    public static String Dis_RTIMM(String opname , int rt , int imm)
+    {
+        return opname + " " + gprNames[rt] + ", " + imm;
     }
-
-    public static String Dis_RSRT(String opname, int value) {
-        int rs = (value >> 21) & 0x1f;
-        int rt = (value >> 16) & 0x1f;
-        
-        return opname + " " + gprNames[rs] + ", " + gprNames[rt];
-    }
-
-    public static String Dis_RTIMMRS(String opname, int value) {
-        int rs = (value >> 21) & 0x1f;
-        int rt = (value >> 16) & 0x1f;
-        int imm = ((value & 0xffff) << 16) >> 16;
-        
+    public static String Dis_RTIMMRS(String opname, int rt,int rs, int imm) {        
         return opname + " " + gprNames[rt] + ", " + imm + " (" + gprNames[rs] + ")";
     }
+    public static String Dis_RDRT(String opname, int rd, int rt) {
+      return opname + " " + gprNames[rd] + ", " + gprNames[rt];
+    }
+   
 }
