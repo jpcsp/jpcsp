@@ -234,9 +234,18 @@ public class DisasmOpcodes implements AllegrexInstructions {
     @Override
     public void doMFC1(int rt, int c1dr){returnString = "mtc1 " + gprNames[rt] + ", " + fprNames[c1dr];}
     @Override
+   
     public void doCFC1(int rt, int c1cr){returnString = "cfc1 " + gprNames[rt] + ", " + fcrNames[c1cr];}
     @Override
     public void doMTC1(int rt, int c1dr){returnString = "mtc1 " + gprNames[rt] + ", " + fprNames[c1dr];}  
     @Override
     public void doCTC1(int rt, int c1cr){returnString = "ctc1 " + gprNames[rt] + ", " + fcrNames[c1cr];}
+       @Override
+    public void doBC1F(int simm16){}
+    @Override
+    public void doBC1T (int simm16){}
+    @Override
+    public void doBC1FL(int simm16){}
+    @Override
+    public void doBC1TL(int simm16){}
 }
