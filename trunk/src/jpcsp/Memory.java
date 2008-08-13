@@ -146,7 +146,7 @@ public class Memory {
         try {
             byte[] memory = MemoryRange(address);
 
-            if (isUncachedVideoRam(address)) {
+            if (((address >= START_UNCACHED_RAM_VIDEO) && (address <= END_UNCACHED_RAM_VIDEO))) {
                 int index = address - 0x44000000;
                 memory[index + 3] = (byte) (data >> 24);
                 memory[index + 2] = (byte) ((data & 0x00ff0000) >> 16);
@@ -163,9 +163,5 @@ public class Memory {
         } catch (Exception e) {
             System.out.println("unsupported write32 in addr= " + Integer.toHexString(address) + " data= " + data);
         }
-    }
-
-    private boolean isUncachedVideoRam(int address) {
-        return ((address >= START_UNCACHED_RAM_VIDEO) && (address <= END_UNCACHED_RAM_VIDEO));
     }
 }
