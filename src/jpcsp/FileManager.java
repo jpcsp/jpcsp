@@ -230,6 +230,11 @@ public class FileManager {
 
                         f.seek(elfoffset + shdr.getSh_offset());
                         int offsettoread = (int) getBaseoffset() + (int) shdr.getSh_addr() - MemoryMap.START_RAM;
+                        
+                        /***************************************
+                         * Load a block on main memory ....
+                         ***************************************/
+                        
                         f.read(Memory.get_instance().mainmemory, offsettoread, (int) shdr.getSh_size());
                         break;
                     case 8: // ShType.NOBITS
