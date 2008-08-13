@@ -20,6 +20,7 @@ import static jpcsp.MemoryMap.*;
 
 public class Memory {
     //21/07/08 memory using singleton pattern
+
     private static Memory instance = null;
     public byte[] mainmemory;
     public byte[] scratchpad;
@@ -37,9 +38,13 @@ public class Memory {
     }
 
     private Memory() { //no one can instantiate it, except itself
+
         mainmemory = new byte[0x01FFFFFF]; //32mb main ram
+
         scratchpad = new byte[0x00003FFF]; //16kb scratchpad
+
         videoram = new byte[0x001FFFFF]; // 2mb videoram
+
     }
 
     private byte[] MemoryRange(int address) throws Exception {
@@ -56,8 +61,8 @@ public class Memory {
         if ((address >= START_SCRATCHPAD) && (address <= END_SCRATCHPAD)) {
             return scratchpad;
         }
-        
-        if ((address >= START_UNCACHED_RAM_VIDEO) && (address <= END_UNCACHED_RAM_VIDEO)){
+
+        if ((address >= START_UNCACHED_RAM_VIDEO) && (address <= END_UNCACHED_RAM_VIDEO)) {
             return videoram;
         }
         throw new Exception("InvalidMemoryRange");
@@ -85,8 +90,8 @@ public class Memory {
 
             int index = address & 0x01FFFFFF;
 
-            return (short) (((short) memory[index + 1] << 8)           |
-                           (((short) memory[index + 0] << 0) & 0x00ff));
+            return (short) (((short) memory[index + 1] << 8) |
+                    (((short) memory[index + 0] << 0) & 0x00ff));
         } catch (Exception e) {
             System.out.println("read16 to unsupported emulate memory ! " + Integer.toHexString(address));
         }
@@ -101,10 +106,10 @@ public class Memory {
 
             int index = address & 0x01FFFFFF;
 
-            return (((int) memory[index + 3] << 24)               |
-                   (((int) memory[index + 2] << 16) & 0x00ff0000) |
-                   (((int) memory[index + 1] <<  8) & 0x0000ff00) |
-                   (((int) memory[index + 0] <<  0) & 0x000000ff));
+            return (((int) memory[index + 3] << 24) |
+                    (((int) memory[index + 2] << 16) & 0x00ff0000) |
+                    (((int) memory[index + 1] << 8) & 0x0000ff00) |
+                    (((int) memory[index + 0] << 0) & 0x000000ff));
         } catch (Exception e) {
             System.out.println("read32 to unsupported emulate memory ! " + Integer.toHexString(address));
         }
@@ -130,8 +135,8 @@ public class Memory {
 
             int index = address & 0x01FFFFFF;
 
-            memory[index + 1] = (byte) ((data >> 8)      );
-            memory[index + 0] = (byte) ((data >> 0) & 256);            
+            memory[index + 1] = (byte) ((data >> 8));
+            memory[index + 0] = (byte) ((data >> 0) & 256);
         } catch (Exception e) {
             System.out.println("unsupported write16 in addr= " + Integer.toHexString(address) + " data= " + data);
         }
@@ -141,14 +146,26 @@ public class Memory {
         try {
             byte[] memory = MemoryRange(address);
 
-            int index = address & 0x01FFFFFF;
+            if (isUncachedVideoRam(address)) {
+                int index = address - 0x44000000;
+                memory[index + 3] = (byte) (data >> 24);
+                memory[index + 2] = (byte) ((data & 0x00ff0000) >> 16);
+                memory[index + 1] = (byte) ((data & 0x0000ff00) >> 8);
+                memory[index] = (byte) (data & 0x000000ff);
+            } else {
+                int index = address & 0x01FFFFFF;
 
-            memory[index + 3] = (byte) ((data >> 24)           );
-            memory[index + 2] = (byte) ((data >> 16) & 0xFF0000);            
-            memory[index + 1] = (byte) ((data >>  8) & 0x00FF00);
-            memory[index + 0] = (byte) ((data >>  0) & 0x0000FF);            
+                memory[index + 3] = (byte) ((data >> 24));
+                memory[index + 2] = (byte) ((data >> 16) & 0xFF0000);
+                memory[index + 1] = (byte) ((data >> 8) & 0x00FF00);
+                memory[index + 0] = (byte) ((data >> 0) & 0x0000FF);
+            }
         } catch (Exception e) {
             System.out.println("unsupported write32 in addr= " + Integer.toHexString(address) + " data= " + data);
         }
+    }
+
+    private boolean isUncachedVideoRam(int address) {
+        return ((address >= START_UNCACHED_RAM_VIDEO) && (address <= END_UNCACHED_RAM_VIDEO));
     }
 }
