@@ -59,22 +59,19 @@ public class SyscallHandler {
                 case 0x20c0:
                     Utils.get_instance().Utils_sceKernelUtilsMt19937UInt(gpr[4]);
                     break;
-
-                /* TODO (for minifire)
-                case 0x20eb:
-                    LoadExec.get_instance().LoadExec_sceKernelExitGame();
-                    break;
-
-                case 0x213a:
-                    pspdisplay.get_instance().pspdisplay_sceDisplaySetMode(gpr[4], gpr[5], gpr[6]);
+                case 0x213a:              
+                    sceDisplay.get_instance().sceDisplaySetMode(gpr[4], gpr[5], gpr[6]);
                     break;
                 case 0x213f:
-                    pspdisplay.get_instance().pspdisplay_sceDisplaySetFrameBuf(gpr[4], gpr[5], gpr[6], gpr[7]);
+                    sceDisplay.get_instance().sceDisplaySetFrameBuf(gpr[4], gpr[5], gpr[6], gpr[7]);
                     break;
                 case 0x2147:
-                    pspdisplay.get_instance().pspdisplay_sceDisplayWaitVblankStart();
-                    break;
-                */
+                    sceDisplay.get_instance().sceDisplayWaitVblankStart();
+                    break;                /* TODO (for minifire)
+                case 0x20eb:
+                    LoadExec.get_instance().LoadExec_sceKernelExitGame();
+                    break;*/
+                
 
                 default:
                     System.out.println("Unsupported syscall " + Integer.toHexString(code));
