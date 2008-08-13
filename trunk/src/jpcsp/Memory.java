@@ -47,10 +47,10 @@ public class Memory {
     private void setRange(int address) throws Exception {
 
         // K0,K2/KS,K3 segment ?
-        if ((address & 0x80000000) == 1) {
+        if ((address & 0x80000000) != 0) {
 
             // K2/KS,K3 segment ?
-            if ((address & 0x40000000) == 1) {
+            if ((address & 0x40000000) != 0) {
                 throw new Exception("Invalid memory address : " + Integer.toHexString(address));
             }
             // bits 31, 30 and 29 set to 0
@@ -86,7 +86,7 @@ public class Memory {
             setRange(address);
             return range[index] & 255;
         } catch (Exception e) {
-            System.out.println("read8 - " + e.toString());
+            System.out.println("read8 - " + e.getMessage());
         }
         return 0;
     }
@@ -98,7 +98,7 @@ public class Memory {
             return (((int) (range[index + 0] & 255)) << 0) |
                     (((int) (range[index + 1] & 255)) << 8);
         } catch (Exception e) {
-            System.out.println("read16 - " + e.toString());
+            System.out.println("read16 - " + e.getMessage());
         }
 
         return 0;
@@ -113,7 +113,7 @@ public class Memory {
                     (((int) (range[index + 2] & 255)) << 16) |
                     (((int) (range[index + 3] & 255)) << 24);
         } catch (Exception e) {
-            System.out.println("read32 - " + e.toString());
+            System.out.println("read32 - " + e.getMessage());
         }
 
         return 0;
@@ -124,7 +124,7 @@ public class Memory {
             setRange(address);
             range[index] = data;
         } catch (Exception e) {
-            System.out.println("write8 - " + Integer.toHexString(data) + " - " + e.toString());
+            System.out.println("write8 - " + Integer.toHexString(data) + " - " + e.getMessage());
         }
     }
 
@@ -134,7 +134,7 @@ public class Memory {
             range[index + 0] = (byte) ((data >> 0) & 255);
             range[index + 1] = (byte) ((data >> 8) & 255);
         } catch (Exception e) {
-            System.out.println("write16 " + Integer.toHexString(data) + " - " + e.toString());
+            System.out.println("write16 - " + Integer.toHexString(data) + " - " + e.getMessage());
         }
     }
 
@@ -146,7 +146,7 @@ public class Memory {
             range[index + 2] = (byte) ((data >> 16) & 255);
             range[index + 3] = (byte) ((data >> 24));
         } catch (Exception e) {
-            System.out.println("write32 " + Integer.toHexString(data) + " - " + e.toString());
+            System.out.println("write32 - " + Integer.toHexString(data) + " - " + e.getMessage());
         }
     }
 }
