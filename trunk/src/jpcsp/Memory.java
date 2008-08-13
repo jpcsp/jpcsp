@@ -56,7 +56,10 @@ public class Memory {
         if ((address >= START_SCRATCHPAD) && (address <= END_SCRATCHPAD)) {
             return scratchpad;
         }
-
+        
+        if ((address >= START_UNCACHED_RAM_VIDEO) && (address <= END_UNCACHED_RAM_VIDEO)){
+            return videoram;
+        }
         throw new Exception("InvalidMemoryRange");
     }
 

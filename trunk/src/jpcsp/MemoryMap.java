@@ -33,4 +33,6 @@ public class MemoryMap {
     public static final int END_KERNEL = 0x887fffff ; //K0
     public static final int START_USERSPACE = 0x08800000 ; //KU0
     public static final int END_USERSPACE = 0x09ffffff ; //KU0
+    public static final int START_UNCACHED_RAM_VIDEO = 0x44000000;
+    public static final int END_UNCACHED_RAM_VIDEO = 0x441fffff;
 }
