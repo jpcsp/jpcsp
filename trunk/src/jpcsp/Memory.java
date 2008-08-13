@@ -24,6 +24,8 @@ public class Memory {
     public byte[] mainmemory;
     public byte[] scratchpad;
     public byte[] videoram;
+    private byte[] range;
+    private int index;
 
     public static Memory get_instance() {
         if (instance == null) {
@@ -42,50 +44,61 @@ public class Memory {
         videoram = new byte[0x001FFFFF]; // 2mb videoram
     }
 
-    private byte[] MemoryRange(int address) throws Exception {
-        address = address & 0x3FFFFFFF;
+    private void setRange(int address) throws Exception {
+
+        // K0,K2/KS,K3 segment ?
+        if ((address & 0x80000000) == 1) {
+
+            // K2/KS,K3 segment ?
+            if ((address & 0x40000000) == 1) {
+                throw new Exception("Invalid memory address : " + Integer.toHexString(address));
+            }
+            // bits 31, 30 and 29 set to 0
+            address &= 0x1FFFFFFF;
+        } else {
+            // bits 31 and 30 set to 0
+            address &= 0x3FFFFFFF;
+        }
 
         if ((address >= START_RAM) && (address <= END_RAM)) {
-            return mainmemory;
+            index = address - START_RAM;
+            range = mainmemory;
+            return;
         }
 
         if ((address >= START_VRAM) && (address <= END_VRAM)) {
-            return videoram;
+            index = address - START_VRAM;
+            range = videoram;
+            return;
         }
 
         if ((address >= START_SCRATCHPAD) && (address <= END_SCRATCHPAD)) {
-            return scratchpad;
+            index = address - START_SCRATCHPAD;
+            range = scratchpad;
+            return;
         }
 
-        throw new Exception("InvalidMemoryRange");
+        throw new Exception("Invalid memory address : " + Integer.toHexString(address));
     }
 
     public int read8(int address) {
-
         try {
-            byte[] memory = MemoryRange(address);
-
-            int index = address & 0x01FFFFFF;
-
-            return memory[index];
+            setRange(address);
+            return range[index] & 255;
         } catch (Exception e) {
-            System.out.println("read8 to unsupported emulate memory ! " + Integer.toHexString(address));
+            System.out.println("read8 - " + e.toString());
         }
-
         return 0;
     }
 
     public int read16(int address) {
 
         try {
-            byte[] memory = MemoryRange(address);
-
-            int index = address & 0x01FFFFFF;
-
-            return (short) (((short) memory[index + 1] << 8)           |
-                           (((short) memory[index + 0] << 0) & 0x00ff));
+            setRange(address);
+            return (((int) (range[index + 0] & 255)) << 0) |
+                    (((int) (range[index + 1] & 255)) << 8);
         } catch (Exception e) {
-            System.out.println("read16 to unsupported emulate memory ! " + Integer.toHexString(address));
+            System.out.println("read16 - " + e.toString());
         }
 
         return 0;
@@ -94,16 +107,13 @@ public class Memory {
     public int read32(int address) {
 
         try {
-            byte[] memory = MemoryRange(address);
-
-            int index = address & 0x01FFFFFF;
-
-            return (((int) memory[index + 3] << 24)               |
-                   (((int) memory[index + 2] << 16) & 0x00ff0000) |
-                   (((int) memory[index + 1] <<  8) & 0x0000ff00) |
-                   (((int) memory[index + 0] <<  0) & 0x000000ff));
+            setRange(address);
+            return (((int) (range[index + 0] & 255)) << 0) |
+                    (((int) (range[index + 1] & 255)) << 8) |
+                    (((int) (range[index + 2] & 255)) << 16) |
+                    (((int) (range[index + 3] & 255)) << 24);
         } catch (Exception e) {
-            System.out.println("read32 to unsupported emulate memory ! " + Integer.toHexString(address));
+            System.out.println("read32 - " + e.toString());
         }
 
         return 0;
@@ -111,41 +121,32 @@ public class Memory {
 
     public void write8(int address, byte data) {
         try {
-            byte[] memory = MemoryRange(address);
-
-            int index = address & 0x01FFFFFF;
-
-            memory[index] = data;
+            setRange(address);
+            range[index] = data;
         } catch (Exception e) {
-            System.out.println("write8 to unsupported emulate memory ! " + Integer.toHexString(address));
+            System.out.println("write8 - " + Integer.toHexString(data) + " - " + e.toString());
         }
     }
 
     public void write16(int address, short data) {
         try {
-            byte[] memory = MemoryRange(address);
-
-            int index = address & 0x01FFFFFF;
-
-            memory[index + 1] = (byte) ((data >> 8)      );
-            memory[index + 0] = (byte) ((data >> 0) & 256);            
+            setRange(address);
+            range[index + 0] = (byte) ((data >> 0) & 255);
+            range[index + 1] = (byte) ((data >> 8) & 255);
         } catch (Exception e) {
-            System.out.println("unsupported write16 in addr= " + Integer.toHexString(address) + " data= " + data);
+            System.out.println("write16 " + Integer.toHexString(data) + " - " + e.toString());
         }
     }
 
     public void write32(int address, int data) {
         try {
-            byte[] memory = MemoryRange(address);
-
-            int index = address & 0x01FFFFFF;
-
-            memory[index + 3] = (byte) ((data >> 24)           );
-            memory[index + 2] = (byte) ((data >> 16) & 0xFF0000);            
-            memory[index + 1] = (byte) ((data >>  8) & 0x00FF00);
-            memory[index + 0] = (byte) ((data >>  0) & 0x0000FF);            
+            setRange(address);
+            range[index + 0] = (byte) ((data >> 0) & 255);
+            range[index + 1] = (byte) ((data >> 8) & 255);
+            range[index + 2] = (byte) ((data >> 16) & 255);
+            range[index + 3] = (byte) ((data >> 24));
         } catch (Exception e) {
-            System.out.println("unsupported write32 in addr= " + Integer.toHexString(address) + " data= " + data);
+            System.out.println("write32 " + Integer.toHexString(data) + " - " + e.toString());
         }
     }
 }
