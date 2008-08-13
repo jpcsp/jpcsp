@@ -862,14 +862,16 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doROTR(int rd, int rt, int sa) {
         if (rd != 0) {
-            int at = gpr[rt];
-            gpr[rd] = (at >>> sa) | (at << (32 - sa));
+            gpr[rd] = Integer.rotateRight(gpr[rt], sa);
         }
     }
 
     @Override
     public void doROTRV(int rd, int rt, int rs) {
-        doROTR(rd, rt, (gpr[rs] & 31));
+        if (rd != 0) {
+            // no need of "gpr[rs] & 31", rotateRight does it for us
+            gpr[rd] = Integer.rotateRight(gpr[rt], gpr[rs]);
+        }
     }
 
     @Override
@@ -912,34 +914,14 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doCLZ(int rd, int rs) {
         if (rd != 0) {
-            int count = 32;
-            int value = gpr[rs];
-            int i = 31;
-
-            do {
-                if (((value >>> i) & 1) == 1) {
-                    count = 31 - i;
-                }
-            } while (count == 32 && i-- != 0);
-
-            gpr[rd] = count;
+            gpr[rd] = Integer.numberOfLeadingZeros(gpr[rs]);
         }
     }
 
     @Override
     public void doCLO(int rd, int rs) {
         if (rd != 0) {
-            int count = 32;
-            int value = gpr[rs];
-            int i = 31;
-
-            do {
-                if (((value >>> i) & 1) == 0) {
-                    count = 31 - i;
-                }
-            } while (count == 32 && i-- != 0);
-
-            gpr[rd] = count;
+            gpr[rd] = Integer.numberOfLeadingZeros(~gpr[rs]);
         }
     }
 
@@ -1002,26 +984,14 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doWSBH(int rd, int rt) {
         if (rd != 0) {
-            int x = gpr[rt];
-            int y = 0;
-            y |= (x & 0x000000ff) << 8;
-            y |= (x & 0x0000ff00) << 0;
-            y |= (x & 0x00ff0000) << 24;
-            y |= (x & 0xff000000) << 16;
-            gpr[rd] = y;
+            gpr[rd] = Integer.rotateRight(Integer.reverseBytes(gpr[rt]), 16);
         }
     }
 
     @Override
     public void doWSBW(int rd, int rt) {
         if (rd != 0) {
-            int x = gpr[rt];
-            int y = 0;
-            y |= (x & 0x000000ff) << 24;
-            y |= (x & 0x0000ff00) << 16;
-            y |= (x & 0x00ff0000) << 8;
-            y |= (x & 0xff000000) << 0;
-            gpr[rd] = y;
+            gpr[rd] = Integer.reverseBytes(gpr[rt]);
         }
     }
 
@@ -1035,41 +1005,7 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doBITREV(int rd, int rt) {
         if (rd != 0) {
-            int x = gpr[rt];
-            int y = 0;
-            y |= (x & 0x00000001) << 31;
-            y |= (x & 0x00000002) << 30;
-            y |= (x & 0x00000004) << 29;
-            y |= (x & 0x00000008) << 28;
-            y |= (x & 0x00000010) << 27;
-            y |= (x & 0x00000020) << 26;
-            y |= (x & 0x00000040) << 25;
-            y |= (x & 0x00000080) << 24;
-            y |= (x & 0x00000100) << 23;
-            y |= (x & 0x00000200) << 22;
-            y |= (x & 0x00000400) << 21;
-            y |= (x & 0x00000800) << 20;
-            y |= (x & 0x00001000) << 19;
-            y |= (x & 0x00002000) << 18;
-            y |= (x & 0x00004000) << 17;
-            y |= (x & 0x00008000) << 16;
-            y |= (x & 0x00010000) << 15;
-            y |= (x & 0x00020000) << 14;
-            y |= (x & 0x00040000) << 13;
-            y |= (x & 0x00080000) << 12;
-            y |= (x & 0x00100000) << 11;
-            y |= (x & 0x00200000) << 10;
-            y |= (x & 0x00400000) << 9;
-            y |= (x & 0x00800000) << 8;
-            y |= (x & 0x01000000) << 7;
-            y |= (x & 0x02000000) << 6;
-            y |= (x & 0x04000000) << 5;
-            y |= (x & 0x08000000) << 4;
-            y |= (x & 0x10000000) << 3;
-            y |= (x & 0x20000000) << 2;
-            y |= (x & 0x40000000) << 1;
-            y |= (x & 0x80000000) << 0;
-            gpr[rd] = y;
+            gpr[rd] = Integer.reverse(gpr[rt]);
         }
     }
 
