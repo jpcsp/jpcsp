@@ -1029,4 +1029,64 @@ public class Processor implements AllegrexInstructions {
     public void doBC1FL(int simm16){System.out.println("Interpreter: Unsupported bc1fl instruction");}
     @Override
     public void doBC1TL(int simm16){System.out.println("Interpreter: Unsupported bc1tl instruction");}
+    @Override
+    public void doADDS(int fd , int fs ,int ft){System.out.println("Interpreter: Unsupported add.s instruction");}
+    @Override
+    public void doSUBS(int fd , int fs ,int ft){System.out.println("Interpreter: Unsupported sub.s instruction");} 
+    @Override
+    public void doMULS(int fd , int fs ,int ft){System.out.println("Interpreter: Unsupported mul.s instruction");} 
+    @Override
+    public void doDIVS(int fd , int fs ,int ft){System.out.println("Interpreter: Unsupported div.s instruction");} 
+    @Override
+    public void doSQRTS(int fd,int fs){System.out.println("Interpreter: Unsupported sqrt.s instruction");}
+    @Override
+    public void doABSS(int fd,int fs){System.out.println("Interpreter: Unsupported abs.s instruction");}
+    @Override
+    public void doMOVS(int fd,int fs){System.out.println("Interpreter: Unsupported mov.s instruction");}
+    @Override
+    public void doNEGS(int fd,int fs){System.out.println("Interpreter: Unsupported neg.s instruction");}
+    @Override
+    public void doROUNDWS(int fd,int fs){System.out.println("Interpreter: Unsupported round.w.s instruction");}
+    @Override
+    public void doTRUNCWS(int fd,int fs){System.out.println("Interpreter: Unsupported trunc.w.s instruction");}
+    @Override
+    public void doCEILWS(int fd,int fs){System.out.println("Interpreter: Unsupported ceil.w.s instruction");}
+    @Override
+    public void doFLOORWS(int fd,int fs){System.out.println("Interpreter: Unsupported floor.w.s instruction");}
+    @Override
+    public void doCVTSW(int fd,int fs){System.out.println("Interpreter: Unsupported cvt.s.w instruction");}
+    @Override
+    public void doCVTWS(int fd,int fs){System.out.println("Interpreter: Unsupported cvt.w.s instruction");}
+    @Override
+    public void doCF(int fs,int ft){System.out.println("Interpreter: Unsupported c.f instruction");}
+    @Override
+    public void doCUN(int fs,int ft){System.out.println("Interpreter: Unsupported c.un instruction");}
+    @Override
+    public void doCEQ(int fs,int ft){System.out.println("Interpreter: Unsupported c.eq instruction");}
+    @Override
+    public void doCUEQ(int fs,int ft){System.out.println("Interpreter: Unsupported c.ueq instruction");}
+    @Override
+    public void doCOLT(int fs,int ft){System.out.println("Interpreter: Unsupported c.olt instruction");}
+    @Override
+    public void doCULT(int fs,int ft){System.out.println("Interpreter: Unsupported c.ult instruction");}
+    @Override
+    public void doCOLE(int fs,int ft){System.out.println("Interpreter: Unsupported c.ole instruction");}
+    @Override
+    public void doCULE(int fs,int ft){System.out.println("Interpreter: Unsupported c.ule instruction");}
+    @Override
+    public void doCSF(int fs,int ft){System.out.println("Interpreter: Unsupported c.sf instruction");}
+    @Override
+    public void doCNGLE(int fs,int ft){System.out.println("Interpreter: Unsupported c.ngle instruction");}
+    @Override
+    public void doCSEQ(int fs,int ft){System.out.println("Interpreter: Unsupported c.seq instruction");}
+    @Override
+    public void doCNGL(int fs,int ft){System.out.println("Interpreter: Unsupported c.ngl instruction");}
+    @Override
+    public void doCLT(int fs,int ft){System.out.println("Interpreter: Unsupported c.lt instruction");}
+    @Override
+    public void doCNGE(int fs,int ft){System.out.println("Interpreter: Unsupported c.nge instruction");}
+    @Override
+    public void doCLE(int fs,int ft){System.out.println("Interpreter: Unsupported c.le instruction");}
+    @Override
+    public void doCNGT(int fs,int ft){System.out.println("Interpreter: Unsupported c.ngt instruction");}
 }
