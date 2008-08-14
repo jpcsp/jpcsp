@@ -39,16 +39,37 @@ public class JpcspMainGUI extends javax.swing.JFrame {
     Registers regs;
     MemoryViewer memview;
     SettingsGUI setgui;
+    LoggingWindow logwin;
     final String version = MetaInformation.FULL_NAME;
 
     /** Creates new form JpcspMainGUI */
     public JpcspMainGUI() {
+        setLocation(0,0);//set windowlocation to up corner
         initComponents();
         emulator = new Emulator(); //maybe pass the container drawndable
 
         this.setTitle(version);
+        createLoggingWindow();//create it to catch all :)
     }
-
+    private void createLoggingWindow(){
+        if(logwin !=null){
+            logwin.setVisible(false);
+            Logging.setIcon(null);
+            desktopPane.remove(logwin);
+            logwin = null;
+        }
+        logwin = new LoggingWindow();
+        //logwin.setLocation(300,400);
+        logwin.setLocation(Settings.get_instance().readWindowPos("logwindow")[0], Settings.get_instance().readWindowPos("logwindow")[1]);
+        logwin.setVisible(true);
+        desktopPane.add(logwin);
+        Logging.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
+        try {
+            logwin.setSelected(true);
+        } catch (java.beans.PropertyVetoException e) {
+        }
+        
+    }
     private void createDisassemblerWindow() {
         //disassembler window
         if (dis != null) {
@@ -133,7 +154,16 @@ public class JpcspMainGUI extends javax.swing.JFrame {
         } catch (java.beans.PropertyVetoException e) {
         }
     }
-
+    private void hideLoggingWindow()
+    {
+     if(logwin!=null)
+     {
+       logwin.setVisible(false);
+       Logging.setIcon(null);
+       desktopPane.remove(logwin);
+       logwin = null;
+     }
+    }
     private void hideDisassemblerWindow() {
         if (dis != null) {
             //clear previously opened stuff
@@ -198,12 +228,12 @@ public class JpcspMainGUI extends javax.swing.JFrame {
         ElfInfo = new javax.swing.JMenuItem();
         Registers = new javax.swing.JMenuItem();
         MemView = new javax.swing.JMenuItem();
+        Logging = new javax.swing.JMenuItem();
         WindowsPos = new javax.swing.JMenuItem();
         helpMenu = new javax.swing.JMenu();
         aboutMenuItem = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setLocationByPlatform(true);
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {
                 formWindowClosing(evt);
@@ -296,6 +326,14 @@ public class JpcspMainGUI extends javax.swing.JFrame {
         });
         Windows.add(MemView);
 
+        Logging.setText("Logging");
+        Logging.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                LoggingActionPerformed(evt);
+            }
+        });
+        Windows.add(Logging);
+
         WindowsPos.setText("Reset WindowsPos");
         WindowsPos.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -324,11 +362,11 @@ public class JpcspMainGUI extends javax.swing.JFrame {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(desktopPane, javax.swing.GroupLayout.DEFAULT_SIZE, 894, Short.MAX_VALUE)
+            .addComponent(desktopPane, javax.swing.GroupLayout.DEFAULT_SIZE, 949, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(desktopPane, javax.swing.GroupLayout.DEFAULT_SIZE, 666, Short.MAX_VALUE)
+            .addComponent(desktopPane, javax.swing.GroupLayout.DEFAULT_SIZE, 716, Short.MAX_VALUE)
         );
 
         pack();
@@ -348,7 +386,8 @@ public class JpcspMainGUI extends javax.swing.JFrame {
 
 private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openMenuItemActionPerformed
     boolean isloaded = false; // variable to check if user at least choose something
-
+        if(logwin!=null)
+          logwin.clearScreenMessages();
     saveWinPos();//same windows before open something
 
     final JFileChooser fc = makeJFileChooser();
@@ -383,6 +422,8 @@ private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         createRegistersWindow();
         createMemoryViewWindow();
         createDisassemblerWindow();
+
+        
     } else {
         hideELFWindow();
         hideRegistersWindow();
@@ -455,6 +496,15 @@ private void WindowsMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:eve
             MemView.setIcon(null);
         }
     }
+    if(logwin !=null)
+    {
+     if(logwin.isVisible()){
+           Logging.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
+        } else {
+           Logging.setIcon(null);
+     }   
+        
+    }
 }//GEN-LAST:event_WindowsMouseEntered
 
 private void RegistersActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RegistersActionPerformed
@@ -513,14 +563,20 @@ private void WindowsPosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
         regs.setLocation(70, 0);
     //write them to xml
     }
+    if(logwin !=null)
+    {
+        logwin.setLocation(300,400);
+    }
     String dispos[] = {"300", "0"};
     String elfpos[] = {"0", "0"};
     String mempos[] = {"70", "150"};
     String regpos[] = {"70", "0"};
+    String logpos[] = {"300","400"};
     Settings.get_instance().writeWindowPos("elfheader", elfpos);
     Settings.get_instance().writeWindowPos("registers", regpos);
     Settings.get_instance().writeWindowPos("disassembler", dispos);
     Settings.get_instance().writeWindowPos("memoryview", mempos);
+    Settings.get_instance().writeWindowPos("logwindow", logpos);
 
 }//GEN-LAST:event_WindowsPosActionPerformed
 
@@ -539,6 +595,21 @@ private void SettingsMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     }
 
 }//GEN-LAST:event_SettingsMenuActionPerformed
+
+private void LoggingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LoggingActionPerformed
+    if (logwin != null) {
+        logwin.setLocation(Settings.get_instance().readWindowPos("logwindow")[0], Settings.get_instance().readWindowPos("logwindow")[1]);
+        if (logwin.isVisible()) {
+            logwin.setVisible(false);
+            Logging.setIcon(null);
+
+        } else {
+            logwin.setVisible(true);
+            Logging.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif")));
+        }
+
+    }
+}//GEN-LAST:event_LoggingActionPerformed
     private void saveWinPos() {
 
         if (dis != null) {
@@ -577,6 +648,15 @@ private void SettingsMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
                 Settings.get_instance().writeWindowPos("memoryview", coord);
             }
         }
+        if (logwin != null) {
+            if (logwin.isVisible()) {
+                Point location = logwin.getLocation();
+                String[] coord = new String[2];
+                coord[0] = Integer.toString(location.x);
+                coord[1] = Integer.toString(location.y);
+                Settings.get_instance().writeWindowPos("logwindow", coord);
+            }
+        }
     }
 
     /**
@@ -588,6 +668,7 @@ private void SettingsMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
         } catch (Exception e) {
             e.printStackTrace();
         }
+        
         java.awt.EventQueue.invokeLater(new Runnable() {
 
             public void run() {
@@ -600,6 +681,7 @@ private void SettingsMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     private javax.swing.JMenuItem Disasembler;
     private javax.swing.JMenuItem ElfInfo;
     private javax.swing.JMenu Emulation;
+    private javax.swing.JMenuItem Logging;
     private javax.swing.JMenuItem MemView;
     private javax.swing.JMenu Options;
     private javax.swing.JMenuItem Registers;

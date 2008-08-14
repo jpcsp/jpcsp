@@ -20,7 +20,10 @@
            <x>15</x>
            <y>-13</y>
        </registers>
-
+      <logwindow>
+        <x>300</x>
+        <y>400</y>
+      </logwindow>
     </windowspos>
 
   </guisettings>
