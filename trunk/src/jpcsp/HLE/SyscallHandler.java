@@ -33,6 +33,9 @@ public class SyscallHandler {
         try {
             // Currently using FW1.50 codes
             switch(code) {
+                case 0x2015:
+                    ThreadMan.get_instance().ThreadMan_sceKernelSleepThreadCB();
+                    break;
                 case 0x201c:
                     ThreadMan.get_instance().ThreadMan_sceKernelDelayThread(gpr[4]);
                     break;
@@ -49,6 +52,9 @@ public class SyscallHandler {
                 case 0x2071:
                     ThreadMan.get_instance().ThreadMan_sceKernelExitThread(gpr[4]);
                     break;
+                case 0x2072:
+                    ThreadMan.get_instance().ThreadMan_sceKernelExitDeleteThread(gpr[4]);
+                    break;
                 case 0x2073:
                     ThreadMan.get_instance().ThreadMan_sceKernelTerminateThread(gpr[4]);
                     break;
@@ -59,7 +65,14 @@ public class SyscallHandler {
                 case 0x20c0:
                     Utils.get_instance().Utils_sceKernelUtilsMt19937UInt(gpr[4]);
                     break;
-                case 0x213a:              
+
+                /* TODO (for minifire)
+                case 0x20eb:
+                    LoadExec.get_instance().LoadExec_sceKernelExitGame();
+                    break;
+                */
+
+                case 0x213a:
                     sceDisplay.get_instance().sceDisplaySetMode(gpr[4], gpr[5], gpr[6]);
                     break;
                 case 0x213f:
@@ -67,11 +80,32 @@ public class SyscallHandler {
                     break;
                 case 0x2147:
                     sceDisplay.get_instance().sceDisplayWaitVblankStart();
-                    break;                /* TODO (for minifire)
-                case 0x20eb:
-                    LoadExec.get_instance().LoadExec_sceKernelExitGame();
-                    break;*/
-                
+                    break;
+
+                /* TODO (for minifire)
+                case 0x2150:
+                    Ctrl.get_instance().Ctrl_sceCtrlPeekBufferPositive();
+                    break;
+                */
+
+                case 0x20f0:
+                    pspge.get_instance().sceGeEdramGetAddr();
+                    break;
+
+/*
+HelloJpcsp.PBP
+Unsupported syscall 20b2 sceKernelStdin
+Unsupported syscall 20b3 sceKernelStdout
+Unsupported syscall 20b4 sceKernelStderr
+
+Unsupported syscall 200d sceKernelCreateCallback
+Unsupported syscall 20ec sceKernelRegisterExitCallback
+
+controller.pbp
+Unsupported syscall 214c sceCtrlSetSamplingCycle
+Unsupported syscall 214e sceCtrlSetSamplingMode
+Unsupported syscall 2152 sceCtrlReadBufferPositive
+*/
 
                 default:
                     System.out.println("Unsupported syscall " + Integer.toHexString(code));
