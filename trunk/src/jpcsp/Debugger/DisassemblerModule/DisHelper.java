@@ -122,6 +122,10 @@ public class DisHelper {
     public static String Dis_RSRTOFFSET(String opname, int rs , int rt ,int simm16, int opcode_address) {
         return opname + " " + gprNames[rs] + ", " + gprNames[rt] + " 0x" + Integer.toHexString(simm16 * 4 + opcode_address + 4);
     }
+    public static String Dis_OFFSET(String opname , int imm , int opcode_address)
+    {
+        return opname + " " +  " 0x" + Integer.toHexString(imm * 4 + opcode_address + 4);
+    }
     public static String Dis_RTRSIMM(String opname, int rt,int rs , int simm16) {
        
        /* if (!opname.equals("andi") && !opname.equals("ori") && !opname.equals("xori")) {
@@ -169,5 +173,16 @@ public class DisHelper {
     public static String Dis_RDRT(String opname, int rd, int rt) {
       return opname + " " + gprNames[rd] + ", " + gprNames[rt];
     }
-   
+    public static String Dis_FDFSFT(String opname,int fd,int fs,int ft)
+    {
+        return opname + " " + fprNames[fd] + ", " + fprNames[fs] + ", " + fprNames[ft];
+    }
+    public static String Dis_FDFS(String opname,int fd,int fs)
+    {
+        return opname + " " + fprNames[fd] + ", " + fprNames[fs];
+    }
+    public static String Dis_FSFT(String opname,int fs,int ft)
+    {
+        return opname + " " + fprNames[fs] + ", " + fprNames[ft];
+    }
 }
