@@ -21,12 +21,13 @@ import jpcsp.HLE.SyscallHandler;
 
 public class Processor implements AllegrexInstructions {
 
-    public int[]     gpr;
-    public float[]   fpr;
-    public float[]   vpr;
-    public long      hilo;
-    public int       pc, npc;
-    public int       cycles;
+    public int[] gpr;
+    public float[] fpr;
+    public float[] vpr;
+    public long hilo;
+    public int pc,  npc;
+    public int cycles;
+    public boolean bc1t;
 
     Processor() {
         Memory.get_instance(); //intialize memory
@@ -40,6 +41,8 @@ public class Processor implements AllegrexInstructions {
         gpr = new int[32];
         fpr = new float[32];
         vpr = new float[128];
+
+        bc1t = false;
     }
 
     public int hi() {
@@ -86,7 +89,6 @@ public class Processor implements AllegrexInstructions {
         long tmp = value << (62 - 31);
         return ((tmp >>> 1) == (tmp & 1));
     }
-
     private final Decoder interpreter = new Decoder();
 
     public void step() {
@@ -122,7 +124,7 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doUNK(String reason) {
-        System.out.println(reason);
+        System.out.println("Interpreter : " + reason);
     }
 
     @Override
@@ -632,49 +634,49 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doHALT() {
         // TODO
-        System.out.println("Interpreter: Unsupported HALT instruction");
+        System.out.println("Unsupported HALT instruction");
     }
 
     @Override
     public void doMFIC(int rt) {
         // TODO
-        System.out.println("Interpreter: Unsupported mfic instruction");
+        System.out.println("Unsupported mfic instruction");
     }
 
     @Override
     public void doMTIC(int rt) {
         // TODO
-        System.out.println("Interpreter: Unsupported mtic instruction");
+        System.out.println("Unsupported mtic instruction");
     }
 
     @Override
     public void doMFC0(int rt, int c0dr) {
         // TODO
-        System.out.println("Interpreter: Unsupported mfc0 instruction");
+        System.out.println("Unsupported mfc0 instruction");
     }
 
     @Override
     public void doCFC0(int rt, int c0cr) {
         // TODO
-        System.out.println("Interpreter: Unsupported cfc0 instruction");
+        System.out.println("Unsupported cfc0 instruction");
     }
 
     @Override
     public void doMTC0(int rt, int c0dr) {
         // TODO
-        System.out.println("Interpreter: Unsupported mtc0 instruction");
+        System.out.println("Unsupported mtc0 instruction");
     }
 
     @Override
     public void doCTC0(int rt, int c0cr) {
         // TODO
-        System.out.println("Interpreter: Unsupported ctc0 instruction");
+        System.out.println("Unsupported ctc0 instruction");
     }
 
     @Override
     public void doERET() {
         // TODO
-        System.out.println("Interpreter: Unsupported eret instruction");
+        System.out.println("Unsupported eret instruction");
     }
 
     @Override
@@ -703,31 +705,30 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doLWL(int rt, int rs, int simm16) {
-      int virtAddr = gpr[rs] + simm16;
-      int offset = virtAddr & 0x3;
-      int reg = gpr[rt];
+        int virtAddr = gpr[rs] + simm16;
+        int offset = virtAddr & 0x3;
+        int reg = gpr[rt];
 
-      int word = Memory.get_instance().read32(virtAddr & 0xfffffffc);
+        int word = Memory.get_instance().read32(virtAddr & 0xfffffffc);
 
-      switch (offset)
-      {
-      case 0:
-          word = ((word & 0xff) << 24) | (reg & 0xffffff);
-          break;
+        switch (offset) {
+            case 0:
+                word = ((word & 0xff) << 24) | (reg & 0xffffff);
+                break;
 
-        case 1:
-          word = ((word & 0xffff) << 16) | (reg & 0xffff);
-          break;
+            case 1:
+                word = ((word & 0xffff) << 16) | (reg & 0xffff);
+                break;
 
-        case 2:
-          word = ((word & 0xffffff) << 8) | (reg & 0xff);
-          break;
+            case 2:
+                word = ((word & 0xffffff) << 8) | (reg & 0xff);
+                break;
 
-        case 3:
-          break;
-      }
-      
-      gpr[rt] = word;
+            case 3:
+                break;
+        }
+
+        gpr[rt] = word;
     }
 
     @Override
@@ -738,31 +739,30 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doLWR(int rt, int rs, int simm16) {
-      int virtAddr = gpr[rs] + simm16;
-      int offset = virtAddr & 0x3;
-      int reg = gpr[rt];
+        int virtAddr = gpr[rs] + simm16;
+        int offset = virtAddr & 0x3;
+        int reg = gpr[rt];
 
-      int word = Memory.get_instance().read32(virtAddr & 0xfffffffc);
+        int word = Memory.get_instance().read32(virtAddr & 0xfffffffc);
 
-      switch (offset)
-      {
-      case 0:
-          break;
-      
-      case 1:
-          word = (reg & 0xff000000) | ((word & 0xffffff00) >> 8);
-          break;
-      
-      case 2:
-          word = (reg & 0xffff0000) | ((word & 0xffff0000) >> 16);
-          break;
-      
-      case 3:
-          word = (reg & 0xffffff00) | ((word & 0xff000000) >> 24);
-          break;
-      }
-      
-      gpr[rt] = word;
+        switch (offset) {
+            case 0:
+                break;
+
+            case 1:
+                word = (reg & 0xff000000) | ((word & 0xffffff00) >> 8);
+                break;
+
+            case 2:
+                word = (reg & 0xffff0000) | ((word & 0xffff0000) >> 16);
+                break;
+
+            case 3:
+                word = (reg & 0xffffff00) | ((word & 0xff000000) >> 24);
+                break;
+        }
+
+        gpr[rt] = word;
     }
 
     @Override
@@ -779,31 +779,30 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doSWL(int rt, int rs, int simm16) {
-       int virtAddr = gpr[rs] + simm16;
-      int offset = virtAddr & 0x3;
-      int reg = gpr[rt];
-      int data = Memory.get_instance().read32(virtAddr & 0xfffffffc);
+        int virtAddr = gpr[rs] + simm16;
+        int offset = virtAddr & 0x3;
+        int reg = gpr[rt];
+        int data = Memory.get_instance().read32(virtAddr & 0xfffffffc);
 
-      switch (offset)
-        {
-        case 0:
-          data = (data & 0xffffff00) | (reg >> 24 & 0xff);
-          break;
+        switch (offset) {
+            case 0:
+                data = (data & 0xffffff00) | (reg >> 24 & 0xff);
+                break;
 
-        case 1:
-          data = (data & 0xffff0000) | (reg >> 16 & 0xffff);
-          break;
+            case 1:
+                data = (data & 0xffff0000) | (reg >> 16 & 0xffff);
+                break;
 
-        case 2:
-          data = (data & 0xff000000) | (reg >> 8 & 0xffffff);
-          break;
+            case 2:
+                data = (data & 0xff000000) | (reg >> 8 & 0xffffff);
+                break;
 
-        case 3:
-          data = reg;
-          break;
+            case 3:
+                data = reg;
+                break;
         }
 
-      Memory.get_instance().write32(virtAddr & 0xfffffffc, data);
+        Memory.get_instance().write32(virtAddr & 0xfffffffc, data);
     }
 
     @Override
@@ -814,49 +813,48 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doSWR(int rt, int rs, int simm16) {
-      int virtAddr = gpr[rs] + simm16;
-      int offset = virtAddr & 0x3;
-      int reg = gpr[rt];
-      int data = Memory.get_instance().read32(virtAddr & 0xfffffffc);
+        int virtAddr = gpr[rs] + simm16;
+        int offset = virtAddr & 0x3;
+        int reg = gpr[rt];
+        int data = Memory.get_instance().read32(virtAddr & 0xfffffffc);
 
-      switch (offset)
-        {
-        case 0:
-          data = reg;
-          break;
+        switch (offset) {
+            case 0:
+                data = reg;
+                break;
 
-        case 1:
-          data = ((reg << 8) & 0xffffff00) | (data & 0xff) ;
-          break;
+            case 1:
+                data = ((reg << 8) & 0xffffff00) | (data & 0xff);
+                break;
 
-        case 2:
-          data = ((reg << 16) & 0xffff0000) | (data & 0xffff);
-          break;
+            case 2:
+                data = ((reg << 16) & 0xffff0000) | (data & 0xffff);
+                break;
 
-        case 3:
-          data = ((reg << 24) & 0xff000000) | (data & 0xffffff);
-          break;
+            case 3:
+                data = ((reg << 24) & 0xff000000) | (data & 0xffffff);
+                break;
         }
 
-      Memory.get_instance().write32(virtAddr & 0xfffffffc, data);
+        Memory.get_instance().write32(virtAddr & 0xfffffffc, data);
     }
 
     @Override
     public void doCACHE(int code, int rs, int simm16) {
         // TODO
-        System.out.println("Interpreter: Unsupported cache instruction");
+        System.out.println("Unsupported cache instruction");
     }
 
     @Override
     public void doLL(int rt, int rs, int simm16) {
         // TODO
-        System.out.println("Interpreter: Unsupported ll instruction");
+        System.out.println("Unsupported ll instruction");
     }
 
     @Override
     public void doSC(int rt, int rs, int simm16) {
         // TODO
-        System.out.println("Interpreter: Unsupported sc instruction");
+        System.out.println("Unsupported sc instruction");
     }
 
     @Override
@@ -903,7 +901,7 @@ public class Processor implements AllegrexInstructions {
         // cop0.debug_epc = pc - 4;
         // cop0.cause.exc |= BREAK_EXC;
         // npc = cop0.exception_handler;
-        System.out.println("Interpreter: Unsupported break instruction");
+        System.out.println("Unsupported break instruction");
     }
 
     @Override
@@ -1013,80 +1011,245 @@ public class Processor implements AllegrexInstructions {
     public void doSEH(int rd, int rt) {
         gpr[rd] = (gpr[rt] << 16) >> 16;
     }
+
     @Override
-    public void doMFC1(int rt, int c1dr){System.out.println("Interpreter: Unsupported mfc1 instruction");}
+    public void doMFC1(int rt, int c1dr) {
+        gpr[rt] = Float.floatToRawIntBits(fpr[c1dr]);
+    }
+
     @Override
-    public void doCFC1(int rt, int c1cr){System.out.println("Interpreter: Unsupported cfc1 instruction");}
+    public void doCFC1(int rt, int c1cr) {
+        doUNK("Unsupported cfc1 instruction");
+    }
+
     @Override
-    public void doMTC1(int rt, int c1dr){System.out.println("Interpreter: Unsupported mtc1 instruction");}  
+    public void doMTC1(int rt, int c1dr) {
+        fpr[c1dr] = Float.intBitsToFloat(gpr[rt]);
+    }
+
     @Override
-    public void doCTC1(int rt, int c1cr){System.out.println("Interpreter: Unsupported ctc1 instruction");}
+    public void doCTC1(int rt, int c1cr) {
+        doUNK("Unsupported ctc1 instruction");
+    }
+
     @Override
-    public void doBC1F(int simm16){System.out.println("Interpreter: Unsupported bc1f instruction");}
+    public void doBC1F(int simm16) {
+        int previous_cycles = cycles;
+        npc = !bc1t ? branchTarget(pc, simm16) : (pc + 4);
+        stepDelayslot();
+        if (cycles - previous_cycles < 3) {
+            cycles = previous_cycles + 3;
+        }
+    }
+
     @Override
-    public void doBC1T (int simm16){System.out.println("Interpreter: Unsupported bc1t instruction");}
+    public void doBC1T(int simm16) {
+        int previous_cycles = cycles;
+        npc = bc1t ? branchTarget(pc, simm16) : (pc + 4);
+        stepDelayslot();
+        if (cycles - previous_cycles < 3) {
+            cycles = previous_cycles + 3;
+        }
+    }
+
     @Override
-    public void doBC1FL(int simm16){System.out.println("Interpreter: Unsupported bc1fl instruction");}
+    public void doBC1FL(int simm16) {
+        int previous_cycles = cycles;
+        if (!bc1t) {
+            npc = branchTarget(pc, simm16);
+            stepDelayslot();
+            if (cycles - previous_cycles < 3) {
+                cycles = previous_cycles + 3;
+            }
+        } else {
+            pc += 4;
+            cycles += 3;
+        }
+    }
+
     @Override
-    public void doBC1TL(int simm16){System.out.println("Interpreter: Unsupported bc1tl instruction");}
+    public void doBC1TL(int simm16) {
+        int previous_cycles = cycles;
+        if (bc1t) {
+            npc = branchTarget(pc, simm16);
+            stepDelayslot();
+            if (cycles - previous_cycles < 3) {
+                cycles = previous_cycles + 3;
+            }
+        } else {
+            pc += 4;
+            cycles += 3;
+        }
+    }
+
     @Override
-    public void doADDS(int fd , int fs ,int ft){System.out.println("Interpreter: Unsupported add.s instruction");}
+    public void doADDS(int fd, int fs, int ft) {
+        fpr[fd] = fpr[fs] + fpr[ft];
+    }
+
     @Override
-    public void doSUBS(int fd , int fs ,int ft){System.out.println("Interpreter: Unsupported sub.s instruction");} 
+    public void doSUBS(int fd, int fs, int ft) {
+        fpr[fd] = fpr[fs] - fpr[ft];
+    }
+
     @Override
-    public void doMULS(int fd , int fs ,int ft){System.out.println("Interpreter: Unsupported mul.s instruction");} 
+    public void doMULS(int fd, int fs, int ft) {
+        fpr[fd] = fpr[fs] * fpr[ft];
+    }
+
     @Override
-    public void doDIVS(int fd , int fs ,int ft){System.out.println("Interpreter: Unsupported div.s instruction");} 
+    public void doDIVS(int fd, int fs, int ft) {
+        fpr[fd] = fpr[fs] / fpr[ft];
+    }
+
     @Override
-    public void doSQRTS(int fd,int fs){System.out.println("Interpreter: Unsupported sqrt.s instruction");}
+    public void doSQRTS(int fd, int fs) {
+        fpr[fd] = (float) Math.sqrt(fpr[fs]);
+    }
+
     @Override
-    public void doABSS(int fd,int fs){System.out.println("Interpreter: Unsupported abs.s instruction");}
+    public void doABSS(int fd, int fs) {
+        fpr[fd] = Math.abs(fpr[fs]);
+    }
+
     @Override
-    public void doMOVS(int fd,int fs){System.out.println("Interpreter: Unsupported mov.s instruction");}
+    public void doMOVS(int fd, int fs) {
+        fpr[fd] = fpr[fs];
+    }
+
     @Override
-    public void doNEGS(int fd,int fs){System.out.println("Interpreter: Unsupported neg.s instruction");}
+    public void doNEGS(int fd, int fs) {
+        fpr[fd] = 0.0f - fpr[fs];
+    }
+
     @Override
-    public void doROUNDWS(int fd,int fs){System.out.println("Interpreter: Unsupported round.w.s instruction");}
+    public void doROUNDWS(int fd, int fs) {
+        fpr[fd] = Float.intBitsToFloat(Math.round(fpr[fs]));
+    }
+
     @Override
-    public void doTRUNCWS(int fd,int fs){System.out.println("Interpreter: Unsupported trunc.w.s instruction");}
+    public void doTRUNCWS(int fd, int fs) {
+        fpr[fd] = Float.intBitsToFloat((int) (fpr[fs]));
+    }
+
     @Override
-    public void doCEILWS(int fd,int fs){System.out.println("Interpreter: Unsupported ceil.w.s instruction");}
+    public void doCEILWS(int fd, int fs) {
+        fpr[fd] = Float.intBitsToFloat((int) Math.ceil(fpr[fs]));
+    }
+
     @Override
-    public void doFLOORWS(int fd,int fs){System.out.println("Interpreter: Unsupported floor.w.s instruction");}
+    public void doFLOORWS(int fd, int fs) {
+        fpr[fd] = Float.intBitsToFloat((int) Math.floor(fpr[fs]));
+    }
+
     @Override
-    public void doCVTSW(int fd,int fs){System.out.println("Interpreter: Unsupported cvt.s.w instruction");}
+    public void doCVTSW(int fd, int fs) {
+        fpr[fd] = (float) Float.floatToRawIntBits(fpr[fs]);
+    }
+
     @Override
-    public void doCVTWS(int fd,int fs){System.out.println("Interpreter: Unsupported cvt.w.s instruction");}
+    public void doCVTWS(int fd, int fs) {
+        // TODO : round mode
+        switch (0) {
+            case 1:
+                fpr[fd] = Float.intBitsToFloat((int) (fpr[fs]));
+            case 2:
+                fpr[fd] = Float.intBitsToFloat((int) Math.ceil(fpr[fs]));
+            case 3:
+                fpr[fd] = Float.intBitsToFloat((int) Math.floor(fpr[fs]));
+            default:
+                fpr[fd] = Float.intBitsToFloat((int) Math.rint(fpr[fs]));
+        }
+    }
+
+    private boolean c_cond_s(float fs, float ft, boolean signal, boolean less, boolean equal, boolean unordered) {
+        unordered = unordered && (Float.isNaN(fs) || Float.isNaN(ft));
+        if (unordered && signal) {
+            doUNK("float point unordered exception");
+        }
+        equal = equal && !unordered && (fs == ft);
+        less = less && !unordered && (fs < ft);
+
+        return less || equal || unordered;
+    }
+
     @Override
-    public void doCF(int fs,int ft){System.out.println("Interpreter: Unsupported c.f instruction");}
+    public void doCF(int fs, int ft) {
+        bc1t = c_cond_s(fpr[fs], fpr[ft], false, false, false, false);
+    }
+
     @Override
-    public void doCUN(int fs,int ft){System.out.println("Interpreter: Unsupported c.un instruction");}
+    public void doCUN(int fs, int ft) {
+        bc1t = c_cond_s(fpr[fs], fpr[ft], false, false, false, true);
+    }
+
     @Override
-    public void doCEQ(int fs,int ft){System.out.println("Interpreter: Unsupported c.eq instruction");}
+    public void doCEQ(int fs, int ft) {
+        bc1t = c_cond_s(fpr[fs], fpr[ft], false, false, true, false);
+    }
+
     @Override
-    public void doCUEQ(int fs,int ft){System.out.println("Interpreter: Unsupported c.ueq instruction");}
+    public void doCUEQ(int fs, int ft) {
+        bc1t = c_cond_s(fpr[fs], fpr[ft], false, false, true, true);
+    }
+
     @Override
-    public void doCOLT(int fs,int ft){System.out.println("Interpreter: Unsupported c.olt instruction");}
+    public void doCOLT(int fs, int ft) {
+        bc1t = c_cond_s(fpr[fs], fpr[ft], false, true, false, false);
+    }
+
     @Override
-    public void doCULT(int fs,int ft){System.out.println("Interpreter: Unsupported c.ult instruction");}
+    public void doCULT(int fs, int ft) {
+        bc1t = c_cond_s(fpr[fs], fpr[ft], false, true, false, true);
+    }
+
     @Override
-    public void doCOLE(int fs,int ft){System.out.println("Interpreter: Unsupported c.ole instruction");}
+    public void doCOLE(int fs, int ft) {
+        bc1t = c_cond_s(fpr[fs], fpr[ft], false, true, true, false);
+    }
+
     @Override
-    public void doCULE(int fs,int ft){System.out.println("Interpreter: Unsupported c.ule instruction");}
+    public void doCULE(int fs, int ft) {
+        bc1t = c_cond_s(fpr[fs], fpr[ft], false, true, true, true);
+    }
+
     @Override
-    public void doCSF(int fs,int ft){System.out.println("Interpreter: Unsupported c.sf instruction");}
+    public void doCSF(int fs, int ft) {
+        bc1t = c_cond_s(fpr[fs], fpr[ft], true, false, false, false);
+    }
+
     @Override
-    public void doCNGLE(int fs,int ft){System.out.println("Interpreter: Unsupported c.ngle instruction");}
+    public void doCNGLE(int fs, int ft) {
+        bc1t = c_cond_s(fpr[fs], fpr[ft], false, false, false, true);
+    }
+
     @Override
-    public void doCSEQ(int fs,int ft){System.out.println("Interpreter: Unsupported c.seq instruction");}
+    public void doCSEQ(int fs, int ft) {
+        bc1t = c_cond_s(fpr[fs], fpr[ft], true, false, true, false);
+    }
+
     @Override
-    public void doCNGL(int fs,int ft){System.out.println("Interpreter: Unsupported c.ngl instruction");}
+    public void doCNGL(int fs, int ft) {
+        bc1t = c_cond_s(fpr[fs], fpr[ft], false, false, true, true);
+    }
+
     @Override
-    public void doCLT(int fs,int ft){System.out.println("Interpreter: Unsupported c.lt instruction");}
+    public void doCLT(int fs, int ft) {
+        bc1t = c_cond_s(fpr[fs], fpr[ft], true, true, false, false);
+    }
+
     @Override
-    public void doCNGE(int fs,int ft){System.out.println("Interpreter: Unsupported c.nge instruction");}
+    public void doCNGE(int fs, int ft) {
+        bc1t = c_cond_s(fpr[fs], fpr[ft], true, true, false, true);
+    }
+
     @Override
-    public void doCLE(int fs,int ft){System.out.println("Interpreter: Unsupported c.le instruction");}
+    public void doCLE(int fs, int ft) {
+        bc1t = c_cond_s(fpr[fs], fpr[ft], true, true, true, false);
+    }
+
     @Override
-    public void doCNGT(int fs,int ft){System.out.println("Interpreter: Unsupported c.ngt instruction");}
+    public void doCNGT(int fs, int ft) {
+        bc1t = c_cond_s(fpr[fs], fpr[ft], true, true, true, true);
+    }
 }
