@@ -241,71 +241,71 @@ public class DisasmOpcodes implements AllegrexInstructions {
     @Override
     public void doCTC1(int rt, int c1cr){returnString = "ctc1 " + gprNames[rt] + ", " + fcrNames[c1cr];}
        @Override
-    public void doBC1F(int simm16){}
+    public void doBC1F(int simm16){returnString = Dis_OFFSET("bc1f",simm16,opcode_address);}
     @Override
-    public void doBC1T (int simm16){}
+    public void doBC1T (int simm16){returnString = Dis_OFFSET("bc1t",simm16,opcode_address);}
     @Override
-    public void doBC1FL(int simm16){}
+    public void doBC1FL(int simm16){returnString = Dis_OFFSET("bc1fl",simm16,opcode_address);}
     @Override
-    public void doBC1TL(int simm16){}
+    public void doBC1TL(int simm16){returnString = Dis_OFFSET("bc1tl",simm16,opcode_address);}
     @Override
-    public void doADDS(int fd , int fs ,int ft){}
+    public void doADDS(int fd , int fs ,int ft){returnString = Dis_FDFSFT("add.s",fd,fs,ft);}
     @Override
-    public void doSUBS(int fd , int fs ,int ft){} 
+    public void doSUBS(int fd , int fs ,int ft){returnString = Dis_FDFSFT("sub.s",fd,fs,ft);} 
     @Override
-    public void doMULS(int fd , int fs ,int ft){} 
+    public void doMULS(int fd , int fs ,int ft){returnString = Dis_FDFSFT("mul.s",fd,fs,ft);} 
     @Override
-    public void doDIVS(int fd , int fs ,int ft){} 
+    public void doDIVS(int fd , int fs ,int ft){returnString = Dis_FDFSFT("div.s",fd,fs,ft);} 
     @Override
-    public void doSQRTS(int fd,int fs){}
+    public void doSQRTS(int fd,int fs){returnString = Dis_FDFS("sqrt.s",fd,fs);}
     @Override
-    public void doABSS(int fd,int fs){}
+    public void doABSS(int fd,int fs){returnString = Dis_FDFS("abs.s",fd,fs);}
     @Override
-    public void doMOVS(int fd,int fs){}
+    public void doMOVS(int fd,int fs){returnString = Dis_FDFS("mov.s",fd,fs);}
     @Override
-    public void doNEGS(int fd,int fs){}
+    public void doNEGS(int fd,int fs){returnString = Dis_FDFS("neg.s",fd,fs);}
     @Override
-    public void doROUNDWS(int fd,int fs){}
+    public void doROUNDWS(int fd,int fs){returnString = Dis_FDFS("round.w.s",fd,fs);}
     @Override
-    public void doTRUNCWS(int fd,int fs){}
+    public void doTRUNCWS(int fd,int fs){returnString = Dis_FDFS("trunc.w.s",fd,fs);}
     @Override
-    public void doCEILWS(int fd,int fs){}
+    public void doCEILWS(int fd,int fs){returnString = Dis_FDFS("ceil.w.s",fd,fs);}
     @Override
-    public void doFLOORWS(int fd,int fs){}
+    public void doFLOORWS(int fd,int fs){returnString = Dis_FDFS("floor.w.s",fd,fs);}
     @Override
-    public void doCVTSW(int fd,int fs){}
+    public void doCVTSW(int fd,int fs){returnString = Dis_FDFS("cvt.s.w",fd,fs);}
     @Override
-    public void doCVTWS(int fd,int fs){}
+    public void doCVTWS(int fd,int fs){returnString = Dis_FDFS("cvt.w.s",fd,fs);}
     @Override
-    public void doCF(int fs,int ft){}
+    public void doCF(int fs,int ft){returnString = Dis_FSFT("c.f",fs,ft);}
     @Override
-    public void doCUN(int fs,int ft){}
+    public void doCUN(int fs,int ft){returnString = Dis_FSFT("c.un",fs,ft);}
     @Override
-    public void doCEQ(int fs,int ft){}
+    public void doCEQ(int fs,int ft){returnString = Dis_FSFT("c.eq",fs,ft);}
     @Override
-    public void doCUEQ(int fs,int ft){}
+    public void doCUEQ(int fs,int ft){returnString = Dis_FSFT("c.ueq",fs,ft);}
     @Override
-    public void doCOLT(int fs,int ft){}
+    public void doCOLT(int fs,int ft){returnString = Dis_FSFT("c.olt",fs,ft);}
     @Override
-    public void doCULT(int fs,int ft){}
+    public void doCULT(int fs,int ft){returnString = Dis_FSFT("c.ult",fs,ft);}
     @Override
-    public void doCOLE(int fs,int ft){}
+    public void doCOLE(int fs,int ft){returnString = Dis_FSFT("c.ole",fs,ft);}
     @Override
-    public void doCULE(int fs,int ft){}
+    public void doCULE(int fs,int ft){returnString = Dis_FSFT("c.ule",fs,ft);}
     @Override
-    public void doCSF(int fs,int ft){}
+    public void doCSF(int fs,int ft){returnString = Dis_FSFT("c.sf",fs,ft);}
     @Override
-    public void doCNGLE(int fs,int ft){}
+    public void doCNGLE(int fs,int ft){returnString = Dis_FSFT("c.ngle",fs,ft);}
     @Override
-    public void doCSEQ(int fs,int ft){}
+    public void doCSEQ(int fs,int ft){returnString = Dis_FSFT("c.seq",fs,ft);}
     @Override
-    public void doCNGL(int fs,int ft){}
+    public void doCNGL(int fs,int ft){returnString = Dis_FSFT("c.ngl",fs,ft);}
     @Override
-    public void doCLT(int fs,int ft){}
+    public void doCLT(int fs,int ft){returnString = Dis_FSFT("c.lt",fs,ft);}
     @Override
-    public void doCNGE(int fs,int ft){}
+    public void doCNGE(int fs,int ft){returnString = Dis_FSFT("c.nge",fs,ft);}
     @Override
-    public void doCLE(int fs,int ft){}
+    public void doCLE(int fs,int ft){returnString = Dis_FSFT("c.cle",fs,ft);}
     @Override
-    public void doCNGT(int fs,int ft){}
+    public void doCNGT(int fs,int ft){returnString = Dis_FSFT("c.cngt",fs,ft);}
 }
