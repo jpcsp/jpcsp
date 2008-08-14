@@ -248,4 +248,64 @@ public class DisasmOpcodes implements AllegrexInstructions {
     public void doBC1FL(int simm16){}
     @Override
     public void doBC1TL(int simm16){}
+    @Override
+    public void doADDS(int fd , int fs ,int ft){}
+    @Override
+    public void doSUBS(int fd , int fs ,int ft){} 
+    @Override
+    public void doMULS(int fd , int fs ,int ft){} 
+    @Override
+    public void doDIVS(int fd , int fs ,int ft){} 
+    @Override
+    public void doSQRTS(int fd,int fs){}
+    @Override
+    public void doABSS(int fd,int fs){}
+    @Override
+    public void doMOVS(int fd,int fs){}
+    @Override
+    public void doNEGS(int fd,int fs){}
+    @Override
+    public void doROUNDWS(int fd,int fs){}
+    @Override
+    public void doTRUNCWS(int fd,int fs){}
+    @Override
+    public void doCEILWS(int fd,int fs){}
+    @Override
+    public void doFLOORWS(int fd,int fs){}
+    @Override
+    public void doCVTSW(int fd,int fs){}
+    @Override
+    public void doCVTWS(int fd,int fs){}
+    @Override
+    public void doCF(int fs,int ft){}
+    @Override
+    public void doCUN(int fs,int ft){}
+    @Override
+    public void doCEQ(int fs,int ft){}
+    @Override
+    public void doCUEQ(int fs,int ft){}
+    @Override
+    public void doCOLT(int fs,int ft){}
+    @Override
+    public void doCULT(int fs,int ft){}
+    @Override
+    public void doCOLE(int fs,int ft){}
+    @Override
+    public void doCULE(int fs,int ft){}
+    @Override
+    public void doCSF(int fs,int ft){}
+    @Override
+    public void doCNGLE(int fs,int ft){}
+    @Override
+    public void doCSEQ(int fs,int ft){}
+    @Override
+    public void doCNGL(int fs,int ft){}
+    @Override
+    public void doCLT(int fs,int ft){}
+    @Override
+    public void doCNGE(int fs,int ft){}
+    @Override
+    public void doCLE(int fs,int ft){}
+    @Override
+    public void doCNGT(int fs,int ft){}
 }

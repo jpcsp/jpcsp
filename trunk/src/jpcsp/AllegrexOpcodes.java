@@ -372,7 +372,7 @@ public class AllegrexOpcodes {
 // 001 | --    | ---   | ---   | ---   |round.w.s| trunc.w.s | ceil.w.s  | floor.w.s  |
 // 010 | ---   | ---   | ---   | ---   | ---   |  ---  |  ---  | ---   |
 // 011 | ---   | ---   | ---   | ----  | ---   |  ---  | ---   | ---   |
-// 100 |cvt.s.w| ---   | ---   | ---   |cvt.w.s|  ---  |dis.int| ----- |
+// 100 |cvt.s.w| ---   | ---   | ---   |cvt.w.s|  ---  | ---   | ----- |
 // 101 | ---   | ---   | ---   | ----  | ---   |  ---  | ---   | ---   |
 // 110 | c.f   |  c.un | c.eq  | c.ueq | c.olt | c.ult | c.ole | c.ule |
 // 111 | c.sf  | c.ngle| c.seq | c.ngl | c.lt  | c.nge | c.le  | c.ngt |
@@ -389,9 +389,8 @@ public class AllegrexOpcodes {
     public static final byte TRUNCWS = 0xd;
     public static final byte CEILWS = 0xe;
     public static final byte FLOORWS = 0xf;
-    public static final byte CVTSQ = 0x20;
+    public static final byte CVTSW = 0x20;
     public static final byte CVTWS = 0x24;
-    public static final byte DISINT = 0x26;
     public static final byte CF = 0x30;
     public static final byte CUN = 0x31;
     public static final byte CEQ = 0x32;

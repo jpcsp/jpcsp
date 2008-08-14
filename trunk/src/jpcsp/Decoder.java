@@ -60,7 +60,15 @@ public class Decoder {
     public int syscode(int instruction) {
         return (instruction >> 6) & 0x000fffff;
     }
-
+    public int fd(int instruction) {
+        return (instruction >> 6) & 31;
+    }
+    public int fs(int instruction) {
+        return (instruction >> 11) & 31;
+    }
+   public int ft(int instruction) {
+        return (instruction >> 16) & 31;
+    }
     public < P extends AllegrexInstructions > void process(P that, int insn) {
 
         byte opcode = (byte) (insn >>> 26);
@@ -409,7 +417,105 @@ public class Decoder {
                                 that.doUNK("Unsupported COP1BC instruction " + Integer.toHexString(rs(insn)));
                                 break;
                         }
-                        break;        
+                        break; 
+                    case COP1F:
+                        switch((byte)func(insn))
+                        {
+                            case ADDS: 
+                                that.doADDS(fd(insn), fs(insn), ft(insn));
+                                break;
+                            case SUBS:
+                                that.doSUBS(fd(insn), fs(insn), ft(insn));
+                                break;
+                            case MULS: 
+                                that.doMULS(fd(insn), fs(insn), ft(insn));
+                                break;
+                            case DIVS: 
+                                that.doDIVS(fd(insn), fs(insn), ft(insn));
+                                break;
+                            case SQRTS:
+                                that.doSQRTS(fd(insn),fs(insn));
+                                break;
+                            case ABSS: 
+                                that.doABSS(fd(insn),fs(insn));
+                                break;
+                            case MOVS: 
+                                that.doMOVS(fd(insn),fs(insn));
+                                break;
+                            case NEGS:
+                                that.doNEGS(fd(insn),fs(insn));
+                                break;
+                            case ROUNDWS: 
+                                that.doROUNDWS(fd(insn),fs(insn));
+                                break;
+                            case TRUNCWS: 
+                                that.doTRUNCWS(fd(insn),fs(insn));
+                                break;
+                            case CEILWS:
+                                that.doCEILWS(fd(insn),fs(insn));
+                                break;
+                            case FLOORWS: 
+                                that.doFLOORWS(fd(insn),fs(insn));
+                                break;
+                            case CVTSW:
+                                that.doCVTSW(fd(insn),fs(insn));
+                                break;
+                            case CVTWS:
+                                that.doCVTWS(fd(insn),fs(insn));
+                                break;
+                            case CF: 
+                                that.doCF(fs(insn),ft(insn));
+                                break;
+                            case CUN: 
+                                that.doCUN(fs(insn),ft(insn));
+                                break;
+                            case CEQ: 
+                                that.doCEQ(fs(insn),ft(insn));
+                                break;
+                            case CUEQ: 
+                                that.doCUEQ(fs(insn),ft(insn));
+                                break;
+                            case COLT:
+                                that.doCOLT(fs(insn),ft(insn));
+                                break;
+                            case CULT: 
+                                that.doCULT(fs(insn),ft(insn));
+                                break;
+                            case COLE: 
+                                that.doCOLE(fs(insn),ft(insn));
+                                break;
+                            case CULE:
+                                that.doCULE(fs(insn),ft(insn));
+                                break;
+                            case CSF:
+                                that.doCSF(fs(insn),ft(insn));
+                                break;
+                            case CNGLE:
+                                that.doCNGLE(fs(insn),ft(insn));
+                                break;
+                            case CSEQ:
+                                that.doCSEQ(fs(insn),ft(insn));
+                                break;
+                            case CNGL:
+                                that.doCNGL(fs(insn),ft(insn));
+                                break;
+                            case CLT: 
+                                that.doCLT(fs(insn),ft(insn));
+                                break;
+                            case CNGE:
+                                that.doCNGE(fs(insn),ft(insn));
+                                break;
+                            case CLE: 
+                                that.doCLE(fs(insn),ft(insn));
+                                break;
+                            case CNGT:
+                                that.doCNGT(fs(insn),ft(insn));
+                                break;
+                            default:
+                                that.doUNK("Unsupported COP1F instruction " + Integer.toHexString(func(insn)));
+                                break;
+                        }
+                        break;
                     default:
                         that.doUNK("Unsupported COP1 instruction " + Integer.toHexString(rs(insn)));
                         break;
