@@ -19,10 +19,10 @@ package jpcsp.util;
 
 public class MetaInformation {
     public static String NAME = "Jpcsp";
-    public static String VERSION = "v0.05";
+    public static String VERSION = "v0.06";
     public static String FULL_NAME = NAME + " " + VERSION;
     public static String OFFICIAL_SITE = "http://jpcsp.org/";
     public static String OFFICIAL_FORUM = "http://jpcsp.org/forum/";
     public static String OFFICIAL_REPOSITORY = "http://code.google.com/p/jpcsp/";
-    public static String TEAM = "shadow, mad, dreampeppers99, wrayal, fiveofhearts, hl...@free.fr????";
+    public static String TEAM = "shadow, mad, dreampeppers99, wrayal, fiveofhearts,hlide";
 }

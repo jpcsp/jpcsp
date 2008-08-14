@@ -363,6 +363,49 @@ public class AllegrexOpcodes {
     public static final byte BC1T = 0x01;
     public static final byte BC1FL = 0x02;
     public static final byte BC1TL = 0x03;
-    
-            
+ //     COP1F: encoded by function field when opcode COP1 = COP1F  //14/08/2008 not sure need to recheck
+//     31---------26------------------------------------------5--------0
+//     |=  COP1F  |                                         | function|
+//     ------6----------------------------------------------------6-----
+//     |--000--|--001--|--010--|--011--|--100--|--101--|--110--|--111--| lo
+// 000 |add.s  | sub.s | mul.s | div.s |sqrt.s |abs.s  |mov.s  |neg.s  |
+// 001 | --    | ---   | ---   | ---   |round.w.s| trunc.w.s | ceil.w.s  | floor.w.s  |
+// 010 | ---   | ---   | ---   | ---   | ---   |  ---  |  ---  | ---   |
+// 011 | ---   | ---   | ---   | ----  | ---   |  ---  | ---   | ---   |
+// 100 |cvt.s.w| ---   | ---   | ---   |cvt.w.s|  ---  |dis.int| ----- |
+// 101 | ---   | ---   | ---   | ----  | ---   |  ---  | ---   | ---   |
+// 110 | c.f   |  c.un | c.eq  | c.ueq | c.olt | c.ult | c.ole | c.ule |
+// 111 | c.sf  | c.ngle| c.seq | c.ngl | c.lt  | c.nge | c.le  | c.ngt |
+//  hi |-------|-------|-------|-------|-------|-------|-------|-------|   
+    public static final byte ADDS = 0x00;
+    public static final byte SUBS = 0x01; 
+    public static final byte MULS = 0x02;
+    public static final byte DIVS = 0x03;
+    public static final byte SQRTS = 0x04;
+    public static final byte ABSS = 0x05;
+    public static final byte MOVS = 0x06;
+    public static final byte NEGS = 0x07;
+    public static final byte ROUNDWS = 0xc;
+    public static final byte TRUNCWS = 0xd;
+    public static final byte CEILWS = 0xe;
+    public static final byte FLOORWS = 0xf;
+    public static final byte CVTSQ = 0x20;
+    public static final byte CVTWS = 0x24;
+    public static final byte DISINT = 0x26;
+    public static final byte CF = 0x30;
+    public static final byte CUN = 0x31;
+    public static final byte CEQ = 0x32;
+    public static final byte CUEQ = 0x33;
+    public static final byte COLT = 0x34;
+    public static final byte CULT = 0x35;
+    public static final byte COLE = 0x36;
+    public static final byte CULE = 0x37;
+    public static final byte CSF = 0x38;
+    public static final byte CNGLE = 0x39;
+    public static final byte CSEQ = 0x3a;
+    public static final byte CNGL = 0x3b;
+    public static final byte CLT = 0x3c;
+    public static final byte CNGE = 0x3d;
+    public static final byte CLE = 0x3e;
+    public static final byte CNGT = 0x3f;
 }            
