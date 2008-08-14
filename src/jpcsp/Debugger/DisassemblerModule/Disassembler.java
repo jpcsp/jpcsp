@@ -359,8 +359,12 @@ private void JumpToActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:
 
 
 private void StepEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_StepEmuActionPerformed
-    //c.stepCpu();
-    emu.getProcessor().step();
+    try {
+        emu.getProcessor().step();
+        jpcsp.HLE.ThreadMan.get_instance().step();
+    } catch(GeneralJpcspException e) {
+        JpcspDialogManager.showError(this, "General Error : " + e.getMessage());
+    }
     DebuggerPC = 0;
     RefreshDebugger();
     regs.RefreshRegisters();
@@ -502,7 +506,7 @@ private void formInternalFrameClosing(javax.swing.event.InternalFrameEvent evt) 
            }
        }catch(GeneralJpcspException e)
        {
-
+            JpcspDialogManager.showError(null, "General Error : " + e.getMessage());
        }
         return 0;
     }
@@ -588,7 +592,7 @@ private void ClearBreakpointsActionPerformed(java.awt.event.ActionEvent evt) {//
            }
        }catch(GeneralJpcspException e)
        {
-
+            JpcspDialogManager.showError(null, "General Error : " + e.getMessage());
        }
         return 0;
     }
@@ -602,8 +606,8 @@ private void RunWithBreakPointsActionPerformed(java.awt.event.ActionEvent evt) {
    worker2.execute();
 
 }//GEN-LAST:event_RunWithBreakPointsActionPerformed
-    
-    
+
+
     public void RefreshDebugger() {
         int t;
         int cnt;
@@ -637,7 +641,7 @@ private void RunWithBreakPointsActionPerformed(java.awt.event.ActionEvent evt) {
         }
 
     }
-    
+
 
     /**
    * Empty implementation of the ClipboardOwner interface.

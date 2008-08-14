@@ -5,7 +5,7 @@ Function:
 - Schedule threads
 
 Note:
-- incomplete, untested, not wired to the rest of the emulator yet
+- incomplete and not fully tested
 
 
 This file is part of jpcsp.
@@ -29,7 +29,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import jpcsp.Emulator;
 import jpcsp.GeneralJpcspException;
+import jpcsp.Memory;
+import jpcsp.MemoryMap;
 import jpcsp.Processor;
+import static jpcsp.util.Utilities.*;
 
 
 public class ThreadMan {
@@ -63,24 +66,46 @@ public class ThreadMan {
     }
 
     /** to be called from the main emulation loop */
-    public void step() {
+    public void step() throws GeneralJpcspException {
         if (current_thread != null) {
             current_thread.runClocks++;
+
+            //System.out.println("pc=" + Emulator.getProcessor().pc + " ra=" + Emulator.getProcessor().gpr[31]);
+
+            // Hook jr ra to 0 (thread function returned)
+            if (Emulator.getProcessor().pc == 0 && Emulator.getProcessor().gpr[31] == 0) {
+                // Thread has exited
+                System.out.println("Thread exit detected SceUID=" + Integer.toHexString(current_thread.uid) + " name:'" + current_thread.name + "'");
+                current_thread.status = PspThreadStatus.PSP_THREAD_STOPPED;
+                contextSwitch(nextThread());
+            }
         } else {
             // idle thread
             // Look for a new thread to switch in
             contextSwitch(nextThread());
         }
 
-        // decrement delaysteps on sleeping threads
         Iterator<SceKernelThreadInfo> it = threadlist.values().iterator();
         while(it.hasNext()) {
             SceKernelThreadInfo thread = it.next();
+
+            // Decrement delaysteps on sleeping threads
             if (thread.status == PspThreadStatus.PSP_THREAD_WAITING) {
                 if (thread.delaysteps > 0)
                     thread.delaysteps--;
                 if (thread.delaysteps == 0)
                     thread.status = PspThreadStatus.PSP_THREAD_READY;
+            }
+
+            // Cleanup stopped threads marked for deletion
+            if (thread.status == PspThreadStatus.PSP_THREAD_STOPPED) {
+                if (thread.do_delete) {
+                    // TODO cleanup thread, example: free the stack, anything else?
+                    // MemoryMan.free(thread.stack_addr);
+
+                    threadlist.remove(thread.uid);
+                    SceUIDMan.get_instance().releaseUid(thread.uid, "ThreadMan");
+                }
             }
         }
 
@@ -90,7 +115,8 @@ public class ThreadMan {
     private void contextSwitch(SceKernelThreadInfo newthread) {
         if (current_thread != null) {
             // Switch out old thread
-            current_thread.status = PspThreadStatus.PSP_THREAD_READY;
+            if (current_thread.status == PspThreadStatus.PSP_THREAD_RUNNING)
+                current_thread.status = PspThreadStatus.PSP_THREAD_READY;
             // save registers
             current_thread.saveContext();
         }
@@ -101,7 +127,7 @@ public class ThreadMan {
             newthread.wakeupCount++; // check
             // restore registers
             newthread.restoreContext();
-            System.out.println("ThreadMan: switched to thread SceUID=" + Integer.toHexString(newthread.uid));
+            System.out.println("ThreadMan: switched to thread SceUID=" + Integer.toHexString(newthread.uid) + " name:'" + newthread.name + "'");
         }
 
         current_thread = newthread;
@@ -109,6 +135,7 @@ public class ThreadMan {
 
     // A ring buffer would be so nice here...
     // TODO thread priorities
+    // This function must have the property of never returning current_thread, unless current_thread is already null
     private SceKernelThreadInfo nextThread() {
         Iterator<SceKernelThreadInfo> it;
         SceKernelThreadInfo found = null;
@@ -121,9 +148,7 @@ public class ThreadMan {
 
             if (!foundcurrent && thread == current_thread) {
                 foundcurrent = true;
-            }
-
-            if (foundcurrent && thread.status == PspThreadStatus.PSP_THREAD_READY) {
+            } else if (foundcurrent && thread.status == PspThreadStatus.PSP_THREAD_READY) {
                 found = thread;
                 break;
             }
@@ -153,43 +178,40 @@ public class ThreadMan {
 
 
     public void ThreadMan_sceKernelCreateThread(int a0, int a1, int a2, int a3, int t0, int t1) {
-        String name = "TestThread"; // TODO readStringZ(Memory.get_instance().mainmemory, a0);
+        String name = readStringZ(Memory.get_instance().mainmemory, (a0 & 0x3fffffff) - MemoryMap.START_RAM);
 
         // TODO use t1/SceKernelThreadOptParam?
 
         SceKernelThreadInfo thread = new SceKernelThreadInfo(name, a1, a2, a3, t0);
 
-        System.out.println("sceKernelCreateThread SceUID=" + Integer.toHexString(thread.uid) + " PC=" + Integer.toHexString(thread.pcreg));
+        System.out.println("sceKernelCreateThread SceUID=" + Integer.toHexString(thread.uid) + " PC=" + Integer.toHexString(thread.pcreg) + " name:'" + thread.name + "'");
 
         Emulator.getProcessor().gpr[2] = thread.uid;
         //return thread.uid;
     }
 
+    /** terminate thread a0 */
     public void ThreadMan_sceKernelTerminateThread(int a0) throws GeneralJpcspException {
         SceUIDMan.get_instance().checkUidPurpose(a0, "ThreadMan");
         SceKernelThreadInfo thread = threadlist.get(a0);
+        System.out.println("sceKernelTerminateThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
+
         thread.status = PspThreadStatus.PSP_THREAD_STOPPED; // PSP_THREAD_STOPPED or PSP_THREAD_KILLED ?
 
         Emulator.getProcessor().gpr[2] = 0;
         //return 0;
     }
 
+    /** delete thread a0 */
     public void ThreadMan_sceKernelDeleteThread(int a0) throws GeneralJpcspException {
         SceUIDMan.get_instance().checkUidPurpose(a0, "ThreadMan");
         SceKernelThreadInfo thread = threadlist.get(a0);
+        System.out.println("sceKernelDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
 
-        // If we're deleting the current thread switch to another first
-        if (a0 == current_thread.uid)
-            contextSwitch(nextThread());
-
-        // TODO cleanup thread, example: free the stack, anything else?
-        // MemoryMan.free(thread.stack_addr);
-
-        threadlist.remove(a0);
-        SceUIDMan.get_instance().releaseUid(a0, "ThreadMan");
+        // Mark thread for deletion
+        thread.do_delete = true;
 
         Emulator.getProcessor().gpr[2] = 0;
-        //return 0;
     }
 
     public void ThreadMan_sceKernelStartThread(int a0, int a1, int a2) throws GeneralJpcspException {
@@ -211,6 +233,7 @@ public class ThreadMan {
 
     /** exit the current thread */
     public void ThreadMan_sceKernelExitThread(int a0) {
+        System.out.println("sceKernelExitThread SceUID=" + Integer.toHexString(current_thread.uid) + " name:'" + current_thread.name + "'");
         current_thread.status = PspThreadStatus.PSP_THREAD_STOPPED;
         current_thread.exitStatus = a0;
         contextSwitch(nextThread());
@@ -219,10 +242,47 @@ public class ThreadMan {
         //return 0;
     }
 
-    /** sleep the current thread */
+    /** exit the current thread, then delete it */
+    public void ThreadMan_sceKernelExitDeleteThread(int a0) throws GeneralJpcspException {
+        SceKernelThreadInfo thread = current_thread; // save a reference for post context switch operations
+        System.out.println("sceKernelExitDeleteThread SceUID=" + Integer.toHexString(current_thread.uid) + " name:'" + current_thread.name + "'");
+
+        // Exit
+        current_thread.status = PspThreadStatus.PSP_THREAD_STOPPED;
+        current_thread.exitStatus = a0;
+        contextSwitch(nextThread());
+
+        // Mark thread for deletion
+        thread.do_delete = true;
+
+        /* or we could just delete it here
+        // Delete
+        // TODO cleanup thread, example: free the stack, anything else?
+        // MemoryMan.free(thread.stack_addr);
+
+        threadlist.remove(thread.uid);
+        SceUIDMan.get_instance().releaseUid(thread.uid, "ThreadMan");
+        */
+
+        Emulator.getProcessor().gpr[2] = 0;
+    }
+
+    /** sleep the current thread until a registered callback is triggered */
+    public void ThreadMan_sceKernelSleepThreadCB() {
+        System.out.println("sceKernelSleepThreadCB SceUID=" + Integer.toHexString(current_thread.uid) + " name:'" + current_thread.name + "'");
+
+        current_thread.status = PspThreadStatus.PSP_THREAD_SUSPEND;
+        current_thread.do_callbacks = true;
+        contextSwitch(nextThread());
+
+        Emulator.getProcessor().gpr[2] = 0;
+    }
+
+    /** sleep the current thread for a certain number of microseconds */
     public void ThreadMan_sceKernelDelayThread(int a0) {
         current_thread.status = PspThreadStatus.PSP_THREAD_WAITING;
         current_thread.delaysteps = a0; // TODO delaysteps = a0 * steprate
+        current_thread.do_callbacks = false;
         contextSwitch(nextThread());
 
         Emulator.getProcessor().gpr[2] = 0;
@@ -272,6 +332,8 @@ public class ThreadMan {
         private float[] fpr;
         private float[] vpr;
         private int delaysteps;
+        private boolean do_delete;
+        private boolean do_callbacks; // in this implementation, only valid for PSP_THREAD_WAITING and PSP_THREAD_SUSPEND
 
         public SceKernelThreadInfo(String name, int entry_addr, int initPriority, int stackSize, int attr) {
             this.name = name;
@@ -313,6 +375,8 @@ public class ThreadMan {
             gpr[31] = 0; // ra
 
             delaysteps = 0;
+            do_delete = false;
+            do_callbacks = false;
         }
 
         public void saveContext() {

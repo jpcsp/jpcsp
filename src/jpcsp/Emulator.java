@@ -312,9 +312,6 @@ public class Emulator {
 
                 //System.out.println(shdr.getSh_namez() + ":" + stubsCount + " module entries");
 
-                // TODO move this to reset function
-                nidMapper.Initialise("syscalls.txt", "FW 1.50");
-
                 for (int i = 0; i < stubHeadersCount; i++)
                 {
                     stubHeader = new Elf32StubHeader(mem, stubHeadersAddress);
@@ -402,6 +399,7 @@ public class Emulator {
         getProcessor().reset();
         Memory.get_instance().NullMemory();
         gpu.clean();
+        NIDMapper.get_instance().Initialise("syscalls.txt", "FW 1.50");
     }
 
     public void run() throws GeneralJpcspException {
@@ -409,6 +407,7 @@ public class Emulator {
        // run = true;
         while (run == true) {
             cpu.step();
+            jpcsp.HLE.ThreadMan.get_instance().step();
             gpu.draw();
             controller.checkControllerState();
             //delay(cpu.numberCyclesDelay());
