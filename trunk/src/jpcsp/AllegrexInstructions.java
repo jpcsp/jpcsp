@@ -163,7 +163,11 @@ public interface AllegrexInstructions {
 
     public void doLL(int rt, int rs, int simm16);
 
+    public void doLWC1(int rt, int rs, int simm16);
+
     public void doSC(int rt, int rs, int simm16);
+    
+    public void doSWC1(int rt, int rs, int simm16);
     
     public void doROTR(int rd, int rt, int sa);
     
@@ -208,43 +212,81 @@ public interface AllegrexInstructions {
     public void doBITREV(int rd, int rt);
     
     public void doSEH(int rd, int rt);
+    
     //COP1 instructions
     public void doMFC1(int rt, int c1dr);
+    
     public void doCFC1(int rt, int c1cr);
+    
     public void doMTC1(int rt, int c1dr);    
+    
     public void doCTC1(int rt, int c1cr);
+    
     public void doBC1F(int simm16);
+    
     public void doBC1T (int simm16);
+    
     public void doBC1FL(int simm16);
+    
     public void doBC1TL(int simm16);
+    
     public void doADDS(int fd , int fs ,int ft);
+    
     public void doSUBS(int fd , int fs ,int ft); 
+    
     public void doMULS(int fd , int fs ,int ft); 
+    
     public void doDIVS(int fd , int fs ,int ft); 
+    
     public void doSQRTS(int fd,int fs);
+    
     public void doABSS(int fd,int fs);
+    
     public void doMOVS(int fd,int fs);
+    
     public void doNEGS(int fd,int fs);
+    
     public void doROUNDWS(int fd,int fs);
+    
     public void doTRUNCWS(int fd,int fs);
+    
     public void doCEILWS(int fd,int fs);
+    
     public void doFLOORWS(int fd,int fs);
+    
     public void doCVTSW(int fd,int fs);
+    
     public void doCVTWS(int fd,int fs);
+    
     public void doCF(int fs,int ft);
+    
     public void doCUN(int fs,int ft);
+    
     public void doCEQ(int fs,int ft);
+    
     public void doCUEQ(int fs,int ft);
+    
     public void doCOLT(int fs,int ft);
+    
     public void doCULT(int fs,int ft);
+    
     public void doCOLE(int fs,int ft);
+    
     public void doCULE(int fs,int ft);
+    
     public void doCSF(int fs,int ft);
+    
     public void doCNGLE(int fs,int ft);
+    
     public void doCSEQ(int fs,int ft);
+    
     public void doCNGL(int fs,int ft);
+    
     public void doCLT(int fs,int ft);
+    
     public void doCNGE(int fs,int ft);
+    
     public void doCLE(int fs,int ft);
+    
     public void doCNGT(int fs,int ft);
 }

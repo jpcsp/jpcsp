@@ -21,16 +21,27 @@ import jpcsp.HLE.SyscallHandler;
 
 public class Processor implements AllegrexInstructions {
 
+    private static final int fcr0_imp = 0; /* FPU design number */
+
+    private static final int fcr0_rev = 0; /* FPU revision bumber */
+
     public int[] gpr;
     public float[] fpr;
     public float[] vpr;
     public long hilo;
     public int pc,  npc;
-    public int cycles;
-    public boolean bc1t;
+    public int fcr31_rm;
+    public boolean fcr31_c;
+    public boolean fcr31_fs;
+    public long cycles;
+    public long hilo_cycles;
+    public long[] fpr_cycles;
+    public long[] vpr_cycles;
+    public long fcr31_cycles;
+    private Memory memory;
 
     Processor() {
-        Memory.get_instance(); //intialize memory
+        memory = Memory.get_instance(); //intialize memory
         reset();
     }
 
@@ -42,7 +53,14 @@ public class Processor implements AllegrexInstructions {
         fpr = new float[32];
         vpr = new float[128];
 
-        bc1t = false;
+        fcr31_rm = 0;
+        fcr31_c = false;
+        fcr31_fs = false;
+
+        cycles = 0;
+        hilo_cycles = 0;
+        fpr_cycles = new long[32];
+        vpr_cycles = new long[128];
     }
 
     public int hi() {
@@ -89,12 +107,46 @@ public class Processor implements AllegrexInstructions {
         long tmp = value << (62 - 31);
         return ((tmp >>> 1) == (tmp & 1));
     }
+
+    private void updateCyclesFdFsFt(int fd, int fs, int ft, long latency) {
+        // WAW conflict (Successively writing the same register)
+        cycles = Math.max(cycles, fpr_cycles[fd]);
+        
+        // cycles when the destination register is written 
+        fpr_cycles[fd] = cycles + latency;
+        
+        // RAW conflict (Using the result of previous FPU instructions)  
+        cycles = Math.max(cycles, Math.max(fpr_cycles[fs], fpr_cycles[ft]));
+    }
+
+    private void updateCyclesFdFs(int fd, int fs, long latency) {
+        // WAW conflict (Successively writing the same register)
+        cycles = Math.max(cycles, fpr_cycles[fd]);
+
+        // cycles when the destination register is written 
+        fpr_cycles[fd] = cycles + latency;
+
+        // RAW conflict (Using the result of previous FPU instructions)  
+        cycles = Math.max(cycles, fpr_cycles[fs]);
+    }
+
+    private void updateCyclesFsFt(int fs, int ft, long latency) {
+        // WAW conflict (Successively writing the same register)
+        cycles = Math.max(cycles, fcr31_cycles);
+
+        // cycles when the FPU C bit is written 
+        fcr31_cycles = cycles + latency;
+        
+        // RAW conflict (Using the result of previous FPU instructions)  
+        cycles = Math.max(cycles, Math.max(fpr_cycles[fs], fpr_cycles[ft]));
+    }
+   
     private final Decoder interpreter = new Decoder();
 
     public void step() {
         npc = pc + 4;
 
-        int insn = Memory.get_instance().read32(pc);
+        int insn = memory.read32(pc);
 
         // by default, any Allegrex instruction takes 1 cycle at least
         cycles += 1;
@@ -107,7 +159,7 @@ public class Processor implements AllegrexInstructions {
     }
 
     public void stepDelayslot() {
-        int insn = Memory.get_instance().read32(pc);
+        int insn = memory.read32(pc);
 
         // by default, any Allegrex instruction takes 1 cycle at least
         cycles += 1;
@@ -175,24 +227,24 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doJR(int rs) {
-        int previous_cycles = cycles;
+        long target_cycles = cycles + 2;
         npc = gpr[rs];
         stepDelayslot();
-        if (cycles - previous_cycles < 2) {
-            cycles = previous_cycles + 2;
+        if (cycles < target_cycles) {
+            cycles = target_cycles;
         }
     }
 
     @Override
     public void doJALR(int rd, int rs) {
-        int previous_cycles = cycles;
+        long target_cycles = cycles + 3;
         if (rd != 0) {
             gpr[rd] = pc + 4;
         }
         npc = gpr[rs];
         stepDelayslot();
-        if (cycles - previous_cycles < 2) {
-            cycles = previous_cycles + 2;
+        if (cycles < target_cycles) {
+            cycles = target_cycles;
         }
     }
 
@@ -201,14 +253,18 @@ public class Processor implements AllegrexInstructions {
         if (rd != 0) {
             gpr[rd] = hi();
         }
-    // cycles ?
+        if (cycles < hilo_cycles) {
+            cycles = hilo_cycles;
+        }
     }
 
     @Override
     public void doMTHI(int rs) {
         int hi = gpr[rs];
         hilo = (((long) hi) << 32) | (hilo & 0xffffffff);
-    // cycles ?
+        if (cycles < hilo_cycles) {
+            cycles = hilo_cycles;
+        }
     }
 
     @Override
@@ -216,26 +272,36 @@ public class Processor implements AllegrexInstructions {
         if (rd != 0) {
             gpr[rd] = lo();
         }
-    // cycles ?
+        if (cycles < hilo_cycles) {
+            cycles = hilo_cycles;
+        }
     }
 
     @Override
     public void doMTLO(int rs) {
         int lo = gpr[rs];
         hilo = ((hilo >>> 32) << 32) | (((long) lo) & 0xffffffff);
-    // cycles ?
+        if (cycles < hilo_cycles) {
+            cycles = hilo_cycles;
+        }
     }
 
     @Override
     public void doMULT(int rs, int rt) {
         hilo = ((long) gpr[rs]) * ((long) gpr[rs]);
-        cycles += 4;
+        if (cycles < hilo_cycles) {
+            cycles = hilo_cycles;
+        }
+        hilo_cycles = cycles + 4;
     }
 
     @Override
     public void doMULTU(int rs, int rt) {
         hilo = (((long) gpr[rs]) & 0xffffffff) * (((long) gpr[rs]) & 0xffffffff);
-        cycles += 4;
+        if (cycles < hilo_cycles) {
+            cycles = hilo_cycles;
+        }
+        hilo_cycles = cycles + 4;
     }
 
     @Override
@@ -243,7 +309,10 @@ public class Processor implements AllegrexInstructions {
         int lo = gpr[rs] / gpr[rt];
         int hi = gpr[rs] % gpr[rt];
         hilo = ((long) hi) << 32 | (((long) lo) & 0xffffffff);
-        cycles += 35;
+        if (cycles < hilo_cycles) {
+            cycles = hilo_cycles;
+        }
+        hilo_cycles = cycles + 35;
     }
 
     @Override
@@ -253,7 +322,10 @@ public class Processor implements AllegrexInstructions {
         int lo = (int) (x / y);
         int hi = (int) (x % y);
         hilo = ((long) hi) << 32 | (((long) lo) & 0xffffffff);
-        cycles += 35;
+        if (cycles < hilo_cycles) {
+            cycles = hilo_cycles;
+        }
+        hilo_cycles = cycles + 35;
     }
 
     @Override
@@ -264,7 +336,7 @@ public class Processor implements AllegrexInstructions {
             if (!addSubOverflow(result)) {
                 gpr[rd] = (int) result;
             } else {
-                // TODO set exception overflow and break !!! (rd cannot be modify)
+                doUNK("ADD raises an Overflow exception");
             }
         }
     }
@@ -284,7 +356,7 @@ public class Processor implements AllegrexInstructions {
             if (!addSubOverflow(result)) {
                 gpr[rd] = (int) result;
             } else {
-                // TODO set exception overflow and break !!! (rd cannot be modify)
+                doUNK("SUB raises an Overflow exception");
             }
         }
     }
@@ -340,32 +412,32 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doBLTZ(int rs, int simm16) {
-        int previous_cycles = cycles;
+        long target_cycles = cycles + 3;
         npc = (gpr[rs] < 0) ? branchTarget(pc, simm16) : (pc + 4);
         stepDelayslot();
-        if (cycles - previous_cycles < 3) {
-            cycles = previous_cycles + 3;
+        if (cycles < target_cycles) {
+            cycles = target_cycles;
         }
     }
 
     @Override
     public void doBGEZ(int rs, int simm16) {
-        int previous_cycles = cycles;
+        long target_cycles = cycles + 3;
         npc = (gpr[rs] >= 0) ? branchTarget(pc, simm16) : (pc + 4);
         stepDelayslot();
-        if (cycles - previous_cycles < 3) {
-            cycles = previous_cycles + 3;
+        if (cycles < target_cycles) {
+            cycles = target_cycles;
         }
     }
 
     @Override
     public void doBLTZL(int rs, int simm16) {
-        int previous_cycles = cycles;
+        long target_cycles = cycles + 3;
         if (gpr[rs] < 0) {
             npc = branchTarget(pc, simm16);
             stepDelayslot();
-            if (cycles - previous_cycles < 3) {
-                cycles = previous_cycles + 3;
+            if (cycles < target_cycles) {
+                cycles = target_cycles;
             }
         } else {
             pc += 4;
@@ -375,12 +447,12 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doBGEZL(int rs, int simm16) {
-        int previous_cycles = cycles;
+        long target_cycles = cycles + 3;
         if (gpr[rs] >= 0) {
             npc = branchTarget(pc, simm16);
             stepDelayslot();
-            if (cycles - previous_cycles < 3) {
-                cycles = previous_cycles + 3;
+            if (cycles < target_cycles) {
+                cycles = target_cycles;
             }
         } else {
             pc += 4;
@@ -390,40 +462,40 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doBLTZAL(int rs, int simm16) {
-        int previous_cycles = cycles;
+        long target_cycles = cycles + 3;
         int target = pc + 4;
         boolean t = (gpr[rs] < 0);
         gpr[31] = target;
         npc = t ? branchTarget(pc, simm16) : target;
         stepDelayslot();
-        if (cycles - previous_cycles < 3) {
-            cycles = previous_cycles + 3;
+        if (cycles < target_cycles) {
+            cycles = target_cycles;
         }
     }
 
     @Override
     public void doBGEZAL(int rs, int simm16) {
-        int previous_cycles = cycles;
+        long target_cycles = cycles + 3;
         int target = pc + 4;
         boolean t = (gpr[rs] >= 0);
         gpr[31] = target;
         npc = t ? branchTarget(pc, simm16) : target;
         stepDelayslot();
-        if (cycles - previous_cycles < 3) {
-            cycles = previous_cycles + 3;
+        if (cycles < target_cycles) {
+            cycles = target_cycles;
         }
     }
 
     @Override
     public void doBLTZALL(int rs, int simm16) {
-        int previous_cycles = cycles;
+        long target_cycles = cycles + 3;
         boolean t = (gpr[rs] < 0);
         gpr[31] = pc + 4;
         if (t) {
             npc = branchTarget(pc, simm16);
             stepDelayslot();
-            if (cycles - previous_cycles < 3) {
-                cycles = previous_cycles + 3;
+            if (cycles < target_cycles) {
+                cycles = target_cycles;
             }
         } else {
             pc += 4;
@@ -433,14 +505,14 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doBGEZALL(int rs, int simm16) {
-        int previous_cycles = cycles;
+        long target_cycles = cycles + 3;
         boolean t = (gpr[rs] >= 0);
         gpr[31] = pc + 4;
         if (t) {
             npc = branchTarget(pc, simm16);
             stepDelayslot();
-            if (cycles - previous_cycles < 3) {
-                cycles = previous_cycles + 3;
+            if (cycles < target_cycles) {
+                cycles = target_cycles;
             }
         } else {
             pc += 4;
@@ -450,73 +522,73 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doJ(int uimm26) {
-        int previous_cycles = cycles;
+        long target_cycles = cycles + 2;
         npc = jumpTarget(pc, uimm26);
         stepDelayslot();
-        if (cycles - previous_cycles < 2) {
-            cycles = previous_cycles + 2;
+        if (cycles < target_cycles) {
+            cycles = target_cycles;
         }
     }
 
     @Override
     public void doJAL(int uimm26) {
-        int previous_cycles = cycles;
+        long target_cycles = cycles + 2;
         gpr[31] = pc + 4;
         npc = jumpTarget(pc, uimm26);
         stepDelayslot();
-        if (cycles - previous_cycles < 2) {
-            cycles = previous_cycles + 2;
+        if (cycles < target_cycles) {
+            cycles = target_cycles;
         }
     }
 
     @Override
     public void doBEQ(int rs, int rt, int simm16) {
-        int previous_cycles = cycles;
+        long target_cycles = cycles + 3;
         npc = (gpr[rs] == gpr[rt]) ? branchTarget(pc, simm16) : (pc + 4);
         stepDelayslot();
-        if (cycles - previous_cycles < 3) {
-            cycles = previous_cycles + 3;
+        if (cycles < target_cycles) {
+            cycles = target_cycles;
         }
     }
 
     @Override
     public void doBNE(int rs, int rt, int simm16) {
-        int previous_cycles = cycles;
+        long target_cycles = cycles + 3;
         npc = (gpr[rs] != gpr[rt]) ? branchTarget(pc, simm16) : (pc + 4);
         stepDelayslot();
-        if (cycles - previous_cycles < 3) {
-            cycles = previous_cycles + 3;
+        if (cycles < target_cycles) {
+            cycles = target_cycles;
         }
     }
 
     @Override
     public void doBLEZ(int rs, int simm16) {
-        int previous_cycles = cycles;
+        long target_cycles = cycles + 3;
         npc = (gpr[rs] <= 0) ? branchTarget(pc, simm16) : (pc + 4);
         stepDelayslot();
-        if (cycles - previous_cycles < 3) {
-            cycles = previous_cycles + 3;
+        if (cycles < target_cycles) {
+            cycles = target_cycles;
         }
     }
 
     @Override
     public void doBGTZ(int rs, int simm16) {
-        int previous_cycles = cycles;
+        long target_cycles = cycles + 3;
         npc = (gpr[rs] > 0) ? branchTarget(pc, simm16) : (pc + 4);
         stepDelayslot();
-        if (cycles - previous_cycles < 3) {
-            cycles = previous_cycles + 3;
+        if (cycles < target_cycles) {
+            cycles = target_cycles;
         }
     }
 
     @Override
     public void doBEQL(int rs, int rt, int simm16) {
-        int previous_cycles = cycles;
+        long target_cycles = cycles + 3;
         if (gpr[rs] == gpr[rt]) {
             npc = branchTarget(pc, simm16);
             stepDelayslot();
-            if (cycles - previous_cycles < 3) {
-                cycles = previous_cycles + 3;
+            if (cycles < target_cycles) {
+                cycles = target_cycles;
             }
         } else {
             pc += 4;
@@ -526,12 +598,12 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doBNEL(int rs, int rt, int simm16) {
-        int previous_cycles = cycles;
+        long target_cycles = cycles + 3;
         if (gpr[rs] != gpr[rt]) {
             npc = branchTarget(pc, simm16);
             stepDelayslot();
-            if (cycles - previous_cycles < 3) {
-                cycles = previous_cycles + 3;
+            if (cycles < target_cycles) {
+                cycles = target_cycles;
             }
         } else {
             pc += 4;
@@ -541,12 +613,12 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doBLEZL(int rs, int simm16) {
-        int previous_cycles = cycles;
+        long target_cycles = cycles + 3;
         if (gpr[rs] <= 0) {
             npc = branchTarget(pc, simm16);
             stepDelayslot();
-            if (cycles - previous_cycles < 3) {
-                cycles = previous_cycles + 3;
+            if (cycles < target_cycles) {
+                cycles = target_cycles;
             }
         } else {
             pc += 4;
@@ -556,12 +628,12 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doBGTZL(int rs, int simm16) {
-        int previous_cycles = cycles;
+        long target_cycles = cycles + 3;
         if (gpr[rs] > 0) {
             npc = branchTarget(pc, simm16);
             stepDelayslot();
-            if (cycles - previous_cycles < 3) {
-                cycles = previous_cycles + 3;
+            if (cycles < target_cycles) {
+                cycles = target_cycles;
             }
         } else {
             pc += 4;
@@ -577,7 +649,7 @@ public class Processor implements AllegrexInstructions {
             if (!addSubOverflow(result)) {
                 gpr[rt] = (int) result;
             } else {
-                // TODO set exception overflow and break !!! (rd cannot be modify)
+                doUNK("ADDI raises an Overflow exception");
             }
         }
     }
@@ -634,82 +706,79 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doHALT() {
         // TODO
-        System.out.println("Unsupported HALT instruction");
+        doUNK("Unsupported HALT instruction");
     }
 
     @Override
     public void doMFIC(int rt) {
         // TODO
-        System.out.println("Unsupported mfic instruction");
+        doUNK("Unsupported mfic instruction");
     }
 
     @Override
     public void doMTIC(int rt) {
         // TODO
-        System.out.println("Unsupported mtic instruction");
+        doUNK("Unsupported mtic instruction");
     }
 
     @Override
     public void doMFC0(int rt, int c0dr) {
         // TODO
-        System.out.println("Unsupported mfc0 instruction");
+        doUNK("Unsupported mfc0 instruction");
     }
 
     @Override
     public void doCFC0(int rt, int c0cr) {
         // TODO
-        System.out.println("Unsupported cfc0 instruction");
+        doUNK("Unsupported cfc0 instruction");
     }
 
     @Override
     public void doMTC0(int rt, int c0dr) {
         // TODO
-        System.out.println("Unsupported mtc0 instruction");
+        doUNK("Unsupported mtc0 instruction");
     }
 
     @Override
     public void doCTC0(int rt, int c0cr) {
         // TODO
-        System.out.println("Unsupported ctc0 instruction");
+        doUNK("Unsupported ctc0 instruction");
     }
 
     @Override
     public void doERET() {
         // TODO
-        System.out.println("Unsupported eret instruction");
+        //ll_bit = 0;
+        doUNK("Unsupported eret instruction");
     }
 
     @Override
     public void doLB(int rt, int rs, int simm16) {
-        int virtAddr = gpr[rs] + simm16;
-        gpr[rt] = (Memory.get_instance().read8(virtAddr) << 24) >> 24;
+        gpr[rt] = (memory.read8(gpr[rs] + simm16) << 24) >> 24;
     }
 
     @Override
     public void doLBU(int rt, int rs, int simm16) {
-        int virtAddr = gpr[rs] + simm16;
-        gpr[rt] = Memory.get_instance().read8(virtAddr) & 0xff;
+        gpr[rt] = memory.read8(gpr[rs] + simm16) & 0xff;
     }
 
     @Override
     public void doLH(int rt, int rs, int simm16) {
-        int virtAddr = gpr[rs] + simm16;
-        gpr[rt] = (Memory.get_instance().read16(virtAddr) << 16) >> 16;
+        gpr[rt] = (memory.read16(gpr[rs] + simm16) << 16) >> 16;
     }
 
     @Override
     public void doLHU(int rt, int rs, int simm16) {
-        int virtAddr = gpr[rs] + simm16;
-        gpr[rt] = Memory.get_instance().read16(virtAddr) & 0xffff;
+        gpr[rt] = memory.read16(gpr[rs] + simm16) & 0xffff;
     }
 
     @Override
     public void doLWL(int rt, int rs, int simm16) {
-        int virtAddr = gpr[rs] + simm16;
-        int offset = virtAddr & 0x3;
+        int address = gpr[rs] + simm16;
+        int offset = address & 0x3;
         int reg = gpr[rt];
 
-        int word = Memory.get_instance().read32(virtAddr & 0xfffffffc);
+        int word = memory.read32(address & 0xfffffffc);
 
         switch (offset) {
             case 0:
@@ -733,17 +802,16 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doLW(int rt, int rs, int simm16) {
-        int virtAddr = gpr[rs] + simm16;
-        gpr[rt] = Memory.get_instance().read32(virtAddr);
+        gpr[rt] = memory.read32(gpr[rs] + simm16);
     }
 
     @Override
     public void doLWR(int rt, int rs, int simm16) {
-        int virtAddr = gpr[rs] + simm16;
-        int offset = virtAddr & 0x3;
+        int address = gpr[rs] + simm16;
+        int offset = address & 0x3;
         int reg = gpr[rt];
 
-        int word = Memory.get_instance().read32(virtAddr & 0xfffffffc);
+        int word = memory.read32(address & 0xfffffffc);
 
         switch (offset) {
             case 0:
@@ -767,22 +835,20 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doSB(int rt, int rs, int simm16) {
-        int virtAddr = gpr[rs] + simm16;
-        Memory.get_instance().write8(virtAddr, (byte) (gpr[rt] & 0xFF));
+        memory.write8(gpr[rs] + simm16, (byte) (gpr[rt] & 0xFF));
     }
 
     @Override
     public void doSH(int rt, int rs, int simm16) {
-        int virtAddr = gpr[rs] + simm16;
-        Memory.get_instance().write16(virtAddr, (short) (gpr[rt] & 0xFFFF));
+        memory.write16(gpr[rs] + simm16, (short) (gpr[rt] & 0xFFFF));
     }
 
     @Override
     public void doSWL(int rt, int rs, int simm16) {
-        int virtAddr = gpr[rs] + simm16;
-        int offset = virtAddr & 0x3;
+        int address = gpr[rs] + simm16;
+        int offset = address & 0x3;
         int reg = gpr[rt];
-        int data = Memory.get_instance().read32(virtAddr & 0xfffffffc);
+        int data = memory.read32(address & 0xfffffffc);
 
         switch (offset) {
             case 0:
@@ -802,21 +868,20 @@ public class Processor implements AllegrexInstructions {
                 break;
         }
 
-        Memory.get_instance().write32(virtAddr & 0xfffffffc, data);
+        memory.write32(address & 0xfffffffc, data);
     }
 
     @Override
     public void doSW(int rt, int rs, int simm16) {
-        int virtAddr = gpr[rs] + simm16;
-        Memory.get_instance().write32(virtAddr, gpr[rt]);
+        memory.write32(gpr[rs] + simm16, gpr[rt]);
     }
 
     @Override
     public void doSWR(int rt, int rs, int simm16) {
-        int virtAddr = gpr[rs] + simm16;
-        int offset = virtAddr & 0x3;
+        int address = gpr[rs] + simm16;
+        int offset = address & 0x3;
         int reg = gpr[rt];
-        int data = Memory.get_instance().read32(virtAddr & 0xfffffffc);
+        int data = memory.read32(address & 0xfffffffc);
 
         switch (offset) {
             case 0:
@@ -836,25 +901,38 @@ public class Processor implements AllegrexInstructions {
                 break;
         }
 
-        Memory.get_instance().write32(virtAddr & 0xfffffffc, data);
+        memory.write32(address & 0xfffffffc, data);
     }
 
     @Override
     public void doCACHE(int code, int rs, int simm16) {
         // TODO
-        System.out.println("Unsupported cache instruction");
+        doUNK("Unsupported cache instruction");
     }
 
     @Override
     public void doLL(int rt, int rs, int simm16) {
-        // TODO
-        System.out.println("Unsupported ll instruction");
+        gpr[rt] = memory.read32(gpr[rs] + simm16);
+    //ll_bit = 1;
+    }
+
+    @Override
+    public void doLWC1(int ft, int rs, int simm16) {
+        fpr[ft] = Float.intBitsToFloat(memory.read32(gpr[rs] + simm16));
+        cycles = Math.max(cycles, fpr_cycles[ft]);
+        fpr_cycles[ft] = cycles + 1;
     }
 
     @Override
     public void doSC(int rt, int rs, int simm16) {
-        // TODO
-        System.out.println("Unsupported sc instruction");
+        memory.write32(gpr[rs] + simm16, gpr[rt]);
+        gpr[rt] = 1; // = ll_bit;
+    }
+
+    @Override
+    public void doSWC1(int ft, int rs, int simm16) {
+        memory.write32(gpr[rs] + simm16, Float.floatToRawIntBits(fpr[ft]));
+        cycles = Math.max(cycles, fpr_cycles[ft]);
     }
 
     @Override
@@ -926,13 +1004,19 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doMADD(int rs, int rt) {
         hilo += ((long) gpr[rs]) * ((long) gpr[rs]);
-        cycles += 4;
+        if (cycles < hilo_cycles) {
+            cycles = hilo_cycles;
+        }
+        hilo_cycles = cycles + 4;
     }
 
     @Override
     public void doMADDU(int rs, int rt) {
         hilo += (((long) gpr[rs]) & 0xffffffff) * (((long) gpr[rs]) & 0xffffffff);
-        cycles += 4;
+        if (cycles < hilo_cycles) {
+            cycles = hilo_cycles;
+        }
+        hilo_cycles = cycles + 4;
     }
 
     @Override
@@ -956,13 +1040,19 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doMSUB(int rs, int rt) {
         hilo -= ((long) gpr[rs]) * ((long) gpr[rs]);
-        cycles += 4;
+        if (cycles < hilo_cycles) {
+            cycles = hilo_cycles;
+        }
+        hilo_cycles = cycles + 4;
     }
 
     @Override
     public void doMSUBU(int rs, int rt) {
         hilo -= (((long) gpr[rs]) & 0xffffffff) * (((long) gpr[rs]) & 0xffffffff);
-        cycles += 4;
+        if (cycles < hilo_cycles) {
+            cycles = hilo_cycles;
+        }
+        hilo_cycles = cycles + 4;
     }
 
     @Override
@@ -1015,136 +1105,179 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doMFC1(int rt, int c1dr) {
         gpr[rt] = Float.floatToRawIntBits(fpr[c1dr]);
+        cycles = Math.max(cycles, fpr_cycles[c1dr]);
     }
 
     @Override
     public void doCFC1(int rt, int c1cr) {
-        doUNK("Unsupported cfc1 instruction");
+        if (rt != 0) {
+            switch (c1cr) {
+                case 0:
+                    gpr[rt] = (fcr0_imp << 8) | (fcr0_rev);
+                    break;
+
+                case 31:
+                    gpr[rt] = (fcr31_fs ? (1 << 24) : 0) | (fcr31_c ? (1 << 23) : 0) | (fcr31_rm & 3);
+                    cycles = Math.max(cycles, fcr31_cycles);
+                    break;
+
+                default:
+                    doUNK("Unsupported cfc1 instruction for fcr" + Integer.toString(c1cr));
+            }
+        }
     }
 
     @Override
     public void doMTC1(int rt, int c1dr) {
         fpr[c1dr] = Float.intBitsToFloat(gpr[rt]);
+        cycles = Math.max(cycles, fpr_cycles[c1dr]);
+        fpr_cycles[c1dr] = cycles + 1;
     }
 
     @Override
     public void doCTC1(int rt, int c1cr) {
-        doUNK("Unsupported ctc1 instruction");
+        switch (c1cr) {
+            case 31:
+                int bits = gpr[rt] & 0x01800003;
+                fcr31_rm = bits & 3;
+                bits >>= 23;
+                fcr31_fs = (bits > 1);
+                fcr31_c = (bits >> 1) == 1;
+                cycles = Math.max(cycles, fcr31_cycles);
+                fcr31_cycles = cycles + 1;
+                break;
+
+            default:
+                doUNK("Unsupported ctc1 instruction for fcr" + Integer.toString(c1cr));
+        }
     }
 
     @Override
     public void doBC1F(int simm16) {
-        int previous_cycles = cycles;
-        npc = !bc1t ? branchTarget(pc, simm16) : (pc + 4);
+        long target_cycles = Math.max(cycles + 3, fcr31_cycles);
+        npc = !fcr31_c ? branchTarget(pc, simm16) : (pc + 4);
         stepDelayslot();
-        if (cycles - previous_cycles < 3) {
-            cycles = previous_cycles + 3;
+        if (cycles < target_cycles) {
+            cycles = target_cycles;
         }
     }
 
     @Override
     public void doBC1T(int simm16) {
-        int previous_cycles = cycles;
-        npc = bc1t ? branchTarget(pc, simm16) : (pc + 4);
+        long target_cycles = Math.max(cycles + 3, fcr31_cycles);
+        npc = fcr31_c ? branchTarget(pc, simm16) : (pc + 4);
         stepDelayslot();
-        if (cycles - previous_cycles < 3) {
-            cycles = previous_cycles + 3;
+        if (cycles < target_cycles) {
+            cycles = target_cycles;
         }
     }
 
     @Override
     public void doBC1FL(int simm16) {
-        int previous_cycles = cycles;
-        if (!bc1t) {
+        long target_cycles = Math.max(cycles + 3, fcr31_cycles);
+        if (!fcr31_c) {
             npc = branchTarget(pc, simm16);
             stepDelayslot();
-            if (cycles - previous_cycles < 3) {
-                cycles = previous_cycles + 3;
+            if (cycles < target_cycles) {
+                cycles = target_cycles;
             }
         } else {
             pc += 4;
-            cycles += 3;
+            cycles = target_cycles;
         }
     }
 
     @Override
     public void doBC1TL(int simm16) {
-        int previous_cycles = cycles;
-        if (bc1t) {
+        long target_cycles = Math.max(cycles + 3, fcr31_cycles);
+        if (fcr31_c) {
             npc = branchTarget(pc, simm16);
             stepDelayslot();
-            if (cycles - previous_cycles < 3) {
-                cycles = previous_cycles + 3;
+            if (cycles < target_cycles) {
+                cycles = target_cycles;
             }
         } else {
             pc += 4;
-            cycles += 3;
+            cycles = target_cycles;
         }
     }
 
     @Override
     public void doADDS(int fd, int fs, int ft) {
         fpr[fd] = fpr[fs] + fpr[ft];
+        updateCyclesFdFsFt(fd, fs, ft, 3);
     }
 
     @Override
     public void doSUBS(int fd, int fs, int ft) {
         fpr[fd] = fpr[fs] - fpr[ft];
+        updateCyclesFdFsFt(fd, fs, ft, 3);
     }
 
     @Override
     public void doMULS(int fd, int fs, int ft) {
         fpr[fd] = fpr[fs] * fpr[ft];
+        updateCyclesFdFsFt(fd, fs, ft, 6);
     }
 
     @Override
     public void doDIVS(int fd, int fs, int ft) {
         fpr[fd] = fpr[fs] / fpr[ft];
+        updateCyclesFdFsFt(fd, fs, ft, 27);
     }
 
     @Override
     public void doSQRTS(int fd, int fs) {
         fpr[fd] = (float) Math.sqrt(fpr[fs]);
+        updateCyclesFdFs(fd, fs, 27);
     }
 
     @Override
     public void doABSS(int fd, int fs) {
         fpr[fd] = Math.abs(fpr[fs]);
+        fpr_cycles[fd] = cycles;
     }
 
     @Override
     public void doMOVS(int fd, int fs) {
         fpr[fd] = fpr[fs];
+        fpr_cycles[fd] = cycles;
     }
 
     @Override
     public void doNEGS(int fd, int fs) {
         fpr[fd] = 0.0f - fpr[fs];
+        fpr_cycles[fd] = cycles;
     }
 
     @Override
     public void doROUNDWS(int fd, int fs) {
         fpr[fd] = Float.intBitsToFloat(Math.round(fpr[fs]));
+        updateCyclesFdFs(fd, fs, 3);
     }
 
     @Override
     public void doTRUNCWS(int fd, int fs) {
         fpr[fd] = Float.intBitsToFloat((int) (fpr[fs]));
+        updateCyclesFdFs(fd, fs, 3);
     }
 
     @Override
     public void doCEILWS(int fd, int fs) {
         fpr[fd] = Float.intBitsToFloat((int) Math.ceil(fpr[fs]));
+        updateCyclesFdFs(fd, fs, 3);
     }
 
     @Override
     public void doFLOORWS(int fd, int fs) {
         fpr[fd] = Float.intBitsToFloat((int) Math.floor(fpr[fs]));
+        updateCyclesFdFs(fd, fs, 3);
     }
 
     @Override
     public void doCVTSW(int fd, int fs) {
         fpr[fd] = (float) Float.floatToRawIntBits(fpr[fs]);
+        updateCyclesFdFs(fd, fs, 5);
     }
 
     @Override
@@ -1160,12 +1293,13 @@ public class Processor implements AllegrexInstructions {
             default:
                 fpr[fd] = Float.intBitsToFloat((int) Math.rint(fpr[fs]));
         }
+        updateCyclesFdFs(fd, fs, 3);
     }
 
     private boolean c_cond_s(float fs, float ft, boolean signal, boolean less, boolean equal, boolean unordered) {
         unordered = unordered && (Float.isNaN(fs) || Float.isNaN(ft));
         if (unordered && signal) {
-            doUNK("float point unordered exception");
+            doUNK("C.cond.S instruction raise an Unordered exception");
         }
         equal = equal && !unordered && (fs == ft);
         less = less && !unordered && (fs < ft);
@@ -1175,81 +1309,97 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doCF(int fs, int ft) {
-        bc1t = c_cond_s(fpr[fs], fpr[ft], false, false, false, false);
+        fcr31_c = c_cond_s(fpr[fs], fpr[ft], false, false, false, false);
+        updateCyclesFsFt(fs, ft, 1);
     }
 
     @Override
     public void doCUN(int fs, int ft) {
-        bc1t = c_cond_s(fpr[fs], fpr[ft], false, false, false, true);
+        fcr31_c = c_cond_s(fpr[fs], fpr[ft], false, false, false, true);
+        updateCyclesFsFt(fs, ft, 1);
     }
 
     @Override
     public void doCEQ(int fs, int ft) {
-        bc1t = c_cond_s(fpr[fs], fpr[ft], false, false, true, false);
+        fcr31_c = c_cond_s(fpr[fs], fpr[ft], false, false, true, false);
+        updateCyclesFsFt(fs, ft, 1);
     }
 
     @Override
     public void doCUEQ(int fs, int ft) {
-        bc1t = c_cond_s(fpr[fs], fpr[ft], false, false, true, true);
+        fcr31_c = c_cond_s(fpr[fs], fpr[ft], false, false, true, true);
+        updateCyclesFsFt(fs, ft, 1);
     }
 
     @Override
     public void doCOLT(int fs, int ft) {
-        bc1t = c_cond_s(fpr[fs], fpr[ft], false, true, false, false);
+        fcr31_c = c_cond_s(fpr[fs], fpr[ft], false, true, false, false);
+        updateCyclesFsFt(fs, ft, 1);
     }
 
     @Override
     public void doCULT(int fs, int ft) {
-        bc1t = c_cond_s(fpr[fs], fpr[ft], false, true, false, true);
+        fcr31_c = c_cond_s(fpr[fs], fpr[ft], false, true, false, true);
+        updateCyclesFsFt(fs, ft, 1);
     }
 
     @Override
     public void doCOLE(int fs, int ft) {
-        bc1t = c_cond_s(fpr[fs], fpr[ft], false, true, true, false);
+        fcr31_c = c_cond_s(fpr[fs], fpr[ft], false, true, true, false);
+        updateCyclesFsFt(fs, ft, 1);
     }
 
     @Override
     public void doCULE(int fs, int ft) {
-        bc1t = c_cond_s(fpr[fs], fpr[ft], false, true, true, true);
+        fcr31_c = c_cond_s(fpr[fs], fpr[ft], false, true, true, true);
+        updateCyclesFsFt(fs, ft, 1);
     }
 
     @Override
     public void doCSF(int fs, int ft) {
-        bc1t = c_cond_s(fpr[fs], fpr[ft], true, false, false, false);
+        fcr31_c = c_cond_s(fpr[fs], fpr[ft], true, false, false, false);
+        updateCyclesFsFt(fs, ft, 1);
     }
 
     @Override
     public void doCNGLE(int fs, int ft) {
-        bc1t = c_cond_s(fpr[fs], fpr[ft], false, false, false, true);
+        fcr31_c = c_cond_s(fpr[fs], fpr[ft], false, false, false, true);
+        updateCyclesFsFt(fs, ft, 1);
     }
 
     @Override
     public void doCSEQ(int fs, int ft) {
-        bc1t = c_cond_s(fpr[fs], fpr[ft], true, false, true, false);
+        fcr31_c = c_cond_s(fpr[fs], fpr[ft], true, false, true, false);
+        updateCyclesFsFt(fs, ft, 1);
     }
 
     @Override
     public void doCNGL(int fs, int ft) {
-        bc1t = c_cond_s(fpr[fs], fpr[ft], false, false, true, true);
+        fcr31_c = c_cond_s(fpr[fs], fpr[ft], false, false, true, true);
+        updateCyclesFsFt(fs, ft, 1);
     }
 
     @Override
     public void doCLT(int fs, int ft) {
-        bc1t = c_cond_s(fpr[fs], fpr[ft], true, true, false, false);
+        fcr31_c = c_cond_s(fpr[fs], fpr[ft], true, true, false, false);
+        updateCyclesFsFt(fs, ft, 1);
     }
 
     @Override
     public void doCNGE(int fs, int ft) {
-        bc1t = c_cond_s(fpr[fs], fpr[ft], true, true, false, true);
+        fcr31_c = c_cond_s(fpr[fs], fpr[ft], true, true, false, true);
+        updateCyclesFsFt(fs, ft, 1);
     }
 
     @Override
     public void doCLE(int fs, int ft) {
-        bc1t = c_cond_s(fpr[fs], fpr[ft], true, true, true, false);
+        fcr31_c = c_cond_s(fpr[fs], fpr[ft], true, true, true, false);
+        updateCyclesFsFt(fs, ft, 1);
     }
 
     @Override
     public void doCNGT(int fs, int ft) {
-        bc1t = c_cond_s(fpr[fs], fpr[ft], true, true, true, true);
+        fcr31_c = c_cond_s(fpr[fs], fpr[ft], true, true, true, true);
+        updateCyclesFsFt(fs, ft, 1);
     }
 }
