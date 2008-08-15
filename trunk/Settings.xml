@@ -5,16 +5,16 @@
     <windowspos>
 
        <disassembler>
-           <x>243</x>
-           <y>44</y>
+           <x>242</x>
+           <y>67</y>
        </disassembler>
        <elfheader>
            <x>399</x>
            <y>325</y>
        </elfheader>
        <memoryview>
-           <x>7</x>
-           <y>231</y>
+           <x>2</x>
+           <y>-17</y>
        </memoryview>
        <registers>
            <x>15</x>

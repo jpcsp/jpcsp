@@ -1368,7 +1368,7 @@ public class Processor implements AllegrexInstructions {
     
     // VFPU2
     @Override
-    public void doVCMP(int vsize, int vs,int vt) {
+    public void doVCMP(int vsize, int vs, int vt, int cond) {
         doUNK("Unsupported VFPU instruction");
     }
     
