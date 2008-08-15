@@ -76,6 +76,34 @@ public class Decoder {
         return instruction & 15;
     }
 
+    public int vd(int instruction) {
+        return (instruction) & 127;
+    }
+
+    public int vs(int instruction) {
+        return (instruction >> 8) & 127;
+    }
+
+    public int vt(int instruction) {
+        return (instruction >> 16) & 127;
+    }
+    
+    public int vsize(int instruction) {
+        return 1 + ((instruction >> 7) & 1) + ((instruction >> 15) & 1);
+    }
+    
+    public int vop0(int instruction) {
+        return (instruction >> 23) & 7;
+    }
+
+    public int vop1(int instruction) {
+        return (instruction >> 23) & 7;
+    }
+
+    public int vop2(int instruction) {
+        return (instruction >> 23) & 7;
+    }
+
     public <P extends AllegrexInstructions> void process(P that, int insn) {
 
         byte opcode = (byte) (insn >>> 26);
@@ -493,6 +521,94 @@ public class Decoder {
 
             case BGTZL:
                 that.doBGTZ(rs(insn), simm16(insn));
+                break;
+
+            case VFPU0:
+                switch ((byte) vop0(insn)) {
+                    case VADD:
+                        that.doVADD(vsize(insn), vd(insn), vs(insn), vt(insn));
+                        break;
+
+                    case VSUB:
+                        that.doVSUB(vsize(insn), vd(insn), vs(insn), vt(insn));
+                        break;
+
+                    case VSBN:
+                        that.doVSBN(vsize(insn), vd(insn), vs(insn), vt(insn));
+                        break;
+
+                    case VDIV:
+                        that.doVDIV(vsize(insn), vd(insn), vs(insn), vt(insn));
+                        break;
+
+                    default:
+                        that.doUNK("Unsupported VFPU0 instruction " + Integer.toBinaryString(vop0(insn)));
+                        break;
+                }
+                break;
+
+            case VFPU1:
+                switch ((byte) vop1(insn)) {                   
+                    case VMUL:
+                        that.doVMUL(vsize(insn), vd(insn), vs(insn), vt(insn));
+                        break;
+
+                    case VDOT:
+                        that.doVDOT(vsize(insn), vd(insn), vs(insn), vt(insn));
+                        break;
+
+                    case VSCL:
+                        that.doVSCL(vsize(insn), vd(insn), vs(insn), vt(insn));
+                        break;
+
+                    case VHDP:
+                        that.doVHDP(vsize(insn), vd(insn), vs(insn), vt(insn));
+                        break;
+
+                    case VCRS:
+                        that.doVCRS(vsize(insn), vd(insn), vs(insn), vt(insn));
+                        break;
+
+                    case VDET:
+                        that.doVDET(vsize(insn), vd(insn), vs(insn), vt(insn));
+                        break;
+
+                    default:
+                        that.doUNK("Unsupported VFPU1 instruction " + Integer.toBinaryString(vop1(insn)));
+                        break;
+                }
+                break;
+
+            case VFPU2:
+                switch ((byte) vop2(insn)) {
+                    case VCMP:
+                        that.doVCMP(vsize(insn), vs(insn), vt(insn));
+                        break;
+
+                    case VMIN:
+                        that.doVMIN(vsize(insn), vd(insn), vs(insn), vt(insn));
+                        break;
+
+                    case VMAX:
+                        that.doVMAX(vsize(insn), vd(insn), vs(insn), vt(insn));
+                        break;
+
+                    case VSCMP:
+                        that.doVSCMP(vsize(insn), vd(insn), vs(insn), vt(insn));
+                        break;
+
+                    case VSGE:
+                        that.doVSGE(vsize(insn), vd(insn), vs(insn), vt(insn));
+                        break;
+
+                    case VSLT:
+                        that.doVSLT(vsize(insn), vd(insn), vs(insn), vt(insn));
+                        break;
+
+                    default:
+                        that.doUNK("Unsupported VFPU2 instruction " + Integer.toBinaryString(vop2(insn)));
+                        break;
+                }
                 break;
 
             case SPECIAL2:
