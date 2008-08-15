@@ -58,7 +58,22 @@ public class Settings {
             e.printStackTrace();
         }
         return coord;
-
+    }
+	
+	public int[] readWindowSize(String windowname) {
+        int[] dimension = new int[2];
+        try {
+            // Build the document with SAX and Xerces, no validation
+            SAXBuilder builder = new SAXBuilder();
+            // Create the document
+            Document doc = builder.build(new File("Settings.xml"));
+            Element webapp = doc.getRootElement();
+            dimension[0] = Integer.parseInt(webapp.getChild("guisettings").getChild("windowsize").getChild(windowname).getChild("x").getText());
+            dimension[1] = Integer.parseInt(webapp.getChild("guisettings").getChild("windowsize").getChild(windowname).getChild("y").getText());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return dimension;
     }
 
     public void writeWindowPos(String windowname, String[] pos) {
@@ -83,6 +98,30 @@ public class Settings {
             e.printStackTrace();
         }
     }
+	
+	public void writeWindowSize(String windowname, String[] dimension) {
+        try {
+
+            SAXBuilder builder = new SAXBuilder();
+            Document doc = builder.build(new File("Settings.xml"));
+            Element webapp = doc.getRootElement();
+            webapp.getChild("guisettings").getChild("windowsize").getChild(windowname).getChild("x").setText(dimension[0]);
+            webapp.getChild("guisettings").getChild("windowsize").getChild(windowname).getChild("y").setText(dimension[1]);
+            XMLOutputter xmloutputter = new XMLOutputter();
+            try {
+                FileOutputStream fileOutputStream = new FileOutputStream("Settings.xml");
+                xmloutputter.output(doc, fileOutputStream);
+                fileOutputStream.close();
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+	
     public boolean readBoolEmuoptions(String option)
     {
         int value=0;
