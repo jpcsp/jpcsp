@@ -283,7 +283,7 @@ public interface AllegrexInstructions {
     public void doVDET(int vsize, int vd, int vs,int vt);
 
     // VFPU2
-    public void doVCMP(int vsize, int vs,int vt);
+    public void doVCMP(int vsize, int vs, int vt, int cond);
 
     public void doVMIN(int vsize, int vd, int vs,int vt);
 

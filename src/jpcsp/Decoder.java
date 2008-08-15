@@ -72,7 +72,7 @@ public class Decoder {
         return (instruction >> 16) & 31;
     }
 
-    public int fcond(int instruction) {
+    public int cond(int instruction) {
         return instruction & 15;
     }
 
@@ -87,11 +87,11 @@ public class Decoder {
     public int vt(int instruction) {
         return (instruction >> 16) & 127;
     }
-    
+
     public int vsize(int instruction) {
         return 1 + ((instruction >> 7) & 1) + ((instruction >> 15) & 1);
     }
-    
+
     public int vop0(int instruction) {
         return (instruction >> 23) & 7;
     }
@@ -495,7 +495,7 @@ public class Decoder {
                                 that.doCVTWS(fd(insn), fs(insn));
                                 break;
                             case CCONDS:
-                                that.doCCONDS(fs(insn), ft(insn), fcond(insn));
+                                that.doCCONDS(fs(insn), ft(insn), cond(insn));
                                 break;
                             default:
                                 that.doUNK("Unsupported COP1F instruction " + Integer.toHexString(func(insn)));
@@ -548,7 +548,7 @@ public class Decoder {
                 break;
 
             case VFPU1:
-                switch ((byte) vop1(insn)) {                   
+                switch ((byte) vop1(insn)) {
                     case VMUL:
                         that.doVMUL(vsize(insn), vd(insn), vs(insn), vt(insn));
                         break;
@@ -582,7 +582,7 @@ public class Decoder {
             case VFPU2:
                 switch ((byte) vop2(insn)) {
                     case VCMP:
-                        that.doVCMP(vsize(insn), vs(insn), vt(insn));
+                        that.doVCMP(vsize(insn), vs(insn), vt(insn), cond(insn));
                         break;
 
                     case VMIN:
