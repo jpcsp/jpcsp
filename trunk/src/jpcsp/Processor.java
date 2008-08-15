@@ -1312,5 +1312,88 @@ public class Processor implements AllegrexInstructions {
         }
         
         updateCyclesFsFt(fs, ft, 1);
-    }    
+    }
+    
+    // VFPU0
+    @Override
+    public void doVADD(int vsize, int vd, int vs,int vt) {
+        doUNK("Unsupported VFPU instruction");
+    }
+
+    @Override
+    public void doVSUB(int vsize, int vd, int vs,int vt) {
+        doUNK("Unsupported VFPU instruction");       
+    }
+
+    @Override
+    public void doVSBN(int vsize, int vd, int vs,int vt) {
+        doUNK("Unsupported VFPU instruction");
+    }
+    
+    @Override
+    public void doVDIV(int vsize, int vd, int vs,int vt) {
+        doUNK("Unsupported VFPU instruction");
+    }
+    
+    // VFPU1
+    @Override
+    public void doVMUL(int vsize, int vd, int vs,int vt) {
+        doUNK("Unsupported VFPU instruction");
+    }
+    
+    @Override
+    public void doVDOT(int vsize, int vd, int vs,int vt) {
+        doUNK("Unsupported VFPU instruction");
+    }
+    
+    @Override
+    public void doVSCL(int vsize, int vd, int vs,int vt) {
+        doUNK("Unsupported VFPU instruction");
+    }
+    
+    @Override
+    public void doVHDP(int vsize, int vd, int vs,int vt) {
+        doUNK("Unsupported VFPU instruction");
+    }
+    
+    @Override
+    public void doVCRS(int vsize, int vd, int vs,int vt) {
+        doUNK("Unsupported VFPU instruction");
+    }
+    
+    @Override
+    public void doVDET(int vsize, int vd, int vs,int vt) {
+        doUNK("Unsupported VFPU instruction");
+    }
+    
+    // VFPU2
+    @Override
+    public void doVCMP(int vsize, int vs,int vt) {
+        doUNK("Unsupported VFPU instruction");
+    }
+    
+    @Override
+    public void doVMIN(int vsize, int vd, int vs,int vt) {
+        doUNK("Unsupported VFPU instruction");
+    }
+    
+    @Override
+    public void doVMAX(int vsize, int vd, int vs,int vt) {
+        doUNK("Unsupported VFPU instruction");
+    }
+    
+    @Override
+    public void doVSCMP(int vsize, int vd, int vs,int vt) {
+        doUNK("Unsupported VFPU instruction");
+    }
+    
+    @Override
+    public void doVSGE(int vsize, int vd, int vs,int vt) {
+        doUNK("Unsupported VFPU instruction");
+    }
+    
+    @Override
+    public void doVSLT(int vsize, int vd, int vs,int vt) {
+        doUNK("Unsupported VFPU instruction");
+    }
 }
