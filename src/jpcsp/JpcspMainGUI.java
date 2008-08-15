@@ -49,7 +49,11 @@ public class JpcspMainGUI extends javax.swing.JFrame {
         emulator = new Emulator(); //maybe pass the container drawndable
 
         this.setTitle(version);
-        createLoggingWindow();//create it to catch all :)
+		this.setSize(Settings.get_instance().readWindowSize("mainwindow")[0], Settings.get_instance().readWindowSize("mainwindow")[1]);
+		if (this.getHeight() <= 200 || this.getWidth() <= 200)
+			this.setSize(900, 700);
+		
+		createLoggingWindow();//create it to catch all :)
     }
     private void createLoggingWindow(){
         if(logwin !=null){
@@ -657,6 +661,12 @@ private void LoggingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
                 Settings.get_instance().writeWindowPos("logwindow", coord);
             }
         }
+		
+		/* save main window size */
+		String[] windowSize = new String[2];
+		windowSize[0] = Integer.toString(this.getWidth());
+		windowSize[1] = Integer.toString(this.getHeight());
+		Settings.get_instance().writeWindowSize("mainwindow", windowSize);
     }
 
     /**

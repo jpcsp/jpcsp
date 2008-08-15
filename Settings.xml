@@ -3,28 +3,34 @@
   <guisettings>
 
     <windowspos>
-
        <disassembler>
-           <x>242</x>
-           <y>67</y>
+         <x>401</x>
+         <y>14</y>
        </disassembler>
        <elfheader>
-           <x>399</x>
-           <y>325</y>
+         <x>244</x>
+         <y>16</y>
        </elfheader>
        <memoryview>
-           <x>2</x>
-           <y>-17</y>
+         <x>3</x>
+         <y>362</y>
        </memoryview>
        <registers>
-           <x>15</x>
-           <y>-13</y>
+         <x>16</x>
+         <y>5</y>
        </registers>
       <logwindow>
-        <x>300</x>
-        <y>400</y>
+        <x>514</x>
+        <y>487</y>
       </logwindow>
     </windowspos>
+	
+    <windowsize>
+      <mainwindow>
+        <x>1169</x>
+        <y>872</y>
+      </mainwindow>
+    </windowsize>
 
   </guisettings>
   
