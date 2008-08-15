@@ -13,7 +13,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 package jpcsp;
 
 import static jpcsp.AllegrexOpcodes.*;
@@ -22,7 +22,6 @@ import static jpcsp.AllegrexOpcodes.*;
  *
  * @author hli
  */
-
 public class Decoder {
 
     public int rs(int instruction) {
@@ -60,16 +59,24 @@ public class Decoder {
     public int syscode(int instruction) {
         return (instruction >> 6) & 0x000fffff;
     }
+
     public int fd(int instruction) {
         return (instruction >> 6) & 31;
     }
+
     public int fs(int instruction) {
         return (instruction >> 11) & 31;
     }
-   public int ft(int instruction) {
+
+    public int ft(int instruction) {
         return (instruction >> 16) & 31;
     }
-    public < P extends AllegrexInstructions > void process(P that, int insn) {
+
+    public int fcond(int instruction) {
+        return instruction & 15;
+    }
+
+    public <P extends AllegrexInstructions> void process(P that, int insn) {
 
         byte opcode = (byte) (insn >>> 26);
 
@@ -253,8 +260,7 @@ public class Decoder {
                 break;
 
             case REGIMM:
-                switch ((byte) rt(insn))
-                {
+                switch ((byte) rt(insn)) {
                     case BLTZ:
                         that.doBLTZ(rs(insn), simm16(insn));
                         break;
@@ -350,8 +356,7 @@ public class Decoder {
                 break;
 
             case COP0:
-                switch ((byte) rs(insn))
-                {
+                switch ((byte) rs(insn)) {
                     case MFC0:
                         that.doMFC0(rt(insn), rd(insn));
                         break;
@@ -369,10 +374,11 @@ public class Decoder {
                         break;
 
                     case COP0ERET:
-                        if (func(insn) == ERET)
+                        if (func(insn) == ERET) {
                             that.doERET();
-                        else
+                        } else {
                             that.doUNK("Unsupported COP0ERET instruction " + Integer.toHexString(func(insn)));
+                        }
                         break;
 
                     default:
@@ -381,8 +387,7 @@ public class Decoder {
                 }
                 break;
             case COP1:
-                switch ((byte) rs(insn))
-                {
+                switch ((byte) rs(insn)) {
                     case MFC1:
                         that.doMFC1(rt(insn), rd(insn));
                         break;
@@ -399,117 +404,70 @@ public class Decoder {
                         that.doCFC1(rt(insn), rd(insn));
                         break;
                     case COP1BC:
-                        switch((byte)rt(insn))
-                        {
-                            case BC1F :
+                        switch ((byte) rt(insn)) {
+                            case BC1F:
                                 that.doBC1F(simm16(insn));
                                 break;
-                            case BC1T :
-                                that.doBC1T (simm16(insn));
+                            case BC1T:
+                                that.doBC1T(simm16(insn));
                                 break;
                             case BC1FL:
                                 that.doBC1FL(simm16(insn));
                                 break;
-                            case BC1TL: 
+                            case BC1TL:
                                 that.doBC1TL(simm16(insn));
                                 break;
                             default:
                                 that.doUNK("Unsupported COP1BC instruction " + Integer.toHexString(rs(insn)));
                                 break;
                         }
-                        break; 
+                        break;
                     case COP1F:
-                        switch((byte)func(insn))
-                        {
-                            case ADDS: 
+                        switch ((byte) func(insn)) {
+                            case ADDS:
                                 that.doADDS(fd(insn), fs(insn), ft(insn));
                                 break;
                             case SUBS:
                                 that.doSUBS(fd(insn), fs(insn), ft(insn));
                                 break;
-                            case MULS: 
+                            case MULS:
                                 that.doMULS(fd(insn), fs(insn), ft(insn));
                                 break;
-                            case DIVS: 
+                            case DIVS:
                                 that.doDIVS(fd(insn), fs(insn), ft(insn));
                                 break;
                             case SQRTS:
-                                that.doSQRTS(fd(insn),fs(insn));
+                                that.doSQRTS(fd(insn), fs(insn));
                                 break;
-                            case ABSS: 
-                                that.doABSS(fd(insn),fs(insn));
+                            case ABSS:
+                                that.doABSS(fd(insn), fs(insn));
                                 break;
-                            case MOVS: 
-                                that.doMOVS(fd(insn),fs(insn));
+                            case MOVS:
+                                that.doMOVS(fd(insn), fs(insn));
                                 break;
                             case NEGS:
-                                that.doNEGS(fd(insn),fs(insn));
+                                that.doNEGS(fd(insn), fs(insn));
                                 break;
-                            case ROUNDWS: 
-                                that.doROUNDWS(fd(insn),fs(insn));
+                            case ROUNDWS:
+                                that.doROUNDWS(fd(insn), fs(insn));
                                 break;
-                            case TRUNCWS: 
-                                that.doTRUNCWS(fd(insn),fs(insn));
+                            case TRUNCWS:
+                                that.doTRUNCWS(fd(insn), fs(insn));
                                 break;
                             case CEILWS:
-                                that.doCEILWS(fd(insn),fs(insn));
+                                that.doCEILWS(fd(insn), fs(insn));
                                 break;
-                            case FLOORWS: 
-                                that.doFLOORWS(fd(insn),fs(insn));
+                            case FLOORWS:
+                                that.doFLOORWS(fd(insn), fs(insn));
                                 break;
                             case CVTSW:
-                                that.doCVTSW(fd(insn),fs(insn));
+                                that.doCVTSW(fd(insn), fs(insn));
                                 break;
                             case CVTWS:
-                                that.doCVTWS(fd(insn),fs(insn));
+                                that.doCVTWS(fd(insn), fs(insn));
                                 break;
-                            case CF: 
-                                that.doCF(fs(insn),ft(insn));
-                                break;
-                            case CUN: 
-                                that.doCUN(fs(insn),ft(insn));
-                                break;
-                            case CEQ: 
-                                that.doCEQ(fs(insn),ft(insn));
-                                break;
-                            case CUEQ: 
-                                that.doCUEQ(fs(insn),ft(insn));
-                                break;
-                            case COLT:
-                                that.doCOLT(fs(insn),ft(insn));
-                                break;
-                            case CULT: 
-                                that.doCULT(fs(insn),ft(insn));
-                                break;
-                            case COLE: 
-                                that.doCOLE(fs(insn),ft(insn));
-                                break;
-                            case CULE:
-                                that.doCULE(fs(insn),ft(insn));
-                                break;
-                            case CSF:
-                                that.doCSF(fs(insn),ft(insn));
-                                break;
-                            case CNGLE:
-                                that.doCNGLE(fs(insn),ft(insn));
-                                break;
-                            case CSEQ:
-                                that.doCSEQ(fs(insn),ft(insn));
-                                break;
-                            case CNGL:
-                                that.doCNGL(fs(insn),ft(insn));
-                                break;
-                            case CLT: 
-                                that.doCLT(fs(insn),ft(insn));
-                                break;
-                            case CNGE:
-                                that.doCNGE(fs(insn),ft(insn));
-                                break;
-                            case CLE: 
-                                that.doCLE(fs(insn),ft(insn));
-                                break;
-                            case CNGT:
-                                that.doCNGT(fs(insn),ft(insn));
+                            case CCONDS:
+                                that.doCCONDS(fs(insn), ft(insn), fcond(insn));
                                 break;
                             default:
                                 that.doUNK("Unsupported COP1F instruction " + Integer.toHexString(func(insn)));
@@ -538,8 +496,7 @@ public class Decoder {
                 break;
 
             case SPECIAL2:
-                switch ((byte) func(insn))
-                {
+                switch ((byte) func(insn)) {
                     case HALT:
                         that.doHALT();
                         break;

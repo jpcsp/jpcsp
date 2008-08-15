@@ -642,83 +642,28 @@ public class DisasmOpcodes implements AllegrexInstructions {
         returnString = Dis_FDFS("cvt.w.s", fd, fs);
     }
 
+    private static final String ccondsNames[] = {
+            "c.f.s",
+            "c.un.s",
+            "c.eq.s",
+            "c.ueq.s",
+            "c.olt.s",
+            "c.ult.s",
+            "c.ole.s",
+            "c.ule.s",
+            "c.sf.s",
+            "c.ngle.s",
+            "c.seq.s",
+            "c.ngl.s",
+            "c.lt.s",
+            "c.nge.s",
+            "c.le.s",
+            "c.ngt.s"
+        }; 
+    
     @Override
-    public void doCF(int fs, int ft) {
-        returnString = Dis_FSFT("c.f.s", fs, ft);
+    public void doCCONDS(int fs, int ft, int cond) {
+        returnString = Dis_FSFT(ccondsNames[cond], fs, ft);
     }
 
-    @Override
-    public void doCUN(int fs, int ft) {
-        returnString = Dis_FSFT("c.un.s", fs, ft);
-    }
-
-    @Override
-    public void doCEQ(int fs, int ft) {
-        returnString = Dis_FSFT("c.eq.s", fs, ft);
-    }
-
-    @Override
-    public void doCUEQ(int fs, int ft) {
-        returnString = Dis_FSFT("c.ueq.s", fs, ft);
-    }
-
-    @Override
-    public void doCOLT(int fs, int ft) {
-        returnString = Dis_FSFT("c.olt.s", fs, ft);
-    }
-
-    @Override
-    public void doCULT(int fs, int ft) {
-        returnString = Dis_FSFT("c.ult.s", fs, ft);
-    }
-
-    @Override
-    public void doCOLE(int fs, int ft) {
-        returnString = Dis_FSFT("c.ole.s", fs, ft);
-    }
-
-    @Override
-    public void doCULE(int fs, int ft) {
-        returnString = Dis_FSFT("c.ule.s", fs, ft);
-    }
-
-    @Override
-    public void doCSF(int fs, int ft) {
-        returnString = Dis_FSFT("c.sf.s", fs, ft);
-    }
-
-    @Override
-    public void doCNGLE(int fs, int ft) {
-        returnString = Dis_FSFT("c.ngle.s", fs, ft);
-    }
-
-    @Override
-    public void doCSEQ(int fs, int ft) {
-        returnString = Dis_FSFT("c.seq.s", fs, ft);
-    }
-
-    @Override
-    public void doCNGL(int fs, int ft) {
-        returnString = Dis_FSFT("c.ngl.s", fs, ft);
-    }
-
-    @Override
-    public void doCLT(int fs, int ft) {
-        returnString = Dis_FSFT("c.lt.s", fs, ft);
-    }
-
-    @Override
-    public void doCNGE(int fs, int ft) {
-        returnString = Dis_FSFT("c.nge.s", fs, ft);
-    }
-
-    @Override
-    public void doCLE(int fs, int ft) {
-        returnString = Dis_FSFT("c.cle.s", fs, ft);
-    }
-
-    @Override
-    public void doCNGT(int fs, int ft) {
-        returnString = Dis_FSFT("c.cngt.s", fs, ft);
-    }
 }

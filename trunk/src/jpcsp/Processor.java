@@ -111,10 +111,10 @@ public class Processor implements AllegrexInstructions {
     private void updateCyclesFdFsFt(int fd, int fs, int ft, long latency) {
         // WAW conflict (Successively writing the same register)
         cycles = Math.max(cycles, fpr_cycles[fd]);
-        
+
         // cycles when the destination register is written 
         fpr_cycles[fd] = cycles + latency;
-        
+
         // RAW conflict (Using the result of previous FPU instructions)  
         cycles = Math.max(cycles, Math.max(fpr_cycles[fs], fpr_cycles[ft]));
     }
@@ -136,11 +136,10 @@ public class Processor implements AllegrexInstructions {
 
         // cycles when the FPU C bit is written 
         fcr31_cycles = cycles + latency;
-        
+
         // RAW conflict (Using the result of previous FPU instructions)  
         cycles = Math.max(cycles, Math.max(fpr_cycles[fs], fpr_cycles[ft]));
     }
-   
     private final Decoder interpreter = new Decoder();
 
     public void step() {
@@ -1282,8 +1281,7 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doCVTWS(int fd, int fs) {
-        // TODO : round mode
-        switch (0) {
+        switch (fcr31_rm) {
             case 1:
                 fpr[fd] = Float.intBitsToFloat((int) (fpr[fs]));
             case 2:
@@ -1296,110 +1294,23 @@ public class Processor implements AllegrexInstructions {
         updateCyclesFdFs(fd, fs, 3);
     }
 
-    private boolean c_cond_s(float fs, float ft, boolean signal, boolean less, boolean equal, boolean unordered) {
-        unordered = unordered && (Float.isNaN(fs) || Float.isNaN(ft));
-        if (unordered && signal) {
-            doUNK("C.cond.S instruction raise an Unordered exception");
+    @Override
+    public void doCCONDS(int fs, int ft, int cond) {
+        boolean unordered = ((cond & 1) != 0) && (Float.isNaN(fs) || Float.isNaN(ft));
+
+        if (unordered) {
+            if ((cond & 8) != 0) {
+                doUNK("C.cond.S instruction raises an Unordered exception");
+            }
+
+            fcr31_c = true;
+        } else {    
+            boolean equal = ((cond & 2) != 0) && (fs == ft);
+            boolean less = ((cond & 4) != 0) && (fs < ft);
+
+            fcr31_c = less || equal;
         }
-        equal = equal && !unordered && (fs == ft);
-        less = less && !unordered && (fs < ft);
-
-        return less || equal || unordered;
-    }
-
-    @Override
-    public void doCF(int fs, int ft) {
-        fcr31_c = c_cond_s(fpr[fs], fpr[ft], false, false, false, false);
+        
         updateCyclesFsFt(fs, ft, 1);
-    }
-
-    @Override
-    public void doCUN(int fs, int ft) {
-        fcr31_c = c_cond_s(fpr[fs], fpr[ft], false, false, false, true);
-        updateCyclesFsFt(fs, ft, 1);
-    }
-
-    @Override
-    public void doCEQ(int fs, int ft) {
-        fcr31_c = c_cond_s(fpr[fs], fpr[ft], false, false, true, false);
-        updateCyclesFsFt(fs, ft, 1);
-    }
-
-    @Override
-    public void doCUEQ(int fs, int ft) {
-        fcr31_c = c_cond_s(fpr[fs], fpr[ft], false, false, true, true);
-        updateCyclesFsFt(fs, ft, 1);
-    }
-
-    @Override
-    public void doCOLT(int fs, int ft) {
-        fcr31_c = c_cond_s(fpr[fs], fpr[ft], false, true, false, false);
-        updateCyclesFsFt(fs, ft, 1);
-    }
-
-    @Override
-    public void doCULT(int fs, int ft) {
-        fcr31_c = c_cond_s(fpr[fs], fpr[ft], false, true, false, true);
-        updateCyclesFsFt(fs, ft, 1);
-    }
-
-    @Override
-    public void doCOLE(int fs, int ft) {
-        fcr31_c = c_cond_s(fpr[fs], fpr[ft], false, true, true, false);
-        updateCyclesFsFt(fs, ft, 1);
-    }
-
-    @Override
-    public void doCULE(int fs, int ft) {
-        fcr31_c = c_cond_s(fpr[fs], fpr[ft], false, true, true, true);
-        updateCyclesFsFt(fs, ft, 1);
-    }
-
-    @Override
-    public void doCSF(int fs, int ft) {
-        fcr31_c = c_cond_s(fpr[fs], fpr[ft], true, false, false, false);
-        updateCyclesFsFt(fs, ft, 1);
-    }
-
-    @Override
-    public void doCNGLE(int fs, int ft) {
-        fcr31_c = c_cond_s(fpr[fs], fpr[ft], false, false, false, true);
-        updateCyclesFsFt(fs, ft, 1);
-    }
-
-    @Override
-    public void doCSEQ(int fs, int ft) {
-        fcr31_c = c_cond_s(fpr[fs], fpr[ft], true, false, true, false);
-        updateCyclesFsFt(fs, ft, 1);
-    }
-
-    @Override
-    public void doCNGL(int fs, int ft) {
-        fcr31_c = c_cond_s(fpr[fs], fpr[ft], false, false, true, true);
-        updateCyclesFsFt(fs, ft, 1);
-    }
-
-    @Override
-    public void doCLT(int fs, int ft) {
-        fcr31_c = c_cond_s(fpr[fs], fpr[ft], true, true, false, false);
-        updateCyclesFsFt(fs, ft, 1);
-    }
-
-    @Override
-    public void doCNGE(int fs, int ft) {
-        fcr31_c = c_cond_s(fpr[fs], fpr[ft], true, true, false, true);
-        updateCyclesFsFt(fs, ft, 1);
-    }
-
-    @Override
-    public void doCLE(int fs, int ft) {
-        fcr31_c = c_cond_s(fpr[fs], fpr[ft], true, true, true, false);
-        updateCyclesFsFt(fs, ft, 1);
-    }
-
-    @Override
-    public void doCNGT(int fs, int ft) {
-        fcr31_c = c_cond_s(fpr[fs], fpr[ft], true, true, true, true);
-        updateCyclesFsFt(fs, ft, 1);
-    }
+    }    
 }
