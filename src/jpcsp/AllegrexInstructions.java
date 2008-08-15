@@ -258,35 +258,5 @@ public interface AllegrexInstructions {
     
     public void doCVTWS(int fd,int fs);
     
-    public void doCF(int fs,int ft);
-    
-    public void doCUN(int fs,int ft);
-    
-    public void doCEQ(int fs,int ft);
-    
-    public void doCUEQ(int fs,int ft);
-    
-    public void doCOLT(int fs,int ft);
-    
-    public void doCULT(int fs,int ft);
-    
-    public void doCOLE(int fs,int ft);
-    
-    public void doCULE(int fs,int ft);
-    
-    public void doCSF(int fs,int ft);
-    
-    public void doCNGLE(int fs,int ft);
-    
-    public void doCSEQ(int fs,int ft);
-    
-    public void doCNGL(int fs,int ft);
-    
-    public void doCLT(int fs,int ft);
-    
-    public void doCNGE(int fs,int ft);
-    
-    public void doCLE(int fs,int ft);
-    
-    public void doCNGT(int fs,int ft);
+    public void doCCONDS(int fs,int ft, int cond);
 }
