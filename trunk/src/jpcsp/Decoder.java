@@ -100,7 +100,7 @@ public class Decoder {
         return (instruction >> 23) & 7;
     }
 
-    public int vop2(int instruction) {
+    public int vop3(int instruction) {
         return (instruction >> 23) & 7;
     }
 
@@ -579,8 +579,8 @@ public class Decoder {
                 }
                 break;
 
-            case VFPU2:
-                switch ((byte) vop2(insn)) {
+            case VFPU3:
+                switch ((byte) vop3(insn)) {
                     case VCMP:
                         that.doVCMP(vsize(insn), vs(insn), vt(insn), cond(insn));
                         break;
@@ -606,7 +606,7 @@ public class Decoder {
                         break;
 
                     default:
-                        that.doUNK("Unsupported VFPU2 instruction " + Integer.toBinaryString(vop2(insn)));
+                        that.doUNK("Unsupported VFPU3 instruction " + Integer.toBinaryString(vop3(insn)));
                         break;
                 }
                 break;
