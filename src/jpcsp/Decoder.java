@@ -52,6 +52,10 @@ public class Decoder {
         return (instruction) & 0xffff;
     }
 
+    public int uimm24(int instruction) {
+        return (instruction) & 0x00ffffff;
+    }
+
     public int uimm26(int instruction) {
         return (instruction) & 0x03ffffff;
     }
@@ -102,6 +106,14 @@ public class Decoder {
 
     public int vop3(int instruction) {
         return (instruction >> 23) & 7;
+    }
+
+    public int vop5(int instruction) {
+        return (instruction >> 24) & 3;
+    }
+
+    public int vop5_vifim(int instruction) {
+        return (instruction >> 23) & 1;
     }
 
     public <P extends AllegrexInstructions> void process(P that, int insn) {
@@ -607,6 +619,38 @@ public class Decoder {
 
                     default:
                         that.doUNK("Unsupported VFPU3 instruction " + Integer.toBinaryString(vop3(insn)));
+                        break;
+                }
+                break;
+
+            case VFPU5:
+                switch ((byte) vop5(insn)) {
+                    case VPFXS:
+                        that.doVPFXS(uimm24(insn));
+                        break;
+
+                    case VPFXT:
+                        that.doVPFXT(uimm24(insn));
+                        break;
+
+                    case VPFXD:
+                        that.doVPFXD(uimm24(insn));
+                        break;
+
+                    case VIFIM:
+                        switch ((byte) vop5_vifim(insn)) {
+                            case VPFXS:
+                                that.doVIIM(vs(insn), simm16(insn));
+                                break;
+
+                            case VPFXT:
+                                that.doVFIM(vs(insn), simm16(insn));
+                                break;
+                        }
+                        break;
+                        
+                    default:
+                        that.doUNK("Unsupported VFPU5 instruction " + Integer.toBinaryString(vop3(insn)));
                         break;
                 }
                 break;

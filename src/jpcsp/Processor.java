@@ -33,12 +33,25 @@ public class Processor implements AllegrexInstructions {
     public int fcr31_rm;
     public boolean fcr31_c;
     public boolean fcr31_fs;
+    public boolean[] vcr_cc;
+    public int[] vcr_pfxs_swz;
+    public boolean[] vcr_pfxs_abs;
+    public boolean[] vcr_pfxs_cst;
+    public boolean[] vcr_pfxs_neg;
+    public boolean vcr_pfxs;
+    public int[] vcr_pfxt_swz;
+    public boolean[] vcr_pfxt_abs;
+    public boolean[] vcr_pfxt_cst;
+    public boolean[] vcr_pfxt_neg;
+    public boolean vcr_pfxt;
+    public int[] vcr_pfxd_sat;
+    public boolean[] vcr_pfxd_msk;
+    public boolean vcr_pfxd;
     public long cycles;
     public long hilo_cycles;
     public long[] fpr_cycles;
     public long[] vpr_cycles;
     public long fcr31_cycles;
-    public boolean vcr_cc[];
 
     Processor() {
         Memory.get_instance(); //intialize memory
@@ -1315,38 +1328,85 @@ public class Processor implements AllegrexInstructions {
 
         updateCyclesFsFt(fs, ft, 1);
     }
+    // VFPU stuff
+    private float transformVr(int swz, boolean abs, boolean cst, boolean neg, float[] x) {
+        float value = 0.0f;
+        if (cst) {
+            switch (swz) {
+                case 0:
+                    value = abs ? 0.0f : 3.0f;
+                case 1:
+                    value = abs ? 1.0f : (1.0f / 3.0f);
+                case 2:
+                    value = abs ? 2.0f : (1.0f / 4.0f);
+                case 3:
+                    value = abs ? 0.5f : (1.0f / 6.0f);
+            }
+        } else {
+            value = x[swz];
+        }
 
-    private float[] loadVr(int vsize, int vr) {
-        // TO DO : handle VFPU prefixes (VPFXS and VPFXT alter the
-        // read contents of VFPU registers).
+        if (abs) {
+            value = Math.abs(value);
+        }
+        return neg ? (0.0f - value) : value;
+    }
 
+    private float applyPrefixVs(int i, float[] x) {
+        return transformVr(vcr_pfxs_swz[i], vcr_pfxs_abs[i], vcr_pfxs_cst[i], vcr_pfxs_neg[i], x);
+    }
+
+    private float applyPrefixVt(int i, float[] x) {
+        return transformVr(vcr_pfxt_swz[i], vcr_pfxt_abs[i], vcr_pfxt_cst[i], vcr_pfxt_neg[i], x);
+    }
+
+    private float applyPrefixVd(int i, float value) {
+        switch (vcr_pfxd_sat[i]) {
+            case 1:
+                return Math.max(0.0f, Math.min(1.0f, value));
+            case 3:
+                return Math.max(-1.0f, Math.min(1.0f, value));
+        }
+        return value;
+    }
+
+    private float[] loadVs(int vsize, int vs) {
         float[] result = new float[vsize];
 
         int m, r, c;
 
-        m = (vr >> 2) & 7;
-        c = (vr >> 0) & 4;
+        m = (vs >> 2) & 7;
+        c = (vs >> 0) & 4;
 
         switch (vsize) {
             case 1:
-                r = (vr >> 2) & 4;
+                r = (vs >> 2) & 4;
                 result[0] = vpr[m][r][c];
+                if (vcr_pfxs) {
+                    result[0] = applyPrefixVs(0, result);
+                    vcr_pfxs = false;
+                }
                 return result;
 
             case 2:
-                r = (vr & 64) >> 5;
-                if ((vr & 32) == 0) {
+                r = (vs & 64) >> 5;
+                if ((vs & 32) == 0) {
                     result[0] = vpr[m][r + 0][c];
                     result[1] = vpr[m][r + 1][c];
                 } else {
                     result[0] = vpr[m][c][r + 0];
                     result[1] = vpr[m][c][r + 1];
                 }
+                if (vcr_pfxs) {
+                    result[0] = applyPrefixVs(0, result);
+                    result[1] = applyPrefixVs(1, result);
+                    vcr_pfxs = false;
+                }
                 return result;
 
             case 3:
-                r = (vr & 64) >> 6;
-                if ((vr & 32) == 0) {
+                r = (vs & 64) >> 6;
+                if ((vs & 32) == 0) {
                     result[0] = vpr[m][r + 0][c];
                     result[1] = vpr[m][r + 1][c];
                     result[2] = vpr[m][r + 2][c];
@@ -1355,10 +1415,16 @@ public class Processor implements AllegrexInstructions {
                     result[1] = vpr[m][c][r + 1];
                     result[2] = vpr[m][c][r + 2];
                 }
+                if (vcr_pfxs) {
+                    result[0] = applyPrefixVs(0, result);
+                    result[1] = applyPrefixVs(1, result);
+                    result[2] = applyPrefixVs(2, result);
+                    vcr_pfxs = false;
+                }
                 return result;
 
             case 4:
-                if ((vr & 32) == 0) {
+                if ((vs & 32) == 0) {
                     result[0] = vpr[m][0][c];
                     result[1] = vpr[m][1][c];
                     result[2] = vpr[m][2][c];
@@ -1369,6 +1435,13 @@ public class Processor implements AllegrexInstructions {
                     result[2] = vpr[m][c][2];
                     result[3] = vpr[m][c][3];
                 }
+                if (vcr_pfxs) {
+                    result[0] = applyPrefixVs(0, result);
+                    result[1] = applyPrefixVs(1, result);
+                    result[2] = applyPrefixVs(2, result);
+                    result[3] = applyPrefixVs(3, result);
+                    vcr_pfxs = false;
+                }
                 return result;
 
             default:
@@ -1376,20 +1449,86 @@ public class Processor implements AllegrexInstructions {
         return null;
     }
 
-    private float[] loadVs(int vsize, int vs) {
-        // TO DO : handle VPFXS
-        return loadVr(vsize, vs);
-    }
-
     private float[] loadVt(int vsize, int vt) {
-        // TO DO : handle VPFXT
-        return loadVr(vsize, vt);
+        float[] result = new float[vsize];
+
+        int m, r, c;
+
+        m = (vt >> 2) & 7;
+        c = (vt >> 0) & 4;
+
+        switch (vsize) {
+            case 1:
+                r = (vt >> 2) & 4;
+                result[0] = vpr[m][r][c];
+                if (vcr_pfxt) {
+                    result[0] = applyPrefixVt(0, result);
+                    vcr_pfxt = false;
+                }
+                return result;
+
+            case 2:
+                r = (vt & 64) >> 5;
+                if ((vt & 32) == 0) {
+                    result[0] = vpr[m][r + 0][c];
+                    result[1] = vpr[m][r + 1][c];
+                } else {
+                    result[0] = vpr[m][c][r + 0];
+                    result[1] = vpr[m][c][r + 1];
+                }
+                if (vcr_pfxt) {
+                    result[0] = applyPrefixVt(0, result);
+                    result[1] = applyPrefixVt(1, result);
+                    vcr_pfxt = false;
+                }
+                return result;
+
+            case 3:
+                r = (vt & 64) >> 6;
+                if ((vt & 32) == 0) {
+                    result[0] = vpr[m][r + 0][c];
+                    result[1] = vpr[m][r + 1][c];
+                    result[2] = vpr[m][r + 2][c];
+                } else {
+                    result[0] = vpr[m][c][r + 0];
+                    result[1] = vpr[m][c][r + 1];
+                    result[2] = vpr[m][c][r + 2];
+                }
+                if (vcr_pfxt) {
+                    result[0] = applyPrefixVt(0, result);
+                    result[1] = applyPrefixVt(1, result);
+                    result[2] = applyPrefixVt(2, result);
+                    vcr_pfxt = false;
+                }
+                return result;
+
+            case 4:
+                if ((vt & 32) == 0) {
+                    result[0] = vpr[m][0][c];
+                    result[1] = vpr[m][1][c];
+                    result[2] = vpr[m][2][c];
+                    result[3] = vpr[m][3][c];
+                } else {
+                    result[0] = vpr[m][c][0];
+                    result[1] = vpr[m][c][1];
+                    result[2] = vpr[m][c][2];
+                    result[3] = vpr[m][c][3];
+                }
+                if (vcr_pfxt) {
+                    result[0] = applyPrefixVt(0, result);
+                    result[1] = applyPrefixVt(1, result);
+                    result[2] = applyPrefixVt(2, result);
+                    result[3] = applyPrefixVt(3, result);
+                    vcr_pfxt = false;
+                }
+                return result;
+
+            default:
+        }
+        return null;
     }
 
     private void saveVd(int vsize, int vd, float[] result) {
-        // TO DO : handle VFPU prefixes (VPFXD alter the
-        // write contents of VFPU registers).
-
         int m, r, c;
 
         m = (vd >> 2) & 7;
@@ -1398,55 +1537,114 @@ public class Processor implements AllegrexInstructions {
         switch (vsize) {
             case 1:
                 r = (vd >> 2) & 4;
-                vpr[m][r][c] = result[0];
+                if (vcr_pfxd) {
+                    if (!vcr_pfxd_msk[0]) {
+                        vpr[m][r][c] = applyPrefixVd(0, result[0]);
+                    }
+                    vcr_pfxd = false;
+                } else {
+                    vpr[m][r][c] = result[0];
+                }
                 break;
 
             case 2:
                 r = (vd & 64) >> 5;
-                if ((vd & 32) == 0) {
-                    vpr[m][r + 0][c] = result[0];
-                    vpr[m][r + 1][c] = result[1];
+                if (vcr_pfxd) {
+                    if ((vd & 32) == 0) {
+                        for (int i = 0; i < 2; ++i) {
+                            if (!vcr_pfxd_msk[i]) {
+                                vpr[m][r + i][c] = applyPrefixVd(i, result[i]);
+                            }
+                        }
+                    } else {
+                        for (int i = 0; i < 2; ++i) {
+                            if (!vcr_pfxd_msk[i]) {
+                                vpr[m][c][r + i] = applyPrefixVd(i, result[i]);
+                            }
+                        }
+                    }
+                    vcr_pfxd = false;                       
                 } else {
-                    vpr[m][c][r + 0] = result[0];
-                    vpr[m][c][r + 1] = result[1];
+                    if ((vd & 32) == 0) {
+                        for (int i = 0; i < 2; ++i) {
+                            vpr[m][r + i][c] = result[i];
+                        }
+                    } else {
+                        for (int i = 0; i < 2; ++i) {
+                            vpr[m][c][r + i] = result[i];
+                        }
+                    }
                 }
                 break;
 
             case 3:
                 r = (vd & 64) >> 6;
-                if ((vd & 32) == 0) {
-                    vpr[m][r + 0][c] = result[0];
-                    vpr[m][r + 1][c] = result[1];
-                    vpr[m][r + 2][c] = result[2];
+                if (vcr_pfxd) {
+                    if ((vd & 32) == 0) {
+                        for (int i = 0; i < 3; ++i) {
+                            if (!vcr_pfxd_msk[i]) {
+                                vpr[m][r + i][c] = applyPrefixVd(i, result[i]);
+                            }
+                        }
+                    } else {
+                        for (int i = 0; i < 3; ++i) {
+                            if (!vcr_pfxd_msk[i]) {
+                                vpr[m][c][r + i] = applyPrefixVd(i, result[i]);
+                            }
+                        }
+                    }
+                    vcr_pfxd = false;                       
                 } else {
-                    vpr[m][c][r + 0] = result[0];
-                    vpr[m][c][r + 1] = result[1];
-                    vpr[m][c][r + 2] = result[2];
+                    if ((vd & 32) == 0) {
+                        for (int i = 0; i < 3; ++i) {
+                            vpr[m][r + i][c] = result[i];
+                        }
+                    } else {
+                        for (int i = 0; i < 3; ++i) {
+                            vpr[m][c][r + i] = result[i];
+                        }
+                    }
                 }
                 break;
 
             case 4:
-                if ((vd & 32) == 0) {
-                    vpr[m][0][c] = result[0];
-                    vpr[m][1][c] = result[1];
-                    vpr[m][2][c] = result[2];
-                    vpr[m][3][c] = result[3];
+                if (vcr_pfxd) {
+                    if ((vd & 32) == 0) {
+                        for (int i = 0; i < 4; ++i) {
+                            if (!vcr_pfxd_msk[i]) {
+                                vpr[m][i][c] = applyPrefixVd(i, result[i]);
+                            }
+                        }
+                    } else {
+                        for (int i = 0; i < 4; ++i) {
+                            if (!vcr_pfxd_msk[i]) {
+                                vpr[m][c][i] = applyPrefixVd(i, result[i]);
+                            }
+                        }
+                    }
+                    vcr_pfxd = false;                       
                 } else {
-                    vpr[m][c][0] = result[0];
-                    vpr[m][c][1] = result[1];
-                    vpr[m][c][2] = result[2];
-                    vpr[m][c][3] = result[3];
+                    if ((vd & 32) == 0) {
+                        for (int i = 0; i < 4; ++i) {
+                            vpr[m][i][c] = result[i];
+                        }
+                    } else {
+                        for (int i = 0; i < 4; ++i) {
+                            vpr[m][c][i] = result[i];
+                        }
+                    }
                 }
             default:
         }
     }
-    // VFPU0
+// VFPU0
     @Override
     public void doVADD(int vsize, int vd, int vs, int vt) {
         float[] x1 = loadVs(vsize, vs);
         float[] x2 = loadVt(vsize, vt);
 
-        for (int i = 0; i < vsize; ++i) {
+        for (int i = 0; i <
+                vsize; ++i) {
             x1[i] += x2[i];
         }
 
@@ -1458,7 +1656,8 @@ public class Processor implements AllegrexInstructions {
         float[] x1 = loadVs(vsize, vs);
         float[] x2 = loadVt(vsize, vt);
 
-        for (int i = 0; i < vsize; ++i) {
+        for (int i = 0; i <
+                vsize; ++i) {
             x1[i] -= x2[i];
         }
 
@@ -1484,21 +1683,24 @@ public class Processor implements AllegrexInstructions {
         float[] x1 = loadVs(vsize, vs);
         float[] x2 = loadVt(vsize, vt);
 
-        for (int i = 0; i < vsize; ++i) {
+        for (int i = 0; i <
+                vsize; ++i) {
             x1[i] /= x2[i];
         }
 
         saveVd(vsize, vd, x1);
     }
-    // VFPU1
+// VFPU1
     @Override
     public void doVMUL(int vsize, int vd, int vs, int vt) {
         float[] x1 = loadVs(vsize, vs);
         float[] x2 = loadVt(vsize, vt);
 
-        for (int i = 0; i < vsize; ++i) {
+        for (int i = 0; i <
+                vsize; ++i) {
             x1[i] *= x2[i];
         }
+
         saveVd(vsize, vd, x1);
     }
 
@@ -1512,9 +1714,11 @@ public class Processor implements AllegrexInstructions {
         float[] x2 = loadVt(vsize, vt);
         float[] x3 = new float[1];
 
-        for (int i = 0; i < vsize; ++i) {
+        for (int i = 0; i <
+                vsize; ++i) {
             x3[0] += x1[i] * x2[i];
         }
+
         saveVd(1, vd, x3);
     }
 
@@ -1534,9 +1738,11 @@ public class Processor implements AllegrexInstructions {
         float[] x3 = new float[1];
 
         int i;
-        for (i = 0; i < vsize - 1; ++i) {
+        for (i = 0; i <
+                vsize - 1; ++i) {
             x3[0] += x1[i] * x2[i];
         }
+
         x3[0] += x2[i];
 
         saveVd(1, vd, x3);
@@ -1574,7 +1780,7 @@ public class Processor implements AllegrexInstructions {
         saveVd(1, vd, x3);
     }
 
-    // VFPU3
+// VFPU3
     @Override
     public void doVCMP(int vsize, int vs, int vt, int cond) {
         boolean cc_or = false;
@@ -1588,7 +1794,8 @@ public class Processor implements AllegrexInstructions {
             float[] x1 = loadVs(vsize, vs);
             float[] x2 = loadVt(vsize, vt);
 
-            for (int i = 0; i < vsize; ++i) {
+            for (int i = 0; i <
+                    vsize; ++i) {
                 switch (cond & 3) {
                     case 0:
                         cc = not;
@@ -1605,29 +1812,40 @@ public class Processor implements AllegrexInstructions {
                     case 3:
                         cc = not ? (x1[i] > x2[i]) : (x1[i] <= x2[i]);
                         break;
+
                 }
+
+
                 vcr_cc[i] = cc;
-                cc_or = cc_or || cc;
-                cc_and = cc_and && cc;
+                cc_or =
+                        cc_or || cc;
+                cc_and =
+                        cc_and && cc;
             }
 
         } else {
             float[] x1 = loadVs(vsize, vs);
 
-            for (int i = 0; i < vsize; ++i) {
+            for (int i = 0; i <
+                    vsize; ++i) {
                 boolean cc;
                 if ((cond & 3) == 0) {
                     cc = ((cond & 4) == 0) ? (x1[i] == 0.0f) : (x1[i] != 0.0f);
                 } else {
-                    cc = (((cond & 1)==1) && Float.isNaN(x1[i])) ||
-                         (((cond & 2)==2) && Float.isInfinite(x1[i]));
-                    if ((cond & 4) == 4)
+                    cc = (((cond & 1) == 1) && Float.isNaN(x1[i])) ||
+                            (((cond & 2) == 2) && Float.isInfinite(x1[i]));
+                    if ((cond & 4) == 4) {
                         cc = !cc;
+                    }
+
                 }
                 vcr_cc[i] = cc;
-                cc_or = cc_or || cc;
-                cc_and = cc_and && cc;
+                cc_or =
+                        cc_or || cc;
+                cc_and =
+                        cc_and && cc;
             }
+
         }
         vcr_cc[4] = cc_or;
         vcr_cc[5] = cc_and;
@@ -1638,7 +1856,8 @@ public class Processor implements AllegrexInstructions {
         float[] x1 = loadVs(vsize, vs);
         float[] x2 = loadVt(vsize, vt);
 
-        for (int i = 0; i < vsize; ++i) {
+        for (int i = 0; i <
+                vsize; ++i) {
             x1[i] = Math.min(x1[i], x2[i]);
         }
 
@@ -1650,7 +1869,8 @@ public class Processor implements AllegrexInstructions {
         float[] x1 = loadVs(vsize, vs);
         float[] x2 = loadVt(vsize, vt);
 
-        for (int i = 0; i < vsize; ++i) {
+        for (int i = 0; i <
+                vsize; ++i) {
             x1[i] = Math.max(x1[i], x2[i]);
         }
 
@@ -1662,7 +1882,8 @@ public class Processor implements AllegrexInstructions {
         float[] x1 = loadVs(vsize, vs);
         float[] x2 = loadVt(vsize, vt);
 
-        for (int i = 0; i < vsize; ++i) {
+        for (int i = 0; i <
+                vsize; ++i) {
             x1[i] = Math.signum(x1[i] - x2[i]);
         }
 
@@ -1674,7 +1895,8 @@ public class Processor implements AllegrexInstructions {
         float[] x1 = loadVs(vsize, vs);
         float[] x2 = loadVt(vsize, vt);
 
-        for (int i = 0; i < vsize; ++i) {
+        for (int i = 0; i <
+                vsize; ++i) {
             x1[i] = (x1[i] >= x2[i]) ? 1.0f : 0.0f;
         }
 
@@ -1686,10 +1908,88 @@ public class Processor implements AllegrexInstructions {
         float[] x1 = loadVs(vsize, vs);
         float[] x2 = loadVt(vsize, vt);
 
-        for (int i = 0; i < vsize; ++i) {
+        for (int i = 0; i <
+                vsize; ++i) {
             x1[i] = (x1[i] < x2[i]) ? 1.0f : 0.0f;
         }
 
         saveVd(vsize, vd, x1);
+    }
+
+    @Override
+    public void doVPFXS(int imm24) {
+        vcr_pfxs_swz[0] = (imm24 >> 0) & 3; 
+        vcr_pfxs_swz[1] = (imm24 >> 2) & 3; 
+        vcr_pfxs_swz[2] = (imm24 >> 4) & 3; 
+        vcr_pfxs_swz[3] = (imm24 >> 6) & 3; 
+        vcr_pfxs_abs[0] = (imm24 >> 8) != 0; 
+        vcr_pfxs_abs[1] = (imm24 >> 9) != 0; 
+        vcr_pfxs_abs[2] = (imm24 >> 10) != 0; 
+        vcr_pfxs_abs[3] = (imm24 >> 11) != 0; 
+        vcr_pfxs_cst[0] = (imm24 >> 12) != 0; 
+        vcr_pfxs_cst[1] = (imm24 >> 13) != 0; 
+        vcr_pfxs_cst[2] = (imm24 >> 14) != 0; 
+        vcr_pfxs_cst[3] = (imm24 >> 15) != 0; 
+        vcr_pfxs_neg[0] = (imm24 >> 16) != 0; 
+        vcr_pfxs_neg[1] = (imm24 >> 17) != 0; 
+        vcr_pfxs_neg[2] = (imm24 >> 18) != 0; 
+        vcr_pfxs_neg[3] = (imm24 >> 19) != 0; 
+        vcr_pfxs = true;
+    }
+
+    @Override
+    public void doVPFXT(int imm24) {
+        vcr_pfxt_swz[0] = (imm24 >> 0) & 3; 
+        vcr_pfxt_swz[1] = (imm24 >> 2) & 3; 
+        vcr_pfxt_swz[2] = (imm24 >> 4) & 3; 
+        vcr_pfxt_swz[3] = (imm24 >> 6) & 3; 
+        vcr_pfxt_abs[0] = (imm24 >> 8) != 0; 
+        vcr_pfxt_abs[1] = (imm24 >> 9) != 0; 
+        vcr_pfxt_abs[2] = (imm24 >> 10) != 0; 
+        vcr_pfxt_abs[3] = (imm24 >> 11) != 0; 
+        vcr_pfxt_cst[0] = (imm24 >> 12) != 0; 
+        vcr_pfxt_cst[1] = (imm24 >> 13) != 0; 
+        vcr_pfxt_cst[2] = (imm24 >> 14) != 0; 
+        vcr_pfxt_cst[3] = (imm24 >> 15) != 0; 
+        vcr_pfxt_neg[0] = (imm24 >> 16) != 0; 
+        vcr_pfxt_neg[1] = (imm24 >> 17) != 0; 
+        vcr_pfxt_neg[2] = (imm24 >> 18) != 0; 
+        vcr_pfxt_neg[3] = (imm24 >> 19) != 0; 
+        vcr_pfxt = true;
+    }
+
+    @Override
+    public void doVPFXD(int imm24) {
+        vcr_pfxd_sat[0] = (imm24 >> 0) & 3; 
+        vcr_pfxd_sat[1] = (imm24 >> 2) & 3; 
+        vcr_pfxd_sat[2] = (imm24 >> 4) & 3; 
+        vcr_pfxd_sat[3] = (imm24 >> 6) & 3; 
+        vcr_pfxd_msk[0] = (imm24 >> 8) != 0; 
+        vcr_pfxd_msk[1] = (imm24 >> 9) != 0; 
+        vcr_pfxd_msk[2] = (imm24 >> 10) != 0; 
+        vcr_pfxd_msk[3] = (imm24 >> 11) != 0; 
+        vcr_pfxd = true;
+    }
+
+    @Override
+    public void doVIIM(int vs, int imm16) {
+        float[] result = new float[1];
+        
+        result[0] = (float)imm16;
+        
+        saveVd(1, vs, result);
+    }
+
+    @Override
+    public void doVFIM(int vs, int imm16) {
+        float[] result = new float[1];
+        
+        float s = ((imm16 >> 15) == 0) ? 1.0f : -1.0f;
+        int e = ((imm16 >> 10) & 0x1f);
+        int m = (e == 0) ? ((imm16 & 0x3ff) << 1) : ((imm16 & 0x3ff) | 0x400);
+        
+        result[0] = s * ((float)m) * ((float)(1 << e)) / ((float)(1 << 41));
+        
+        saveVd(1, vs, result);
     }
 }

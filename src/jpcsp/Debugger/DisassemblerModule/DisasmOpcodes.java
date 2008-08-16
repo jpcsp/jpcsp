@@ -748,4 +748,30 @@ public class DisasmOpcodes implements AllegrexInstructions {
     public void doVSLT(int vsize, int vd, int vs,int vt) {
         doUNK("Unsupported VFPU instruction");
     }
+    
+    @Override
+    public void doVPFXS(int imm24) {
+        doUNK("Unsupported VFPU instruction");
+    }
+
+    @Override
+    public void doVPFXT(int imm24) {
+        doUNK("Unsupported VFPU instruction");
+    }
+
+    @Override
+    public void doVPFXD(int imm24) {
+        doUNK("Unsupported VFPU instruction");
+    }
+
+    @Override
+    public void doVIIM(int vs, int imm16) {
+        doUNK("Unsupported VFPU instruction");
+    }
+
+    @Override
+    public void doVFIM(int vs, int imm16) {
+        doUNK("Unsupported VFPU instruction");
+    }
+    
 }
