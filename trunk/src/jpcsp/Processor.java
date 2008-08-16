@@ -38,10 +38,10 @@ public class Processor implements AllegrexInstructions {
     public long[] fpr_cycles;
     public long[] vpr_cycles;
     public long fcr31_cycles;
-    private Memory memory;
+    public boolean vcr_cc[];
 
     Processor() {
-        memory = Memory.get_instance(); //intialize memory
+        Memory.get_instance(); //intialize memory
         reset();
     }
 
@@ -56,6 +56,8 @@ public class Processor implements AllegrexInstructions {
         fcr31_rm = 0;
         fcr31_c = false;
         fcr31_fs = false;
+
+        vcr_cc = new boolean[6];
 
         cycles = 0;
         hilo_cycles = 0;
@@ -145,7 +147,7 @@ public class Processor implements AllegrexInstructions {
     public void step() {
         npc = pc + 4;
 
-        int insn = memory.read32(pc);
+        int insn = (Memory.get_instance()).read32(pc);
 
         // by default, any Allegrex instruction takes 1 cycle at least
         cycles += 1;
@@ -158,7 +160,7 @@ public class Processor implements AllegrexInstructions {
     }
 
     public void stepDelayslot() {
-        int insn = memory.read32(pc);
+        int insn = (Memory.get_instance()).read32(pc);
 
         // by default, any Allegrex instruction takes 1 cycle at least
         cycles += 1;
@@ -753,22 +755,22 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doLB(int rt, int rs, int simm16) {
-        gpr[rt] = (memory.read8(gpr[rs] + simm16) << 24) >> 24;
+        gpr[rt] = ((Memory.get_instance()).read8(gpr[rs] + simm16) << 24) >> 24;
     }
 
     @Override
     public void doLBU(int rt, int rs, int simm16) {
-        gpr[rt] = memory.read8(gpr[rs] + simm16) & 0xff;
+        gpr[rt] = (Memory.get_instance()).read8(gpr[rs] + simm16) & 0xff;
     }
 
     @Override
     public void doLH(int rt, int rs, int simm16) {
-        gpr[rt] = (memory.read16(gpr[rs] + simm16) << 16) >> 16;
+        gpr[rt] = ((Memory.get_instance()).read16(gpr[rs] + simm16) << 16) >> 16;
     }
 
     @Override
     public void doLHU(int rt, int rs, int simm16) {
-        gpr[rt] = memory.read16(gpr[rs] + simm16) & 0xffff;
+        gpr[rt] = (Memory.get_instance()).read16(gpr[rs] + simm16) & 0xffff;
     }
 
     @Override
@@ -777,7 +779,7 @@ public class Processor implements AllegrexInstructions {
         int offset = address & 0x3;
         int reg = gpr[rt];
 
-        int word = memory.read32(address & 0xfffffffc);
+        int word = (Memory.get_instance()).read32(address & 0xfffffffc);
 
         switch (offset) {
             case 0:
@@ -801,7 +803,7 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doLW(int rt, int rs, int simm16) {
-        gpr[rt] = memory.read32(gpr[rs] + simm16);
+        gpr[rt] = (Memory.get_instance()).read32(gpr[rs] + simm16);
     }
 
     @Override
@@ -810,7 +812,7 @@ public class Processor implements AllegrexInstructions {
         int offset = address & 0x3;
         int reg = gpr[rt];
 
-        int word = memory.read32(address & 0xfffffffc);
+        int word = (Memory.get_instance()).read32(address & 0xfffffffc);
 
         switch (offset) {
             case 0:
@@ -834,12 +836,12 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doSB(int rt, int rs, int simm16) {
-        memory.write8(gpr[rs] + simm16, (byte) (gpr[rt] & 0xFF));
+        (Memory.get_instance()).write8(gpr[rs] + simm16, (byte) (gpr[rt] & 0xFF));
     }
 
     @Override
     public void doSH(int rt, int rs, int simm16) {
-        memory.write16(gpr[rs] + simm16, (short) (gpr[rt] & 0xFFFF));
+        (Memory.get_instance()).write16(gpr[rs] + simm16, (short) (gpr[rt] & 0xFFFF));
     }
 
     @Override
@@ -847,7 +849,7 @@ public class Processor implements AllegrexInstructions {
         int address = gpr[rs] + simm16;
         int offset = address & 0x3;
         int reg = gpr[rt];
-        int data = memory.read32(address & 0xfffffffc);
+        int data = (Memory.get_instance()).read32(address & 0xfffffffc);
 
         switch (offset) {
             case 0:
@@ -867,12 +869,12 @@ public class Processor implements AllegrexInstructions {
                 break;
         }
 
-        memory.write32(address & 0xfffffffc, data);
+        (Memory.get_instance()).write32(address & 0xfffffffc, data);
     }
 
     @Override
     public void doSW(int rt, int rs, int simm16) {
-        memory.write32(gpr[rs] + simm16, gpr[rt]);
+        (Memory.get_instance()).write32(gpr[rs] + simm16, gpr[rt]);
     }
 
     @Override
@@ -880,7 +882,7 @@ public class Processor implements AllegrexInstructions {
         int address = gpr[rs] + simm16;
         int offset = address & 0x3;
         int reg = gpr[rt];
-        int data = memory.read32(address & 0xfffffffc);
+        int data = (Memory.get_instance()).read32(address & 0xfffffffc);
 
         switch (offset) {
             case 0:
@@ -900,7 +902,7 @@ public class Processor implements AllegrexInstructions {
                 break;
         }
 
-        memory.write32(address & 0xfffffffc, data);
+        (Memory.get_instance()).write32(address & 0xfffffffc, data);
     }
 
     @Override
@@ -911,26 +913,26 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doLL(int rt, int rs, int simm16) {
-        gpr[rt] = memory.read32(gpr[rs] + simm16);
+        gpr[rt] = (Memory.get_instance()).read32(gpr[rs] + simm16);
     //ll_bit = 1;
     }
 
     @Override
     public void doLWC1(int ft, int rs, int simm16) {
-        fpr[ft] = Float.intBitsToFloat(memory.read32(gpr[rs] + simm16));
+        fpr[ft] = Float.intBitsToFloat((Memory.get_instance()).read32(gpr[rs] + simm16));
         cycles = Math.max(cycles, fpr_cycles[ft]);
         fpr_cycles[ft] = cycles + 1;
     }
 
     @Override
     public void doSC(int rt, int rs, int simm16) {
-        memory.write32(gpr[rs] + simm16, gpr[rt]);
+        (Memory.get_instance()).write32(gpr[rs] + simm16, gpr[rt]);
         gpr[rt] = 1; // = ll_bit;
     }
 
     @Override
     public void doSWC1(int ft, int rs, int simm16) {
-        memory.write32(gpr[rs] + simm16, Float.floatToRawIntBits(fpr[ft]));
+        (Memory.get_instance()).write32(gpr[rs] + simm16, Float.floatToRawIntBits(fpr[ft]));
         cycles = Math.max(cycles, fpr_cycles[ft]);
     }
 
@@ -1447,7 +1449,7 @@ public class Processor implements AllegrexInstructions {
         for (int i = 0; i < vsize; ++i) {
             x1[i] += x2[i];
         }
-        
+
         saveVd(vsize, vd, x1);
     }
 
@@ -1459,7 +1461,7 @@ public class Processor implements AllegrexInstructions {
         for (int i = 0; i < vsize; ++i) {
             x1[i] -= x2[i];
         }
-        
+
         saveVd(vsize, vd, x1);
     }
 
@@ -1468,11 +1470,11 @@ public class Processor implements AllegrexInstructions {
         if (vsize != 1) {
             doUNK("Only supported VSBN.S instruction");
         }
-        
+
         float[] x1 = loadVs(1, vs);
         float[] x2 = loadVt(1, vt);
-        
-        x1[0] = Math.scalb(x1[0], Float.floatToRawIntBits(x2[0])); 
+
+        x1[0] = Math.scalb(x1[0], Float.floatToRawIntBits(x2[0]));
 
         saveVd(1, vd, x1);
     }
@@ -1505,7 +1507,7 @@ public class Processor implements AllegrexInstructions {
         if (vsize == 1) {
             doUNK("Unsupported VDOT.S instruction");
         }
-        
+
         float[] x1 = loadVs(vsize, vs);
         float[] x2 = loadVt(vsize, vt);
         float[] x3 = new float[1];
@@ -1526,7 +1528,7 @@ public class Processor implements AllegrexInstructions {
         if (vsize == 1) {
             doUNK("Unsupported VHDP.S instruction");
         }
-        
+
         float[] x1 = loadVs(vsize, vs);
         float[] x2 = loadVt(vsize, vt);
         float[] x3 = new float[1];
@@ -1545,7 +1547,7 @@ public class Processor implements AllegrexInstructions {
         if (vsize != 3) {
             doUNK("Only supported VCRS.T instruction");
         }
-        
+
         float[] x1 = loadVs(3, vs);
         float[] x2 = loadVt(3, vt);
         float[] x3 = new float[3];
@@ -1553,7 +1555,7 @@ public class Processor implements AllegrexInstructions {
         x3[0] = x1[1] * x2[2];
         x3[1] = x1[2] * x2[0];
         x3[2] = x1[0] * x2[1];
-        
+
         saveVd(3, vd, x3);
     }
 
@@ -1562,20 +1564,73 @@ public class Processor implements AllegrexInstructions {
         if (vsize != 2) {
             doUNK("Only supported VDET.P instruction");
         }
-        
+
         float[] x1 = loadVs(2, vs);
         float[] x2 = loadVt(2, vt);
         float[] x3 = new float[1];
 
         x3[0] = x1[0] * x2[1] - x1[1] * x2[0];
-        
+
         saveVd(1, vd, x3);
     }
 
-    // VFPU2
+    // VFPU3
     @Override
     public void doVCMP(int vsize, int vs, int vt, int cond) {
-        doUNK("Not yet supported VFPU instruction");
+        boolean cc_or = false;
+        boolean cc_and = true;
+
+        if ((cond & 8) == 0) {
+            boolean not = ((cond & 4) == 4);
+
+            boolean cc = false;
+
+            float[] x1 = loadVs(vsize, vs);
+            float[] x2 = loadVt(vsize, vt);
+
+            for (int i = 0; i < vsize; ++i) {
+                switch (cond & 3) {
+                    case 0:
+                        cc = not;
+                        break;
+
+                    case 1:
+                        cc = not ? (x1[i] != x2[i]) : (x1[i] == x2[i]);
+                        break;
+
+                    case 2:
+                        cc = not ? (x1[i] >= x2[i]) : (x1[i] < x2[i]);
+                        break;
+
+                    case 3:
+                        cc = not ? (x1[i] > x2[i]) : (x1[i] <= x2[i]);
+                        break;
+                }
+                vcr_cc[i] = cc;
+                cc_or = cc_or || cc;
+                cc_and = cc_and && cc;
+            }
+
+        } else {
+            float[] x1 = loadVs(vsize, vs);
+
+            for (int i = 0; i < vsize; ++i) {
+                boolean cc;
+                if ((cond & 3) == 0) {
+                    cc = ((cond & 4) == 0) ? (x1[i] == 0.0f) : (x1[i] != 0.0f);
+                } else {
+                    cc = (((cond & 1)==1) && Float.isNaN(x1[i])) ||
+                         (((cond & 2)==2) && Float.isInfinite(x1[i]));
+                    if ((cond & 4) == 4)
+                        cc = !cc;
+                }
+                vcr_cc[i] = cc;
+                cc_or = cc_or || cc;
+                cc_and = cc_and && cc;
+            }
+        }
+        vcr_cc[4] = cc_or;
+        vcr_cc[5] = cc_and;
     }
 
     @Override
@@ -1586,7 +1641,7 @@ public class Processor implements AllegrexInstructions {
         for (int i = 0; i < vsize; ++i) {
             x1[i] = Math.min(x1[i], x2[i]);
         }
-        
+
         saveVd(vsize, vd, x1);
     }
 
@@ -1598,7 +1653,7 @@ public class Processor implements AllegrexInstructions {
         for (int i = 0; i < vsize; ++i) {
             x1[i] = Math.max(x1[i], x2[i]);
         }
-        
+
         saveVd(vsize, vd, x1);
     }
 
@@ -1610,7 +1665,7 @@ public class Processor implements AllegrexInstructions {
         for (int i = 0; i < vsize; ++i) {
             x1[i] = Math.signum(x1[i] - x2[i]);
         }
-        
+
         saveVd(vsize, vd, x1);
     }
 
@@ -1622,7 +1677,7 @@ public class Processor implements AllegrexInstructions {
         for (int i = 0; i < vsize; ++i) {
             x1[i] = (x1[i] >= x2[i]) ? 1.0f : 0.0f;
         }
-        
+
         saveVd(vsize, vd, x1);
     }
 
@@ -1634,7 +1689,7 @@ public class Processor implements AllegrexInstructions {
         for (int i = 0; i < vsize; ++i) {
             x1[i] = (x1[i] < x2[i]) ? 1.0f : 0.0f;
         }
-        
+
         saveVd(vsize, vd, x1);
     }
 }
