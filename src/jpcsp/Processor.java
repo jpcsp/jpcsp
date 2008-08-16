@@ -27,7 +27,7 @@ public class Processor implements AllegrexInstructions {
 
     public int[] gpr;
     public float[] fpr;
-    public float[] vpr;
+    public float[][][] vpr;
     public long hilo;
     public int pc,  npc;
     public int fcr31_rm;
@@ -51,7 +51,7 @@ public class Processor implements AllegrexInstructions {
         hilo = 0;
         gpr = new int[32];
         fpr = new float[32];
-        vpr = new float[128];
+        vpr = new float[8][4][4]; // [matrix][row][column]
 
         fcr31_rm = 0;
         fcr31_c = false;
@@ -1304,96 +1304,337 @@ public class Processor implements AllegrexInstructions {
             }
 
             fcr31_c = true;
-        } else {    
+        } else {
             boolean equal = ((cond & 2) != 0) && (fs == ft);
             boolean less = ((cond & 4) != 0) && (fs < ft);
 
             fcr31_c = less || equal;
         }
-        
+
         updateCyclesFsFt(fs, ft, 1);
     }
-    
+
+    private float[] loadVr(int vsize, int vr) {
+        // TO DO : handle VFPU prefixes (VPFXS and VPFXT alter the
+        // read contents of VFPU registers).
+
+        float[] result = new float[vsize];
+
+        int m, r, c;
+
+        m = (vr >> 2) & 7;
+        c = (vr >> 0) & 4;
+
+        switch (vsize) {
+            case 1:
+                r = (vr >> 2) & 4;
+                result[0] = vpr[m][r][c];
+                return result;
+
+            case 2:
+                r = (vr & 64) >> 5;
+                if ((vr & 32) == 0) {
+                    result[0] = vpr[m][r + 0][c];
+                    result[1] = vpr[m][r + 1][c];
+                } else {
+                    result[0] = vpr[m][c][r + 0];
+                    result[1] = vpr[m][c][r + 1];
+                }
+                return result;
+
+            case 3:
+                r = (vr & 64) >> 6;
+                if ((vr & 32) == 0) {
+                    result[0] = vpr[m][r + 0][c];
+                    result[1] = vpr[m][r + 1][c];
+                    result[2] = vpr[m][r + 2][c];
+                } else {
+                    result[0] = vpr[m][c][r + 0];
+                    result[1] = vpr[m][c][r + 1];
+                    result[2] = vpr[m][c][r + 2];
+                }
+                return result;
+
+            case 4:
+                if ((vr & 32) == 0) {
+                    result[0] = vpr[m][0][c];
+                    result[1] = vpr[m][1][c];
+                    result[2] = vpr[m][2][c];
+                    result[3] = vpr[m][3][c];
+                } else {
+                    result[0] = vpr[m][c][0];
+                    result[1] = vpr[m][c][1];
+                    result[2] = vpr[m][c][2];
+                    result[3] = vpr[m][c][3];
+                }
+                return result;
+
+            default:
+        }
+        return null;
+    }
+
+    private float[] loadVs(int vsize, int vs) {
+        // TO DO : handle VPFXS
+        return loadVr(vsize, vs);
+    }
+
+    private float[] loadVt(int vsize, int vt) {
+        // TO DO : handle VPFXT
+        return loadVr(vsize, vt);
+    }
+
+    private void saveVd(int vsize, int vd, float[] result) {
+        // TO DO : handle VFPU prefixes (VPFXD alter the
+        // write contents of VFPU registers).
+
+        int m, r, c;
+
+        m = (vd >> 2) & 7;
+        c = (vd >> 0) & 4;
+
+        switch (vsize) {
+            case 1:
+                r = (vd >> 2) & 4;
+                vpr[m][r][c] = result[0];
+                break;
+
+            case 2:
+                r = (vd & 64) >> 5;
+                if ((vd & 32) == 0) {
+                    vpr[m][r + 0][c] = result[0];
+                    vpr[m][r + 1][c] = result[1];
+                } else {
+                    vpr[m][c][r + 0] = result[0];
+                    vpr[m][c][r + 1] = result[1];
+                }
+                break;
+
+            case 3:
+                r = (vd & 64) >> 6;
+                if ((vd & 32) == 0) {
+                    vpr[m][r + 0][c] = result[0];
+                    vpr[m][r + 1][c] = result[1];
+                    vpr[m][r + 2][c] = result[2];
+                } else {
+                    vpr[m][c][r + 0] = result[0];
+                    vpr[m][c][r + 1] = result[1];
+                    vpr[m][c][r + 2] = result[2];
+                }
+                break;
+
+            case 4:
+                if ((vd & 32) == 0) {
+                    vpr[m][0][c] = result[0];
+                    vpr[m][1][c] = result[1];
+                    vpr[m][2][c] = result[2];
+                    vpr[m][3][c] = result[3];
+                } else {
+                    vpr[m][c][0] = result[0];
+                    vpr[m][c][1] = result[1];
+                    vpr[m][c][2] = result[2];
+                    vpr[m][c][3] = result[3];
+                }
+            default:
+        }
+    }
     // VFPU0
     @Override
-    public void doVADD(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVADD(int vsize, int vd, int vs, int vt) {
+        float[] x1 = loadVs(vsize, vs);
+        float[] x2 = loadVt(vsize, vt);
+
+        for (int i = 0; i < vsize; ++i) {
+            x1[i] += x2[i];
+        }
+        
+        saveVd(vsize, vd, x1);
     }
 
     @Override
-    public void doVSUB(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");       
+    public void doVSUB(int vsize, int vd, int vs, int vt) {
+        float[] x1 = loadVs(vsize, vs);
+        float[] x2 = loadVt(vsize, vt);
+
+        for (int i = 0; i < vsize; ++i) {
+            x1[i] -= x2[i];
+        }
+        
+        saveVd(vsize, vd, x1);
     }
 
     @Override
-    public void doVSBN(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVSBN(int vsize, int vd, int vs, int vt) {
+        if (vsize != 1) {
+            doUNK("Only supported VSBN.S instruction");
+        }
+        
+        float[] x1 = loadVs(1, vs);
+        float[] x2 = loadVt(1, vt);
+        
+        x1[0] = Math.scalb(x1[0], Float.floatToRawIntBits(x2[0])); 
+
+        saveVd(1, vd, x1);
     }
-    
+
     @Override
-    public void doVDIV(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVDIV(int vsize, int vd, int vs, int vt) {
+        float[] x1 = loadVs(vsize, vs);
+        float[] x2 = loadVt(vsize, vt);
+
+        for (int i = 0; i < vsize; ++i) {
+            x1[i] /= x2[i];
+        }
+
+        saveVd(vsize, vd, x1);
     }
-    
     // VFPU1
     @Override
-    public void doVMUL(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVMUL(int vsize, int vd, int vs, int vt) {
+        float[] x1 = loadVs(vsize, vs);
+        float[] x2 = loadVt(vsize, vt);
+
+        for (int i = 0; i < vsize; ++i) {
+            x1[i] *= x2[i];
+        }
+        saveVd(vsize, vd, x1);
     }
-    
+
     @Override
-    public void doVDOT(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVDOT(int vsize, int vd, int vs, int vt) {
+        if (vsize == 1) {
+            doUNK("Unsupported VDOT.S instruction");
+        }
+        
+        float[] x1 = loadVs(vsize, vs);
+        float[] x2 = loadVt(vsize, vt);
+        float[] x3 = new float[1];
+
+        for (int i = 0; i < vsize; ++i) {
+            x3[0] += x1[i] * x2[i];
+        }
+        saveVd(1, vd, x3);
     }
-    
+
     @Override
-    public void doVSCL(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVSCL(int vsize, int vd, int vs, int vt) {
+        doUNK("Not yet supported VFPU instruction");
     }
-    
+
     @Override
-    public void doVHDP(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVHDP(int vsize, int vd, int vs, int vt) {
+        if (vsize == 1) {
+            doUNK("Unsupported VHDP.S instruction");
+        }
+        
+        float[] x1 = loadVs(vsize, vs);
+        float[] x2 = loadVt(vsize, vt);
+        float[] x3 = new float[1];
+
+        int i;
+        for (i = 0; i < vsize - 1; ++i) {
+            x3[0] += x1[i] * x2[i];
+        }
+        x3[0] += x2[i];
+
+        saveVd(1, vd, x3);
     }
-    
+
     @Override
-    public void doVCRS(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVCRS(int vsize, int vd, int vs, int vt) {
+        if (vsize != 3) {
+            doUNK("Only supported VCRS.T instruction");
+        }
+        
+        float[] x1 = loadVs(3, vs);
+        float[] x2 = loadVt(3, vt);
+        float[] x3 = new float[3];
+
+        x3[0] = x1[1] * x2[2];
+        x3[1] = x1[2] * x2[0];
+        x3[2] = x1[0] * x2[1];
+        
+        saveVd(3, vd, x3);
     }
-    
+
     @Override
-    public void doVDET(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVDET(int vsize, int vd, int vs, int vt) {
+        if (vsize != 2) {
+            doUNK("Only supported VDET.P instruction");
+        }
+        
+        float[] x1 = loadVs(2, vs);
+        float[] x2 = loadVt(2, vt);
+        float[] x3 = new float[1];
+
+        x3[0] = x1[0] * x2[1] - x1[1] * x2[0];
+        
+        saveVd(1, vd, x3);
     }
-    
+
     // VFPU2
     @Override
     public void doVCMP(int vsize, int vs, int vt, int cond) {
-        doUNK("Unsupported VFPU instruction");
+        doUNK("Not yet supported VFPU instruction");
     }
-    
+
     @Override
-    public void doVMIN(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVMIN(int vsize, int vd, int vs, int vt) {
+        float[] x1 = loadVs(vsize, vs);
+        float[] x2 = loadVt(vsize, vt);
+
+        for (int i = 0; i < vsize; ++i) {
+            x1[i] = Math.min(x1[i], x2[i]);
+        }
+        
+        saveVd(vsize, vd, x1);
     }
-    
+
     @Override
-    public void doVMAX(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVMAX(int vsize, int vd, int vs, int vt) {
+        float[] x1 = loadVs(vsize, vs);
+        float[] x2 = loadVt(vsize, vt);
+
+        for (int i = 0; i < vsize; ++i) {
+            x1[i] = Math.max(x1[i], x2[i]);
+        }
+        
+        saveVd(vsize, vd, x1);
     }
-    
+
     @Override
-    public void doVSCMP(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVSCMP(int vsize, int vd, int vs, int vt) {
+        float[] x1 = loadVs(vsize, vs);
+        float[] x2 = loadVt(vsize, vt);
+
+        for (int i = 0; i < vsize; ++i) {
+            x1[i] = Math.signum(x1[i] - x2[i]);
+        }
+        
+        saveVd(vsize, vd, x1);
     }
-    
+
     @Override
-    public void doVSGE(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVSGE(int vsize, int vd, int vs, int vt) {
+        float[] x1 = loadVs(vsize, vs);
+        float[] x2 = loadVt(vsize, vt);
+
+        for (int i = 0; i < vsize; ++i) {
+            x1[i] = (x1[i] >= x2[i]) ? 1.0f : 0.0f;
+        }
+        
+        saveVd(vsize, vd, x1);
     }
-    
+
     @Override
-    public void doVSLT(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVSLT(int vsize, int vd, int vs, int vt) {
+        float[] x1 = loadVs(vsize, vs);
+        float[] x2 = loadVt(vsize, vt);
+
+        for (int i = 0; i < vsize; ++i) {
+            x1[i] = (x1[i] < x2[i]) ? 1.0f : 0.0f;
+        }
+        
+        saveVd(vsize, vd, x1);
     }
 }
