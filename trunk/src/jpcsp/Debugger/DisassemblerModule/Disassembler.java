@@ -256,9 +256,7 @@ public class Disassembler extends javax.swing.JInternalFrame implements Clipboar
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(jList1, javax.swing.GroupLayout.DEFAULT_SIZE, 419, Short.MAX_VALUE)
-                        .addContainerGap())
+                    .addComponent(jList1, javax.swing.GroupLayout.PREFERRED_SIZE, 363, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(RunEmu)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -278,8 +276,8 @@ public class Disassembler extends javax.swing.JInternalFrame implements Clipboar
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(ClearBreakpoints)
                         .addGap(33, 33, 33)
-                        .addComponent(jButton3)
-                        .addGap(69, 69, 69))))
+                        .addComponent(jButton3)))
+                .addContainerGap())
         );
 
         pack();
