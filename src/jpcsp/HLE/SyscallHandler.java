@@ -73,13 +73,13 @@ public class SyscallHandler {
                 */
 
                 case 0x213a:
-                    sceDisplay.get_instance().sceDisplaySetMode(gpr[4], gpr[5], gpr[6]);
+                    pspdisplay.get_instance().sceDisplaySetMode(gpr[4], gpr[5], gpr[6]);
                     break;
                 case 0x213f:
-                    sceDisplay.get_instance().sceDisplaySetFrameBuf(gpr[4], gpr[5], gpr[6], gpr[7]);
+                    pspdisplay.get_instance().sceDisplaySetFrameBuf(gpr[4], gpr[5], gpr[6], gpr[7]);
                     break;
                 case 0x2147:
-                    sceDisplay.get_instance().sceDisplayWaitVblankStart();
+                    pspdisplay.get_instance().sceDisplayWaitVblankStart();
                     break;
 
                 /* TODO (for minifire)
