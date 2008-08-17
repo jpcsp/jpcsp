@@ -179,7 +179,6 @@ public class PBP {
         File dir = new File(PBP_UNPACK_PATH_PREFIX);
         deleteDir(dir);//delete all files and directory
         dir.mkdir();
-        System.out.println("HEY");
         if (pbp.size_param_sfo > 0) {
             byte[] data = new byte[pbp.size_param_sfo];
             f.seek(pbp.p_offset_param_sfo);

@@ -77,6 +77,8 @@ public class Emulator {
                 break;
             case FileManager.FORMAT_UMD:
                 break;
+            case FileManager.FORMAT_PSP:
+                break;
             default:
                 throw new IOException("Is not an acceptable format, please choose the rigth file.");
         }
