@@ -29,6 +29,7 @@ import jpcsp.format.Elf32SectionHeader;
 import jpcsp.format.Elf32SectionHeader.ShFlags;
 import jpcsp.format.Elf32SectionHeader.ShType;
 import jpcsp.format.PBP;
+import jpcsp.format.PSP;
 import jpcsp.format.PSPModuleInfo;
 import jpcsp.util.Utilities;
 
@@ -38,12 +39,14 @@ public class FileManager {
     private PSPModuleInfo moduleInfo;
     private PBP pbp;
     private Elf32 elf;
+    private PSP psp;
     private RandomAccessFile actualFile;
     private String filePath;
     public final static int FORMAT_ELF = 0;
     public final static int FORMAT_PBP = 10;
     public final static int FORMAT_UMD = 20;
     public final static int FORMAT_ISO = 30;
+    public final static int FORMAT_PSP = 40;
     private int type = -1;
     private long elfoffset = 0;
     private long baseoffset = 0;
@@ -159,7 +162,17 @@ public class FileManager {
             PbpInfo = getPBP().toString(); //inteast this use PBP.getInfo()
 
             elf = new Elf32(getActualFile()); //the elf of pbp
-
+            if(!getElf32().getHeader().isValid())//probably not an elf
+            {
+              getActualFile().seek(elfoffset); //seek again to elfoffset
+              psp = new PSP(getActualFile());
+              if(psp.isValid())//check if it is an encrypted file
+              {
+                  System.out.println("Encrypted psp format.Not Supported!");
+                  type=FORMAT_PSP;
+                  return;
+              }
+            }
             getPBP().setElf32(elf); //composite the pbp...
 
             processElf();

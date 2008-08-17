@@ -493,7 +493,6 @@ private void formInternalFrameClosing(javax.swing.event.InternalFrameEvent evt) 
    final SwingWorker<Integer,Void> worker = new SwingWorker<Integer,Void>() {
    @Override
     public Integer doInBackground() { //start emulator
-       System.out.println("HEY");
        try {
            if(emu.pause)//emu is paused
            {
