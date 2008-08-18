@@ -58,7 +58,15 @@ public class SyscallHandler {
                 case 0x2073:
                     ThreadMan.get_instance().ThreadMan_sceKernelTerminateThread(gpr[4]);
                     break;
-
+                case 0x20b2:
+                    pspstdio.get_instance().sceKernelStdin();
+                    break;
+                case 0x20b3:
+                    pspstdio.get_instance().sceKernelStdout();
+                    break;
+                case 0x20b4:
+                    pspstdio.get_instance().sceKernelStderr();
+                    break;
                 case 0x20bf:
                     Utils.get_instance().Utils_sceKernelUtilsMt19937Init(gpr[4], gpr[5]);
                     break;
