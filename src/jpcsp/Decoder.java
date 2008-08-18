@@ -92,6 +92,10 @@ public class Decoder {
         return (instruction >> 16) & 127;
     }
 
+    public int vt_mem(int instruction) {
+        return ((instruction >> 16) & 31) | ((instruction & 3) << 5);
+    }
+
     public int vsize(int instruction) {
         return 1 + ((instruction >> 7) & 1) + ((instruction >> 15) & 1);
     }
@@ -769,6 +773,22 @@ public class Decoder {
 
             case CACHE:
                 that.doCACHE(rt(insn), rs(insn), simm16(insn));
+                break;
+
+            case LWC1:
+                that.doLWC1(ft(insn), rs(insn), simm16(insn));
+                break;
+
+            case LVS:
+                that.doLVS(vt_mem(insn), rs(insn), simm16(insn));
+                break;
+
+            case SWC1:
+                that.doSWC1(ft(insn), rs(insn), simm16(insn));
+                break;
+
+            case SVS:
+                that.doSVS(vt_mem(insn), rs(insn), simm16(insn));
                 break;
 
             default:

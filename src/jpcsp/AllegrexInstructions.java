@@ -164,9 +164,13 @@ public interface AllegrexInstructions {
 
     public void doLWC1(int rt, int rs, int simm16);
 
+    public void doLVS(int vt, int rs, int simm14);
+
     public void doSC(int rt, int rs, int simm16);
 
     public void doSWC1(int rt, int rs, int simm16);
+
+    public void doSVS(int vt, int rs, int simm14);
 
     public void doROTR(int rd, int rt, int sa);
 
