@@ -15,9 +15,7 @@ import jpcsp.Decoder;
 public class DisasmOpcodes implements AllegrexInstructions {
 
     private final Decoder disasm = new Decoder();
-    
     int opcode_address;
-    
     String returnString = "Unsupported Instruction"; // set default to unsupported
 
     public String disasm(int value, int opcode_address) {
@@ -413,6 +411,11 @@ public class DisasmOpcodes implements AllegrexInstructions {
     }
 
     @Override
+    public void doLVS(int vt, int rs, int simm14) {
+        returnString = Dis_VTIMMRS("lv", 1, vt, rs, (simm14 << 2));
+    }
+
+    @Override
     public void doSC(int rt, int rs, int simm16) {
         returnString = Dis_RTIMMRS("sc", rt, rs, simm16);
     }
@@ -420,6 +423,11 @@ public class DisasmOpcodes implements AllegrexInstructions {
     @Override
     public void doSWC1(int ft, int rs, int simm16) {
         returnString = Dis_FTIMMRS("swc1", ft, rs, simm16);
+    }
+
+    @Override
+    public void doSVS(int vt, int rs, int simm14) {
+        returnString = Dis_VTIMMRS("sv", 1, vt, rs, (simm14 << 2));
     }
 
     @Override
@@ -641,26 +649,25 @@ public class DisasmOpcodes implements AllegrexInstructions {
     public void doCVTWS(int fd, int fs) {
         returnString = Dis_FDFS("cvt.w.s", fd, fs);
     }
-
     private static final String ccondsNames[] = {
-            "c.f.s",
-            "c.un.s",
-            "c.eq.s",
-            "c.ueq.s",
-            "c.olt.s",
-            "c.ult.s",
-            "c.ole.s",
-            "c.ule.s",
-            "c.sf.s",
-            "c.ngle.s",
-            "c.seq.s",
-            "c.ngl.s",
-            "c.lt.s",
-            "c.nge.s",
-            "c.le.s",
-            "c.ngt.s"
-        }; 
-    
+        "c.f.s",
+        "c.un.s",
+        "c.eq.s",
+        "c.ueq.s",
+        "c.olt.s",
+        "c.ult.s",
+        "c.ole.s",
+        "c.ule.s",
+        "c.sf.s",
+        "c.ngle.s",
+        "c.seq.s",
+        "c.ngl.s",
+        "c.lt.s",
+        "c.nge.s",
+        "c.le.s",
+        "c.ngt.s"
+    };
+
     @Override
     public void doCCONDS(int fs, int ft, int cond) {
         returnString = Dis_FSFT(ccondsNames[cond], fs, ft);
@@ -668,87 +675,89 @@ public class DisasmOpcodes implements AllegrexInstructions {
 
     // VFPU0
     @Override
-    public void doVADD(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVADD(int vsize, int vd, int vs, int vt) {
+        returnString = Dis_VDVSVT("vadd", vsize, vd, vs, vt);
     }
 
     @Override
-    public void doVSUB(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");       
+    public void doVSUB(int vsize, int vd, int vs, int vt) {
+        returnString = Dis_VDVSVT("vsub", vsize, vd, vs, vt);
     }
 
     @Override
-    public void doVSBN(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVSBN(int vsize, int vd, int vs, int vt) {
+        if (vsize == 1) {
+            returnString = Dis_VDVSVT("vsbn", vsize, vd, vs, vt);
+        } else {
+            doUNK("Unsupported VFPU instruction");
+        }
     }
-    
+
     @Override
-    public void doVDIV(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVDIV(int vsize, int vd, int vs, int vt) {
+        returnString = Dis_VDVSVT("vdiv", vsize, vd, vs, vt);
     }
-    
     // VFPU1
     @Override
-    public void doVMUL(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVMUL(int vsize, int vd, int vs, int vt) {
+        returnString = Dis_VDVSVT("vmul", vsize, vd, vs, vt);
     }
-    
+
     @Override
-    public void doVDOT(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVDOT(int vsize, int vd, int vs, int vt) {
+        returnString = Dis_VD1VSVT("vdot", vsize, vd, vs, vt);
     }
-    
+
     @Override
-    public void doVSCL(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVSCL(int vsize, int vd, int vs, int vt) {
+        returnString = Dis_VDVSVT1("vscl", vsize, vd, vs, vt);
     }
-    
+
     @Override
-    public void doVHDP(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVHDP(int vsize, int vd, int vs, int vt) {
+        returnString = Dis_VD1VSVT("vhdp", vsize, vd, vs, vt);
     }
-    
+
     @Override
-    public void doVCRS(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVCRS(int vsize, int vd, int vs, int vt) {
+        returnString = Dis_VDVSVT("vcrs", vsize, vd, vs, vt);
     }
-    
+
     @Override
-    public void doVDET(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVDET(int vsize, int vd, int vs, int vt) {
+        returnString = Dis_VD1VSVT("vdet", vsize, vd, vs, vt);
     }
-    
     // VFPU2
     @Override
     public void doVCMP(int vsize, int vs, int vt, int cond) {
         doUNK("Unsupported VFPU instruction");
     }
-    
+
     @Override
-    public void doVMIN(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVMIN(int vsize, int vd, int vs, int vt) {
+        returnString = Dis_VDVSVT("vmin", vsize, vd, vs, vt);
     }
-    
+
     @Override
-    public void doVMAX(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVMAX(int vsize, int vd, int vs, int vt) {
+        returnString = Dis_VDVSVT("vmax", vsize, vd, vs, vt);
     }
-    
+
     @Override
-    public void doVSCMP(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVSCMP(int vsize, int vd, int vs, int vt) {
+        returnString = Dis_VDVSVT("vscmp", vsize, vd, vs, vt);
     }
-    
+
     @Override
-    public void doVSGE(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVSGE(int vsize, int vd, int vs, int vt) {
+        returnString = Dis_VDVSVT("vsge", vsize, vd, vs, vt);
     }
-    
+
     @Override
-    public void doVSLT(int vsize, int vd, int vs,int vt) {
-        doUNK("Unsupported VFPU instruction");
+    public void doVSLT(int vsize, int vd, int vs, int vt) {
+        returnString = Dis_VDVSVT("vslt", vsize, vd, vs, vt);
     }
-    
+
     @Override
     public void doVPFXS(int imm24) {
         doUNK("Unsupported VFPU instruction");
@@ -773,5 +782,4 @@ public class DisasmOpcodes implements AllegrexInstructions {
     public void doVFIM(int vs, int imm16) {
         doUNK("Unsupported VFPU instruction");
     }
-    
 }

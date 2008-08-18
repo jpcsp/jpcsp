@@ -50,7 +50,7 @@ public class Processor implements AllegrexInstructions {
     public long cycles;
     public long hilo_cycles;
     public long[] fpr_cycles;
-    public long[] vpr_cycles;
+    public long[][][] vpr_cycles;
     public long fcr31_cycles;
 
     Processor() {
@@ -64,7 +64,7 @@ public class Processor implements AllegrexInstructions {
         hilo = 0;
         gpr = new int[32];
         fpr = new float[32];
-        vpr = new float[8][4][4]; // [matrix][row][column]
+        vpr = new float[8][4][4]; // [matrix][column][row]
 
         fcr31_rm = 0;
         fcr31_c = false;
@@ -75,7 +75,7 @@ public class Processor implements AllegrexInstructions {
         cycles = 0;
         hilo_cycles = 0;
         fpr_cycles = new long[32];
-        vpr_cycles = new long[128];
+        vpr_cycles = new long[8][4][4];
     }
 
     public int hi() {
@@ -938,6 +938,16 @@ public class Processor implements AllegrexInstructions {
     }
 
     @Override
+    public void doLVS(int vt, int rs, int simm14) {
+        int r = (vt >> 5) & 3;
+        int m = (vt >> 2) & 7;
+        int c = (vt >> 0) & 3;
+        vpr[m][c][r] = Float.intBitsToFloat((Memory.get_instance()).read32(gpr[rs] + (simm14 << 2)));
+        cycles = Math.max(cycles, vpr_cycles[m][r][c]);
+        vpr_cycles[m][r][c] = cycles + 3;
+    }
+
+    @Override
     public void doSC(int rt, int rs, int simm16) {
         (Memory.get_instance()).write32(gpr[rs] + simm16, gpr[rt]);
         gpr[rt] = 1; // = ll_bit;
@@ -947,6 +957,15 @@ public class Processor implements AllegrexInstructions {
     public void doSWC1(int ft, int rs, int simm16) {
         (Memory.get_instance()).write32(gpr[rs] + simm16, Float.floatToRawIntBits(fpr[ft]));
         cycles = Math.max(cycles, fpr_cycles[ft]);
+    }
+
+    @Override
+    public void doSVS(int vt, int rs, int simm14) {
+        int r = (vt >> 5) & 3;
+        int m = (vt >> 2) & 7;
+        int c = (vt >> 0) & 3;
+        (Memory.get_instance()).write32(gpr[rs] + (simm14 << 2), Float.floatToRawIntBits(vpr[m][r][c]));
+        cycles = Math.max(cycles, vpr_cycles[m][r][c]);
     }
 
     @Override
@@ -1376,12 +1395,12 @@ public class Processor implements AllegrexInstructions {
         int m, r, c;
 
         m = (vs >> 2) & 7;
-        c = (vs >> 0) & 4;
+        c = (vs >> 0) & 3;
 
         switch (vsize) {
             case 1:
-                r = (vs >> 2) & 4;
-                result[0] = vpr[m][r][c];
+                r = (vs >> 5) & 3;
+                result[0] = vpr[m][c][r];
                 if (vcr_pfxs) {
                     result[0] = applyPrefixVs(0, result);
                     vcr_pfxs = false;
@@ -1390,7 +1409,7 @@ public class Processor implements AllegrexInstructions {
 
             case 2:
                 r = (vs & 64) >> 5;
-                if ((vs & 32) == 0) {
+                if ((vs & 32) != 0) {
                     result[0] = vpr[m][r + 0][c];
                     result[1] = vpr[m][r + 1][c];
                 } else {
@@ -1406,7 +1425,7 @@ public class Processor implements AllegrexInstructions {
 
             case 3:
                 r = (vs & 64) >> 6;
-                if ((vs & 32) == 0) {
+                if ((vs & 32) != 0) {
                     result[0] = vpr[m][r + 0][c];
                     result[1] = vpr[m][r + 1][c];
                     result[2] = vpr[m][r + 2][c];
@@ -1424,7 +1443,7 @@ public class Processor implements AllegrexInstructions {
                 return result;
 
             case 4:
-                if ((vs & 32) == 0) {
+                if ((vs & 32) != 0) {
                     result[0] = vpr[m][0][c];
                     result[1] = vpr[m][1][c];
                     result[2] = vpr[m][2][c];
@@ -1455,12 +1474,12 @@ public class Processor implements AllegrexInstructions {
         int m, r, c;
 
         m = (vt >> 2) & 7;
-        c = (vt >> 0) & 4;
+        c = (vt >> 0) & 3;
 
         switch (vsize) {
             case 1:
-                r = (vt >> 2) & 4;
-                result[0] = vpr[m][r][c];
+                r = (vt >> 5) & 3;
+                result[0] = vpr[m][c][r];
                 if (vcr_pfxt) {
                     result[0] = applyPrefixVt(0, result);
                     vcr_pfxt = false;
@@ -1469,7 +1488,7 @@ public class Processor implements AllegrexInstructions {
 
             case 2:
                 r = (vt & 64) >> 5;
-                if ((vt & 32) == 0) {
+                if ((vt & 32) != 0) {
                     result[0] = vpr[m][r + 0][c];
                     result[1] = vpr[m][r + 1][c];
                 } else {
@@ -1485,7 +1504,7 @@ public class Processor implements AllegrexInstructions {
 
             case 3:
                 r = (vt & 64) >> 6;
-                if ((vt & 32) == 0) {
+                if ((vt & 32) != 0) {
                     result[0] = vpr[m][r + 0][c];
                     result[1] = vpr[m][r + 1][c];
                     result[2] = vpr[m][r + 2][c];
@@ -1503,7 +1522,7 @@ public class Processor implements AllegrexInstructions {
                 return result;
 
             case 4:
-                if ((vt & 32) == 0) {
+                if ((vt & 32) != 0) {
                     result[0] = vpr[m][0][c];
                     result[1] = vpr[m][1][c];
                     result[2] = vpr[m][2][c];
@@ -1532,25 +1551,25 @@ public class Processor implements AllegrexInstructions {
         int m, r, c;
 
         m = (vd >> 2) & 7;
-        c = (vd >> 0) & 4;
+        c = (vd >> 0) & 3;
 
         switch (vsize) {
             case 1:
-                r = (vd >> 2) & 4;
+                r = (vd >> 5) & 3;
                 if (vcr_pfxd) {
                     if (!vcr_pfxd_msk[0]) {
-                        vpr[m][r][c] = applyPrefixVd(0, result[0]);
+                        vpr[m][c][r] = applyPrefixVd(0, result[0]);
                     }
                     vcr_pfxd = false;
                 } else {
-                    vpr[m][r][c] = result[0];
+                    vpr[m][c][r] = result[0];
                 }
                 break;
 
             case 2:
                 r = (vd & 64) >> 5;
                 if (vcr_pfxd) {
-                    if ((vd & 32) == 0) {
+                    if ((vd & 32) != 0) {
                         for (int i = 0; i < 2; ++i) {
                             if (!vcr_pfxd_msk[i]) {
                                 vpr[m][r + i][c] = applyPrefixVd(i, result[i]);
@@ -1565,7 +1584,7 @@ public class Processor implements AllegrexInstructions {
                     }
                     vcr_pfxd = false;                       
                 } else {
-                    if ((vd & 32) == 0) {
+                    if ((vd & 32) != 0) {
                         for (int i = 0; i < 2; ++i) {
                             vpr[m][r + i][c] = result[i];
                         }
@@ -1580,7 +1599,7 @@ public class Processor implements AllegrexInstructions {
             case 3:
                 r = (vd & 64) >> 6;
                 if (vcr_pfxd) {
-                    if ((vd & 32) == 0) {
+                    if ((vd & 32) != 0) {
                         for (int i = 0; i < 3; ++i) {
                             if (!vcr_pfxd_msk[i]) {
                                 vpr[m][r + i][c] = applyPrefixVd(i, result[i]);
@@ -1595,7 +1614,7 @@ public class Processor implements AllegrexInstructions {
                     }
                     vcr_pfxd = false;                       
                 } else {
-                    if ((vd & 32) == 0) {
+                    if ((vd & 32) != 0) {
                         for (int i = 0; i < 3; ++i) {
                             vpr[m][r + i][c] = result[i];
                         }
@@ -1609,7 +1628,7 @@ public class Processor implements AllegrexInstructions {
 
             case 4:
                 if (vcr_pfxd) {
-                    if ((vd & 32) == 0) {
+                    if ((vd & 32) != 0) {
                         for (int i = 0; i < 4; ++i) {
                             if (!vcr_pfxd_msk[i]) {
                                 vpr[m][i][c] = applyPrefixVd(i, result[i]);
@@ -1624,7 +1643,7 @@ public class Processor implements AllegrexInstructions {
                     }
                     vcr_pfxd = false;                       
                 } else {
-                    if ((vd & 32) == 0) {
+                    if ((vd & 32) != 0) {
                         for (int i = 0; i < 4; ++i) {
                             vpr[m][i][c] = result[i];
                         }
