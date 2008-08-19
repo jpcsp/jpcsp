@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.BufferedReader;
+import static jpcsp.Syscallv15.*;
 
 public class NIDMapper {
     private static NIDMapper instance;
@@ -98,6 +99,14 @@ public class NIDMapper {
             fr.close();
         } catch(FileNotFoundException e) {
             System.out.println("File not found: " + filename);
+            System.out.println("Using internal syscall mapping");
+            for(int i=0; i<syscalls.length; i++)
+            {
+               int syscall = syscalls[i][0];
+               long nid = syscalls[i][1];
+                //System.out.println(syscall);
+                nidToSyscall.put((int)nid,syscall);
+            }
         } catch(Exception e) {
             e.printStackTrace();
         }

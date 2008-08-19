@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
+import jpcsp.Debugger.DisassemblerModule.*;
 import jpcsp.Emulator;
 import jpcsp.GeneralJpcspException;
 
@@ -116,8 +117,16 @@ Unsupported syscall 2152 sceCtrlReadBufferPositive
 */
 
                 default:
-                    System.out.println("Unsupported syscall " + Integer.toHexString(code));
-                    break;
+                {
+                  for (syscalls.calls c : syscalls.calls.values()) {
+                  if (c.getValue() == code) {
+                      System.out.println("Unsupported syscall " + Integer.toHexString(code) + " " + c);               
+                      return;
+                     }
+                  }        
+                  System.out.println("Unsupported syscall " + Integer.toHexString(code));
+                }  
+                break;
             }
         } catch(GeneralJpcspException e) {
             System.out.println(e.getMessage());
