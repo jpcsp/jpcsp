@@ -21,7 +21,7 @@ package jpcsp.Debugger.DisassemblerModule;
  * @author George
  */
 public class syscalls {
-     static enum calls { 
+     public static enum calls { 
 		 sceKernelRegisterSubIntrHandler(0x2000),
 		 sceKernelReleaseSubIntrHandler(0x2001),
 		 sceKernelEnableSubIntr(0x2002),
@@ -559,7 +559,7 @@ public class syscalls {
             {
                 value=val;
             }
-            int getValue()
+            public int getValue()
             {
                 return value;
             }
