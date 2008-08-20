@@ -466,7 +466,7 @@ public class Decoder {
                                 break;
                         }
                         break;
-                    case COP1F:
+                    case COP1S:
                         switch ((byte) func(insn)) {
                             case ADDS:
                                 that.doADDS(fd(insn), fs(insn), ft(insn));
@@ -504,9 +504,6 @@ public class Decoder {
                             case FLOORWS:
                                 that.doFLOORWS(fd(insn), fs(insn));
                                 break;
-                            case CVTSW:
-                                that.doCVTSW(fd(insn), fs(insn));
-                                break;
                             case CVTWS:
                                 that.doCVTWS(fd(insn), fs(insn));
                                 break;
@@ -514,7 +511,17 @@ public class Decoder {
                                 that.doCCONDS(fs(insn), ft(insn), cond(insn));
                                 break;
                             default:
-                                that.doUNK("Unsupported COP1F instruction " + Integer.toHexString(func(insn)));
+                                that.doUNK("Unsupported COP1S instruction " + Integer.toHexString(func(insn)));
+                                break;
+                        }
+                        break;
+                    case COP1W:
+                        switch ((byte) func(insn)) {
+                            case CVTSW:
+                                that.doCVTSW(fd(insn), fs(insn));
+                                break;
+                            default:
+                                that.doUNK("Unsupported COP1W instruction " + Integer.toHexString(func(insn)));
                                 break;
                         }
                         break;

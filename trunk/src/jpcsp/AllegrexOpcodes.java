@@ -310,28 +310,30 @@ public class AllegrexOpcodes {
     public static final byte SEH = 0x18; // Sign-Extend HalfWord
 
 //     COP1: encoded by the rs field when opcode field = COP1.
-//     31---------26----------23-------31------------------------------0
-//     |=      COP1|          |   rs    |                              |
-//     ------6---------------------5------------------------------------
+//     31-------26------21---------------------------------------------0
+//     |=    COP1|  rs  |                                              |
+//     -----6-------5---------------------------------------------------
 //     |--000--|--001--|--010--|--011--|--100--|--101--|--110--|--111--| lo
 //  00 |  MFC1 |  ---  |  CFC1 |  ---  |  MTC1 |  ---  |  CTC1 |  ---  |
 //  01 |  *1   |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
-//  10 |  *2   |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
+//  10 |  *2   |  ---  |  ---  |  ---  |  *3   |  ---  |  ---  |  ---  |
 //  11 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
 //  hi |-------|-------|-------|-------|-------|-------|-------|-------|
-//    *1 check COP1 BC table
-//    *2 check COP1 Function table;
+//    *1 check COP1BC table
+//    *2 check COP1S table;
+//    *2 check COP1W table;
     public static final byte MFC1 = 0x00;
     public static final byte CFC1 = 0x02;
     public static final byte MTC1 = 0x04;
     public static final byte CTC1 = 0x06;
     public static final byte COP1BC = 0x08;
-    public static final byte COP1F = 0x10;
+    public static final byte COP1S = 0x10;
+    public static final byte COP1W = 0x14; //
     
 //     COP1BC: encoded by the rt field
-//     31---------26----------21-------16------------------------------0
-//     |=    COP1BC|          |   rt    |                              |
-//     ------6---------------------5------------------------------------
+//     31---------21-------16------------------------------------------0
+//     |=    COP1BC|  rt   |                                           |
+//     ------11---------5-----------------------------------------------
 //     |--000--|--001--|--010--|--011--|--100--|--101--|--110--|--111--| lo
 //  00 |  BC1F | BC1T  | BC1FL | BC1TL |  ---  |  ---  |  ---  |  ---  |
 //  01 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
@@ -341,18 +343,19 @@ public class AllegrexOpcodes {
     public static final byte BC1F = 0x00;
     public static final byte BC1T = 0x01;
     public static final byte BC1FL = 0x02;
-    public static final byte BC1TL = 0x03;
-    //     COP1F: encoded by function field when opcode COP1 = COP1F  //14/08/2008 not sure need to recheck
-//     31---------26------------------------------------------5--------0
-//     |=  COP1F  |                                          | function|
-//     ------6----------------------------------------------------6-----
+    public static final byte BC1TL = 0x03; //   
+    
+//     COP1S: encoded by function field
+//     31---------21------------------------------------------5--------0
+//     |=  COP1S  |                                          | function|
+//     -----11----------------------------------------------------6-----
 //     |--000--|--001--|--010--|--011--|--100--|--101--|--110--|--111--| lo
-// 000 |add.s  | sub.s | mul.s | div.s |sqrt.s |abs.s  |mov.s  |neg.s  |
-// 001 | --    | ---   | ---   | ---   |            <*1>.w.s           |
-// 010 | ---   | ---   | ---   | ---   | ---   |  ---  |  ---  | ---   |
-// 011 | ---   | ---   | ---   | ----  | ---   |  ---  | ---   | ---   |
-// 100 |cvt.s.w| ---   | ---   | ---   |cvt.w.s|  ---  | ---   | ----- |
-// 101 | ---   | ---   | ---   | ----  | ---   |  ---  | ---   | ---   |
+// 000 | add.s | sub.s | mul.s | div.s |sqrt.s | abs.s | mov.s | neg.s |
+// 001 |  ---  |  ---  |  ---  |  ---  |            <*1>.w.s           |
+// 010 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
+// 011 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
+// 100 |  ---  |  ---  |  ---  |  ---  |cvt.w.s|  ---  |  ---  |  ---  |
+// 101 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
 // 110 |                            c.<*2>.s                           |
 // 110 |                            c.<*3>.s                           |
 //  hi |-------|-------|-------|-------|-------|-------|-------|-------|   
@@ -360,6 +363,7 @@ public class AllegrexOpcodes {
 // *1 : round.w.s | trunc.w.s | ceil.w.s | floor.w.s
 // *2 : c.f.s | c.un.s | c.eq.s | c.ueq.s | c.olt.s | c.ult.s | c.ole.s | c.ule.s
 // *3 : c.sf.s | c.ngle.s | c.seq.s | c.ngl.s | c.lt.s | c.nge.s | c.le.s  | c.ngt.s
+//
     public static final byte ADDS = 0x00;
     public static final byte SUBS = 0x01;
     public static final byte MULS = 0x02;
@@ -372,7 +376,6 @@ public class AllegrexOpcodes {
     public static final byte TRUNCWS = 0xd;
     public static final byte CEILWS = 0xe;
     public static final byte FLOORWS = 0xf;
-    public static final byte CVTSW = 0x20;
     public static final byte CVTWS = 0x24;
     public static final byte CCONDS = 0x30;
     public static final byte CF = 0x0;
@@ -390,8 +393,24 @@ public class AllegrexOpcodes {
     public static final byte CLT = 0xc;
     public static final byte CNGE = 0xd;
     public static final byte CLE = 0xe;
-    public static final byte CNGT = 0xf;
+    public static final byte CNGT = 0xf; //
     
+//     COP1W: encoded by function field
+//     31---------21------------------------------------------5--------0
+//     |=  COP1W  |                                          | function|
+//     -----11----------------------------------------------------6-----
+//     |--000--|--001--|--010--|--011--|--100--|--101--|--110--|--111--| lo
+// 000 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
+// 001 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
+// 010 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
+// 011 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
+// 100 |cvt.s.w|  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
+// 101 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
+// 110 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
+// 110 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
+//  hi |-------|-------|-------|-------|-------|-------|-------|-------|   
+    public static final byte CVTSW = 0x20; //
+
     // VFPU0:
     // 
     //     31---------26-----23--------------------------------------------0
@@ -403,9 +422,7 @@ public class AllegrexOpcodes {
     public static final byte VADD = 0x00;
     public static final byte VSUB = 0x01;
     public static final byte VSBN = 0x02;
-    public static final byte VDIV = 0x07;
-
-    // VFPU1:
+    public static final byte VDIV = 0x07;    // VFPU1:
     // 
     //     31---------26-----23--------------------------------------------0
     //     |=     VFPU1| VOP |                                             |
@@ -418,9 +435,7 @@ public class AllegrexOpcodes {
     public static final byte VSCL = 0x02;
     public static final byte VHDP = 0x04;
     public static final byte VCRS = 0x05;
-    public static final byte VDET = 0x06;
-
-    // VFPU2: /* known as COP2 */
+    public static final byte VDET = 0x06;    // VFPU2: /* known as COP2 */
     // 
     //     31---------26-----23--------------------------------------------0
     //     |=     VFPU2|                                                   |
@@ -441,9 +456,7 @@ public class AllegrexOpcodes {
     public static final byte VMAX = 0x03;
     public static final byte VSCMP = 0x05;
     public static final byte VSGE = 0x06;
-    public static final byte VSLT = 0x07;
-
-    // VFPU4:
+    public static final byte VSLT = 0x07;    // VFPU4:
     // 
     //     31---------26-----23--------------------------------------------0
     //     |=     VFPU4| VOP |                                             |
@@ -464,18 +477,14 @@ public class AllegrexOpcodes {
     public static final byte VPFXS = 0x00;
     public static final byte VPFXT = 0x01;
     public static final byte VPFXD = 0x02;
-    public static final byte VIFIM = 0x03;
-    
-    //     31---------------23---------------------------------------------0
+    public static final byte VIFIM = 0x03;    //     31---------------23---------------------------------------------0
     //     |=   VFPU5/VIFM  |                                              |
     //     ---------8-------------------------------------------------------
     //     |----------------0----------------|--------------1--------------|
     //     |              VIIM               |            VFIM             |
     //     |---------------------------------|-----------------------------|   
     public static final byte VIIM = 0x0;
-    public static final byte VFIM = 0x1;
-
-    // VFPU6:
+    public static final byte VFIM = 0x1;    // VFPU6:
     // 
     //     31---------26-----23--------------------------------------------0
     //     |=     VFPU6| VOP |                                             |
