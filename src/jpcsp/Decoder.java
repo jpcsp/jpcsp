@@ -467,7 +467,8 @@ public class Decoder {
                         }
                         break;
                     case COP1S:
-                        switch ((byte) func(insn)) {
+                        byte cop1s = (byte) func(insn);
+                        switch (cop1s) {
                             case ADDS:
                                 that.doADDS(fd(insn), fs(insn), ft(insn));
                                 break;
@@ -507,11 +508,12 @@ public class Decoder {
                             case CVTWS:
                                 that.doCVTWS(fd(insn), fs(insn));
                                 break;
-                            case CCONDS:
-                                that.doCCONDS(fs(insn), ft(insn), cond(insn));
-                                break;
                             default:
-                                that.doUNK("Unsupported COP1S instruction " + Integer.toHexString(func(insn)));
+                                if ((cop1s & CCONDS) == CCONDS) {
+                                    that.doCCONDS(fs(insn), ft(insn), cond(insn));
+                                } else {
+                                    that.doUNK("Unsupported COP1S instruction " + Integer.toHexString(func(insn)));
+                                }
                                 break;
                         }
                         break;
@@ -659,7 +661,7 @@ public class Decoder {
                                 break;
                         }
                         break;
-                        
+
                     default:
                         that.doUNK("Unsupported VFPU5 instruction " + Integer.toBinaryString(vop3(insn)));
                         break;
