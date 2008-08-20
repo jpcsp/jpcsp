@@ -4,8 +4,8 @@
 
     <windowspos>
        <disassembler>
-         <x>401</x>
-         <y>14</y>
+         <x>41</x>
+         <y>-20</y>
        </disassembler>
        <elfheader>
          <x>244</x>
@@ -21,7 +21,7 @@
        </registers>
       <logwindow>
         <x>545</x>
-        <y>379</y>
+        <y>382</y>
       </logwindow>
     </windowspos>
 	
