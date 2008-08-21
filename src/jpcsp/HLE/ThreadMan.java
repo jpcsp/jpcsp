@@ -76,6 +76,7 @@ public class ThreadMan {
             if (Emulator.getProcessor().pc == 0 && Emulator.getProcessor().gpr[31] == 0) {
                 // Thread has exited
                 System.out.println("Thread exit detected SceUID=" + Integer.toHexString(current_thread.uid) + " name:'" + current_thread.name + "'");
+                current_thread.exitStatus = Emulator.getProcessor().gpr[2]; // v0
                 current_thread.status = PspThreadStatus.PSP_THREAD_STOPPED;
                 contextSwitch(nextThread());
             }
@@ -104,7 +105,7 @@ public class ThreadMan {
                     // MemoryMan.free(thread.stack_addr);
 
                     threadlist.remove(thread.uid);
-                    SceUIDMan.get_instance().releaseUid(thread.uid, "ThreadMan");
+                    SceUIDMan.get_instance().releaseUid(thread.uid, "ThreadMan-thread");
                 }
             }
         }
@@ -192,7 +193,7 @@ public class ThreadMan {
 
     /** terminate thread a0 */
     public void ThreadMan_sceKernelTerminateThread(int a0) throws GeneralJpcspException {
-        SceUIDMan.get_instance().checkUidPurpose(a0, "ThreadMan");
+        SceUIDMan.get_instance().checkUidPurpose(a0, "ThreadMan-thread");
         SceKernelThreadInfo thread = threadlist.get(a0);
         System.out.println("sceKernelTerminateThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
 
@@ -204,7 +205,7 @@ public class ThreadMan {
 
     /** delete thread a0 */
     public void ThreadMan_sceKernelDeleteThread(int a0) throws GeneralJpcspException {
-        SceUIDMan.get_instance().checkUidPurpose(a0, "ThreadMan");
+        SceUIDMan.get_instance().checkUidPurpose(a0, "ThreadMan-thread");
         SceKernelThreadInfo thread = threadlist.get(a0);
         System.out.println("sceKernelDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
 
@@ -215,7 +216,7 @@ public class ThreadMan {
     }
 
     public void ThreadMan_sceKernelStartThread(int a0, int a1, int a2) throws GeneralJpcspException {
-        SceUIDMan.get_instance().checkUidPurpose(a0, "ThreadMan");
+        SceUIDMan.get_instance().checkUidPurpose(a0, "ThreadMan-thread");
         SceKernelThreadInfo thread = threadlist.get(a0);
 
         // Set return value before context switch!
@@ -261,7 +262,7 @@ public class ThreadMan {
         // MemoryMan.free(thread.stack_addr);
 
         threadlist.remove(thread.uid);
-        SceUIDMan.get_instance().releaseUid(thread.uid, "ThreadMan");
+        SceUIDMan.get_instance().releaseUid(thread.uid, "ThreadMan-thread");
         */
 
         Emulator.getProcessor().gpr[2] = 0;
@@ -289,6 +290,48 @@ public class ThreadMan {
         //return 0;
     }
 
+    public void ThreadMan_sceKernelCreateCallback(int a0, int a1, int a2) throws GeneralJpcspException {
+        String name = readStringZ(Memory.get_instance().mainmemory, (a0 & 0x3fffffff) - MemoryMap.START_RAM);
+        SceKernelCallbackInfo callback = new SceKernelCallbackInfo(name, current_thread.uid, a1, a2);
+
+        System.out.println("sceKernelCreateCallback SceUID=" + Integer.toHexString(callback.uid) + " PC=" + Integer.toHexString(callback.callback_addr) + " name:'" + callback.name + "'");
+
+        Emulator.getProcessor().gpr[2] = callback.uid;
+    }
+
+
+    private class SceKernelCallbackInfo {
+        private String name;
+        private int threadId;
+        private int callback_addr;
+        private int callback_arg_addr;
+        private int notifyCount;
+        private int notifyArg;
+
+        // internal variables
+        private int uid;
+
+        public SceKernelCallbackInfo(String name, int threadId, int callback_addr, int callback_arg_addr) {
+            this.name = name;
+            this.threadId = threadId;
+
+            // Either creation of the arguments is wrong - something in Proessor is not emulating right,
+            // Or the callback addr is like a branch target (nearest 256mb aligned relative)
+            //this.callback_addr = callback_addr;
+            //this.callback_addr = Processor.jumpTarget(Emulator.getProcessor().pc, callback_addr);
+            this.callback_addr = Processor.branchTarget(Emulator.getProcessor().pc, callback_addr);
+
+            this.callback_arg_addr = callback_arg_addr;
+
+            notifyCount = 0; // ?
+            notifyArg = 0; // ?
+
+            // internal state
+            uid = SceUIDMan.get_instance().getNewUid("ThreadMan-callback");
+
+            // TODO add to list of callbacks
+        }
+    }
 
     enum PspThreadStatus {
         PSP_THREAD_RUNNING(1), PSP_THREAD_READY(2),
@@ -356,7 +399,7 @@ public class ThreadMan {
             releaseCount = 0;
 
             // internal state
-            uid = SceUIDMan.get_instance().getNewUid("ThreadMan");
+            uid = SceUIDMan.get_instance().getNewUid("ThreadMan-thread");
             threadlist.put(uid, this);
 
             gpr = new int[32];
