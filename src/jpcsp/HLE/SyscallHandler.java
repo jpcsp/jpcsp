@@ -97,22 +97,34 @@ public class SyscallHandler {
                     pspdisplay.get_instance().sceDisplayWaitVblankStart();
                     break;
 
-                /* TODO (for minifire)
-                case 0x2150:
-                    Ctrl.get_instance().Ctrl_sceCtrlPeekBufferPositive();
+                case 0x214c:
+                    pspctrl.get_instance().sceCtrlSetSamplingCycle(gpr[4]);
                     break;
-                */
+                case 0x214d:
+                    pspctrl.get_instance().sceCtrlGetSamplingCycle(gpr[4]);
+                    break;
+                case 0x214e:
+                    pspctrl.get_instance().sceCtrlSetSamplingMode(gpr[4]);
+                    break;
+                case 0x214f:
+                    pspctrl.get_instance().sceCtrlGetSamplingMode(gpr[4]);
+                    break;
+                case 0x2150:
+                    pspctrl.get_instance().sceCtrlPeekBufferPositive(gpr[4], gpr[5]);
+                    break;
+                case 0x2151:
+                    pspctrl.get_instance().sceCtrlPeekBufferNegative(gpr[4], gpr[5]);
+                    break;
+                case 0x2152:
+                    pspctrl.get_instance().sceCtrlReadBufferPositive(gpr[4], gpr[5]);
+                    break;
+                case 0x2153:
+                    pspctrl.get_instance().sceCtrlReadBufferNegative(gpr[4], gpr[5]);
+                    break;
 
                 case 0x20f0:
                     pspge.get_instance().sceGeEdramGetAddr();
                     break;
-
-/*
-controller.pbp
-Unsupported syscall 214c sceCtrlSetSamplingCycle
-Unsupported syscall 214e sceCtrlSetSamplingMode
-Unsupported syscall 2152 sceCtrlReadBufferPositive
-*/
 
                 default:
                 {
