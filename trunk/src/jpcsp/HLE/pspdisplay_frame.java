@@ -40,9 +40,10 @@ public class pspdisplay_frame implements GLEventListener {
         GLCanvas canvas = new GLCanvas();
 
         canvas.addGLEventListener(this);
+        canvas.setSize(480, 272);
         frame.add(canvas);
-        frame.setSize(480, 272);
         //frame.setLocation(50, 760);
+        frame.pack();
 
         // Ideally we would be like to control how frequently display() is called.
         // The Animator object will call it as fast as it likes, without it the window

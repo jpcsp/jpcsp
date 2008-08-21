@@ -71,7 +71,7 @@ public class pspdisplay {
 
     public void step() {
         long now = System.currentTimeMillis();
-        if (now - lastUpdate > 1000 / 60)
+        if (now - lastUpdate > 1000 / 30)
         {
             UpdateDisplay();
             lastUpdate = now;
@@ -152,7 +152,7 @@ public class pspdisplay {
 
     public void UpdateDisplay() {
         if (pixelformat == null) {
-            System.out.println("pixelformat is null");
+            //System.out.println("pixelformat is null");
             return;
         }
 
