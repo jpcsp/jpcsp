@@ -411,7 +411,8 @@ public class Emulator {
         while (run == true) {
             cpu.step();
             jpcsp.HLE.ThreadMan.get_instance().step();
-            gpu.draw();
+            jpcsp.HLE.pspdisplay.get_instance().step();
+            //gpu.draw();
             controller.checkControllerState();
             //delay(cpu.numberCyclesDelay());
         }

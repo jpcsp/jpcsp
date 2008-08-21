@@ -46,6 +46,8 @@ public class pspdisplay {
     // need redesigning for when we want to emulate GU -> OpenGL.
     private pspdisplay_frame frame;
 
+    private long lastUpdate;
+
     public static pspdisplay get_instance() {
         if (instance == null) {
             instance = new pspdisplay();
@@ -67,20 +69,33 @@ public class pspdisplay {
         frame = new pspdisplay_frame();
     }
 
+    public void step() {
+        long now = System.currentTimeMillis();
+        if (now - lastUpdate > 1000 / 60)
+        {
+            UpdateDisplay();
+            lastUpdate = now;
+        }
+    }
+
     public void sceDisplaySetMode(int mode, int width, int height)
     {
-        //System.out.println("sceDisplaySetMode");
+        System.out.println("sceDisplaySetMode(mode=" + mode + ",width=" + width + ",height=" + height + ")");
 
-        this.mode = mode;
-        this.width = width;
-        this.height = height;
+        if (width <= 0 || height <= 0) {
+            Emulator.getProcessor().gpr[2] = -1;
+        } else {
+            this.mode = mode;
+            this.width = width;
+            this.height = height;
 
-        // Allocate a 32-bit native frame buffer (we'll up sample as necessary)
-        bb = ByteBuffer.allocate(512 * 512 * 4);
-        framebufferram = bb.array();
-        frame.createImage(bb);
+            // Allocate a 32-bit native frame buffer (we'll up sample as necessary)
+            bb = ByteBuffer.allocate(512 * 512 * 4);
+            framebufferram = bb.array();
+            frame.createImage(bb);
 
-        Emulator.getProcessor().gpr[2] = 0;
+            Emulator.getProcessor().gpr[2] = 0;
+        }
     }
 
     public void sceDisplaySetFrameBuf(int topaddr, int bufferwidth, int pixelformat, int sync)
@@ -90,7 +105,10 @@ public class pspdisplay {
         // Discard the kernel/cache bits
         topaddr = topaddr & 0x3fffffff;
 
-        if (topaddr < MemoryMap.START_VRAM || topaddr >= MemoryMap.END_VRAM)
+        if (topaddr < MemoryMap.START_VRAM || topaddr >= MemoryMap.END_VRAM ||
+            bufferwidth <= 0 || // TODO power of 2 check
+            pixelformat < 0 || pixelformat > 3 ||
+            sync < 0 || sync > 1)
         {
             Emulator.getProcessor().gpr[2] = -1;
         }
@@ -116,7 +134,7 @@ public class pspdisplay {
         //ThreadMan.get_instance().ThreadMan_sceKernelDelayThread(micros);
 
         // TODO move this to step() and trigger at 60 frames per second
-        UpdateDisplay();
+        //UpdateDisplay();
 
         Emulator.getProcessor().gpr[2] = 0;
     }
@@ -143,11 +161,10 @@ public class pspdisplay {
         byte[] videoram = Memory.get_instance().videoram;
         int addr = topaddr - MemoryMap.START_VRAM; // 0x04000000
 
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++, addr += bytesPerPixel) {
-                // TODO move these if's outside the loop
-                if (pixelformat == PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_5551)
-                {
+        if (pixelformat == PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_5551)
+        {
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++, addr += bytesPerPixel) {
                     int color =
                         (videoram[addr + 0] << 8) |
                         (videoram[addr + 1]);
@@ -157,8 +174,13 @@ public class pspdisplay {
                     byte a = (byte)(((color      ) & 0x01) * 255);
                     set_native_pixel(framebufferram, x, y, r, g, b, a);
                 }
-                else if (pixelformat == PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_565)
-                {
+                addr += (bufferwidth - width) * bytesPerPixel;
+            }
+        }
+        else if (pixelformat == PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_565)
+        {
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++, addr += bytesPerPixel) {
                     int color =
                         (videoram[addr + 0] << 8) |
                         (videoram[addr + 1]);
@@ -168,8 +190,13 @@ public class pspdisplay {
                     byte a = 0x00; // opaque
                     set_native_pixel(framebufferram, x, y, r, g, b, a);
                 }
-                else if (pixelformat == PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_4444)
-                {
+                addr += (bufferwidth - width) * bytesPerPixel;
+            }
+        }
+        else if (pixelformat == PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_4444)
+        {
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++, addr += bytesPerPixel) {
                     int color =
                         (videoram[addr + 0] << 8) |
                         (videoram[addr + 1]);
@@ -179,8 +206,13 @@ public class pspdisplay {
                     byte a = (byte)(((color      ) & 0x0f) << 4);
                     set_native_pixel(framebufferram, x, y, r, g, b, a);
                 }
-                else if (pixelformat == PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_8888)
-                {
+                addr += (bufferwidth - width) * bytesPerPixel;
+            }
+        }
+        else if (pixelformat == PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_8888)
+        {
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++, addr += bytesPerPixel) {
                     // minifire runs on 8888
                     byte r = videoram[addr + 0];
                     byte g = videoram[addr + 1];
@@ -188,10 +220,10 @@ public class pspdisplay {
                     byte a = videoram[addr + 3];
                     set_native_pixel(framebufferram, x, y, r, g, b, a);
                 }
+                addr += (bufferwidth - width) * bytesPerPixel;
             }
-
-            addr += (bufferwidth - width) * bytesPerPixel;
         }
+
 
         // TESTING
         // alpha component doesn't seem to make any difference, but then i didnt set a blend func
