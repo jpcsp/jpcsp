@@ -314,13 +314,7 @@ public class ThreadMan {
         public SceKernelCallbackInfo(String name, int threadId, int callback_addr, int callback_arg_addr) {
             this.name = name;
             this.threadId = threadId;
-
-            // Either creation of the arguments is wrong - something in Proessor is not emulating right,
-            // Or the callback addr is like a branch target (nearest 256mb aligned relative)
-            //this.callback_addr = callback_addr;
-            //this.callback_addr = Processor.jumpTarget(Emulator.getProcessor().pc, callback_addr);
-            this.callback_addr = Processor.branchTarget(Emulator.getProcessor().pc, callback_addr);
-
+            this.callback_addr = callback_addr;
             this.callback_arg_addr = callback_arg_addr;
 
             notifyCount = 0; // ?
@@ -409,7 +403,7 @@ public class ThreadMan {
             saveContext();
             // Thread specific registers
             pcreg = entry_addr;
-            npcreg = entry_addr + 4;
+            npcreg = entry_addr; // + 4;
             gpr[29] = stack_addr; //sp
 
             // TODO hook "jr ra" where ra = 0,
