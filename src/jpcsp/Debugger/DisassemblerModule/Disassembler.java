@@ -362,6 +362,7 @@ private void StepEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
     try {
         emu.getProcessor().step();
         jpcsp.HLE.ThreadMan.get_instance().step();
+        jpcsp.HLE.pspdisplay.get_instance().step();
     } catch(GeneralJpcspException e) {
         JpcspDialogManager.showError(this, "General Error : " + e.getMessage());
     }
@@ -531,19 +532,23 @@ private void StopEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
 private void AddBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddBreakpointActionPerformed
           String value =(String)jList1.getSelectedValue();
-          if(value.length()>0)
+          if(value != null)
           {
             String address = value.substring(0, 8);
             int addr = Integer.parseInt(address,16);
             breakpoints.add(addr);
-            DebuggerPC = 0;
+            //DebuggerPC = 0;
             RefreshDebugger();
+          }
+          else
+          {
+            JpcspDialogManager.showInformation(this, "Breakpoint Help : " + "Select the line to add a breakpoint to.");
           }
 }//GEN-LAST:event_AddBreakpointActionPerformed
 
 private void RemoveBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RemoveBreakpointActionPerformed
           String value =(String)jList1.getSelectedValue();
-          if(value.length()>0)
+          if(value != null)
           {
             boolean breakpointexists = value.startsWith("<br>");
             if(breakpointexists)
@@ -552,9 +557,13 @@ private void RemoveBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//
               int addr = Integer.parseInt(address,16);
               int b = breakpoints.indexOf(addr);
               breakpoints.remove(b);
-              DebuggerPC = 0;
+              //DebuggerPC = 0;
               RefreshDebugger();
             }
+          }
+          else
+          {
+            JpcspDialogManager.showInformation(this, "Breakpoint Help : " + "Select the line to remove a breakpoint from.");
           }
 }//GEN-LAST:event_RemoveBreakpointActionPerformed
 
