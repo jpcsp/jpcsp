@@ -34,6 +34,9 @@ public class SyscallHandler {
         try {
             // Currently using FW1.50 codes
             switch(code) {
+                case 0x200d:
+                    ThreadMan.get_instance().ThreadMan_sceKernelCreateCallback(gpr[4], gpr[5], gpr[6]);
+                    break;
                 case 0x2015:
                     ThreadMan.get_instance().ThreadMan_sceKernelSleepThreadCB();
                     break;
@@ -59,6 +62,7 @@ public class SyscallHandler {
                 case 0x2073:
                     ThreadMan.get_instance().ThreadMan_sceKernelTerminateThread(gpr[4]);
                     break;
+
                 case 0x20b2:
                     pspstdio.get_instance().sceKernelStdin();
                     break;
@@ -68,6 +72,7 @@ public class SyscallHandler {
                 case 0x20b4:
                     pspstdio.get_instance().sceKernelStderr();
                     break;
+
                 case 0x20bf:
                     Utils.get_instance().Utils_sceKernelUtilsMt19937Init(gpr[4], gpr[5]);
                     break;
@@ -75,11 +80,12 @@ public class SyscallHandler {
                     Utils.get_instance().Utils_sceKernelUtilsMt19937UInt(gpr[4]);
                     break;
 
-                /* TODO (for minifire)
                 case 0x20eb:
-                    LoadExec.get_instance().LoadExec_sceKernelExitGame();
+                    LoadExec.get_instance().sceKernelExitGame();
                     break;
-                */
+                case 0x20ec:
+                    LoadExec.get_instance().sceKernelRegisterExitCallback(gpr[4]);
+                    break;
 
                 case 0x213a:
                     pspdisplay.get_instance().sceDisplaySetMode(gpr[4], gpr[5], gpr[6]);
@@ -102,14 +108,6 @@ public class SyscallHandler {
                     break;
 
 /*
-HelloJpcsp.PBP
-Unsupported syscall 20b2 sceKernelStdin
-Unsupported syscall 20b3 sceKernelStdout
-Unsupported syscall 20b4 sceKernelStderr
-
-Unsupported syscall 200d sceKernelCreateCallback
-Unsupported syscall 20ec sceKernelRegisterExitCallback
-
 controller.pbp
 Unsupported syscall 214c sceCtrlSetSamplingCycle
 Unsupported syscall 214e sceCtrlSetSamplingMode
@@ -120,12 +118,12 @@ Unsupported syscall 2152 sceCtrlReadBufferPositive
                 {
                   for (syscalls.calls c : syscalls.calls.values()) {
                   if (c.getValue() == code) {
-                      System.out.println("Unsupported syscall " + Integer.toHexString(code) + " " + c);               
+                      System.out.println("Unsupported syscall " + Integer.toHexString(code) + " " + c);
                       return;
                      }
-                  }        
+                  }
                   System.out.println("Unsupported syscall " + Integer.toHexString(code));
-                }  
+                }
                 break;
             }
         } catch(GeneralJpcspException e) {

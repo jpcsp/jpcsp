@@ -41,6 +41,6 @@ public class pspge {
 
     public void sceGeEdramGetAddr()
     {
-         Emulator.getProcessor().gpr[2] = MemoryMap.START_VRAM;
+        Emulator.getProcessor().gpr[2] = MemoryMap.START_VRAM;
     }
 }
