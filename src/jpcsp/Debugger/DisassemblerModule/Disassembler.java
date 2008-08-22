@@ -39,13 +39,13 @@ import jpcsp.GeneralJpcspException;
 import jpcsp.Memory;
 import jpcsp.Settings;
 import jpcsp.util.JpcspDialogManager;
-import static jpcsp.AllegrexOpcodes.*;
-import static jpcsp.Debugger.DisassemblerModule.DisHelper.*;
+
 /**
  *
  * @author  shadow
  */
-public class Disassembler extends javax.swing.JInternalFrame implements ClipboardOwner{
+public class Disassembler extends javax.swing.JInternalFrame implements ClipboardOwner, Runnable {
+    Thread t;
     Emulator emu;
     int DebuggerPC;
     private DefaultListModel model_1 = new DefaultListModel();
@@ -60,6 +60,8 @@ public class Disassembler extends javax.swing.JInternalFrame implements Clipboar
     /* Creates new form Disasembler */
     public Disassembler(Emulator emu, Registers regs, MemoryViewer memview) {
         //this.c = c;
+        t=new Thread(this);
+        emu.pause=false;
         this.regs=regs;
         this.memview=memview;
         this.emu=emu;
@@ -70,7 +72,29 @@ public class Disassembler extends javax.swing.JInternalFrame implements Clipboar
         RefreshDebugger();
 
     }
-
+    public void run()
+    {
+       try {
+           if(emu.pause)//emu is paused
+           {
+               
+               //emu.resume();
+               emu.run=true;
+               emu.run();
+               //t.resume();
+             
+           }
+           else
+           {
+               
+             emu.run=true;
+             emu.run();
+           }
+       }catch(GeneralJpcspException e)
+       {
+            JpcspDialogManager.showError(null, "General Error : " + e.getMessage());
+       }
+    }
     /** This method is called from within the constructor to
      * initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is
@@ -489,6 +513,7 @@ private void formInternalFrameClosing(javax.swing.event.InternalFrameEvent evt) 
     coord[0]=Integer.toString(location.x);
     coord[1]=Integer.toString(location.y);
     Settings.get_instance().writeWindowPos("disassembler", coord);
+    //t.destroy();
 
 }//GEN-LAST:event_formInternalFrameClosing
    final SwingWorker<Integer,Void> worker = new SwingWorker<Integer,Void>() {
@@ -518,12 +543,26 @@ private void formInternalFrameClosing(javax.swing.event.InternalFrameEvent evt) 
   };
 private void RunEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RunEmuActionPerformed
 
-  worker.execute();
+  //worker.execute();
+   // t.start();
+    System.out.println("HEY ge");
+      if(emu.pause)//emu is paused
+      {
+          t.resume();
+          System.out.println("HEY pause");
+      }
+      else
+      {
+          t.start();
+          System.out.println("HEY run");
+      }
 
 }//GEN-LAST:event_RunEmuActionPerformed
 
 private void StopEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_StopEmuActionPerformed
-     worker.cancel(false);
+     //worker.cancel(false);
+    t.suspend();
+    emu.pause=true;
      DebuggerPC = 0;
     RefreshDebugger();
     regs.RefreshRegisters();
