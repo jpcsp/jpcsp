@@ -37,7 +37,9 @@ public class pspdisplay_frame implements GLEventListener {
 
     public pspdisplay_frame() {
         frame = new Frame("Display Buffer");
-        GLCanvas canvas = new GLCanvas();
+        GLCapabilities capabilities = new GLCapabilities();
+        capabilities.setHardwareAccelerated(true);
+        GLCanvas canvas = new GLCanvas(capabilities);
 
         canvas.addGLEventListener(this);
         canvas.setSize(480, 272);
@@ -92,14 +94,20 @@ public class pspdisplay_frame implements GLEventListener {
     }
 
     public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
-        GL gl = drawable.getGL();
+       /* GL gl = drawable.getGL();
 
         gl.glMatrixMode(GL.GL_PROJECTION);
         gl.glLoadIdentity();
         gl.glOrtho(0, 480, 272, 0, -1.0, 1.0);
 
         gl.glMatrixMode(GL.GL_MODELVIEW);
-        gl.glLoadIdentity();
+        gl.glLoadIdentity();*/
+        
+      GL gl = drawable.getGL();
+      gl.glViewport(0, 0, width, height);
+      gl.glMatrixMode(GL.GL_PROJECTION);
+      gl.glLoadIdentity();
+      gl.glOrtho(0, 480, 272, 0, -1.0, 1.0);
     }
 
     public void display(GLAutoDrawable drawable) {
