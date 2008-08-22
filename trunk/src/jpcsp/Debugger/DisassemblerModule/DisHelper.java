@@ -275,6 +275,16 @@ public class DisHelper {
 
     public static String Dis_JUMP(String opname, int uimm26, int opcode_address) {
         int jump = (opcode_address & 0xf0000000) | ((uimm26 & 0x3ffffff) << 2);
+
+        // If we think the target is a stub try and append the syscall name
+        if (opname.equals("jal") && jump != 0)
+        {
+            DisasmOpcodes disOp = new DisasmOpcodes();
+            String secondTarget = disOp.disasm(jpcsp.Memory.get_instance().read32(jump+4), jump+4);
+            if (secondTarget.startsWith("syscall") && !secondTarget.contains("[unknown]"))
+                return opname + " 0x" + Integer.toHexString(jump) + " " + secondTarget.substring(13);
+        }
+
         return opname + " 0x" + Integer.toHexString(jump);
     }
 

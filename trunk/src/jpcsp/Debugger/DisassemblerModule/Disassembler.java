@@ -77,16 +77,16 @@ public class Disassembler extends javax.swing.JInternalFrame implements Clipboar
        try {
            if(emu.pause)//emu is paused
            {
-               
+
                //emu.resume();
                emu.run=true;
                emu.run();
                //t.resume();
-             
+
            }
            else
            {
-               
+
              emu.run=true;
              emu.run();
            }
@@ -324,12 +324,12 @@ private void jList1KeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jL
         evt.consume();
         jList1.setSelectedIndex(0);
     } else if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_PAGE_UP && jList1.getSelectedIndex() == 0) {
-        DebuggerPC -= 0x68;
+        DebuggerPC -= 0x0000005c;
         RefreshDebugger();
         evt.consume();
         jList1.setSelectedIndex(0);
     } else if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_PAGE_DOWN && jList1.getSelectedIndex() == jList1.getLastVisibleIndex()) {
-        DebuggerPC += 0x68;
+        DebuggerPC += 0x0000005c;
         RefreshDebugger();
         evt.consume();
         jList1.setSelectedIndex(jList1.getLastVisibleIndex());
@@ -399,7 +399,7 @@ private void StepEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
 // TODO add your handling code here:
     //System.out.println("dump code dialog created");
-    OptionPaneMultiple opt=new OptionPaneMultiple(Integer.toHexString(DebuggerPC),Integer.toHexString(DebuggerPC + 0x00000068));
+    OptionPaneMultiple opt=new OptionPaneMultiple(Integer.toHexString(DebuggerPC),Integer.toHexString(DebuggerPC + 0x0000005c));
     if(opt.completed()){
         //Here the input can be used to actually dump code
         System.out.println("Start address: "+opt.getInput()[0]);
@@ -498,6 +498,12 @@ private void BranchOrJumpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     else
     {
       String add = value.substring(address+2,value.length());
+
+      // Remove syscall code, if present
+      int addressend = add.indexOf(" ");
+      if (addressend != -1)
+        add = add.substring(0, addressend);
+
       StringSelection stringSelection = new StringSelection(add);
       Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
       clipboard.setContents(stringSelection, this);
@@ -545,16 +551,16 @@ private void RunEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:
 
   //worker.execute();
    // t.start();
-   
+
       if(emu.pause)//emu is paused
       {
           t.resume();
-          
+
       }
       else
       {
           t.start();
-          
+
       }
 
 }//GEN-LAST:event_RunEmuActionPerformed
@@ -663,7 +669,7 @@ private void RunWithBreakPointsActionPerformed(java.awt.event.ActionEvent evt) {
         }
         model_1.clear();
 
-        for (t = DebuggerPC          , cnt = 0; t < (DebuggerPC + 0x00000068); t += 0x00000004, cnt++) {
+        for (t = DebuggerPC          , cnt = 0; t < (DebuggerPC + 0x0000005c); t += 0x00000004, cnt++) {
 
             int memread = Memory.get_instance().read32((int) t);
 
