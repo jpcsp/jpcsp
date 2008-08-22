@@ -104,7 +104,10 @@ public class ThreadMan {
                     // TODO cleanup thread, example: free the stack, anything else?
                     // MemoryMan.free(thread.stack_addr);
 
-                    threadlist.remove(thread.uid);
+                    // Changed to thread safe iterator.remove
+                    //threadlist.remove(thread.uid);
+                    it.remove();
+
                     SceUIDMan.get_instance().releaseUid(thread.uid, "ThreadMan-thread");
                 }
             }
