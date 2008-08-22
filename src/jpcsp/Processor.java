@@ -302,7 +302,7 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doMULT(int rs, int rt) {
-        hilo = ((long) gpr[rs]) * ((long) gpr[rs]);
+        hilo = ((long) gpr[rs]) * ((long) gpr[rt]);
         if (cycles < hilo_cycles) {
             cycles = hilo_cycles;
         }
@@ -311,7 +311,7 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doMULTU(int rs, int rt) {
-        hilo = (((long) gpr[rs]) & 0xffffffff) * (((long) gpr[rs]) & 0xffffffff);
+        hilo = (((long) gpr[rs]) & 0xffffffff) * (((long) gpr[rt]) & 0xffffffff);
         if (cycles < hilo_cycles) {
             cycles = hilo_cycles;
         }
@@ -1036,7 +1036,7 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doMADD(int rs, int rt) {
-        hilo += ((long) gpr[rs]) * ((long) gpr[rs]);
+        hilo += ((long) gpr[rs]) * ((long) gpr[rt]);
         if (cycles < hilo_cycles) {
             cycles = hilo_cycles;
         }
@@ -1045,7 +1045,7 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doMADDU(int rs, int rt) {
-        hilo += (((long) gpr[rs]) & 0xffffffff) * (((long) gpr[rs]) & 0xffffffff);
+        hilo += (((long) gpr[rs]) & 0xffffffff) * (((long) gpr[rt]) & 0xffffffff);
         if (cycles < hilo_cycles) {
             cycles = hilo_cycles;
         }
@@ -1072,7 +1072,7 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doMSUB(int rs, int rt) {
-        hilo -= ((long) gpr[rs]) * ((long) gpr[rs]);
+        hilo -= ((long) gpr[rs]) * ((long) gpr[rt]);
         if (cycles < hilo_cycles) {
             cycles = hilo_cycles;
         }
@@ -1081,7 +1081,7 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doMSUBU(int rs, int rt) {
-        hilo -= (((long) gpr[rs]) & 0xffffffff) * (((long) gpr[rs]) & 0xffffffff);
+        hilo -= (((long) gpr[rs]) & 0xffffffff) * (((long) gpr[rt]) & 0xffffffff);
         if (cycles < hilo_cycles) {
             cycles = hilo_cycles;
         }
