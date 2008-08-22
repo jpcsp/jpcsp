@@ -545,16 +545,16 @@ private void RunEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:
 
   //worker.execute();
    // t.start();
-    System.out.println("HEY ge");
+   
       if(emu.pause)//emu is paused
       {
           t.resume();
-          System.out.println("HEY pause");
+          
       }
       else
       {
           t.start();
-          System.out.println("HEY run");
+          
       }
 
 }//GEN-LAST:event_RunEmuActionPerformed
