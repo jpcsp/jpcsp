@@ -18,7 +18,7 @@ package jpcsp.Debugger.DisassemblerModule;
 
 import static jpcsp.Debugger.DisassemblerModule.DisHelper.*;
 import jpcsp.AllegrexInstructions;
-import jpcsp.Decoder;
+import jpcsp.AllegrexDecoder;
 
 /**
  *
@@ -26,7 +26,7 @@ import jpcsp.Decoder;
  */
 public class DisasmOpcodes implements AllegrexInstructions {
 
-    private final Decoder disasm = new Decoder();
+    private final AllegrexDecoder disasm = new AllegrexDecoder();
     int opcode_address;
     String returnString = "Unsupported Instruction"; // set default to unsupported
 

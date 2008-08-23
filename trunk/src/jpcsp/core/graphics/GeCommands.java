@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.core.graphics;
 
-public class GpuCommands {
+public class GeCommands {
 
     private String[] commands;
 
@@ -453,7 +453,7 @@ public class GpuCommands {
     public final static int TRXSIZE = 0xEE;// 	TRXSIZE 	Transfer Size
 
     
-    public GpuCommands() {
+    public GeCommands() {
         commands = new String[0x100];
         commands[TRXSIZE]="trxsize";
         commands[UNKNOWCOMMAND_0xED]="unk 0xed";
