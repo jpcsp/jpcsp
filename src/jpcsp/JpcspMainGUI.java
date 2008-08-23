@@ -41,13 +41,14 @@ public class JpcspMainGUI extends javax.swing.JFrame {
     SettingsGUI setgui;
     LoggingWindow logwin;
     final String version = MetaInformation.FULL_NAME;
-
+    MainGUI guinew;
     /** Creates new form JpcspMainGUI */
     public JpcspMainGUI() {
         setLocation(0,0);//set windowlocation to up corner
         initComponents();
         emulator = new Emulator(); //maybe pass the container drawndable
-
+        guinew = new MainGUI();
+        guinew.setVisible(true);
         this.setTitle(version);
 		this.setSize(Settings.get_instance().readWindowSize("mainwindow")[0], Settings.get_instance().readWindowSize("mainwindow")[1]);
 		if (this.getHeight() <= 200 || this.getWidth() <= 200)
