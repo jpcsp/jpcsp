@@ -22,7 +22,7 @@ import static jpcsp.AllegrexOpcodes.*;
  *
  * @author hli
  */
-public class Decoder {
+public class AllegrexDecoder {
 
     public int rs(int instruction) {
         return (instruction >> 21) & 31;

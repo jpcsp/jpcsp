@@ -17,7 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.core.graphics;
 
 import javax.media.opengl.GL;
-import static jpcsp.core.graphics.GpuCommands.*;
+import static jpcsp.core.graphics.GeCommands.*;
 
 public class VideoEngine {
 
@@ -31,7 +31,7 @@ public class VideoEngine {
     private static VideoEngine instance;
     private GL drawable;
     private static final boolean isDebugMode = true;
-    private static GpuCommands helper;
+    private static GeCommands helper;
 
     private static void log(String msg) {
         System.out.println("VIDEO DEBUG > " + msg);
@@ -48,7 +48,7 @@ public class VideoEngine {
     private static VideoEngine getEngine() {
         if (instance == null) {
             instance = new VideoEngine();
-            helper = new GpuCommands();
+            helper = new GeCommands();
         }
         return instance;
     }
@@ -65,16 +65,25 @@ public class VideoEngine {
         }
     }
 
+    private byte command(int word) {
+        return (byte)(word >>> 24);
+    }
+    
+    private int intArgument(int word) {
+        return (word & 0x00FFFFFF);
+    }
+    
+    private float floatArgument(int word) {
+        return Float.intBitsToFloat(word << 8);
+    }
+    
     public void executeCommand(int word) {
-        byte command = (byte) (word >> 24); // command
-
-        int normalArgument = (word & 0x00FFFFFF); // normal arg
-
-        float floatArgument = (float) (word << 8);  //float arg  (or (float) (normalArgument << 8) )
         // the conversion to float argument by psp, lose 8bits
         int clearFlags;
 
-        switch (command) {
+        int normalArgument = intArgument(word);
+        
+        switch (command(word)) {
             case BASE:
                 actualList.base = normalArgument;
                 if (isDebugMode)log(helper.getCommandString(BASE) + " " + normalArgument);
@@ -94,7 +103,7 @@ public class VideoEngine {
                 if (isDebugMode)log(helper.getCommandString(NOP));
                 break;
             default:
-                log("Unknow/unimplemented video command [ " + command + " ]");
+                log("Unknow/unimplemented video command [ " + command(word) + " ]");
         }
 
     }
