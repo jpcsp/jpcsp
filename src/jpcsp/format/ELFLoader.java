@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.LinkedList;
 import java.util.Iterator;
@@ -427,16 +428,16 @@ public class ELFLoader {
                          //System.out.println("FEED MEMORY WITH IT!");
                          f.seek(elfoffset + shdr.sh_offset);
                          int offsettoread = (int)(loadoffset + shdr.sh_addr - MemoryMap.START_RAM);
-                         f.read(Memory.get_instance().mainmemory, offsettoread, (int)shdr.sh_size);
+                         readBytesToBuffer(f, Memory.get_instance().mainmemory, offsettoread, (int)shdr.sh_size);
                          break;
 
                      case 8: // ShType.NOBITS
                          System.out.println("NO BITS " + String.format("0x%08x to 0x%08x", (int)loadoffset + (int)shdr.sh_addr, (int)loadoffset + (int)shdr.sh_addr + (int)shdr.sh_size));
                          // zero out this memory
                          offsettoread = (int)(loadoffset + shdr.sh_addr - MemoryMap.START_RAM);
-                         byte[] mainmemory = Memory.get_instance().mainmemory;
+                         ByteBuffer mainmemory = Memory.get_instance().mainmemory;
                          for (int j = 0; j < (int)shdr.sh_size; j++)
-                             mainmemory[offsettoread + j] = 0;
+                             mainmemory.put(offsettoread + j, (byte)0);
                          break;
                  }
             }

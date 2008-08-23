@@ -18,6 +18,7 @@ package jpcsp.util;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 
 public class Utilities {
 
@@ -67,6 +68,13 @@ public class Utilities {
         //readByte() isn't more correct? (already exists one readUWord() method to unsign values)
         return (f.readUnsignedByte() | (f.readUnsignedByte() << 8) | (f.readUnsignedByte() << 16) | (f.readUnsignedByte() << 24));
     }
+    
+    public static void readBytesToBuffer(
+        RandomAccessFile f, ByteBuffer buf,
+        int offset, int size) throws IOException
+    {
+        f.read(buf.array(), offset + buf.arrayOffset(), size);
+    }
 
     public static String readStringZ(RandomAccessFile f) throws IOException {
         StringBuffer sb = new StringBuffer();
@@ -89,6 +97,18 @@ public class Utilities {
             if (b == 0) {
                 break;
             }
+            sb.append((char)b);
+        }
+        return sb.toString();
+    }
+    
+    public static String readStringZ(ByteBuffer buf, int offset) {
+        StringBuffer sb = new StringBuffer();
+        byte b;
+        for (;;) {
+            b = buf.get(offset++);
+            if (b == 0)
+                break;
             sb.append((char)b);
         }
         return sb.toString();

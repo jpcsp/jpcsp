@@ -158,7 +158,7 @@ public class pspdisplay {
         // Convert memory at topaddr to native image
         int bytesPerPixel = pixelformat.getBytesPerPixel();
         //byte[] videoram = Memory.get_instance().videoram;
-        ByteBuffer videorambuf = Memory.get_instance().videorambuf;
+        ByteBuffer videoram = Memory.get_instance().videoram;
         int addr = topaddr - MemoryMap.START_VRAM; // 0x04000000
         int xpadding = (bufferwidth - width) * bytesPerPixel;
 
@@ -166,7 +166,7 @@ public class pspdisplay {
         {
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++, addr += 2) {
-                    short color = videorambuf.getShort(addr);
+                    short color = videoram.getShort(addr);
                     byte r = (byte)(((color >> 11) & 0x1f) << 3);
                     byte g = (byte)(((color >>  6) & 0x1f) << 3);
                     byte b = (byte)(((color >>  1) & 0x1f) << 3);
@@ -180,7 +180,7 @@ public class pspdisplay {
         {
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++, addr += 2) {
-                    short color = videorambuf.getShort(addr);
+                    short color = videoram.getShort(addr);
                     byte r = (byte)(((color >> 11) & 0x1f) << 3);
                     byte g = (byte)(((color >>  5) & 0x20) << 2);
                     byte b = (byte)(((color      ) & 0x1f) << 3);
@@ -194,7 +194,7 @@ public class pspdisplay {
         {
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++, addr += 2) {
-                    short color = videorambuf.getShort(addr);
+                    short color = videoram.getShort(addr);
                     byte r = (byte)(((color >> 12) & 0x0f) << 4);
                     byte g = (byte)(((color >>  8) & 0x0f) << 4);
                     byte b = (byte)(((color >>  4) & 0x0f) << 4);
@@ -209,7 +209,7 @@ public class pspdisplay {
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++, addr += 4) {
                     // PSP and OpenGL both use RGBA so we can do a direct copy
-                    bb.putInt((x + y * 512) * 4, videorambuf.getInt(addr));
+                    bb.putInt((x + y * 512) * 4, videoram.getInt(addr));
                 }
                 addr += xpadding;
             }

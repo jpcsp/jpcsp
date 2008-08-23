@@ -19,6 +19,7 @@ package jpcsp;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
 import jpcsp.format.DeferredStub;
@@ -248,15 +249,15 @@ public class FileManager {
                          * Load a block on main memory ....
                          ***************************************/
                         
-                        f.read(Memory.get_instance().mainmemory, offsettoread, (int) shdr.getSh_size());
+                        Utilities.readBytesToBuffer(f, Memory.get_instance().mainmemory, offsettoread, (int) shdr.getSh_size());
                         break;
                     case 8: // ShType.NOBITS
                         //System.out.println("NO BITS");
                         // zero out this memory
                         offsettoread = (int)(getBaseoffset() + shdr.getSh_addr() - MemoryMap.START_RAM);
-                        byte[] mainmemory = Memory.get_instance().mainmemory;
+                        ByteBuffer mainmemory = Memory.get_instance().mainmemory;
                         for (int j = 0; j < (int)shdr.getSh_size(); j++)
-                            mainmemory[offsettoread + j] = 0;
+                            mainmemory.put(offsettoread + j, (byte)0);
                         break;
                 }
             }
