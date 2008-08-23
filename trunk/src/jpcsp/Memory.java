@@ -16,140 +16,166 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp;
 
-import static jpcsp.MemoryMap.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import static jpcsp.MemoryMap.*;
 
 public class Memory {
-    //21/07/08 memory using singleton pattern
+    private static final int PAGE_COUNT        = 0x00100000;
+    private static final int PAGE_MASK         = 0x00000FFF;
+    private static final int PAGE_SHIFT        = 12;
+    
+    private static final int INDEX_SCRATCHPAD  = 0;
+    private static final int INDEX_VRAM        = SIZE_SCRATCHPAD >>> PAGE_SHIFT;
+    private static final int INDEX_RAM         = INDEX_VRAM +
+                                                 (SIZE_VRAM >>> PAGE_SHIFT);
+    
+    private static final int SIZE_ALLMEM       = SIZE_SCRATCHPAD +
+                                                 SIZE_VRAM + SIZE_RAM;
+    
     private static Memory instance = null;
-    public byte[] mainmemory;
-    public byte[] scratchpad;
-    public byte[] videoram;
-    public ByteBuffer mainmemorybuf;
-    public ByteBuffer scratchpadbuf;
-    public ByteBuffer videorambuf;
-    private ByteBuffer range;
-    private int index;
-
+    
+    private byte[]     all; // all psp memory is held in here
+    private int[]      map; // hold map of memory
+    private ByteBuffer buf; // for easier memory reads/writes
+    
+    public ByteBuffer scratchpad;
+    public ByteBuffer videoram;
+    public ByteBuffer mainmemory;
+    
     public static Memory get_instance() {
-        if (instance == null) {
+        if (instance == null)
             instance = new Memory();
-        }
         return instance;
     }
-
+    
     public void NullMemory() {
         instance = null;
     }
+    
+    private Memory() {
+        all = new byte[SIZE_ALLMEM];
+        map = new int[PAGE_COUNT];
+        buf = ByteBuffer.wrap(all);
+        buf.order(ByteOrder.LITTLE_ENDIAN);
+        
+        scratchpad = ByteBuffer.wrap(
+            all,
+            0,
+            SIZE_SCRATCHPAD).slice();
+        scratchpad.order(ByteOrder.LITTLE_ENDIAN);
+        
+        videoram = ByteBuffer.wrap(
+            all,
+            SIZE_SCRATCHPAD,
+            SIZE_VRAM).slice();
+        videoram.order(ByteOrder.LITTLE_ENDIAN);
+        
+        mainmemory = ByteBuffer.wrap(
+            all,
+            SIZE_SCRATCHPAD + SIZE_VRAM,
+            SIZE_RAM).slice();
+        mainmemory.order(ByteOrder.LITTLE_ENDIAN);
 
-    private Memory() { //no one can instantiate it, except itself
-        mainmemory = new byte[0x01FFFFFF]; //32mb main ram
-        scratchpad = new byte[0x00003FFF]; //16kb scratchpad
-        videoram = new byte[0x001FFFFF]; // 2mb videoram
-        mainmemorybuf = ByteBuffer.wrap(mainmemory);
-        scratchpadbuf = ByteBuffer.wrap(scratchpad);
-        videorambuf = ByteBuffer.wrap(videoram);
-        mainmemorybuf.order(ByteOrder.LITTLE_ENDIAN);
-        scratchpadbuf.order(ByteOrder.LITTLE_ENDIAN);
-        videorambuf.order(ByteOrder.LITTLE_ENDIAN);
+        buildMap();
     }
-
-    private void setRange(int address) throws Exception {
-
-        // K0,K2/KS,K3 segment ?
-        if ((address & 0x80000000) != 0) {
-
-            // K2/KS,K3 segment ?
-            if ((address & 0x40000000) != 0) {
-                throw new Exception("Invalid memory address : " + Integer.toHexString(address) + " PC=" + Integer.toHexString(Emulator.getProcessor().pc));
-            }
-            // bits 31, 30 and 29 set to 0
-            address &= 0x1FFFFFFF;
-        } else {
-            // bits 31 and 30 set to 0
-            address &= 0x3FFFFFFF;
+    
+    private void buildMap() {
+        int i;
+        int page;
+        
+        for (i = 0; i < PAGE_COUNT; ++i)
+            map[i] = -1;
+        
+        page = START_SCRATCHPAD >>> PAGE_SHIFT;
+        for (i = 0; i < (SIZE_SCRATCHPAD >>> PAGE_SHIFT); ++i) {
+            map[0x00000 + page + i] = (INDEX_SCRATCHPAD + i) << PAGE_SHIFT;
+            map[0x40000 + page + i] = (INDEX_SCRATCHPAD + i) << PAGE_SHIFT;
+            map[0x80000 + page + i] = (INDEX_SCRATCHPAD + i) << PAGE_SHIFT;
         }
-
-        if ((address >= START_RAM) && (address <= END_RAM)) {
-            index = address - START_RAM;
-            range = mainmemorybuf;
-            return;
+        
+        page = START_VRAM >>> PAGE_SHIFT;
+        for (i = 0; i < (SIZE_VRAM >>> PAGE_SHIFT); ++i) {
+            map[0x00000 + page + i] = (INDEX_VRAM + i) << PAGE_SHIFT;
+            map[0x40000 + page + i] = (INDEX_VRAM + i) << PAGE_SHIFT;
+            map[0x80000 + page + i] = (INDEX_VRAM + i) << PAGE_SHIFT;
         }
-
-        if ((address >= START_VRAM) && (address <= END_VRAM)) {
-            index = address - START_VRAM;
-            range = videorambuf;
-            return;
+        
+        page = START_RAM >>> PAGE_SHIFT;
+        for (i = 0; i < (SIZE_RAM >>> PAGE_SHIFT); ++i) {
+            map[0x00000 + page + i] = (INDEX_RAM + i) << PAGE_SHIFT;
+            map[0x40000 + page + i] = (INDEX_RAM + i) << PAGE_SHIFT;
+            map[0x80000 + page + i] = (INDEX_RAM + i) << PAGE_SHIFT;
         }
-
-        if ((address >= START_SCRATCHPAD) && (address <= END_SCRATCHPAD)) {
-            index = address - START_SCRATCHPAD;
-            range = scratchpadbuf;
-            return;
-        }
-
-        throw new Exception("Invalid memory address : " + Integer.toHexString(address) + " PC=" + Integer.toHexString(Emulator.getProcessor().pc));
     }
-
+    
+    
+    private int indexFromAddr(int address) throws Exception {
+        int index = map[address >>> PAGE_SHIFT];
+        if (index == -1) {
+            throw new Exception(
+                "Invalid memory address : " +
+                Integer.toHexString(address) +
+                " PC=" +
+                Integer.toHexString(Emulator.getProcessor().pc));
+        }
+        return index;
+    }
+    
     public int read8(int address) {
         try {
-            setRange(address);
-            return range.get(index);
+            int page = indexFromAddr(address);
+            return (int)buf.get(page + (address & PAGE_MASK)) & 0xFF;
         } catch (Exception e) {
             System.out.println("read8 - " + e.getMessage());
+            return 0;
         }
-        return 0;
     }
-
+    
     public int read16(int address) {
-
         try {
-            setRange(address);
-            return range.getShort(index);
+            int page = indexFromAddr(address);
+            return (int)buf.getShort(page + (address & PAGE_MASK)) & 0xFFFF;
         } catch (Exception e) {
             System.out.println("read16 - " + e.getMessage());
+            return 0;
         }
-
-        return 0;
     }
-
+    
     public int read32(int address) {
-
         try {
-            setRange(address);
-            return range.getInt(index);
+            int page = indexFromAddr(address);
+            return buf.getInt(page + (address & PAGE_MASK));
         } catch (Exception e) {
             System.out.println("read32 - " + e.getMessage());
+            return 0;
         }
-
-        return 0;
     }
-
+    
     public void write8(int address, byte data) {
         try {
-            setRange(address);
-            range.put(index, data);
+            int page = indexFromAddr(address);
+            buf.put(page + (address & PAGE_MASK), data);
         } catch (Exception e) {
-            System.out.println("write8 - " + Integer.toHexString(data) + " - " + e.getMessage());
+            System.out.println("write8 - " + e.getMessage());
         }
     }
-
+    
     public void write16(int address, short data) {
         try {
-            setRange(address);
-            range.putShort(index, data);
+            int page = indexFromAddr(address);
+            buf.putShort(page + (address & PAGE_MASK), data);
         } catch (Exception e) {
-            System.out.println("write16 - " + Integer.toHexString(data) + " - " + e.getMessage());
+            System.out.println("write16 - " + e.getMessage());
         }
     }
-
+    
     public void write32(int address, int data) {
         try {
-            setRange(address);
-            range.putInt(index, data);
+            int page = indexFromAddr(address);
+            buf.putInt(page + (address & PAGE_MASK), data);
         } catch (Exception e) {
-            System.out.println("write32 - " + Integer.toHexString(data) + " - " + e.getMessage());
+            System.out.println("write32 - " + e.getMessage());
         }
     }
 }
