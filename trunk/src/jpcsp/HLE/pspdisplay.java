@@ -167,10 +167,10 @@ public class pspdisplay {
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++, addr += 2) {
                     short color = videoram.getShort(addr);
-                    byte r = (byte)(((color >> 11) & 0x1f) << 3);
-                    byte g = (byte)(((color >>  6) & 0x1f) << 3);
-                    byte b = (byte)(((color >>  1) & 0x1f) << 3);
-                    byte a = (byte)(((color      ) & 0x01) * 255);
+                    byte r = (byte)(((color >>  0) & 0x1f) << 3);
+                    byte g = (byte)(((color >>  5) & 0x1f) << 3);
+                    byte b = (byte)(((color >> 10) & 0x1f) << 3);
+                    byte a = (byte)(((color >> 15) & 0x01) * 255);
                     set_native_pixel(x, y, r, g, b, a);
                 }
                 addr += xpadding;
@@ -181,11 +181,10 @@ public class pspdisplay {
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++, addr += 2) {
                     short color = videoram.getShort(addr);
-                    byte r = (byte)(((color >> 11) & 0x1f) << 3);
+                    byte r = (byte)(((color >>  0) & 0x1f) << 3);
                     byte g = (byte)(((color >>  5) & 0x20) << 2);
-                    byte b = (byte)(((color      ) & 0x1f) << 3);
-                    byte a = 0x00; // opaque
-                    set_native_pixel(x, y, r, g, b, a);
+                    byte b = (byte)(((color >> 11) & 0x1f) << 3);
+                    set_native_pixel(x, y, r, g, b, (byte)0 /* opaque */);
                 }
                 addr += xpadding;
             }
@@ -195,10 +194,10 @@ public class pspdisplay {
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++, addr += 2) {
                     short color = videoram.getShort(addr);
-                    byte r = (byte)(((color >> 12) & 0x0f) << 4);
-                    byte g = (byte)(((color >>  8) & 0x0f) << 4);
-                    byte b = (byte)(((color >>  4) & 0x0f) << 4);
-                    byte a = (byte)(((color      ) & 0x0f) << 4);
+                    byte r = (byte)(((color >>  0) & 0x0f) << 4);
+                    byte g = (byte)(((color >>  4) & 0x0f) << 4);
+                    byte b = (byte)(((color >>  8) & 0x0f) << 4);
+                    byte a = (byte)(((color >> 12) & 0x0f) << 4);
                     set_native_pixel(x, y, r, g, b, a);
                 }
                 addr += xpadding;

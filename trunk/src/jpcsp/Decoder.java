@@ -96,27 +96,43 @@ public class Decoder {
         return ((instruction >> 16) & 31) | ((instruction & 3) << 5);
     }
 
+    public int uimm3(int instruction) {
+        return (instruction >> 16) & 7;
+    }
+
+    public int uimm5(int instruction) {
+        return (instruction >> 16) & 31;
+    }
+
     public int vsize(int instruction) {
         return 1 + ((instruction >> 7) & 1) + ((instruction >> 15) & 1);
     }
 
-    public int vop0(int instruction) {
+    public int vfpu0(int instruction) {
         return (instruction >> 23) & 7;
     }
 
-    public int vop1(int instruction) {
+    public int vfpu1(int instruction) {
         return (instruction >> 23) & 7;
     }
 
-    public int vop3(int instruction) {
+    public int vfpu3(int instruction) {
         return (instruction >> 23) & 7;
     }
 
-    public int vop5(int instruction) {
+    public int vfpu4(int instruction) {
         return (instruction >> 24) & 3;
     }
 
-    public int vop5_vifim(int instruction) {
+    public int vfpu4_2(int instruction) {
+        return (instruction >> 21) & 7;
+    }
+
+    public int vfpu5(int instruction) {
+        return (instruction >> 24) & 3;
+    }
+
+    public int vfpu5_3(int instruction) {
         return (instruction >> 23) & 1;
     }
 
@@ -549,7 +565,7 @@ public class Decoder {
                 break;
 
             case VFPU0:
-                switch ((byte) vop0(insn)) {
+                switch ((byte) vfpu0(insn)) {
                     case VADD:
                         that.doVADD(vsize(insn), vd(insn), vs(insn), vt(insn));
                         break;
@@ -567,13 +583,13 @@ public class Decoder {
                         break;
 
                     default:
-                        that.doUNK("Unsupported VFPU0 instruction " + Integer.toBinaryString(vop0(insn)));
+                        that.doUNK("Unsupported VFPU0 instruction " + Integer.toBinaryString(vfpu0(insn)));
                         break;
                 }
                 break;
 
             case VFPU1:
-                switch ((byte) vop1(insn)) {
+                switch ((byte) vfpu1(insn)) {
                     case VMUL:
                         that.doVMUL(vsize(insn), vd(insn), vs(insn), vt(insn));
                         break;
@@ -599,13 +615,13 @@ public class Decoder {
                         break;
 
                     default:
-                        that.doUNK("Unsupported VFPU1 instruction " + Integer.toBinaryString(vop1(insn)));
+                        that.doUNK("Unsupported VFPU1 instruction " + Integer.toBinaryString(vfpu1(insn)));
                         break;
                 }
                 break;
 
             case VFPU3:
-                switch ((byte) vop3(insn)) {
+                switch ((byte) vfpu3(insn)) {
                     case VCMP:
                         that.doVCMP(vsize(insn), vs(insn), vt(insn), cond(insn));
                         break;
@@ -631,13 +647,13 @@ public class Decoder {
                         break;
 
                     default:
-                        that.doUNK("Unsupported VFPU3 instruction " + Integer.toBinaryString(vop3(insn)));
+                        that.doUNK("Unsupported VFPU3 instruction " + Integer.toBinaryString(vfpu3(insn)));
                         break;
                 }
                 break;
 
             case VFPU5:
-                switch ((byte) vop5(insn)) {
+                switch ((byte) vfpu5(insn)) {
                     case VPFXS:
                         that.doVPFXS(uimm24(insn));
                         break;
@@ -650,8 +666,8 @@ public class Decoder {
                         that.doVPFXD(uimm24(insn));
                         break;
 
-                    case VIFIM:
-                        switch ((byte) vop5_vifim(insn)) {
+                    case VFPU5_3:
+                        switch ((byte) vfpu5_3(insn)) {
                             case VPFXS:
                                 that.doVIIM(vs(insn), simm16(insn));
                                 break;
@@ -663,7 +679,7 @@ public class Decoder {
                         break;
 
                     default:
-                        that.doUNK("Unsupported VFPU5 instruction " + Integer.toBinaryString(vop3(insn)));
+                        that.doUNK("Unsupported VFPU5 instruction " + Integer.toBinaryString(vfpu3(insn)));
                         break;
                 }
                 break;
