@@ -125,7 +125,9 @@ public class SyscallHandler {
                 case 0x20f0:
                     pspge.get_instance().sceGeEdramGetAddr();
                     break;
-
+                case 0x20f6:
+                    pspge.get_instance().sceGeListEnQueue(gpr[4],gpr[5],gpr[6],gpr[7]);
+                    break;         
                 default:
                 {
                   for (syscalls.calls c : syscalls.calls.values()) {
