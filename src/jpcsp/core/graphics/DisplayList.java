@@ -39,8 +39,9 @@ public class DisplayList {
     public int stallAddress;
     public int[] stack = new int[32];
     public int stackIndex;
+    public int arg;
     
-    public DisplayList(int startList, int stall, int callbackId){
+    public DisplayList(int startList, int stall, int callbackId, int arg){
     //0xab49e76a	int	sceGeListEnQueue	const void *list,void *stall,int cbid,void *arg
         this.base = 0x08000000;
         stackIndex = 0;
@@ -48,5 +49,6 @@ public class DisplayList {
         this.pointer = Emulator.getMemory().read32(start);
         this.stallAddress = stall;
         this.callbackId = callbackId;
+        this.arg = arg;
     }
 }

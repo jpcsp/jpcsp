@@ -24,6 +24,7 @@ import jpcsp.Emulator;
 import jpcsp.MemoryMap;
 
 public class pspge {
+
     private static pspge instance;
 
     public static pspge get_instance() {
@@ -39,8 +40,15 @@ public class pspge {
     public void Initialise() {
     }
 
-    public void sceGeEdramGetAddr()
-    {
+    public void sceGeEdramGetAddr() {
         Emulator.getProcessor().gpr[2] = MemoryMap.START_VRAM;
+    }
+
+    public void sceGeListEnQueue(int list, int stall, int callbackId, int argument) {
+        
+        /*list 	- The head of the list to queue.
+	stall 	- The stall address. If NULL then no stall address set and the list is transferred immediately.
+	cbid 	- ID of the callback set by calling sceGeSetCallback
+	arg 	- Probably a parameter to the callbacks (to be confirmed)*/
     }
 }
