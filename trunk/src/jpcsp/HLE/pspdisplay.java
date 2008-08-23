@@ -20,8 +20,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
@@ -36,7 +36,6 @@ public class pspdisplay {
     private PspDisplayPixelFormats pixelformat;
 
     // HLE state, native rendering surface
-    private byte[] framebufferram; // byte[] backs ByteBuffer
     private ByteBuffer bb; // ByteBuffer backs TextureData (sent to pspdisplay_frame)
 
     // This was just going to be a window, but JOGL requires all operations to
@@ -60,13 +59,27 @@ public class pspdisplay {
 
     public void Initialise() {
         // Create a window here
-        // TODO do it the netbeans way
+        // TODO do it the netbeans way (internal window)
         if (frame != null) {
             frame.cleanup();
             frame = null;
         }
-
         frame = new pspdisplay_frame();
+
+        // If we initialise these here we can remove checks for uninitialised variables later on
+        mode = 0;
+        width = 480;
+        height = 272;
+        topaddr = MemoryMap.START_VRAM;
+        bufferwidth = 512;
+        pixelformat = PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_8888;
+        sync = 0;
+
+        // Allocate a 32-bit native frame buffer at 512x512 (we'll up sample as necessary)
+        // We don't want to keep re-allocating it in sceDisplaySetFrameBuf
+        bb = ByteBuffer.allocate(512 * 512 * 4);
+        bb.order(ByteOrder.LITTLE_ENDIAN);
+        frame.createImage(bb);
     }
 
     public void step() {
@@ -88,12 +101,6 @@ public class pspdisplay {
             this.mode = mode;
             this.width = width;
             this.height = height;
-
-            // Allocate a 32-bit native frame buffer (we'll up sample as necessary)
-            bb = ByteBuffer.allocate(512 * 512 * 4);
-            framebufferram = bb.array();
-            frame.createImage(bb);
-
             Emulator.getProcessor().gpr[2] = 0;
         }
     }
@@ -133,106 +140,85 @@ public class pspdisplay {
         micros = 1;
         //ThreadMan.get_instance().ThreadMan_sceKernelDelayThread(micros);
 
-        // TODO move this to step() and trigger at 60 frames per second
-        //UpdateDisplay();
-
         Emulator.getProcessor().gpr[2] = 0;
     }
 
 
-    private void set_native_pixel(byte[] buffer, int x, int y, byte r, byte g, byte b, byte a)
+    private void set_native_pixel(int x, int y, byte r, byte g, byte b, byte a)
     {
-        int addr = (x + y * bufferwidth) * 4;
+        int addr = (x + y * 512) * 4;
         // OpenGL RGBA
-        buffer[addr + 0] = r;
-        buffer[addr + 1] = g;
-        buffer[addr + 2] = b;
-        buffer[addr + 3] = a;
+        bb.put(addr    , r);
+        bb.put(addr + 1, g);
+        bb.put(addr + 2, b);
+        bb.put(addr + 3, a);
     }
 
     public void UpdateDisplay() {
-        if (pixelformat == null) {
-            //System.out.println("pixelformat is null");
-            return;
-        }
-
         // Convert memory at topaddr to native image
         int bytesPerPixel = pixelformat.getBytesPerPixel();
-        byte[] videoram = Memory.get_instance().videoram;
+        //byte[] videoram = Memory.get_instance().videoram;
+        ByteBuffer videorambuf = Memory.get_instance().videorambuf;
         int addr = topaddr - MemoryMap.START_VRAM; // 0x04000000
+        int xpadding = (bufferwidth - width) * bytesPerPixel;
 
         if (pixelformat == PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_5551)
         {
             for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++, addr += bytesPerPixel) {
-                    int color =
-                        (videoram[addr + 0] << 8) |
-                        (videoram[addr + 1]);
+                for (int x = 0; x < width; x++, addr += 2) {
+                    short color = videorambuf.getShort(addr);
                     byte r = (byte)(((color >> 11) & 0x1f) << 3);
                     byte g = (byte)(((color >>  6) & 0x1f) << 3);
                     byte b = (byte)(((color >>  1) & 0x1f) << 3);
                     byte a = (byte)(((color      ) & 0x01) * 255);
-                    set_native_pixel(framebufferram, x, y, r, g, b, a);
+                    set_native_pixel(x, y, r, g, b, a);
                 }
-                addr += (bufferwidth - width) * bytesPerPixel;
+                addr += xpadding;
             }
         }
         else if (pixelformat == PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_565)
         {
             for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++, addr += bytesPerPixel) {
-                    int color =
-                        (videoram[addr + 0] << 8) |
-                        (videoram[addr + 1]);
+                for (int x = 0; x < width; x++, addr += 2) {
+                    short color = videorambuf.getShort(addr);
                     byte r = (byte)(((color >> 11) & 0x1f) << 3);
                     byte g = (byte)(((color >>  5) & 0x20) << 2);
                     byte b = (byte)(((color      ) & 0x1f) << 3);
                     byte a = 0x00; // opaque
-                    set_native_pixel(framebufferram, x, y, r, g, b, a);
+                    set_native_pixel(x, y, r, g, b, a);
                 }
-                addr += (bufferwidth - width) * bytesPerPixel;
+                addr += xpadding;
             }
         }
         else if (pixelformat == PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_4444)
         {
             for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++, addr += bytesPerPixel) {
-                    int color =
-                        (videoram[addr + 0] << 8) |
-                        (videoram[addr + 1]);
+                for (int x = 0; x < width; x++, addr += 2) {
+                    short color = videorambuf.getShort(addr);
                     byte r = (byte)(((color >> 12) & 0x0f) << 4);
                     byte g = (byte)(((color >>  8) & 0x0f) << 4);
                     byte b = (byte)(((color >>  4) & 0x0f) << 4);
                     byte a = (byte)(((color      ) & 0x0f) << 4);
-                    set_native_pixel(framebufferram, x, y, r, g, b, a);
+                    set_native_pixel(x, y, r, g, b, a);
                 }
-                addr += (bufferwidth - width) * bytesPerPixel;
+                addr += xpadding;
             }
         }
         else if (pixelformat == PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_8888)
         {
             for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++, addr += bytesPerPixel) {
-                    // minifire runs on 8888
-                    byte r = videoram[addr + 0];
-                    byte g = videoram[addr + 1];
-                    byte b = videoram[addr + 2];
-                    byte a = videoram[addr + 3];
-                    set_native_pixel(framebufferram, x, y, r, g, b, a);
+                for (int x = 0; x < width; x++, addr += 4) {
+                    // PSP and OpenGL both use RGBA so we can do a direct copy
+                    bb.putInt((x + y * 512) * 4, videorambuf.getInt(addr));
                 }
-                addr += (bufferwidth - width) * bytesPerPixel;
+                addr += xpadding;
             }
         }
-
-
-        // TESTING
-        // alpha component doesn't seem to make any difference, but then i didnt set a blend func
-        //set_native_pixel(framebufferram, 0, 0, (byte)255, (byte)0, (byte)0, (byte)128);
-        //set_native_pixel(framebufferram, 479, 271, (byte)0, (byte)255, (byte)0, (byte)128);
 
         frame.updateImage();
     }
 
+    // Do we really need this enum? it's just overhead
     public enum PspDisplayPixelFormats {
         PSP_DISPLAY_PIXEL_FORMAT_565(0, 2),
         PSP_DISPLAY_PIXEL_FORMAT_5551(1, 2),
