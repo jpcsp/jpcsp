@@ -17,6 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp;
 
 import static jpcsp.MemoryMap.*;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 public class Memory {
     //21/07/08 memory using singleton pattern
@@ -24,7 +26,10 @@ public class Memory {
     public byte[] mainmemory;
     public byte[] scratchpad;
     public byte[] videoram;
-    private byte[] range;
+    private ByteBuffer mainmemorybuf;
+    private ByteBuffer scratchpadbuf;
+    private ByteBuffer videorambuf;
+    private ByteBuffer range;
     private int index;
 
     public static Memory get_instance() {
@@ -42,6 +47,12 @@ public class Memory {
         mainmemory = new byte[0x01FFFFFF]; //32mb main ram
         scratchpad = new byte[0x00003FFF]; //16kb scratchpad
         videoram = new byte[0x001FFFFF]; // 2mb videoram
+        mainmemorybuf = ByteBuffer.wrap(mainmemory);
+        scratchpadbuf = ByteBuffer.wrap(scratchpad);
+        videorambuf = ByteBuffer.wrap(videoram);
+        mainmemorybuf.order(ByteOrder.LITTLE_ENDIAN);
+        scratchpadbuf.order(ByteOrder.LITTLE_ENDIAN);
+        videorambuf.order(ByteOrder.LITTLE_ENDIAN);
     }
 
     private void setRange(int address) throws Exception {
@@ -62,19 +73,19 @@ public class Memory {
 
         if ((address >= START_RAM) && (address <= END_RAM)) {
             index = address - START_RAM;
-            range = mainmemory;
+            range = mainmemorybuf;
             return;
         }
 
         if ((address >= START_VRAM) && (address <= END_VRAM)) {
             index = address - START_VRAM;
-            range = videoram;
+            range = videorambuf;
             return;
         }
 
         if ((address >= START_SCRATCHPAD) && (address <= END_SCRATCHPAD)) {
             index = address - START_SCRATCHPAD;
-            range = scratchpad;
+            range = scratchpadbuf;
             return;
         }
 
@@ -84,7 +95,7 @@ public class Memory {
     public int read8(int address) {
         try {
             setRange(address);
-            return range[index] & 255;
+            return range.get(index);
         } catch (Exception e) {
             System.out.println("read8 - " + e.getMessage());
         }
@@ -95,8 +106,7 @@ public class Memory {
 
         try {
             setRange(address);
-            return (((int) (range[index + 0] & 255)) << 0) |
-                    (((int) (range[index + 1] & 255)) << 8);
+            return range.getShort(index);
         } catch (Exception e) {
             System.out.println("read16 - " + e.getMessage());
         }
@@ -108,10 +118,7 @@ public class Memory {
 
         try {
             setRange(address);
-            return (((int) (range[index + 0] & 255)) << 0) |
-                    (((int) (range[index + 1] & 255)) << 8) |
-                    (((int) (range[index + 2] & 255)) << 16) |
-                    (((int) (range[index + 3] & 255)) << 24);
+            return range.getInt(index);
         } catch (Exception e) {
             System.out.println("read32 - " + e.getMessage());
         }
@@ -122,7 +129,7 @@ public class Memory {
     public void write8(int address, byte data) {
         try {
             setRange(address);
-            range[index] = data;
+            range.put(index, data);
         } catch (Exception e) {
             System.out.println("write8 - " + Integer.toHexString(data) + " - " + e.getMessage());
         }
@@ -131,8 +138,7 @@ public class Memory {
     public void write16(int address, short data) {
         try {
             setRange(address);
-            range[index + 0] = (byte) ((data >> 0) & 255);
-            range[index + 1] = (byte) ((data >> 8) & 255);
+            range.putShort(index, data);
         } catch (Exception e) {
             System.out.println("write16 - " + Integer.toHexString(data) + " - " + e.getMessage());
         }
@@ -141,10 +147,7 @@ public class Memory {
     public void write32(int address, int data) {
         try {
             setRange(address);
-            range[index + 0] = (byte) ((data >> 0) & 255);
-            range[index + 1] = (byte) ((data >> 8) & 255);
-            range[index + 2] = (byte) ((data >> 16) & 255);
-            range[index + 3] = (byte) ((data >> 24));
+            range.putInt(index, data);
         } catch (Exception e) {
             System.out.println("write32 - " + Integer.toHexString(data) + " - " + e.getMessage());
         }
