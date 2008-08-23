@@ -26,9 +26,9 @@ public class Memory {
     public byte[] mainmemory;
     public byte[] scratchpad;
     public byte[] videoram;
-    private ByteBuffer mainmemorybuf;
-    private ByteBuffer scratchpadbuf;
-    private ByteBuffer videorambuf;
+    public ByteBuffer mainmemorybuf;
+    public ByteBuffer scratchpadbuf;
+    public ByteBuffer videorambuf;
     private ByteBuffer range;
     private int index;
 
@@ -62,7 +62,7 @@ public class Memory {
 
             // K2/KS,K3 segment ?
             if ((address & 0x40000000) != 0) {
-                throw new Exception("Invalid memory address : " + Integer.toHexString(address));
+                throw new Exception("Invalid memory address : " + Integer.toHexString(address) + " PC=" + Integer.toHexString(Emulator.getProcessor().pc));
             }
             // bits 31, 30 and 29 set to 0
             address &= 0x1FFFFFFF;
@@ -89,7 +89,7 @@ public class Memory {
             return;
         }
 
-        throw new Exception("Invalid memory address : " + Integer.toHexString(address));
+        throw new Exception("Invalid memory address : " + Integer.toHexString(address) + " PC=" + Integer.toHexString(Emulator.getProcessor().pc));
     }
 
     public int read8(int address) {
