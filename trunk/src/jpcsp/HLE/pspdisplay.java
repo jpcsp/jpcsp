@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import jpcsp.Emulator;
+import jpcsp.MainGUI;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 
@@ -43,8 +44,8 @@ public class pspdisplay {
     // done in there. It is good enough for frame buffer emulation using simple
     // boolean flags to defer operations to execute in the JOGL thread, but will
     // need redesigning for when we want to emulate GU -> OpenGL.
-    private pspdisplay_frame frame;
-
+    //private pspdisplay_frame frame;
+    private pspdisplay_glcanvas frame;
     private long lastUpdate;
 
     public static pspdisplay get_instance() {
@@ -61,11 +62,11 @@ public class pspdisplay {
         // Create a window here
         // TODO do it the netbeans way (internal window)
         if (frame != null) {
-            frame.cleanup();
+            //frame.cleanup();
             frame = null;
         }
-        frame = new pspdisplay_frame();
-
+        //frame = new pspdisplay_frame();
+        //frame = new pspdisplay_glcanvas().get_instance();
         // If we initialise these here we can remove checks for uninitialised variables later on
         mode = 0;
         width = 480;
@@ -79,7 +80,7 @@ public class pspdisplay {
         // We don't want to keep re-allocating it in sceDisplaySetFrameBuf
         bb = ByteBuffer.allocate(512 * 512 * 4);
         bb.order(ByteOrder.LITTLE_ENDIAN);
-        frame.createImage(bb);
+        pspdisplay_glcanvas.get_instance().createImage(bb);
     }
 
     public void step() {
@@ -213,7 +214,7 @@ public class pspdisplay {
             }
         }
 
-        frame.updateImage();
+        pspdisplay_glcanvas.get_instance().updateImage();
     }
 
     // Do we really need this enum? it's just overhead
