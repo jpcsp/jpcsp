@@ -157,7 +157,6 @@ public class pspdisplay {
     public void UpdateDisplay() {
         // Convert memory at topaddr to native image
         int bytesPerPixel = pixelformat.getBytesPerPixel();
-        //byte[] videoram = Memory.get_instance().videoram;
         ByteBuffer videoram = Memory.get_instance().videoram;
         int addr = topaddr - MemoryMap.START_VRAM; // 0x04000000
         int xpadding = (bufferwidth - width) * bytesPerPixel;
@@ -182,7 +181,7 @@ public class pspdisplay {
                 for (int x = 0; x < width; x++, addr += 2) {
                     short color = videoram.getShort(addr);
                     byte r = (byte)(((color >>  0) & 0x1f) << 3);
-                    byte g = (byte)(((color >>  5) & 0x20) << 2);
+                    byte g = (byte)(((color >>  5) & 0x3f) << 2);
                     byte b = (byte)(((color >> 11) & 0x1f) << 3);
                     set_native_pixel(x, y, r, g, b, (byte)0 /* opaque */);
                 }
