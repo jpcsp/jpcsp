@@ -199,7 +199,8 @@ public class AllegrexOpcodes {
 // 011 |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
 //  hi |-------|-------|-------|-------|-------|-------|-------|-------|
     public static final byte SRLV = 0x0;
-    public static final byte ROTRV = 0x1;//     REGIMM: encoded by the rt field when opcode field = REGIMM.
+    public static final byte ROTRV = 0x1; //
+//     REGIMM: encoded by the rt field when opcode field = REGIMM.
 //     31---------26----------20-------16------------------------------0
 //     |=    REGIMM|          |   rt    |                              |
 //     ------6---------------------5------------------------------------
@@ -329,7 +330,6 @@ public class AllegrexOpcodes {
     public static final byte COP1BC = 0x08;
     public static final byte COP1S = 0x10;
     public static final byte COP1W = 0x14; //
-    
 //     COP1BC: encoded by the rt field
 //     31---------21-------16------------------------------------------0
 //     |=    COP1BC|  rt   |                                           |
@@ -344,7 +344,6 @@ public class AllegrexOpcodes {
     public static final byte BC1T = 0x01;
     public static final byte BC1FL = 0x02;
     public static final byte BC1TL = 0x03; //   
-    
 //     COP1S: encoded by function field
 //     31---------21------------------------------------------5--------0
 //     |=  COP1S  |                                          | function|
@@ -394,7 +393,6 @@ public class AllegrexOpcodes {
     public static final byte CNGE = 0xd;
     public static final byte CLE = 0xe;
     public static final byte CNGT = 0xf; //
-    
 //     COP1W: encoded by function field
 //     31---------21------------------------------------------5--------0
 //     |=  COP1W  |                                          | function|
@@ -419,10 +417,11 @@ public class AllegrexOpcodes {
     //     |--000--|--001--|--010--|--011--|--100--|--101--|--110--|--111--|
     //     | VADD  | VSUB  | VSBN  |  ---  |  ---  |  ---  |  ---  | VDIV  |
     //     |-------|-------|-------|-------|-------|-------|-------|-------|
-    public static final byte VADD = 0x00;
-    public static final byte VSUB = 0x01;
-    public static final byte VSBN = 0x02;
-    public static final byte VDIV = 0x07;    // VFPU1:
+    public static final byte VADD = 0x00; //
+    public static final byte VSUB = 0x01; //
+    public static final byte VSBN = 0x02; //
+    public static final byte VDIV = 0x07; //
+    // VFPU1:
     // 
     //     31---------26-----23--------------------------------------------0
     //     |=     VFPU1| VOP |                                             |
@@ -430,12 +429,13 @@ public class AllegrexOpcodes {
     //     |--000--|--001--|--010--|--011--|--100--|--101--|--110--|--111--|
     //     | VMUL  | VDOT  | VSCL  |  ---  | VHDP  | VCRS  | VDET  |  ---  |
     //     |-------|-------|-------|-------|-------|-------|-------|-------|
-    public static final byte VMUL = 0x00;
-    public static final byte VDOT = 0x01;
-    public static final byte VSCL = 0x02;
-    public static final byte VHDP = 0x04;
-    public static final byte VCRS = 0x05;
-    public static final byte VDET = 0x06;    // VFPU2: /* known as COP2 */
+    public static final byte VMUL = 0x00; //
+    public static final byte VDOT = 0x01; //
+    public static final byte VSCL = 0x02; //
+    public static final byte VHDP = 0x04; //
+    public static final byte VCRS = 0x05; //
+    public static final byte VDET = 0x06; //
+    // VFPU2: /* known as COP2 */
     // 
     //     31---------26-----23--------------------------------------------0
     //     |=     VFPU2|                                                   |
@@ -446,25 +446,62 @@ public class AllegrexOpcodes {
     // VFPU3:
     // 
     //     31---------26-----23--------------------------------------------0
-    //     |=     VFPU2| VOP |                                             |
+    //     |=     VFPU3| VOP |                                             |
     //     ------6--------3-------------------------------------------------
     //     |--000--|--001--|--010--|--011--|--100--|--101--|--110--|--111--|
     //     | VCMP  |  ---  | VMIN  | VMAX  |  ---  | VSCMP | VSGE  | VSLT  |
     //     |-------|-------|-------|-------|-------|-------|-------|-------|
-    public static final byte VCMP = 0x00;
-    public static final byte VMIN = 0x02;
-    public static final byte VMAX = 0x03;
-    public static final byte VSCMP = 0x05;
-    public static final byte VSGE = 0x06;
-    public static final byte VSLT = 0x07;    // VFPU4:
-    // 
-    //     31---------26-----23--------------------------------------------0
+    public static final byte VCMP = 0x00; //
+    public static final byte VMIN = 0x02; //
+    public static final byte VMAX = 0x03; //
+    public static final byte VSCMP = 0x05; //
+    public static final byte VSGE = 0x06; //
+    public static final byte VSLT = 0x07; //
+    // VFPU4:
+    //     31---------26-----24--------------------------------------------0
     //     |=     VFPU4| VOP |                                             |
-    //     ------6--------3-------------------------------------------------
+    //     ------6--------2-------------------------------------------------
+    //     |-------00-------|-------01-------|------10------|------11------|
+    //     |    VFPU4_0     |      ---       |    VFPU4_2   |     VWBN     |
+    //     |----------------|----------------|--------------|--------------|
+    public static final byte VFPU4_0 = 0x0; //
+    public static final byte VFPU4_1 = 0x1; //
+    public static final byte VFPU4_2 = 0x2; //
+    public static final byte VWBN = 0x3; //
+
+    // VFPU4_0:
+    //     31---------26-----24--------------------------------------------0
+    //     |=     VFPU4| 00  |                                             |
+    //     ------6--------2-------------------------------------------------
     //     |--000--|--001--|--010--|--011--|--100--|--101--|--110--|--111--|
     //     |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |  ---  |
     //     |-------|-------|-------|-------|-------|-------|-------|-------|
     //  
+
+    // VFPU4_2:
+    //     31---------26-----24--------------------------------------------0
+    //     |=     VFPU4| 10  |                                             |
+    //     ------6--------2-------------------------------------------------
+    //     |--000--|--001--|--010--|--011--|--100--|--101--|--110--|--111--|
+    //     | VF2IN | VF2IZ | VF2IU | VF2ID | VI2F  |   1*  |  ---  |  ---  |
+    //     |-------|-------|-------|-------|-------|-------|-------|-------|
+    //     *1 : VCMOVF/VCMOVT
+    public static final byte VF2IN = 0x0; //
+    public static final byte VF2IZ = 0x1; //
+    public static final byte VF2IU = 0x2; //
+    public static final byte VF2ID = 0x3; //
+    public static final byte VI2F = 0x4; //
+    public static final byte VFPU4_2_2 = 0x5; //
+
+    // VFPU4_2_2:
+    //     31---------26----24----19---------------------------------------0
+    //     |=     VFPU4| 10 | 101 |                                        |
+    //     ------6--------2----3--------------------------------------------
+    //     |-------00-------|-------01-------|------10------|------11------|
+    //     |     VCMOVF     |     VCMOVT     |     ----     |     ----     |
+    //     |----------------|----------------|--------------|--------------|
+    public static final byte VCMOVF = 0x0; //
+    public static final byte VCMOVT = 0x1; //
 
     // VFPU5:
     // 
@@ -477,7 +514,8 @@ public class AllegrexOpcodes {
     public static final byte VPFXS = 0x00;
     public static final byte VPFXT = 0x01;
     public static final byte VPFXD = 0x02;
-    public static final byte VIFIM = 0x03;    //     31---------------23---------------------------------------------0
+    public static final byte VFPU5_3 = 0x03; //
+    //     31---------------23---------------------------------------------0
     //     |=   VFPU5/VIFM  |                                              |
     //     ---------8-------------------------------------------------------
     //     |----------------0----------------|--------------1--------------|
