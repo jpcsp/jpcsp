@@ -22,8 +22,8 @@ package jpcsp.HLE;
 
 import jpcsp.Emulator;
 import jpcsp.MemoryMap;
-import jpcsp.core.graphics.DisplayList;
-import jpcsp.core.graphics.VideoEngine;
+import jpcsp.graphics.DisplayList;
+import jpcsp.graphics.VideoEngine;
 
 public class pspge {
 
