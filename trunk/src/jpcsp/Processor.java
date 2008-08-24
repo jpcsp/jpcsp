@@ -56,6 +56,8 @@ public class Processor implements AllegrexInstructions {
     Processor() {
         Memory.get_instance(); //intialize memory
         reset();
+        testOpcodes();
+        reset();
     }
 
     public void reset() {
@@ -103,11 +105,11 @@ public class Processor implements AllegrexInstructions {
     }
 
     public static int signedCompare(int i, int j) {
-        return (i - j) >> 31;
+        return (i - j) >>> 31;
     }
 
     public static int unsignedCompare(int i, int j) {
-        return ((i - j) ^ i ^ j) >> 31;
+        return ((i - j) ^ i ^ j) >>> 31;
     }
 
     public static int branchTarget(int npc, int simm16) {
@@ -2038,5 +2040,195 @@ public class Processor implements AllegrexInstructions {
         result[0] = s * ((float) m) * ((float) (1 << e)) / ((float) (1 << 41));
 
         saveVd(1, vs, result);
+    }
+
+    void testOpcodes()
+    {
+        String msg;
+        
+        gpr[1] = +1;
+        gpr[2] = +2;
+        gpr[3] = +3;
+        gpr[5] = -1;
+        gpr[6] = -2;
+        gpr[7] = -3;
+        
+        doSLL(4, 1, 1); msg = "doSLL fails"; assert (gpr[4] == 2) : msg;
+        doSRL(4, 2, 1); msg = "doSRL fails"; assert (gpr[4] == 1) : msg;
+        doSRL(4, 5, 1); msg = "doSRL fails"; assert (gpr[4] == 0x7fffffff) : msg;
+        doSRA(4, 2, 1); msg = "doSRA fails"; assert (gpr[4] == 1) : msg;
+        doSRA(4, 5, 1); msg = "doSRA fails"; assert (gpr[4] == -1) : msg;
+        doSLLV(4, 1, 1); msg = "doSLLV fails"; assert (gpr[4] == 2) : msg;
+        doSRLV(4, 2, 1); msg = "doSRLV fails"; assert (gpr[4] == 1) : msg;
+        doSRLV(4, 5, 1); msg = "doSRLV fails"; assert (gpr[4] == 0x7fffffff) : msg;
+        doSRAV(4, 2, 1); msg = "doSRAV fails"; assert (gpr[4] == 1) : msg;
+        doSRAV(4, 5, 1); msg = "doSRAV fails"; assert (gpr[4] == -1) : msg;
+        doADDU(4, 3, 1); msg = "doADDU fails"; assert (gpr[4] == 4) : msg;
+        doSUBU(4, 3, 1); msg = "doSUBU fails"; assert (gpr[4] == 2) : msg;
+        doAND(4, 5, 6); msg = "doAND fails"; assert (gpr[4] == -2) : msg;
+        doOR(4, 5, 6); msg = "doOR fails"; assert (gpr[4] == -1) : msg;
+        doXOR(4, 5, 6); msg = "doXOR fails"; assert (gpr[4] == 1) : msg;
+        doNOR(4, 0, 1); msg = "doNOR fails"; assert (gpr[4] == -2) : msg;
+        doSLT(4, 5, 6); msg = "doSLT fails"; assert (gpr[4] == 0) : msg;
+        doSLT(4, 6, 5); msg = "doSLT fails"; assert (gpr[4] == 1) : msg;
+        doSLT(4, 5, 5); msg = "doSLT fails"; assert (gpr[4] == 0) : msg;
+        doSLT(4, 5, 1); msg = "doSLT fails"; assert (gpr[4] == 1) : msg;
+        doSLTU(4, 5, 6); msg = "doSLTU fails"; assert (gpr[4] == 0) : msg;
+        doSLTU(4, 6, 5); msg = "doSLTU fails"; assert (gpr[4] == 1) : msg;
+        doSLTU(4, 5, 5); msg = "doSLTU fails"; assert (gpr[4] == 0) : msg;
+        doSLTU(4, 5, 1); msg = "doSLTU fails"; assert (gpr[4] == 0) : msg;
+
+        /*
+    public void doBLTZ(int rs, int simm16);
+
+    public void doBGEZ(int rs, int simm16);
+
+    public void doBLTZL(int rs, int simm16);
+
+    public void doBGEZL(int rs, int simm16);
+
+    public void doBLTZAL(int rs, int simm16);
+
+    public void doBGEZAL(int rs, int simm16);
+
+    public void doBLTZALL(int rs, int simm16);
+
+    public void doBGEZALL(int rs, int simm16);
+
+    public void doJ(int uimm26);
+
+    public void doJAL(int uimm26);
+
+    public void doBEQ(int rs, int rt, int simm16);
+
+    public void doBNE(int rs, int rt, int simm16);
+
+    public void doBLEZ(int rs, int simm16);
+
+    public void doBGTZ(int rs, int simm16);
+
+    public void doBEQL(int rs, int rt, int simm16);
+
+    public void doBNEL(int rs, int rt, int simm16);
+
+    public void doBLEZL(int rs, int simm16);
+
+    public void doBGTZL(int rs, int simm16);
+
+    public void doADDI(int rt, int rs, int simm16);
+
+    public void doADDIU(int rt, int rs, int simm16);
+
+    public void doSLTI(int rt, int rs, int simm16);
+
+    public void doSLTIU(int rt, int rs, int simm16);
+
+    public void doANDI(int rt, int rs, int uimm16);
+
+    public void doORI(int rt, int rs, int uimm16);
+
+    public void doXORI(int rt, int rs, int uimm16);
+
+    public void doLUI(int rt, int uimm16);
+
+    public void doHALT();
+
+    public void doMFIC(int rt);
+
+    public void doMTIC(int rt);
+
+    public void doMFC0(int rt, int c0dr);
+
+    public void doCFC0(int rt, int c0cr);
+
+    public void doMTC0(int rt, int c0dr);
+
+    public void doCTC0(int rt, int c0cr);
+
+    public void doERET();
+
+    public void doLB(int rt, int rs, int simm16);
+
+    public void doLBU(int rt, int rs, int simm16);
+
+    public void doLH(int rt, int rs, int simm16);
+
+    public void doLHU(int rt, int rs, int simm16);
+
+    public void doLWL(int rt, int rs, int simm16);
+
+    public void doLW(int rt, int rs, int simm16);
+
+    public void doLWR(int rt, int rs, int simm16);
+
+    public void doSB(int rt, int rs, int simm16);
+
+    public void doSH(int rt, int rs, int simm16);
+
+    public void doSWL(int rt, int rs, int simm16);
+
+    public void doSW(int rt, int rs, int simm16);
+
+    public void doSWR(int rt, int rs, int simm16);
+
+    public void doCACHE(int rt, int rs, int simm16);
+
+    public void doLL(int rt, int rs, int simm16);
+
+    public void doLWC1(int rt, int rs, int simm16);
+
+    public void doLVS(int vt, int rs, int simm14);
+
+    public void doSC(int rt, int rs, int simm16);
+
+    public void doSWC1(int rt, int rs, int simm16);
+
+    public void doSVS(int vt, int rs, int simm14);
+
+    public void doROTR(int rd, int rt, int sa);
+
+    public void doROTRV(int rd, int rt, int rs);
+
+    public void doMOVZ(int rd, int rs, int rt);
+
+    public void doMOVN(int rd, int rs, int rt);
+
+    public void doSYSCALL(int code);
+
+    public void doBREAK(int code);
+
+    public void doSYNC();
+
+    public void doCLZ(int rd, int rs);
+
+    public void doCLO(int rd, int rs);
+
+    public void doMADD(int rs, int rt);
+
+    public void doMADDU(int rs, int rt);
+
+    public void doMAX(int rd, int rs, int rt);
+
+    public void doMIN(int rd, int rs, int rt);
+
+    public void doMSUB(int rs, int rt);
+
+    public void doMSUBU(int rs, int rt);
+
+    public void doEXT(int rt, int rs, int rd, int sa);
+
+    public void doINS(int rt, int rs, int rd, int sa);
+
+    public void doWSBH(int rd, int rt);
+
+    public void doWSBW(int rd, int rt);
+
+    public void doSEB(int rd, int rt);
+
+    public void doBITREV(int rd, int rt);
+
+    public void doSEH(int rd, int rt);
+
+         */
     }
 }
