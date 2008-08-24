@@ -55,6 +55,6 @@ public class DisplayList {
     @Override
     public String toString(){
         return "id = " + id + ", start address = " + start + ", end adress = " + stallAddress
-                + ", initial command = " + pointer;
+                + ", initial command pointer = " + pointer;
     }
 }

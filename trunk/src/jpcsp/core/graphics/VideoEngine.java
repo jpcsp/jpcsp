@@ -60,26 +60,32 @@ public class VideoEngine {
 
     private VideoEngine() {
     }
-    private boolean listIsOver = true;
+    private boolean listIsOver = false;
     private DisplayList actualList;
 
     public void executeList(DisplayList list) {
         actualList = list;
+        
         while (!listIsOver) {
-            executeCommand(list.pointer);
+            try {
+                executeCommand(list.pointer);
+            } catch (Exception e) {
+                log(e.toString());
+            }
 
-            if (actualList.start >= actualList.stallAddress) {
+             if (actualList.start == actualList.stallAddress) {
                 listIsOver = true;
                 continue;
             }
             actualList.start++; //is it correct?
-
             actualList.pointer = Emulator.getMemory().read32(actualList.start);
         }
+        listIsOver = false;
     }
 
-    private byte command(int word) {
-        return (byte) (word >>> 24);
+    //I guess here we use ubyte
+    private int command(int word) {
+        return (word >>> 24);
     }
 
     private int intArgument(int word) {
@@ -114,6 +120,7 @@ public class VideoEngine {
             case VADDR:
                 vertex.pointer = actualList.base | normalArgument;
                 log(helper.getCommandString(VADDR), vertex.pointer);
+                break;
             case PRIM:
                 int draw = ((normalArgument >> 16) | 0x7);
                 switch (draw){
@@ -143,8 +150,9 @@ public class VideoEngine {
             case SHADE:
                 int SETTED_MODEL = normalArgument | 0x01; //bit 0
                 SETTED_MODEL = (SETTED_MODEL == drawable.GL_SMOOTH) ? SHADE_TYPE_SMOOTH : SHADE_TYPE_FLAT;
-                drawable.glShadeModel(SETTED_MODEL);
+                //drawable.glShadeModel(SETTED_MODEL);
                 log(helper.getCommandString(SHADE) + " " + SETTED_MODEL);
+                break;
             case JUMP:
                 actualList.pointer =  Emulator.getMemory().read32((normalArgument | actualList.base) & 0xFFFFFFFC);
                 //I guess it must be unsign as psp player emulator

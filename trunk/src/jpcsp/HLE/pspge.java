@@ -23,6 +23,7 @@ package jpcsp.HLE;
 import jpcsp.Emulator;
 import jpcsp.MemoryMap;
 import jpcsp.core.graphics.DisplayList;
+import jpcsp.core.graphics.VideoEngine;
 
 public class pspge {
 
@@ -55,7 +56,9 @@ public class pspge {
         */
         
         DisplayList displayList = new DisplayList(list, stall, callbackId, argument);
+        VideoEngine ve = VideoEngine.getEngine(null, true, true);
         log("The list " + displayList.toString());
+        ve.executeList(displayList);
         return displayList.id;
     }
     
