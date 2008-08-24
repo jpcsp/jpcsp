@@ -34,9 +34,12 @@ public class VideoEngine {
     private static final boolean isDebugMode = true;
     private static GeCommands helper;
     private Vertex vertex = new Vertex();
+    private static final char SPACE = ' ';
 
     private static void log(String msg) {
-        if (isDebugMode)System.out.println("sceGe DEBUG > " + msg);
+        if (isDebugMode) {
+            System.out.println("sceGe DEBUG > " + msg);
+        }
     }
 
     public static VideoEngine getEngine(GL draw, boolean fullScreen, boolean hardwareAccelerate) {
@@ -64,32 +67,33 @@ public class VideoEngine {
         actualList = list;
         while (!listIsOver) {
             executeCommand(list.pointer);
-            
-            if (actualList.start >= actualList.stallAddress){
+
+            if (actualList.start >= actualList.stallAddress) {
                 listIsOver = true;
                 continue;
             }
-            actualList.start += 4; //is it correct?
+            actualList.start++; //is it correct?
+
             actualList.pointer = Emulator.getMemory().read32(actualList.start);
-        }        
+        }
     }
 
     private byte command(int word) {
-        return (byte)(word >>> 24);
+        return (byte) (word >>> 24);
     }
-    
+
     private int intArgument(int word) {
         return (word & 0x00FFFFFF);
     }
-    
+
     private float floatArgument(int word) {
         return Float.intBitsToFloat(word << 8);
     }
-    
+
     public void executeCommand(int word) {
         int normalArgument = intArgument(word);
         float floatArgument = floatArgument(word);
-        
+
         switch (command(word)) {
             case BASE:
                 actualList.base = normalArgument;
@@ -107,14 +111,29 @@ public class VideoEngine {
                 break;
             case SHADE:
                 int SETTED_MODEL = normalArgument | 0x01; //bit 0
-                SETTED_MODEL = (SETTED_MODEL == drawable.GL_SMOOTH)? SHADE_TYPE_SMOOTH : SHADE_TYPE_FLAT ;
+
+                SETTED_MODEL = (SETTED_MODEL == drawable.GL_SMOOTH) ? SHADE_TYPE_SMOOTH : SHADE_TYPE_FLAT;
                 drawable.glShadeModel(SETTED_MODEL);
-                log(helper.getCommandString(SHADE) + " " + SETTED_MODEL );
+                log(helper.getCommandString(SHADE) + " " + SETTED_MODEL);
+            case JUMP:
+                actualList.pointer =  Emulator.getMemory().read32((normalArgument | actualList.base) & 0xFFFFFFFC);
+                //I guess it must be unsign as psp player emulator
+                log(helper.getCommandString(JUMP),actualList.pointer);
+                break;
+            case CALL:
+                actualList.stack[actualList.stackIndex++] = actualList.pointer;
+                actualList.pointer = Emulator.getMemory().read32((normalArgument | actualList.base) & 0xFFFFFFFC);
+                log(helper.getCommandString(CALL),actualList.pointer);
+                break;
+            case RET:
+                actualList.pointer = actualList.stack[--actualList.stackIndex];
+                log(helper.getCommandString(RET),actualList.pointer);
+                break;
             case NOP:
                 log(helper.getCommandString(NOP));
                 break;
             default:
-                log("Unknow/unimplemented video command [ " + command(word) + " ]");
+                log("Unknow/unimplemented video command [ " + helper.getCommandString(command(word)) + " ]");
         }
 
     }
@@ -138,6 +157,10 @@ public class VideoEngine {
     }
 
     public void waitVBlank() {
+    }
+
+    private void log(String commandString, int pointer) {
+        log(commandString+SPACE+pointer);
     }
 
     private void setHardwareAcc(boolean hardwareAccelerate) {
