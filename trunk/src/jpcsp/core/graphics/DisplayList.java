@@ -35,14 +35,13 @@ public class DisplayList {
     public int id;
     public int callbackId;
     public int pointer;
-    public int startAddress;
     public int stallAddress;
     public int[] stack = new int[32];
     public int stackIndex;
     public int arg;
-    
+    private static int ids = 0;
+            
     public DisplayList(int startList, int stall, int callbackId, int arg){
-    //0xab49e76a	int	sceGeListEnQueue	const void *list,void *stall,int cbid,void *arg
         this.base = 0x08000000;
         stackIndex = 0;
         this.start = startList; 
@@ -50,5 +49,12 @@ public class DisplayList {
         this.stallAddress = stall;
         this.callbackId = callbackId;
         this.arg = arg;
+        id=++ids;
+    }
+    
+    @Override
+    public String toString(){
+        return "id = " + id + ", start address = " + start + ", end adress = " + stallAddress
+                + ", initial command = " + pointer;
     }
 }
