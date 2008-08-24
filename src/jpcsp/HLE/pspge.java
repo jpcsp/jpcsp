@@ -57,6 +57,14 @@ public class pspge {
         
         DisplayList displayList = new DisplayList(list, stall, callbackId, argument);
         VideoEngine ve = VideoEngine.getEngine(null, true, true);
+        /**
+         * 
+         * reading more, i saw that here we just put the display list on quee 
+         * after that we draw [execute list]...
+         * 
+         * so this code is just to debug stuffs until we discovery how
+         * things goes.... 
+         */
         log("The list " + displayList.toString());
         ve.executeList(displayList);
         return displayList.id;
