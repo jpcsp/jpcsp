@@ -36,7 +36,7 @@ public class VideoEngine {
     private Vertex vertex = new Vertex();
 
     private static void log(String msg) {
-        if (isDebugMode)System.out.println("VIDEO DEBUG > " + msg);
+        if (isDebugMode)System.out.println("sceGe DEBUG > " + msg);
     }
 
     public static VideoEngine getEngine(GL draw, boolean fullScreen, boolean hardwareAccelerate) {
