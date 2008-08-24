@@ -4,31 +4,31 @@
 
     <windowspos>
        <disassembler>
-         <x>41</x>
-         <y>-20</y>
+         <x>209</x>
+         <y>88</y>
        </disassembler>
        <elfheader>
          <x>244</x>
          <y>16</y>
        </elfheader>
        <memoryview>
-         <x>3</x>
-         <y>362</y>
+         <x>251</x>
+         <y>256</y>
        </memoryview>
        <registers>
          <x>16</x>
          <y>5</y>
        </registers>
       <logwindow>
-        <x>49</x>
-        <y>376</y>
+        <x>58</x>
+        <y>336</y>
       </logwindow>
     </windowspos>
 	
     <windowsize>
       <mainwindow>
-        <x>705</x>
-        <y>780</y>
+        <x>872</x>
+        <y>746</y>
       </mainwindow>
     </windowsize>
 
