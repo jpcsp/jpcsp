@@ -95,23 +95,30 @@ public class VideoEngine {
         float floatArgument = floatArgument(word);
 
         switch (command(word)) {
+            case END:
+                listIsOver = true;
+                log(helper.getCommandString(END));
+                break;
+            case FINISH:
+                listIsOver = true;
+                log(helper.getCommandString(FINISH));
+                break;
             case BASE:
                 actualList.base = normalArgument;
-                log(helper.getCommandString(BASE) + " " + normalArgument);
+                log(helper.getCommandString(BASE),normalArgument);
                 break;
             case IADDR:
                 vertex.index = actualList.base | normalArgument;
-                log(helper.getCommandString(IADDR) + " " + vertex.index);
+                log(helper.getCommandString(IADDR),vertex.index);
                 break;
             case VADDR:
                 vertex.pointer = actualList.base | normalArgument;
-                log(helper.getCommandString(VADDR) + " " + vertex.pointer);
+                log(helper.getCommandString(VADDR), vertex.pointer);
             case PRIM:
                 log(helper.getCommandString(PRIM) + " ");
                 break;
             case SHADE:
                 int SETTED_MODEL = normalArgument | 0x01; //bit 0
-
                 SETTED_MODEL = (SETTED_MODEL == drawable.GL_SMOOTH) ? SHADE_TYPE_SMOOTH : SHADE_TYPE_FLAT;
                 drawable.glShadeModel(SETTED_MODEL);
                 log(helper.getCommandString(SHADE) + " " + SETTED_MODEL);
