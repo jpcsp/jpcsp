@@ -14,8 +14,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.core.graphics;
+package jpcsp.graphics;
 
-public class VideoContext {
-
+public class LcdInfo {
+    public final static int WIDTH = 512;
+    public final static int HEIGHT = 272;
+    public final static String PIXEL_FORMAT  = "ABBBBBGGGGGRRRRR";
 }

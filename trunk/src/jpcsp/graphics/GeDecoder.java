@@ -14,9 +14,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.core.graphics;
+package jpcsp.graphics;
 
-import static jpcsp.core.graphics.GeCommands.*;
+import static jpcsp.graphics.GeCommands.*;
 
 /**
  *
