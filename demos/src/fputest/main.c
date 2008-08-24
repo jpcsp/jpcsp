@@ -60,6 +60,13 @@ float __attribute__((noinline)) divs(float x, float y)
 	return result;
 }
 
+float __attribute__((noinline)) sqrts(float x)
+{
+	float result;
+	asm volatile("sqrt.s %0, %1" : "=f"(result) : "f"(x));
+	return result;
+}
+
 float __attribute__((noinline)) abss(float x)
 {
 	float result;
@@ -85,11 +92,12 @@ int main(int argc, char *argv[])
 	results[4] = (abss(+2.0) == 2.0);
 	results[5] = (abss(-2.0) == 2.0);
 	results[6] = (negs(negs(+2.0)) == 2.0);
+	results[7] = (sqrts(4.0)) == 2.0);
 
 	int result = 0, i;
 
 	for (i = 0; i < 32; ++i)
-		result |= 1 << i;
+		if (results[i]) result |= 1 << i;
 
 	return 0;
 }

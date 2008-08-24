@@ -1358,7 +1358,9 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doCCONDS(int fs, int ft, int cond) {
-        boolean unordered = ((cond & 1) != 0) && (Float.isNaN(fs) || Float.isNaN(ft));
+        float x = fpr[fs];
+        float y = fpr[ft];
+        boolean unordered = ((cond & 1) != 0) && (Float.isNaN(x) || Float.isNaN(y));
 
         if (unordered) {
             if ((cond & 8) != 0) {
@@ -1367,8 +1369,8 @@ public class Processor implements AllegrexInstructions {
 
             fcr31_c = true;
         } else {
-            boolean equal = ((cond & 2) != 0) && (fs == ft);
-            boolean less = ((cond & 4) != 0) && (fs < ft);
+            boolean equal = ((cond & 2) != 0) && (x == y);
+            boolean less = ((cond & 4) != 0) && (x < y);
 
             fcr31_c = less || equal;
         }

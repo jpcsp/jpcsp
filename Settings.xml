@@ -12,8 +12,8 @@
          <y>16</y>
        </elfheader>
        <memoryview>
-         <x>251</x>
-         <y>256</y>
+         <x>233</x>
+         <y>453</y>
        </memoryview>
        <registers>
          <x>16</x>
