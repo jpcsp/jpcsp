@@ -66,12 +66,8 @@ public class VideoEngine {
     public void executeList(DisplayList list) {
         actualList = list;
         
-        while (!listIsOver) {
-            try {
+        while (!listIsOver) {            
                 executeCommand(list.pointer);
-            } catch (Exception e) {
-                log(e.toString());
-            }
 
              if (actualList.start == actualList.stallAddress) {
                 listIsOver = true;
