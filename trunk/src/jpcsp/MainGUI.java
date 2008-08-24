@@ -17,10 +17,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp;
 
+import java.awt.Point;
 import javax.swing.JPopupMenu;
 import javax.swing.ToolTipManager;
 import javax.swing.UIManager;
 import jpcsp.Debugger.ConsoleWindow;
+import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
 import jpcsp.HLE.pspdisplay_glcanvas;
 import jpcsp.util.MetaInformation;
 
@@ -31,16 +33,20 @@ import jpcsp.util.MetaInformation;
 public class MainGUI extends javax.swing.JFrame {
    final String version = MetaInformation.FULL_NAME;
    ConsoleWindow consolewin;
+   DisassemblerFrame disasm;
+   
     /** Creates new form MainGUI */
     public MainGUI() {
         //logging console window stuff
         consolewin = new ConsoleWindow();
+        consolewin.setLocation(0,600);//put it under the emu window
         consolewin.setVisible(false);
         /*next two lines are for overlay menus over joglcanvas*/
         JPopupMenu.setDefaultLightWeightPopupEnabled(false);
         ToolTipManager.sharedInstance().setLightWeightPopupEnabled(false);
         //end of
         initComponents();
+        this.setLocation(0,0);//set location to 0 //NOTE:that will probably change
         this.setTitle(version);
         /*add glcanvas to frame and pack frame to get the canvas size*/
         getContentPane().add(pspdisplay_glcanvas.get_instance(), java.awt.BorderLayout.CENTER);
@@ -138,6 +144,11 @@ public class MainGUI extends javax.swing.JFrame {
         DebugMenu.setText("Debug");
 
         EnterDebugger.setText("Enter Debugger");
+        EnterDebugger.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                EnterDebuggerActionPerformed(evt);
+            }
+        });
         DebugMenu.add(EnterDebugger);
 
         EnterMemoryViewer.setText("Memory viewer");
@@ -168,6 +179,13 @@ private void ToggleConsoleActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 // TODO add your handling code here:
     consolewin.setVisible(!consolewin.isVisible());
 }//GEN-LAST:event_ToggleConsoleActionPerformed
+
+private void EnterDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterDebuggerActionPerformed
+      disasm = new DisassemblerFrame();
+      Point mainwindow = this.getLocation(); 
+      disasm.setLocation(mainwindow.x+50, mainwindow.y+50);
+      disasm.setVisible(true);
+}//GEN-LAST:event_EnterDebuggerActionPerformed
 
     /**
     * @param args the command line arguments
