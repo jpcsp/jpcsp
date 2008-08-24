@@ -115,7 +115,30 @@ public class VideoEngine {
                 vertex.pointer = actualList.base | normalArgument;
                 log(helper.getCommandString(VADDR), vertex.pointer);
             case PRIM:
-                log(helper.getCommandString(PRIM) + " ");
+                int draw = ((normalArgument >> 16) | 0x7);
+                switch (draw){
+                    case PRIM_POINT:
+                        log(helper.getCommandString(PRIM) + " point");
+                        break;
+                    case PRIM_LINES_STRIPS:
+                        log(helper.getCommandString(PRIM) + " lines_strips");
+                        break;
+                    case PRIM_LINE:
+                        log(helper.getCommandString(PRIM) + " line");
+                        break;
+                    case PRIM_SPRITES:
+                        log(helper.getCommandString(PRIM) + " sprites");
+                        break;
+                    case PRIM_TRIANGLE:
+                        log(helper.getCommandString(PRIM) + " triangle");
+                        break;
+                    case PRIM_TRIANGLE_FANS:
+                        log(helper.getCommandString(PRIM) + " triangle_fans");
+                        break;
+                    case PRIM_TRIANGLE_STRIPS:
+                        log(helper.getCommandString(PRIM) + " triangle_strips");
+                        break;
+                }
                 break;
             case SHADE:
                 int SETTED_MODEL = normalArgument | 0x01; //bit 0
