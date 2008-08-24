@@ -235,7 +235,7 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doSRAV(int rd, int rt, int rs) {
         if (rd != 0) {
-            gpr[rd] = (gpr[rt] >>> (gpr[rs] & 31));
+            gpr[rd] = (gpr[rt] >> (gpr[rs] & 31));
         }
     }
 
@@ -378,7 +378,7 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doSUBU(int rd, int rs, int rt) {
         if (rd != 0) {
-            gpr[rd] = (int) ((((long) gpr[rs]) & 0xffffffff) - (((long) gpr[rt]) & 0xffffffff));
+            gpr[rd] = gpr[rs] - gpr[rt];
         }
     }
 
@@ -768,22 +768,34 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doLB(int rt, int rs, int simm16) {
-        gpr[rt] = ((Memory.get_instance()).read8(gpr[rs] + simm16) << 24) >> 24;
+        int word = ((Memory.get_instance()).read8(gpr[rs] + simm16) << 24) >> 24;
+        if (rt != 0) {
+            gpr[rt] = word;
+        }
     }
 
     @Override
     public void doLBU(int rt, int rs, int simm16) {
-        gpr[rt] = (Memory.get_instance()).read8(gpr[rs] + simm16) & 0xff;
+        int word = (Memory.get_instance()).read8(gpr[rs] + simm16) & 0xff;
+        if (rt != 0) {
+            gpr[rt] = word;
+        }
     }
 
     @Override
     public void doLH(int rt, int rs, int simm16) {
-        gpr[rt] = ((Memory.get_instance()).read16(gpr[rs] + simm16) << 16) >> 16;
+        int word = ((Memory.get_instance()).read16(gpr[rs] + simm16) << 16) >> 16;
+        if (rt != 0) {
+            gpr[rt] = word;
+        }
     }
 
     @Override
     public void doLHU(int rt, int rs, int simm16) {
-        gpr[rt] = (Memory.get_instance()).read16(gpr[rs] + simm16) & 0xffff;
+        int word = (Memory.get_instance()).read16(gpr[rs] + simm16) & 0xffff;
+        if (rt != 0) {
+            gpr[rt] = word;
+        }
     }
 
     @Override
@@ -811,12 +823,17 @@ public class Processor implements AllegrexInstructions {
                 break;
         }
 
-        gpr[rt] = word;
+        if (rt != 0) {
+            gpr[rt] = word;
+        }
     }
 
     @Override
     public void doLW(int rt, int rs, int simm16) {
-        gpr[rt] = (Memory.get_instance()).read32(gpr[rs] + simm16);
+        int word = (Memory.get_instance()).read32(gpr[rs] + simm16);
+        if (rt != 0) {
+            gpr[rt] = word;
+        }
     }
 
     @Override
@@ -844,7 +861,9 @@ public class Processor implements AllegrexInstructions {
                 break;
         }
 
-        gpr[rt] = word;
+        if (rt != 0) {
+            gpr[rt] = word;
+        }
     }
 
     @Override
@@ -926,7 +945,10 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doLL(int rt, int rs, int simm16) {
-        gpr[rt] = (Memory.get_instance()).read32(gpr[rs] + simm16);
+        int word = (Memory.get_instance()).read32(gpr[rs] + simm16);
+        if (rt != 0) {
+            gpr[rt] = word;
+        }
     //ll_bit = 1;
     }
 
@@ -950,7 +972,9 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doSC(int rt, int rs, int simm16) {
         (Memory.get_instance()).write32(gpr[rs] + simm16, gpr[rt]);
-        gpr[rt] = 1; // = ll_bit;
+        if (rt != 0) {
+            gpr[rt] = 1; // = ll_bit;
+        }
     }
 
     @Override
@@ -1090,16 +1114,20 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doEXT(int rt, int rs, int rd, int sa) {
-        int mask = ~(~1 << rd);
-        gpr[rt] = (gpr[rs] >> sa) & mask;
+        if (rt != 0) {
+            int mask = ~(~1 << rd);
+            gpr[rt] = (gpr[rs] >> sa) & mask;
+        }
     }
 
     @Override
     public void doINS(int rt, int rs, int rd, int sa) {
-        int mask1 = ~(~0 << sa);
-        int mask2 = (~0 << rd);
-        int mask3 = mask1 | mask2;
-        gpr[rt] = (gpr[rt] & mask3) | ((gpr[rs] >> sa) & mask2);
+        if (rt != 0) {
+            int mask1 = ~(~0 << sa);
+            int mask2 = (~0 << rd);
+            int mask3 = mask1 | mask2;
+            gpr[rt] = (gpr[rt] & mask3) | ((gpr[rs] >> sa) & mask2);
+        }
     }
 
     @Override
@@ -1392,7 +1420,7 @@ public class Processor implements AllegrexInstructions {
     private float[] loadVs(int vsize, int vs) {
         float[] result = new float[vsize];
 
-        int m, r, c;
+        int m,  r,  c;
 
         m = (vs >> 2) & 7;
         c = (vs >> 0) & 3;
@@ -1471,7 +1499,7 @@ public class Processor implements AllegrexInstructions {
     private float[] loadVt(int vsize, int vt) {
         float[] result = new float[vsize];
 
-        int m, r, c;
+        int m,  r,  c;
 
         m = (vt >> 2) & 7;
         c = (vt >> 0) & 3;
@@ -1548,7 +1576,7 @@ public class Processor implements AllegrexInstructions {
     }
 
     private void saveVd(int vsize, int vd, float[] result) {
-        int m, r, c;
+        int m,  r,  c;
 
         m = (vd >> 2) & 7;
         c = (vd >> 0) & 3;
@@ -1582,7 +1610,7 @@ public class Processor implements AllegrexInstructions {
                             }
                         }
                     }
-                    vcr_pfxd = false;                       
+                    vcr_pfxd = false;
                 } else {
                     if ((vd & 32) != 0) {
                         for (int i = 0; i < 2; ++i) {
@@ -1612,7 +1640,7 @@ public class Processor implements AllegrexInstructions {
                             }
                         }
                     }
-                    vcr_pfxd = false;                       
+                    vcr_pfxd = false;
                 } else {
                     if ((vd & 32) != 0) {
                         for (int i = 0; i < 3; ++i) {
@@ -1641,7 +1669,7 @@ public class Processor implements AllegrexInstructions {
                             }
                         }
                     }
-                    vcr_pfxd = false;                       
+                    vcr_pfxd = false;
                 } else {
                     if ((vd & 32) != 0) {
                         for (int i = 0; i < 4; ++i) {
@@ -1937,78 +1965,78 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doVPFXS(int imm24) {
-        vcr_pfxs_swz[0] = (imm24 >> 0) & 3; 
-        vcr_pfxs_swz[1] = (imm24 >> 2) & 3; 
-        vcr_pfxs_swz[2] = (imm24 >> 4) & 3; 
-        vcr_pfxs_swz[3] = (imm24 >> 6) & 3; 
-        vcr_pfxs_abs[0] = (imm24 >> 8) != 0; 
-        vcr_pfxs_abs[1] = (imm24 >> 9) != 0; 
-        vcr_pfxs_abs[2] = (imm24 >> 10) != 0; 
-        vcr_pfxs_abs[3] = (imm24 >> 11) != 0; 
-        vcr_pfxs_cst[0] = (imm24 >> 12) != 0; 
-        vcr_pfxs_cst[1] = (imm24 >> 13) != 0; 
-        vcr_pfxs_cst[2] = (imm24 >> 14) != 0; 
-        vcr_pfxs_cst[3] = (imm24 >> 15) != 0; 
-        vcr_pfxs_neg[0] = (imm24 >> 16) != 0; 
-        vcr_pfxs_neg[1] = (imm24 >> 17) != 0; 
-        vcr_pfxs_neg[2] = (imm24 >> 18) != 0; 
-        vcr_pfxs_neg[3] = (imm24 >> 19) != 0; 
+        vcr_pfxs_swz[0] = (imm24 >> 0) & 3;
+        vcr_pfxs_swz[1] = (imm24 >> 2) & 3;
+        vcr_pfxs_swz[2] = (imm24 >> 4) & 3;
+        vcr_pfxs_swz[3] = (imm24 >> 6) & 3;
+        vcr_pfxs_abs[0] = (imm24 >> 8) != 0;
+        vcr_pfxs_abs[1] = (imm24 >> 9) != 0;
+        vcr_pfxs_abs[2] = (imm24 >> 10) != 0;
+        vcr_pfxs_abs[3] = (imm24 >> 11) != 0;
+        vcr_pfxs_cst[0] = (imm24 >> 12) != 0;
+        vcr_pfxs_cst[1] = (imm24 >> 13) != 0;
+        vcr_pfxs_cst[2] = (imm24 >> 14) != 0;
+        vcr_pfxs_cst[3] = (imm24 >> 15) != 0;
+        vcr_pfxs_neg[0] = (imm24 >> 16) != 0;
+        vcr_pfxs_neg[1] = (imm24 >> 17) != 0;
+        vcr_pfxs_neg[2] = (imm24 >> 18) != 0;
+        vcr_pfxs_neg[3] = (imm24 >> 19) != 0;
         vcr_pfxs = true;
     }
 
     @Override
     public void doVPFXT(int imm24) {
-        vcr_pfxt_swz[0] = (imm24 >> 0) & 3; 
-        vcr_pfxt_swz[1] = (imm24 >> 2) & 3; 
-        vcr_pfxt_swz[2] = (imm24 >> 4) & 3; 
-        vcr_pfxt_swz[3] = (imm24 >> 6) & 3; 
-        vcr_pfxt_abs[0] = (imm24 >> 8) != 0; 
-        vcr_pfxt_abs[1] = (imm24 >> 9) != 0; 
-        vcr_pfxt_abs[2] = (imm24 >> 10) != 0; 
-        vcr_pfxt_abs[3] = (imm24 >> 11) != 0; 
-        vcr_pfxt_cst[0] = (imm24 >> 12) != 0; 
-        vcr_pfxt_cst[1] = (imm24 >> 13) != 0; 
-        vcr_pfxt_cst[2] = (imm24 >> 14) != 0; 
-        vcr_pfxt_cst[3] = (imm24 >> 15) != 0; 
-        vcr_pfxt_neg[0] = (imm24 >> 16) != 0; 
-        vcr_pfxt_neg[1] = (imm24 >> 17) != 0; 
-        vcr_pfxt_neg[2] = (imm24 >> 18) != 0; 
-        vcr_pfxt_neg[3] = (imm24 >> 19) != 0; 
+        vcr_pfxt_swz[0] = (imm24 >> 0) & 3;
+        vcr_pfxt_swz[1] = (imm24 >> 2) & 3;
+        vcr_pfxt_swz[2] = (imm24 >> 4) & 3;
+        vcr_pfxt_swz[3] = (imm24 >> 6) & 3;
+        vcr_pfxt_abs[0] = (imm24 >> 8) != 0;
+        vcr_pfxt_abs[1] = (imm24 >> 9) != 0;
+        vcr_pfxt_abs[2] = (imm24 >> 10) != 0;
+        vcr_pfxt_abs[3] = (imm24 >> 11) != 0;
+        vcr_pfxt_cst[0] = (imm24 >> 12) != 0;
+        vcr_pfxt_cst[1] = (imm24 >> 13) != 0;
+        vcr_pfxt_cst[2] = (imm24 >> 14) != 0;
+        vcr_pfxt_cst[3] = (imm24 >> 15) != 0;
+        vcr_pfxt_neg[0] = (imm24 >> 16) != 0;
+        vcr_pfxt_neg[1] = (imm24 >> 17) != 0;
+        vcr_pfxt_neg[2] = (imm24 >> 18) != 0;
+        vcr_pfxt_neg[3] = (imm24 >> 19) != 0;
         vcr_pfxt = true;
     }
 
     @Override
     public void doVPFXD(int imm24) {
-        vcr_pfxd_sat[0] = (imm24 >> 0) & 3; 
-        vcr_pfxd_sat[1] = (imm24 >> 2) & 3; 
-        vcr_pfxd_sat[2] = (imm24 >> 4) & 3; 
-        vcr_pfxd_sat[3] = (imm24 >> 6) & 3; 
-        vcr_pfxd_msk[0] = (imm24 >> 8) != 0; 
-        vcr_pfxd_msk[1] = (imm24 >> 9) != 0; 
-        vcr_pfxd_msk[2] = (imm24 >> 10) != 0; 
-        vcr_pfxd_msk[3] = (imm24 >> 11) != 0; 
+        vcr_pfxd_sat[0] = (imm24 >> 0) & 3;
+        vcr_pfxd_sat[1] = (imm24 >> 2) & 3;
+        vcr_pfxd_sat[2] = (imm24 >> 4) & 3;
+        vcr_pfxd_sat[3] = (imm24 >> 6) & 3;
+        vcr_pfxd_msk[0] = (imm24 >> 8) != 0;
+        vcr_pfxd_msk[1] = (imm24 >> 9) != 0;
+        vcr_pfxd_msk[2] = (imm24 >> 10) != 0;
+        vcr_pfxd_msk[3] = (imm24 >> 11) != 0;
         vcr_pfxd = true;
     }
 
     @Override
     public void doVIIM(int vs, int imm16) {
         float[] result = new float[1];
-        
-        result[0] = (float)imm16;
-        
+
+        result[0] = (float) imm16;
+
         saveVd(1, vs, result);
     }
 
     @Override
     public void doVFIM(int vs, int imm16) {
         float[] result = new float[1];
-        
+
         float s = ((imm16 >> 15) == 0) ? 1.0f : -1.0f;
         int e = ((imm16 >> 10) & 0x1f);
         int m = (e == 0) ? ((imm16 & 0x3ff) << 1) : ((imm16 & 0x3ff) | 0x400);
-        
-        result[0] = s * ((float)m) * ((float)(1 << e)) / ((float)(1 << 41));
-        
+
+        result[0] = s * ((float) m) * ((float) (1 << e)) / ((float) (1 << 41));
+
         saveVd(1, vs, result);
     }
 }

@@ -153,9 +153,9 @@ public class AllegrexDecoder {
 
                     case SRLROR:
                         if (rs(insn) == ROTR) {
-                            that.doSRL(rd(insn), rt(insn), sa(insn));
-                        } else {
                             that.doROTR(rd(insn), rt(insn), sa(insn));
+                        } else {
+                            that.doSRL(rd(insn), rt(insn), sa(insn));
                         }
                         break;
 
@@ -169,9 +169,9 @@ public class AllegrexDecoder {
 
                     case SRLRORV:
                         if (sa(insn) == ROTRV) {
-                            that.doSRLV(rd(insn), rt(insn), rs(insn));
-                        } else {
                             that.doROTRV(rd(insn), rt(insn), rs(insn));
+                        } else {
+                            that.doSRLV(rd(insn), rt(insn), rs(insn));
                         }
                         break;
 
@@ -342,7 +342,7 @@ public class AllegrexDecoder {
                         break;
 
                     case BGEZAL:
-                        that.doBLTZAL(rs(insn), simm16(insn));
+                        that.doBGEZAL(rs(insn), simm16(insn));
                         break;
 
                     case BLTZALL:
@@ -350,7 +350,7 @@ public class AllegrexDecoder {
                         break;
 
                     case BGEZALL:
-                        that.doBLTZALL(rs(insn), simm16(insn));
+                        that.doBGEZALL(rs(insn), simm16(insn));
                         break;
 
                     default:
@@ -446,6 +446,7 @@ public class AllegrexDecoder {
                         break;
                 }
                 break;
+
             case COP1:
                 switch ((byte) rs(insn)) {
                     case MFC1:
@@ -457,11 +458,11 @@ public class AllegrexDecoder {
                         break;
 
                     case MTC1:
-                        that.doMFC1(rt(insn), rd(insn));
+                        that.doMTC1(rt(insn), rd(insn));
                         break;
 
                     case CTC1:
-                        that.doCFC1(rt(insn), rd(insn));
+                        that.doCTC1(rt(insn), rd(insn));
                         break;
                     case COP1BC:
                         switch ((byte) rt(insn)) {
@@ -548,6 +549,21 @@ public class AllegrexDecoder {
                         break;
                 }
                 break;
+
+            case VFPU2:
+                switch ((byte) rs(insn)) {
+                    case MFVMFVC:
+
+                    case MTVMTVC:
+
+                    case VFPU2BC:
+
+                    default:
+                        that.doUNK("Unsupported VFPU2 instruction " + Integer.toHexString(rs(insn)));
+                        break;
+                }
+                break;
+                
             case BEQL:
                 that.doBEQL(rs(insn), rt(insn), simm16(insn));
                 break;
