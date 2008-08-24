@@ -121,8 +121,21 @@ public class VideoEngine {
                 vertex.pointer = actualList.base | normalArgument;
                 log(helper.getCommandString(VADDR), vertex.pointer);
                 break;
+            case XPOS:
+                log(helper.getCommandString(XPOS), floatArgument);
+                break;
+            case YPOS:
+                log(helper.getCommandString(YPOS), floatArgument);
+                break;
+            case ZPOS:
+                log(helper.getCommandString(ZPOS), floatArgument);
+                break;
+            case FBP:
+                log(helper.getCommandString(FBP), normalArgument);
+                break;
             case PRIM:
-                int draw = ((normalArgument >> 16) | 0x7);
+                int numberOfVertex = normalArgument & 0xFFFF;
+                int draw = ((normalArgument >> 16) & 0x7);                
                 switch (draw){
                     case PRIM_POINT:
                         log(helper.getCommandString(PRIM) + " point");
@@ -149,9 +162,9 @@ public class VideoEngine {
                 break;
             case SHADE:
                 int SETTED_MODEL = normalArgument | 0x01; //bit 0
-                SETTED_MODEL = (SETTED_MODEL == drawable.GL_SMOOTH) ? SHADE_TYPE_SMOOTH : SHADE_TYPE_FLAT;
+                SETTED_MODEL = (SETTED_MODEL == 0x01) ? SHADE_TYPE_SMOOTH : SHADE_TYPE_FLAT;
                 //drawable.glShadeModel(SETTED_MODEL);
-                log(helper.getCommandString(SHADE) + " " + SETTED_MODEL);
+                log(helper.getCommandString(SHADE) + " " + ((SETTED_MODEL==0x01) ? "smooth" : "flat"));
                 break;
             case JUMP:
                 actualList.pointer =  Emulator.getMemory().read32((normalArgument | actualList.base) & 0xFFFFFFFC);
@@ -195,6 +208,10 @@ public class VideoEngine {
     }
 
     public void waitVBlank() {
+    }
+
+    private void log(String commandString, float floatArgument) {
+        log(commandString+SPACE+floatArgument);
     }
 
     private void log(String commandString, int pointer) {
