@@ -52,6 +52,28 @@
           <Properties>
             <Property name="text" type="java.lang.String" value="Debug"/>
           </Properties>
+          <SubComponents>
+            <MenuItem class="javax.swing.JMenuItem" name="EnterDebugger">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Enter Debugger"/>
+              </Properties>
+            </MenuItem>
+            <MenuItem class="javax.swing.JMenuItem" name="EnterMemoryViewer">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Memory viewer"/>
+              </Properties>
+            </MenuItem>
+            <MenuItem class="javax.swing.JMenuItem" name="ToggleConsole">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Toggle Console"/>
+              </Properties>
+            </MenuItem>
+            <MenuItem class="javax.swing.JMenuItem" name="ElfHeaderViewer">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Elf Header Info"/>
+              </Properties>
+            </MenuItem>
+          </SubComponents>
         </Menu>
         <Menu class="javax.swing.JMenu" name="HelpMenu">
           <Properties>

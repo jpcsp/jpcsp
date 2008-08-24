@@ -38,6 +38,7 @@ public class MainGUI extends javax.swing.JFrame {
         //end of
         initComponents();
         this.setTitle(version);
+        /*add glcanvas to frame and pack frame to get the canvas size*/
         getContentPane().add(pspdisplay_glcanvas.get_instance(), java.awt.BorderLayout.CENTER);
         pack();
         
@@ -66,6 +67,10 @@ public class MainGUI extends javax.swing.JFrame {
         ResetEmu = new javax.swing.JMenuItem();
         OptionsMenu = new javax.swing.JMenu();
         DebugMenu = new javax.swing.JMenu();
+        EnterDebugger = new javax.swing.JMenuItem();
+        EnterMemoryViewer = new javax.swing.JMenuItem();
+        ToggleConsole = new javax.swing.JMenuItem();
+        ElfHeaderViewer = new javax.swing.JMenuItem();
         HelpMenu = new javax.swing.JMenu();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -127,6 +132,19 @@ public class MainGUI extends javax.swing.JFrame {
         MenuBar.add(OptionsMenu);
 
         DebugMenu.setText("Debug");
+
+        EnterDebugger.setText("Enter Debugger");
+        DebugMenu.add(EnterDebugger);
+
+        EnterMemoryViewer.setText("Memory viewer");
+        DebugMenu.add(EnterMemoryViewer);
+
+        ToggleConsole.setText("Toggle Console");
+        DebugMenu.add(ToggleConsole);
+
+        ElfHeaderViewer.setText("Elf Header Info");
+        DebugMenu.add(ElfHeaderViewer);
+
         MenuBar.add(DebugMenu);
 
         HelpMenu.setText("Help");
@@ -156,7 +174,10 @@ public class MainGUI extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenu DebugMenu;
+    private javax.swing.JMenuItem ElfHeaderViewer;
     private javax.swing.JMenu EmulationMenu;
+    private javax.swing.JMenuItem EnterDebugger;
+    private javax.swing.JMenuItem EnterMemoryViewer;
     private javax.swing.JMenuItem ExitEmu;
     private javax.swing.JMenu FileMenu;
     private javax.swing.JMenu HelpMenu;
@@ -166,6 +187,7 @@ public class MainGUI extends javax.swing.JFrame {
     private javax.swing.JMenuItem PauseEmu;
     private javax.swing.JMenuItem ResetEmu;
     private javax.swing.JMenuItem RunEmu;
+    private javax.swing.JMenuItem ToggleConsole;
     private javax.swing.JToggleButton jToggleButton1;
     private javax.swing.JToggleButton jToggleButton2;
     private javax.swing.JToggleButton jToggleButton3;
