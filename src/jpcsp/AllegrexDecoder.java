@@ -573,11 +573,11 @@ public class AllegrexDecoder {
                 break;
 
             case BLEZL:
-                that.doBLEZ(rs(insn), simm16(insn));
+                that.doBLEZL(rs(insn), simm16(insn));
                 break;
 
             case BGTZL:
-                that.doBGTZ(rs(insn), simm16(insn));
+                that.doBGTZL(rs(insn), simm16(insn));
                 break;
 
             case VFPU0:
