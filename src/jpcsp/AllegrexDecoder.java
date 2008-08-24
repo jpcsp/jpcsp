@@ -426,11 +426,11 @@ public class AllegrexDecoder {
                         break;
 
                     case MTC0:
-                        that.doMFC0(rt(insn), rd(insn));
+                        that.doMTC0(rt(insn), rd(insn));
                         break;
 
                     case CTC0:
-                        that.doCFC0(rt(insn), rd(insn));
+                        that.doCTC0(rt(insn), rd(insn));
                         break;
 
                     case COP0ERET:
