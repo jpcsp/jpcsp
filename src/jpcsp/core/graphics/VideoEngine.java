@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.core.graphics;
 
 import javax.media.opengl.GL;
+import jpcsp.Emulator;
 import static jpcsp.core.graphics.GeCommands.*;
 
 public class VideoEngine {
@@ -32,9 +33,10 @@ public class VideoEngine {
     private GL drawable;
     private static final boolean isDebugMode = true;
     private static GeCommands helper;
+    private Vertex vertex = new Vertex();
 
     private static void log(String msg) {
-        System.out.println("VIDEO DEBUG > " + msg);
+        if (isDebugMode)System.out.println("VIDEO DEBUG > " + msg);
     }
 
     public static VideoEngine getEngine(GL draw, boolean fullScreen, boolean hardwareAccelerate) {
@@ -62,7 +64,14 @@ public class VideoEngine {
         actualList = list;
         while (!listIsOver) {
             executeCommand(list.pointer);
-        }
+            
+            if (actualList.start >= actualList.stallAddress){
+                listIsOver = true;
+                continue;
+            }
+            actualList.start += 4; //is it correct?
+            actualList.pointer = Emulator.getMemory().read32(actualList.start);
+        }        
     }
 
     private byte command(int word) {
@@ -78,29 +87,31 @@ public class VideoEngine {
     }
     
     public void executeCommand(int word) {
-        // the conversion to float argument by psp, lose 8bits
-        int clearFlags;
-
         int normalArgument = intArgument(word);
+        float floatArgument = floatArgument(word);
         
         switch (command(word)) {
             case BASE:
                 actualList.base = normalArgument;
-                if (isDebugMode)log(helper.getCommandString(BASE) + " " + normalArgument);
-                
+                log(helper.getCommandString(BASE) + " " + normalArgument);
                 break;
             case IADDR:
-                actualList.stackIndex = actualList.base | normalArgument;
+                vertex.index = actualList.base | normalArgument;
+                log(helper.getCommandString(IADDR) + " " + vertex.index);
                 break;
+            case VADDR:
+                vertex.pointer = actualList.base | normalArgument;
+                log(helper.getCommandString(VADDR) + " " + vertex.pointer);
             case PRIM:
+                log(helper.getCommandString(PRIM) + " ");
+                break;
             case SHADE:
-                int SHADE_MODEL_SELECTED = normalArgument << 23; //bit 0
-                SHADE_MODEL_SELECTED = (SHADE_MODEL_SELECTED == 0)?SHADE_TYPE_SMOOTH:SHADE_TYPE_FLAT ;
-                drawable.glShadeModel(SHADE_MODEL_SELECTED);
-                if (isDebugMode)log(helper.getCommandString(SHADE) + " " + SHADE_MODEL_SELECTED );
-                
+                int SETTED_MODEL = normalArgument | 0x01; //bit 0
+                SETTED_MODEL = (SETTED_MODEL == drawable.GL_SMOOTH)? SHADE_TYPE_SMOOTH : SHADE_TYPE_FLAT ;
+                drawable.glShadeModel(SETTED_MODEL);
+                log(helper.getCommandString(SHADE) + " " + SETTED_MODEL );
             case NOP:
-                if (isDebugMode)log(helper.getCommandString(NOP));
+                log(helper.getCommandString(NOP));
                 break;
             default:
                 log("Unknow/unimplemented video command [ " + command(word) + " ]");

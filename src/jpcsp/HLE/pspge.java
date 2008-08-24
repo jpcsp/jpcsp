@@ -22,6 +22,7 @@ package jpcsp.HLE;
 
 import jpcsp.Emulator;
 import jpcsp.MemoryMap;
+import jpcsp.core.graphics.DisplayList;
 
 public class pspge {
 
@@ -44,11 +45,26 @@ public class pspge {
         Emulator.getProcessor().gpr[2] = MemoryMap.START_VRAM;
     }
 
-    public void sceGeListEnQueue(int list, int stall, int callbackId, int argument) {
+    public int sceGeListEnQueue(int list, int stall, int callbackId, int argument) {
         
-        /*list 	- The head of the list to queue.
+        /*
+        list 	- The head of the list to queue.
 	stall 	- The stall address. If NULL then no stall address set and the list is transferred immediately.
 	cbid 	- ID of the callback set by calling sceGeSetCallback
-	arg 	- Probably a parameter to the callbacks (to be confirmed)*/
+	arg 	- Probably a parameter to the callbacks (to be confirmed)
+        */
+        
+        DisplayList displayList = new DisplayList(list, stall, callbackId, argument);
+        log("The list " + displayList.toString());
+        return displayList.id;
     }
+    
+    private void log(String msg){
+        System.out.println("sceGe DEBUG > " + msg);
+    }
+    
+    
+    
+    
+    
 }
