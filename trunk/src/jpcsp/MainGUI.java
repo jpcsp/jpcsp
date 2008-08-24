@@ -20,6 +20,7 @@ package jpcsp;
 import javax.swing.JPopupMenu;
 import javax.swing.ToolTipManager;
 import javax.swing.UIManager;
+import jpcsp.Debugger.ConsoleWindow;
 import jpcsp.HLE.pspdisplay_glcanvas;
 import jpcsp.util.MetaInformation;
 
@@ -29,9 +30,12 @@ import jpcsp.util.MetaInformation;
  */
 public class MainGUI extends javax.swing.JFrame {
    final String version = MetaInformation.FULL_NAME;
-   
+   ConsoleWindow consolewin;
     /** Creates new form MainGUI */
     public MainGUI() {
+        //logging console window stuff
+        consolewin = new ConsoleWindow();
+        consolewin.setVisible(false);
         /*next two lines are for overlay menus over joglcanvas*/
         JPopupMenu.setDefaultLightWeightPopupEnabled(false);
         ToolTipManager.sharedInstance().setLightWeightPopupEnabled(false);
@@ -140,6 +144,11 @@ public class MainGUI extends javax.swing.JFrame {
         DebugMenu.add(EnterMemoryViewer);
 
         ToggleConsole.setText("Toggle Console");
+        ToggleConsole.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ToggleConsoleActionPerformed(evt);
+            }
+        });
         DebugMenu.add(ToggleConsole);
 
         ElfHeaderViewer.setText("Elf Header Info");
@@ -154,6 +163,11 @@ public class MainGUI extends javax.swing.JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+private void ToggleConsoleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ToggleConsoleActionPerformed
+// TODO add your handling code here:
+    consolewin.setVisible(!consolewin.isVisible());
+}//GEN-LAST:event_ToggleConsoleActionPerformed
 
     /**
     * @param args the command line arguments

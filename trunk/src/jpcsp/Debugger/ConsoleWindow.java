@@ -31,7 +31,7 @@ import javax.swing.JOptionPane;
  *
  * @author  shadow
  */
-public class LoggingWindow extends javax.swing.JInternalFrame {
+public class ConsoleWindow extends javax.swing.JFrame {
     private transient PrintStream  m_stdoutPS = new PrintStream( 
         new JTextAreaOutStream( new ByteArrayOutputStream() ) );
 
@@ -45,9 +45,9 @@ public class LoggingWindow extends javax.swing.JInternalFrame {
 
 
     /** Creates new form LoggingWindow */
-    public LoggingWindow() {
+    public ConsoleWindow() {
         initComponents();
-        //System.setOut( m_stdoutPS );
+        System.setOut( m_stdoutPS );
         
     }
 
@@ -65,12 +65,11 @@ public class LoggingWindow extends javax.swing.JInternalFrame {
         ClearMessageButton = new javax.swing.JButton();
         SaveMessageToFileButton = new javax.swing.JButton();
 
-        setClosable(true);
         setDefaultCloseOperation(javax.swing.WindowConstants.HIDE_ON_CLOSE);
         setTitle("Logger");
 
         talogging.setColumns(20);
-        talogging.setFont(new java.awt.Font("Courier New", 0, 12)); // NOI18N
+        talogging.setFont(new java.awt.Font("Courier New", 0, 12));
         talogging.setRows(5);
         jScrollPane1.setViewportView(talogging);
 
@@ -102,7 +101,7 @@ public class LoggingWindow extends javax.swing.JInternalFrame {
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 222, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 226, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(ClearMessageButton)
