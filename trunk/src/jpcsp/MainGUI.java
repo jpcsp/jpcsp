@@ -47,7 +47,7 @@ public class MainGUI extends javax.swing.JFrame {
    Emulator emulator;
     /** Creates new form MainGUI */
     public MainGUI() {
-        emulator = new Emulator();
+        emulator = new Emulator(this);
         //logging console window stuff
         consolewin = new ConsoleWindow();
         consolewin.setLocation(0,600);//put it under the emu window
@@ -62,7 +62,7 @@ public class MainGUI extends javax.swing.JFrame {
         /*add glcanvas to frame and pack frame to get the canvas size*/
         getContentPane().add(pspdisplay_glcanvas.get_instance(), java.awt.BorderLayout.CENTER);
         pack();
-        
+
     }
 
     /** This method is called from within the constructor to
@@ -97,7 +97,7 @@ public class MainGUI extends javax.swing.JFrame {
         About = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setMinimumSize(new java.awt.Dimension(300, 400));
+        setMinimumSize(new java.awt.Dimension(320, 240));
 
         jToolBar1.setFloatable(false);
         jToolBar1.setRollover(true);
@@ -249,9 +249,9 @@ private void ToggleConsoleActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 private void EnterDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterDebuggerActionPerformed
      if(disasm==null)
      {
-      PauseEmu(); 
+      PauseEmu();
       disasm = new DisassemblerFrame(emulator);
-      Point mainwindow = this.getLocation(); 
+      Point mainwindow = this.getLocation();
       disasm.setLocation(mainwindow.x+50, mainwindow.y+50);
       disasm.setVisible(true);
      }
@@ -271,12 +271,12 @@ private void RunButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
         fc.setCurrentDirectory(new java.io.File("."));
         return fc;
     }
- 
+
 private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenFileActionPerformed
         PauseEmu();
         if(consolewin!=null)
           consolewin.clearScreenMessages();
-   
+
     final JFileChooser fc = makeJFileChooser();
     int returnVal = fc.showOpenDialog(this);
 
@@ -285,7 +285,7 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
         //This is where a real application would open the file.
         try {
             emulator.load(file.getPath());
-            
+
             this.setTitle(version + " - " + file.getName());
         } catch (IOException e) {
             e.printStackTrace();
@@ -307,16 +307,16 @@ private void PauseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
 private void ElfHeaderViewerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ElfHeaderViewerActionPerformed
      if(elfheader==null)
      {
-       
+
       elfheader = new ElfHeaderInfo();
-      Point mainwindow = this.getLocation(); 
+      Point mainwindow = this.getLocation();
       elfheader.setLocation(mainwindow.x+50, mainwindow.y+50);
       elfheader.setVisible(true);
      }
      else
      {
        elfheader.RefreshWindow();
-       elfheader.setVisible(true);   
+       elfheader.setVisible(true);
      }
 }//GEN-LAST:event_ElfHeaderViewerActionPerformed
 
@@ -324,16 +324,16 @@ private void EnterMemoryViewerActionPerformed(java.awt.event.ActionEvent evt) {/
      PauseEmu();
     if(memoryview==null)
      {
-       
+
       memoryview = new MemoryViewer();
-      Point mainwindow = this.getLocation(); 
+      Point mainwindow = this.getLocation();
       memoryview.setLocation(mainwindow.x+100, mainwindow.y+50);
       memoryview.setVisible(true);
      }
      else
      {
        memoryview.RefreshMemory();
-       memoryview.setVisible(true);   
+       memoryview.setVisible(true);
      }
 }//GEN-LAST:event_EnterMemoryViewerActionPerformed
 
@@ -352,31 +352,41 @@ private void PauseEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
 }//GEN-LAST:event_PauseEmuActionPerformed
 
 private void SetttingsMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SetttingsMenuActionPerformed
-     
+
     if(setgui==null)
      {
-       
+
       setgui = new SettingsGUI();
-      Point mainwindow = this.getLocation(); 
+      Point mainwindow = this.getLocation();
       setgui.setLocation(mainwindow.x+100, mainwindow.y+50);
       setgui.setVisible(true);
      }
      else
      {
        setgui.RefreshWindow();
-       setgui.setVisible(true);   
+       setgui.setVisible(true);
      }
 }//GEN-LAST:event_SetttingsMenuActionPerformed
 
 private void RunEmu()
 {
-    PauseButton.setSelected(false);   
     emulator.RunEmu();
 }
 private void PauseEmu()
 {
-    RunButton.setSelected(false);
-    emulator.PauseEmu();
+    // This is a toggle, so can pause and unpause
+    if (emulator.run)
+    {
+        if (!emulator.pause)
+            emulator.PauseEmu();
+        else
+            RunEmu();
+    }
+}
+public void RefreshButtons()
+{
+    RunButton.setSelected(emulator.run && !emulator.pause);
+    PauseButton.setSelected(emulator.run && emulator.pause);
 }
     /**
     * @param args the command line arguments

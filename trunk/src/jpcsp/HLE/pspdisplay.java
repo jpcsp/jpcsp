@@ -47,6 +47,8 @@ public class pspdisplay {
     //private pspdisplay_frame frame;
     private pspdisplay_glcanvas frame;
     private long lastUpdate;
+    private int bottomaddr;
+    private boolean refreshRequired;
 
     public static pspdisplay get_instance() {
         if (instance == null) {
@@ -67,6 +69,7 @@ public class pspdisplay {
         }
         //frame = new pspdisplay_frame();
         //frame = new pspdisplay_glcanvas().get_instance();
+
         // If we initialise these here we can remove checks for uninitialised variables later on
         mode = 0;
         width = 480;
@@ -75,6 +78,7 @@ public class pspdisplay {
         bufferwidth = 512;
         pixelformat = PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_8888;
         sync = 0;
+        bottomaddr = topaddr + bufferwidth * height * pixelformat.getBytesPerPixel();
 
         // Allocate a 32-bit native frame buffer at 512x512 (we'll up sample as necessary)
         // We don't want to keep re-allocating it in sceDisplaySetFrameBuf
@@ -87,7 +91,10 @@ public class pspdisplay {
         long now = System.currentTimeMillis();
         if (now - lastUpdate > 1000 / 30)
         {
-            UpdateDisplay();
+            if (refreshRequired) {
+                UpdateDisplay();
+                refreshRequired = false;
+            }
             lastUpdate = now;
         }
     }
@@ -102,6 +109,10 @@ public class pspdisplay {
             this.mode = mode;
             this.width = width;
             this.height = height;
+
+            bottomaddr = topaddr + bufferwidth * height * pixelformat.getBytesPerPixel();
+            refreshRequired = true;
+
             Emulator.getProcessor().gpr[2] = 0;
         }
     }
@@ -126,6 +137,9 @@ public class pspdisplay {
             this.bufferwidth = bufferwidth; // power of 2 TODO check and return -1 on failure
             this.pixelformat = PspDisplayPixelFormats.findValue(pixelformat);
             this.sync = sync;
+
+            bottomaddr = topaddr + bufferwidth * height * this.pixelformat.getBytesPerPixel();
+            refreshRequired = true;
 
             Emulator.getProcessor().gpr[2] = 0;
         }
@@ -215,6 +229,27 @@ public class pspdisplay {
         }
 
         pspdisplay_glcanvas.get_instance().updateImage();
+    }
+
+    public void write8(int address, int data) {
+        address &= 0x3fffffff;
+        if (address >= topaddr && address < bottomaddr) {
+            refreshRequired = true;
+        }
+    }
+
+    public void write16(int address, int data) {
+        address &= 0x3fffffff;
+        if (address >= topaddr && address < bottomaddr) {
+            refreshRequired = true;
+        }
+    }
+
+    public void write32(int address, int data) {
+        address &= 0x3fffffff;
+        if (address >= topaddr && address < bottomaddr) {
+            refreshRequired = true;
+        }
     }
 
     // Do we really need this enum? it's just overhead

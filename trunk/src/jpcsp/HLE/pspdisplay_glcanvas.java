@@ -37,7 +37,7 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
 
     private boolean doupdate;
     private Buffer b;
-    
+
     private static pspdisplay_glcanvas instance;
     public static pspdisplay_glcanvas get_instance() {
         if (instance == null) {
@@ -55,7 +55,7 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
         b = null;
         doupdate = false;
     }
-    
+
     public void createImage(Buffer b) {
         System.out.println("create tex (deferred)");
         this.b = b;
@@ -82,7 +82,7 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
 
         gl.glMatrixMode(GL.GL_MODELVIEW);
         gl.glLoadIdentity();*/
-        
+
       GL gl = drawable.getGL();
       gl.glViewport(0, 0, width, height);
       gl.glMatrixMode(GL.GL_PROJECTION);

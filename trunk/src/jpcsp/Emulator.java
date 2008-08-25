@@ -33,15 +33,17 @@ public class Emulator implements Runnable {
     private Controller controller;
     private FileManager romManager;
     private boolean mediaImplemented = false;
-    Thread mainThread;
-    public boolean run = false;
-    public boolean pause = false;
-    public boolean stop = false;
-    public boolean resume = false;
+    private Thread mainThread;
+    public static boolean run = false;
+    public static boolean pause = false;
+    //public boolean stop = false;
+    //public boolean resume = false;
+    private static MainGUI gui;
 
-    public Emulator() {
+    public Emulator(MainGUI gui) {
+        this.gui = gui;
         cpu = new Processor();
-        
+
         controller = new Controller();
         mainThread = new Thread(this);
     }
@@ -417,7 +419,7 @@ public class Emulator implements Runnable {
         }
     }*/
     @Override
-    public void run() 
+    public void run()
     {
         while (true) {
             try {
@@ -434,30 +436,34 @@ public class Emulator implements Runnable {
             controller.checkControllerState();
             //delay(cpu.numberCyclesDelay());
         }
-              
+
     }
     public synchronized void RunEmu()
     {
       //run =true;
       //checkStatus();
-      
+
       if(pause)
       {
           pause=false;
           notify();
       }
-      else
+      else if (!run)
       {
           run=true;
-          mainThread.start();   
+          mainThread.start();
       }
+
+      gui.RefreshButtons();
     }
-    public synchronized void PauseEmu()
+    public static synchronized void PauseEmu()
     {
         if(run)
         {
          pause=true;
         }
+
+        gui.RefreshButtons();
     }
    /* public void pause() {
         pause = true;
@@ -487,10 +493,10 @@ public class Emulator implements Runnable {
     {
       if(run) System.out.println("emu is running");
       else System.out.println("emu not running");
-          
+
       if(pause) System.out.println("emu is paused");
-      if(resume) System.out.println("emu is resumed");
-      if(stop) System.out.println("emu is stopped");
-        
+      //if(resume) System.out.println("emu is resumed");
+      //if(stop) System.out.println("emu is stopped");
+
     }
 }

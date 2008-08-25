@@ -20,14 +20,15 @@ package jpcsp.util;
  *
  * @author nickblame
  */
+import java.awt.Component;
 import javax.swing.*;
 
-public class OptionPaneMultiple extends JFrame {
+public class OptionPaneMultiple extends JOptionPane {
     JTextField startaddr;
     JTextField endaddr;
     JTextField filename;
     boolean completed=false;
-    public OptionPaneMultiple(String start,String end) {
+    public OptionPaneMultiple(Component parentComponent, String start, String end) {
         startaddr = new JTextField(5);
         endaddr = new JTextField(5);
         filename = new JTextField(5);
@@ -44,7 +45,7 @@ public class OptionPaneMultiple extends JFrame {
                 null,
                 options);
 
-        JDialog dialog = op.createDialog(this, "dump code...");
+        JDialog dialog = op.createDialog(parentComponent, "dump code...");
         dialog.setVisible(true);
         Object selectedValue = op.getValue();
 
@@ -58,24 +59,24 @@ public class OptionPaneMultiple extends JFrame {
         //System.out.println(selectedValue);
         if (selectedValue == null) {
             System.out.println("dump code window Closed");
-           
+
         } else if (selectedValue.equals("Ok")) {
             //System.out.println("dump code returns " + startaddr.getText() + " : " + endaddr.getText() + " : " + filename.getText());
             completed=true;
-           
+
         } else {
             System.out.println("dump code window Canceled");
-            
+
         }
-        
+
     }
     public String[] getInput(){
         String[] i={startaddr.getText(),endaddr.getText(),filename.getText()};
         return i;
     }
     public boolean completed(){
-        
+
         return completed;
     }
-    
+
 }
