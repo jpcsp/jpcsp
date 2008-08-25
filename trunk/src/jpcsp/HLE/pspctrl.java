@@ -29,6 +29,33 @@ public class pspctrl {
     private int cycle;
     private int mode; // PspCtrlMode { PSP_CTRL_MODE_DIGITAL = 0, PSP_CTRL_MODE_ANALOG  }
 
+    private byte Lx;
+    private byte Ly;
+    private int Buttons;
+    
+    public final static int PSP_CTRL_SELECT = 0x000001;
+    public final static int PSP_CTRL_START = 0x000008;
+    public final static int PSP_CTRL_UP = 0x000010;
+    public final static int PSP_CTRL_RIGHT = 0x000020;
+    public final static int PSP_CTRL_DOWN = 0x000040;
+    public final static int PSP_CTRL_LEFT = 0x000080;
+    public final static int PSP_CTRL_LTRIGGER = 0x000100;
+    public final static int PSP_CTRL_RTRIGGER = 0x000200;
+    public final static int PSP_CTRL_TRIANGLE = 0x001000;
+    public final static int PSP_CTRL_CIRCLE = 0x002000;
+    public final static int PSP_CTRL_CROSS = 0x004000;
+    public final static int PSP_CTRL_SQUARE = 0x008000;
+    public final static int PSP_CTRL_HOME = 0x010000;
+    public final static int PSP_CTRL_HOLD = 0x020000;
+    public final static int PSP_CTRL_NOTE = 0x800000;
+    public final static int PSP_CTRL_SCREEN = 0x400000;
+    public final static int PSP_CTRL_VOLUP = 0x100000;
+    public final static int PSP_CTRL_VOLDOWN = 0x200000;
+    public final static int PSP_CTRL_WLAN_UP = 0x040000;
+    public final static int PSP_CTRL_REMOTE = 0x080000;
+    public final static int PSP_CTRL_DISC = 0x1000000;
+    public final static int PSP_CTRL_MS = 0x2000000;
+  
     public static pspctrl get_instance() {
         if (instance == null) {
             instance = new pspctrl();
@@ -37,6 +64,13 @@ public class pspctrl {
     }
 
     private pspctrl() {
+    }
+    
+    public void setButtons(byte Lx, byte Ly, int Buttons)
+    {
+        this.Lx = Lx;
+        this.Ly = Ly;
+        this.Buttons = Buttons;
     }
 
     public void sceCtrlSetSamplingCycle(int a0)
@@ -71,9 +105,6 @@ public class pspctrl {
         for (i = 0; i < a1; i++) {
             // TODO set timestamp, get buttons and analog state, probably from jpcsp.Controller class
             int TimeStamp = 0;
-            int Buttons = 0;
-            byte Lx = (byte)128;
-            byte Ly = (byte)128;
 
             mem.write32(a0, TimeStamp);
             mem.write32(a0 + 4, Buttons);
@@ -93,9 +124,6 @@ public class pspctrl {
         for (i = 0; i < a1; i++) {
             // TODO set timestamp, get buttons and analog state
             int TimeStamp = 0;
-            int Buttons = 0;
-            byte Lx = (byte)128;
-            byte Ly = (byte)128;
 
             mem.write32(a0, TimeStamp);
             mem.write32(a0 + 4, ~Buttons);
@@ -115,9 +143,6 @@ public class pspctrl {
         for (i = 0; i < a1; i++) {
             // TODO set timestamp, get buttons and analog state
             int TimeStamp = 0;
-            int Buttons = 0;
-            byte Lx = (byte)128;
-            byte Ly = (byte)128;
 
             mem.write32(a0, TimeStamp);
             mem.write32(a0 + 4, Buttons);
@@ -137,9 +162,6 @@ public class pspctrl {
         for (i = 0; i < a1; i++) {
             // TODO set timestamp, get buttons and analog state
             int TimeStamp = 0;
-            int Buttons = 0;
-            byte Lx = (byte)128;
-            byte Ly = (byte)128;
 
             mem.write32(a0, TimeStamp);
             mem.write32(a0 + 4, ~Buttons);

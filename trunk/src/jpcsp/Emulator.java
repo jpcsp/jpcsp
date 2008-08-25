@@ -489,6 +489,11 @@ public class Emulator implements Runnable {
     public static Memory getMemory() {
         return Memory.get_instance();
     }
+    
+    public Controller getController() {
+        return controller;
+    }
+    
     public void checkStatus()
     {
       if(run) System.out.println("emu is running");
