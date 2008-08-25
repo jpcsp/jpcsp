@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Debugger;
 
+import java.awt.Point;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -26,6 +27,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+import jpcsp.Settings;
 
 /**
  *
@@ -65,8 +67,12 @@ public class ConsoleWindow extends javax.swing.JFrame {
         ClearMessageButton = new javax.swing.JButton();
         SaveMessageToFileButton = new javax.swing.JButton();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.HIDE_ON_CLOSE);
         setTitle("Logger");
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowClosing(java.awt.event.WindowEvent evt) {
+                formWindowClosing(evt);
+            }
+        });
 
         talogging.setColumns(20);
         talogging.setFont(new java.awt.Font("Courier New", 0, 12));
@@ -173,6 +179,15 @@ private void SaveMessageToFileButtonActionPerformed(java.awt.event.ActionEvent e
             }
         }
 }//GEN-LAST:event_SaveMessageToFileButtonActionPerformed
+
+private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
+    Point location = getLocation();
+    //location.x
+    String[] coord = new String[2];
+    coord[0]=Integer.toString(location.x);
+    coord[1]=Integer.toString(location.y);
+    Settings.get_instance().writeWindowPos("logwindow", coord);
+}//GEN-LAST:event_formWindowClosing
          /**
      * Clears only the messages that are displayed in the textarea.
      */

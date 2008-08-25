@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.Debugger.DisassemblerModule;
 
+import java.awt.Point;
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.ClipboardOwner;
@@ -31,8 +32,8 @@ import javax.swing.DefaultListModel;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import jpcsp.Emulator;
-import jpcsp.GeneralJpcspException;
 import jpcsp.Memory;
+import jpcsp.Settings;
 import jpcsp.util.JpcspDialogManager;
 import jpcsp.util.OptionPaneMultiple;
 
@@ -42,12 +43,14 @@ import jpcsp.util.OptionPaneMultiple;
  */
 public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOwner{
     int DebuggerPC;
+    Emulator emu;
     private DefaultListModel listmodel = new DefaultListModel();
     int opcode_address; // store the address of the opcode used for offsetdecode
     DisasmOpcodes disOp = new DisasmOpcodes();
     ArrayList<Integer> breakpoints = new ArrayList<Integer>();
     /** Creates new form DisassemblerFrame */
-    public DisassemblerFrame() {
+    public DisassemblerFrame(Emulator emu) {
+        this.emu=emu;
         DebuggerPC = 0;
         listmodel = new DefaultListModel();
         initComponents();
@@ -111,8 +114,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         BranchOrJump = new javax.swing.JMenuItem();
         disasmList = new javax.swing.JList(listmodel);
         DisasmToolbar = new javax.swing.JToolBar();
-        jToggleButton1 = new javax.swing.JToggleButton();
-        jButton8 = new javax.swing.JButton();
+        RunDebugger = new javax.swing.JToggleButton();
+        PauseDebugger = new javax.swing.JButton();
         jSeparator1 = new javax.swing.JToolBar.Separator();
         StepInto = new javax.swing.JButton();
         jButton2 = new javax.swing.JButton();
@@ -156,11 +159,15 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         });
         DisMenu.add(BranchOrJump);
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Debugger");
         setResizable(false);
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowClosing(java.awt.event.WindowEvent evt) {
+                formWindowClosing(evt);
+            }
+        });
 
-        disasmList.setFont(new java.awt.Font("Courier New", 0, 11)); // NOI18N
+        disasmList.setFont(new java.awt.Font("Courier New", 0, 11));
         disasmList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         disasmList.addMouseWheelListener(new java.awt.event.MouseWheelListener() {
             public void mouseWheelMoved(java.awt.event.MouseWheelEvent evt) {
@@ -181,22 +188,32 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         DisasmToolbar.setFloatable(false);
         DisasmToolbar.setRollover(true);
 
-        jToggleButton1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PlayIcon.png"))); // NOI18N
-        jToggleButton1.setText("Run");
-        jToggleButton1.setFocusable(false);
-        jToggleButton1.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
-        jToggleButton1.setIconTextGap(2);
-        jToggleButton1.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        DisasmToolbar.add(jToggleButton1);
+        RunDebugger.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PlayIcon.png"))); // NOI18N
+        RunDebugger.setText("Run");
+        RunDebugger.setFocusable(false);
+        RunDebugger.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        RunDebugger.setIconTextGap(2);
+        RunDebugger.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        RunDebugger.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                RunDebuggerActionPerformed(evt);
+            }
+        });
+        DisasmToolbar.add(RunDebugger);
 
-        jButton8.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StopIcon.png"))); // NOI18N
-        jButton8.setText("Stop");
-        jButton8.setFocusable(false);
-        jButton8.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
-        jButton8.setIconTextGap(2);
-        jButton8.setInheritsPopupMenu(true);
-        jButton8.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        DisasmToolbar.add(jButton8);
+        PauseDebugger.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PauseIcon.png"))); // NOI18N
+        PauseDebugger.setText("Pause");
+        PauseDebugger.setFocusable(false);
+        PauseDebugger.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        PauseDebugger.setIconTextGap(2);
+        PauseDebugger.setInheritsPopupMenu(true);
+        PauseDebugger.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        PauseDebugger.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                PauseDebuggerActionPerformed(evt);
+            }
+        });
+        DisasmToolbar.add(PauseDebugger);
         DisasmToolbar.add(jSeparator1);
 
         StepInto.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StepIntoIcon.png"))); // NOI18N
@@ -459,12 +476,12 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addComponent(DisasmToolbar, javax.swing.GroupLayout.DEFAULT_SIZE, 759, Short.MAX_VALUE)
+                .addComponent(DisasmToolbar, javax.swing.GroupLayout.DEFAULT_SIZE, 763, Short.MAX_VALUE)
                 .addContainerGap())
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(disasmList, javax.swing.GroupLayout.PREFERRED_SIZE, 491, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 26, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 30, Short.MAX_VALUE)
                 .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 223, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(19, 19, 19))
         );
@@ -709,28 +726,49 @@ private void DeleteBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//
 }//GEN-LAST:event_DeleteBreakpointActionPerformed
 
 private void StepIntoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_StepIntoActionPerformed
-    try {
+   // try {
         Emulator.getProcessor().step();
         jpcsp.HLE.ThreadMan.get_instance().step();
         jpcsp.HLE.pspdisplay.get_instance().step();
-    } catch(GeneralJpcspException e) {
-        JpcspDialogManager.showError(this, "General Error : " + e.getMessage());
-    }
+    //} catch(GeneralJpcspException e) {
+    //    JpcspDialogManager.showError(this, "General Error : " + e.getMessage());
+   // }
     DebuggerPC = 0;
     RefreshDebugger();
 }//GEN-LAST:event_StepIntoActionPerformed
 
+private void RunDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RunDebuggerActionPerformed
+      //while(breakpoints.indexOf(Emulator.getProcessor().pc) != -1)//check if there is a breakpoint
+      //{
+     //     emu.PauseEmu();
+      //    RunDebugger.setSelected(false);
+      //    DebuggerPC = 0;
+      //    RefreshDebugger();
+     // }
+     // else
+     // {
+        emu.RunEmu();
+     // }
+}//GEN-LAST:event_RunDebuggerActionPerformed
+
+private void PauseDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PauseDebuggerActionPerformed
+    emu.PauseEmu();
+    RunDebugger.setSelected(false);
+    DebuggerPC = 0;
+    RefreshDebugger();
+}//GEN-LAST:event_PauseDebuggerActionPerformed
+
+private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
+    Point location = getLocation();
+    //location.x
+    String[] coord = new String[2];
+    coord[0]=Integer.toString(location.x);
+    coord[1]=Integer.toString(location.y);
+    Settings.get_instance().writeWindowPos("disassembler", coord);
+}//GEN-LAST:event_formWindowClosing
+
     
-    /**
-    * @param args the command line arguments
-    */
-    public static void main(String args[]) {
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                new DisassemblerFrame().setVisible(true);
-            }
-        });
-    }
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton AddBreakpoint;
@@ -743,13 +781,13 @@ private void StepIntoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.JToolBar DisasmToolbar;
     private javax.swing.JButton DumpCodeToText;
     private javax.swing.JButton JumpToAddress;
+    private javax.swing.JButton PauseDebugger;
     private javax.swing.JButton ResetToPCbutton;
+    private javax.swing.JToggleButton RunDebugger;
     private javax.swing.JButton StepInto;
     private javax.swing.JList disasmList;
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton3;
-    private javax.swing.JButton jButton8;
-    private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JToolBar.Separator jSeparator1;
     private javax.swing.JToolBar.Separator jSeparator2;
     private javax.swing.JToolBar.Separator jSeparator3;
@@ -758,7 +796,6 @@ private void StepIntoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.JTable jTable1;
     private javax.swing.JTable jTable2;
     private javax.swing.JTable jTable3;
-    private javax.swing.JToggleButton jToggleButton1;
     // End of variables declaration//GEN-END:variables
 
 }

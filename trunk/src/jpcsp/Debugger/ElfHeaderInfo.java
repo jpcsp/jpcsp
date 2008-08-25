@@ -19,7 +19,7 @@ package jpcsp.Debugger;
 import java.awt.Point;
 import jpcsp.*;
 
-public class ElfHeaderInfo extends javax.swing.JInternalFrame {
+public class ElfHeaderInfo extends javax.swing.JFrame {
 
     /** Creates new form ElfHeaderInfo */
     public ElfHeaderInfo() {
@@ -30,7 +30,14 @@ public class ElfHeaderInfo extends javax.swing.JInternalFrame {
         ELFInfoArea.append(FileManager.SectInfo);
 
     }
-
+    public void RefreshWindow()
+    {
+      ELFInfoArea.setText("");
+      ELFInfoArea.append(FileManager.PbpInfo);
+      ELFInfoArea.append(FileManager.ElfInfo);
+      ELFInfoArea.append(FileManager.ProgInfo);
+      ELFInfoArea.append(FileManager.SectInfo);
+    }
     /** This method is called from within the constructor to
      * initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is
@@ -43,24 +50,11 @@ public class ElfHeaderInfo extends javax.swing.JInternalFrame {
         jScrollPane1 = new javax.swing.JScrollPane();
         ELFInfoArea = new javax.swing.JTextArea();
 
-        setClosable(true);
-        setDefaultCloseOperation(javax.swing.WindowConstants.HIDE_ON_CLOSE);
         setTitle("Elf Header Info");
-        addInternalFrameListener(new javax.swing.event.InternalFrameListener() {
-            public void internalFrameActivated(javax.swing.event.InternalFrameEvent evt) {
-            }
-            public void internalFrameClosed(javax.swing.event.InternalFrameEvent evt) {
-            }
-            public void internalFrameClosing(javax.swing.event.InternalFrameEvent evt) {
-                formInternalFrameClosing(evt);
-            }
-            public void internalFrameDeactivated(javax.swing.event.InternalFrameEvent evt) {
-            }
-            public void internalFrameDeiconified(javax.swing.event.InternalFrameEvent evt) {
-            }
-            public void internalFrameIconified(javax.swing.event.InternalFrameEvent evt) {
-            }
-            public void internalFrameOpened(javax.swing.event.InternalFrameEvent evt) {
+        setResizable(false);
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowClosing(java.awt.event.WindowEvent evt) {
+                formWindowClosing(evt);
             }
         });
 
@@ -85,15 +79,17 @@ public class ElfHeaderInfo extends javax.swing.JInternalFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-private void formInternalFrameClosing(javax.swing.event.InternalFrameEvent evt) {//GEN-FIRST:event_formInternalFrameClosing
-   // System.out.println(this.getLocation());
+
+
+private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
     Point location = getLocation();
     //location.x
     String[] coord = new String[2];
     coord[0]=Integer.toString(location.x);
     coord[1]=Integer.toString(location.y);
     Settings.get_instance().writeWindowPos("elfheader", coord);
-}//GEN-LAST:event_formInternalFrameClosing
+    
+}//GEN-LAST:event_formWindowClosing
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

@@ -19,21 +19,21 @@ package jpcsp.Debugger;
 
 import java.awt.Point;
 import javax.swing.JOptionPane;
+import jpcsp.Emulator;
 import jpcsp.Memory;
-import jpcsp.Processor;
 import jpcsp.Settings;
 
 /**
  *
  * @author  George
  */
-public class MemoryViewer extends javax.swing.JInternalFrame {
-    Processor cpu;
+public class MemoryViewer extends javax.swing.JFrame {
+    //Processor cpu;
     int startaddress;
     /** Creates new form MemoryViewer */
-    public MemoryViewer(Processor c) {
-        this.cpu = c;
-        startaddress=c.pc;
+    public MemoryViewer() {
+        //this.cpu = c;
+        startaddress=Emulator.getProcessor().pc;
         initComponents();
 
         RefreshMemory();
@@ -116,30 +116,17 @@ public class MemoryViewer extends javax.swing.JInternalFrame {
         AddressField = new javax.swing.JTextField();
         GoToButton = new javax.swing.JButton();
 
-        setClosable(true);
-        setDefaultCloseOperation(javax.swing.WindowConstants.HIDE_ON_CLOSE);
         setTitle("Memory Viewer");
-        addInternalFrameListener(new javax.swing.event.InternalFrameListener() {
-            public void internalFrameActivated(javax.swing.event.InternalFrameEvent evt) {
-            }
-            public void internalFrameClosed(javax.swing.event.InternalFrameEvent evt) {
-            }
-            public void internalFrameClosing(javax.swing.event.InternalFrameEvent evt) {
-                formInternalFrameClosing(evt);
-            }
-            public void internalFrameDeactivated(javax.swing.event.InternalFrameEvent evt) {
-            }
-            public void internalFrameDeiconified(javax.swing.event.InternalFrameEvent evt) {
-            }
-            public void internalFrameIconified(javax.swing.event.InternalFrameEvent evt) {
-            }
-            public void internalFrameOpened(javax.swing.event.InternalFrameEvent evt) {
+        setResizable(false);
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowClosing(java.awt.event.WindowEvent evt) {
+                formWindowClosing(evt);
             }
         });
 
         memoryview.setColumns(20);
         memoryview.setEditable(false);
-        memoryview.setFont(new java.awt.Font("Courier New", 0, 12));
+        memoryview.setFont(new java.awt.Font("Courier New", 0, 12)); // NOI18N
         memoryview.setRows(5);
         memoryview.addMouseWheelListener(new java.awt.event.MouseWheelListener() {
             public void mouseWheelMoved(java.awt.event.MouseWheelEvent evt) {
@@ -241,13 +228,15 @@ private void memoryviewMouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GE
    }
 }//GEN-LAST:event_memoryviewMouseWheelMoved
 
-private void formInternalFrameClosing(javax.swing.event.InternalFrameEvent evt) {//GEN-FIRST:event_formInternalFrameClosing
+private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
     Point location = getLocation();
+    //location.x
     String[] coord = new String[2];
     coord[0]=Integer.toString(location.x);
     coord[1]=Integer.toString(location.y);
     Settings.get_instance().writeWindowPos("memoryview", coord);
-}//GEN-LAST:event_formInternalFrameClosing
+}//GEN-LAST:event_formWindowClosing
+
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

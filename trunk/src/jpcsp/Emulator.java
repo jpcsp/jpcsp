@@ -27,14 +27,13 @@ import jpcsp.format.Elf32SectionHeader.ShType;
 import jpcsp.format.Elf32StubHeader;
 import static jpcsp.util.Utilities.*;
 
-public class Emulator {
+public class Emulator implements Runnable {
 
     private static Processor cpu;
-    private Gpu gpu;
     private Controller controller;
     private FileManager romManager;
     private boolean mediaImplemented = false;
-
+    Thread mainThread;
     public boolean run = false;
     public boolean pause = false;
     public boolean stop = false;
@@ -42,8 +41,9 @@ public class Emulator {
 
     public Emulator() {
         cpu = new Processor();
-        gpu = new Gpu();
+        
         controller = new Controller();
+        mainThread = new Thread(this);
     }
 
     public void load(String filename) throws IOException {
@@ -401,11 +401,10 @@ public class Emulator {
     private void initNewPsp() {
         getProcessor().reset();
         Memory.get_instance().NullMemory();
-        gpu.clean();
         NIDMapper.get_instance().Initialise("syscalls.txt", "FW 1.50");
     }
 
-    public void run() throws GeneralJpcspException {
+   /* public void run() throws GeneralJpcspException {
         // basic code, just one thread by now... it's just a view
        // run = true;
         while (run == true) {
@@ -416,9 +415,51 @@ public class Emulator {
             controller.checkControllerState();
             //delay(cpu.numberCyclesDelay());
         }
+    }*/
+    @Override
+    public void run() 
+    {
+        while (true) {
+            try {
+             synchronized(this) {
+                    while (pause)
+                        wait();
+                }
+            } catch (InterruptedException e){
+            }
+            cpu.step();
+            jpcsp.HLE.ThreadMan.get_instance().step();
+            jpcsp.HLE.pspdisplay.get_instance().step();
+            //gpu.draw();
+            controller.checkControllerState();
+            //delay(cpu.numberCyclesDelay());
+        }
+              
     }
-
-    public void pause() {
+    public synchronized void RunEmu()
+    {
+      //run =true;
+      //checkStatus();
+      
+      if(pause)
+      {
+          pause=false;
+          notify();
+      }
+      else
+      {
+          run=true;
+          mainThread.start();   
+      }
+    }
+    public synchronized void PauseEmu()
+    {
+        if(run)
+        {
+         pause=true;
+        }
+    }
+   /* public void pause() {
         pause = true;
         run = resume = stop = false;
     }
@@ -433,7 +474,7 @@ public class Emulator {
         //probally make more and more!!!... stuffs here
         stop = true ;
         run = resume = pause = false;
-    }
+    }*/
 
     public static Processor getProcessor() {
         return cpu;
@@ -441,5 +482,15 @@ public class Emulator {
 
     public static Memory getMemory() {
         return Memory.get_instance();
+    }
+    public void checkStatus()
+    {
+      if(run) System.out.println("emu is running");
+      else System.out.println("emu not running");
+          
+      if(pause) System.out.println("emu is paused");
+      if(resume) System.out.println("emu is resumed");
+      if(stop) System.out.println("emu is stopped");
+        
     }
 }
