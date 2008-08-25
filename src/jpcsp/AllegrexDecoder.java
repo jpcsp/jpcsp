@@ -164,7 +164,7 @@ public class AllegrexDecoder {
                         break;
 
                     case SLLV:
-                        that.doSLLV(rd(insn), rt(insn), sa(insn));
+                        that.doSLLV(rd(insn), rt(insn), rs(insn));
                         break;
 
                     case SRLRORV:
@@ -176,7 +176,7 @@ public class AllegrexDecoder {
                         break;
 
                     case SRAV:
-                        that.doSRAV(rd(insn), rt(insn), sa(insn));
+                        that.doSRAV(rd(insn), rt(insn), rs(insn));
                         break;
 
                     case JR:
@@ -412,7 +412,7 @@ public class AllegrexDecoder {
                 break;
 
             case LUI:
-                that.doLUI(rt(insn), simm16(insn));
+                that.doLUI(rt(insn), uimm16(insn));
                 break;
 
             case COP0:
@@ -563,7 +563,7 @@ public class AllegrexDecoder {
                         break;
                 }
                 break;
-                
+
             case BEQL:
                 that.doBEQL(rs(insn), rt(insn), simm16(insn));
                 break;
