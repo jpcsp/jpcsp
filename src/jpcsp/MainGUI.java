@@ -18,12 +18,19 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp;
 
 import java.awt.Point;
+import java.io.File;
+import java.io.IOException;
+import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.ToolTipManager;
 import javax.swing.UIManager;
 import jpcsp.Debugger.ConsoleWindow;
 import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
+import jpcsp.Debugger.ElfHeaderInfo;
+import jpcsp.Debugger.MemoryViewer;
 import jpcsp.HLE.pspdisplay_glcanvas;
+import jpcsp.util.JpcspDialogManager;
 import jpcsp.util.MetaInformation;
 
 /**
@@ -34,9 +41,13 @@ public class MainGUI extends javax.swing.JFrame {
    final String version = MetaInformation.FULL_NAME;
    ConsoleWindow consolewin;
    DisassemblerFrame disasm;
-   
+   ElfHeaderInfo elfheader;
+   MemoryViewer memoryview;
+   SettingsGUI setgui;
+   Emulator emulator;
     /** Creates new form MainGUI */
     public MainGUI() {
+        emulator = new Emulator();
         //logging console window stuff
         consolewin = new ConsoleWindow();
         consolewin.setLocation(0,600);//put it under the emu window
@@ -64,9 +75,9 @@ public class MainGUI extends javax.swing.JFrame {
     private void initComponents() {
 
         jToolBar1 = new javax.swing.JToolBar();
-        jToggleButton1 = new javax.swing.JToggleButton();
-        jToggleButton2 = new javax.swing.JToggleButton();
-        jToggleButton3 = new javax.swing.JToggleButton();
+        RunButton = new javax.swing.JToggleButton();
+        PauseButton = new javax.swing.JToggleButton();
+        ResetButton = new javax.swing.JButton();
         MenuBar = new javax.swing.JMenuBar();
         FileMenu = new javax.swing.JMenu();
         OpenFile = new javax.swing.JMenuItem();
@@ -76,12 +87,14 @@ public class MainGUI extends javax.swing.JFrame {
         PauseEmu = new javax.swing.JMenuItem();
         ResetEmu = new javax.swing.JMenuItem();
         OptionsMenu = new javax.swing.JMenu();
+        SetttingsMenu = new javax.swing.JMenuItem();
         DebugMenu = new javax.swing.JMenu();
         EnterDebugger = new javax.swing.JMenuItem();
         EnterMemoryViewer = new javax.swing.JMenuItem();
         ToggleConsole = new javax.swing.JMenuItem();
         ElfHeaderViewer = new javax.swing.JMenuItem();
         HelpMenu = new javax.swing.JMenu();
+        About = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setMinimumSize(new java.awt.Dimension(300, 400));
@@ -89,35 +102,50 @@ public class MainGUI extends javax.swing.JFrame {
         jToolBar1.setFloatable(false);
         jToolBar1.setRollover(true);
 
-        jToggleButton1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PlayIcon.png"))); // NOI18N
-        jToggleButton1.setText("Run");
-        jToggleButton1.setFocusable(false);
-        jToggleButton1.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
-        jToggleButton1.setIconTextGap(2);
-        jToggleButton1.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        jToolBar1.add(jToggleButton1);
+        RunButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PlayIcon.png"))); // NOI18N
+        RunButton.setText("Run");
+        RunButton.setFocusable(false);
+        RunButton.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        RunButton.setIconTextGap(2);
+        RunButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        RunButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                RunButtonActionPerformed(evt);
+            }
+        });
+        jToolBar1.add(RunButton);
 
-        jToggleButton2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PauseIcon.png"))); // NOI18N
-        jToggleButton2.setText("Pause");
-        jToggleButton2.setFocusable(false);
-        jToggleButton2.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
-        jToggleButton2.setIconTextGap(2);
-        jToggleButton2.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        jToolBar1.add(jToggleButton2);
+        PauseButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PauseIcon.png"))); // NOI18N
+        PauseButton.setText("Pause");
+        PauseButton.setFocusable(false);
+        PauseButton.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        PauseButton.setIconTextGap(2);
+        PauseButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        PauseButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                PauseButtonActionPerformed(evt);
+            }
+        });
+        jToolBar1.add(PauseButton);
 
-        jToggleButton3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StopIcon.png"))); // NOI18N
-        jToggleButton3.setText("Reset");
-        jToggleButton3.setFocusable(false);
-        jToggleButton3.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
-        jToggleButton3.setIconTextGap(2);
-        jToggleButton3.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        jToolBar1.add(jToggleButton3);
+        ResetButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StopIcon.png"))); // NOI18N
+        ResetButton.setText("Reset");
+        ResetButton.setFocusable(false);
+        ResetButton.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        ResetButton.setIconTextGap(2);
+        ResetButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        jToolBar1.add(ResetButton);
 
         getContentPane().add(jToolBar1, java.awt.BorderLayout.NORTH);
 
         FileMenu.setText("File");
 
         OpenFile.setText("OpenFile");
+        OpenFile.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                OpenFileActionPerformed(evt);
+            }
+        });
         FileMenu.add(OpenFile);
 
         ExitEmu.setText("Exit");
@@ -128,9 +156,19 @@ public class MainGUI extends javax.swing.JFrame {
         EmulationMenu.setText("Emulation");
 
         RunEmu.setText("Run");
+        RunEmu.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                RunEmuActionPerformed(evt);
+            }
+        });
         EmulationMenu.add(RunEmu);
 
         PauseEmu.setText("Pause");
+        PauseEmu.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                PauseEmuActionPerformed(evt);
+            }
+        });
         EmulationMenu.add(PauseEmu);
 
         ResetEmu.setText("Reset");
@@ -139,6 +177,15 @@ public class MainGUI extends javax.swing.JFrame {
         MenuBar.add(EmulationMenu);
 
         OptionsMenu.setText("Options");
+
+        SetttingsMenu.setText("Settings");
+        SetttingsMenu.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                SetttingsMenuActionPerformed(evt);
+            }
+        });
+        OptionsMenu.add(SetttingsMenu);
+
         MenuBar.add(OptionsMenu);
 
         DebugMenu.setText("Debug");
@@ -152,6 +199,11 @@ public class MainGUI extends javax.swing.JFrame {
         DebugMenu.add(EnterDebugger);
 
         EnterMemoryViewer.setText("Memory viewer");
+        EnterMemoryViewer.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                EnterMemoryViewerActionPerformed(evt);
+            }
+        });
         DebugMenu.add(EnterMemoryViewer);
 
         ToggleConsole.setText("Toggle Console");
@@ -163,11 +215,25 @@ public class MainGUI extends javax.swing.JFrame {
         DebugMenu.add(ToggleConsole);
 
         ElfHeaderViewer.setText("Elf Header Info");
+        ElfHeaderViewer.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ElfHeaderViewerActionPerformed(evt);
+            }
+        });
         DebugMenu.add(ElfHeaderViewer);
 
         MenuBar.add(DebugMenu);
 
         HelpMenu.setText("Help");
+
+        About.setText("About");
+        About.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                AboutActionPerformed(evt);
+            }
+        });
+        HelpMenu.add(About);
+
         MenuBar.add(HelpMenu);
 
         setJMenuBar(MenuBar);
@@ -181,12 +247,137 @@ private void ToggleConsoleActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 }//GEN-LAST:event_ToggleConsoleActionPerformed
 
 private void EnterDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterDebuggerActionPerformed
-      disasm = new DisassemblerFrame();
+     if(disasm==null)
+     {
+      PauseEmu(); 
+      disasm = new DisassemblerFrame(emulator);
       Point mainwindow = this.getLocation(); 
       disasm.setLocation(mainwindow.x+50, mainwindow.y+50);
       disasm.setVisible(true);
+     }
+     else
+     {
+         disasm.setVisible(true);
+         disasm.RefreshDebugger();
+     }
 }//GEN-LAST:event_EnterDebuggerActionPerformed
 
+private void RunButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RunButtonActionPerformed
+            RunEmu();
+}//GEN-LAST:event_RunButtonActionPerformed
+ private JFileChooser makeJFileChooser() {
+        final JFileChooser fc = new JFileChooser();
+        fc.setDialogTitle("Open Elf/Pbp File");
+        fc.setCurrentDirectory(new java.io.File("."));
+        return fc;
+    }
+ 
+private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenFileActionPerformed
+        PauseEmu();
+        if(consolewin!=null)
+          consolewin.clearScreenMessages();
+   
+    final JFileChooser fc = makeJFileChooser();
+    int returnVal = fc.showOpenDialog(this);
+
+    if (userChooseSomething(returnVal)) {
+        File file = fc.getSelectedFile();
+        //This is where a real application would open the file.
+        try {
+            emulator.load(file.getPath());
+            
+            this.setTitle(version + " - " + file.getName());
+        } catch (IOException e) {
+            e.printStackTrace();
+            JpcspDialogManager.showError(this, "IO Error : " + e.getMessage());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JpcspDialogManager.showError(this, "Critical Error : " + ex.getMessage());
+        }
+    } else {
+        return; //user cancel the action
+
+    }
+}//GEN-LAST:event_OpenFileActionPerformed
+
+private void PauseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PauseButtonActionPerformed
+    PauseEmu();
+}//GEN-LAST:event_PauseButtonActionPerformed
+
+private void ElfHeaderViewerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ElfHeaderViewerActionPerformed
+     if(elfheader==null)
+     {
+       
+      elfheader = new ElfHeaderInfo();
+      Point mainwindow = this.getLocation(); 
+      elfheader.setLocation(mainwindow.x+50, mainwindow.y+50);
+      elfheader.setVisible(true);
+     }
+     else
+     {
+       elfheader.RefreshWindow();
+       elfheader.setVisible(true);   
+     }
+}//GEN-LAST:event_ElfHeaderViewerActionPerformed
+
+private void EnterMemoryViewerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterMemoryViewerActionPerformed
+     PauseEmu();
+    if(memoryview==null)
+     {
+       
+      memoryview = new MemoryViewer();
+      Point mainwindow = this.getLocation(); 
+      memoryview.setLocation(mainwindow.x+100, mainwindow.y+50);
+      memoryview.setVisible(true);
+     }
+     else
+     {
+       memoryview.RefreshMemory();
+       memoryview.setVisible(true);   
+     }
+}//GEN-LAST:event_EnterMemoryViewerActionPerformed
+
+private void AboutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AboutActionPerformed
+  StringBuilder message = new StringBuilder();
+    message.append("<html>").append("<h2>" + MetaInformation.FULL_NAME + "</h2>").append("<hr/>").append("Official site      : <a href='" + MetaInformation.OFFICIAL_SITE + "'>" + MetaInformation.OFFICIAL_SITE + "</a><br/>").append("Official forum     : <a href='" + MetaInformation.OFFICIAL_FORUM + "'>" + MetaInformation.OFFICIAL_FORUM + "</a><br/>").append("Official repository: <a href='" + MetaInformation.OFFICIAL_REPOSITORY + "'>" + MetaInformation.OFFICIAL_REPOSITORY + "</a><br/>").append("<hr/>").append("<i>Team:</i> <font color='gray'>" + MetaInformation.TEAM + "</font>").append("</html>");
+    JOptionPane.showMessageDialog(this, message.toString(), version, JOptionPane.INFORMATION_MESSAGE);
+}//GEN-LAST:event_AboutActionPerformed
+
+private void RunEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RunEmuActionPerformed
+   RunEmu();
+}//GEN-LAST:event_RunEmuActionPerformed
+
+private void PauseEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PauseEmuActionPerformed
+  PauseEmu();
+}//GEN-LAST:event_PauseEmuActionPerformed
+
+private void SetttingsMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SetttingsMenuActionPerformed
+     
+    if(setgui==null)
+     {
+       
+      setgui = new SettingsGUI();
+      Point mainwindow = this.getLocation(); 
+      setgui.setLocation(mainwindow.x+100, mainwindow.y+50);
+      setgui.setVisible(true);
+     }
+     else
+     {
+       setgui.RefreshWindow();
+       setgui.setVisible(true);   
+     }
+}//GEN-LAST:event_SetttingsMenuActionPerformed
+
+private void RunEmu()
+{
+    PauseButton.setSelected(false);   
+    emulator.RunEmu();
+}
+private void PauseEmu()
+{
+    RunButton.setSelected(false);
+    emulator.PauseEmu();
+}
     /**
     * @param args the command line arguments
     */
@@ -205,6 +396,7 @@ private void EnterDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JMenuItem About;
     private javax.swing.JMenu DebugMenu;
     private javax.swing.JMenuItem ElfHeaderViewer;
     private javax.swing.JMenu EmulationMenu;
@@ -216,14 +408,17 @@ private void EnterDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     private javax.swing.JMenuBar MenuBar;
     private javax.swing.JMenuItem OpenFile;
     private javax.swing.JMenu OptionsMenu;
+    private javax.swing.JToggleButton PauseButton;
     private javax.swing.JMenuItem PauseEmu;
+    private javax.swing.JButton ResetButton;
     private javax.swing.JMenuItem ResetEmu;
+    private javax.swing.JToggleButton RunButton;
     private javax.swing.JMenuItem RunEmu;
+    private javax.swing.JMenuItem SetttingsMenu;
     private javax.swing.JMenuItem ToggleConsole;
-    private javax.swing.JToggleButton jToggleButton1;
-    private javax.swing.JToggleButton jToggleButton2;
-    private javax.swing.JToggleButton jToggleButton3;
     private javax.swing.JToolBar jToolBar1;
     // End of variables declaration//GEN-END:variables
-
+    private boolean userChooseSomething(int returnVal) {
+        return returnVal == JFileChooser.APPROVE_OPTION;
+    }
 }

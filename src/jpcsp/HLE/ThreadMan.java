@@ -66,7 +66,7 @@ public class ThreadMan {
     }
 
     /** to be called from the main emulation loop */
-    public void step() throws GeneralJpcspException {
+    public void step() /*throws GeneralJpcspException*/ {
         if (current_thread != null) {
             current_thread.runClocks++;
 
@@ -107,8 +107,13 @@ public class ThreadMan {
                     // Changed to thread safe iterator.remove
                     //threadlist.remove(thread.uid);
                     it.remove();
-
+                 try{
                     SceUIDMan.get_instance().releaseUid(thread.uid, "ThreadMan-thread");
+                 }
+                 catch(Exception e)
+                 {
+                   e.printStackTrace();   
+                 }
                 }
             }
         }

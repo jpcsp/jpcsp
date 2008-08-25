@@ -21,7 +21,7 @@ package jpcsp;
  *
  * @author  shadow
  */
-public class SettingsGUI extends javax.swing.JInternalFrame {
+public class SettingsGUI extends javax.swing.JFrame {
 
     /** Creates new form SettingsGUI */
     public SettingsGUI() {
@@ -43,7 +43,6 @@ public class SettingsGUI extends javax.swing.JInternalFrame {
         jButton1 = new javax.swing.JButton();
         jButton2 = new javax.swing.JButton();
 
-        setClosable(true);
         setTitle("Settings");
 
         pbpunpackcheck.setText("unpack pbp when loading");
@@ -91,7 +90,11 @@ public class SettingsGUI extends javax.swing.JInternalFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
+public void RefreshWindow()
+{
+    boolean pbpunpack = Settings.get_instance().readBoolEmuoptions("pbpunpack");
+   if(pbpunpack) pbpunpackcheck.setSelected(true);
+}
 private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
    dispose();
 }//GEN-LAST:event_jButton2ActionPerformed
