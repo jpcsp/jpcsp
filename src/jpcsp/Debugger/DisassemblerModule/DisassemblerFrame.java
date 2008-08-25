@@ -54,11 +54,11 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         DebuggerPC = 0;
         listmodel = new DefaultListModel();
         initComponents();
-        
+
         RefreshDebugger();
     }
-    
-    
+
+
     public void RefreshDebugger() {
         int t;
         int cnt;
@@ -67,7 +67,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         }
         listmodel.clear();
 
-        for (t = DebuggerPC , cnt = 0; t < (DebuggerPC + 0x000000A8); t += 0x00000004, cnt++) {
+        for (t = DebuggerPC , cnt = 0; t < (DebuggerPC + 0x00000094); t += 0x00000004, cnt++) {
 
             int memread = Memory.get_instance().read32((int) t);
 
@@ -511,12 +511,12 @@ private void disasmListKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:even
         evt.consume();
         disasmList.setSelectedIndex(0);
     } else if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_PAGE_UP && disasmList.getSelectedIndex() == 0) {
-        DebuggerPC -= 0x000000A8;
+        DebuggerPC -= 0x00000094;
         RefreshDebugger();
         evt.consume();
         disasmList.setSelectedIndex(0);
     } else if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_PAGE_DOWN && disasmList.getSelectedIndex() == disasmList.getLastVisibleIndex()) {
-        DebuggerPC += 0x000000A8;
+        DebuggerPC += 0x00000094;
         RefreshDebugger();
         evt.consume();
         disasmList.setSelectedIndex(disasmList.getLastVisibleIndex());
@@ -568,7 +568,7 @@ private void JumpToAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 }//GEN-LAST:event_JumpToAddressActionPerformed
 
 private void DumpCodeToTextActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DumpCodeToTextActionPerformed
-    OptionPaneMultiple opt=new OptionPaneMultiple(Integer.toHexString(DebuggerPC),Integer.toHexString(DebuggerPC + 0x000000A4));
+    OptionPaneMultiple opt = new OptionPaneMultiple(this, Integer.toHexString(DebuggerPC), Integer.toHexString(DebuggerPC + 0x00000094));
     if(opt.completed()){
         //Here the input can be used to actually dump code
         System.out.println("Start address: "+opt.getInput()[0]);
@@ -704,7 +704,7 @@ private void DeleteAllBreakpointsActionPerformed(java.awt.event.ActionEvent evt)
        if(!breakpoints.isEmpty())
             breakpoints.clear();
 }//GEN-LAST:event_DeleteAllBreakpointsActionPerformed
-         
+
 private void DeleteBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DeleteBreakpointActionPerformed
           String value =(String)disasmList.getSelectedValue();
           if(value != null)
@@ -767,7 +767,7 @@ private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:even
     Settings.get_instance().writeWindowPos("disassembler", coord);
 }//GEN-LAST:event_formWindowClosing
 
-    
+
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

@@ -18,59 +18,60 @@ package jpcsp;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import jpcsp.HLE.pspdisplay;
 import static jpcsp.MemoryMap.*;
 
 public class Memory {
     private static final int PAGE_COUNT        = 0x00100000;
     private static final int PAGE_MASK         = 0x00000FFF;
     private static final int PAGE_SHIFT        = 12;
-    
+
     private static final int INDEX_SCRATCHPAD  = 0;
     private static final int INDEX_VRAM        = SIZE_SCRATCHPAD >>> PAGE_SHIFT;
     private static final int INDEX_RAM         = INDEX_VRAM +
                                                  (SIZE_VRAM >>> PAGE_SHIFT);
-    
+
     private static final int SIZE_ALLMEM       = SIZE_SCRATCHPAD +
                                                  SIZE_VRAM + SIZE_RAM;
-    
+
     private static Memory instance = null;
-    
+
     private byte[]     all; // all psp memory is held in here
     private int[]      map; // hold map of memory
     private ByteBuffer buf; // for easier memory reads/writes
-    
+
     public ByteBuffer scratchpad;
     public ByteBuffer videoram;
     public ByteBuffer mainmemory;
-    
+
     public static Memory get_instance() {
         if (instance == null)
             instance = new Memory();
         return instance;
     }
-    
+
     public void NullMemory() {
         instance = null;
     }
-    
+
     private Memory() {
         all = new byte[SIZE_ALLMEM];
         map = new int[PAGE_COUNT];
         buf = ByteBuffer.wrap(all);
         buf.order(ByteOrder.LITTLE_ENDIAN);
-        
+
         scratchpad = ByteBuffer.wrap(
             all,
             0,
             SIZE_SCRATCHPAD).slice();
         scratchpad.order(ByteOrder.LITTLE_ENDIAN);
-        
+
         videoram = ByteBuffer.wrap(
             all,
             SIZE_SCRATCHPAD,
             SIZE_VRAM).slice();
         videoram.order(ByteOrder.LITTLE_ENDIAN);
-        
+
         mainmemory = ByteBuffer.wrap(
             all,
             SIZE_SCRATCHPAD + SIZE_VRAM,
@@ -79,28 +80,28 @@ public class Memory {
 
         buildMap();
     }
-    
+
     private void buildMap() {
         int i;
         int page;
-        
+
         for (i = 0; i < PAGE_COUNT; ++i)
             map[i] = -1;
-        
+
         page = START_SCRATCHPAD >>> PAGE_SHIFT;
         for (i = 0; i < (SIZE_SCRATCHPAD >>> PAGE_SHIFT); ++i) {
             map[0x00000 + page + i] = (INDEX_SCRATCHPAD + i) << PAGE_SHIFT;
             map[0x40000 + page + i] = (INDEX_SCRATCHPAD + i) << PAGE_SHIFT;
             map[0x80000 + page + i] = (INDEX_SCRATCHPAD + i) << PAGE_SHIFT;
         }
-        
+
         page = START_VRAM >>> PAGE_SHIFT;
         for (i = 0; i < (SIZE_VRAM >>> PAGE_SHIFT); ++i) {
             map[0x00000 + page + i] = (INDEX_VRAM + i) << PAGE_SHIFT;
             map[0x40000 + page + i] = (INDEX_VRAM + i) << PAGE_SHIFT;
             map[0x80000 + page + i] = (INDEX_VRAM + i) << PAGE_SHIFT;
         }
-        
+
         page = START_RAM >>> PAGE_SHIFT;
         for (i = 0; i < (SIZE_RAM >>> PAGE_SHIFT); ++i) {
             map[0x00000 + page + i] = (INDEX_RAM + i) << PAGE_SHIFT;
@@ -108,8 +109,8 @@ public class Memory {
             map[0x80000 + page + i] = (INDEX_RAM + i) << PAGE_SHIFT;
         }
     }
-    
-    
+
+
     private int indexFromAddr(int address) throws Exception {
         int index = map[address >>> PAGE_SHIFT];
         if (index == -1) {
@@ -121,61 +122,70 @@ public class Memory {
         }
         return index;
     }
-    
+
     public int read8(int address) {
         try {
             int page = indexFromAddr(address);
             return (int)buf.get(page + (address & PAGE_MASK)) & 0xFF;
         } catch (Exception e) {
             System.out.println("read8 - " + e.getMessage());
+            Emulator.PauseEmu();
             return 0;
         }
     }
-    
+
     public int read16(int address) {
         try {
             int page = indexFromAddr(address);
             return (int)buf.getShort(page + (address & PAGE_MASK)) & 0xFFFF;
         } catch (Exception e) {
             System.out.println("read16 - " + e.getMessage());
+            Emulator.PauseEmu();
             return 0;
         }
     }
-    
+
     public int read32(int address) {
         try {
             int page = indexFromAddr(address);
             return buf.getInt(page + (address & PAGE_MASK));
         } catch (Exception e) {
             System.out.println("read32 - " + e.getMessage());
+            Emulator.PauseEmu();
             return 0;
         }
     }
-    
+
     public void write8(int address, byte data) {
         try {
             int page = indexFromAddr(address);
             buf.put(page + (address & PAGE_MASK), data);
+            pspdisplay.get_instance().write8(address, data);
         } catch (Exception e) {
             System.out.println("write8 - " + e.getMessage());
+            Emulator.PauseEmu();
         }
     }
-    
+
     public void write16(int address, short data) {
         try {
             int page = indexFromAddr(address);
             buf.putShort(page + (address & PAGE_MASK), data);
+            pspdisplay.get_instance().write16(address, data);
         } catch (Exception e) {
             System.out.println("write16 - " + e.getMessage());
+            Emulator.PauseEmu();
         }
     }
-    
+
     public void write32(int address, int data) {
         try {
             int page = indexFromAddr(address);
             buf.putInt(page + (address & PAGE_MASK), data);
+            pspdisplay.get_instance().write32(address, data);
         } catch (Exception e) {
             System.out.println("write32 - " + e.getMessage());
+            Emulator.PauseEmu();
         }
     }
 }
