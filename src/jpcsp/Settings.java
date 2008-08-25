@@ -16,10 +16,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp;
 
+import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import jpcsp.Controller.keyCode;
 import org.jdom.Document;
 import org.jdom.Element;
 import org.jdom.input.SAXBuilder;
@@ -163,6 +168,91 @@ public class Settings {
             e.printStackTrace();
         }
         
+    }
+    
+    public HashMap<Integer, keyCode> loadKeys() {
+        HashMap<Integer, keyCode> m = new HashMap<Integer, keyCode>(22);
+        
+        m.put(readKeyOption("up"), keyCode.UP);
+        m.put(readKeyOption("down"), keyCode.DOWN);
+        m.put(readKeyOption("left"), keyCode.LEFT);
+        m.put(readKeyOption("right"), keyCode.RIGHT);
+        m.put(readKeyOption("start"), keyCode.START);
+        m.put(readKeyOption("select"), keyCode.SELECT);
+        m.put(readKeyOption("triangle"), keyCode.TRIANGLE);
+        m.put(readKeyOption("square"), keyCode.SQUARE);
+        m.put(readKeyOption("circle"), keyCode.CIRCLE);
+        m.put(readKeyOption("cross"), keyCode.CROSS);
+        m.put(readKeyOption("lTrigger"), keyCode.L1);
+        m.put(readKeyOption("rTrigger"), keyCode.R1);
+        
+        return m;
+    }
+    
+    public void writeKeys(HashMap<Integer, keyCode> keys) {
+        Iterator iter = keys.entrySet().iterator();
+        while(iter.hasNext()) {
+            Map.Entry<Integer, keyCode> entry = (Map.Entry)iter.next();
+            keyCode key = (keyCode)entry.getValue();
+            int value = (Integer)entry.getKey();
+            
+            switch (key) {
+                case DOWN:      writeKeyOption("down", value); break;
+                case UP:        writeKeyOption("up", value); break;
+                case LEFT:      writeKeyOption("left", value); break;
+                case RIGHT:     writeKeyOption("right", value); break;
+            
+                case TRIANGLE:  writeKeyOption("triangle", value); break;
+                case SQUARE:    writeKeyOption("square", value); break;
+                case CIRCLE:    writeKeyOption("circle", value); break;
+                case CROSS:     writeKeyOption("cross", value); break;
+                case L1:        writeKeyOption("lTrigger", value); break;
+                case R1:        writeKeyOption("rTrigger", value); break;
+                case START:     writeKeyOption("start", value); break;
+                case SELECT:    writeKeyOption("select", value); break;
+                        
+                default: break;
+            }
+        }
+    }
+    
+    private int readKeyOption(String keyName) {
+        int r = KeyEvent.VK_UNDEFINED;
+        
+        try {
+            // Build the document with SAX and Xerces, no validation
+            SAXBuilder builder = new SAXBuilder();
+            // Create the document
+            Document doc = builder.build(new File("Settings.xml"));
+            Element webapp = doc.getRootElement();
+            r = Integer.parseInt(webapp.getChild("emuoptions").getChild("keys").getChild(keyName).getText());
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        return r;
+    }
+    
+    public void writeKeyOption(String keyName, int key) {
+        try {
+            SAXBuilder builder = new SAXBuilder();
+            Document doc = builder.build(new File("Settings.xml"));
+            Element webapp = doc.getRootElement();
+            webapp.getChild("emuoptions").getChild("keys").getChild(keyName).setText(Integer.toString(key));
+            XMLOutputter xmloutputter = new XMLOutputter();
+            try {
+                FileOutputStream fileOutputStream = new FileOutputStream("Settings.xml");
+                xmloutputter.output(doc, fileOutputStream);
+                fileOutputStream.close();
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
     
 }
