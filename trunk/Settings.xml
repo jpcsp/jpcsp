@@ -36,5 +36,19 @@
   
   <emuoptions>
       <pbpunpack>1</pbpunpack>
+      <keys>
+          <up>38</up>
+          <down>40</down>
+          <left>37</left>
+          <right>39</right>
+          <start>10</start>
+          <select>32</select>
+          <triangle>87</triangle>
+          <square>65</square>
+          <circle>68</circle>
+          <cross>83</cross>
+          <lTrigger>81</lTrigger>
+          <rTrigger>69</rTrigger>
+      </keys>
   </emuoptions>
 </SETTINGS>
