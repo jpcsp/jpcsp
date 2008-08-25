@@ -18,6 +18,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp;
 
 import java.awt.Point;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.io.File;
 import java.io.IOException;
 import javax.swing.JFileChooser;
@@ -37,7 +39,7 @@ import jpcsp.util.MetaInformation;
  *
  * @author  shadow
  */
-public class MainGUI extends javax.swing.JFrame {
+public class MainGUI extends javax.swing.JFrame implements KeyListener {
    final String version = MetaInformation.FULL_NAME;
    ConsoleWindow consolewin;
    DisassemblerFrame disasm;
@@ -61,6 +63,7 @@ public class MainGUI extends javax.swing.JFrame {
         this.setTitle(version);
         /*add glcanvas to frame and pack frame to get the canvas size*/
         getContentPane().add(pspdisplay_glcanvas.get_instance(), java.awt.BorderLayout.CENTER);
+        pspdisplay_glcanvas.get_instance().addKeyListener(this);
         pack();
 
     }
@@ -430,5 +433,18 @@ public void RefreshButtons()
     // End of variables declaration//GEN-END:variables
     private boolean userChooseSomething(int returnVal) {
         return returnVal == JFileChooser.APPROVE_OPTION;
+    }
+
+    @Override
+    public void keyTyped(KeyEvent arg0) { }
+
+    @Override
+    public void keyPressed(KeyEvent arg0) {
+        emulator.getController().keyPressed(arg0);
+    }
+
+    @Override
+    public void keyReleased(KeyEvent arg0) {
+        emulator.getController().keyReleased(arg0);
     }
 }
