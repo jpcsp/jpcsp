@@ -26,6 +26,8 @@ import javax.media.opengl.GL;
 import javax.media.opengl.GLAutoDrawable;
 import javax.media.opengl.GLCanvas;
 import javax.media.opengl.GLEventListener;
+import javax.media.opengl.Threading;
+
 
 /**
  *
@@ -49,8 +51,8 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
     {
         setSize(480, 272);
         addGLEventListener(this);
-        final Animator animator = new Animator(this);
-        animator.start();
+        //final Animator animator = new Animator(this);
+        //animator.start();
 
         b = null;
         doupdate = false;
@@ -64,6 +66,18 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
     public void updateImage() {
         //System.out.println("update tex (deferred)");
         doupdate = true;
+
+        // Why all the checks? see http://download.java.net/media/jogl/builds/nightly/javadoc_public/javax/media/opengl/Threading.html
+        if (!Threading.isOpenGLThread() && Threading.isSingleThreaded()) {
+            Threading.invokeOnOpenGLThread(new Runnable() {
+                public void run() {
+                    //System.err.println("thread display");
+                    display();
+                } });
+        } else {
+            //System.err.println("non-thread display");
+            display();
+        }
     }
 
     // ----------------------- GLEventListener -----------------------

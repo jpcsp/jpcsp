@@ -81,8 +81,14 @@ public class VideoEngine {
             executeCommand(ins);
         }
 
+        if (actualList.pc == actualList.stallAddress) {
+            actualList.status = DisplayList.STALL_REACHED;
+            System.out.println("list " + actualList.id + " stalled at " + String.format("%08x", actualList.stallAddress));
+        }
+
         if (listIsOver) {
             // TODO remove list cleanly :P
+            actualList.status = DisplayList.DRAWING_DONE; // DONE, DRAWING_DONE, CANCEL_DONE ?
             jpcsp.HLE.pspge.get_instance().sceGeListDeQueue(actualList.id);
         }
     }
@@ -114,8 +120,8 @@ public class VideoEngine {
                 log(helper.getCommandString(FINISH));
                 break;
             case BASE:
-                actualList.base = normalArgument;
-                log(helper.getCommandString(BASE),normalArgument);
+                actualList.base = normalArgument << 8;
+                log(helper.getCommandString(BASE) + " " + String.format("%08x", actualList.base));
                 break;
             case IADDR:
                 vertex.index = actualList.base | normalArgument;
@@ -123,7 +129,7 @@ public class VideoEngine {
                 break;
             case VADDR:
                 vertex.pointer = actualList.base | normalArgument;
-                log(helper.getCommandString(VADDR), vertex.pointer);
+                log(helper.getCommandString(VADDR) + " " + String.format("%08x", vertex.pointer));
                 break;
 
             case TME:
@@ -222,18 +228,20 @@ public class VideoEngine {
                 break;
 
             case JUMP:
-                actualList.pc =  Emulator.getMemory().read32((normalArgument | actualList.base) & 0xFFFFFFFC);
+                int npc = (normalArgument | actualList.base) & 0xFFFFFFFC;
                 //I guess it must be unsign as psp player emulator
-                log(helper.getCommandString(JUMP),actualList.pc);
+                log(helper.getCommandString(JUMP) + " old PC:" + String.format("%08x", actualList.pc)
+                    + " new PC:" + String.format("%08x", npc));
+                actualList.pc = npc;
                 break;
             case CALL:
-                actualList.stack[actualList.stackIndex++] = actualList.pc;
-                actualList.pc = Emulator.getMemory().read32((normalArgument | actualList.base) & 0xFFFFFFFC);
-                log(helper.getCommandString(CALL),actualList.pc);
+                actualList.stack[actualList.stackIndex++] = actualList.pc + 4;
+                actualList.pc = (normalArgument | actualList.base) & 0xFFFFFFFC;
+                log(helper.getCommandString(CALL), actualList.pc);
                 break;
             case RET:
                 actualList.pc = actualList.stack[--actualList.stackIndex];
-                log(helper.getCommandString(RET),actualList.pc);
+                log(helper.getCommandString(RET), actualList.pc);
                 break;
 
             case NOP:
