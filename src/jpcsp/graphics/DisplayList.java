@@ -35,6 +35,7 @@ public class DisplayList {
     public int pc;
     public int[] stack = new int[32];
     public int stackIndex;
+    public int status;
     public int id;
 
     public int start;
@@ -51,6 +52,7 @@ public class DisplayList {
         base = 0x08000000;
         pc = startList;
         stackIndex = 0;
+        status = DisplayList.QUEUED;
         id = ++ids;
     }
 

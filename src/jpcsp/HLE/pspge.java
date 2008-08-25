@@ -60,10 +60,14 @@ public class pspge {
 
         /*
         list 	- The head of the list to queue.
-	stall 	- The stall address. If NULL then no stall address set and the list is transferred immediately.
-	cbid 	- ID of the callback set by calling sceGeSetCallback
-	arg 	- Probably a parameter to the callbacks (to be confirmed)
+        stall 	- The stall address. If NULL then no stall address set and the list is transferred immediately.
+        cbid 	- ID of the callback set by calling sceGeSetCallback
+        arg 	- Probably a parameter to the callbacks (to be confirmed)
         */
+
+        // remove uncache bit
+        list &= 0x3fffffff;
+        stall &= 0x3fffffff;
 
         DisplayList displayList = new DisplayList(list, stall, callbackId, argument);
         displayLists.put(displayList.id, displayList);
@@ -97,6 +101,13 @@ public class pspge {
     public void sceGeListUpdateStallAddr(int qid, int stallAddress) {
         DisplayList displayList = displayLists.get(qid);
         if (displayList != null) {
+            // remove uncache bit
+            stallAddress &= 0x3fffffff;
+
+            System.out.println("sceGeListUpdateStallAddr qid=" + qid
+                + " new stall addr " + String.format("%08x", stallAddress)
+                + " approx " + ((stallAddress - displayList.stallAddress) / 4) + " commands");
+
             displayList.stallAddress = stallAddress;
 
             // TODO set status as ready, instead of executing immediately ?
@@ -105,7 +116,7 @@ public class pspge {
 
             Emulator.getProcessor().gpr[2] = 0;
         } else {
-            System.out.println("sceGeListUpdateStallAddr failed");
+            System.out.println("sceGeListUpdateStallAddr qid="+ qid +" failed, no longer exists");
             Emulator.getProcessor().gpr[2] = -1;
         }
     }
