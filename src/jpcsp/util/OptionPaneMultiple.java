@@ -23,7 +23,7 @@ package jpcsp.util;
 import java.awt.Component;
 import javax.swing.*;
 
-public class OptionPaneMultiple extends JOptionPane {
+public class OptionPaneMultiple {
     JTextField startaddr;
     JTextField endaddr;
     JTextField filename;

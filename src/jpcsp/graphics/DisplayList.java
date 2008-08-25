@@ -28,33 +28,36 @@ public class DisplayList {
     //sceGuSendList [int mode
     public static final int GU_TAIL = 0;
     public static final int GU_HEAD = 1;
-    
-    public int start;
+
+    private static int ids = 0;
+
     public int base;
-    public int current;
-    public int id;
-    public int callbackId;
-    public int pointer;
-    public int stallAddress;
+    public int pc;
     public int[] stack = new int[32];
     public int stackIndex;
+    public int id;
+
+    public int start;
+    public int stallAddress;
+    public int callbackId;
     public int arg;
-    private static int ids = 0;
-            
+
     public DisplayList(int startList, int stall, int callbackId, int arg){
-        this.base = 0x08000000;
-        stackIndex = 0;
-        this.start = startList; 
-        this.pointer = Emulator.getMemory().read32(start);
+        this.start = startList;
         this.stallAddress = stall;
         this.callbackId = callbackId;
         this.arg = arg;
-        id=++ids;
+
+        base = 0x08000000;
+        pc = startList;
+        stackIndex = 0;
+        id = ++ids;
     }
-    
+
     @Override
     public String toString(){
-        return "id = " + id + ", start address = " + start + ", end adress = " + stallAddress
-                + ", initial command pointer = " + pointer;
+        return "id = " + id + ", start address = " + Integer.toHexString(start)
+                + ", end address = " + Integer.toHexString(stallAddress)
+                + ", initial command instruction = " + Integer.toHexString(Emulator.getMemory().read32(pc));
     }
 }

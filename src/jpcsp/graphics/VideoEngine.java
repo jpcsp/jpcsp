@@ -36,6 +36,11 @@ public class VideoEngine {
     private Vertex vertex = new Vertex();
     private static final char SPACE = ' ';
 
+    // TODO these currently here for testing only
+    private int fbp, fbw; // frame buffer pointer and width
+    private int zbp, zbw; // depth buffer pointer and width
+    private int psm; // pixel format
+
     private static void log(String msg) {
         if (isDebugMode) {
             System.out.println("sceGe DEBUG > " + msg);
@@ -65,38 +70,41 @@ public class VideoEngine {
 
     public void executeList(DisplayList list) {
         actualList = list;
-        
-        while (!listIsOver) {            
-                executeCommand(list.pointer);
-
-             if (actualList.start == actualList.stallAddress) {
-                listIsOver = true;
-                continue;
-            }
-            actualList.start++; //is it correct?
-            actualList.pointer = Emulator.getMemory().read32(actualList.start);
-        }
         listIsOver = false;
+
+        while (!listIsOver &&
+            actualList.pc != actualList.stallAddress &&
+            // TODO maybe remove this line when all is done, because if we exit the loop early we either need to completely stop emulation or have some way of restarting the list
+            !Emulator.pause) {
+            int ins = Emulator.getMemory().read32(actualList.pc);
+            actualList.pc += 4;
+            executeCommand(ins);
+        }
+
+        if (listIsOver) {
+            // TODO remove list cleanly :P
+            jpcsp.HLE.pspge.get_instance().sceGeListDeQueue(actualList.id);
+        }
     }
 
     //I guess here we use ubyte
-    private int command(int word) {
-        return (word >>> 24);
+    private int command(int instruction) {
+        return (instruction >>> 24);
     }
 
-    private int intArgument(int word) {
-        return (word & 0x00FFFFFF);
+    private int intArgument(int instruction) {
+        return (instruction & 0x00FFFFFF);
     }
 
-    private float floatArgument(int word) {
-        return Float.intBitsToFloat(word << 8);
+    private float floatArgument(int instruction) {
+        return Float.intBitsToFloat(instruction << 8);
     }
 
-    public void executeCommand(int word) {
-        int normalArgument = intArgument(word);
-        float floatArgument = floatArgument(word);
+    public void executeCommand(int instruction) {
+        int normalArgument = intArgument(instruction);
+        float floatArgument = floatArgument(instruction);
 
-        switch (command(word)) {
+        switch (command(instruction)) {
             case END:
                 listIsOver = true;
                 log(helper.getCommandString(END));
@@ -117,21 +125,71 @@ public class VideoEngine {
                 vertex.pointer = actualList.base | normalArgument;
                 log(helper.getCommandString(VADDR), vertex.pointer);
                 break;
+
+            case TME:
+                if (normalArgument != 0)
+                    log("sceGuEnable(GU_TEXTURE_2D)");
+                else
+                    log("sceGuDisable(GU_TEXTURE_2D)");
+                break;
+
+            case XSCALE:
+                log("sceGuViewport width = " + (floatArgument * 2));
+                break;
+            case YSCALE:
+                log("sceGuViewport height = " + (- floatArgument * 2));
+                break;
+
+            // sceGuViewport cx/cy, can we discard these settings? it's only for clipping?
             case XPOS:
-                log(helper.getCommandString(XPOS), floatArgument);
+                log("sceGuViewport cx = " + floatArgument);
                 break;
             case YPOS:
-                log(helper.getCommandString(YPOS), floatArgument);
+                log("sceGuViewport cy = " + floatArgument);
                 break;
+
             case ZPOS:
                 log(helper.getCommandString(ZPOS), floatArgument);
                 break;
-            case FBP:
-                log(helper.getCommandString(FBP), normalArgument);
+
+            // sceGuOffset, can we discard these settings? it's only for clipping?
+            case OFFSETX:
+                log("sceGuOffset x = " + (normalArgument >> 4));
                 break;
+            case OFFSETY:
+                log("sceGuOffset y = " + (normalArgument >> 4));
+                break;
+
+            case FBP:
+                // assign or OR lower 24-bits?
+                fbp = normalArgument;
+                break;
+            case FBW:
+                fbp &= 0xffffff;
+                fbp |= (normalArgument << 8) & 0xff000000;
+                fbw = (normalArgument) & 0xffff;
+                log("fbp=" + Integer.toHexString(fbp) + ", fbw=" + fbw);
+                break;
+
+            case ZBP:
+                // assign or OR lower 24-bits?
+                zbp = normalArgument;
+                break;
+            case ZBW:
+                zbp &= 0xffffff;
+                zbp |= (normalArgument << 8) & 0xff000000;
+                zbw = (normalArgument) & 0xffff;
+                log("zbp=" + Integer.toHexString(zbp) + ", zbw=" + zbw);
+                break;
+
+            case PSM:
+                psm = normalArgument;
+                log("psm=" + normalArgument);
+                break;
+
             case PRIM:
                 int numberOfVertex = normalArgument & 0xFFFF;
-                int draw = ((normalArgument >> 16) & 0x7);                
+                int draw = ((normalArgument >> 16) & 0x7);
                 switch (draw){
                     case PRIM_POINT:
                         log(helper.getCommandString(PRIM) + " point");
@@ -162,25 +220,28 @@ public class VideoEngine {
                 //drawable.glShadeModel(SETTED_MODEL);
                 log(helper.getCommandString(SHADE) + " " + ((SETTED_MODEL==0x01) ? "smooth" : "flat"));
                 break;
+
             case JUMP:
-                actualList.pointer =  Emulator.getMemory().read32((normalArgument | actualList.base) & 0xFFFFFFFC);
+                actualList.pc =  Emulator.getMemory().read32((normalArgument | actualList.base) & 0xFFFFFFFC);
                 //I guess it must be unsign as psp player emulator
-                log(helper.getCommandString(JUMP),actualList.pointer);
+                log(helper.getCommandString(JUMP),actualList.pc);
                 break;
             case CALL:
-                actualList.stack[actualList.stackIndex++] = actualList.pointer;
-                actualList.pointer = Emulator.getMemory().read32((normalArgument | actualList.base) & 0xFFFFFFFC);
-                log(helper.getCommandString(CALL),actualList.pointer);
+                actualList.stack[actualList.stackIndex++] = actualList.pc;
+                actualList.pc = Emulator.getMemory().read32((normalArgument | actualList.base) & 0xFFFFFFFC);
+                log(helper.getCommandString(CALL),actualList.pc);
                 break;
             case RET:
-                actualList.pointer = actualList.stack[--actualList.stackIndex];
-                log(helper.getCommandString(RET),actualList.pointer);
+                actualList.pc = actualList.stack[--actualList.stackIndex];
+                log(helper.getCommandString(RET),actualList.pc);
                 break;
+
             case NOP:
                 log(helper.getCommandString(NOP));
                 break;
+
             default:
-                log("Unknow/unimplemented video command [ " + helper.getCommandString(command(word)) + " ]");
+                log("Unknown/unimplemented video command [ " + helper.getCommandString(command(instruction)) + " ]");
         }
 
     }
@@ -210,8 +271,8 @@ public class VideoEngine {
         log(commandString+SPACE+floatArgument);
     }
 
-    private void log(String commandString, int pointer) {
-        log(commandString+SPACE+pointer);
+    private void log(String commandString, int value) {
+        log(commandString+SPACE+value);
     }
 
     private void setHardwareAcc(boolean hardwareAccelerate) {

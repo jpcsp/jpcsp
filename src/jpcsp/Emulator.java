@@ -392,6 +392,7 @@ public class Emulator implements Runnable {
         jpcsp.HLE.ThreadMan.get_instance().Initialise(cpu.pc, romManager.getPSPModuleInfo().getM_attr());
         jpcsp.HLE.Utils.get_instance().Initialise();
         jpcsp.HLE.pspdisplay.get_instance().Initialise();
+        jpcsp.HLE.pspge.get_instance().Initialise();
     }
 
     private void initDebugWindowsByPbp() {
@@ -458,12 +459,11 @@ public class Emulator implements Runnable {
     }
     public static synchronized void PauseEmu()
     {
-        if(run)
+        if (run)
         {
-         pause=true;
+            pause=true;
+            gui.RefreshButtons();
         }
-
-        gui.RefreshButtons();
     }
    /* public void pause() {
         pause = true;
