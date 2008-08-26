@@ -758,6 +758,7 @@ public class AllegrexDecoder {
                                 that.doUNK("Unsupported BSHFL instruction " + Integer.toHexString(sa(insn)));
                                 break;
                         }
+                        break;
 
                     default:
                         that.doUNK("Unsupported SPECIAL3 instruction " + Integer.toHexString(func(insn)));
