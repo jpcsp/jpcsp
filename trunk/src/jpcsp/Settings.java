@@ -185,6 +185,12 @@ public class Settings {
         m.put(readKeyOption("cross"), keyCode.CROSS);
         m.put(readKeyOption("lTrigger"), keyCode.L1);
         m.put(readKeyOption("rTrigger"), keyCode.R1);
+        m.put(readKeyOption("home"), keyCode.HOME);
+        m.put(readKeyOption("hold"), keyCode.HOLD);
+        m.put(readKeyOption("volPlus"), keyCode.VOLPLUS);
+        m.put(readKeyOption("volMin"), keyCode.VOLMIN);
+        m.put(readKeyOption("screen"), keyCode.SCREEN);
+        m.put(readKeyOption("music"), keyCode.MUSIC);
         
         return m;
     }
@@ -210,6 +216,13 @@ public class Settings {
                 case R1:        writeKeyOption("rTrigger", value); break;
                 case START:     writeKeyOption("start", value); break;
                 case SELECT:    writeKeyOption("select", value); break;
+                
+                case HOME:      writeKeyOption("home", value); break;
+                case HOLD:      writeKeyOption("hold", value); break;
+                case VOLMIN:    writeKeyOption("volMin", value); break;
+                case VOLPLUS:   writeKeyOption("volPlus", value); break;
+                case SCREEN:    writeKeyOption("screen", value); break;
+                case MUSIC:     writeKeyOption("music", value); break;
                         
                 default: break;
             }
