@@ -49,6 +49,12 @@
           <cross>83</cross>
           <lTrigger>81</lTrigger>
           <rTrigger>69</rTrigger>
+          <hold>76</hold>
+          <home>72</home>
+          <volPlus>61</volPlus>
+          <volMin>45</volMin>
+          <screen>78</screen>
+          <music>77</music>
       </keys>
   </emuoptions>
 </SETTINGS>

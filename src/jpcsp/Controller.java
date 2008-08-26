@@ -31,7 +31,7 @@ public class Controller {
     
     public enum keyCode { 
         UP, DOWN, LEFT, RIGHT, START, SELECT, TRIANGLE, SQUARE, CIRCLE, CROSS,
-        L1, R1, HOME, HOLD };
+        L1, R1, HOME, HOLD, VOLMIN, VOLPLUS, SCREEN, MUSIC };
     
     public Controller() {
         /* load the button config */
@@ -42,19 +42,6 @@ public class Controller {
     public void loadKeyConfig() {
         keys.clear();
         keys.putAll(Settings.get_instance().loadKeys());
-        
-        /*keys.put(KeyEvent.VK_UP, keyCode.UP);
-        keys.put(KeyEvent.VK_DOWN, keyCode.DOWN);
-        keys.put(KeyEvent.VK_LEFT, keyCode.LEFT);
-        keys.put(KeyEvent.VK_RIGHT, keyCode.RIGHT);
-        keys.put(KeyEvent.VK_ENTER, keyCode.START);
-        keys.put(KeyEvent.VK_SPACE, keyCode.SELECT);
-        keys.put(KeyEvent.VK_W, keyCode.TRIANGLE);
-        keys.put(KeyEvent.VK_A, keyCode.SQUARE);
-        keys.put(KeyEvent.VK_D, keyCode.CIRCLE);
-        keys.put(KeyEvent.VK_S, keyCode.CROSS);
-        keys.put(KeyEvent.VK_Q, keyCode.L1);
-        keys.put(KeyEvent.VK_E, keyCode.R1);*/
     }
     
     public void checkControllerState(){
@@ -84,6 +71,13 @@ public class Controller {
             case R1:        this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_RTRIGGER; break;
             case START:     this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_START; break;
             case SELECT:    this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_SELECT; break;
+            
+            case HOME:      this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_HOME; break;
+            case HOLD:      this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_HOLD; break;
+            case VOLMIN:    this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_VOLDOWN; break;
+            case VOLPLUS:   this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_VOLUP; break;
+            case SCREEN:    this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_SCREEN; break;
+            case MUSIC:     this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_NOTE; break;
                         
             default: return;
         }
@@ -110,6 +104,13 @@ public class Controller {
             case R1:        this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_RTRIGGER; break;
             case START:     this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_START; break;
             case SELECT:    this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_SELECT; break;
+            
+            case HOME:      this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_HOME; break;
+            case HOLD:      this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_HOLD; break;
+            case VOLMIN:    this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_VOLDOWN; break;
+            case VOLPLUS:   this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_VOLUP; break;
+            case SCREEN:    this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_SCREEN; break;
+            case MUSIC:     this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_NOTE; break;
            
             default: return;
         }
