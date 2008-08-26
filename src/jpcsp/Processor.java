@@ -1346,12 +1346,16 @@ public class Processor implements AllegrexInstructions {
         switch (fcr31_rm) {
             case 1:
                 fpr[fd] = Float.intBitsToFloat((int) (fpr[fs]));
+                break;
             case 2:
                 fpr[fd] = Float.intBitsToFloat((int) Math.ceil(fpr[fs]));
+                break;
             case 3:
                 fpr[fd] = Float.intBitsToFloat((int) Math.floor(fpr[fs]));
+                break;
             default:
                 fpr[fd] = Float.intBitsToFloat((int) Math.rint(fpr[fs]));
+                break;
         }
         updateCyclesFdFs(fd, fs, 3);
     }
@@ -1384,12 +1388,16 @@ public class Processor implements AllegrexInstructions {
             switch (swz) {
                 case 0:
                     value = abs ? 0.0f : 3.0f;
+                    break;
                 case 1:
                     value = abs ? 1.0f : (1.0f / 3.0f);
+                    break;
                 case 2:
                     value = abs ? 2.0f : (1.0f / 4.0f);
+                    break;
                 case 3:
                     value = abs ? 0.5f : (1.0f / 6.0f);
+                    break;
             }
         } else {
             value = x[swz];
@@ -1683,7 +1691,10 @@ public class Processor implements AllegrexInstructions {
                         }
                     }
                 }
-            default:
+                break;
+                
+            default:    
+                break;
         }
     }
 // VFPU0
