@@ -763,7 +763,7 @@ public class AllegrexDecoder {
                         that.doUNK("Unsupported SPECIAL3 instruction " + Integer.toHexString(func(insn)));
                         break;
                 }
-
+                break;
             case LB:
                 that.doLB(rt(insn), rs(insn), simm16(insn));
                 break;
