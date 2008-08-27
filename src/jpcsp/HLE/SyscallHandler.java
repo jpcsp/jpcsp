@@ -121,6 +121,9 @@ public class SyscallHandler {
                 case 0x2153:
                     pspctrl.get_instance().sceCtrlReadBufferNegative(gpr[4], gpr[5]);
                     break;
+                case 0x2155:
+                    pspctrl.get_instance().sceCtrlPeekLatch(gpr[4]);
+                    break;
 
                 case 0x20f0:
                     pspge.get_instance().sceGeEdramGetAddr();

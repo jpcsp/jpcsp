@@ -28,6 +28,8 @@ public class pspctrl {
 
     private int cycle;
     private int mode; // PspCtrlMode { PSP_CTRL_MODE_DIGITAL = 0, PSP_CTRL_MODE_ANALOG  }
+    private int uiPress = 0;
+    private int uiRelease = 1;
 
     private byte Lx;
     private byte Ly;
@@ -66,11 +68,19 @@ public class pspctrl {
     private pspctrl() {
     }
     
-    public void setButtons(byte Lx, byte Ly, int Buttons)
+    public void setButtons(byte Lx, byte Ly, int Buttons, boolean pressed)
     {
         this.Lx = Lx;
         this.Ly = Ly;
         this.Buttons = Buttons;
+        
+        if (pressed) {
+            this.uiRelease = 0;
+            this.uiPress = 1;
+        } else {
+            this.uiRelease = 1;
+            this.uiPress = 0;
+        }
     }
     
     public boolean isModeDigital() {
@@ -177,6 +187,16 @@ public class pspctrl {
         }
 
         Emulator.getProcessor().gpr[2] = i;
+    }
+    
+    public void sceCtrlPeekLatch(int a0) {
+        Memory mem = Memory.get_instance();
+        
+        mem.write32(a0, 0);             //uiMake
+        mem.write32(a0 +4, 0);          //uiBreak
+        mem.write32(a0 +8, uiPress);
+        mem.write32(a0 +12, uiRelease);
+        Emulator.getProcessor().gpr[2] = 0;
     }
 
     private class SceCtrlData {

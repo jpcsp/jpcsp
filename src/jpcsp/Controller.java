@@ -27,7 +27,8 @@ public class Controller {
     private int Buttons = 0;
     private keyCode lastKey = keyCode.RELEASED;
     private long lastUpdate;
-    public boolean changed = true;
+    private boolean pressed = false; 
+    private boolean changed = true;
     
     private HashMap<Integer, keyCode> keys;
     
@@ -64,7 +65,7 @@ public class Controller {
             return;
         }
         
-        jpcsp.HLE.pspctrl.get_instance().setButtons(Lx, Ly, Buttons);
+        jpcsp.HLE.pspctrl.get_instance().setButtons(Lx, Ly, Buttons, pressed);
         changed = false;
         lastUpdate = now;
     }
@@ -114,6 +115,7 @@ public class Controller {
         }
         changed = true;
         lastKey = key;
+        pressed = true;
         //System.out.println("keyPressed!! " + this.Buttons);
     }
 
@@ -161,5 +163,6 @@ public class Controller {
         }
         changed = true;
         lastKey = keyCode.RELEASED;
+        pressed = false;
     }
 }
