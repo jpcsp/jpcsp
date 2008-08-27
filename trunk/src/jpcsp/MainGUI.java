@@ -102,7 +102,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener {
         About = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setMinimumSize(new java.awt.Dimension(300, 400));
+        setMinimumSize(new java.awt.Dimension(480, 272));
 
         jToolBar1.setFloatable(false);
         jToolBar1.setRollover(true);
