@@ -143,7 +143,7 @@ private void LoadButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
         String[] files = f.list();
         for(int i=0 ; i < files.length ; i++)
         {
-         System.out.println(files[i]);
+         if(files[i].startsWith(".")) continue; //probably a hidden file
          listmodel.addElement(files[i]);
         }
 
