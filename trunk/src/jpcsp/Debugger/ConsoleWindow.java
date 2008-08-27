@@ -68,6 +68,7 @@ public class ConsoleWindow extends javax.swing.JFrame {
         SaveMessageToFileButton = new javax.swing.JButton();
 
         setTitle("Logger");
+        setResizable(false);
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {
                 formWindowClosing(evt);
@@ -75,7 +76,7 @@ public class ConsoleWindow extends javax.swing.JFrame {
         });
 
         talogging.setColumns(20);
-        talogging.setFont(new java.awt.Font("Courier New", 0, 12));
+        talogging.setFont(new java.awt.Font("Courier New", 0, 12)); // NOI18N
         talogging.setRows(5);
         jScrollPane1.setViewportView(talogging);
 
