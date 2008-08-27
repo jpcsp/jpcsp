@@ -36,6 +36,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
     private keyCode targetKey;
     private HashMap<Integer, keyCode> currentKeys;
     private HashMap<keyCode, Integer> revertKeys;  //kinda lame
+    private Controller controller = null;
     
     /** Creates new form SettingsGUI */
     public SettingsGUI() {
@@ -149,6 +150,10 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         
         this.sender = sender;
         this.targetKey = targetKey;
+    }
+    
+    public void setController(Controller controller) {
+        this.controller = controller;
     }
     
     /** This method is called from within the constructor to
@@ -669,6 +674,9 @@ private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
    Settings.get_instance().writeBoolEmuoptions("pbpunpack", pbpunpackcheck.isSelected());
    Settings.get_instance().writeKeys(currentKeys);
+   
+   if (controller != null)
+       controller.loadKeyConfig(currentKeys);
    dispose();
 }//GEN-LAST:event_jButtonOKActionPerformed
 

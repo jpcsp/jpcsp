@@ -66,7 +66,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener {
         getContentPane().add(pspdisplay_glcanvas.get_instance(), java.awt.BorderLayout.CENTER);
         pspdisplay_glcanvas.get_instance().addKeyListener(this);
         pack();
-
+        
     }
 
     /** This method is called from within the constructor to
@@ -378,6 +378,9 @@ private void SetttingsMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN
       Point mainwindow = this.getLocation();
       setgui.setLocation(mainwindow.x+100, mainwindow.y+50);
       setgui.setVisible(true);
+      
+      /* add a direct link to the controller */
+      setgui.setController(emulator.getController());
      }
      else
      {

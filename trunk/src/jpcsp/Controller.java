@@ -44,6 +44,11 @@ public class Controller {
         keys.putAll(Settings.get_instance().loadKeys());
     }
     
+    public void loadKeyConfig(HashMap<Integer, keyCode> newLayout) {
+        keys.clear();
+        keys.putAll(newLayout);
+    }
+    
     public void checkControllerState(){
         if (!changed)
             return;
