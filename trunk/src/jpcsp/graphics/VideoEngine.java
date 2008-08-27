@@ -83,7 +83,7 @@ public class VideoEngine {
 
         if (actualList.pc == actualList.stallAddress) {
             actualList.status = DisplayList.STALL_REACHED;
-            System.out.println("list " + actualList.id + " stalled at " + String.format("%08x", actualList.stallAddress));
+            log("list " + actualList.id + " stalled at " + String.format("%08x", actualList.stallAddress));
         }
 
         if (listIsOver) {

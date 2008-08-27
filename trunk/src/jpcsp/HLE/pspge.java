@@ -81,7 +81,7 @@ public class pspge {
          * so this code is just to debug stuffs until we discovery how
          * things goes....
          */
-        VideoEngine ve = VideoEngine.getEngine(null, true, true);
+        VideoEngine ve = VideoEngine.getEngine(pspdisplay_glcanvas.getDrawable(), true, true);
         ve.executeList(displayList);
 
         Emulator.getProcessor().gpr[2] = displayList.id;
@@ -90,10 +90,10 @@ public class pspge {
     public void sceGeListDeQueue(int qid) {
         // TODO if we render asynchronously, using another thread then we need to interupt it first
         if (displayLists.remove(qid) != null) {
-            System.out.println("sceGeListDeQueue qid=" + qid);
+            log("sceGeListDeQueue qid=" + qid);
             Emulator.getProcessor().gpr[2] = 0;
         } else {
-            System.out.println("sceGeListDeQueue failed qid=" + qid);
+            log("sceGeListDeQueue failed qid=" + qid);
             Emulator.getProcessor().gpr[2] = -1;
         }
     }
@@ -104,7 +104,7 @@ public class pspge {
             // remove uncache bit
             stallAddress &= 0x3fffffff;
 
-            System.out.println("sceGeListUpdateStallAddr qid=" + qid
+            log("sceGeListUpdateStallAddr qid=" + qid
                 + " new stall addr " + String.format("%08x", stallAddress)
                 + " approx " + ((stallAddress - displayList.stallAddress) / 4) + " commands");
 
@@ -116,7 +116,7 @@ public class pspge {
 
             Emulator.getProcessor().gpr[2] = 0;
         } else {
-            System.out.println("sceGeListUpdateStallAddr qid="+ qid +" failed, no longer exists");
+            log("sceGeListUpdateStallAddr qid="+ qid +" failed, no longer exists");
             Emulator.getProcessor().gpr[2] = -1;
         }
     }

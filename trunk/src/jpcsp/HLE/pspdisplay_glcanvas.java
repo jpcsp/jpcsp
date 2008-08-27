@@ -41,6 +41,10 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
     private Buffer b;
 
     private static pspdisplay_glcanvas instance;
+    
+    public static GL getDrawable(){
+        return get_instance().getGL();
+    }
     public static pspdisplay_glcanvas get_instance() {
         if (instance == null) {
             instance = new pspdisplay_glcanvas();
