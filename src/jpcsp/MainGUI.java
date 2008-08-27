@@ -46,6 +46,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener {
    ElfHeaderInfo elfheader;
    MemoryViewer memoryview;
    SettingsGUI setgui;
+   MemStickBrowser memstick;
    Emulator emulator;
     /** Creates new form MainGUI */
     public MainGUI() {
@@ -84,6 +85,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener {
         MenuBar = new javax.swing.JMenuBar();
         FileMenu = new javax.swing.JMenu();
         OpenFile = new javax.swing.JMenuItem();
+        OpenMemStick = new javax.swing.JMenuItem();
         ExitEmu = new javax.swing.JMenuItem();
         EmulationMenu = new javax.swing.JMenu();
         RunEmu = new javax.swing.JMenuItem();
@@ -100,7 +102,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener {
         About = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setMinimumSize(new java.awt.Dimension(320, 240));
+        setMinimumSize(new java.awt.Dimension(300, 400));
 
         jToolBar1.setFloatable(false);
         jToolBar1.setRollover(true);
@@ -151,7 +153,20 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener {
         });
         FileMenu.add(OpenFile);
 
+        OpenMemStick.setText("Open MemStick");
+        OpenMemStick.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                OpenMemStickActionPerformed(evt);
+            }
+        });
+        FileMenu.add(OpenMemStick);
+
         ExitEmu.setText("Exit");
+        ExitEmu.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ExitEmuActionPerformed(evt);
+            }
+        });
         FileMenu.add(ExitEmu);
 
         MenuBar.add(FileMenu);
@@ -252,7 +267,7 @@ private void ToggleConsoleActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 private void EnterDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterDebuggerActionPerformed
      if(disasm==null)
      {
-      PauseEmu();
+      if(emulator.run) PauseEmu();
       disasm = new DisassemblerFrame(emulator);
       Point mainwindow = this.getLocation();
       disasm.setLocation(mainwindow.x+50, mainwindow.y+50);
@@ -276,7 +291,7 @@ private void RunButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
     }
 
 private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenFileActionPerformed
-        PauseEmu();
+        if(emulator.run) PauseEmu();
         if(consolewin!=null)
           consolewin.clearScreenMessages();
 
@@ -324,7 +339,7 @@ private void ElfHeaderViewerActionPerformed(java.awt.event.ActionEvent evt) {//G
 }//GEN-LAST:event_ElfHeaderViewerActionPerformed
 
 private void EnterMemoryViewerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterMemoryViewerActionPerformed
-     PauseEmu();
+     if(emulator.run) PauseEmu();
     if(memoryview==null)
      {
 
@@ -370,6 +385,28 @@ private void SetttingsMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN
        setgui.setVisible(true);
      }
 }//GEN-LAST:event_SetttingsMenuActionPerformed
+
+private void ExitEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExitEmuActionPerformed
+  System.exit(0);
+}//GEN-LAST:event_ExitEmuActionPerformed
+
+private void OpenMemStickActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenMemStickActionPerformed
+    if(emulator.run) PauseEmu();
+    if(memstick==null)
+     {
+
+      memstick = new MemStickBrowser(emulator);
+      Point mainwindow = this.getLocation();
+      memstick.setLocation(mainwindow.x+100, mainwindow.y+50);
+      memstick.setVisible(true);
+    }
+    else
+    {
+      memstick.RefreshWindow();
+      memstick.setVisible(true);
+    }
+
+}//GEN-LAST:event_OpenMemStickActionPerformed
 
 private void RunEmu()
 {
@@ -420,6 +457,7 @@ public void RefreshButtons()
     private javax.swing.JMenu HelpMenu;
     private javax.swing.JMenuBar MenuBar;
     private javax.swing.JMenuItem OpenFile;
+    private javax.swing.JMenuItem OpenMemStick;
     private javax.swing.JMenu OptionsMenu;
     private javax.swing.JToggleButton PauseButton;
     private javax.swing.JMenuItem PauseEmu;
