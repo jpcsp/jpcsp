@@ -194,18 +194,25 @@
                                   <EmptySpace min="-2" pref="48" max="-2" attributes="0"/>
                               </Group>
                           </Group>
-                          <Component id="fieldScreen" min="-2" pref="53" max="-2" attributes="0"/>
-                          <EmptySpace max="-2" attributes="0"/>
-                          <Component id="fieldMusic" min="-2" pref="53" max="-2" attributes="0"/>
-                          <EmptySpace min="-2" pref="4" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="0" attributes="0">
                               <Group type="102" attributes="0">
-                                  <EmptySpace min="-2" pref="81" max="-2" attributes="0"/>
-                                  <Component id="fieldStart" min="-2" pref="53" max="-2" attributes="0"/>
+                                  <EmptySpace min="-2" pref="59" max="-2" attributes="0"/>
+                                  <Component id="fieldMusic" min="-2" pref="53" max="-2" attributes="0"/>
+                                  <EmptySpace min="-2" pref="4" max="-2" attributes="0"/>
+                                  <Group type="103" groupAlignment="0" attributes="0">
+                                      <Group type="102" attributes="0">
+                                          <EmptySpace min="-2" pref="81" max="-2" attributes="0"/>
+                                          <Component id="fieldStart" min="-2" pref="53" max="-2" attributes="0"/>
+                                      </Group>
+                                      <Group type="102" alignment="0" attributes="0">
+                                          <EmptySpace min="-2" pref="38" max="-2" attributes="0"/>
+                                          <Component id="fieldSelect" min="-2" pref="53" max="-2" attributes="0"/>
+                                      </Group>
+                                  </Group>
                               </Group>
                               <Group type="102" alignment="0" attributes="0">
-                                  <EmptySpace min="-2" pref="38" max="-2" attributes="0"/>
-                                  <Component id="fieldSelect" min="-2" pref="53" max="-2" attributes="0"/>
+                                  <EmptySpace min="-2" pref="1" max="-2" attributes="0"/>
+                                  <Component id="fieldScreen" min="-2" pref="53" max="-2" attributes="0"/>
                               </Group>
                           </Group>
                           <EmptySpace min="-2" pref="43" max="-2" attributes="0"/>
@@ -272,6 +279,7 @@
                               <Group type="103" groupAlignment="3" attributes="0">
                                   <Component id="fieldVolMin" alignment="3" min="-2" max="-2" attributes="0"/>
                                   <Component id="fieldAnalogRight" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="fieldScreen" alignment="3" min="-2" max="-2" attributes="0"/>
                               </Group>
                               <Component id="fieldAnalogLeft" alignment="0" min="-2" max="-2" attributes="0"/>
                           </Group>
@@ -285,10 +293,7 @@
                           <EmptySpace min="-2" pref="41" max="-2" attributes="0"/>
                           <Component id="fieldCross" min="-2" max="-2" attributes="0"/>
                           <EmptySpace pref="86" max="32767" attributes="0"/>
-                          <Group type="103" groupAlignment="3" attributes="0">
-                              <Component id="fieldScreen" alignment="3" min="-2" max="-2" attributes="0"/>
-                              <Component id="fieldMusic" alignment="3" min="-2" max="-2" attributes="0"/>
-                          </Group>
+                          <Component id="fieldMusic" min="-2" max="-2" attributes="0"/>
                           <EmptySpace min="-2" pref="60" max="-2" attributes="0"/>
                       </Group>
                   </Group>
