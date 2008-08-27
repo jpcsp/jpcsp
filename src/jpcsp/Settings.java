@@ -177,6 +177,10 @@ public class Settings {
         m.put(readKeyOption("down"), keyCode.DOWN);
         m.put(readKeyOption("left"), keyCode.LEFT);
         m.put(readKeyOption("right"), keyCode.RIGHT);
+        m.put(readKeyOption("analogUp"), keyCode.ANUP);
+        m.put(readKeyOption("analogDown"), keyCode.ANDOWN);
+        m.put(readKeyOption("analogLeft"), keyCode.ANLEFT);
+        m.put(readKeyOption("analogRight"), keyCode.ANRIGHT);
         m.put(readKeyOption("start"), keyCode.START);
         m.put(readKeyOption("select"), keyCode.SELECT);
         m.put(readKeyOption("triangle"), keyCode.TRIANGLE);
@@ -207,6 +211,10 @@ public class Settings {
                 case UP:        writeKeyOption("up", value); break;
                 case LEFT:      writeKeyOption("left", value); break;
                 case RIGHT:     writeKeyOption("right", value); break;
+                case ANDOWN:    writeKeyOption("analogDown", value); break;
+                case ANUP:      writeKeyOption("analogUp", value); break;
+                case ANLEFT:    writeKeyOption("analogLeft", value); break;
+                case ANRIGHT:   writeKeyOption("analogRight", value); break;
             
                 case TRIANGLE:  writeKeyOption("triangle", value); break;
                 case SQUARE:    writeKeyOption("square", value); break;

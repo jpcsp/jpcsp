@@ -41,6 +41,10 @@
           <down>40</down>
           <left>37</left>
           <right>39</right>
+          <analogUp>85</analogUp>
+          <analogDown>75</analogDown>
+          <analogLeft>74</analogLeft>
+          <analogRight>73</analogRight>
           <start>10</start>
           <select>32</select>
           <triangle>87</triangle>
