@@ -72,6 +72,12 @@ public class pspctrl {
         this.Ly = Ly;
         this.Buttons = Buttons;
     }
+    
+    public boolean isModeDigital() {
+        if (mode == 0)
+            return true;
+        return false;
+    }
 
     public void sceCtrlSetSamplingCycle(int a0)
     {

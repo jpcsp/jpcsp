@@ -66,6 +66,10 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         fieldVolPlus.addKeyListener(this);
         fieldVolMin.addKeyListener(this);
         fieldHold.addKeyListener(this);
+        fieldAnalogUp.addKeyListener(this);
+        fieldAnalogDown.addKeyListener(this);
+        fieldAnalogLeft.addKeyListener(this);
+        fieldAnalogRight.addKeyListener(this);
     }
     
     private void loadKeys() {
@@ -85,6 +89,10 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                 case UP:        fieldUp.setText(KeyEvent.getKeyText(value)); break;
                 case LEFT:      fieldLeft.setText(KeyEvent.getKeyText(value)); break;
                 case RIGHT:     fieldRight.setText(KeyEvent.getKeyText(value)); break;
+                case ANDOWN:    fieldAnalogDown.setText(KeyEvent.getKeyText(value)); break;
+                case ANUP:      fieldAnalogUp.setText(KeyEvent.getKeyText(value)); break;
+                case ANLEFT:    fieldAnalogLeft.setText(KeyEvent.getKeyText(value)); break;
+                case ANRIGHT:   fieldAnalogRight.setText(KeyEvent.getKeyText(value)); break;
             
                 case TRIANGLE:  fieldTriangle.setText(KeyEvent.getKeyText(value)); break;
                 case SQUARE:    fieldSquare.setText(KeyEvent.getKeyText(value)); break;
@@ -753,19 +761,19 @@ private void fieldMusicMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:
 }//GEN-LAST:event_fieldMusicMouseClicked
 
 private void fieldAnalogDownMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldAnalogDownMouseClicked
-// TODO add your handling code here:
+    setKey(fieldAnalogDown, keyCode.ANDOWN);
 }//GEN-LAST:event_fieldAnalogDownMouseClicked
 
 private void fieldAnalogUpMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldAnalogUpMouseClicked
-// TODO add your handling code here:
+    setKey(fieldAnalogUp, keyCode.ANUP);
 }//GEN-LAST:event_fieldAnalogUpMouseClicked
 
 private void fieldAnalogRightMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldAnalogRightMouseClicked
-// TODO add your handling code here:
+    setKey(fieldAnalogRight, keyCode.ANRIGHT);
 }//GEN-LAST:event_fieldAnalogRightMouseClicked
 
 private void fieldAnalogLeftMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_fieldAnalogLeftMouseClicked
-// TODO add your handling code here:
+    setKey(fieldAnalogLeft, keyCode.ANLEFT);
 }//GEN-LAST:event_fieldAnalogLeftMouseClicked
 
 private void fieldAnalogDownActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_fieldAnalogDownActionPerformed
