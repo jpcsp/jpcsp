@@ -392,6 +392,8 @@ private void ExitEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
 private void OpenMemStickActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenMemStickActionPerformed
     if(emulator.run) PauseEmu();
+    if(consolewin!=null)
+          consolewin.clearScreenMessages();
     if(memstick==null)
      {
 
