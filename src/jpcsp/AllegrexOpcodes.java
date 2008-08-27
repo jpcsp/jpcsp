@@ -65,7 +65,7 @@ public class AllegrexOpcodes {
     public static final byte LUI = 0xf; // Load Upper Immediate
     public static final byte COP0 = 0x10; // Coprocessor Operation 
     public static final byte COP1 = 0x11; // Coprocessor Operation 
-    public static final byte COP2 = 0x12; // Coprocessor Operation 
+    public static final byte VFPU2 = 0x12;
     /*  0x13 reserved or unsupported */
     public static final byte BEQL = 0x14; // Branch on Equal Likely
     public static final byte BNEL = 0x15; // Branch on Not Equal Likely
@@ -73,7 +73,7 @@ public class AllegrexOpcodes {
     public static final byte BGTZL = 0x17; // Branch on Greater Than Zero Likely
     public static final byte VFPU0 = 0x18;
     public static final byte VFPU1 = 0x19;
-    public static final byte VFPU2 = 0x1a;
+    /*  0x1a reserved or unsupported */
     public static final byte VFPU3 = 0x1b;
     public static final byte SPECIAL2 = 0x1c; // Allegrex table
     /*  0x1d reserved or unsupported */

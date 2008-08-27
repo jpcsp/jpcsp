@@ -8,20 +8,20 @@
          <y>88</y>
        </disassembler>
        <elfheader>
-         <x>244</x>
-         <y>16</y>
+         <x>143</x>
+         <y>328</y>
        </elfheader>
        <memoryview>
-         <x>233</x>
-         <y>453</y>
+         <x>100</x>
+         <y>50</y>
        </memoryview>
        <registers>
          <x>16</x>
          <y>5</y>
        </registers>
       <logwindow>
-        <x>58</x>
-        <y>336</y>
+        <x>651</x>
+        <y>376</y>
       </logwindow>
     </windowspos>
 	
