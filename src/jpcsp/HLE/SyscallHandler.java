@@ -37,6 +37,9 @@ public class SyscallHandler {
                 case 0x200d:
                     ThreadMan.get_instance().ThreadMan_sceKernelCreateCallback(gpr[4], gpr[5], gpr[6]);
                     break;
+                case 0x2014:
+                    ThreadMan.get_instance().ThreadMan_sceKernelSleepThread();
+                    break;
                 case 0x2015:
                     ThreadMan.get_instance().ThreadMan_sceKernelSleepThreadCB();
                     break;
@@ -92,7 +95,7 @@ public class SyscallHandler {
                 case 0x20ec:
                     LoadExec.get_instance().sceKernelRegisterExitCallback(gpr[4]);
                     break;
-                    
+
                 case 0x213a:
                     pspdisplay.get_instance().sceDisplaySetMode(gpr[4], gpr[5], gpr[6]);
                     break;
@@ -157,7 +160,7 @@ public class SyscallHandler {
                case 0x208f:// sceIoOpen
                     pspiofilemgr.get_instance().sceIoOpen(gpr[4],gpr[5],gpr[6]);
                     break;
-                case 0x2093:// sceIoWrite 
+                case 0x2093:// sceIoWrite
                     pspiofilemgr.get_instance().sceIoWrite(gpr[4],gpr[5],gpr[6]);
                     break;
                 case 0x209b://sceIoDopen
