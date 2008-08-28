@@ -1,7 +1,18 @@
 /*
- * MemStickBrowser.java
- *
- * Created on 27 Αύγουστος 2008, 10:17 πμ
+This file is part of jpcsp.
+
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package jpcsp;
@@ -12,6 +23,7 @@ import javax.swing.DefaultListModel;
 import javax.swing.JOptionPane;
 import jpcsp.HLE.pspiofilemgr;
 import jpcsp.util.JpcspDialogManager;
+import jpcsp.util.MetaInformation;
 
 /**
  *
@@ -20,12 +32,14 @@ import jpcsp.util.JpcspDialogManager;
 public class MemStickBrowser extends javax.swing.JFrame {
     private DefaultListModel listmodel = new DefaultListModel();
     Emulator emu;
+    MainGUI gui;
     /** Creates new form MemStickBrowser */
-    public MemStickBrowser(Emulator emu) {
+    public MemStickBrowser(Emulator emu, MainGUI gui) {
         this.emu=emu;
+        this.gui=gui;
         listmodel = new DefaultListModel();
         initComponents();
-        
+
         RefreshWindow();
     }
 
@@ -102,11 +116,11 @@ private void CancelButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
 }//GEN-LAST:event_CancelButtonActionPerformed
 
 private void LoadButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LoadButtonActionPerformed
-   
+
     //step 1: look if we have select something
    if(browserlist.getSelectedIndex()==-1)
    {
-     JOptionPane.showMessageDialog(this, "You haven't select something","jpcsp Error",JOptionPane.ERROR_MESSAGE);   
+     JOptionPane.showMessageDialog(this, "You haven't select something","jpcsp Error",JOptionPane.ERROR_MESSAGE);
      return;
    }
    //step 2: is what we have selected a directory?
@@ -114,20 +128,21 @@ private void LoadButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
    File isdir = new File("ms0/PSP/GAME/" + (String)browserlist.getSelectedValue());
    if(!isdir.isDirectory())
    {
-            JOptionPane.showMessageDialog(this, "The selection you choose is not a directory","jpcsp Error",JOptionPane.ERROR_MESSAGE);   
+            JOptionPane.showMessageDialog(this, "The selection you choose is not a directory","jpcsp Error",JOptionPane.ERROR_MESSAGE);
             return;
    }
    //step 3: check if the select directory contains an eboot.pbp file
    File eboot = new File("ms0/PSP/GAME/" + (String)browserlist.getSelectedValue() + "/eboot.pbp");
    if(!eboot.exists())//GEN-LAST:event_LoadButtonActionPerformed
    {
-        JOptionPane.showMessageDialog(this, "There isn't an eboot.pbp on the selected directory","jpcsp Error",JOptionPane.ERROR_MESSAGE);   
+        JOptionPane.showMessageDialog(this, "There isn't an eboot.pbp on the selected directory","jpcsp Error",JOptionPane.ERROR_MESSAGE);
         return;
    }
    //step 4: okay we can load eboot.pbp now :)
            try {
             emu.load(eboot.getPath());
             pspiofilemgr.get_instance().getfilepath("ms0/PSP/GAME/" + (String)browserlist.getSelectedValue());
+            gui.setTitle(MetaInformation.FULL_NAME + " - " + (String)browserlist.getSelectedValue());
         } catch (IOException e) {
             e.printStackTrace();
             JpcspDialogManager.showError(this, "IO Error : " + e.getMessage());
@@ -135,7 +150,7 @@ private void LoadButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
             ex.printStackTrace();
             JpcspDialogManager.showError(this, "Critical Error : " + ex.getMessage());
         }
-   dispose();//close the window 
+   dispose();//close the window
 }
 
     public void RefreshWindow()

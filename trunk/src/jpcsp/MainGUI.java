@@ -67,7 +67,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener {
         getContentPane().add(pspdisplay_glcanvas.get_instance(), java.awt.BorderLayout.CENTER);
         pspdisplay_glcanvas.get_instance().addKeyListener(this);
         pack();
-        
+
     }
 
     /** This method is called from within the constructor to
@@ -268,7 +268,7 @@ private void ToggleConsoleActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 private void EnterDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterDebuggerActionPerformed
      if(disasm==null)
      {
-      if(emulator.run) PauseEmu();
+      PauseEmu();
       disasm = new DisassemblerFrame(emulator);
       Point mainwindow = this.getLocation();
       disasm.setLocation(mainwindow.x+50, mainwindow.y+50);
@@ -292,7 +292,7 @@ private void RunButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
     }
 
 private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenFileActionPerformed
-        if(emulator.run) PauseEmu();
+        PauseEmu();
         if(consolewin!=null)
           consolewin.clearScreenMessages();
 
@@ -322,7 +322,7 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
 }//GEN-LAST:event_OpenFileActionPerformed
 
 private void PauseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PauseButtonActionPerformed
-    PauseEmu();
+    TogglePauseEmu();
 }//GEN-LAST:event_PauseButtonActionPerformed
 
 private void ElfHeaderViewerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ElfHeaderViewerActionPerformed
@@ -342,7 +342,7 @@ private void ElfHeaderViewerActionPerformed(java.awt.event.ActionEvent evt) {//G
 }//GEN-LAST:event_ElfHeaderViewerActionPerformed
 
 private void EnterMemoryViewerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterMemoryViewerActionPerformed
-     if(emulator.run) PauseEmu();
+    PauseEmu();
     if(memoryview==null)
      {
 
@@ -381,7 +381,7 @@ private void SetttingsMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN
       Point mainwindow = this.getLocation();
       setgui.setLocation(mainwindow.x+100, mainwindow.y+50);
       setgui.setVisible(true);
-      
+
       /* add a direct link to the controller */
       setgui.setController(emulator.getController());
      }
@@ -397,14 +397,13 @@ private void ExitEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 }//GEN-LAST:event_ExitEmuActionPerformed
 
 private void OpenMemStickActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenMemStickActionPerformed
-    if(emulator.run) PauseEmu();
-    this.setTitle(version);
+    PauseEmu();
     if(consolewin!=null)
           consolewin.clearScreenMessages();
     if(memstick==null)
      {
 
-      memstick = new MemStickBrowser(emulator);
+      memstick = new MemStickBrowser(emulator, this);
       Point mainwindow = this.getLocation();
       memstick.setLocation(mainwindow.x+100, mainwindow.y+50);
       memstick.setVisible(true);
@@ -421,7 +420,7 @@ private void RunEmu()
 {
     emulator.RunEmu();
 }
-private void PauseEmu()
+private void TogglePauseEmu()
 {
     // This is a toggle, so can pause and unpause
     if (emulator.run)
@@ -430,6 +429,13 @@ private void PauseEmu()
             emulator.PauseEmu();
         else
             RunEmu();
+    }
+}
+private void PauseEmu()
+{
+    // This will only enter pause mode
+    if (emulator.run && !emulator.pause) {
+        emulator.PauseEmu();
     }
 }
 public void RefreshButtons()
