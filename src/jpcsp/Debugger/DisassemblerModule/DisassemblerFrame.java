@@ -51,10 +51,10 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
     /** Creates new form DisassemblerFrame */
     public DisassemblerFrame(Emulator emu) {
         this.emu=emu;
-        DebuggerPC = 0;
         listmodel = new DefaultListModel();
         initComponents();
 
+        DebuggerPC = 0;
         RefreshDebugger();
     }
 
@@ -714,8 +714,9 @@ private void DeleteBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//
             {
               String address = value.substring(4, 12);
               int addr = Integer.parseInt(address,16);
-              int b = breakpoints.indexOf(addr);
-              breakpoints.remove(b);
+              //int b = breakpoints.indexOf(addr);
+              //breakpoints.remove(b);
+              breakpoints.remove(addr);
               RefreshDebugger();
             }
           }
@@ -726,37 +727,42 @@ private void DeleteBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//
 }//GEN-LAST:event_DeleteBreakpointActionPerformed
 
 private void StepIntoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_StepIntoActionPerformed
-   // try {
-        Emulator.getProcessor().step();
-        jpcsp.HLE.ThreadMan.get_instance().step();
-        jpcsp.HLE.pspdisplay.get_instance().step();
-    //} catch(GeneralJpcspException e) {
-    //    JpcspDialogManager.showError(this, "General Error : " + e.getMessage());
-   // }
+    Emulator.getProcessor().step();
+    jpcsp.HLE.ThreadMan.get_instance().step();
+    jpcsp.HLE.pspdisplay.get_instance().step();
+    Emulator.getController().checkControllerState();
+
     DebuggerPC = 0;
     RefreshDebugger();
 }//GEN-LAST:event_StepIntoActionPerformed
 
 private void RunDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RunDebuggerActionPerformed
-      //while(breakpoints.indexOf(Emulator.getProcessor().pc) != -1)//check if there is a breakpoint
-      //{
-     //     emu.PauseEmu();
-      //    RunDebugger.setSelected(false);
-      //    DebuggerPC = 0;
-      //    RefreshDebugger();
-     // }
-     // else
-     // {
-        emu.RunEmu();
-     // }
+    emu.RunEmu();
 }//GEN-LAST:event_RunDebuggerActionPerformed
+
+// Called from Emulator
+public void step() {
+    //check if there is a breakpoint
+    if (breakpoints.size() > 0 &&
+        breakpoints.indexOf(Emulator.getProcessor().pc) != -1) {
+        emu.PauseEmu();
+
+        DebuggerPC = 0;
+        RefreshDebugger();
+    }
+}
 
 private void PauseDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PauseDebuggerActionPerformed
     emu.PauseEmu();
-    RunDebugger.setSelected(false);
+
     DebuggerPC = 0;
     RefreshDebugger();
 }//GEN-LAST:event_PauseDebuggerActionPerformed
+
+// Called from Emulator
+public void RefreshButtons() {
+    RunDebugger.setSelected(emu.run && !emu.pause);
+}
 
 private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
     Point location = getLocation();

@@ -22,6 +22,7 @@ import javax.swing.JOptionPane;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Settings;
+import static jpcsp.MemoryMap.*;
 
 /**
  *
@@ -38,9 +39,8 @@ public class MemoryViewer extends javax.swing.JFrame {
 
         RefreshMemory();
     }
-    public char converttochar(int address)
+    private char converttochar(int character)
     {
-        int character = Memory.get_instance().read8(address);
       //char newone = (char)Memory.get_instance().read8(address);
       //if(newone <32 || newone >127)
       //    return (byte)32;
@@ -51,56 +51,52 @@ public class MemoryViewer extends javax.swing.JFrame {
           return (char)(character & 0x0ff);
 
     }
+
+    private boolean isAddressGood(int address)
+    {
+        return ((address >= START_SCRATCHPAD && address <= END_SCRATCHPAD) ||
+            (address >= START_VRAM && address <= END_VRAM) ||
+            (address >= START_RAM && address <= END_RAM));
+    }
+
+    private byte safeRead8(int address)
+    {
+        byte value = 0;
+        if (isAddressGood(address))
+            value = (byte)Memory.get_instance().read8(address);
+        return value;
+    }
+
     public void RefreshMemory()
     {
-      int addr = startaddress;
-      memoryview.setText("");
-      for(int y=0; y<22; y++)//21 lines
-      {
-                memoryview.append(String.format("%08x : %02x %02x %02x %02x %02x %02x " +
-                                  "%02x %02x %02x %02x %02x %02x %02x %02x " +
-                                   "%02x %02x %c %c %c %c %c %c %c %c %c %c %c %c %c %c %c %c", addr,
-                                               (byte)Memory.get_instance().read8(addr),
-                                               (byte)Memory.get_instance().read8(addr+1),
-                                               (byte)Memory.get_instance().read8(addr+2),
-                                               (byte)Memory.get_instance().read8(addr+3),
-                                               (byte)Memory.get_instance().read8(addr+4),
-                                               (byte)Memory.get_instance().read8(addr+5),
-                                               (byte)Memory.get_instance().read8(addr+6),
-                                               (byte)Memory.get_instance().read8(addr+7),
-                                               (byte)Memory.get_instance().read8(addr+8),
-                                               (byte)Memory.get_instance().read8(addr+9),
-                                               (byte)Memory.get_instance().read8(addr+10),
-                                               (byte)Memory.get_instance().read8(addr+11),
-                                               (byte)Memory.get_instance().read8(addr+12),
-                                               (byte)Memory.get_instance().read8(addr+13),
-                                               (byte)Memory.get_instance().read8(addr+14),
-                                               (byte)Memory.get_instance().read8(addr+15),
-                                               converttochar(addr),
-                                               converttochar(addr+1),
-                                               converttochar(addr+2),
-                                               converttochar(addr+3),
-                                               converttochar(addr+4),
-                                               converttochar(addr+5),
-                                               converttochar(addr+6),
-                                               converttochar(addr+7),
-                                               converttochar(addr+8),
-                                               converttochar(addr+9),
-                                               converttochar(addr+10),
-                                               converttochar(addr+11),
-                                               converttochar(addr+12),
-                                               converttochar(addr+13),
-                                               converttochar(addr+14),
-                                               converttochar(addr+15)
+        byte[] line = new byte[16];
+        int addr = startaddress;
+        memoryview.setText("");
+        for(int y=0; y<22; y++)//21 lines
+        {
+            for (int i = 0; i < line.length; i++)
+                line[i] = safeRead8(addr + i);
 
-                                               )
-                                               );
-                if(y !=21) memoryview.append("\n");
-           // }
-            addr +=16;
+            memoryview.append(String.format("%08x : %02x %02x %02x %02x %02x %02x " +
+                    "%02x %02x %02x %02x %02x %02x %02x %02x " +
+                    "%02x %02x %c %c %c %c %c %c %c %c %c %c %c %c %c %c %c %c", addr,
+                    line[0], line[1], line[2], line[3], line[4], line[5], line[6], line[7],
+                    line[8], line[9], line[10], line[11], line[12], line[13], line[14], line[15],
+                    converttochar(line[0]), converttochar(line[1]),
+                    converttochar(line[2]), converttochar(line[3]),
+                    converttochar(line[4]), converttochar(line[5]),
+                    converttochar(line[6]), converttochar(line[7]),
+                    converttochar(line[8]), converttochar(line[9]),
+                    converttochar(line[10]), converttochar(line[11]),
+                    converttochar(line[12]), converttochar(line[13]),
+                    converttochar(line[14]), converttochar(line[15])
+                    )
+                );
+            if(y !=21) memoryview.append("\n");
+        // }
+        addr +=16;
 
-      }
-
+        }
     }
     /** This method is called from within the constructor to
      * initialize the form.
