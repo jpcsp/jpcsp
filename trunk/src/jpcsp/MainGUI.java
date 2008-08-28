@@ -32,6 +32,7 @@ import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
 import jpcsp.Debugger.ElfHeaderInfo;
 import jpcsp.Debugger.MemoryViewer;
 import jpcsp.HLE.pspdisplay_glcanvas;
+import jpcsp.HLE.pspiofilemgr;
 import jpcsp.util.JpcspDialogManager;
 import jpcsp.util.MetaInformation;
 
@@ -303,7 +304,9 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
         //This is where a real application would open the file.
         try {
             emulator.load(file.getPath());
-
+            String findpath = file.getParent();
+            System.out.println(findpath);
+            pspiofilemgr.get_instance().getfilepath(findpath);
             this.setTitle(version + " - " + file.getName());
         } catch (IOException e) {
             e.printStackTrace();
@@ -395,6 +398,7 @@ private void ExitEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
 private void OpenMemStickActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenMemStickActionPerformed
     if(emulator.run) PauseEmu();
+    this.setTitle(version);
     if(consolewin!=null)
           consolewin.clearScreenMessages();
     if(memstick==null)

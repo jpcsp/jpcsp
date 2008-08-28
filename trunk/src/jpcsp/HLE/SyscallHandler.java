@@ -151,7 +151,15 @@ public class SyscallHandler {
                     pspge.get_instance().sceGeUnsetCallback(gpr[4]);
                     break;
                 */
-
+               case 0x208d:// sceIoClose
+                    pspiofilemgr.get_instance().sceIoClose(gpr[4]);
+                    break;
+               case 0x208f:// sceIoOpen
+                    pspiofilemgr.get_instance().sceIoOpen(gpr[4],gpr[5],gpr[6]);
+                    break;
+                case 0x2093:// sceIoWrite 
+                    pspiofilemgr.get_instance().sceIoWrite(gpr[4],gpr[5],gpr[6]);
+                    break;
                 default:
                 {
                   for (syscalls.calls c : syscalls.calls.values()) {

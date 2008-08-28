@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import javax.swing.DefaultListModel;
 import javax.swing.JOptionPane;
+import jpcsp.HLE.pspiofilemgr;
 import jpcsp.util.JpcspDialogManager;
 
 /**
@@ -126,6 +127,7 @@ private void LoadButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
    //step 4: okay we can load eboot.pbp now :)
            try {
             emu.load(eboot.getPath());
+            pspiofilemgr.get_instance().getfilepath("ms0/PSP/GAME/" + (String)browserlist.getSelectedValue());
         } catch (IOException e) {
             e.printStackTrace();
             JpcspDialogManager.showError(this, "IO Error : " + e.getMessage());
