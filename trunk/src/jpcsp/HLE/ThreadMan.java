@@ -39,6 +39,7 @@ public class ThreadMan {
     private static ThreadMan instance;
     private static HashMap<Integer, SceKernelThreadInfo> threadlist;
     private SceKernelThreadInfo current_thread;
+    private int rootThreadUid;
 
     public static ThreadMan get_instance() {
         if (instance == null) {
@@ -59,6 +60,7 @@ public class ThreadMan {
         threadlist = new HashMap<Integer, SceKernelThreadInfo>();
 
         current_thread = new SceKernelThreadInfo("root", entry_addr, 0x20, 0x40000, attr);
+        rootThreadUid = current_thread.uid;
 
         // Switch in this thread
         current_thread.status = PspThreadStatus.PSP_THREAD_RUNNING;
@@ -76,6 +78,11 @@ public class ThreadMan {
             if (Emulator.getProcessor().pc == 0 && Emulator.getProcessor().gpr[31] == 0) {
                 // Thread has exited
                 System.out.println("Thread exit detected SceUID=" + Integer.toHexString(current_thread.uid) + " name:'" + current_thread.name + "'");
+                if (current_thread.uid == rootThreadUid) {
+                    System.out.println("Program exit detected (return " + Emulator.getProcessor().gpr[2] + ")");
+                    Emulator.PauseEmu();
+                }
+
                 current_thread.exitStatus = Emulator.getProcessor().gpr[2]; // v0
                 current_thread.status = PspThreadStatus.PSP_THREAD_STOPPED;
                 contextSwitch(nextThread());
@@ -112,7 +119,7 @@ public class ThreadMan {
                  }
                  catch(Exception e)
                  {
-                   e.printStackTrace();   
+                   e.printStackTrace();
                  }
                 }
             }
