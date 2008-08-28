@@ -106,7 +106,7 @@ public class pspiofilemgr {
         IOInfo file = filelist.get(a0);
         try
         {
-          if ((a1 >= MemoryMap.START_RAM ) && (a1 <= MemoryMap.END_VRAM)) 
+          if ((a1 >= MemoryMap.START_RAM ) && (a1 <= MemoryMap.END_RAM)) 
           {
            FileOutputStream fop=new FileOutputStream(file.f);
            fop.write(Memory.get_instance().mainmemory.array(), a1 - MemoryMap.START_RAM, a2);
