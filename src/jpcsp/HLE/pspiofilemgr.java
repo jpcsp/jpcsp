@@ -71,7 +71,7 @@ public class pspiofilemgr {
     }
     public void sceIoClose(int a0)
     {
-        if(debug)System.out.println("sceIoClose uid" + a0);
+        if(debug)System.out.println("sceIoClose uid= " + a0);
        
         try{
          SceUIDMan.get_instance().checkUidPurpose(a0, "IOFileManager-File");
@@ -95,6 +95,20 @@ public class pspiofilemgr {
 
     public void sceIoWrite(int a0 , int a1,int a2)
     {
+        if(a0==1)
+        {
+            String stdout = readStringZ(Memory.get_instance().mainmemory, (a1 & 0x3fffffff) - MemoryMap.START_RAM);
+            System.out.print(stdout);
+            Emulator.getProcessor().gpr[2]= a2;
+            return;
+        }
+        if(a0==2)
+        {
+            String stderr = readStringZ(Memory.get_instance().mainmemory, (a1 & 0x3fffffff) - MemoryMap.START_RAM);
+            System.out.print(stderr);
+            Emulator.getProcessor().gpr[2]= a2;
+            return;
+        }
          System.out.println("sceIoWrite uid=" + a0 + " data = " + Integer.toHexString(a1) + " size = "+a2);
         try{
          SceUIDMan.get_instance().checkUidPurpose(a0, "IOFileManager-File");
