@@ -52,17 +52,10 @@ public class MemoryViewer extends javax.swing.JFrame {
 
     }
 
-    private boolean isAddressGood(int address)
-    {
-        return ((address >= START_SCRATCHPAD && address <= END_SCRATCHPAD) ||
-            (address >= START_VRAM && address <= END_VRAM) ||
-            (address >= START_RAM && address <= END_RAM));
-    }
-
     private byte safeRead8(int address)
     {
         byte value = 0;
-        if (isAddressGood(address))
+        if (Memory.get_instance().isAddressGood(address))
             value = (byte)Memory.get_instance().read8(address);
         return value;
     }

@@ -68,24 +68,27 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         listmodel.clear();
 
         for (t = DebuggerPC , cnt = 0; t < (DebuggerPC + 0x00000094); t += 0x00000004, cnt++) {
+            if (Memory.get_instance().isAddressGood((int) t)) {
+                int memread = Memory.get_instance().read32((int) t);
 
-            int memread = Memory.get_instance().read32((int) t);
-
-            if (memread == 0) {
-                 if(breakpoints.indexOf(t)!=-1)
-                      listmodel.addElement(String.format("<br>%08x:[%08x]: nop", t, memread));
-                 else
-                  listmodel.addElement(String.format("%08x:[%08x]: nop", t, memread));
+                if (memread == 0) {
+                     if(breakpoints.indexOf(t)!=-1)
+                          listmodel.addElement(String.format("<br>%08x:[%08x]: nop", t, memread));
+                     else
+                      listmodel.addElement(String.format("%08x:[%08x]: nop", t, memread));
+                } else {
+                    opcode_address = t;
+                    if(breakpoints.indexOf(t)!=-1)
+                    {
+                        listmodel.addElement(String.format("<br>%08x:[%08x]: %s", t, memread, disOp.disasm(memread,opcode_address)));
+                    }
+                    else
+                    {
+                        listmodel.addElement(String.format("%08x:[%08x]: %s", t, memread, disOp.disasm(memread,opcode_address)));
+                    }
+                }
             } else {
-                opcode_address = t;
-                if(breakpoints.indexOf(t)!=-1)
-                {
-                    listmodel.addElement(String.format("<br>%08x:[%08x]: %s", t, memread, disOp.disasm(memread,opcode_address)));
-                }
-                else
-                {
-                    listmodel.addElement(String.format("%08x:[%08x]: %s", t, memread, disOp.disasm(memread,opcode_address)));
-                }
+                listmodel.addElement(String.format("%08x: unmapped", t));
             }
         }
     //refreshregisters
@@ -588,15 +591,21 @@ private void DumpCodeToTextActionPerformed(java.awt.event.ActionEvent evt) {//GE
             int End = Integer.parseInt(opt.getInput()[1],16);
             for(int i =Start; i<=End; i+=4)
             {
-               int memread = Memory.get_instance().read32((int) i);
-             if (memread == 0) {
-                bufferedWriter.write(String.format("%08x : [%08x]: nop", i, memread));
-                bufferedWriter.newLine();
-             } else {
-                opcode_address = i;
-                bufferedWriter.write(String.format("%08x : [%08x]: %s", i, memread, disOp.disasm(memread,opcode_address)));
-                bufferedWriter.newLine();
-             }
+                if (Memory.get_instance().isAddressGood((int) i)) {
+                    int memread = Memory.get_instance().read32((int) i);
+                    if (memread == 0) {
+                        bufferedWriter.write(String.format("%08x : [%08x]: nop", i, memread));
+                        bufferedWriter.newLine();
+                    } else {
+                        opcode_address = i;
+                        bufferedWriter.write(String.format("%08x : [%08x]: %s", i, memread, disOp.disasm(memread,opcode_address)));
+                        bufferedWriter.newLine();
+                    }
+                } else {
+                    // Should we even both printing these?
+                    bufferedWriter.write(String.format("%08x : unmapped", i));
+                    bufferedWriter.newLine();
+                }
             }
 
 
@@ -714,9 +723,8 @@ private void DeleteBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//
             {
               String address = value.substring(4, 12);
               int addr = Integer.parseInt(address,16);
-              //int b = breakpoints.indexOf(addr);
-              //breakpoints.remove(b);
-              breakpoints.remove(addr);
+              int b = breakpoints.indexOf(addr);
+              breakpoints.remove(b);
               RefreshDebugger();
             }
           }
