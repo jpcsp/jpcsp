@@ -208,43 +208,51 @@ public class ThreadMan {
 
     /** terminate thread a0 */
     public void ThreadMan_sceKernelTerminateThread(int a0) throws GeneralJpcspException {
-        SceUIDMan.get_instance().checkUidPurpose(a0, "ThreadMan-thread");
+        SceUIDMan.get_instance().checkUidPurpose(a0, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadlist.get(a0);
-        System.out.println("sceKernelTerminateThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
+        if (thread == null) {
+            Emulator.getProcessor().gpr[2] = 0x80020198; //notfoundthread
+        } else {
+            System.out.println("sceKernelTerminateThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
 
-        thread.status = PspThreadStatus.PSP_THREAD_STOPPED; // PSP_THREAD_STOPPED or PSP_THREAD_KILLED ?
+            thread.status = PspThreadStatus.PSP_THREAD_STOPPED; // PSP_THREAD_STOPPED or PSP_THREAD_KILLED ?
 
-        Emulator.getProcessor().gpr[2] = 0;
-        //return 0;
+            Emulator.getProcessor().gpr[2] = 0;
+        }
     }
 
     /** delete thread a0 */
     public void ThreadMan_sceKernelDeleteThread(int a0) throws GeneralJpcspException {
-        SceUIDMan.get_instance().checkUidPurpose(a0, "ThreadMan-thread");
+        SceUIDMan.get_instance().checkUidPurpose(a0, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadlist.get(a0);
-        System.out.println("sceKernelDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
+        if (thread == null) {
+            Emulator.getProcessor().gpr[2] = 0x80020198; //notfoundthread
+        } else {
+            System.out.println("sceKernelDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
 
-        // Mark thread for deletion
-        thread.do_delete = true;
+            // Mark thread for deletion
+            thread.do_delete = true;
 
-        Emulator.getProcessor().gpr[2] = 0;
+            Emulator.getProcessor().gpr[2] = 0;
+        }
     }
 
     public void ThreadMan_sceKernelStartThread(int a0, int a1, int a2) throws GeneralJpcspException {
-        SceUIDMan.get_instance().checkUidPurpose(a0, "ThreadMan-thread");
+        SceUIDMan.get_instance().checkUidPurpose(a0, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadlist.get(a0);
+        if (thread == null) {
+            Emulator.getProcessor().gpr[2] = 0x80020198; //notfoundthread
+        } else {
+            // Set return value before context switch!
+            Emulator.getProcessor().gpr[2] = 0;
 
-        // Set return value before context switch!
-        Emulator.getProcessor().gpr[2] = 0;
-
-        //thread.status = PspThreadStatus.PSP_THREAD_READY;
-        // We will start the thread immediately so we don't have to save a1 and a2 somewhere
-        contextSwitch(thread);
-        // set arguments
-        Emulator.getProcessor().gpr[4] = a1; // a0 = a1;
-        Emulator.getProcessor().gpr[5] = a2; // a1 = a2;
-
-        //return 0;
+            //thread.status = PspThreadStatus.PSP_THREAD_READY;
+            // We will start the thread immediately so we don't have to save a1 and a2 somewhere
+            contextSwitch(thread);
+            // set arguments
+            Emulator.getProcessor().gpr[4] = a1; // a0 = a1;
+            Emulator.getProcessor().gpr[5] = a2; // a1 = a2;
+        }
     }
 
     /** exit the current thread */
@@ -313,30 +321,30 @@ public class ThreadMan {
 
         Emulator.getProcessor().gpr[2] = callback.uid;
     }
-    
+
     public void ThreadMan_sceKernelGetThreadId() {
         //Get the current thread Id
         Emulator.getProcessor().gpr[2] = current_thread.uid;
     }
-    
+
     public void ThreadMan_sceKernelReferThreadStatus(int a0, int a1) {
         //Get the status information for the specified thread
         SceKernelThreadInfo thread = threadlist.get(a0);
         if (thread == null) {
-            Emulator.getProcessor().gpr[2] = 1;
+            Emulator.getProcessor().gpr[2] = 0x80020198; //notfoundthread
             return;
         }
         int i, len;
         Memory mem = Memory.get_instance();
         mem.write32(a1, 106); //struct size
-        
+
         //thread name max 32bytes
         len = thread.name.length();
         if (len > 31) len = 31;
         for (i=0; i < len; i++)
             mem.write8(a1 +4 +i, (byte)thread.name.charAt(i));
         mem.write8(a1 +4 +i, (byte)0);
-        
+
         mem.write32(a1 +36, thread.attr);
         mem.write32(a1 +40, thread.status.getValue());
         mem.write32(a1 +44, thread.entry_addr);
@@ -353,7 +361,7 @@ public class ThreadMan {
         mem.write32(a1 +94, thread.intrPreemptCount);
         mem.write32(a1 +98, thread.threadPreemptCount);
         mem.write32(a1 +102, thread.releaseCount);
-        
+
         Emulator.getProcessor().gpr[2] = 0;
     }
 

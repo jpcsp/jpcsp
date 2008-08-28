@@ -53,13 +53,18 @@ public class SceUIDMan {
 
     /** classes should call checkUidPurpose before using a SceUID */
     public void checkUidPurpose(int uid, Object purpose) throws GeneralJpcspException {
+        checkUidPurpose(uid, purpose, false);
+    }
+
+    /** classes should call checkUidPurpose before using a SceUID */
+    public void checkUidPurpose(int uid, Object purpose, boolean allowUnknown) throws GeneralJpcspException {
         SceUID found = uids.get(uid);
 
         if (found == null) {
-            throw new GeneralJpcspException("Attempt to use unknown SceUID (purpose='" + purpose.toString() + "')");
-        }
-
-        if (!purpose.equals(found.getPurpose())) {
+            if (!allowUnknown) {
+                throw new GeneralJpcspException("Attempt to use unknown SceUID (purpose='" + purpose.toString() + "')");
+            }
+        } else if (!purpose.equals(found.getPurpose())) {
             throw new GeneralJpcspException("Attempt to use SceUID for different purpose (purpose='" + purpose.toString() + "',original='" + found.getPurpose().toString() + "')");
         }
     }
