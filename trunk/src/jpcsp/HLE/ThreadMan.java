@@ -77,12 +77,8 @@ public class ThreadMan {
             // Hook jr ra to 0 (thread function returned)
             if (Emulator.getProcessor().pc == 0 && Emulator.getProcessor().gpr[31] == 0) {
                 // Thread has exited
-                System.out.println("Thread exit detected SceUID=" + Integer.toHexString(current_thread.uid) + " name:'" + current_thread.name + "'");
-                if (current_thread.uid == rootThreadUid) {
-                    System.out.println("Program exit detected (return " + Emulator.getProcessor().gpr[2] + ")");
-                    Emulator.PauseEmu();
-                }
-
+                System.out.println("Thread exit detected SceUID=" + Integer.toHexString(current_thread.uid)
+                    + " name:'" + current_thread.name + "' return:" + Emulator.getProcessor().gpr[2]);
                 current_thread.exitStatus = Emulator.getProcessor().gpr[2]; // v0
                 current_thread.status = PspThreadStatus.PSP_THREAD_STOPPED;
                 contextSwitch(nextThread());
@@ -144,6 +140,9 @@ public class ThreadMan {
             // restore registers
             newthread.restoreContext();
             System.out.println("ThreadMan: switched to thread SceUID=" + Integer.toHexString(newthread.uid) + " name:'" + newthread.name + "'");
+        } else {
+            System.out.println("No ready threads - pausing emulator");
+            Emulator.PauseEmu();
         }
 
         current_thread = newthread;
@@ -200,7 +199,8 @@ public class ThreadMan {
 
         SceKernelThreadInfo thread = new SceKernelThreadInfo(name, a1, a2, a3, t0);
 
-        System.out.println("sceKernelCreateThread SceUID=" + Integer.toHexString(thread.uid) + " PC=" + Integer.toHexString(thread.pcreg) + " name:'" + thread.name + "'");
+        System.out.println("sceKernelCreateThread SceUID=" + Integer.toHexString(thread.uid)
+            + " PC=" + Integer.toHexString(thread.pcreg) + " name:'" + thread.name + "' attr:" + Integer.toHexString(t1));
 
         Emulator.getProcessor().gpr[2] = thread.uid;
         //return thread.uid;
@@ -297,6 +297,17 @@ public class ThreadMan {
 
         current_thread.status = PspThreadStatus.PSP_THREAD_SUSPEND;
         current_thread.do_callbacks = true;
+        contextSwitch(nextThread());
+
+        Emulator.getProcessor().gpr[2] = 0;
+    }
+
+    /** sleep the current thread */
+    public void ThreadMan_sceKernelSleepThread() {
+        System.out.println("sceKernelSleepThread SceUID=" + Integer.toHexString(current_thread.uid) + " name:'" + current_thread.name + "'");
+
+        current_thread.status = PspThreadStatus.PSP_THREAD_SUSPEND;
+        current_thread.do_callbacks = false;
         contextSwitch(nextThread());
 
         Emulator.getProcessor().gpr[2] = 0;
