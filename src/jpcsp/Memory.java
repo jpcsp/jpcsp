@@ -123,6 +123,12 @@ public class Memory {
         return index;
     }
 
+    public boolean isAddressGood(int address)
+    {
+        int index = map[address >>> PAGE_SHIFT];
+        return (index != -1);
+    }
+
     public int read8(int address) {
         try {
             int page = indexFromAddr(address);
@@ -188,7 +194,7 @@ public class Memory {
             Emulator.PauseEmu();
         }
     }
-    
+
     public void write64(int address, long data) {
         try {
             int page = indexFromAddr(address);
