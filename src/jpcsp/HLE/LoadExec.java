@@ -46,13 +46,8 @@ public class LoadExec {
 
     public void sceKernelExitGame()
     {
-        System.out.println("sceKernelExitGame unimplemented");
-        /* TODO
-        Emulator emu = ?;
-
-        if (emu.run)
-            emu.stop();
-        */
+        System.out.println("Program exit detected (sceKernelExitGame)");
+        Emulator.PauseEmu();
     }
 
     /* TODO
