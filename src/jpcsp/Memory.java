@@ -188,4 +188,15 @@ public class Memory {
             Emulator.PauseEmu();
         }
     }
+    
+    public void write64(int address, long data) {
+        try {
+            int page = indexFromAddr(address);
+            buf.putLong(page + (address & PAGE_MASK), data);
+            //pspdisplay.get_instance().write64(address, data);
+        } catch (Exception e) {
+            System.out.println("write64 - " + e.getMessage());
+            Emulator.PauseEmu();
+        }
+    }
 }

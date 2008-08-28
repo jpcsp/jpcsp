@@ -62,6 +62,12 @@ public class SyscallHandler {
                 case 0x2073:
                     ThreadMan.get_instance().ThreadMan_sceKernelTerminateThread(gpr[4]);
                     break;
+                case 0x207b:
+                    ThreadMan.get_instance().ThreadMan_sceKernelGetThreadId();
+                    break;
+                case 0x2080:
+                    ThreadMan.get_instance().ThreadMan_sceKernelReferThreadStatus(gpr[4], gpr[5]);
+                    break;
 
                 case 0x20b2:
                     pspstdio.get_instance().sceKernelStdin();
@@ -86,7 +92,7 @@ public class SyscallHandler {
                 case 0x20ec:
                     LoadExec.get_instance().sceKernelRegisterExitCallback(gpr[4]);
                     break;
-
+                    
                 case 0x213a:
                     pspdisplay.get_instance().sceDisplaySetMode(gpr[4], gpr[5], gpr[6]);
                     break;
