@@ -273,6 +273,7 @@ private void EnterDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN
       Point mainwindow = this.getLocation();
       disasm.setLocation(mainwindow.x+50, mainwindow.y+50);
       disasm.setVisible(true);
+      emulator.setDebugger(disasm);
      }
      else
      {
@@ -350,6 +351,7 @@ private void EnterMemoryViewerActionPerformed(java.awt.event.ActionEvent evt) {/
       Point mainwindow = this.getLocation();
       memoryview.setLocation(mainwindow.x+100, mainwindow.y+50);
       memoryview.setVisible(true);
+      emulator.setMemoryViewer(memoryview);
      }
      else
      {

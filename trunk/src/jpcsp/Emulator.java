@@ -19,6 +19,8 @@ package jpcsp;
 import java.io.IOException;
 import java.util.List;
 import java.util.LinkedList;
+import jpcsp.Debugger.MemoryViewer;
+import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
 import jpcsp.format.DeferredStub;
 import jpcsp.format.Elf32;
 import jpcsp.format.Elf32Relocate;
@@ -30,7 +32,7 @@ import static jpcsp.util.Utilities.*;
 public class Emulator implements Runnable {
 
     private static Processor cpu;
-    private Controller controller;
+    private static Controller controller;
     private FileManager romManager;
     private boolean mediaImplemented = false;
     private Thread mainThread;
@@ -39,6 +41,8 @@ public class Emulator implements Runnable {
     //public boolean stop = false;
     //public boolean resume = false;
     private static MainGUI gui;
+    private static DisassemblerFrame debugger;
+    private static MemoryViewer memview;
 
     public Emulator(MainGUI gui) {
         this.gui = gui;
@@ -405,6 +409,9 @@ public class Emulator implements Runnable {
         getProcessor().reset();
         Memory.get_instance().NullMemory();
         NIDMapper.get_instance().Initialise("syscalls.txt", "FW 1.50");
+
+        if (memview != null)
+            memview.RefreshMemory();
     }
 
    /* public void run() throws GeneralJpcspException {
@@ -433,36 +440,48 @@ public class Emulator implements Runnable {
             cpu.step();
             jpcsp.HLE.ThreadMan.get_instance().step();
             jpcsp.HLE.pspdisplay.get_instance().step();
-            //gpu.draw();
             controller.checkControllerState();
+
+            if (debugger != null)
+                debugger.step();
             //delay(cpu.numberCyclesDelay());
         }
 
     }
     public synchronized void RunEmu()
     {
-      //run =true;
-      //checkStatus();
+        //run =true;
+        //checkStatus();
 
-      if(pause)
-      {
-          pause=false;
-          notify();
-      }
-      else if (!run)
-      {
-          run=true;
-          mainThread.start();
-      }
+        if(pause)
+        {
+            pause = false;
+            notify();
+        }
+        else if (!run)
+        {
+            run = true;
+            mainThread.start();
+        }
 
-      gui.RefreshButtons();
+        gui.RefreshButtons();
+        if (debugger != null)
+            debugger.RefreshButtons();
     }
+    // static so Memory can pause emu on invalid read/write
     public static synchronized void PauseEmu()
     {
-        if (run)
+        if (run && !pause)
         {
-            pause=true;
+            pause = true;
+
             gui.RefreshButtons();
+
+            if (debugger != null)
+                debugger.RefreshButtons();
+
+            if (memview != null)
+                memview.RefreshMemory();
         }
     }
    /* public void pause() {
@@ -489,11 +508,11 @@ public class Emulator implements Runnable {
     public static Memory getMemory() {
         return Memory.get_instance();
     }
-    
-    public Controller getController() {
+
+    public static Controller getController() {
         return controller;
     }
-    
+
     public void checkStatus()
     {
       if(run) System.out.println("emu is running");
@@ -503,5 +522,13 @@ public class Emulator implements Runnable {
       //if(resume) System.out.println("emu is resumed");
       //if(stop) System.out.println("emu is stopped");
 
+    }
+
+    public void setDebugger(DisassemblerFrame debugger) {
+        this.debugger = debugger;
+    }
+
+    public void setMemoryViewer(MemoryViewer memview) {
+        this.memview = memview;
     }
 }
