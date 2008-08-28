@@ -160,6 +160,12 @@ public class SyscallHandler {
                 case 0x2093:// sceIoWrite 
                     pspiofilemgr.get_instance().sceIoWrite(gpr[4],gpr[5],gpr[6]);
                     break;
+                case 0x209b://sceIoDopen
+                    pspiofilemgr.get_instance().sceIoDopen(gpr[4]);
+                    break;
+                case 0x20a1: //sceChDir
+                    pspiofilemgr.get_instance().sceIoChdir(gpr[4]);
+                    break;
                 default:
                 {
                   for (syscalls.calls c : syscalls.calls.values()) {
