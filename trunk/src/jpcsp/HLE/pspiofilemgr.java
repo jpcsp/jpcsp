@@ -101,7 +101,8 @@ public class pspiofilemgr {
         }
         catch(GeneralJpcspException e)
         { 
-            e.printStackTrace(); 
+            System.out.println("sceIoClose - trying to write a file that hasn't be open uid=" + a0); 
+            return;
         }
         IOInfo file = filelist.get(a0);
         try
@@ -122,6 +123,17 @@ public class pspiofilemgr {
            e.printStackTrace();   
         }
         Emulator.getProcessor().gpr[2]= a2;//return the number of bytes written
+    }
+    public void sceIoDopen(int a0)
+    {
+       String name = readStringZ(Memory.get_instance().mainmemory, (a0 & 0x3fffffff) - MemoryMap.START_RAM);
+       System.out.println("sceIoDopen dir = " + name);
+
+    }
+    public void sceIoChdir(int a0)
+    {
+       String name = readStringZ(Memory.get_instance().mainmemory, (a0 & 0x3fffffff) - MemoryMap.START_RAM);
+       System.out.println("sceIoChdir = " + name);
     }
     //the following gets the filepath from memstick manager. 
     String filepath;
@@ -151,7 +163,8 @@ public class pspiofilemgr {
             }
             else
             {
-             System.out.println("SceIoFilemgr - Unsupported device for write");
+             System.out.println("SceIoFilemgr - Unsupported device for open");
+             uid=-1;
              return;
             }
             if((a1 & PSP_O_CREAT) ==0x0200 )
