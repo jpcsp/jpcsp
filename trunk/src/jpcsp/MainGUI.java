@@ -17,7 +17,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp;
 
+import java.awt.Dimension;
 import java.awt.Point;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.File;
@@ -40,15 +43,18 @@ import jpcsp.util.MetaInformation;
  *
  * @author  shadow
  */
-public class MainGUI extends javax.swing.JFrame implements KeyListener {
-   final String version = MetaInformation.FULL_NAME;
-   ConsoleWindow consolewin;
-   DisassemblerFrame disasm;
-   ElfHeaderInfo elfheader;
-   MemoryViewer memoryview;
-   SettingsGUI setgui;
-   MemStickBrowser memstick;
-   Emulator emulator;
+public class MainGUI extends javax.swing.JFrame implements KeyListener, ComponentListener {
+    final String version = MetaInformation.FULL_NAME;
+    ConsoleWindow consolewin;
+    DisassemblerFrame disasm;
+    ElfHeaderInfo elfheader;
+    MemoryViewer memoryview;
+    SettingsGUI setgui;
+    MemStickBrowser memstick;
+    Emulator emulator;
+    private Point mainwindowPos; // stores the last known window position
+    private boolean snapConsole = true;
+
     /** Creates new form MainGUI */
     public MainGUI() {
         emulator = new Emulator(this);
@@ -66,6 +72,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener {
         /*add glcanvas to frame and pack frame to get the canvas size*/
         getContentPane().add(pspdisplay_glcanvas.get_instance(), java.awt.BorderLayout.CENTER);
         pspdisplay_glcanvas.get_instance().addKeyListener(this);
+        this.addComponentListener(this);
         pack();
 
     }
@@ -262,6 +269,11 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener {
 
 private void ToggleConsoleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ToggleConsoleActionPerformed
 // TODO add your handling code here:
+    if (!consolewin.isVisible()) {
+        mainwindowPos = this.getLocation();
+        Dimension mainwindowSize = this.getSize();
+        consolewin.setLocation(mainwindowPos.x, mainwindowPos.y + mainwindowSize.height);
+    }
     consolewin.setVisible(!consolewin.isVisible());
 }//GEN-LAST:event_ToggleConsoleActionPerformed
 
@@ -502,4 +514,31 @@ public void RefreshButtons()
     public void keyReleased(KeyEvent arg0) {
         emulator.getController().keyReleased(arg0);
     }
+
+    @Override
+    public void componentHidden(ComponentEvent e) { }
+
+    @Override
+    public void componentMoved(ComponentEvent e) {
+        if (snapConsole && consolewin.isVisible()) {
+            Point newPos = this.getLocation();
+            Point consolePos = consolewin.getLocation();
+            Dimension mainwindowSize = this.getSize();
+
+            if (consolePos.x == mainwindowPos.x &&
+                consolePos.y == mainwindowPos.y + mainwindowSize.height) {
+                consolewin.setLocation(newPos.x, newPos.y + mainwindowSize.height);
+            } else {
+                snapConsole = false;
+            }
+
+            mainwindowPos = newPos;
+        }
+    }
+
+    @Override
+    public void componentResized(ComponentEvent e) { }
+
+    @Override
+    public void componentShown(ComponentEvent e) { }
 }
