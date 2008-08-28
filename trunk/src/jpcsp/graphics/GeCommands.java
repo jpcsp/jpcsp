@@ -26,11 +26,11 @@ public class GeCommands {
     public final static int PRIM = 0x04; //Primitive Kick
         public final static int PRIM_POINT = 0x00;
         public final static int PRIM_LINE = 0x01;
-        public final static int PRIM_LINES_STRIPS = 0x03;
-        public final static int PRIM_TRIANGLE = 0x04;
-        public final static int PRIM_TRIANGLE_STRIPS = 0x05;
-        public final static int PRIM_TRIANGLE_FANS = 0x06;
-        public final static int PRIM_SPRITES = 0x07;
+        public final static int PRIM_LINES_STRIPS = 0x02;
+        public final static int PRIM_TRIANGLE = 0x03;
+        public final static int PRIM_TRIANGLE_STRIPS = 0x04;
+        public final static int PRIM_TRIANGLE_FANS = 0x05;
+        public final static int PRIM_SPRITES = 0x06;
     public final static int BEZIER = 0x05; //Bezier Patch Kick
     public final static int SPLINE = 0x06; //Spline Surface Kick
         public final static int SPLINE_EDGE_CLOSE_CLOSE = 0x0; //V OR U IS THE SAME
@@ -51,22 +51,22 @@ public class GeCommands {
     public final static int VTYPE = 0x12;// 	VTYPE 	Vertex Type
         public final static int VTYPE_TRANSFORM_PIPELINE_TRANS_COORD = 0x0;
         public final static int VTYPE_TRANSFORM_PIPELINE_RAW_COORD = 0x1;
-        
+
         public final static int VTYPE_INDEX_NOT_USING_INDEX = 0x00;
         public final static int VTYPE_INDEX_8_BIT = 0x01;
         public final static int VTYPE_INDEX_16_BIT = 0x02;
         public final static int VTYPE_INDEX_UNKNOW = 0x03;
-        
+
         public final static int VTYPE_WEIGTH_FORMAT_NOT_PRESENT = 0x00;
         public final static int VTYPE_WEIGTH_FORMAT_8_BIT = 0x01;
         public final static int VTYPE_WEIGTH_FORMAT_16_BIT = 0x02;
         public final static int VTYPE_WEIGTH_FORMAT_32_BIT = 0x03;
-        
+
         public final static int VTYPE_POSITION_FORMAT_NOT_PRESENT = 0x00;
-        public final static int VTYPE_POSITION_FORMAT_8_BIT = 0x01; 
+        public final static int VTYPE_POSITION_FORMAT_8_BIT = 0x01;
         public final static int VTYPE_POSITION_FORMAT_16_BIT = 0x02;
         public final static int VTYPE_POSITION_FORMAT_36_BIT = 0x03;
-        
+
         public final static int VTYPE_NORMAL_FORMAT_NOT_PRESENT = 0x00;
         public final static int VTYPE_NORMAL_FORMAT_8_BIT = 0x01;
         public final static int VTYPE_NORMAL_FORMAT_16_BIT = 0x02;
@@ -80,7 +80,7 @@ public class GeCommands {
         public final static int VTYPE_COLOR_FORMAT_16BIT_ABGR_5551 = 0X05;
         public final static int VTYPE_COLOR_FORMAT_16BIT_ABGR_4444 = 0X06;
         public final static int VTYPE_COLOR_FORMAT_32BIT_ABGR_8888 = 0X07;
-        
+
         public final static int VTYPE_TEXTURE_FORMAT_NOT_PRESENT = 0X00;
         public final static int VTYPE_TEXTURE_FORMAT_8_BIT = 0X01;
         public final static int VTYPE_TEXTURE_FORMAT_16_BIT = 0X02;
@@ -94,7 +94,7 @@ public class GeCommands {
     public final static int LTE1 = 0x19;// 	LTE1 	Light 1 Enable
     public final static int LTE2 = 0x1A;// 	LTE2 	Light 2 Enable
     public final static int LTE3 = 0x1B;// 	LTE3 	Light 3 Enable
-    public final static int CPE = 0x1C;// 	CPE 	Clip Plane Enable                
+    public final static int CPE = 0x1C;// 	CPE 	Clip Plane Enable
     public final static int BCE = 0x1D;// 	BCE 	Backface Culling Enable
     public final static int TME = 0x1E;// 	TME 	Texture Mapping Enable
     public final static int FGE = 0x1F;// 	FGE 	Fog Enable
@@ -106,8 +106,8 @@ public class GeCommands {
     public final static int AAE = 0x25;// 	AAE 	Anitaliasing Enable
     public final static int PCE = 0x26;// 	PCE 	Patch Cull Enable
     public final static int CTE = 0x27;// 	CTE 	Color Test Enable
-    public final static int LOE = 0x28;// 	LOE 	Logical Operation Enable  
-    public final static int UNKNOWCOMMAND_0x29 = 0x29; 	  	  
+    public final static int LOE = 0x28;// 	LOE 	Logical Operation Enable
+    public final static int UNKNOWCOMMAND_0x29 = 0x29;
     public final static int BOFS = 0x2A;// 	BOFS 	Bone Matrix Offset
     public final static int BONE = 0x2B;// 	BONE 	Bone Matrix Upload
     public final static int MW0 = 0x2C;// 	MW0 	Morph Weight 0
@@ -118,12 +118,12 @@ public class GeCommands {
     public final static int MW5 = 0x31;// 	MW5 	Morph Weight 5
     public final static int MW6 = 0x32;// 	MW6 	Morph Weight 6
     public final static int MW7 = 0x33;// 	MW7 	Morph Weight 7
-    public final static int UNKNOWCOMMAND_0x34 = 0x34; 	  	 
-    public final static int UNKNOWCOMMAND_0x35 = 0x35; 	  	 
+    public final static int UNKNOWCOMMAND_0x34 = 0x34;
+    public final static int UNKNOWCOMMAND_0x35 = 0x35;
     public final static int PSUB = 0x36;// 	PSUB 	Patch Subdivision
     public final static int PPRIM = 0x37;// 	PPRIM 	Patch Primitive
     public final static int PFACE = 0x38;// 	PFACE 	Patch Front Face
-    public final static int UNKNOWCOMMAND_0x39 = 0x39; 	  	 
+    public final static int UNKNOWCOMMAND_0x39 = 0x39;
     public final static int WMS = 0x3A;// 	WMS 	World Matrix Select
     public final static int WORLD = 0x3B;// 	WORLD 	World Matrix Upload
     public final static int VMS = 0x3C;// 	VMS 	View Matrix Select
@@ -145,12 +145,12 @@ public class GeCommands {
     public final static int OFFSETX = 0x4C;// 	OFFSETX 	Viewport offset (X)
     public final static int OFFSETY = 0x4D;// 	OFFSETY 	Viewport offset (Y)
     public final static int UNKNOWCOMMAND_0X4E = 0x4E;
-    public final static int UNKNOWCOMMAND_0x4F = 0X4F;	  	 
+    public final static int UNKNOWCOMMAND_0x4F = 0X4F;
     public final static int SHADE = 0x50;// 	SHADE 	Shade Model
         public final static int SHADE_TYPE_FLAT = 0X00;
         public final static int SHADE_TYPE_SMOOTH = 0X01;
     public final static int RNORM = 0x51;// 	RNORM 	Reverse Face Normals Enable
-    public final static int UNKNOWCOMMAND_0x52 = 0X52; 	  	 
+    public final static int UNKNOWCOMMAND_0x52 = 0X52;
     public final static int CMAT = 0x53;// 	CMAT 	Color Material
         public final static int CMAT_FLAG_AMBIENT = 0X01;
         public final static int CMAT_FLAG_DIFFUSE = 0X02;
@@ -160,8 +160,8 @@ public class GeCommands {
     public final static int DMC = 0x56;// 	DMC 	Diffuse Model Color
     public final static int SMC = 0x57;// 	SMC 	Specular Model Color
     public final static int AMA = 0x58;// 	AMA 	Ambient Model Alpha
-    public final static int UNKNOWCOMMAND_0x59 = 0X59; 	  	 
-    public final static int UNKNOWCOMMAND_0x5A = 0X5A; 	  	 
+    public final static int UNKNOWCOMMAND_0x59 = 0X59;
+    public final static int UNKNOWCOMMAND_0x5A = 0X5A;
     public final static int SPOW = 0x5B;// 	SPOW 	Specular Power
     public final static int ALC = 0x5C;// 	ALC 	Ambient Light Color
     public final static int ALA = 0x5D;// 	ALA 	Ambient Light Alpha
@@ -267,8 +267,8 @@ public class GeCommands {
     public final static int TRXSBW = 0xB3;// 	TRXSBW 	Transmission Source Buffer Width
     public final static int TRXDBP = 0xB4;// 	TRXDBP 	Transmission Destination Buffer Pointer
     public final static int TRXDBW = 0xB5;// 	TRXDBW 	Transmission Destination Buffer Width
-    public final static int UNKNOWCOMMAND_0xB6 = 0XB6; 	  	 
-    public final static int UNKNOWCOMMAND_0xB7 = 0XB7;	  	 
+    public final static int UNKNOWCOMMAND_0xB6 = 0XB6;
+    public final static int UNKNOWCOMMAND_0xB7 = 0XB7;
     public final static int TSIZE0 = 0xB8;// 	TSIZE0 	Texture Size Level 0
     public final static int TSIZE1 = 0xB9;// 	TSIZE1 	Texture Size Level 1
     public final static int TSIZE2 = 0xBA;// 	TSIZE2 	Texture Size Level 2
@@ -282,7 +282,7 @@ public class GeCommands {
         public final static int TMAP_TEXTURE_PROJECTION_MODE_TEXTURE_COORDINATES = 0X01;
         public final static int TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL = 0X02;
         public final static int TMAP_TEXTURE_PROJECTION_MODE_NORMAL = 0X03;
-        
+
         public final static int TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV = 0X00;
         public final static int TMAP_TEXTURE_MAP_MODE_TEXTURE_MATRIX = 0X01;
         public final static int TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP = 0X02;
@@ -323,10 +323,10 @@ public class GeCommands {
     public final static int TFUNC = 0xC9;// 	TFUNC 	Texture Function
         public final static int TFUNC_FRAGMENT_DOUBLE_ENABLE_COLOR_UNTOUCHED = 0X00;
         public final static int TFUNC_FRAGMENT_DOUBLE_ENABLE_COLOR_DOUBLED = 0X01;
-        
+
         public final static int TFUNC_FRAGMENT_DOUBLE_TEXTURE_COLOR_ALPHA_IS_IGNORED = 0X00;
         public final static int TFUNC_FRAGMENT_DOUBLE_TEXTURE_COLOR_ALPHA_IS_READ = 0X01;
-        
+
         public final static int TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_MODULATE = 0X00;
         public final static int TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_DECAL = 0X01;
         public final static int TFUNC_FRAGMENT_DOUBLE_TEXTURE_EFECT_BLEND = 0X02;
@@ -342,7 +342,7 @@ public class GeCommands {
     public final static int FDIST = 0xCE;// 	FDIST 	Fog Range
     public final static int FCOL = 0xCF;// 	FCOL 	Fog Color
     public final static int TSLOPE = 0xD0;// 	TSLOPE 	Texture Slope
-    public final static int UNKNOWCOMMAND_0xD1 = 0XD1; 	  	 
+    public final static int UNKNOWCOMMAND_0xD1 = 0XD1;
     public final static int PSM = 0xD2;// 	PSM 	Frame Buffer Pixel Storage Mode
         public final static int PSM_16BIT_BGR5650 = 0X00;
         public final static int PSM_16BIT_ABGR5551 = 0X01;
@@ -449,10 +449,10 @@ public class GeCommands {
         public final static int TRXKICK_32BIT_TEXEL_SIZE = 0X01;
     public final static int TRXPOS = 0xEB;// 	TRXSPOS 	Transfer Source Position
     public final static int TRXDPOS = 0xEC;// 	TRXDPOS 	Transfer Destination Position
-    public final static int UNKNOWCOMMAND_0xED = 0XED; 	  	 
+    public final static int UNKNOWCOMMAND_0xED = 0XED;
     public final static int TRXSIZE = 0xEE;// 	TRXSIZE 	Transfer Size
 
-    
+
     public GeCommands() {
         commands = new String[0x100];
         commands[TRXSIZE]="trxsize";
@@ -692,7 +692,7 @@ public class GeCommands {
         commands[SPLINE] = "spline";
         commands[BBOX] = "bbox";
         commands[JUMP] = "jump";
-        
+
     }
 
     public String getCommandString(int command) {
