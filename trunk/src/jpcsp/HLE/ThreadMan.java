@@ -313,7 +313,49 @@ public class ThreadMan {
 
         Emulator.getProcessor().gpr[2] = callback.uid;
     }
-
+    
+    public void ThreadMan_sceKernelGetThreadId() {
+        //Get the current thread Id
+        Emulator.getProcessor().gpr[2] = current_thread.uid;
+    }
+    
+    public void ThreadMan_sceKernelReferThreadStatus(int a0, int a1) {
+        //Get the status information for the specified thread
+        SceKernelThreadInfo thread = threadlist.get(a0);
+        if (thread == null) {
+            Emulator.getProcessor().gpr[2] = 1;
+            return;
+        }
+        int i, len;
+        Memory mem = Memory.get_instance();
+        mem.write32(a1, 106); //struct size
+        
+        //thread name max 32bytes
+        len = thread.name.length();
+        if (len > 31) len = 31;
+        for (i=0; i < len; i++)
+            mem.write8(a1 +4 +i, (byte)thread.name.charAt(i));
+        mem.write8(a1 +4 +i, (byte)0);
+        
+        mem.write32(a1 +36, thread.attr);
+        mem.write32(a1 +40, thread.status.getValue());
+        mem.write32(a1 +44, thread.entry_addr);
+        mem.write32(a1 +48, thread.stack_addr);
+        mem.write32(a1 +52, thread.stackSize);
+        mem.write32(a1 +56, thread.gpReg_addr);
+        mem.write32(a1 +60, thread.initPriority);
+        mem.write32(a1 +64, thread.currentPriority);
+        mem.write32(a1 +68, thread.waitType);
+        mem.write32(a1 +72, thread.waitId);
+        mem.write32(a1 +78, thread.wakeupCount);
+        mem.write32(a1 +82, thread.exitStatus);
+        mem.write64(a1 +86, thread.runClocks);
+        mem.write32(a1 +94, thread.intrPreemptCount);
+        mem.write32(a1 +98, thread.threadPreemptCount);
+        mem.write32(a1 +102, thread.releaseCount);
+        
+        Emulator.getProcessor().gpr[2] = 0;
+    }
 
     private class SceKernelCallbackInfo {
         private String name;
@@ -371,7 +413,7 @@ public class ThreadMan {
         private int waitId;
         private int wakeupCount;
         private int exitStatus;
-        private int runClocks;
+        private long runClocks;
         private int intrPreemptCount;
         private int threadPreemptCount;
         private int releaseCount;
