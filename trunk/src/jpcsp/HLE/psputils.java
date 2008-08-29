@@ -1,6 +1,6 @@
 /*
 TODO
-- HLE everything in http://psp.jim.sh/pspsdk-doc/group__Utils.html
+- HLE everything in http://psp.jim.sh/pspsdk-doc/psputils_8h.html
 
 
 This file is part of jpcsp.
@@ -28,18 +28,18 @@ import jpcsp.GeneralJpcspException;
 import jpcsp.Processor;
 
 
-public class Utils {
-    private static Utils instance;
+public class psputils {
+    private static psputils instance;
     private static HashMap<Integer, SceKernelUtilsMt19937Context> Mt19937List;
 
-    public static Utils get_instance() {
+    public static psputils get_instance() {
         if (instance == null) {
-            instance = new Utils();
+            instance = new psputils();
         }
         return instance;
     }
 
-    private Utils() {
+    private psputils() {
     }
 
     /** call this when resetting the emulator */
@@ -49,20 +49,20 @@ public class Utils {
         Mt19937List = new HashMap<Integer, SceKernelUtilsMt19937Context>();
     }
 
-    public void Utils_sceKernelUtilsMt19937Init(int a0, int a1) {
+    public void sceKernelUtilsMt19937Init(int ctx_addr, int seed) {
         // We'll use the address of the ctx as a key
-        Mt19937List.remove(a0); // Remove records of any already existing context at a0
-        Mt19937List.put(a0, new SceKernelUtilsMt19937Context(a1));
+        Mt19937List.remove(ctx_addr); // Remove records of any already existing context at a0
+        Mt19937List.put(ctx_addr, new SceKernelUtilsMt19937Context(seed));
         Emulator.getProcessor().gpr[2] = 0;
     }
 
-    public void Utils_sceKernelUtilsMt19937UInt(int a0) {
-        SceKernelUtilsMt19937Context ctx = Mt19937List.get(a0);
+    public void sceKernelUtilsMt19937UInt(int ctx_addr) {
+        SceKernelUtilsMt19937Context ctx = Mt19937List.get(ctx_addr);
         if (ctx != null) {
             Emulator.getProcessor().gpr[2] = ctx.r.nextInt();
         } else {
             // TODO what happens if the ctx is bad?
-            System.out.println("sceKernelUtilsMt19937UInt uninitialised context " + Integer.toHexString(a0));
+            System.out.println("sceKernelUtilsMt19937UInt uninitialised context " + Integer.toHexString(ctx_addr));
             Emulator.getProcessor().gpr[2] = 0;
         }
     }

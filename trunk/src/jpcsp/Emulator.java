@@ -53,9 +53,7 @@ public class Emulator implements Runnable {
     }
 
     public void load(String filename) throws IOException {
-        // TODO: here will load fileName, iso or etc...
-        //getProcessor().reset();
-        //ELFLoader.LoadPBPELF(filename, getProcessor());
+        //  here load fileName, iso or etc...
         processLoading(filename);
         if (!mediaImplemented) {
             throw new IOException("This kind of file format still not supported.");
@@ -394,7 +392,7 @@ public class Emulator implements Runnable {
         // All other registers are uninitialised/random values
 
         jpcsp.HLE.ThreadMan.get_instance().Initialise(cpu.pc, romManager.getPSPModuleInfo().getM_attr());
-        jpcsp.HLE.Utils.get_instance().Initialise();
+        jpcsp.HLE.psputils.get_instance().Initialise();
         jpcsp.HLE.pspdisplay.get_instance().Initialise();
         jpcsp.HLE.pspge.get_instance().Initialise();
     }
