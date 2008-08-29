@@ -21,9 +21,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.HashMap;
 import jpcsp.Emulator;
 import jpcsp.GeneralJpcspException;
@@ -95,14 +98,14 @@ public class pspiofilemgr {
 
     public void sceIoWrite(int a0 , int a1,int a2)
     {
-        if(a0==1)
+        if(a0==1)//stdout
         {
             String stdout = readStringZ(Memory.get_instance().mainmemory, (a1 & 0x3fffffff) - MemoryMap.START_RAM);
             System.out.print(stdout);
             Emulator.getProcessor().gpr[2]= a2;
             return;
         }
-        if(a0==2)
+        if(a0==2)//stderr
         {
             String stderr = readStringZ(Memory.get_instance().mainmemory, (a1 & 0x3fffffff) - MemoryMap.START_RAM);
             System.out.print(stderr);
@@ -115,7 +118,7 @@ public class pspiofilemgr {
         }
         catch(GeneralJpcspException e)
         { 
-            System.out.println("sceIoClose - trying to write a file that hasn't be open uid=" + a0); 
+            System.out.println("sceIoWrite - trying to write a file that hasn't be open uid=" + a0); 
             return;
         }
         IOInfo file = filelist.get(a0);
@@ -123,7 +126,15 @@ public class pspiofilemgr {
         {
           if ((a1 >= MemoryMap.START_RAM ) && (a1 <= MemoryMap.END_RAM)) 
           {
-           FileOutputStream fop=new FileOutputStream(file.f);
+            FileOutputStream fop;
+            if(file.fileappend)
+            {
+              fop =new FileOutputStream(file.f,true);//append to file
+            }
+            else
+            {    
+              fop=new FileOutputStream(file.f);
+            }
            fop.write(Memory.get_instance().mainmemory.array(), a1 - MemoryMap.START_RAM, a2);
            fop.close();
           }
@@ -137,6 +148,43 @@ public class pspiofilemgr {
            e.printStackTrace();   
         }
         Emulator.getProcessor().gpr[2]= a2;//return the number of bytes written
+    }
+    public void sceIoRead(int a0 , int a1,int a2)
+    {
+         System.out.println("sceIoRead uid=" + a0 + " data = " + Integer.toHexString(a1) + " size = "+a2);
+        try{
+         SceUIDMan.get_instance().checkUidPurpose(a0, "IOFileManager-File");
+        }
+        catch(GeneralJpcspException e)
+        { 
+            System.out.println("sceIoRead - trying to read a file that hasn't be open uid=" + a0); 
+            return;
+        }
+        IOInfo file = filelist.get(a0);
+        try
+        {
+          if ((a1 >= MemoryMap.START_RAM ) && (a1 <= MemoryMap.END_RAM)) 
+          {
+              if(file.f.exists())//check if it exists before open ..
+              {
+                FileInputStream fin=new FileInputStream(file.f);
+                fin.read(Memory.get_instance().mainmemory.array(), a1 - MemoryMap.START_RAM, a2);
+                fin.close();
+              }
+              else
+              {
+                System.out.println("sceIoRead - Tried to read from a not existance file");   
+              }
+          }
+          else
+          {
+            System.out.println("sceIoRead - Unsupported memory address for read");   
+          }
+        }
+        catch(IOException e)
+        {
+           e.printStackTrace();   
+        }
     }
     public void sceIoDopen(int a0)
     {
@@ -158,6 +206,7 @@ public class pspiofilemgr {
     private class IOInfo{
         private int uid;
         File f; 
+        public boolean fileappend=false;
         public IOInfo(String name,int a1,int a2)
         {
             
@@ -185,7 +234,7 @@ public class pspiofilemgr {
             {
                if(debug) System.out.println("sceIoOpen - create new file");
                try{
-                 if(!f.createNewFile())//if already exists
+                 if(!f.createNewFile())//if already exists maybe that isn't important but do it anyway 
                  {
                    f.delete();//delete it
                    f.createNewFile(); //and recreate it 
@@ -207,8 +256,22 @@ public class pspiofilemgr {
              }
              if(((a1 & PSP_O_TRUNC)  == 0x0400))
              {
+                //Okay the is probably a very bad way to do this.. but works.. anyone with better idea?
                 if(debug) System.out.println("sceIoOpen - Truncates");
-               /*TODO*/
+                try 
+                {
+                  FileOutputStream fop = new FileOutputStream(f);
+                  BufferedOutputStream bos = new BufferedOutputStream(fop);
+                  PrintStream b = new PrintStream(bos,true);
+                  b.close();
+                  bos.close();
+                  fop.close();
+                }
+                catch(IOException e)
+                {
+                  e.printStackTrace();   
+                }
+
              }
              if(((a1 & PSP_O_RDWR)  == 0x0003))
              {
@@ -219,7 +282,23 @@ public class pspiofilemgr {
              if(((a1 & PSP_O_APPEND)  == 0x0100))
              {
                   if(debug) System.out.println("sceIoOpen - Append file");
-                  /*TODO */
+                  fileappend=true;
+             }
+             if(((a1 & PSP_O_NBLOCK)  == 0x0004))
+             {
+                  if(debug) System.out.println("sceIoOpen - nblock unsupported!!");
+             }
+             if(((a1 & PSP_O_DIROPEN)  == 0x0008))
+             {
+                  if(debug) System.out.println("sceIoOpen - diropen unsupported!!");
+             }
+             if(((a1 & PSP_O_EXCL)  == 0x0800))
+             {
+               if(debug) System.out.println("sceIoOpen - excl unsupported!!");
+             }
+             if(((a1 & PSP_O_NOWAIT)  == 0x8000))
+             {
+                  if(debug) System.out.println("sceIoOpen - nowait unsupported!!");
              }
             uid = SceUIDMan.get_instance().getNewUid("IOFileManager-File");
             filelist.put(uid, this);
