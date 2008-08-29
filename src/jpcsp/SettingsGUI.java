@@ -41,8 +41,12 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
     /** Creates new form SettingsGUI */
     public SettingsGUI() {
         initComponents();
-        boolean pbpunpack = Settings.get_instance().readBoolEmuoptions("pbpunpack");
-        if(pbpunpack) pbpunpackcheck.setSelected(true);
+        boolean enabled = Settings.get_instance().readBoolOptions("emuoptions/pbpunpack");
+        pbpunpackcheck.setSelected(enabled);
+        enabled = Settings.get_instance().readBoolOptions("guisettings/saveWindowPos");
+        saveWindowPosCheck.setSelected(enabled);
+        enabled = Settings.get_instance().readBoolOptions("guisettings/openLogwindow");
+        openLogwindowCheck.setSelected(enabled);
         
         /* load current config and set the config */
         loadKeys();
@@ -179,6 +183,8 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         jTabbedPane1 = new javax.swing.JTabbedPane();
         jPanel1 = new javax.swing.JPanel();
         pbpunpackcheck = new javax.swing.JCheckBox();
+        saveWindowPosCheck = new javax.swing.JCheckBox();
+        openLogwindowCheck = new javax.swing.JCheckBox();
         bg = new javax.swing.JPanel();
         fgPanel = new javax.swing.JPanel();
         fieldStart = new javax.swing.JTextField();
@@ -224,21 +230,36 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
 
         pbpunpackcheck.setText("unpack pbp when loading");
 
+        saveWindowPosCheck.setText("save window positions on exit");
+
+        openLogwindowCheck.setText("open console on start-up");
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(22, 22, 22)
-                .addComponent(pbpunpackcheck, javax.swing.GroupLayout.PREFERRED_SIZE, 147, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(421, Short.MAX_VALUE))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
+                        .addGap(22, 22, 22)
+                        .addComponent(pbpunpackcheck, javax.swing.GroupLayout.DEFAULT_SIZE, 169, Short.MAX_VALUE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addContainerGap(22, Short.MAX_VALUE)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(openLogwindowCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(saveWindowPosCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                .addGap(399, 399, 399))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGap(18, 18, 18)
                 .addComponent(pbpunpackcheck)
-                .addContainerGap(270, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(saveWindowPosCheck)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(openLogwindowCheck)
+                .addContainerGap(224, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab("General", jPanel1);
@@ -467,11 +488,6 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                 fieldAnalogDownMouseClicked(evt);
             }
         });
-        fieldAnalogDown.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                fieldAnalogDownActionPerformed(evt);
-            }
-        });
 
         fieldAnalogLeft.setEditable(false);
         fieldAnalogLeft.setHorizontalAlignment(javax.swing.JTextField.CENTER);
@@ -675,15 +691,19 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
     }// </editor-fold>//GEN-END:initComponents
 public void RefreshWindow()
 {
-    boolean pbpunpack = Settings.get_instance().readBoolEmuoptions("pbpunpack");
-   if(pbpunpack) pbpunpackcheck.setSelected(true);
+    /* (not needed?)
+    boolean pbpunpack = Settings.get_instance().readBoolEmuoptions("emuoptions/pbpunpack");
+    if (pbpunpack) pbpunpackcheck.setSelected(true);
+    */
 }
 private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCancelActionPerformed
    dispose();
 }//GEN-LAST:event_jButtonCancelActionPerformed
 
 private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
-   Settings.get_instance().writeBoolEmuoptions("pbpunpack", pbpunpackcheck.isSelected());
+   Settings.get_instance().writeBoolOptions("emuoptions/pbpunpack", pbpunpackcheck.isSelected());
+   Settings.get_instance().writeBoolOptions("guisettings/saveWindowPos", saveWindowPosCheck.isSelected());
+   Settings.get_instance().writeBoolOptions("guisettings/openLogwindow", openLogwindowCheck.isSelected());
    Settings.get_instance().writeKeys(currentKeys);
    
    if (controller != null)
@@ -779,10 +799,6 @@ private void fieldAnalogLeftMouseClicked(java.awt.event.MouseEvent evt) {//GEN-F
     setKey(fieldAnalogLeft, keyCode.ANLEFT);
 }//GEN-LAST:event_fieldAnalogLeftMouseClicked
 
-private void fieldAnalogDownActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_fieldAnalogDownActionPerformed
-// TODO add your handling code here:
-}//GEN-LAST:event_fieldAnalogDownActionPerformed
-
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel bg;
     private javax.swing.JLabel bgLabel1;
@@ -813,7 +829,9 @@ private void fieldAnalogDownActionPerformed(java.awt.event.ActionEvent evt) {//G
     private javax.swing.JButton jButtonOK;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JTabbedPane jTabbedPane1;
+    private javax.swing.JCheckBox openLogwindowCheck;
     private javax.swing.JCheckBox pbpunpackcheck;
+    private javax.swing.JCheckBox saveWindowPosCheck;
     // End of variables declaration//GEN-END:variables
 
 }

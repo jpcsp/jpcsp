@@ -187,7 +187,9 @@ private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:even
     String[] coord = new String[2];
     coord[0]=Integer.toString(location.x);
     coord[1]=Integer.toString(location.y);
-    Settings.get_instance().writeWindowPos("logwindow", coord);
+    
+    if (Settings.get_instance().readBoolOptions("guisettings/saveWindowPos"))
+        Settings.get_instance().writeWindowPos("logwindow", coord);
 }//GEN-LAST:event_formWindowClosing
          /**
      * Clears only the messages that are displayed in the textarea.

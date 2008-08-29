@@ -79,10 +79,21 @@
           <Layout>
             <DimensionLayout dim="0">
               <Group type="103" groupAlignment="0" attributes="0">
-                  <Group type="102" alignment="0" attributes="0">
-                      <EmptySpace min="-2" pref="22" max="-2" attributes="0"/>
-                      <Component id="pbpunpackcheck" min="-2" pref="147" max="-2" attributes="0"/>
-                      <EmptySpace pref="421" max="32767" attributes="0"/>
+                  <Group type="102" alignment="1" attributes="0">
+                      <Group type="103" groupAlignment="1" attributes="0">
+                          <Group type="102" alignment="0" attributes="0">
+                              <EmptySpace min="-2" pref="22" max="-2" attributes="0"/>
+                              <Component id="pbpunpackcheck" pref="169" max="32767" attributes="0"/>
+                          </Group>
+                          <Group type="102" alignment="1" attributes="0">
+                              <EmptySpace pref="22" max="32767" attributes="0"/>
+                              <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                  <Component id="openLogwindowCheck" alignment="0" max="32767" attributes="1"/>
+                                  <Component id="saveWindowPosCheck" alignment="0" max="32767" attributes="1"/>
+                              </Group>
+                          </Group>
+                      </Group>
+                      <EmptySpace min="-2" pref="399" max="-2" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -91,7 +102,11 @@
                   <Group type="102" alignment="0" attributes="0">
                       <EmptySpace min="-2" pref="18" max="-2" attributes="0"/>
                       <Component id="pbpunpackcheck" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace pref="270" max="32767" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Component id="saveWindowPosCheck" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Component id="openLogwindowCheck" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace pref="224" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -100,6 +115,16 @@
             <Component class="javax.swing.JCheckBox" name="pbpunpackcheck">
               <Properties>
                 <Property name="text" type="java.lang.String" value="unpack pbp when loading"/>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="saveWindowPosCheck">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="save window positions on exit"/>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="openLogwindowCheck">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="open console on start-up"/>
               </Properties>
             </Component>
           </SubComponents>
@@ -658,7 +683,6 @@
                   </Properties>
                   <Events>
                     <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="fieldAnalogDownMouseClicked"/>
-                    <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="fieldAnalogDownActionPerformed"/>
                   </Events>
                 </Component>
                 <Component class="javax.swing.JTextField" name="fieldAnalogLeft">

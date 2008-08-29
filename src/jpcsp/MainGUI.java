@@ -58,23 +58,30 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     /** Creates new form MainGUI */
     public MainGUI() {
         emulator = new Emulator(this);
-        //logging console window stuff
-        consolewin = new ConsoleWindow();
-        consolewin.setLocation(0,600);//put it under the emu window
-        consolewin.setVisible(false);
+        
         /*next two lines are for overlay menus over joglcanvas*/
         JPopupMenu.setDefaultLightWeightPopupEnabled(false);
         ToolTipManager.sharedInstance().setLightWeightPopupEnabled(false);
         //end of
+        
         initComponents();
-        this.setLocation(0,0);//set location to 0 //NOTE:that will probably change
-        this.setTitle(version);
+        int pos[] = Settings.get_instance().readWindowPos("mainwindow");
+        setLocation(pos[0], pos[1]);
+        setTitle(version);
+        
         /*add glcanvas to frame and pack frame to get the canvas size*/
         getContentPane().add(pspdisplay_glcanvas.get_instance(), java.awt.BorderLayout.CENTER);
         pspdisplay_glcanvas.get_instance().addKeyListener(this);
         this.addComponentListener(this);
         pack();
-
+        
+        //logging console window stuff
+        consolewin = new ConsoleWindow();
+        mainwindowPos = getLocation();
+        consolewin.setLocation(mainwindowPos.x, mainwindowPos.y + getSize().height);
+        if (Settings.get_instance().readBoolOptions("guisettings/openLogwindow"))
+            consolewin.setVisible(true);
+        
     }
 
     /** This method is called from within the constructor to
@@ -111,6 +118,11 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setMinimumSize(new java.awt.Dimension(480, 272));
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowClosing(java.awt.event.WindowEvent evt) {
+                formWindowClosing(evt);
+            }
+        });
 
         jToolBar1.setFloatable(false);
         jToolBar1.setRollover(true);
@@ -407,7 +419,7 @@ private void SetttingsMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 }//GEN-LAST:event_SetttingsMenuActionPerformed
 
 private void ExitEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExitEmuActionPerformed
-  System.exit(0);
+    exitEmu();
 }//GEN-LAST:event_ExitEmuActionPerformed
 
 private void OpenMemStickActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenMemStickActionPerformed
@@ -429,6 +441,21 @@ private void OpenMemStickActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     }
 
 }//GEN-LAST:event_OpenMemStickActionPerformed
+
+private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
+    exitEmu();
+}//GEN-LAST:event_formWindowClosing
+
+private void exitEmu() {
+    Point location = getLocation();
+    String[] coord = new String[2];
+    coord[0]=Integer.toString(location.x);
+    coord[1]=Integer.toString(location.y);
+    if (Settings.get_instance().readBoolOptions("guisettings/saveWindowPos"))
+        Settings.get_instance().writeWindowPos("mainwindow", coord);
+    
+    System.exit(0);
+}
 
 private void RunEmu()
 {
