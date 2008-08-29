@@ -129,10 +129,10 @@ public class Processor implements AllegrexInstructions {
         // WAW conflict (Successively writing the same register)
         cycles = Math.max(cycles, fpr_cycles[fd]);
 
-        // cycles when the destination register is written 
+        // cycles when the destination register is written
         fpr_cycles[fd] = cycles + latency;
 
-        // RAW conflict (Using the result of previous FPU instructions)  
+        // RAW conflict (Using the result of previous FPU instructions)
         cycles = Math.max(cycles, Math.max(fpr_cycles[fs], fpr_cycles[ft]));
     }
 
@@ -140,10 +140,10 @@ public class Processor implements AllegrexInstructions {
         // WAW conflict (Successively writing the same register)
         cycles = Math.max(cycles, fpr_cycles[fd]);
 
-        // cycles when the destination register is written 
+        // cycles when the destination register is written
         fpr_cycles[fd] = cycles + latency;
 
-        // RAW conflict (Using the result of previous FPU instructions)  
+        // RAW conflict (Using the result of previous FPU instructions)
         cycles = Math.max(cycles, fpr_cycles[fs]);
     }
 
@@ -151,10 +151,10 @@ public class Processor implements AllegrexInstructions {
         // WAW conflict (Successively writing the same register)
         cycles = Math.max(cycles, fcr31_cycles);
 
-        // cycles when the FPU C bit is written 
+        // cycles when the FPU C bit is written
         fcr31_cycles = cycles + latency;
 
-        // RAW conflict (Using the result of previous FPU instructions)  
+        // RAW conflict (Using the result of previous FPU instructions)
         cycles = Math.max(cycles, Math.max(fpr_cycles[fs], fpr_cycles[ft]));
     }
     private final AllegrexDecoder interpreter = new AllegrexDecoder();
@@ -1692,8 +1692,8 @@ public class Processor implements AllegrexInstructions {
                     }
                 }
                 break;
-                
-            default:    
+
+            default:
                 break;
         }
     }
@@ -2064,7 +2064,7 @@ public class Processor implements AllegrexInstructions {
         gpr[8] = 32;
         gpr[9] = 255;
         gpr[10] = 65535;
-        
+
         doSLL(4, 1, 1); assert (gpr[4] == 2);
         doSRL(4, 2, 1); assert (gpr[4] == 1);
         doSRL(4, 5, 1); assert (gpr[4] == 0x7fffffff);

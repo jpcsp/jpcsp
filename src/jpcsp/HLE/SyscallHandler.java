@@ -55,7 +55,7 @@ public class SyscallHandler {
               //  case 0x2010: //sceKernelCancelCallback
               //  case 0x2011: //sceKernelGetCallbackCount
               //  case 0x2012: //sceKernelCheckCallback
-              //  case 0x2013: //sceKernelReferCallbackStatus   
+              //  case 0x2013: //sceKernelReferCallbackStatus
                 case 0x2014:
                     ThreadMan.get_instance().ThreadMan_sceKernelSleepThread();
                     break;
@@ -150,7 +150,7 @@ public class SyscallHandler {
 		// sceKernelSetVTimerHandler(0x2069),
 		// sceKernelSetVTimerHandlerWide(0x206a),
 		// sceKernelCancelVTimerHandler(0x206b),
-		// sceKernelReferVTimerStatus(0x206c),    
+		// sceKernelReferVTimerStatus(0x206c),
                 case 0x206d:
                     ThreadMan.get_instance().ThreadMan_sceKernelCreateThread(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8], gpr[9]);
                     break;
@@ -207,7 +207,7 @@ public class SyscallHandler {
                     pspiofilemgr.get_instance().sceIoOpen(gpr[4],gpr[5],gpr[6]);
                     break;
 		// sceIoOpenAsync(0x2090),
-                case 0x2091: //sceIoRead    
+                case 0x2091: //sceIoRead
 		   pspiofilemgr.get_instance().sceIoRead(gpr[4],gpr[5],gpr[6]);
                    break;
 		// sceIoReadAsync(0x2092),
@@ -257,7 +257,9 @@ public class SyscallHandler {
                 case 0x20b4:
                     pspstdio.get_instance().sceKernelStderr();
                     break;
-		// sceKernelDcacheInvalidateRange(0x20b5),
+                case 0x20b5:
+                    psputils.get_instance().sceKernelDcacheInvalidateRange(gpr[4], gpr[5]);
+                    break;
 		// sceKernelIcacheInvalidateRange(0x20b6),
 		// sceKernelUtilsMd5Digest(0x20b7),
 		// sceKernelUtilsMd5BlockInit(0x20b8),
@@ -268,20 +270,30 @@ public class SyscallHandler {
 		// sceKernelUtilsSha1BlockUpdate(0x20bd),
 		// sceKernelUtilsSha1BlockResult(0x20be),
                 case 0x20bf:
-                    Utils.get_instance().Utils_sceKernelUtilsMt19937Init(gpr[4], gpr[5]);
-                    break;               
+                    psputils.get_instance().sceKernelUtilsMt19937Init(gpr[4], gpr[5]);
+                    break;
                 case 0x20c0:
-                    Utils.get_instance().Utils_sceKernelUtilsMt19937UInt(gpr[4]);
+                    psputils.get_instance().sceKernelUtilsMt19937UInt(gpr[4]);
                     break;
 		// sceKernelGetGPI(0x20c1),
 		// sceKernelSetGPO(0x20c2),
 		// sceKernelLibcClock(0x20c3),
-		// sceKernelLibcTime(0x20c4),
+                case 0x20c4:
+                    psputils.get_instance().sceKernelLibcTime(gpr[4]);
+                    break;
 		// sceKernelLibcGettimeofday(0x20c5),
-		// sceKernelDcacheWritebackAll(0x20c6),
-		// sceKernelDcacheWritebackInvalidateAll(0x20c7),
-		// sceKernelDcacheWritebackRange(0x20c8),
-		// sceKernelDcacheWritebackInvalidateRange(0x20c9),
+                case 0x20c6:
+                    psputils.get_instance().sceKernelDcacheWritebackAll();
+                    break;
+                case 0x20c7:
+                    psputils.get_instance().sceKernelDcacheWritebackInvalidateAll();
+                    break;
+                case 0x20c8:
+                    psputils.get_instance().sceKernelDcacheWritebackRange(gpr[4], gpr[5]);
+                    break;
+                case 0x20c9:
+                    psputils.get_instance().sceKernelDcacheWritebackInvalidateRange(gpr[4], gpr[5]);
+                    break;
 		// sceKernelDcacheProbe(0x20ca),
 		// sceKernelDcacheReadTag(0x20cb),
 		// sceKernelIcacheInvalidateAll(0x20cc),
@@ -335,7 +347,7 @@ public class SyscallHandler {
                 case 0x20f6:
                     pspge.get_instance().sceGeListEnQueue(gpr[4], gpr[5], gpr[6], gpr[7]);
                     break;
-               // sceGeListEnQueueHead(0x20f7),    
+               // sceGeListEnQueueHead(0x20f7),
                 case 0x20f8:
                     pspge.get_instance().sceGeListDeQueue(gpr[4]);
                     break;
@@ -351,7 +363,7 @@ public class SyscallHandler {
               //      break;
               //  case 0x20ff:
               //      pspge.get_instance().sceGeUnsetCallback(gpr[4]);
-              //      break;   
+              //      break;
              //       sceRtcGetTickResolution(0x2100),
 		// sceRtcGetCurrentTick(0x2101),
 		// sceRtc_011F03C1(0x2102),
@@ -426,7 +438,7 @@ public class SyscallHandler {
 		// sceDisplayGetVcount(0x2143),
 		// sceDisplayIsVblank(0x2144),
 		// sceDisplayWaitVblank(0x2145),
-		// sceDisplayWaitVblankCB(0x2146),    
+		// sceDisplayWaitVblankCB(0x2146),
                 case 0x2147:
                     pspdisplay.get_instance().sceDisplayWaitVblankStart();
                     break;
@@ -458,7 +470,7 @@ public class SyscallHandler {
                 case 0x2153:
                     pspctrl.get_instance().sceCtrlReadBufferNegative(gpr[4], gpr[5]);
                     break;
-              // sceCtrlPeekLatch(0x2154),     
+              // sceCtrlPeekLatch(0x2154),
                 case 0x2155:
                     pspctrl.get_instance().sceCtrlPeekLatch(gpr[4]);
                     break;
