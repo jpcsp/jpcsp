@@ -41,6 +41,9 @@ public class ThreadMan {
     private SceKernelThreadInfo current_thread;
     private int rootThreadUid;
 
+    // stack allocation
+    private static int stackAllocated;
+
     public static ThreadMan get_instance() {
         if (instance == null) {
             instance = new ThreadMan();
@@ -58,6 +61,9 @@ public class ThreadMan {
         //System.out.println("ThreadMan: Initialise");
 
         threadlist = new HashMap<Integer, SceKernelThreadInfo>();
+
+        // Clear stack allocation info
+        stackAllocated = 0;
 
         current_thread = new SceKernelThreadInfo("root", entry_addr, 0x20, 0x40000, attr);
         rootThreadUid = current_thread.uid;
@@ -243,6 +249,7 @@ public class ThreadMan {
         if (thread == null) {
             Emulator.getProcessor().gpr[2] = 0x80020198; //notfoundthread
         } else {
+            //System.out.println("sceKernelStartThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
             // Set return value before context switch!
             Emulator.getProcessor().gpr[2] = 0;
 
@@ -345,6 +352,9 @@ public class ThreadMan {
             Emulator.getProcessor().gpr[2] = 0x80020198; //notfoundthread
             return;
         }
+
+        //System.out.println("sceKernelReferThreadStatus SceKernelThreadInfo=" + Integer.toHexString(a1));
+
         int i, len;
         Memory mem = Memory.get_instance();
         mem.write32(a1, 106); //struct size
@@ -416,6 +426,12 @@ public class ThreadMan {
         }
     }
 
+    private int mallocStack(int size) {
+        int p = 0x09f00000 - stackAllocated;
+        stackAllocated += size;
+        return p;
+    }
+
     private class SceKernelThreadInfo {
         // SceKernelThreadInfo <http://psp.jim.sh/pspsdk-doc/structSceKernelThreadInfo.html>
         private String name;
@@ -456,7 +472,7 @@ public class ThreadMan {
             this.attr = attr;
 
             status = PspThreadStatus.PSP_THREAD_SUSPEND;
-            stack_addr = 0x09f00000; // TODO MemoryMan.malloc(stackSize);
+            stack_addr = mallocStack(stackSize); // TODO MemoryMan.mallocFromEnd(stackSize);
             gpReg_addr = 0; // ?
             currentPriority = initPriority;
             waitType = 0; // ?
