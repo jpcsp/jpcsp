@@ -20,11 +20,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Random;
 import jpcsp.Emulator;
-import jpcsp.GeneralJpcspException;
+import jpcsp.Memory;
 import jpcsp.Processor;
 
 
@@ -47,6 +48,35 @@ public class psputils {
         //System.out.println("Utils: Initialise");
 
         Mt19937List = new HashMap<Integer, SceKernelUtilsMt19937Context>();
+    }
+
+    /** Get the time in seconds since the epoc (1st Jan 1970).  */
+    public void sceKernelLibcTime(int time_t_addr) {
+        long millis = Calendar.getInstance().getTimeInMillis();
+        int seconds = (int)(millis / 1000);
+        if (time_t_addr != 0)
+            Memory.get_instance().write32(time_t_addr, seconds);
+        Emulator.getProcessor().gpr[2] = seconds;
+    }
+
+    public void sceKernelDcacheWritebackAll() {
+        // Don't do anything for now
+    }
+
+    public void sceKernelDcacheWritebackInvalidateAll() {
+        // Don't do anything for now
+    }
+
+    public void sceKernelDcacheWritebackRange(int p_addr, int size) {
+        // Don't do anything for now
+    }
+
+    public void sceKernelDcacheWritebackInvalidateRange(int p_addr, int size) {
+        // Don't do anything for now
+    }
+
+    public void sceKernelDcacheInvalidateRange(int p_addr, int size) {
+        // Don't do anything for now
     }
 
     public void sceKernelUtilsMt19937Init(int ctx_addr, int seed) {
