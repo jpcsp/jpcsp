@@ -1,8 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<SETTINGS>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><SETTINGS>
   <guisettings>
 
     <windowspos>
+        <mainwindow>
+            <x>0</x>
+            <y>0</y>
+        </mainwindow>
        <disassembler>
          <x>209</x>
          <y>88</y>
@@ -20,8 +23,8 @@
          <y>5</y>
        </registers>
       <logwindow>
-        <x>651</x>
-        <y>376</y>
+        <x>0</x>
+        <y>600</y>
       </logwindow>
     </windowspos>
 	
@@ -31,7 +34,9 @@
         <y>746</y>
       </mainwindow>
     </windowsize>
-
+    
+    <saveWindowPos>1</saveWindowPos>
+    <openLogwindow>1</openLogwindow>
   </guisettings>
   
   <emuoptions>

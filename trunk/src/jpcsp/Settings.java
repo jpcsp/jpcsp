@@ -195,11 +195,11 @@ public class Settings {
         }
     }
    
-    public boolean readBoolEmuoptions(String option)
+    public boolean readBoolOptions(String option)
     {
         int value=0;
         try {
-            String v = readXmlSetting("//emuoptions/" + option);
+            String v = readXmlSetting("//" + option);
             value = v != null ? Integer.parseInt(v) : 0;
            
         } catch (Exception e) {
@@ -209,7 +209,7 @@ public class Settings {
         else return false;
     }
    
-    public void writeBoolEmuoptions(String option,boolean value)
+    public void writeBoolOptions(String option,boolean value)
     {
           String state = value ? "1" : "0";
            
@@ -219,7 +219,7 @@ public class Settings {
                 XPathFactory xpathFactory = XPathFactory.newInstance();
               XPath xpath = xpathFactory.newXPath();
               
-                Element emuOption = (Element) xpath.evaluate("//emuoptions/" + option, doc, XPathConstants.NODE);
+                Element emuOption = (Element) xpath.evaluate("//" + option, doc, XPathConstants.NODE);
                
                 emuOption.replaceChild(doc.createTextNode(state), emuOption.getFirstChild());
                

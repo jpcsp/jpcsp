@@ -823,7 +823,7 @@ public class ELFLoader {
         if (pbp.isValid())
         {
             type = FileManager.FORMAT_PBP;
-            if (Settings.get_instance().readBoolEmuoptions("pbpunpack"))
+            if (Settings.get_instance().readBoolOptions("emuoptions/pbpunpack"))
                 PBP.unpackPBP(f);
 
             elfoffset = pbp.getOffsetPspData();

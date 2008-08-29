@@ -154,7 +154,7 @@ public class FileManager {
 
         if (getPBP().isValid()) {
 
-            if (Settings.get_instance().readBoolEmuoptions("pbpunpack")) {
+            if (Settings.get_instance().readBoolOptions("emuoptions/pbpunpack")) {
                 getPBP().unpackPBP(getActualFile());
             }
             elfoffset = getPBP().getOffsetPspData();
