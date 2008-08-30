@@ -47,6 +47,8 @@ public class pspdisplay {
     //private pspdisplay_frame frame;
     private pspdisplay_glcanvas frame;
     private long lastUpdate;
+    private long lastWrite;
+    private int lastWriteCount;
     private int bottomaddr;
     private boolean refreshRequired;
 
@@ -80,19 +82,31 @@ public class pspdisplay {
         sync = 0;
         bottomaddr = topaddr + bufferwidth * height * pixelformat.getBytesPerPixel();
 
-        // Allocate a 32-bit native frame buffer at 512x512 (we'll up sample as necessary)
-        // We don't want to keep re-allocating it in sceDisplaySetFrameBuf
-        bb = ByteBuffer.allocate(512 * 512 * 4);
+        updateDispSettings();
+    }
+
+    private void updateDispSettings() {
+        byte[] all = Memory.get_instance().videoram.array();
+
+        bb = ByteBuffer.wrap(
+            all,
+            Memory.get_instance().videoram.arrayOffset() + topaddr - MemoryMap.START_VRAM,
+            bottomaddr - topaddr).slice();
         bb.order(ByteOrder.LITTLE_ENDIAN);
-        pspdisplay_glcanvas.get_instance().createImage(bb);
+
+        pspdisplay_glcanvas.get_instance().updateDispSettings(
+            bb, width, height, bufferwidth, pixelformat.getValue(), topaddr);
     }
 
     public void step() {
         long now = System.currentTimeMillis();
-        if (now - lastUpdate > 1000 / 30)
+        if (now - lastUpdate > 1000 / 60)
         {
-            if (refreshRequired) {
-                UpdateDisplay();
+            if (refreshRequired /*&&
+                // Stopped writing to vram 10th second ago, or written enough times to get a complete frame
+                (now - lastWrite > 100 || lastWriteCount >= 480 * 272)*/) {
+                pspdisplay_glcanvas.get_instance().updateImage();
+                //lastWriteCount = 0;
                 refreshRequired = false;
             }
             lastUpdate = now;
@@ -141,6 +155,9 @@ public class pspdisplay {
             bottomaddr = topaddr + bufferwidth * height * this.pixelformat.getBytesPerPixel();
             refreshRequired = true;
 
+            //System.out.println("sceDisplaySetFrameBuf topaddr=" + Integer.toHexString(topaddr) + " psm=" + this.pixelformat + " bpp=" + this.pixelformat.getBytesPerPixel());
+            updateDispSettings();
+
             Emulator.getProcessor().gpr[2] = 0;
         }
     }
@@ -158,97 +175,42 @@ public class pspdisplay {
         Emulator.getProcessor().gpr[2] = 0;
     }
 
-
-    private void set_native_pixel(int x, int y, byte r, byte g, byte b, byte a)
-    {
-        int addr = (x + y * 512) * 4;
-        // OpenGL RGBA
-        bb.put(addr    , r);
-        bb.put(addr + 1, g);
-        bb.put(addr + 2, b);
-        bb.put(addr + 3, a);
-    }
-
-    public void UpdateDisplay() {
-        // Convert memory at topaddr to native image
-        int bytesPerPixel = pixelformat.getBytesPerPixel();
-        ByteBuffer videoram = Memory.get_instance().videoram;
-        int addr = topaddr - MemoryMap.START_VRAM; // 0x04000000
-        int xpadding = (bufferwidth - width) * bytesPerPixel;
-
-        if (pixelformat == PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_5551)
-        {
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++, addr += 2) {
-                    short color = videoram.getShort(addr);
-                    byte r = (byte)(((color >>  0) & 0x1f) << 3);
-                    byte g = (byte)(((color >>  5) & 0x1f) << 3);
-                    byte b = (byte)(((color >> 10) & 0x1f) << 3);
-                    byte a = (byte)(((color >> 15) & 0x01) * 255);
-                    set_native_pixel(x, y, r, g, b, a);
-                }
-                addr += xpadding;
-            }
-        }
-        else if (pixelformat == PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_565)
-        {
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++, addr += 2) {
-                    short color = videoram.getShort(addr);
-                    byte r = (byte)(((color >>  0) & 0x1f) << 3);
-                    byte g = (byte)(((color >>  5) & 0x3f) << 2);
-                    byte b = (byte)(((color >> 11) & 0x1f) << 3);
-                    set_native_pixel(x, y, r, g, b, (byte)0 /* opaque */);
-                }
-                addr += xpadding;
-            }
-        }
-        else if (pixelformat == PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_4444)
-        {
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++, addr += 2) {
-                    short color = videoram.getShort(addr);
-                    byte r = (byte)(((color >>  0) & 0x0f) << 4);
-                    byte g = (byte)(((color >>  4) & 0x0f) << 4);
-                    byte b = (byte)(((color >>  8) & 0x0f) << 4);
-                    byte a = (byte)(((color >> 12) & 0x0f) << 4);
-                    set_native_pixel(x, y, r, g, b, a);
-                }
-                addr += xpadding;
-            }
-        }
-        else if (pixelformat == PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_8888)
-        {
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++, addr += 4) {
-                    // PSP and OpenGL both use RGBA so we can do a direct copy
-                    bb.putInt((x + y * 512) * 4, videoram.getInt(addr));
-                }
-                addr += xpadding;
-            }
-        }
-
-        pspdisplay_glcanvas.get_instance().updateImage();
-    }
-
     public void write8(int address, int data) {
         address &= 0x3fffffff;
-        if (address >= topaddr && address < bottomaddr) {
-            refreshRequired = true;
+        //if (address >= MemoryMap.START_VRAM && address <= MemoryMap.END_VRAM)
+        {
+            if (address >= topaddr && address < bottomaddr) {
+                refreshRequired = true;
+            }
+
+            //lastWrite = System.currentTimeMillis();
+            //lastWriteCount++;
         }
     }
 
     public void write16(int address, int data) {
         address &= 0x3fffffff;
-        if (address >= topaddr && address < bottomaddr) {
-            refreshRequired = true;
+        //if (address >= MemoryMap.START_VRAM && address <= MemoryMap.END_VRAM)
+        {
+            if (address >= topaddr && address < bottomaddr) {
+                refreshRequired = true;
+            }
+
+            //lastWrite = System.currentTimeMillis();
+            //lastWriteCount++;
         }
     }
 
     public void write32(int address, int data) {
         address &= 0x3fffffff;
-        if (address >= topaddr && address < bottomaddr) {
-            refreshRequired = true;
+        //if (address >= MemoryMap.START_VRAM && address <= MemoryMap.END_VRAM)
+        {
+            if (address >= topaddr && address < bottomaddr) {
+                refreshRequired = true;
+            }
+
+            //lastWrite = System.currentTimeMillis();
+            //lastWriteCount++;
         }
     }
 

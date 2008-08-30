@@ -20,7 +20,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
-import java.util.HashMap;
 import jpcsp.Emulator;
 import jpcsp.MemoryMap;
 import jpcsp.graphics.DisplayList;
@@ -30,9 +29,6 @@ import jpcsp.graphics.VideoEngine;
 public class pspge {
 
     private static pspge instance;
-
-    private HashMap<Integer, DisplayList> displayLists;
-
     /*
     private PspGeCallbackData cbdata;
     private int cbid = -1;
@@ -49,7 +45,9 @@ public class pspge {
     }
 
     public void Initialise() {
-        displayLists = new HashMap<Integer, DisplayList>();
+        DisplayList.Lock();
+        DisplayList.Initialise();
+        DisplayList.Unlock();
     }
 
     public void sceGeEdramGetAddr() {
@@ -57,6 +55,7 @@ public class pspge {
     }
 
     public void sceGeListEnQueue(int list, int stall, int callbackId, int argument) {
+        DisplayList.Lock();
 
         /*
         list 	- The head of the list to queue.
@@ -70,55 +69,57 @@ public class pspge {
         stall &= 0x3fffffff;
 
         DisplayList displayList = new DisplayList(list, stall, callbackId, argument);
-        displayLists.put(displayList.id, displayList);
+        DisplayList.addDisplayList(displayList);
         log("The list " + displayList.toString());
 
-        /**
-         *
-         * reading more, i saw that here we just put the display list on quee
-         * after that we draw [execute list]...
-         *
-         * so this code is just to debug stuffs until we discovery how
-         * things goes....
-         */
-        VideoEngine ve = VideoEngine.getEngine(pspdisplay_glcanvas.getDrawable(), true, true);
-        ve.executeList(displayList);
 
         Emulator.getProcessor().gpr[2] = displayList.id;
+        DisplayList.Unlock();
+
+        pspdisplay_glcanvas.get_instance().updateImage();
     }
 
     public void sceGeListDeQueue(int qid) {
+        DisplayList.Lock();
         // TODO if we render asynchronously, using another thread then we need to interupt it first
-        if (displayLists.remove(qid) != null) {
+        if (DisplayList.removeDisplayList(qid)) {
             log("sceGeListDeQueue qid=" + qid);
             Emulator.getProcessor().gpr[2] = 0;
         } else {
             log("sceGeListDeQueue failed qid=" + qid);
             Emulator.getProcessor().gpr[2] = -1;
         }
+        DisplayList.Unlock();
     }
 
     public void sceGeListUpdateStallAddr(int qid, int stallAddress) {
-        DisplayList displayList = displayLists.get(qid);
+        boolean update = false;
+
+        DisplayList.Lock();
+        DisplayList displayList = DisplayList.getDisplayList(qid);
         if (displayList != null) {
             // remove uncache bit
             stallAddress &= 0x3fffffff;
 
             log("sceGeListUpdateStallAddr qid=" + qid
                 + " new stall addr " + String.format("%08x", stallAddress)
-                + " approx " + ((stallAddress - displayList.stallAddress) / 4) + " commands");
+                + " " + ((stallAddress - displayList.stallAddress) / 4) + " new commands");
 
             displayList.stallAddress = stallAddress;
-
-            // TODO set status as ready, instead of executing immediately ?
-            VideoEngine ve = VideoEngine.getEngine(null, true, true);
-            ve.executeList(displayList);
+            if (displayList.pc != displayList.stallAddress) {
+                displayList.status = DisplayList.QUEUED;
+                update = true;
+            }
 
             Emulator.getProcessor().gpr[2] = 0;
         } else {
             log("sceGeListUpdateStallAddr qid="+ qid +" failed, no longer exists");
             Emulator.getProcessor().gpr[2] = -1;
         }
+        DisplayList.Unlock();
+
+        if (update)
+            pspdisplay_glcanvas.get_instance().updateImage();
     }
 
     /* Not sure if this is correct

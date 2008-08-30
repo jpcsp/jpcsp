@@ -16,8 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics;
 
+import java.util.Iterator;
+import java.util.HashMap;
 import jpcsp.Emulator;
 
+// Use the locks for reading/writing member variables and calling member methods
 public class DisplayList {
 
     public static final int DONE = 0;
@@ -29,7 +32,10 @@ public class DisplayList {
     public static final int GU_TAIL = 0;
     public static final int GU_HEAD = 1;
 
+    private static HashMap<Integer, DisplayList> displayLists;
     private static int ids = 0;
+    private static Object lock = new Object();
+    private static int lockvalue = 1;
 
     public int base;
     public int pc;
@@ -40,10 +46,10 @@ public class DisplayList {
 
     public int start;
     public int stallAddress;
-    public int callbackId;
-    public int arg;
+    public final int callbackId;
+    public final int arg;
 
-    public DisplayList(int startList, int stall, int callbackId, int arg){
+    public DisplayList(int startList, int stall, int callbackId, int arg) {
         this.start = startList;
         this.stallAddress = stall;
         this.callbackId = callbackId;
@@ -52,12 +58,63 @@ public class DisplayList {
         base = 0x08000000;
         pc = startList;
         stackIndex = 0;
-        status = DisplayList.QUEUED;
-        id = ++ids;
+        if (pc == stallAddress)
+            status = DisplayList.STALL_REACHED;
+        else
+            status = DisplayList.QUEUED;
+        //list.id = ids++;
+    }
+
+    public static synchronized void Initialise() {
+        displayLists = new HashMap<Integer, DisplayList>();
+    }
+
+    public static synchronized void addDisplayList(DisplayList list) {
+        // create the id outside of the constructor, inside a synchronized block so it is thread safe
+        list.id = ids++;
+        displayLists.put(list.id, list);
+    }
+
+    public static synchronized boolean removeDisplayList(int id) {
+        return (displayLists.remove(id) != null);
+    }
+
+    public static synchronized DisplayList getDisplayList(int id) {
+        return displayLists.get(id);
+    }
+
+    public static synchronized Iterator<DisplayList> iterator() {
+        return displayLists.values().iterator();
+    }
+
+    public static void Lock() {
+        synchronized (lock) {
+            //System.err.println("Lock");
+            try {
+                if (lockvalue == 0)
+                    throw new Exception("Lock");
+            } catch(Exception e) {
+                e.printStackTrace();
+            }
+
+            try {
+                while (lockvalue == 0) lock.wait();
+            } catch(InterruptedException e) {
+            }
+            lockvalue--;
+        }
+    }
+
+    public static void Unlock() {
+        synchronized (lock) {
+            lockvalue++;
+            lock.notify();
+            //System.err.println("Unlock");
+        }
     }
 
     @Override
-    public String toString(){
+    public synchronized String toString() {
         return "id = " + id + ", start address = " + Integer.toHexString(start)
                 + ", end address = " + Integer.toHexString(stallAddress)
                 + ", initial command instruction = " + Integer.toHexString(Emulator.getMemory().read32(pc));
