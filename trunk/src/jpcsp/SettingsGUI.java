@@ -50,6 +50,8 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         openLogwindowCheck.setSelected(enabled);
         enabled = Settings.get_instance().readBoolOptions("guisettings/snapLogwindow");
         snapConsoleCheck.setSelected(enabled);
+        enabled = Settings.get_instance().readBoolOptions("emuoptions/recompiler");
+        recompilerCheck.setSelected(enabled);
         
         /* load current config and set the config */
         loadKeys();
@@ -192,6 +194,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         saveWindowPosCheck = new javax.swing.JCheckBox();
         openLogwindowCheck = new javax.swing.JCheckBox();
         snapConsoleCheck = new javax.swing.JCheckBox();
+        recompilerCheck = new javax.swing.JCheckBox();
         bg = new javax.swing.JPanel();
         fgPanel = new javax.swing.JPanel();
         fieldStart = new javax.swing.JTextField();
@@ -243,22 +246,28 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
 
         snapConsoleCheck.setText("snap console to main window");
 
+        recompilerCheck.setText("use recompiler");
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
-                        .addGap(22, 22, 22)
-                        .addComponent(pbpunpackcheck, javax.swing.GroupLayout.DEFAULT_SIZE, 169, Short.MAX_VALUE))
+                .addContainerGap(20, Short.MAX_VALUE)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addContainerGap(22, Short.MAX_VALUE)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(openLogwindowCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(saveWindowPosCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(snapConsoleCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 169, Short.MAX_VALUE))))
-                .addGap(399, 399, 399))
+                        .addComponent(recompilerCheck)
+                        .addContainerGap())
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(jPanel1Layout.createSequentialGroup()
+                            .addComponent(pbpunpackcheck, javax.swing.GroupLayout.DEFAULT_SIZE, 564, Short.MAX_VALUE)
+                            .addContainerGap())
+                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(openLogwindowCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(saveWindowPosCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(snapConsoleCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 169, Short.MAX_VALUE))
+                            .addGap(399, 399, 399)))))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -271,7 +280,9 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                 .addComponent(openLogwindowCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(snapConsoleCheck)
-                .addContainerGap(201, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(recompilerCheck)
+                .addContainerGap(178, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab("General", jPanel1);
@@ -717,6 +728,7 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
    Settings.get_instance().writeBoolOptions("guisettings/saveWindowPos", saveWindowPosCheck.isSelected());
    Settings.get_instance().writeBoolOptions("guisettings/openLogwindow", openLogwindowCheck.isSelected());
    Settings.get_instance().writeBoolOptions("guisettings/snapLogwindow", snapConsoleCheck.isSelected());
+   Settings.get_instance().writeBoolOptions("emuoptions/recompiler", recompilerCheck.isSelected());
    Settings.get_instance().writeKeys(currentKeys);
    
    if (controller != null)
@@ -846,6 +858,7 @@ private void fieldAnalogLeftMouseClicked(java.awt.event.MouseEvent evt) {//GEN-F
     private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JCheckBox openLogwindowCheck;
     private javax.swing.JCheckBox pbpunpackcheck;
+    private javax.swing.JCheckBox recompilerCheck;
     private javax.swing.JCheckBox saveWindowPosCheck;
     private javax.swing.JCheckBox snapConsoleCheck;
     // End of variables declaration//GEN-END:variables

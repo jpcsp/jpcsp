@@ -32,6 +32,7 @@ import static jpcsp.util.Utilities.*;
 public class Emulator implements Runnable {
 
     private static Processor cpu;
+    private static Recompiler rec;
     private static Controller controller;
     private FileManager romManager;
     private boolean mediaImplemented = false;
@@ -47,6 +48,11 @@ public class Emulator implements Runnable {
     public Emulator(MainGUI gui) {
         this.gui = gui;
         cpu = new Processor();
+        
+        if (Settings.get_instance().readBoolOptions("emuoptions/recompiler"))
+            rec = new Recompiler();
+        else
+            rec = null;
 
         controller = new Controller();
         mainThread = new Thread(this);
@@ -435,14 +441,19 @@ public class Emulator implements Runnable {
                 }
             } catch (InterruptedException e){
             }
-            cpu.step();
-            jpcsp.HLE.ThreadMan.get_instance().step();
-            jpcsp.HLE.pspdisplay.get_instance().step();
-            controller.checkControllerState();
+            
+            if (rec != null) {
+                rec.run();
+            } else {
+                cpu.step();
+                jpcsp.HLE.ThreadMan.get_instance().step();
+                jpcsp.HLE.pspdisplay.get_instance().step();
+                controller.checkControllerState();
 
-            if (debugger != null)
-                debugger.step();
-            //delay(cpu.numberCyclesDelay());
+                if (debugger != null)
+                    debugger.step();
+                //delay(cpu.numberCyclesDelay());
+            }
         }
 
     }

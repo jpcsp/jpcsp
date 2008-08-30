@@ -7,8 +7,8 @@
             <y>0</y>
         </mainwindow>
        <disassembler>
-         <x>209</x>
-         <y>88</y>
+         <x>50</x>
+         <y>50</y>
        </disassembler>
        <elfheader>
          <x>143</x>
@@ -24,7 +24,7 @@
        </registers>
       <logwindow>
         <x>0</x>
-        <y>600</y>
+        <y>347</y>
       </logwindow>
     </windowspos>
 	
@@ -42,6 +42,7 @@
   
   <emuoptions>
       <pbpunpack>1</pbpunpack>
+      <recompiler>0</recompiler>
       <keys>
           <up>38</up>
           <down>40</down>

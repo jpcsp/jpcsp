@@ -296,7 +296,9 @@ private void ToggleConsoleActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 }//GEN-LAST:event_ToggleConsoleActionPerformed
 
 private void EnterDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterDebuggerActionPerformed
-     if(disasm==null)
+    if (Settings.get_instance().readBoolOptions("emuoptions/recompiler"))
+        return;
+    if(disasm==null)
      {
       PauseEmu();
       disasm = new DisassemblerFrame(emulator);
