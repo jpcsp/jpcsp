@@ -42,16 +42,16 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
     private UpdateThread thread;
     private Object callingThread;
 */
-    private BufferInfo currentBufferInfo;
-    private BufferInfo lastBufferInfo;
-    private BufferInfo deleteBufferInfo;
+    private volatile BufferInfo currentBufferInfo;
+    private volatile BufferInfo lastBufferInfo;
+    private volatile BufferInfo deleteBufferInfo;
 
-    private boolean doredraw;
+    private volatile boolean doredraw;
     private int reshape_width, reshape_height;
 
-    private boolean doupdatetexture; // Call currentBufferInfo.updateTexture()
-    private boolean docreatetexture; // Call currentBufferInfo.createTexture()
-    private boolean dodeletetexture; // Call deleteBufferInfo.dispose()
+    private volatile boolean doupdatetexture; // Call currentBufferInfo.updateTexture()
+    private volatile boolean docreatetexture; // Call currentBufferInfo.createTexture()
+    private volatile boolean dodeletetexture; // Call deleteBufferInfo.dispose()
 
     public static GL getDrawable(){
         return get_instance().getGL();
@@ -75,7 +75,7 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
         // We are starting our own update thread to replace the Animator
         // This way we can control the update rate
         // Apparently we need all these checks, see http://download.java.net/media/jogl/builds/nightly/javadoc_public/javax/media/opengl/Threading.html
-        if (!Threading.isOpenGLThread() && Threading.isSingleThreaded()) {
+        if (Threading.isSingleThreaded() && !Threading.isOpenGLThread()) {
             System.out.println("Using GL update thread");
             thread = new UpdateThread();
             Threading.invokeOnOpenGLThread(thread);
@@ -133,6 +133,9 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
     // If UPDATE_BLOCKS = true, then this function blocks, so don't hold the DisplayList lock when you call it
     public void updateImage() {
         //System.out.println("update tex (deferred)");
+
+        // Update the texture from the shared Buffer
+        doupdatetexture = true;
 
         // Why all the checks? see http://download.java.net/media/jogl/builds/nightly/javadoc_public/javax/media/opengl/Threading.html
         if (Threading.isSingleThreaded() && !Threading.isOpenGLThread()) {
