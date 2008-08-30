@@ -20,7 +20,6 @@ package jpcsp.HLE;
 import jpcsp.graphics.VideoEngine;
 //import com.sun.opengl.util.Animator;
 import com.sun.opengl.util.texture.Texture;
-import com.sun.opengl.util.texture.TextureCoords;
 import com.sun.opengl.util.texture.TextureData;
 import com.sun.opengl.util.texture.TextureIO;
 import java.nio.Buffer;
@@ -36,17 +35,17 @@ import javax.media.opengl.Threading;
  */
 public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
     private static pspdisplay_glcanvas instance;
-
+/*
     // In theory we can protect shared access to videoram if only 1 thread can run at a time,
     // so this option lets us block the emu thread while the GL thread updates.
     private final static boolean UPDATE_BLOCKS = true;
+    private UpdateThread thread;
     private Object callingThread;
-
+*/
     private BufferInfo currentBufferInfo;
     private BufferInfo lastBufferInfo;
     private BufferInfo deleteBufferInfo;
 
-    private UpdateThread thread;
     private boolean doredraw;
     private int reshape_width, reshape_height;
 
@@ -72,13 +71,18 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
         //final Animator animator = new Animator(this);
         //animator.start();
 
+/*
         // We are starting our own update thread to replace the Animator
         // This way we can control the update rate
         // Apparently we need all these checks, see http://download.java.net/media/jogl/builds/nightly/javadoc_public/javax/media/opengl/Threading.html
         if (!Threading.isOpenGLThread() && Threading.isSingleThreaded()) {
+            System.out.println("Using GL update thread");
             thread = new UpdateThread();
             Threading.invokeOnOpenGLThread(thread);
+        } else {
+            System.out.println("NOT using GL update thread");
         }
+*/
 
         currentBufferInfo = null;
         lastBufferInfo = null;
@@ -91,6 +95,8 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
     }
 
     // Here pspdisplay shares its GL pixel data with pspdisplay_glcanvas
+    // We anticipate PSP to flip between 2 buffers (2 addresses in vram), so we
+    // implement a cache system so we don't call GL create/destroy texture lots.
     // addr should be associated with buffer, such that if buffer is backed by a different piece of memory then addr will also have a different value
     public void updateDispSettings(Buffer buffer, int width, int height, int bufferwidth, int psppixelformat, int addr) {
         BufferInfo newBufferInfo = new BufferInfo(buffer, width, height, bufferwidth, psppixelformat, addr);
@@ -127,14 +133,29 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
     // If UPDATE_BLOCKS = true, then this function blocks, so don't hold the DisplayList lock when you call it
     public void updateImage() {
         //System.out.println("update tex (deferred)");
-        doredraw = true;
 
+        // Why all the checks? see http://download.java.net/media/jogl/builds/nightly/javadoc_public/javax/media/opengl/Threading.html
+        if (Threading.isSingleThreaded() && !Threading.isOpenGLThread()) {
+            Threading.invokeOnOpenGLThread(new Runnable() {
+                public void run() {
+                    System.out.println("Using GL update thread");
+                    display();
+                } });
+        } else {
+            System.out.println("NOT using GL update thread");
+            display();
+        }
+
+
+/*
         if (thread != null) {
             // Tell the GL thread to update, then wait for it to finish updating before continuing this thread
-            // This is so we don't get race conditions on Buffer b
+            // This is so we don't get race conditions on the shared Buffer's
             if (UPDATE_BLOCKS) {
                 callingThread = Thread.currentThread();
             }
+
+            doredraw = true;
             thread.notify();
 
             if (UPDATE_BLOCKS) {
@@ -146,10 +167,20 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
                 }
             }
         } else {
+            if (Threading.isSingleThreaded() && !Threading.isOpenGLThread()) {
+                System.out.println("Using GL update thread");
+                thread = new UpdateThread();
+                Threading.invokeOnOpenGLThread(thread);
+            } else {
+                System.out.println("NOT using GL update thread");
+                //display();
+            }
+
             display();
         }
+*/
     }
-
+/*
     // Our own GL thread (replaces Animator)
     private class UpdateThread implements Runnable {
         public void run() {
@@ -170,7 +201,7 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
             }
         }
     }
-
+*/
     // ----------------------- GLEventListener -----------------------
 
     public void init(GLAutoDrawable drawable) {
@@ -178,6 +209,7 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
         gl.setSwapInterval(1);
     }
 
+    // This should get called once when the canvas is created, then each time it gets resized
     public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
        /* GL gl = drawable.getGL();
 
@@ -188,13 +220,13 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
         gl.glMatrixMode(GL.GL_MODELVIEW);
         gl.glLoadIdentity();*/
 
-      /*
+
       GL gl = drawable.getGL();
       gl.glViewport(0, 0, width, height);
       gl.glMatrixMode(GL.GL_PROJECTION);
       gl.glLoadIdentity();
       gl.glOrtho(0, 480, 272, 0, -1.0, 1.0);
-      */
+
         reshape_width = width;
         reshape_height = height;
     }
@@ -203,16 +235,6 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
         GL gl = drawable.getGL();
         gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
 
-        if (docreatetexture) {
-            currentBufferInfo.createTexture();
-            docreatetexture = false;
-        }
-
-        if (doupdatetexture) {
-            currentBufferInfo.updateTexture();
-            doupdatetexture = false;
-        }
-
         if (dodeletetexture) {
             deleteBufferInfo.dispose();
             deleteBufferInfo = null;
@@ -220,22 +242,30 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
         }
 
         if (currentBufferInfo != null) {
+            if (docreatetexture) {
+                currentBufferInfo.createTexture();
+                docreatetexture = false;
+            }
+
+            if (doupdatetexture) {
+                currentBufferInfo.updateTexture();
+                doupdatetexture = false;
+            }
+/*
             // Execute queued display lists
             VideoEngine ve = VideoEngine.getEngine(gl, true, true);
             ve.update();
 
-            //tex.updateImage(inputData);
-
-            // Save GL_TEXTURE_2D, current matrix mode, viewport settings
+            // Save VideoEngine's GL_TEXTURE_2D, current matrix mode, viewport settings
             gl.glPushAttrib(GL.GL_ENABLE_BIT|GL.GL_TRANSFORM_BIT|GL.GL_VIEWPORT_BIT);
 
-            // Seyup these here, since VideoEngine may have changed them
+            // Setup these here, since VideoEngine may have changed them
             gl.glViewport(0, 0, reshape_width, reshape_height);
             gl.glMatrixMode(GL.GL_PROJECTION);
-            gl.glPushMatrix(); // Save GL_PROJECTION matrix
+            gl.glPushMatrix(); // Save VideoEngine's GL_PROJECTION matrix
             gl.glLoadIdentity();
             gl.glOrtho(0, 480, 272, 0, -1.0, 1.0);
-
+*/
             gl.glEnable(GL.GL_TEXTURE_2D);
             currentBufferInfo.tex.bind();
 
@@ -255,10 +285,14 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
                 gl.glTexCoord2f(0.0f, currentBufferInfo.v);
                 gl.glVertex3f(0.0f, 272.0f, 0.0f);
             gl.glEnd();
+/*
+            // Restore VideoEngine's GL_PROJECTION matrix
+            gl.glMatrixMode(GL.GL_PROJECTION);
+            gl.glPopMatrix();
 
-
-            gl.glPopMatrix(); // Restore GL_PROJECTION matrix
-            gl.glPopAttrib(); // Restore GL_TEXTURE_2D, current matrix mode, viewport settings
+            // Restore VideoEngine's GL_TEXTURE_2D, current matrix mode, viewport settings
+            gl.glPopAttrib();
+*/
         }
     }
 
@@ -286,7 +320,8 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
                 case 1: pixelType = GL.GL_UNSIGNED_SHORT_1_5_5_5_REV; break;
                 case 2: pixelType = GL.GL_UNSIGNED_SHORT_4_4_4_4_REV; break;
                 default:
-                case 3: pixelType = GL.GL_UNSIGNED_INT_8_8_8_8_REV; break;
+                //case 3: pixelType = GL.GL_UNSIGNED_INT_8_8_8_8_REV; break;
+                case 3: pixelType = GL.GL_UNSIGNED_BYTE; break;
             }
         }
 
