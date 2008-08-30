@@ -16,11 +16,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics;
 
+import java.util.Iterator;
 import javax.media.opengl.GL;
 import jpcsp.Emulator;
 import static jpcsp.graphics.GeCommands.*;
 
 public class VideoEngine {
+
+    private static VideoEngine instance;
+    private GL gl;
 
     private boolean fullscreen;
     private int mode;
@@ -29,8 +33,6 @@ public class VideoEngine {
     private int width;
     private int height;
     private boolean ha;
-    private static VideoEngine instance;
-    private GL drawable;
     private static final boolean isDebugMode = true;
     private static GeCommands helper;
     private Vertex vertex = new Vertex();
@@ -41,17 +43,20 @@ public class VideoEngine {
     private int zbp, zbw; // depth buffer pointer and width
     private int psm; // pixel format
 
+    private boolean listIsOver;
+    private DisplayList actualList; // The currently executing list
+
     private static void log(String msg) {
         if (isDebugMode) {
             System.out.println("sceGe DEBUG > " + msg);
         }
     }
 
-    public static VideoEngine getEngine(GL draw, boolean fullScreen, boolean hardwareAccelerate) {
+    public static VideoEngine getEngine(GL gl, boolean fullScreen, boolean hardwareAccelerate) {
         VideoEngine engine = getEngine();
         engine.setFullScreenShoot(fullScreen);
         engine.setHardwareAcc(hardwareAccelerate);
-        engine.drawable = draw;
+        engine.gl = gl;
         return engine;
     }
 
@@ -65,16 +70,33 @@ public class VideoEngine {
 
     private VideoEngine() {
     }
-    private boolean listIsOver = false;
-    private DisplayList actualList;
 
-    public void executeList(DisplayList list) {
+    // call from GL thread
+    public void update() {
+        //System.err.println("update start");
+        DisplayList.Lock();
+        Iterator<DisplayList> it = DisplayList.iterator();
+        while(it.hasNext()) {
+            DisplayList list = it.next();
+            if (list.status == DisplayList.QUEUED) {
+                //System.err.println("executeList");
+                executeList(list);
+
+                if (list.status == DisplayList.DONE)
+                    it.remove();
+            }
+        }
+        DisplayList.Unlock();
+        //System.err.println("update done");
+    }
+
+    // call from GL thread
+    private void executeList(DisplayList list) {
         actualList = list;
         listIsOver = false;
 
         while (!listIsOver &&
             actualList.pc != actualList.stallAddress &&
-            // TODO maybe remove this line when all is done, because if we exit the loop early we either need to completely stop emulation or have some way of restarting the list
             !Emulator.pause) {
             int ins = Emulator.getMemory().read32(actualList.pc);
             actualList.pc += 4;
@@ -87,9 +109,9 @@ public class VideoEngine {
         }
 
         if (listIsOver) {
-            // TODO remove list cleanly :P
-            actualList.status = DisplayList.DRAWING_DONE; // DONE, DRAWING_DONE, CANCEL_DONE ?
-            jpcsp.HLE.pspge.get_instance().sceGeListDeQueue(actualList.id);
+            // Set list for deferred remove
+            actualList.status = DisplayList.DONE;
+            actualList = null;
         }
     }
 
@@ -124,19 +146,26 @@ public class VideoEngine {
                 log(helper.getCommandString(BASE) + " " + String.format("%08x", actualList.base));
                 break;
             case IADDR:
-                vertex.index = actualList.base | normalArgument;
-                log(helper.getCommandString(IADDR),vertex.index);
+                vertex.ptr_index = actualList.base | normalArgument;
+                log(helper.getCommandString(IADDR) + " " + String.format("%08x", vertex.ptr_index));
                 break;
             case VADDR:
-                vertex.pointer = actualList.base | normalArgument;
-                log(helper.getCommandString(VADDR) + " " + String.format("%08x", vertex.pointer));
+                vertex.ptr_vertex = actualList.base | normalArgument;
+                log(helper.getCommandString(VADDR) + " " + String.format("%08x", vertex.ptr_vertex));
+                break;
+            case VTYPE:
+                vertex.processType(normalArgument);
+                log(helper.getCommandString(VTYPE) + " " + vertex.toString());
                 break;
 
             case TME:
-                if (normalArgument != 0)
+                if (normalArgument != 0) {
+                    gl.glEnable(GL.GL_TEXTURE_2D);
                     log("sceGuEnable(GU_TEXTURE_2D)");
-                else
+                } else {
+                    gl.glDisable(GL.GL_TEXTURE_2D);
                     log("sceGuDisable(GU_TEXTURE_2D)");
+                }
                 break;
 
             case XSCALE:
@@ -194,29 +223,53 @@ public class VideoEngine {
                 break;
 
             case PRIM:
+                int[] mapping = new int[] { GL.GL_POINTS, GL.GL_LINES, GL.GL_LINE_STRIP, GL.GL_TRIANGLES, GL.GL_TRIANGLE_STRIP, GL.GL_TRIANGLE_FAN };
                 int numberOfVertex = normalArgument & 0xFFFF;
-                int draw = ((normalArgument >> 16) & 0x7);
-                switch (draw){
+                int type = ((normalArgument >> 16) & 0x7);
+
+                // Logging
+                switch (type) {
                     case PRIM_POINT:
                         log(helper.getCommandString(PRIM) + " point");
-                        break;
-                    case PRIM_LINES_STRIPS:
-                        log(helper.getCommandString(PRIM) + " lines_strips");
                         break;
                     case PRIM_LINE:
                         log(helper.getCommandString(PRIM) + " line");
                         break;
-                    case PRIM_SPRITES:
-                        log(helper.getCommandString(PRIM) + " sprites");
+                    case PRIM_LINES_STRIPS:
+                        log(helper.getCommandString(PRIM) + " lines_strips");
                         break;
                     case PRIM_TRIANGLE:
                         log(helper.getCommandString(PRIM) + " triangle");
                         break;
+                    case PRIM_TRIANGLE_STRIPS:
+                        log(helper.getCommandString(PRIM) + " triangle_strips");
+                        break;
                     case PRIM_TRIANGLE_FANS:
                         log(helper.getCommandString(PRIM) + " triangle_fans");
                         break;
+                    case PRIM_SPRITES:
+                        log(helper.getCommandString(PRIM) + " sprites");
+                        break;
+                }
+
+                // GL
+                switch (type) {
+                    case PRIM_POINT:
+                    case PRIM_LINE:
+                    case PRIM_LINES_STRIPS:
+                    case PRIM_TRIANGLE:
                     case PRIM_TRIANGLE_STRIPS:
-                        log(helper.getCommandString(PRIM) + " triangle_strips");
+                    case PRIM_TRIANGLE_FANS:
+                        gl.glBegin(mapping[type]);
+                            for (int i = 0; i < numberOfVertex; i++) {
+                                int addr = vertex.getAddress(i);
+                                vertex.output(gl, Emulator.getMemory(), addr);
+                            }
+                        gl.glEnd();
+                        break;
+
+                    case PRIM_SPRITES:
+                        // TODO
                         break;
                 }
                 break;
