@@ -35,23 +35,22 @@ import javax.media.opengl.Threading;
  */
 public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
     private static pspdisplay_glcanvas instance;
-/*
+
     // In theory we can protect shared access to videoram if only 1 thread can run at a time,
     // so this option lets us block the emu thread while the GL thread updates.
     private final static boolean UPDATE_BLOCKS = true;
-    private UpdateThread thread;
     private Object callingThread;
-*/
-    private volatile BufferInfo currentBufferInfo;
-    private volatile BufferInfo lastBufferInfo;
-    private volatile BufferInfo deleteBufferInfo;
+    private Object waitObject;
 
-    private volatile boolean doredraw;
+    private BufferInfo currentBufferInfo;
+    private BufferInfo lastBufferInfo;
+    private BufferInfo deleteBufferInfo;
+
     private int reshape_width, reshape_height;
 
-    private volatile boolean doupdatetexture; // Call currentBufferInfo.updateTexture()
-    private volatile boolean docreatetexture; // Call currentBufferInfo.createTexture()
-    private volatile boolean dodeletetexture; // Call deleteBufferInfo.dispose()
+    private boolean doupdatetexture; // Call currentBufferInfo.updateTexture()
+    private boolean docreatetexture; // Call currentBufferInfo.createTexture()
+    private boolean dodeletetexture; // Call deleteBufferInfo.dispose()
 
     public static GL getDrawable(){
         return get_instance().getGL();
@@ -68,27 +67,17 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
         setSize(480, 272);
         addGLEventListener(this);
 
+        // The Animator will update however fast JOGL designers wanted it to
+        // We don't need it anymore since pspdisplay will call updateImage at 60 fps
         //final Animator animator = new Animator(this);
         //animator.start();
 
-/*
-        // We are starting our own update thread to replace the Animator
-        // This way we can control the update rate
-        // Apparently we need all these checks, see http://download.java.net/media/jogl/builds/nightly/javadoc_public/javax/media/opengl/Threading.html
-        if (Threading.isSingleThreaded() && !Threading.isOpenGLThread()) {
-            System.out.println("Using GL update thread");
-            thread = new UpdateThread();
-            Threading.invokeOnOpenGLThread(thread);
-        } else {
-            System.out.println("NOT using GL update thread");
-        }
-*/
+        waitObject = new Object();
 
         currentBufferInfo = null;
         lastBufferInfo = null;
         deleteBufferInfo = null;
 
-        doredraw = false;
         doupdatetexture = false;
         docreatetexture = false;
         dodeletetexture = false;
@@ -120,6 +109,12 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
                 //System.out.println("deleting old buffer");
                 deleteBufferInfo = lastBufferInfo;
                 dodeletetexture = true;
+
+                /* testing: this should fail when opening a 2nd pbp because it gets called from emu thread
+                deleteBufferInfo.dispose();
+                deleteBufferInfo = null;
+                dodeletetexture = false;
+                */
             }
 
             lastBufferInfo = currentBufferInfo;
@@ -137,74 +132,20 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
         // Update the texture from the shared Buffer
         doupdatetexture = true;
 
-        // Why all the checks? see http://download.java.net/media/jogl/builds/nightly/javadoc_public/javax/media/opengl/Threading.html
-        if (Threading.isSingleThreaded() && !Threading.isOpenGLThread()) {
-            Threading.invokeOnOpenGLThread(new Runnable() {
-                public void run() {
-                    System.out.println("Using GL update thread");
-                    display();
-                } });
-        } else {
-            System.out.println("NOT using GL update thread");
-            display();
+        if (UPDATE_BLOCKS) {
+            /* broken
+            callingThread = Thread.currentThread();
+            try {
+                while(callingThread != null) waitObject.wait();
+            } catch(InterruptedException e) {
+            }
+            */
         }
 
-
-/*
-        if (thread != null) {
-            // Tell the GL thread to update, then wait for it to finish updating before continuing this thread
-            // This is so we don't get race conditions on the shared Buffer's
-            if (UPDATE_BLOCKS) {
-                callingThread = Thread.currentThread();
-            }
-
-            doredraw = true;
-            thread.notify();
-
-            if (UPDATE_BLOCKS) {
-                // Here we are blocking, waiting for the update to finish
-                // Main reason is so pspdisplay doesn't alter the shared buffer while we are using it in this class
-                try {
-                    while(doredraw) wait();
-                } catch(InterruptedException e) {
-                }
-            }
-        } else {
-            if (Threading.isSingleThreaded() && !Threading.isOpenGLThread()) {
-                System.out.println("Using GL update thread");
-                thread = new UpdateThread();
-                Threading.invokeOnOpenGLThread(thread);
-            } else {
-                System.out.println("NOT using GL update thread");
-                //display();
-            }
-
-            display();
-        }
-*/
+        //System.err.println("updateImage " + Thread.currentThread());
+        display();
     }
-/*
-    // Our own GL thread (replaces Animator)
-    private class UpdateThread implements Runnable {
-        public void run() {
-            for(;;) {
-                try {
-                    while(!doredraw) wait();
-                } catch(InterruptedException e) {
-                }
 
-                // This will redraw the canvas
-                display();
-                doredraw = false;
-
-                // Wake up the thread that requested the update
-                if (UPDATE_BLOCKS) {
-                    callingThread.notify();
-                }
-            }
-        }
-    }
-*/
     // ----------------------- GLEventListener -----------------------
 
     public void init(GLAutoDrawable drawable) {
@@ -245,6 +186,8 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
         }
 
         if (currentBufferInfo != null) {
+            //System.err.println("display " + Thread.currentThread());
+
             if (docreatetexture) {
                 currentBufferInfo.createTexture();
                 docreatetexture = false;
@@ -296,6 +239,13 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
             // Restore VideoEngine's GL_TEXTURE_2D, current matrix mode, viewport settings
             gl.glPopAttrib();
 */
+        }
+
+        if (UPDATE_BLOCKS && callingThread != null) {
+            /* broken
+            waitObject.notify();
+            callingThread = null;
+            */
         }
     }
 
@@ -356,8 +306,10 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
 
         // Call from GL thread
         public void dispose() {
-            if (tex != null)
+            if (tex != null) {
+                //System.err.println("dispose " + Thread.currentThread());
                 tex.dispose();
+            }
         }
 
         public boolean equals(BufferInfo b) {
