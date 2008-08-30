@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 */
 package jpcsp;
 
+import java.awt.Point;
 import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.FileInputStream;
@@ -157,18 +158,22 @@ public class Settings {
         return dimension;
     }
 
-    public void writeWindowPos(String windowname, String[] pos) {
+    public void writeWindowPos(String windowname, Point pos) {
+        String[] coord = new String[2];
+        coord[0]=Integer.toString(pos.x);
+        coord[1]=Integer.toString(pos.y);
+        
         try {
            Document doc = getSettingsDocument();
            
             XPathFactory xpathFactory = XPathFactory.newInstance();
-          XPath xpath = xpathFactory.newXPath();
+            XPath xpath = xpathFactory.newXPath();
           
             Element posX = (Element) xpath.evaluate("//guisettings/windowspos/" + windowname + "/x", doc, XPathConstants.NODE);
             Element posY = (Element) xpath.evaluate("//guisettings/windowspos/" + windowname + "/y", doc, XPathConstants.NODE);
            
-            posX.replaceChild(doc.createTextNode(pos[0]), posX.getFirstChild());
-            posY.replaceChild(doc.createTextNode(pos[1]), posY.getFirstChild());
+            posX.replaceChild(doc.createTextNode(coord[0]), posX.getFirstChild());
+            posY.replaceChild(doc.createTextNode(coord[1]), posY.getFirstChild());
            
             writeSettings(doc);
         } catch (Exception e) {

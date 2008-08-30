@@ -16,7 +16,6 @@
  */
 package jpcsp.Debugger;
 
-import java.awt.Point;
 import jpcsp.*;
 
 public class ElfHeaderInfo extends javax.swing.JFrame {
@@ -53,8 +52,8 @@ public class ElfHeaderInfo extends javax.swing.JFrame {
         setTitle("Elf Header Info");
         setResizable(false);
         addWindowListener(new java.awt.event.WindowAdapter() {
-            public void windowClosing(java.awt.event.WindowEvent evt) {
-                formWindowClosing(evt);
+            public void windowDeactivated(java.awt.event.WindowEvent evt) {
+                formWindowDeactivated(evt);
             }
         });
 
@@ -81,17 +80,11 @@ public class ElfHeaderInfo extends javax.swing.JFrame {
 
 
 
-private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
-    Point location = getLocation();
-    //location.x
-    String[] coord = new String[2];
-    coord[0]=Integer.toString(location.x);
-    coord[1]=Integer.toString(location.y);
-    
+private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowDeactivated
+    //Called when the mainWindow is closed
     if (Settings.get_instance().readBoolOptions("guisettings/saveWindowPos"))
-        Settings.get_instance().writeWindowPos("elfheader", coord);
-    
-}//GEN-LAST:event_formWindowClosing
+        Settings.get_instance().writeWindowPos("elfheader", getLocation());
+}//GEN-LAST:event_formWindowDeactivated
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
