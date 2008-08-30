@@ -1014,7 +1014,7 @@ public class Processor implements AllegrexInstructions {
             if (interpreter_only || (current_bb == null)) {
                 gpr[rt] = gpr[rs] ^ uimm16;
             } else if (tracked_gpr[rs].fixed) {
-                fix_gpr(rt, gpr[rs] | uimm16);
+                fix_gpr(rt, gpr[rs] ^ uimm16);
             } else {
                 load_gpr(rs, false);
                 alter_gpr(rt);
