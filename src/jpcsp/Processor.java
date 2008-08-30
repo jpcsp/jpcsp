@@ -18,6 +18,8 @@ package jpcsp;
 
 import static jpcsp.AllegrexInstructions.*;
 import jpcsp.HLE.SyscallHandler;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Processor implements AllegrexInstructions {
 
@@ -52,6 +54,18 @@ public class Processor implements AllegrexInstructions {
     public long[] fpr_cycles;
     public long[][][] vpr_cycles;
     public long fcr31_cycles;
+    private AllegrexBasicBlock current_bb = null;
+    protected Map<Integer, AllegrexBasicBlock> basic_blocks = new HashMap<Integer, AllegrexBasicBlock>();
+    public boolean interpreter_only = true;
+
+    public class RegisterTracking {
+
+        public boolean loaded = false;
+        public boolean dirty = false;
+        public boolean fixed = false;
+        public boolean labeled = false;
+    }
+    public RegisterTracking tracked_gpr[];
 
     Processor() {
         Memory.get_instance(); //intialize memory
@@ -78,6 +92,65 @@ public class Processor implements AllegrexInstructions {
         hilo_cycles = 0;
         fpr_cycles = new long[32];
         vpr_cycles = new long[8][4][4];
+
+        tracked_gpr = new RegisterTracking[32];
+    }
+
+    public void fix_gpr(int register, int value) {
+        if (register != 0 || current_bb != null) {
+            tracked_gpr[register].loaded = false;
+            tracked_gpr[register].dirty = true;
+            tracked_gpr[register].fixed = true;
+            gpr[register] = value;
+        }
+    }
+
+    public void load_gpr(int register) {
+        if (register != 0 && current_bb != null) {
+            if (!tracked_gpr[register].labeled) {
+                current_bb.emit("int gpr_" + register + " = processor.gpr[" + register + "];");
+            }
+            tracked_gpr[register].loaded = true;
+            tracked_gpr[register].dirty = false;
+            tracked_gpr[register].fixed = false;
+            tracked_gpr[register].labeled = true;
+        }
+    }
+
+    public void alter_gpr(int register) {
+        if (register != 0 && current_bb != null) {
+            if (!tracked_gpr[register].labeled) {
+                current_bb.emit("int gpr_" + register + ";");
+            }
+            tracked_gpr[register].loaded = true;
+            tracked_gpr[register].dirty = false;
+            tracked_gpr[register].fixed = false;
+            tracked_gpr[register].labeled = true;
+        }
+    }
+
+    public String get_gpr(int register) {
+        if (tracked_gpr[register].fixed) {
+            return "0x" + Integer.toHexString(gpr[register]);
+        } else if (tracked_gpr[register].labeled) {
+            return "gpr_" + register;
+        } else {
+            return "processor.gpr[" + register + "]";
+        }
+    }
+
+    public void reset_all_gpr() {
+        if (current_bb != null) {
+            for (int i = 0; i < 32; ++i) {
+                if (tracked_gpr[i].labeled) {
+                    if (tracked_gpr[i].dirty) {
+                        if (!tracked_gpr[i].fixed) {
+                            current_bb.emit("processor.gpr[" + i + "] = gpr_" + i + ";");
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public int hi() {
@@ -157,9 +230,27 @@ public class Processor implements AllegrexInstructions {
         // RAW conflict (Using the result of previous FPU instructions)
         cycles = Math.max(cycles, Math.max(fpr_cycles[fs], fpr_cycles[ft]));
     }
-    private final AllegrexDecoder interpreter = new AllegrexDecoder();
+    private final AllegrexDecoder decoder = new AllegrexDecoder();
 
     public void step() {
+
+        // check whether a basic block is in progress
+        if (!interpreter_only && current_bb == null) {
+            current_bb = basic_blocks.get(pc);
+            if (current_bb != null) {
+                if (!current_bb.freezed) {
+                    current_bb.freeze();
+                }
+                current_bb.execution_count++;
+                current_bb.execute();
+                current_bb = null;
+                return;
+            } else {
+                current_bb = new AllegrexBasicBlock(this, pc);
+                basic_blocks.put(pc, current_bb);
+            }
+        }
+
         npc = pc + 4;
 
         int insn = (Memory.get_instance()).read32(pc);
@@ -171,7 +262,7 @@ public class Processor implements AllegrexInstructions {
         pc = npc;
 
         // process the current instruction
-        interpreter.process(this, insn);
+        decoder.process(this, insn);
     }
 
     public void stepDelayslot() {
@@ -184,7 +275,7 @@ public class Processor implements AllegrexInstructions {
         pc += 4;
 
         // process the current instruction
-        interpreter.process(this, insn);
+        decoder.process(this, insn);
 
         pc = npc;
         npc = pc + 4;
@@ -660,12 +751,17 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doADDI(int rt, int rs, int simm16) {
         if (rt != 0) {
-            long result = (long) gpr[rs] + (long) simm16;
+            if (current_bb == null) {
+                long result = (long) gpr[rs] + (long) simm16;
 
-            if (!addSubOverflow(result)) {
-                gpr[rt] = (int) result;
+                if (!addSubOverflow(result)) {
+                    gpr[rt] = (int) result;
+                } else {
+                    doUNK("ADDI raises an Overflow exception");
+                }
             } else {
-                doUNK("ADDI raises an Overflow exception");
+                // this ADDI instruction is never generated by gcc so treat it as ADDUI 
+                doADDIU(rt, rs, simm16);
             }
         }
     }
@@ -673,49 +769,101 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doADDIU(int rt, int rs, int simm16) {
         if (rt != 0) {
-            gpr[rt] = gpr[rs] + simm16;
+            if (current_bb == null) {
+                gpr[rt] = gpr[rs] + simm16;
+            } else if (tracked_gpr[rs].fixed) {
+                fix_gpr(rt, gpr[rs] + simm16);
+            } else {
+                load_gpr(rs);
+                alter_gpr(rt);
+                current_bb.emit(get_gpr(rt) + " = " + get_gpr(rs) + " + " + simm16 + ";");
+            }
         }
     }
 
     @Override
     public void doSLTI(int rt, int rs, int simm16) {
         if (rt != 0) {
-            gpr[rt] = signedCompare(gpr[rs], simm16);
+            if (current_bb == null) {
+                gpr[rt] = signedCompare(gpr[rs], simm16);
+            } else if (tracked_gpr[rs].fixed) {
+                fix_gpr(rt, signedCompare(gpr[rs], simm16));
+            } else {
+                load_gpr(rs);
+                alter_gpr(rt);
+                current_bb.emit(get_gpr(rt) + " = processor.signedCompare(" + get_gpr(rs) + ", " + simm16 + ");");
+            }
         }
     }
 
     @Override
     public void doSLTIU(int rt, int rs, int simm16) {
         if (rt != 0) {
-            gpr[rt] = unsignedCompare(gpr[rs], simm16);
+            if (current_bb == null) {
+                gpr[rt] = unsignedCompare(gpr[rs], simm16);
+            } else if (tracked_gpr[rs].fixed) {
+                fix_gpr(rt, unsignedCompare(gpr[rs], simm16));
+            } else {
+                load_gpr(rs);
+                alter_gpr(rt);
+                current_bb.emit(get_gpr(rt) + " = processor.unsignedCompare(" + get_gpr(rs) + ", " + simm16 + ");");
+            }
         }
     }
 
     @Override
     public void doANDI(int rt, int rs, int uimm16) {
         if (rt != 0) {
-            gpr[rt] = gpr[rs] & uimm16;
+            if (current_bb == null) {
+                gpr[rt] = gpr[rs] & uimm16;
+            } else if (tracked_gpr[rs].fixed) {
+                fix_gpr(rt, gpr[rs] & uimm16);
+            } else {
+                load_gpr(rs);
+                alter_gpr(rt);
+                current_bb.emit(get_gpr(rt) + " = " + get_gpr(rs) + " & " + uimm16 + ";");
+            }
         }
     }
 
     @Override
     public void doORI(int rt, int rs, int uimm16) {
         if (rt != 0) {
-            gpr[rt] = gpr[rs] | uimm16;
+            if (current_bb == null) {
+                gpr[rt] = gpr[rs] | uimm16;
+            } else if (tracked_gpr[rs].fixed) {
+                fix_gpr(rt, gpr[rs] | uimm16);
+            } else {
+                load_gpr(rs);
+                alter_gpr(rt);
+                current_bb.emit(get_gpr(rt) + " = " + get_gpr(rs) + " | " + uimm16 + ";");
+            }
         }
     }
 
     @Override
     public void doXORI(int rt, int rs, int uimm16) {
         if (rt != 0) {
-            gpr[rt] = gpr[rs] ^ uimm16;
+            if (current_bb == null) {
+                gpr[rt] = gpr[rs] ^ uimm16;
+            } else if (tracked_gpr[rs].fixed) {
+                fix_gpr(rt, gpr[rs] | uimm16);
+            } else {
+                load_gpr(rs);
+                alter_gpr(rt);
+                current_bb.emit(get_gpr(rt) + " = " + get_gpr(rs) + " ^ " + uimm16 + ";");
+            }
         }
     }
 
     @Override
     public void doLUI(int rt, int uimm16) {
         if (rt != 0) {
-            gpr[rt] = uimm16 << 16;
+            if (current_bb == null) {
+                gpr[rt] = uimm16 << 16;
+            } else {
+                fix_gpr(rt, uimm16 << 16);
+            }
         }
     }
 
@@ -1117,7 +1265,7 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doEXT(int rt, int rs, int rd, int sa) {
         if (rt != 0) {
-            int mask = ~(~0 << (rd+1));
+            int mask = ~(~0 << (rd + 1));
             gpr[rt] = (gpr[rs] >>> sa) & mask;
         }
     }
@@ -1125,7 +1273,7 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doINS(int rt, int rs, int rd, int sa) {
         if (rt != 0) {
-            int mask = ~(~0 << (rd-sa+1)) << sa;
+            int mask = ~(~0 << (rd - sa + 1)) << sa;
             gpr[rt] = (gpr[rt] & ~mask) | ((gpr[rs] << sa) & mask);
         }
     }
@@ -1430,7 +1578,13 @@ public class Processor implements AllegrexInstructions {
     private float[] loadVs(int vsize, int vs) {
         float[] result = new float[vsize];
 
-        int m,  r,  c;
+
+
+
+
+
+
+        int m, r, c;
 
         m = (vs >> 2) & 7;
         c = (vs >> 0) & 3;
@@ -1509,7 +1663,13 @@ public class Processor implements AllegrexInstructions {
     private float[] loadVt(int vsize, int vt) {
         float[] result = new float[vsize];
 
-        int m,  r,  c;
+
+
+
+
+
+
+        int m, r, c;
 
         m = (vt >> 2) & 7;
         c = (vt >> 0) & 3;
@@ -1586,7 +1746,13 @@ public class Processor implements AllegrexInstructions {
     }
 
     private void saveVd(int vsize, int vd, float[] result) {
-        int m,  r,  c;
+
+
+
+
+
+
+        int m, r, c;
 
         m = (vd >> 2) & 7;
         c = (vd >> 0) & 3;
@@ -2053,8 +2219,7 @@ public class Processor implements AllegrexInstructions {
         saveVd(1, vs, result);
     }
 
-    void testOpcodes()
-    {
+    void testOpcodes() {
         gpr[1] = +1;
         gpr[2] = +2;
         gpr[3] = +3;
@@ -2065,70 +2230,157 @@ public class Processor implements AllegrexInstructions {
         gpr[9] = 255;
         gpr[10] = 65535;
 
-        doSLL(4, 1, 1); assert (gpr[4] == 2);
-        doSRL(4, 2, 1); assert (gpr[4] == 1);
-        doSRL(4, 5, 1); assert (gpr[4] == 0x7fffffff);
-        doSRA(4, 2, 1); assert (gpr[4] == 1);
-        doSRA(4, 5, 1); assert (gpr[4] == -1);
-        doSLLV(4, 1, 1); assert (gpr[4] == 2);
-        doSRLV(4, 2, 1); assert (gpr[4] == 1);
-        doSRLV(4, 5, 1); assert (gpr[4] == 0x7fffffff);
-        doSRAV(4, 2, 1); assert (gpr[4] == 1);
-        doSRAV(4, 5, 1); assert (gpr[4] == -1);
-        doADDU(4, 3, 1); assert (gpr[4] == 4);
-        doSUBU(4, 3, 1); assert (gpr[4] == 2);
-        doAND(4, 5, 6); assert (gpr[4] == -2);
-        doOR(4, 5, 6); assert (gpr[4] == -1);
-        doXOR(4, 5, 6); assert (gpr[4] == 1);
-        doNOR(4, 0, 1); assert (gpr[4] == -2);
-        doSLT(4, 5, 6); assert (gpr[4] == 0);
-        doSLT(4, 6, 5); assert (gpr[4] == 1);
-        doSLT(4, 5, 5); assert (gpr[4] == 0);
-        doSLT(4, 5, 1); assert (gpr[4] == 1);
-        doSLTU(4, 5, 6); assert (gpr[4] == 0);
-        doSLTU(4, 6, 5); assert (gpr[4] == 1);
-        doSLTU(4, 5, 5); assert (gpr[4] == 0);
-        doSLTU(4, 5, 1); assert (gpr[4] == 0);
-        doADDIU(4, 1, 1); assert (gpr[4] == 2);
-        doSLTI(4, 5, -2); assert (gpr[4] == 0);
-        doSLTI(4, 6, -1); assert (gpr[4] == 1);
-        doSLTI(4, 5, -1); assert (gpr[4] == 0);
-        doSLTI(4, 5, 1); assert (gpr[4] == 1);
-        doSLTIU(4, 5, -2); assert (gpr[4] == 0);
-        doSLTIU(4, 6, -1); assert (gpr[4] == 1);
-        doSLTIU(4, 5, -1); assert (gpr[4] == 0);
-        doSLTIU(4, 5, 1); assert (gpr[4] == 0);
-        doANDI(4, 5, -2); assert (gpr[4] == -2);
-        doORI(4, 5, -2); assert (gpr[4] == -1);
-        doXORI(4, 5, -2); assert (gpr[4] == 1);
-        doLUI(4, 1); assert (gpr[4] == 0x00010000);
-        doROTR(4, 1, 1); assert (gpr[4] == 0x80000000);
-        doROTRV(4, 1, 1); assert (gpr[4] == 0x80000000);
-        doROTR(4, 1, 32); assert (gpr[4] == 1);
-        doROTRV(4, 1, 8); assert (gpr[4] == 1);
-        gpr[4] = 0; doMOVZ(4, 1, 1); assert (gpr[4] == 0);
-        gpr[4] = 0; doMOVZ(4, 1, 0); assert (gpr[4] == 1);
-        gpr[4] = 0; doMOVN(4, 1, 1); assert (gpr[4] == 1);
-        gpr[4] = 0; doMOVN(4, 1, 0); assert (gpr[4] == 0);
-        doCLZ(4, 0); assert (gpr[4] == 32);
-        doCLZ(4, 5); assert (gpr[4] == 0);
-        doCLO(4, 0); assert (gpr[4] == 0);
-        doCLO(4, 5); assert (gpr[4] == 32);
-        doMAX(4, 1, 5); assert (gpr[4] == 1);
-        doMAX(4, 5, 1); assert (gpr[4] == 1);
-        doMIN(4, 1, 5); assert (gpr[4] == -1);
-        doMIN(4, 5, 1); assert (gpr[4] == -1);
-        doEXT(4, 3, 1, 1); assert (gpr[4] == 1);
-        doEXT(4, 5, 30, 1); assert (gpr[4] == 0x7fffffff);
-        gpr[4] = -3; doINS(4, 5, 1, 1); assert (gpr[4] == -1);
-        gpr[4] = -1; doINS(4, 0, 31, 1); assert (gpr[4] == 1);
-        doWSBH(4, 3); assert (gpr[4] == 0x00000300);
-        doWSBW(4, 3); assert (gpr[4] == 0x03000000);
-        doBITREV(4, 2); assert (gpr[4] == 0x40000000);
-        doSEB(4, 8); assert (gpr[4] == 32);
-        doSEB(4, 9); assert (gpr[4] == -1);
-        doSEH(4, 8); assert (gpr[4] == 32);
-        doSEH(4, 9); assert (gpr[4] == 255);
-        doSEH(4, 10); assert (gpr[4] == -1);
+        doSLL(4, 1, 1);
+        assert (gpr[4] == 2);
+        doSRL(4, 2, 1);
+        assert (gpr[4] == 1);
+        doSRL(4, 5, 1);
+        assert (gpr[4] == 0x7fffffff);
+        doSRA(4, 2, 1);
+        assert (gpr[4] == 1);
+        doSRA(4, 5, 1);
+        assert (gpr[4] == -1);
+        doSLLV(4, 1, 1);
+        assert (gpr[4] == 2);
+        doSRLV(4, 2, 1);
+        assert (gpr[4] == 1);
+        doSRLV(4, 5, 1);
+        assert (gpr[4] == 0x7fffffff);
+        doSRAV(4, 2, 1);
+        assert (gpr[4] == 1);
+        doSRAV(4, 5, 1);
+        assert (gpr[4] == -1);
+        doADDU(4, 3, 1);
+        assert (gpr[4] == 4);
+        doSUBU(4, 3, 1);
+        assert (gpr[4] == 2);
+        doAND(4, 5, 6);
+        assert (gpr[4] == -2);
+        doOR(4, 5, 6);
+        assert (gpr[4] == -1);
+        doXOR(4, 5, 6);
+        assert (gpr[4] == 1);
+        doNOR(4, 0, 1);
+        assert (gpr[4] == -2);
+        doSLT(4, 5, 6);
+        assert (gpr[4] == 0);
+        doSLT(4, 6, 5);
+        assert (gpr[4] == 1);
+        doSLT(4, 5, 5);
+        assert (gpr[4] == 0);
+        doSLT(4, 5, 1);
+        assert (gpr[4] == 1);
+        doSLTU(4, 5, 6);
+        assert (gpr[4] == 0);
+        doSLTU(4, 6, 5);
+        assert (gpr[4] == 1);
+        doSLTU(4, 5, 5);
+        assert (gpr[4] == 0);
+        doSLTU(4, 5, 1);
+        assert (gpr[4] == 0);
+        doADDIU(4, 1, 1);
+        assert (gpr[4] == 2);
+        doSLTI(4, 5, -2);
+        assert (gpr[4] == 0);
+        doSLTI(4, 6, -1);
+        assert (gpr[4] == 1);
+        doSLTI(4, 5, -1);
+        assert (gpr[4] == 0);
+        doSLTI(4, 5, 1);
+        assert (gpr[4] == 1);
+        doSLTIU(4, 5, -2);
+        assert (gpr[4] == 0);
+        doSLTIU(4, 6, -1);
+        assert (gpr[4] == 1);
+        doSLTIU(4, 5, -1);
+        assert (gpr[4] == 0);
+        doSLTIU(4, 5, 1);
+        assert (gpr[4] == 0);
+        doANDI(4, 5, -2);
+        assert (gpr[4] == -2);
+        doORI(4, 5, -2);
+        assert (gpr[4] == -1);
+        doXORI(4, 5, -2);
+        assert (gpr[4] == 1);
+        doLUI(4, 1);
+        assert (gpr[4] == 0x00010000);
+        doROTR(4, 1, 1);
+        assert (gpr[4] == 0x80000000);
+        doROTRV(4, 1, 1);
+        assert (gpr[4] == 0x80000000);
+        doROTR(4, 1, 32);
+        assert (gpr[4] == 1);
+        doROTRV(4, 1, 8);
+        assert (gpr[4] == 1);
+        gpr[4] = 0;
+        doMOVZ(4, 1, 1);
+        assert (gpr[4] == 0);
+        gpr[4] = 0;
+        doMOVZ(4, 1, 0);
+        assert (gpr[4] == 1);
+        gpr[4] = 0;
+        doMOVN(4, 1, 1);
+        assert (gpr[4] == 1);
+        gpr[4] = 0;
+        doMOVN(4, 1, 0);
+        assert (gpr[4] == 0);
+        doCLZ(4, 0);
+        assert (gpr[4] == 32);
+        doCLZ(4, 5);
+        assert (gpr[4] == 0);
+        doCLO(4, 0);
+        assert (gpr[4] == 0);
+        doCLO(4, 5);
+        assert (gpr[4] == 32);
+        doMAX(4, 1, 5);
+        assert (gpr[4] == 1);
+        doMAX(4, 5, 1);
+        assert (gpr[4] == 1);
+        doMIN(4, 1, 5);
+        assert (gpr[4] == -1);
+        doMIN(4, 5, 1);
+        assert (gpr[4] == -1);
+        doEXT(4, 3, 1, 1);
+        assert (gpr[4] == 1);
+        doEXT(4, 5, 30, 1);
+        assert (gpr[4] == 0x7fffffff);
+        gpr[4] = -3;
+        doINS(4, 5, 1, 1);
+        assert (gpr[4] == -1);
+        gpr[4] = -1;
+        doINS(4, 0, 31, 1);
+        assert (gpr[4] == 1);
+        doWSBH(4, 3);
+        assert (gpr[4] == 0x00000300);
+        doWSBW(4, 3);
+        assert (gpr[4] == 0x03000000);
+        doBITREV(4, 2);
+        assert (gpr[4] == 0x40000000);
+        doSEB(4, 8);
+        assert (gpr[4] == 32);
+        doSEB(4, 9);
+        assert (gpr[4] == -1);
+        doSEH(4, 8);
+        assert (gpr[4] == 32);
+        doSEH(4, 9);
+        assert (gpr[4] == 255);
+        doSEH(4, 10);
+        assert (gpr[4] == -1);
     }
 }
+/*
+LUI rt, uimm16 {
+processor.gpr_is_constant[rt] = true;
+processor.gpr[rt] = uimm16 << 16;
+}
+
+ORI rt, rs, uimm16 {
+if (processor.gpr_is_constant[rs]) {
+processor.gpr_is_constant[rt] = true;
+processor.gpr[rt] = processor.gpr[rs] | unsignedExtend(imm16);  
+} else {
+emit("processor.gpr[rt] = " + processor.gpr_value[%0]); 
+processor.gpr_is_constant[rt] = false;
+}
+}
+ */

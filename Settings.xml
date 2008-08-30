@@ -3,8 +3,8 @@
 
     <windowspos>
         <mainwindow>
-            <x>0</x>
-            <y>0</y>
+            <x>529</x>
+            <y>36</y>
         </mainwindow>
        <disassembler>
          <x>50</x>
@@ -23,8 +23,8 @@
          <y>5</y>
        </registers>
       <logwindow>
-        <x>0</x>
-        <y>347</y>
+        <x>529</x>
+        <y>388</y>
       </logwindow>
     </windowspos>
 	
@@ -44,28 +44,28 @@
       <pbpunpack>1</pbpunpack>
       <recompiler>0</recompiler>
       <keys>
-          <up>38</up>
-          <down>40</down>
-          <left>37</left>
-          <right>39</right>
-          <analogUp>85</analogUp>
-          <analogDown>75</analogDown>
-          <analogLeft>74</analogLeft>
-          <analogRight>73</analogRight>
-          <start>10</start>
-          <select>32</select>
-          <triangle>87</triangle>
-          <square>65</square>
-          <circle>68</circle>
-          <cross>83</cross>
-          <lTrigger>81</lTrigger>
+          <up>90</up>
+          <down>83</down>
+          <left>81</left>
+          <right>68</right>
+          <analogUp>38</analogUp>
+          <analogDown>40</analogDown>
+          <analogLeft>37</analogLeft>
+          <analogRight>39</analogRight>
+          <start>123</start>
+          <select>122</select>
+          <triangle>104</triangle>
+          <square>100</square>
+          <circle>102</circle>
+          <cross>32</cross>
+          <lTrigger>65</lTrigger>
           <rTrigger>69</rTrigger>
-          <hold>76</hold>
-          <home>72</home>
-          <volPlus>61</volPlus>
-          <volMin>45</volMin>
-          <screen>78</screen>
-          <music>77</music>
+          <hold>115</hold>
+          <home>36</home>
+          <volPlus>119</volPlus>
+          <volMin>118</volMin>
+          <screen>120</screen>
+          <music>121</music>
       </keys>
   </emuoptions>
 </SETTINGS>
