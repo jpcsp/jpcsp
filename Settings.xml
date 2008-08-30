@@ -37,6 +37,7 @@
     
     <saveWindowPos>1</saveWindowPos>
     <openLogwindow>1</openLogwindow>
+    <snapLogwindow>1</snapLogwindow>
   </guisettings>
   
   <emuoptions>

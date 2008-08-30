@@ -37,6 +37,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
     private HashMap<Integer, keyCode> currentKeys;
     private HashMap<keyCode, Integer> revertKeys;  //kinda lame
     private Controller controller = null;
+    private MainGUI mainWindow = null;
     
     /** Creates new form SettingsGUI */
     public SettingsGUI() {
@@ -47,6 +48,8 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         saveWindowPosCheck.setSelected(enabled);
         enabled = Settings.get_instance().readBoolOptions("guisettings/openLogwindow");
         openLogwindowCheck.setSelected(enabled);
+        enabled = Settings.get_instance().readBoolOptions("guisettings/snapLogwindow");
+        snapConsoleCheck.setSelected(enabled);
         
         /* load current config and set the config */
         loadKeys();
@@ -167,6 +170,9 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
     public void setController(Controller controller) {
         this.controller = controller;
     }
+    public void setMainGUI(MainGUI mainWindow) {
+        this.mainWindow = mainWindow;
+    }
     
     /** This method is called from within the constructor to
      * initialize the form.
@@ -185,6 +191,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         pbpunpackcheck = new javax.swing.JCheckBox();
         saveWindowPosCheck = new javax.swing.JCheckBox();
         openLogwindowCheck = new javax.swing.JCheckBox();
+        snapConsoleCheck = new javax.swing.JCheckBox();
         bg = new javax.swing.JPanel();
         fgPanel = new javax.swing.JPanel();
         fieldStart = new javax.swing.JTextField();
@@ -234,6 +241,8 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
 
         openLogwindowCheck.setText("open console on start-up");
 
+        snapConsoleCheck.setText("snap console to main window");
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -247,7 +256,8 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                         .addContainerGap(22, Short.MAX_VALUE)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addComponent(openLogwindowCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(saveWindowPosCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                            .addComponent(saveWindowPosCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(snapConsoleCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 169, Short.MAX_VALUE))))
                 .addGap(399, 399, 399))
         );
         jPanel1Layout.setVerticalGroup(
@@ -259,7 +269,9 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                 .addComponent(saveWindowPosCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(openLogwindowCheck)
-                .addContainerGap(224, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(snapConsoleCheck)
+                .addContainerGap(201, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab("General", jPanel1);
@@ -704,10 +716,13 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
    Settings.get_instance().writeBoolOptions("emuoptions/pbpunpack", pbpunpackcheck.isSelected());
    Settings.get_instance().writeBoolOptions("guisettings/saveWindowPos", saveWindowPosCheck.isSelected());
    Settings.get_instance().writeBoolOptions("guisettings/openLogwindow", openLogwindowCheck.isSelected());
+   Settings.get_instance().writeBoolOptions("guisettings/snapLogwindow", snapConsoleCheck.isSelected());
    Settings.get_instance().writeKeys(currentKeys);
    
    if (controller != null)
        controller.loadKeyConfig(currentKeys);
+   if (snapConsoleCheck.isSelected() && mainWindow != null)
+       mainWindow.snaptoMainwindow();
    dispose();
 }//GEN-LAST:event_jButtonOKActionPerformed
 
@@ -832,6 +847,7 @@ private void fieldAnalogLeftMouseClicked(java.awt.event.MouseEvent evt) {//GEN-F
     private javax.swing.JCheckBox openLogwindowCheck;
     private javax.swing.JCheckBox pbpunpackcheck;
     private javax.swing.JCheckBox saveWindowPosCheck;
+    private javax.swing.JCheckBox snapConsoleCheck;
     // End of variables declaration//GEN-END:variables
 
 }

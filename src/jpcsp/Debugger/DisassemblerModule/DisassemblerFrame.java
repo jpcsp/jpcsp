@@ -17,7 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.Debugger.DisassemblerModule;
 
-import java.awt.Point;
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.ClipboardOwner;
@@ -165,8 +164,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         setTitle("Debugger");
         setResizable(false);
         addWindowListener(new java.awt.event.WindowAdapter() {
-            public void windowClosing(java.awt.event.WindowEvent evt) {
-                formWindowClosing(evt);
+            public void windowDeactivated(java.awt.event.WindowEvent evt) {
+                formWindowDeactivated(evt);
             }
         });
 
@@ -772,16 +771,11 @@ public void RefreshButtons() {
     RunDebugger.setSelected(emu.run && !emu.pause);
 }
 
-private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
-    Point location = getLocation();
-    //location.x
-    String[] coord = new String[2];
-    coord[0]=Integer.toString(location.x);
-    coord[1]=Integer.toString(location.y);
-    
+private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowDeactivated
+    //Called when the mainWindow is closed
     if (Settings.get_instance().readBoolOptions("guisettings/saveWindowPos"))
-        Settings.get_instance().writeWindowPos("disassembler", coord);
-}//GEN-LAST:event_formWindowClosing
+        Settings.get_instance().writeWindowPos("disassembler", getLocation());
+}//GEN-LAST:event_formWindowDeactivated
 
 
 

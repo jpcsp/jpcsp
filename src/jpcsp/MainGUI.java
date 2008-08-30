@@ -77,8 +77,14 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         
         //logging console window stuff
         consolewin = new ConsoleWindow();
-        mainwindowPos = getLocation();
-        consolewin.setLocation(mainwindowPos.x, mainwindowPos.y + getSize().height);
+        snapConsole = Settings.get_instance().readBoolOptions("guisettings/snapLogwindow");
+        if (snapConsole) {
+            mainwindowPos = getLocation();
+            consolewin.setLocation(mainwindowPos.x, mainwindowPos.y + getHeight());
+        } else {
+            pos = Settings.get_instance().readWindowPos("logwindow");
+            consolewin.setLocation(pos[0], pos[1]);
+        }
         if (Settings.get_instance().readBoolOptions("guisettings/openLogwindow"))
             consolewin.setVisible(true);
         
@@ -280,11 +286,11 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     }// </editor-fold>//GEN-END:initComponents
 
 private void ToggleConsoleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ToggleConsoleActionPerformed
-// TODO add your handling code here:
     if (!consolewin.isVisible()) {
         mainwindowPos = this.getLocation();
-        Dimension mainwindowSize = this.getSize();
-        consolewin.setLocation(mainwindowPos.x, mainwindowPos.y + mainwindowSize.height);
+        
+        if (snapConsole)
+            consolewin.setLocation(mainwindowPos.x, mainwindowPos.y + getHeight());
     }
     consolewin.setVisible(!consolewin.isVisible());
 }//GEN-LAST:event_ToggleConsoleActionPerformed
@@ -294,8 +300,8 @@ private void EnterDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN
      {
       PauseEmu();
       disasm = new DisassemblerFrame(emulator);
-      Point mainwindow = this.getLocation();
-      disasm.setLocation(mainwindow.x+50, mainwindow.y+50);
+      int pos[] = Settings.get_instance().readWindowPos("disassembler");
+      disasm.setLocation(pos[0], pos[1]);
       disasm.setVisible(true);
       emulator.setDebugger(disasm);
      }
@@ -355,8 +361,8 @@ private void ElfHeaderViewerActionPerformed(java.awt.event.ActionEvent evt) {//G
      {
 
       elfheader = new ElfHeaderInfo();
-      Point mainwindow = this.getLocation();
-      elfheader.setLocation(mainwindow.x+50, mainwindow.y+50);
+      int pos[] = Settings.get_instance().readWindowPos("elfheader");
+      elfheader.setLocation(pos[0], pos[1]);
       elfheader.setVisible(true);
      }
      else
@@ -372,8 +378,8 @@ private void EnterMemoryViewerActionPerformed(java.awt.event.ActionEvent evt) {/
      {
 
       memoryview = new MemoryViewer();
-      Point mainwindow = this.getLocation();
-      memoryview.setLocation(mainwindow.x+100, mainwindow.y+50);
+      int pos[] = Settings.get_instance().readWindowPos("memoryview");
+      memoryview.setLocation(pos[0], pos[1]);
       memoryview.setVisible(true);
       emulator.setMemoryViewer(memoryview);
      }
@@ -408,8 +414,9 @@ private void SetttingsMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN
       setgui.setLocation(mainwindow.x+100, mainwindow.y+50);
       setgui.setVisible(true);
 
-      /* add a direct link to the controller */
+      /* add a direct link to the controller and main window*/
       setgui.setController(emulator.getController());
+      setgui.setMainGUI(this);
      }
      else
      {
@@ -447,14 +454,17 @@ private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:even
 }//GEN-LAST:event_formWindowClosing
 
 private void exitEmu() {
-    Point location = getLocation();
-    String[] coord = new String[2];
-    coord[0]=Integer.toString(location.x);
-    coord[1]=Integer.toString(location.y);
     if (Settings.get_instance().readBoolOptions("guisettings/saveWindowPos"))
-        Settings.get_instance().writeWindowPos("mainwindow", coord);
+        Settings.get_instance().writeWindowPos("mainwindow", getLocation());
+    Settings.get_instance().writeBoolOptions("guisettings/snapLogwindow", snapConsole);
     
     System.exit(0);
+}
+
+public void snaptoMainwindow() {
+    snapConsole = true;
+    mainwindowPos = getLocation();
+    consolewin.setLocation(mainwindowPos.x, mainwindowPos.y + getHeight());
 }
 
 private void RunEmu()
@@ -551,7 +561,7 @@ public void RefreshButtons()
             Point newPos = this.getLocation();
             Point consolePos = consolewin.getLocation();
             Dimension mainwindowSize = this.getSize();
-
+            
             if (consolePos.x == mainwindowPos.x &&
                 consolePos.y == mainwindowPos.y + mainwindowSize.height) {
                 consolewin.setLocation(newPos.x, newPos.y + mainwindowSize.height);

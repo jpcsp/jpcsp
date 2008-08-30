@@ -17,12 +17,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.Debugger;
 
-import java.awt.Point;
 import javax.swing.JOptionPane;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Settings;
-import static jpcsp.MemoryMap.*;
 
 /**
  *
@@ -108,14 +106,14 @@ public class MemoryViewer extends javax.swing.JFrame {
         setTitle("Memory Viewer");
         setResizable(false);
         addWindowListener(new java.awt.event.WindowAdapter() {
-            public void windowClosing(java.awt.event.WindowEvent evt) {
-                formWindowClosing(evt);
+            public void windowDeactivated(java.awt.event.WindowEvent evt) {
+                formWindowDeactivated(evt);
             }
         });
 
         memoryview.setColumns(20);
         memoryview.setEditable(false);
-        memoryview.setFont(new java.awt.Font("Courier New", 0, 12)); // NOI18N
+        memoryview.setFont(new java.awt.Font("Courier New", 0, 12));
         memoryview.setRows(5);
         memoryview.addMouseWheelListener(new java.awt.event.MouseWheelListener() {
             public void mouseWheelMoved(java.awt.event.MouseWheelEvent evt) {
@@ -217,16 +215,11 @@ private void memoryviewMouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GE
    }
 }//GEN-LAST:event_memoryviewMouseWheelMoved
 
-private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
-    Point location = getLocation();
-    //location.x
-    String[] coord = new String[2];
-    coord[0]=Integer.toString(location.x);
-    coord[1]=Integer.toString(location.y);
-    
+private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowDeactivated
+    //Called when the mainWindow is closed
     if (Settings.get_instance().readBoolOptions("guisettings/saveWindowPos"))
-        Settings.get_instance().writeWindowPos("memoryview", coord);
-}//GEN-LAST:event_formWindowClosing
+        Settings.get_instance().writeWindowPos("memoryview", getLocation());
+}//GEN-LAST:event_formWindowDeactivated
 
 
 
