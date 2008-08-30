@@ -56,7 +56,7 @@ public class Processor implements AllegrexInstructions {
     public long fcr31_cycles;
     private AllegrexBasicBlock current_bb = null;
     protected Map<Integer, AllegrexBasicBlock> basic_blocks = new HashMap<Integer, AllegrexBasicBlock>();
-    public boolean interpreter_only = true;
+    public final boolean interpreter_only = true;
 
     public class RegisterTracking {
 
@@ -66,6 +66,8 @@ public class Processor implements AllegrexInstructions {
         public boolean labeled = false;
     }
     public RegisterTracking tracked_gpr[];
+    public RegisterTracking tracked_fpr[];
+    public RegisterTracking tracked_hilo;
 
     Processor() {
         Memory.get_instance(); //intialize memory
@@ -94,6 +96,8 @@ public class Processor implements AllegrexInstructions {
         vpr_cycles = new long[8][4][4];
 
         tracked_gpr = new RegisterTracking[32];
+        tracked_fpr = new RegisterTracking[32];
+        tracked_hilo = new RegisterTracking();
     }
 
     public void fix_gpr(int register, int value) {
@@ -105,15 +109,66 @@ public class Processor implements AllegrexInstructions {
         }
     }
 
-    public void load_gpr(int register) {
+    public void fix_fpr(int register, float value) {
+        if (register != 0 || current_bb != null) {
+            tracked_fpr[register].loaded = false;
+            tracked_fpr[register].dirty = true;
+            tracked_fpr[register].fixed = true;
+            fpr[register] = value;
+        }
+    }
+    
+    public void fix_hilo(long value) {
+        if (current_bb != null) {
+            tracked_hilo.loaded = false;
+            tracked_hilo.dirty = true;
+            tracked_hilo.fixed = true;
+            hilo = value;
+        }
+    }
+
+    public void load_gpr(int register, boolean force) {
         if (register != 0 && current_bb != null) {
+            if (!force && tracked_gpr[register].fixed) {
+                return;
+            }
             if (!tracked_gpr[register].labeled) {
                 current_bb.emit("int gpr_" + register + " = processor.gpr[" + register + "];");
+                tracked_gpr[register].labeled = true;
             }
             tracked_gpr[register].loaded = true;
             tracked_gpr[register].dirty = false;
             tracked_gpr[register].fixed = false;
-            tracked_gpr[register].labeled = true;
+        }
+    }
+
+    public void load_fpr(int register, boolean force) {
+        if (register != 0 && current_bb != null) {
+            if (!force && tracked_fpr[register].fixed) {
+                return;
+            }
+            if (!tracked_fpr[register].labeled) {
+                current_bb.emit("int fpr_" + register + " = processor.fpr[" + register + "];");
+                tracked_fpr[register].labeled = true;
+            }
+            tracked_fpr[register].loaded = true;
+            tracked_fpr[register].dirty = false;
+            tracked_fpr[register].fixed = false;
+        }
+    }
+
+    public void load_hilo(boolean force) {
+        if (current_bb != null) {
+            if (!force && tracked_hilo.fixed) {
+                return;
+            }
+            if (!tracked_hilo.labeled) {
+                current_bb.emit("long hilo = processor.hilo; int hi, lo;");
+                tracked_hilo.labeled = true;
+            }
+            tracked_hilo.loaded = true;
+            tracked_hilo.dirty = false;
+            tracked_hilo.fixed = false;
         }
     }
 
@@ -121,11 +176,35 @@ public class Processor implements AllegrexInstructions {
         if (register != 0 && current_bb != null) {
             if (!tracked_gpr[register].labeled) {
                 current_bb.emit("int gpr_" + register + ";");
+                tracked_gpr[register].labeled = true;
             }
-            tracked_gpr[register].loaded = true;
-            tracked_gpr[register].dirty = false;
+            tracked_gpr[register].loaded = false;
+            tracked_gpr[register].dirty = true;
             tracked_gpr[register].fixed = false;
-            tracked_gpr[register].labeled = true;
+        }
+    }
+
+    public void alter_fpr(int register) {
+        if (register != 0 && current_bb != null) {
+            if (!tracked_fpr[register].labeled) {
+                current_bb.emit("float fpr_" + register + ";");
+                tracked_fpr[register].labeled = true;
+            }
+            tracked_fpr[register].loaded = false;
+            tracked_fpr[register].dirty = true;
+            tracked_fpr[register].fixed = false;
+        }
+    }
+
+    public void alter_hilo() {
+        if (current_bb != null) {
+            if (!tracked_hilo.labeled) {
+                current_bb.emit("long hilo; int hi, lo;");
+            tracked_hilo.labeled = true;
+            }
+            tracked_hilo.loaded = false;
+            tracked_hilo.dirty = true;
+            tracked_hilo.fixed = false;
         }
     }
 
@@ -139,7 +218,27 @@ public class Processor implements AllegrexInstructions {
         }
     }
 
-    public void reset_all_gpr() {
+    public String get_fpr(int register) {
+        if (tracked_gpr[register].fixed) {
+            return Float.toString(fpr[register]);
+        } else if (tracked_gpr[register].labeled) {
+            return "fpr_" + register;
+        } else {
+            return "processor.fpr[" + register + "]";
+        }
+    }
+
+    public String get_hilo() {
+        if (tracked_hilo.fixed) {
+            return Long.toString(hilo);
+        } else if (tracked_hilo.labeled) {
+            return "hilo";
+        } else {
+            return "processor.hilo";
+        }
+    }
+    
+    public void reset_register_tracking() {
         if (current_bb != null) {
             for (int i = 0; i < 32; ++i) {
                 if (tracked_gpr[i].labeled) {
@@ -147,6 +246,22 @@ public class Processor implements AllegrexInstructions {
                         if (!tracked_gpr[i].fixed) {
                             current_bb.emit("processor.gpr[" + i + "] = gpr_" + i + ";");
                         }
+                    }
+                }
+            }
+            for (int i = 0; i < 32; ++i) {
+                if (tracked_fpr[i].labeled) {
+                    if (tracked_fpr[i].dirty) {
+                        if (!tracked_fpr[i].fixed) {
+                            current_bb.emit("processor.fpr[" + i + "] = fpr_" + i + ";");
+                        }
+                    }
+                }
+            }
+            if (tracked_hilo.labeled) {
+                if (tracked_hilo.dirty) {
+                    if (!tracked_hilo.fixed) {
+                        current_bb.emit("processor.hilo = hilo;");
                     }
                 }
             }
@@ -293,14 +408,30 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doSLL(int rd, int rt, int sa) {
         if (rd != 0) {
-            gpr[rd] = (gpr[rt] << sa);
+            if (interpreter_only || (current_bb == null)) {
+                gpr[rd] = (gpr[rt] << sa);
+            } else if (tracked_gpr[rt].fixed) {
+                fix_gpr(rd, (gpr[rt] << sa));
+            } else {
+                load_gpr(rt, false);
+                alter_gpr(rd);
+                current_bb.emit(get_gpr(rd) + " = (" + get_gpr(rt) + " << " + sa + ");");
+            }
         }
     }
 
     @Override
     public void doSRL(int rd, int rt, int sa) {
         if (rd != 0) {
-            gpr[rd] = (gpr[rt] >>> sa);
+            if (interpreter_only || (current_bb == null)) {
+                gpr[rd] = (gpr[rt] >>> sa);
+            } else if (tracked_gpr[rt].fixed) {
+                fix_gpr(rd, (gpr[rt] >>> sa));
+            } else {
+                load_gpr(rt, false);
+                alter_gpr(rd);
+                current_bb.emit(get_gpr(rd) + " = (" + get_gpr(rt) + " >>> " + sa + ");");
+            }
         }
     }
 
@@ -308,27 +439,63 @@ public class Processor implements AllegrexInstructions {
     public void doSRA(int rd, int rt, int sa) {
         if (rd != 0) {
             gpr[rd] = (gpr[rt] >> sa);
+            if (interpreter_only || (current_bb == null)) {
+                gpr[rd] = (gpr[rt] >> sa);
+            } else if (tracked_gpr[rt].fixed) {
+                fix_gpr(rd, (gpr[rt] >> sa));
+            } else {
+                load_gpr(rt, false);
+                alter_gpr(rd);
+                current_bb.emit(get_gpr(rd) + " = (" + get_gpr(rt) + " >> " + sa + ");");
+            }
         }
     }
 
     @Override
     public void doSLLV(int rd, int rt, int rs) {
         if (rd != 0) {
-            gpr[rd] = (gpr[rt] << (gpr[rs] & 31));
+            if (interpreter_only || (current_bb == null)) {
+                gpr[rd] = (gpr[rt] << (gpr[rs] & 31));
+            } else if (tracked_gpr[rt].fixed && tracked_gpr[rs].fixed) {
+                fix_gpr(rd, (gpr[rt] << (gpr[rs] & 31)));
+            } else {
+                load_gpr(rs, false);
+                load_gpr(rt, false);
+                alter_gpr(rd);
+                current_bb.emit(get_gpr(rd) + " = (" + get_gpr(rt) + " << (" + get_gpr(rt) + " & 31));");
+            }
         }
     }
 
     @Override
     public void doSRLV(int rd, int rt, int rs) {
         if (rd != 0) {
-            gpr[rd] = (gpr[rt] >>> (gpr[rs] & 31));
+            if (interpreter_only || (current_bb == null)) {
+                gpr[rd] = (gpr[rt] >>> (gpr[rs] & 31));
+            } else if (tracked_gpr[rt].fixed && tracked_gpr[rs].fixed) {
+                fix_gpr(rd, (gpr[rt] >>> (gpr[rs] & 31)));
+            } else {
+                load_gpr(rs, false);
+                load_gpr(rt, false);
+                alter_gpr(rd);
+                current_bb.emit(get_gpr(rd) + " = (" + get_gpr(rt) + " >>> (" + get_gpr(rt) + " & 31));");
+            }
         }
     }
 
     @Override
     public void doSRAV(int rd, int rt, int rs) {
         if (rd != 0) {
-            gpr[rd] = (gpr[rt] >> (gpr[rs] & 31));
+            if (interpreter_only || (current_bb == null)) {
+                gpr[rd] = (gpr[rt] >> (gpr[rs] & 31));
+            } else if (tracked_gpr[rt].fixed && tracked_gpr[rs].fixed) {
+                fix_gpr(rd, (gpr[rt] >> (gpr[rs] & 31)));
+            } else {
+                load_gpr(rs, false);
+                load_gpr(rt, false);
+                alter_gpr(rd);
+                current_bb.emit(get_gpr(rd) + " = (" + get_gpr(rt) + " >> (" + get_gpr(rt) + " & 31));");
+            }
         }
     }
 
@@ -751,7 +918,7 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doADDI(int rt, int rs, int simm16) {
         if (rt != 0) {
-            if (current_bb == null) {
+            if (interpreter_only || (current_bb == null)) {
                 long result = (long) gpr[rs] + (long) simm16;
 
                 if (!addSubOverflow(result)) {
@@ -769,12 +936,12 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doADDIU(int rt, int rs, int simm16) {
         if (rt != 0) {
-            if (current_bb == null) {
+            if (interpreter_only || (current_bb == null)) {
                 gpr[rt] = gpr[rs] + simm16;
             } else if (tracked_gpr[rs].fixed) {
                 fix_gpr(rt, gpr[rs] + simm16);
             } else {
-                load_gpr(rs);
+                load_gpr(rs, false);
                 alter_gpr(rt);
                 current_bb.emit(get_gpr(rt) + " = " + get_gpr(rs) + " + " + simm16 + ";");
             }
@@ -784,12 +951,12 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doSLTI(int rt, int rs, int simm16) {
         if (rt != 0) {
-            if (current_bb == null) {
+            if (interpreter_only || (current_bb == null)) {
                 gpr[rt] = signedCompare(gpr[rs], simm16);
             } else if (tracked_gpr[rs].fixed) {
                 fix_gpr(rt, signedCompare(gpr[rs], simm16));
             } else {
-                load_gpr(rs);
+                load_gpr(rs, false);
                 alter_gpr(rt);
                 current_bb.emit(get_gpr(rt) + " = processor.signedCompare(" + get_gpr(rs) + ", " + simm16 + ");");
             }
@@ -799,12 +966,12 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doSLTIU(int rt, int rs, int simm16) {
         if (rt != 0) {
-            if (current_bb == null) {
+            if (interpreter_only || (current_bb == null)) {
                 gpr[rt] = unsignedCompare(gpr[rs], simm16);
             } else if (tracked_gpr[rs].fixed) {
                 fix_gpr(rt, unsignedCompare(gpr[rs], simm16));
             } else {
-                load_gpr(rs);
+                load_gpr(rs, false);
                 alter_gpr(rt);
                 current_bb.emit(get_gpr(rt) + " = processor.unsignedCompare(" + get_gpr(rs) + ", " + simm16 + ");");
             }
@@ -814,12 +981,12 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doANDI(int rt, int rs, int uimm16) {
         if (rt != 0) {
-            if (current_bb == null) {
+            if (interpreter_only || (current_bb == null)) {
                 gpr[rt] = gpr[rs] & uimm16;
             } else if (tracked_gpr[rs].fixed) {
                 fix_gpr(rt, gpr[rs] & uimm16);
             } else {
-                load_gpr(rs);
+                load_gpr(rs, false);
                 alter_gpr(rt);
                 current_bb.emit(get_gpr(rt) + " = " + get_gpr(rs) + " & " + uimm16 + ";");
             }
@@ -829,12 +996,12 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doORI(int rt, int rs, int uimm16) {
         if (rt != 0) {
-            if (current_bb == null) {
+            if (interpreter_only || (current_bb == null)) {
                 gpr[rt] = gpr[rs] | uimm16;
             } else if (tracked_gpr[rs].fixed) {
                 fix_gpr(rt, gpr[rs] | uimm16);
             } else {
-                load_gpr(rs);
+                load_gpr(rs, false);
                 alter_gpr(rt);
                 current_bb.emit(get_gpr(rt) + " = " + get_gpr(rs) + " | " + uimm16 + ";");
             }
@@ -844,12 +1011,12 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doXORI(int rt, int rs, int uimm16) {
         if (rt != 0) {
-            if (current_bb == null) {
+            if (interpreter_only || (current_bb == null)) {
                 gpr[rt] = gpr[rs] ^ uimm16;
             } else if (tracked_gpr[rs].fixed) {
                 fix_gpr(rt, gpr[rs] | uimm16);
             } else {
-                load_gpr(rs);
+                load_gpr(rs, false);
                 alter_gpr(rt);
                 current_bb.emit(get_gpr(rt) + " = " + get_gpr(rs) + " ^ " + uimm16 + ";");
             }
@@ -859,7 +1026,7 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doLUI(int rt, int uimm16) {
         if (rt != 0) {
-            if (current_bb == null) {
+            if (interpreter_only || (current_bb == null)) {
                 gpr[rt] = uimm16 << 16;
             } else {
                 fix_gpr(rt, uimm16 << 16);
