@@ -48,7 +48,7 @@ public class Emulator implements Runnable {
     public Emulator(MainGUI gui) {
         this.gui = gui;
         cpu = new Processor();
-        
+
         if (Settings.get_instance().readBoolOptions("emuoptions/recompiler"))
             rec = new Recompiler();
         else
@@ -441,7 +441,7 @@ public class Emulator implements Runnable {
                 }
             } catch (InterruptedException e){
             }
-            
+
             if (rec != null) {
                 rec.run();
             } else {
@@ -462,7 +462,10 @@ public class Emulator implements Runnable {
         //run =true;
         //checkStatus();
 
-        if(pause)
+        if (!mediaImplemented)
+            return;
+
+        if (pause)
         {
             pause = false;
             notify();
