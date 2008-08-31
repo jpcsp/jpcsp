@@ -1,0 +1,1373 @@
+field
+{
+    rs:5; rd:5; rt:5; sa:5; lsb:5; msb:5;
+
+    fs:5; fd:5; ft:5; fcond:4;
+
+    vs:7; vt:7; vd:7; vcond:4;
+
+    vs_m:3; vs_c:2; vs_r:2; vs_x:1; vs_o:1;
+    vt_m:3; vt_c:2; vt_r:2; vt_x:1; vt_o:1;
+    vd_m:3; vd_c:2; vd_r:2; vd_x:1; vd_o:1;
+
+    imm3:3; imm5:5; imm7:7; imm14:14; imm16:16; imm20:20; imm26:26;
+
+    negw:1; negz:1; negy:1; negx:1;
+    cstw:1; cstz:1; csty:1; cstx:1;
+    absw:1; absz:1; absy:1; absx:1;
+    swzw:2; swzz:2; swzy:2; swzx:2;
+    mskw:1; mskz:1; msky:1; mskx:1;
+    satw:2; satz:2; saty:2; satx:2;
+
+    wb:1;
+
+    c0dr:5; c0cr:5;
+}
+
+var {}
+
+group root
+{
+    group MISC
+    {
+        op NOP(00000000000000000000000000000000)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "nop";`
+        }
+
+        op CACHE(101111:rs:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_CCIMMRS("cache", rt, signExtend(imm16), rs);`
+        }
+
+        op SYSCALL(000000:imm20:001100)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_Syscall(imm20);`
+        }
+
+        op ERET(010000:10000:00000:00000:00000:011000)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "eret";`
+        }
+
+        op BREAK(000000:imm20:001101)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_Break(imm20);`
+        }
+
+        op SYNC(00000000000000000000000000001111)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "sync";`
+        }
+    }
+
+    group ALU
+    {
+        op ADD(000000:rs:rt:rd:00000:100000)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRSRT("add", rd, rs, rt);`
+        }
+
+        op ADDU(000000:rs:rt:rd:00000:100001)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRSRT("addu", rd, rs, rt);`
+        }
+
+        op ADDI(001000:rs:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RTRSIMM("addi", rt, rs, signExtend(imm16));`
+        }
+
+        op ADDIU(001001:rs:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RTRSIMM("addiu", rt, rs, signExtend(imm16));`
+        }
+
+        op AND(000000:rs:rt:rd:00000:100100)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRSRT("and", rd, rs, rt);`
+        }
+
+        op ANDI(001100:rs:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RTRSIMM("andi", rt, rs, zeroExtend(imm16));`
+        }
+
+        op NOR(000000:rs:rt:rd:00000:100111)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRSRT("nor", rd, rs, rt);`
+        }
+
+        op OR(000000:rs:rt:rd:00000:100101)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRSRT("or", rd, rs, rt);`
+        }
+
+        op ORI(001101:rs:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RTRSIMM("ori", rt, rs, zeroExtend(imm16));`
+        }
+
+        op XOR(000000:rs:rt:rd:00000:100110)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRSRT("xor", rd, rs, rt);`
+        }
+
+        op XORI(001110:rs:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RTRSIMM("xori", rt, rs, zeroExtend(imm16));`
+        }
+
+        op SLL(000000:00000:rt:rd:sa:000000)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRTSA("sll", rd, rt, sa);`
+        }
+
+        op SLLV(000000:rs:rt:rd:00000:000100)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRTRS("sllv", rd, rt, rs);`
+        }
+
+        op SRA(000000:00000:rt:rd:sa:000011)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRTSA("sra", rd, rt, sa);`
+        }
+
+        op SRAV(000000:rs:rt:rd:00000:000111)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRTRS("srav", rd, rt, rs);`
+        }
+
+        op SRL(000000:00000:rt:rd:sa:000010)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRTSA("srl", rd, rt, sa);`
+        }
+
+        op SRLV(000000:rs:rt:rd:00000:000110)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRTRS("srlv", rd, rt, rs);`
+        }
+
+        op ROTR(000000:00001:rt:rd:sa:000010)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRTSA("rotr", rd, rt, sa);`
+        }
+
+        op ROTRV(000000:rs:rt:rd:00001:000110)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRTRS("rotrv", rd, rt, rs);`
+        }
+
+        op SLT(000000:rs:rt:rd:00000:101010)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRSRT("slt", rd, rs, rt);`
+        }
+
+        op SLTI(001010:rs:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RTRSIMM("slti", rt, rs, signExtend(imm16));`
+        }
+
+        op SLTU(000000:rs:rt:rd:00000:101011)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRSRT("sltu", rd, rs, rt);`
+        }
+
+        op SLTIU(001011:rs:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RTRSIMM("sltiu", rt, rs, signExtend(imm16));`
+        }
+
+        op SUB(000000:rs:rt:rd:00000:100010)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRSRT("sub", rd, rs, rt);`
+        }
+
+        op SUBU(000000:rs:rt:rd:00000:100011)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRSRT("subu", rd, rs, rt);`
+        }
+
+        op LUI(001111:00000:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RTIMM("lui", rt, zeroExtend(imm16));`
+        }
+
+        op SEB(011111:00000:rt:rd:10000:100001)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRT("seb", rd, rt);`
+        }
+
+        op SEH(011111:00000:rt:rd:11000:100000)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRT("seb", rd, rt);`
+        }
+
+        op BITREV(011111:00000:rt:rd:10100:100000)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRT("seb", rd, rt);`
+        }
+
+        op WSBH(011111:00000:rt:rd:00010:100000)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRT("seb", rd, rt);`
+        }
+
+        op WSBW(011111:00000:rt:rd:00011:100000)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRT("seb", rd, rt);`
+        }
+
+        op MOVZ(000000:rs:rt:rd:00000:001010)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRSRT("movz", rd, rs, rt);`
+        }
+
+        op MOVN(000000:rs:rt:rd:00000:001011)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRSRT("movn", rd, rs, rt);`
+        }
+
+        op MAX(000000:rs:rt:rd:00000:101100)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRSRT("max", rd, rs, rt);`
+        }
+
+        op MIN(000000:rs:rt:rd:00000:101101)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRSRT("min", rd, rs, rt);`
+        }
+
+        op CLZ(000000:rs:00000:rd:00000:010110)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRS("seb", rd, rs);`
+        }
+
+        op CLO(000000:rs:00000:rd:00000:010111)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRS("seb", rd, rs);`
+        }
+
+        op EXT(011111:rs:rt:msb:lsb:000000)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_Ext(rt, rs, lsb, msb);`
+        }
+
+        op INS(011111:rs:rt:msb:lsb:000100)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_Ins(rt, rs, lsb, msb);`
+        }
+    }
+
+    group MDU
+    {
+        op MULT(000000:rs:rt:00000:00000:011000)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RSRT("mult", rs, rt);`
+        }
+
+        op MULTU(000000:rs:rt:00000:00000:011001)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RSRT("multu", rs, rt);`
+        }
+
+        op MADD(000000:rs:rt:00000:00000:011100)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RSRT("madd", rs, rt);`
+        }
+
+        op MADDU(000000:rs:rt:00000:00000:011101)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RSRT("maddu", rs, rt);`
+        }
+
+        op MSUB(000000:rs:rt:00000:00000:101110)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RSRT("msub", rs, rt);`
+        }
+
+        op MSUBU(000000:rs:rt:00000:00000:101111)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RSRT("msubu", rs, rt);`
+        }
+
+        op DIV(000000:rs:rt:00000:00000:011010)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RSRT("div", rs, rt);`
+        }
+
+        op DIVU(000000:rs:rt:00000:00000:011011)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RSRT("divu", rs, rt);`
+        }
+
+        op MFHI(000000:00000:00000:rd:00000:010000)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RD("mfhi", rd);`
+        }
+
+        op MFLO(000000:00000:00000:rd:00000:010010)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RD("mflo", rd);`
+        }
+
+        op MTHI(000000:rs:00000:00000:00000:010001)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RS("mthi", rs);`
+        }
+
+        op MTLO(000000:rs:00000:00000:00000:010011)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RS("mtlo", rs);`
+        }
+    }
+
+    group BCU
+    {
+        op BEQ(000100:rs:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RSRTOFFSET("beq", rs, rt, imm16, address);`
+        }
+
+        op BEQL(010100:rs:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RSRTOFFSET("beql", rs, rt, imm16, address);`
+        }
+
+        op BGEZ(000001:rs:00001:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RSOFFSET("bgez", rs, imm16, address);`
+        }
+
+        op BGEZAL(000001:rs:10001:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RSOFFSET("bgezal", rs, imm16, address);`
+        }
+
+        op BGEZALL(000001:rs:10011:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RSOFFSET("bgezall", rs, imm16, address);`
+        }
+
+        op BGEZL(000001:rs:00011:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RSOFFSET("bgezl", rs, imm16, address);`
+        }
+
+        op BGTZ(000111:rs:00000:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RSOFFSET("bgtz", rs, imm16, address);`
+        }
+
+        op BGTZL(010111:rs:00000:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RSOFFSET("bgtzl", rs, imm16, address);`
+        }
+
+        op BLEZ(000110:rs:00000:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RSOFFSET("blez", rs, imm16, address);`
+        }
+
+        op BLEZL(010110:rs:00000:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RSOFFSET("blezl", rs, imm16, address);`
+        }
+
+        op BLTZ(000001:rs:00000:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RSOFFSET("bltz", rs, imm16, address);`
+        }
+
+        op BLTZAL(000001:rs:10000:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RSOFFSET("bltzal", rs, imm16, address);`
+        }
+
+        op BLTZALL(000001:rs:10010:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RSOFFSET("bltzall", rs, imm16, address);`
+        }
+
+        op BLTZL(000001:rs:00010:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RSOFFSET("bltzl", rs, imm16, address);`
+        }
+
+        op BNE(000101:rs:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RSRTOFFSET("bne", rs, rt, imm16, address);`
+        }
+
+        op BNEL(010101:rs:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RSRTOFFSET("bnel", rs, rt, imm16, address);`
+        }
+
+        op J(000010:imm26)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_JUMP("j", imm26, address);`
+        }
+
+        op JAL(000011:imm26)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_JUMP("jal", imm26, address);`
+        }
+
+        op JALR(000000:rs:00000:rd:00000:001001)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RDRS("jalr", rd, rs);`
+        }
+
+        op JR(000000:rs:00000:00000:00000:001000)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RS("jr", rs);`
+        }
+
+        op BC1F(010001:01000:00000:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_OFFSET("bc1f", imm16, address);`
+        }
+
+        op BC1T(010001:01000:00001:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_OFFSET("bc1t", imm16, address);`
+        }
+
+        op BC1FL(010001:01000:00010:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_OFFSET("bc1fl", imm16, address);`
+        }
+
+        op BC1TL(010001:01000:00011:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_OFFSET("bc1tl", imm16, address);`
+        }
+    }
+
+    group LSU
+    {
+        op LB(100000:rs:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RTIMMRS("lb", rt, rs, imm16);`
+        }
+
+        op LBU(100100:rs:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RTIMMRS("lbu", rt, rs, imm16);`
+        }
+
+        op LH(100001:rs:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RTIMMRS("lh", rt, rs, imm16);`
+        }
+
+        op LHU(100101:rs:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RTIMMRS("lhu", rt, rs, imm16);`
+        }
+
+        op LW(100011:rs:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RTIMMRS("lw", rt, rs, imm16);`
+        }
+
+        op LWL(100010:rs:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RTIMMRS("lwl", rt, rs, imm16);`
+        }
+
+        op LWR(100110:rs:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RTIMMRS("lwr", rt, rs, imm16);`
+        }
+
+        op SB(101000:rs:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RTIMMRS("sb", rt, rs, imm16);`
+        }
+
+        op SH(101001:rs:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RTIMMRS("sh", rt, rs, imm16);`
+        }
+
+        op SW(101011:rs:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RTIMMRS("sw", rt, rs, imm16);`
+        }
+
+        op SWL(101010:rs:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RTIMMRS("swl", rt, rs, imm16);`
+        }
+
+        op SWR(101110:rs:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RTIMMRS("swr", rt, rs, imm16);`
+        }
+
+        op LL(110000:rs:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RTIMMRS("ll", rt, rs, imm16);`
+        }
+
+        op SC(111000:rs:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RTIMMRS("sc", rt, rs, imm16);`
+        }
+
+        op LWC1(110001:rs:ft:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_FTIMMRS("lwc1", ft, rs, imm16);`
+        }
+
+        op SWC1(111001:rs:ft:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_FTIMMRS("swc1", ft, rs, imm16);`
+        }
+    }
+
+    group FPU
+    {
+        // cycles = `pitch/latency/repeat rate`
+
+        op ADD_S(010001:10000:ft:fs:fd:000000)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_FDFSFT("add.s", fd, fs, ft);`
+        }
+
+        op SUB_S(010001:10000:ft:fs:fd:000001)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_FDFSFT("sub.s", fd, fs, ft);`
+        }
+
+        op MUL_S(010001:10000:ft:fs:fd:000010)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_FDFSFT("mul.s", fd, fs, ft);`
+        }
+
+        op DIV_S(010001:10000:ft:fs:fd:000011)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_FDFSFT("div.s", fd, fs, ft);`
+        }
+
+        op SQRT_S(010001:10000:00000:fs:fd:000100)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_FDFS("sqrt.s", fd, fs);`
+        }
+
+        op ABS_S(010001:10000:00000:fs:fd:000101)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_FDFS("abs.s", fd, fs);`
+        }
+
+        op MOV_S(010001:10000:00000:fs:fd:000110)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_FDFS("mov.s", fd, fs);`
+        }
+
+        op NEG_S(010001:10000:00000:fs:fd:000111)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_FDFS("neg.s", fd, fs);`
+        }
+
+        op ROUND_W_S(010001:10000:00000:fs:fd:001100)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_FDFS("round.w.s", fd, fs);`
+        }
+
+        op TRUNC_W_S(010001:10000:00000:fs:fd:001101)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_FDFS("trunc.w.s", fd, fs);`
+        }
+
+        op CEIL_W_S(010001:10000:00000:fs:fd:001110)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_FDFS("ceil.w.s", fd, fs);`
+        }
+
+        op FLOOR_W_S(010001:10000:00000:fs:fd:001111)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_FDFS("floor.w.s", fd, fs);`
+        }
+
+        op CVT_S_W(010001:10100:00000:fs:fd:100000)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_FDFS("cvt.s.w", fd, fs);`
+        }
+
+        op CVT_W_S(010001:10000:00000:fs:fd:100100)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_FDFS("cvt.w.s", fd, fs);`
+        }
+
+        op C_COND_S(010001:10000:ft:fs:00000:11:fcond)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_Cconds(fcond, fs, ft);`
+        }
+
+        op MFC1(010001:00000:rt:fs:00000:000000)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RTFS("mfc1", rt, fs);`
+        }
+
+        op CFC1(010001:00010:rt:fs:00000:000000)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RTFC("cfc1", rt, fs);`
+        }
+
+        op MTC1(010001:00100:rt:fs:00000:000000)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RTFS("mtc1", rt, fs);`
+        }
+
+        op CTC1(010001:00110:rt:fs:00000:000000)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RTFC("ctc1", rt, fs);`
+        }
+    }
+
+    group COP0
+    {
+        op MFC0(010000:00000:rt:c0dr:00000:000000)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented MFC0";`
+        }
+
+        op CFC0(010000:00010:rt:c0cr:00000:000000)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented CFC0";`
+        }
+
+        op MTC0(010000:00100:rt:c0dr:00000:000000)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented MTC0";`
+        }
+
+        op CTC0(010000:00110:rt:c0cr:00000:000000)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented CTC0";`
+        }
+    }
+}
