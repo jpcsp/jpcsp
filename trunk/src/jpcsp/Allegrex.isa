@@ -489,7 +489,7 @@ group root
                     return;
                 }
                 if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
-                    processor.fix_gpr(rd, processor.gpr[rs] << (processor.gpr[rt]&31));
+                    processor.fix_gpr(rd, processor.gpr[rt] << (processor.gpr[rs]&31));
                 } else {
                     processor.load_gpr(rs, false);
                     processor.load_gpr(rt, false);
@@ -552,7 +552,7 @@ group root
                     return;
                 }
                 if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
-                    processor.fix_gpr(rd, processor.gpr[rs] >> (processor.gpr[rt]&31));
+                    processor.fix_gpr(rd, processor.gpr[rt] >> (processor.gpr[rs]&31));
                 } else {
                     processor.load_gpr(rs, false);
                     processor.load_gpr(rt, false);
@@ -560,9 +560,9 @@ group root
                     processor.current_bb.emit(
                         processor.get_gpr(rd) +
                         " = (" +
-                        processor.get_gpr(rs) +
-                        " >> (" +
                         processor.get_gpr(rt) +
+                        " >> (" +
+                        processor.get_gpr(rs) +
                         "&31));"
                     );
                 }
@@ -615,7 +615,7 @@ group root
                     return;
                 }
                 if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
-                    processor.fix_gpr(rd, processor.gpr[rs] >>> (processor.gpr[rt]&31));
+                    processor.fix_gpr(rd, processor.gpr[rt] >>> (processor.gpr[rs]&31));
                 } else {
                     processor.load_gpr(rs, false);
                     processor.load_gpr(rt, false);
@@ -623,9 +623,9 @@ group root
                     processor.current_bb.emit(
                         processor.get_gpr(rd) +
                         " = (" +
-                        processor.get_gpr(rs) +
-                        " >>> (" +
                         processor.get_gpr(rt) +
+                        " >>> (" +
+                        processor.get_gpr(rs) +
                         "&31));"
                     );
                 }
@@ -686,9 +686,9 @@ group root
                     processor.current_bb.emit(
                         processor.get_gpr(rd) +
                         " = Integer.rotateRight(" +
-                        processor.get_gpr(rs) +
-                        ", " +
                         processor.get_gpr(rt) +
+                        ", " +
+                        processor.get_gpr(rs) +
                         ");"
                     );
                 }
@@ -700,9 +700,30 @@ group root
         op SLT(000000:rs:rt:rd:00000:101010)
         {
             interpret = `
+                if (rd != 0) {
+                    processor.gpr[rd] = Processor.signedCompare(processor.gpr[rs], processor.gpr[rt]);
+                }
             `
 
             compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, Processor.signedCompare(processor.gpr[rs], processor.gpr[rt]));
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = Processor.signedCompare(" +
+                        processor.get_gpr(rs) +
+                        ", " +
+                        processor.get_gpr(rt) +
+                        ");"
+                    );
+                }
             `
 
             disasm = `return Dis_RDRSRT("slt", rd, rs, rt);`
@@ -711,9 +732,29 @@ group root
         op SLTI(001010:rs:rt:imm16)
         {
             interpret = `
+                if (rt != 0) {
+                    processor.gpr[rt] = Processor.signedCompare(processor.gpr[rs], Processor.signExtend(imm16));
+                }
             `
 
             compile = `
+                if (rt == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rs].fixed) {
+                    processor.fix_gpr(rt, Processor.signedCompare(processor.gpr[rs], Processor.signExtend(imm16)));
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.alter_gpr(rt);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rt) +
+                        " = Processor.signedCompare(" +
+                        processor.get_gpr(rs) +
+                        ", " +
+                        Processor.signExtend(imm16) +
+                        ");"
+                    );
+                }
             `
 
             disasm = `return Dis_RTRSIMM("slti", rt, rs, signExtend(imm16));`
@@ -722,9 +763,30 @@ group root
         op SLTU(000000:rs:rt:rd:00000:101011)
         {
             interpret = `
+                if (rd != 0) {
+                    processor.gpr[rd] = Processor.unsignedCompare(processor.gpr[rt], processor.gpr[rs]);
+                }
             `
 
             compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, Processor.unsignedCompare(processor.gpr[rt], processor.gpr[rs]));
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = Processor.unsignedCompare(" +
+                        processor.get_gpr(rs) +
+                        ", " +
+                        processor.get_gpr(rt) +
+                        ");"
+                    );
+                }
             `
 
             disasm = `return Dis_RDRSRT("sltu", rd, rs, rt);`
@@ -733,9 +795,29 @@ group root
         op SLTIU(001011:rs:rt:imm16)
         {
             interpret = `
+                if (rt != 0) {
+                    processor.gpr[rt] = Processor.unsignedCompare(processor.gpr[rs], Processor.signExtend(imm16));
+                }
             `
 
             compile = `
+                if (rt == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rs].fixed) {
+                    processor.fix_gpr(rt, Processor.unsignedCompare(processor.gpr[rs], Processor.signExtend(imm16)));
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.alter_gpr(rt);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rt) +
+                        " = Processor.unsignedCompare(" +
+                        processor.get_gpr(rs) +
+                        ", " +
+                        Processor.signExtend(imm16) +
+                        ");"
+                    );
+                }
             `
 
             disasm = `return Dis_RTRSIMM("sltiu", rt, rs, signExtend(imm16));`
@@ -1511,9 +1593,39 @@ group root
         op BEQ(000100:rs:rt:imm16)
         {
             interpret = `
+                processor.npc = (processor.gpr[rs] == processor.gpr[rt]) ? Processor.branchTarget(processor.pc, Processor.signExtend(imm16)) : (processor.pc + 4);
+                processor.stepDelayslot();
             `
 
             compile = `
+                boolean c = (processor.gpr[rs] == processor.gpr[rt]);
+                int target = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
+                boolean loop = (target == processor.current_bb.entry);
+                if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                    if (c) {
+                        processor.current_bb.emit("processor.pc = 0x" + Integer.toHexString(target) + ";");
+                    } else {
+                        processor.current_bb.emit("processor.pc += 4;");
+                    }
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.load_gpr(rt, false);
+                    processor.current_bb.emit(
+                        "processor.pc = (" +
+                        processor.get_gpr(rs) +
+                        " == " +
+                        processor.get_gpr(rt) +
+                        ") ? 0x" +
+                        Integer.toHexString(target) +
+                        " : (processor.pc + 4);"
+                    );
+                }
+                processor.npc = c ? target : (processor.pc + 4);
+                processor.stepDelayslot();
+                processor.reset_register_tracking();
+                processor.current_bb.emit(loop ? "continue;\n" : "break;\n");
+                processor.current_bb.freeze();
+                processor.current_bb = null;
             `
 
             disasm = `return Dis_RSRTOFFSET("beq", rs, rt, imm16, address);`
@@ -1665,6 +1777,8 @@ group root
         op BNE(000101:rs:rt:imm16)
         {
             interpret = `
+                processor.npc = (processor.gpr[rs] != processor.gpr[rt]) ? Processor.branchTarget(processor.pc, Processor.signExtend(imm16)) : (processor.pc + 4);
+                processor.stepDelayslot();
             `
 
             compile = `
@@ -1709,9 +1823,27 @@ group root
         op JALR(000000:rs:00000:rd:00000:001001)
         {
             interpret = `
+                if (rd != 0) {
+                    processor.gpr[rd] = processor.pc + 4;
+                }
+                processor.npc = processor.gpr[rs];
+                processor.stepDelayslot();
             `
 
             compile = `
+                boolean loop = (processor.tracked_gpr[rs].fixed && (processor.gpr[rs] == processor.current_bb.entry));
+                if (rd != 0) {
+                    processor.fix_gpr(rd, processor.pc + 4);
+                }
+                processor.current_bb.emit(
+                    "processor.pc = " + processor.get_gpr(rs) + ";"
+                );
+                processor.npc = processor.gpr[rs];
+                processor.stepDelayslot();
+                processor.reset_register_tracking();
+                processor.current_bb.emit("break;");
+                processor.current_bb.freeze();
+                processor.current_bb = null;
             `
 
             disasm = `return Dis_RDRS("jalr", rd, rs);`
@@ -1720,9 +1852,21 @@ group root
         op JR(000000:rs:00000:00000:00000:001000)
         {
             interpret = `
+                processor.npc = processor.gpr[rs];
+                processor.stepDelayslot();
             `
 
             compile = `
+                boolean loop = (processor.tracked_gpr[rs].fixed && (processor.gpr[rs] == processor.current_bb.entry));
+                processor.current_bb.emit(
+                    "processor.pc = " + processor.get_gpr(rs) + ";"
+                );
+                processor.npc = processor.gpr[rs];
+                processor.stepDelayslot();
+                processor.reset_register_tracking();
+                processor.current_bb.emit(loop ? "continue;" : "break;");
+                processor.current_bb.freeze();
+                processor.current_bb = null;
             `
 
             disasm = `return Dis_RS("jr", rs);`
@@ -1731,9 +1875,20 @@ group root
         op BC1F(010001:01000:00000:imm16)
         {
             interpret = `
+                processor.npc = !processor.fcr31_c ? Processor.branchTarget(processor.pc, Processor.signExtend(imm16)) : (processor.pc + 4);
+                processor.stepDelayslot();
             `
 
             compile = `
+                int target = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
+                boolean loop = (target == processor.current_bb.entry);
+                processor.current_bb.emit("processor.pc = (!processor.fcr31_c) ? 0x" + Integer.toHexString(target) + " : processor.pc + 4;");
+                processor.npc = !processor.fcr31_c ? target : (processor.pc + 4);
+                processor.stepDelayslot();
+                processor.reset_register_tracking();
+                processor.current_bb.emit(loop ? "continue;\n" : "break;\n");
+                processor.current_bb.freeze();
+                processor.current_bb = null;
             `
 
             disasm = `return Dis_OFFSET("bc1f", imm16, address);`
@@ -1742,9 +1897,20 @@ group root
         op BC1T(010001:01000:00001:imm16)
         {
             interpret = `
+                processor.npc = processor.fcr31_c ? Processor.branchTarget(processor.pc, Processor.signExtend(imm16)) : (processor.pc + 4);
+                processor.stepDelayslot();
             `
 
             compile = `
+                int target = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
+                boolean loop = (target == processor.current_bb.entry);
+                processor.current_bb.emit("processor.pc = processor.fcr31_c ? 0x" + Integer.toHexString(target) + " : (processor.pc + 4);");
+                processor.npc = processor.fcr31_c ? target : (processor.pc + 4);
+                processor.stepDelayslot();
+                processor.reset_register_tracking();
+                processor.current_bb.emit(loop ? "continue;\n" : "break;\n");
+                processor.current_bb.freeze();
+                processor.current_bb = null;
             `
 
             disasm = `return Dis_OFFSET("bc1t", imm16, address);`
@@ -1753,9 +1919,32 @@ group root
         op BC1FL(010001:01000:00010:imm16)
         {
             interpret = `
+                if (!processor.fcr31_c) {
+                    processor.npc = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
+                    processor.stepDelayslot();
+                } else {
+                    processor.pc += 4;
+                }
             `
 
             compile = `
+                int target = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
+                boolean loop = (target == processor.current_bb.entry);
+                processor.current_bb.emit(
+                    "if (!processor.fcr31_c) {\n" +
+                        "processor.pc = 0x" + Integer.toHexString(target) + ";"
+                );
+                processor.npc = !processor.fcr31_c ? target : (processor.pc + 4);
+                processor.stepDelayslot();
+                processor.current_bb.emit(
+                    "} else {\n" +
+                        "processor.pc += 4;" +
+                    "}\n"
+                );
+                processor.reset_register_tracking();
+                processor.current_bb.emit(loop ? "continue;\n" : "break;\n");
+                processor.current_bb.freeze();
+                processor.current_bb = null;
             `
 
             disasm = `return Dis_OFFSET("bc1fl", imm16, address);`
@@ -1764,9 +1953,32 @@ group root
         op BC1TL(010001:01000:00011:imm16)
         {
             interpret = `
+                if (processor.fcr31_c) {
+                    processor.npc = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
+                    processor.stepDelayslot();
+                } else {
+                    processor.pc += 4;
+                }
             `
 
             compile = `
+                int target = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
+                boolean loop = (target == processor.current_bb.entry);
+                processor.current_bb.emit(
+                    "if (processor.fcr31_c) {\n" +
+                        "processor.pc = 0x" + Integer.toHexString(target) + ";"
+                );
+                processor.npc = processor.fcr31_c ? target : (processor.pc + 4);
+                processor.stepDelayslot();
+                processor.current_bb.emit(
+                    "} else {\n" +
+                        "processor.pc += 4;" +
+                    "}\n"
+                );
+                processor.reset_register_tracking();
+                processor.current_bb.emit(loop ? "continue;\n" : "break;\n");
+                processor.current_bb.freeze();
+                processor.current_bb = null;
             `
 
             disasm = `return Dis_OFFSET("bc1tl", imm16, address);`
