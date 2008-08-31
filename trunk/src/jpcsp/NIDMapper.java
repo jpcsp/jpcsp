@@ -40,7 +40,7 @@ public class NIDMapper {
 
     /**
      * @filename "syscalls.txt"
-     * @param firmwareversion, one of: "FW 1.00", "FW 1.50", "FW 1.52", "FW 2.00"
+     * @param firmwareversion one of: "FW 1.00", "FW 1.50", "FW 1.52", "FW 2.00"
      * or any other supported FW in syscalls.txt. */
     public void Initialise(String filename, String firmwareversion) {
         //System.out.println("NIDMapper: Initialise");

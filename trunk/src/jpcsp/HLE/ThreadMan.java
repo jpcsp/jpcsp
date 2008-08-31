@@ -55,7 +55,7 @@ public class ThreadMan {
     }
 
     /** call this when resetting the emulator
-     * @param entry from ELF header
+     * @param entry_addr entry from ELF header
      * @param attr from sceModuleInfo ELF section header */
     public void Initialise(int entry_addr, int attr) {
         //System.out.println("ThreadMan: Initialise");
