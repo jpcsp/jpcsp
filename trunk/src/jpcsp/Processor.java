@@ -16,16 +16,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp;
 
-import static jpcsp.AllegrexInstructions.*;
+//import static jpcsp.AllegrexInstructions;
 import jpcsp.HLE.SyscallHandler;
 import java.util.HashMap;
 import java.util.Map;
 
 public class Processor implements AllegrexInstructions {
 
-    private static final int fcr0_imp = 0; /* FPU design number */
+    public static final int fcr0_imp = 0; /* FPU design number */
 
-    private static final int fcr0_rev = 0; /* FPU revision bumber */
+    public static final int fcr0_rev = 0; /* FPU revision bumber */
 
     public int[] gpr;
     public float[] fpr;
@@ -54,7 +54,7 @@ public class Processor implements AllegrexInstructions {
     public long[] fpr_cycles;
     public long[][][] vpr_cycles;
     public long fcr31_cycles;
-    private AllegrexBasicBlock current_bb = null;
+    public AllegrexBasicBlock current_bb = null;
     protected Map<Integer, AllegrexBasicBlock> basic_blocks = new HashMap<Integer, AllegrexBasicBlock>();
     public final boolean interpreter_only = true;
 
@@ -98,6 +98,8 @@ public class Processor implements AllegrexInstructions {
         tracked_gpr = new RegisterTracking[32];
         tracked_fpr = new RegisterTracking[32];
         tracked_hilo = new RegisterTracking();
+        
+        reset_register_tracking();
     }
 
     public void fix_gpr(int register, int value) {
@@ -115,15 +117,6 @@ public class Processor implements AllegrexInstructions {
             tracked_fpr[register].dirty = true;
             tracked_fpr[register].fixed = true;
             fpr[register] = value;
-        }
-    }
-    
-    public void fix_hilo(long value) {
-        if (current_bb != null) {
-            tracked_hilo.loaded = false;
-            tracked_hilo.dirty = true;
-            tracked_hilo.fixed = true;
-            hilo = value;
         }
     }
 
@@ -163,7 +156,7 @@ public class Processor implements AllegrexInstructions {
                 return;
             }
             if (!tracked_hilo.labeled) {
-                current_bb.emit("long hilo = processor.hilo; int hi, lo;");
+                current_bb.emit("long hilo = processor.hilo;");
                 tracked_hilo.labeled = true;
             }
             tracked_hilo.loaded = true;
@@ -199,8 +192,8 @@ public class Processor implements AllegrexInstructions {
     public void alter_hilo() {
         if (current_bb != null) {
             if (!tracked_hilo.labeled) {
-                current_bb.emit("long hilo; int hi, lo;");
-            tracked_hilo.labeled = true;
+                current_bb.emit("long hilo;");
+                tracked_hilo.labeled = true;
             }
             tracked_hilo.loaded = false;
             tracked_hilo.dirty = true;
@@ -229,40 +222,38 @@ public class Processor implements AllegrexInstructions {
     }
 
     public String get_hilo() {
-        if (tracked_hilo.fixed) {
-            return Long.toString(hilo);
-        } else if (tracked_hilo.labeled) {
+        if (tracked_hilo.labeled) {
             return "hilo";
         } else {
             return "processor.hilo";
         }
     }
-    
+
     public void reset_register_tracking() {
         if (current_bb != null) {
-            for (int i = 0; i < 32; ++i) {
+            for (int i = 1; i < 32; ++i) {
                 if (tracked_gpr[i].labeled) {
                     if (tracked_gpr[i].dirty) {
-                        if (!tracked_gpr[i].fixed) {
-                            current_bb.emit("processor.gpr[" + i + "] = gpr_" + i + ";");
-                        }
+                        current_bb.emit("processor.gpr[" + i + "] = " + get_gpr(i) + ";");
                     }
                 }
             }
+
+            tracked_gpr[0].loaded = false;
+            tracked_gpr[0].dirty = false;
+            tracked_gpr[0].fixed = true;
+            tracked_gpr[0].labeled = false;
+            
             for (int i = 0; i < 32; ++i) {
                 if (tracked_fpr[i].labeled) {
                     if (tracked_fpr[i].dirty) {
-                        if (!tracked_fpr[i].fixed) {
-                            current_bb.emit("processor.fpr[" + i + "] = fpr_" + i + ";");
-                        }
+                        current_bb.emit("processor.fpr[" + i + "] = " + get_fpr(i) + ";");
                     }
                 }
             }
             if (tracked_hilo.labeled) {
                 if (tracked_hilo.dirty) {
-                    if (!tracked_hilo.fixed) {
-                        current_bb.emit("processor.hilo = hilo;");
-                    }
+                    current_bb.emit("processor.hilo = hilo;");
                 }
             }
         }
@@ -274,6 +265,31 @@ public class Processor implements AllegrexInstructions {
 
     public int lo() {
         return (int) (hilo & 0xffffffff);
+    }
+
+    public static long signedDivMod(int x, int y) {
+        return ((long) (x % y)) << 32 | (((long) (x / y)) & 0xffffffff);
+    }
+
+    public static long unsignedDivMod(long x, long y) {
+        return ((x % y)) << 32 | ((x / y) & 0xffffffff);
+    }
+
+    public static int max(int x, int y) {
+        return (x > y) ? x : y;
+    }
+
+    public static int min(int x, int y) {
+        return (x < y) ? x : y;
+    }
+
+    public static int extractBits(int x, int pos, int len) {
+        return (x >>> pos) & ~(~0 << len);
+    }
+
+    public static int insertBits(int x, int y, int lsb, int msb) {
+        int mask = ~(~0 << (msb - lsb + 1)) << lsb;
+        return (x & ~mask) | ((y << lsb) & mask);
     }
 
     public static int signExtend(int value) {
@@ -353,9 +369,6 @@ public class Processor implements AllegrexInstructions {
         if (!interpreter_only && current_bb == null) {
             current_bb = basic_blocks.get(pc);
             if (current_bb != null) {
-                if (!current_bb.freezed) {
-                    current_bb.freeze();
-                }
                 current_bb.execution_count++;
                 current_bb.execute();
                 current_bb = null;

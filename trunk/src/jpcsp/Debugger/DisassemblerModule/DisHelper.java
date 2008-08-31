@@ -22,19 +22,35 @@ package jpcsp.Debugger.DisassemblerModule;
  */
 public class DisHelper {
 
-    static String[] gprNames = {
+    public static int signExtend(int value) {
+        return (value << 16) >> 16;
+    }
+
+    public static int signExtend8(int value) {
+        return (value << 24) >> 24;
+    }
+
+    public static int zeroExtend(int value) {
+        return (value & 0xffff);
+    }
+
+    public static int zeroExtend8(int value) {
+        return (value & 0xff);
+    }
+    
+    public static String[] gprNames = {
         "$zr", "$at", "$v0", "$v1", "$a0", "$a1", "$a2", "$a3",
         "$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", "$t7",
         "$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7",
         "$t8", "$t9", "$k0", "$k1", "$gp", "$sp", "$fp", "$ra"
     };
-    static String[] fprNames = {
+    public static String[] fprNames = {
         "$f0", "$f1", "$f2", "$f3", "$f4", "$f5", "$f6", "$f7",
         "$f8", "$f9", "$f10", "$f11", "$f12", "$f13", "$f14", "$f15",
         "$f16", "$f17", "$f18", "$f19", "$f20", "$f21", "$f22", "$f23",
         "$f24", "$f25", "$f26", "$f27", "$f28", "$f29", "$f30", "$f31"
     };
-    static String[][] vprNames = {
+    public static String[][] vprNames = {
         {
             "S000.s", "S010.s", "S020.s", "S030.s",
             "S100.s", "S110.s", "S120.s", "S130.s",
@@ -137,13 +153,13 @@ public class DisHelper {
             "R710.t", "R711.t", "R712.t", "R713.t",
         }
     };
-    static String[] fcrNames = {
+    public static String[] fcrNames = {
         "$fcsr0", "$fcsr1", "$fcsr2", "$fcsr3", "$fcsr4", "$fcsr5", "$fcsr6", "$fcsr7",
         "$fcsr8", "$fcsr9", "$fcsr10", "$fcsr11", "$fcsr12", "$fcsr13", "$fcsr14", "$fcsr15",
         "$fcsr16", "$fcsr17", "$fcsr18", "$fcsr19", "$fcsr20", "$fcsr21", "$fcsr22", "$fcsr23",
         "$fcsr24", "$fcsr25", "$fcsr26", "$fcsr27", "$fcsr28", "$fcsr29", "$fcsr30", "$fcsr31"
     };
-    static String[] cop0Names = {
+    public static String[] cop0Names = {
         "Index", "Random", "EntryLo0", "EntryLo1", "Context", "PageMask", "Wired", "cop0reg7",
         "BadVaddr", "Count", "EntryHi", "Compare", "Status", "Cause", "EPC", "PrID",
         "Config", "LLAddr", "WatchLo", "WatchHi", "XContext", "cop0reg21", "cop0reg22", "cop0reg23",
@@ -151,7 +167,7 @@ public class DisHelper {
     };
     //New helpers
     public static String Dis_RDRTSA(String opname, int rd, int rt, int sa) {
-        if (rd == 0) {
+        if ((rd == 0) && sa == 0) {
             return "nop";
         } else {
             return opname + " " + gprNames[rd] + ", " + gprNames[rt] + ", " + sa;
@@ -175,6 +191,10 @@ public class DisHelper {
         return opname + " " + gprNames[rd] + ", " + gprNames[rs];
     }
 
+    public static String Dis_RDRT(String opname, int rd, int rt) {
+        return opname + " " + gprNames[rd] + ", " + gprNames[rt];
+    }
+
     public static String Dis_RD(String opname, int rd) {
         return opname + " " + gprNames[rd];
     }
@@ -183,6 +203,14 @@ public class DisHelper {
         return opname + " " + gprNames[rs] + ", " + gprNames[rt];
     }
 
+    public static String Dis_Ext(int rt, int rs, int rd, int sa) {
+        return "ext " + gprNames[rt] + ", " + gprNames[rs] + ", " + sa + ", " + (rd + 1);
+    }
+
+    public static String Dis_Ins(int rt, int rs, int rd, int sa) {
+        return "ins " + gprNames[rt] + ", " + gprNames[rs] + ", " + sa + ", " + (rd - sa + 1);
+    }
+    
     public static String Dis_RDRSRT(String opname, int rd, int rs, int rt) {
         if (rs == 0 && rt == 0) {
 
@@ -226,18 +254,18 @@ public class DisHelper {
     }
 
     public static String Dis_RSOFFSET(String opname, int rs, int simm16, int opcode_address) {
-        return opname + " " + gprNames[rs] + ", 0x" + Integer.toHexString(simm16 * 4 + opcode_address + 4);
+        return opname + " " + gprNames[rs] + ", 0x" + Integer.toHexString(simm16*4 + opcode_address + 4);
     }
 
     public static String Dis_RSRTOFFSET(String opname, int rs, int rt, int simm16, int opcode_address) {
-        return opname + " " + gprNames[rs] + ", " + gprNames[rt] + " 0x" + Integer.toHexString(simm16 * 4 + opcode_address + 4);
+        return opname + " " + gprNames[rs] + ", " + gprNames[rt] + ", 0x" + Integer.toHexString(simm16*4 + opcode_address + 4);
     }
 
     public static String Dis_OFFSET(String opname, int imm, int opcode_address) {
-        return opname + " " + " 0x" + Integer.toHexString(imm * 4 + opcode_address + 4);
+        return opname + " 0x" + Integer.toHexString(imm*4 + opcode_address + 4);
     }
 
-    public static String Dis_RTRSIMM(String opname, int rt, int rs, int simm16) {
+    public static String Dis_RTRSIMM(String opname, int rt, int rs, int imm16) {
 
         /* if (!opname.equals("andi") && !opname.equals("ori") && !opname.equals("xori")) {
         imm = (imm << 16) >> 16;
@@ -248,12 +276,12 @@ public class DisHelper {
             if (opname.equals("andi")) {
                 return "li " + gprNames[rt] + ", 0";
             } else if (opname.matches("slti")) {
-                return "li " + gprNames[rt] + ", " + simm16;
+                return "li " + gprNames[rt] + ", " + ((0 < imm16) ? 1 : 0);
             }
 
         }
 
-        return opname + " " + gprNames[rt] + ", " + gprNames[rs] + ", " + simm16;
+        return opname + " " + gprNames[rt] + ", " + gprNames[rs] + ", " + imm16;
     }
 
     public static String Dis_Syscall(int code) {  /* probably okay */
@@ -296,12 +324,12 @@ public class DisHelper {
         return opname + " " + gprNames[rt] + ", " + imm + " (" + gprNames[rs] + ")";
     }
 
-    public static String Dis_FTIMMRS(String opname, int rt, int rs, int imm) {
-        return opname + " " + fprNames[rt] + ", " + imm + " (" + gprNames[rs] + ")";
+    public static String Dis_CCIMMRS(String opname, int code, int rs, int imm) {
+        return opname + " 0x" + Integer.toHexString(code) + ", " + imm + " (" + gprNames[rs] + ")";
     }
 
-    public static String Dis_RDRT(String opname, int rd, int rt) {
-        return opname + " " + gprNames[rd] + ", " + gprNames[rt];
+    public static String Dis_FTIMMRS(String opname, int rt, int rs, int imm) {
+        return opname + " " + fprNames[rt] + ", " + imm + " (" + gprNames[rs] + ")";
     }
 
     public static String Dis_FDFSFT(String opname, int fd, int fs, int ft) {
@@ -311,6 +339,38 @@ public class DisHelper {
     public static String Dis_FDFS(String opname, int fd, int fs) {
         return opname + " " + fprNames[fd] + ", " + fprNames[fs];
     }
+
+    public static String Dis_RTFS(String opname, int rt, int fs) {
+        return opname + " " + gprNames[rt] + ", " + fprNames[fs];
+    }
+
+    public static String Dis_RTFC(String opname, int rt, int fc) {
+        return opname + " " + gprNames[rt] + ", " + fcrNames[fc];
+    }
+
+    private static final String ccondsNames[] = {
+        "c.f.s",
+        "c.un.s",
+        "c.eq.s",
+        "c.ueq.s",
+        "c.olt.s",
+        "c.ult.s",
+        "c.ole.s",
+        "c.ule.s",
+        "c.sf.s",
+        "c.ngle.s",
+        "c.seq.s",
+        "c.ngl.s",
+        "c.lt.s",
+        "c.nge.s",
+        "c.le.s",
+        "c.ngt.s"
+    };
+
+    public static String Dis_Cconds(int cconds, int fs, int ft) {
+        return ccondsNames[cconds] + " " + fprNames[fs] + ", " + fprNames[ft];
+    }
+
 
     public static String Dis_FSFT(String opname, int fs, int ft) {
         return opname + " " + fprNames[fs] + ", " + fprNames[ft];

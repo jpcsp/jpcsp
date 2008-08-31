@@ -1,111 +1,184 @@
-field
-{
-    rs:5; rd:5; rt:5; sa:5; lsb:5; msb:5;
 
-    fs:5; fd:5; ft:5; fcond:4;
+/* this is an auto-generated file from Allegrex.isa file */
+/* This file is part of jpcsp.
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-    vs:7; vt:7; vd:7; vcond:4;
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-    vs_m:3; vs_c:2; vs_r:2; vs_x:1; vs_o:1;
-    vt_m:3; vt_c:2; vt_r:2; vt_x:1; vt_o:1;
-    vd_m:3; vd_c:2; vd_r:2; vd_x:1; vd_o:1;
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
-    imm3:3; imm5:5; imm7:7; imm14:14; imm16:16; imm20:20; imm26:26;
+package jpcsp.Allegrex;
 
-    negw:1; negz:1; negy:1; negx:1;
-    cstw:1; cstz:1; csty:1; cstx:1;
-    absw:1; absz:1; absy:1; absx:1;
-    swzw:2; swzz:2; swzy:2; swzx:2;
-    mskw:1; mskz:1; msky:1; mskx:1;
-    satw:2; satz:2; saty:2; satx:2;
+import jpcsp.Processor;
 
-    wb:1;
+import static jpcsp.Debugger.DisassemblerModule.DisHelper.*;
 
-    c0dr:5; c0cr:5;
-    c1dr:5; c1cr:5;
+/**
+ *
+ * @author hli
+ */
+public class Instructions {
+
+public static final class NOP {
+static void interpret(Processor processor, int insn) {
+
+
+
+}
+static void compile(Processor processor, int insn) {
+
+
+
+}
+static String disasm(int address, int insn) {
+
+
+return "nop";
+}
 }
 
-var {}
+public static final class CACHE {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-group root
-{
-    group MISC
-    {
-        op NOP(00000000000000000000000000000000)
-        {
-            interpret = ``
 
-            compile = ``
 
-            disasm = `return "nop";`
-        }
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-        op CACHE(101111:rs:rt:imm16)
-        {
-            interpret = ``
 
-            compile = ``
 
-            disasm = `return Dis_CCIMMRS("cache", rt, signExtend(imm16), rs);`
-        }
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-        op SYSCALL(000000:imm20:001100)
-        {
-            interpret = `
-            `
 
-            compile = `
-            `
+return Dis_CCIMMRS("cache", rt, signExtend(imm16), rs);
+}
+}
 
-            disasm = `return Dis_Syscall(imm20);`
-        }
+public static final class SYSCALL {
+static void interpret(Processor processor, int insn) {
+	int imm20 = (insn>>6)&1048575;
 
-        op ERET(010000:10000:00000:00000:00000:011000)
-        {
-            interpret = `
-            `
 
-            compile = `
-            `
 
-            disasm = `return "eret";`
-        }
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm20 = (insn>>6)&1048575;
 
-        op BREAK(000000:imm20:001101)
-        {
-            interpret = `
-            `
 
-            compile = `
-            `
 
-            disasm = `return Dis_Break(imm20);`
-        }
+            
+}
+static String disasm(int address, int insn) {
+	int imm20 = (insn>>6)&1048575;
 
-        op SYNC(00000000000000000000000000001111)
-        {
-            interpret = `
-            `
 
-            compile = `
-            `
+return Dis_Syscall(imm20);
+}
+}
 
-            disasm = `return "sync";`
-        }
-    }
+public static final class ERET {
+static void interpret(Processor processor, int insn) {
 
-    group ALU
-    {
-        op ADD(000000:rs:rt:rd:00000:100000)
-        {
-            interpret = `
+
+
+            
+}
+static void compile(Processor processor, int insn) {
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+
+
+return "eret";
+}
+}
+
+public static final class BREAK {
+static void interpret(Processor processor, int insn) {
+	int imm20 = (insn>>6)&1048575;
+
+
+
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm20 = (insn>>6)&1048575;
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+	int imm20 = (insn>>6)&1048575;
+
+
+return Dis_Break(imm20);
+}
+}
+
+public static final class SYNC {
+static void interpret(Processor processor, int insn) {
+
+
+
+            
+}
+static void compile(Processor processor, int insn) {
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+
+
+return "sync";
+}
+}
+
+public static final class ADD {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 // just ignore overflow exception as it is useless
                 if (rd != 0) {
                     processor.gpr[rd] = processor.gpr[rs] + processor.gpr[rt];
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rd == 0) {
                     return;
                 }
@@ -124,20 +197,38 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RDRSRT("add", rd, rs, rt);`
-        }
 
-        op ADDU(000000:rs:rt:rd:00000:100001)
-        {
-            interpret = `
+return Dis_RDRSRT("add", rd, rs, rt);
+}
+}
+
+public static final class ADDU {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = processor.gpr[rs] + processor.gpr[rt];
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rd == 0) {
                     return;
                 }
@@ -156,21 +247,39 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RDRSRT("addu", rd, rs, rt);`
-        }
 
-        op ADDI(001000:rs:rt:imm16)
-        {
-            interpret = `
+return Dis_RDRSRT("addu", rd, rs, rt);
+}
+}
+
+public static final class ADDI {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 // just ignore overflow exception as it is useless
                 if (rt != 0) {
                     processor.gpr[rt] = processor.gpr[rs] + Processor.signExtend(imm16);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rt == 0) {
                     return;
                 }
@@ -188,20 +297,38 @@ group root
                         "));"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RTRSIMM("addi", rt, rs, signExtend(imm16));`
-        }
 
-        op ADDIU(001001:rs:rt:imm16)
-        {
-            interpret = `
+return Dis_RTRSIMM("addi", rt, rs, signExtend(imm16));
+}
+}
+
+public static final class ADDIU {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if (rt != 0) {
                     processor.gpr[rt] = processor.gpr[rs] + Processor.signExtend(imm16);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rt == 0) {
                     return;
                 }
@@ -219,20 +346,38 @@ group root
                         "));"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RTRSIMM("addiu", rt, rs, signExtend(imm16));`
-        }
 
-        op AND(000000:rs:rt:rd:00000:100100)
-        {
-            interpret = `
+return Dis_RTRSIMM("addiu", rt, rs, signExtend(imm16));
+}
+}
+
+public static final class AND {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = processor.gpr[rs] & processor.gpr[rt];
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rd == 0) {
                     return;
                 }
@@ -251,20 +396,38 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RDRSRT("and", rd, rs, rt);`
-        }
 
-        op ANDI(001100:rs:rt:imm16)
-        {
-            interpret = `
+return Dis_RDRSRT("and", rd, rs, rt);
+}
+}
+
+public static final class ANDI {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if (rt != 0) {
                     processor.gpr[rt] = processor.gpr[rs] & Processor.zeroExtend(imm16);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rt == 0) {
                     return;
                 }
@@ -282,20 +445,38 @@ group root
                         "));"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RTRSIMM("andi", rt, rs, zeroExtend(imm16));`
-        }
 
-        op NOR(000000:rs:rt:rd:00000:100111)
-        {
-            interpret = `
+return Dis_RTRSIMM("andi", rt, rs, zeroExtend(imm16));
+}
+}
+
+public static final class NOR {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = ~(processor.gpr[rs] | processor.gpr[rt]);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rd == 0) {
                     return;
                 }
@@ -314,20 +495,38 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RDRSRT("nor", rd, rs, rt);`
-        }
 
-        op OR(000000:rs:rt:rd:00000:100101)
-        {
-            interpret = `
+return Dis_RDRSRT("nor", rd, rs, rt);
+}
+}
+
+public static final class OR {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = processor.gpr[rs] | processor.gpr[rt];
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rd == 0) {
                     return;
                 }
@@ -346,20 +545,38 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RDRSRT("or", rd, rs, rt);`
-        }
 
-        op ORI(001101:rs:rt:imm16)
-        {
-            interpret = `
+return Dis_RDRSRT("or", rd, rs, rt);
+}
+}
+
+public static final class ORI {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if (rt != 0) {
                     processor.gpr[rt] = processor.gpr[rs] | Processor.zeroExtend(imm16);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rt == 0) {
                     return;
                 }
@@ -377,20 +594,38 @@ group root
                         "));"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RTRSIMM("ori", rt, rs, zeroExtend(imm16));`
-        }
 
-        op XOR(000000:rs:rt:rd:00000:100110)
-        {
-            interpret = `
+return Dis_RTRSIMM("ori", rt, rs, zeroExtend(imm16));
+}
+}
+
+public static final class XOR {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = processor.gpr[rs] ^ processor.gpr[rt];
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rd == 0) {
                     return;
                 }
@@ -409,20 +644,38 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RDRSRT("xor", rd, rs, rt);`
-        }
 
-        op XORI(001110:rs:rt:imm16)
-        {
-            interpret = `
+return Dis_RDRSRT("xor", rd, rs, rt);
+}
+}
+
+public static final class XORI {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if (rt != 0) {
                     processor.gpr[rt] = processor.gpr[rs] ^ Processor.zeroExtend(imm16);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rt == 0) {
                     return;
                 }
@@ -440,20 +693,38 @@ group root
                         "));"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RTRSIMM("xori", rt, rs, zeroExtend(imm16));`
-        }
 
-        op SLL(000000:00000:rt:rd:sa:000000)
-        {
-            interpret = `
+return Dis_RTRSIMM("xori", rt, rs, zeroExtend(imm16));
+}
+}
+
+public static final class SLL {
+static void interpret(Processor processor, int insn) {
+	int sa = (insn>>6)&31;
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = (processor.gpr[rt] << sa);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int sa = (insn>>6)&31;
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            compile = `
+
+
                 if (rd == 0) {
                     return;
                 }
@@ -471,20 +742,38 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int sa = (insn>>6)&31;
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            disasm = `return Dis_RDRTSA("sll", rd, rt, sa);`
-        }
 
-        op SLLV(000000:rs:rt:rd:00000:000100)
-        {
-            interpret = `
+return Dis_RDRTSA("sll", rd, rt, sa);
+}
+}
+
+public static final class SLLV {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = processor.gpr[rt] << (processor.gpr[rs]&31);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rd == 0) {
                     return;
                 }
@@ -503,20 +792,38 @@ group root
                         "&31));"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RDRTRS("sllv", rd, rt, rs);`
-        }
 
-        op SRA(000000:00000:rt:rd:sa:000011)
-        {
-            interpret = `
+return Dis_RDRTRS("sllv", rd, rt, rs);
+}
+}
+
+public static final class SRA {
+static void interpret(Processor processor, int insn) {
+	int sa = (insn>>6)&31;
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = (processor.gpr[rt] >> sa);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int sa = (insn>>6)&31;
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            compile = `
+
+
                 if (rd == 0) {
                     return;
                 }
@@ -534,20 +841,38 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int sa = (insn>>6)&31;
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            disasm = `return Dis_RDRTSA("sra", rd, rt, sa);`
-        }
 
-        op SRAV(000000:rs:rt:rd:00000:000111)
-        {
-            interpret = `
+return Dis_RDRTSA("sra", rd, rt, sa);
+}
+}
+
+public static final class SRAV {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = processor.gpr[rt] >> (processor.gpr[rs]&31);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rd == 0) {
                     return;
                 }
@@ -566,20 +891,38 @@ group root
                         "&31));"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RDRTRS("srav", rd, rt, rs);`
-        }
 
-        op SRL(000000:00000:rt:rd:sa:000010)
-        {
-            interpret = `
+return Dis_RDRTRS("srav", rd, rt, rs);
+}
+}
+
+public static final class SRL {
+static void interpret(Processor processor, int insn) {
+	int sa = (insn>>6)&31;
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = (processor.gpr[rt] >>> sa);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int sa = (insn>>6)&31;
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            compile = `
+
+
                 if (rd == 0) {
                     return;
                 }
@@ -597,20 +940,38 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int sa = (insn>>6)&31;
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            disasm = `return Dis_RDRTSA("srl", rd, rt, sa);`
-        }
 
-        op SRLV(000000:rs:rt:rd:00000:000110)
-        {
-            interpret = `
+return Dis_RDRTSA("srl", rd, rt, sa);
+}
+}
+
+public static final class SRLV {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = processor.gpr[rt] >>> (processor.gpr[rs]&31);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rd == 0) {
                     return;
                 }
@@ -629,20 +990,38 @@ group root
                         "&31));"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RDRTRS("srlv", rd, rt, rs);`
-        }
 
-        op ROTR(000000:00001:rt:rd:sa:000010)
-        {
-            interpret = `
+return Dis_RDRTRS("srlv", rd, rt, rs);
+}
+}
+
+public static final class ROTR {
+static void interpret(Processor processor, int insn) {
+	int sa = (insn>>6)&31;
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = Integer.rotateRight(processor.gpr[rt], sa);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int sa = (insn>>6)&31;
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            compile = `
+
+
                 if (rd == 0) {
                     return;
                 }
@@ -660,20 +1039,38 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int sa = (insn>>6)&31;
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            disasm = `return Dis_RDRTSA("rotr", rd, rt, sa);`
-        }
 
-        op ROTRV(000000:rs:rt:rd:00001:000110)
-        {
-            interpret = `
+return Dis_RDRTSA("rotr", rd, rt, sa);
+}
+}
+
+public static final class ROTRV {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = Integer.rotateRight(processor.gpr[rt], processor.gpr[rs]);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rd == 0) {
                     return;
                 }
@@ -692,20 +1089,38 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RDRTRS("rotrv", rd, rt, rs);`
-        }
 
-        op SLT(000000:rs:rt:rd:00000:101010)
-        {
-            interpret = `
+return Dis_RDRTRS("rotrv", rd, rt, rs);
+}
+}
+
+public static final class SLT {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = Processor.signedCompare(processor.gpr[rs], processor.gpr[rt]);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rd == 0) {
                     return;
                 }
@@ -724,20 +1139,38 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RDRSRT("slt", rd, rs, rt);`
-        }
 
-        op SLTI(001010:rs:rt:imm16)
-        {
-            interpret = `
+return Dis_RDRSRT("slt", rd, rs, rt);
+}
+}
+
+public static final class SLTI {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if (rt != 0) {
                     processor.gpr[rt] = Processor.signedCompare(processor.gpr[rs], Processor.signExtend(imm16));
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rt == 0) {
                     return;
                 }
@@ -755,20 +1188,38 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RTRSIMM("slti", rt, rs, signExtend(imm16));`
-        }
 
-        op SLTU(000000:rs:rt:rd:00000:101011)
-        {
-            interpret = `
+return Dis_RTRSIMM("slti", rt, rs, signExtend(imm16));
+}
+}
+
+public static final class SLTU {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = Processor.unsignedCompare(processor.gpr[rt], processor.gpr[rs]);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rd == 0) {
                     return;
                 }
@@ -787,20 +1238,38 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RDRSRT("sltu", rd, rs, rt);`
-        }
 
-        op SLTIU(001011:rs:rt:imm16)
-        {
-            interpret = `
+return Dis_RDRSRT("sltu", rd, rs, rt);
+}
+}
+
+public static final class SLTIU {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if (rt != 0) {
                     processor.gpr[rt] = Processor.unsignedCompare(processor.gpr[rs], Processor.signExtend(imm16));
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rt == 0) {
                     return;
                 }
@@ -818,21 +1287,38 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RTRSIMM("sltiu", rt, rs, signExtend(imm16));`
-        }
 
-        op SUB(000000:rs:rt:rd:00000:100010)
-        {
-            // ignore overflow exception as it is useless
-            interpret = `
+return Dis_RTRSIMM("sltiu", rt, rs, signExtend(imm16));
+}
+}
+
+public static final class SUB {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = processor.gpr[rs] - processor.gpr[rt];
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rd == 0) {
                     return;
                 }
@@ -851,20 +1337,38 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RDRSRT("sub", rd, rs, rt);`
-        }
 
-        op SUBU(000000:rs:rt:rd:00000:100011)
-        {
-            interpret = `
+return Dis_RDRSRT("sub", rd, rs, rt);
+}
+}
+
+public static final class SUBU {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = processor.gpr[rs] - processor.gpr[rt];
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rd == 0) {
                     return;
                 }
@@ -883,38 +1387,69 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RDRSRT("subu", rd, rs, rt);`
-        }
 
-        op LUI(001111:00000:rt:imm16)
-        {
-            interpret = `
+return Dis_RDRSRT("subu", rd, rs, rt);
+}
+}
+
+public static final class LUI {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+
+
+
                 if (rt != 0) {
                     processor.gpr[rt] = (imm16 << 16);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
 
-            compile = `
+
+
                 if (rt == 0) {
                     return;
                 }
                 processor.fix_gpr(rt, (imm16 << 16));
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
 
-            disasm = `return Dis_RTIMM("lui", rt, zeroExtend(imm16));`
-        }
 
-        op SEB(011111:00000:rt:rd:10000:100001)
-        {
-            interpret = `
+return Dis_RTIMM("lui", rt, zeroExtend(imm16));
+}
+}
+
+public static final class SEB {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = Processor.signExtend8(processor.gpr[rt]);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            compile = `
+
+
                 if (rd == 0) {
                     return;
                 }
@@ -930,20 +1465,35 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            disasm = `return Dis_RDRT("seb", rd, rt);`
-        }
 
-        op SEH(011111:00000:rt:rd:11000:100000)
-        {
-            interpret = `
+return Dis_RDRT("seb", rd, rt);
+}
+}
+
+public static final class SEH {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = Processor.signExtend(processor.gpr[rt]);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            compile = `
+
+
                 if (rd == 0) {
                     return;
                 }
@@ -959,20 +1509,35 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            disasm = `return Dis_RDRT("seh", rd, rt);`
-        }
 
-        op BITREV(011111:00000:rt:rd:10100:100000)
-        {
-            interpret = `
+return Dis_RDRT("seh", rd, rt);
+}
+}
+
+public static final class BITREV {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = Integer.reverse(processor.gpr[rt]);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            compile = `
+
+
                 if (rd == 0) {
                     return;
                 }
@@ -988,20 +1553,35 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            disasm = `return Dis_RDRT("bitrev", rd, rt);`
-        }
 
-        op WSBH(011111:00000:rt:rd:00010:100000)
-        {
-            interpret = `
+return Dis_RDRT("bitrev", rd, rt);
+}
+}
+
+public static final class WSBH {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = Integer.rotateRight(Integer.reverseBytes(processor.gpr[rt]), 16);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            compile = `
+
+
                 if (rd == 0) {
                     return;
                 }
@@ -1017,20 +1597,35 @@ group root
                         "), 16);"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            disasm = `return Dis_RDRT("wsbh", rd, rt);`
-        }
 
-        op WSBW(011111:00000:rt:rd:00011:100000)
-        {
-            interpret = `
+return Dis_RDRT("wsbh", rd, rt);
+}
+}
+
+public static final class WSBW {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = Integer.reverseBytes(processor.gpr[rt]);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            compile = `
+
+
                 if (rd == 0) {
                     return;
                 }
@@ -1046,20 +1641,37 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            disasm = `return Dis_RDRT("wsbw", rd, rt);`
-        }
 
-        op MOVZ(000000:rs:rt:rd:00000:001010)
-        {
-            interpret = `
+return Dis_RDRT("wsbw", rd, rt);
+}
+}
+
+public static final class MOVZ {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if ((rd != 0) && (processor.gpr[rt] == 0)) {
                     processor.gpr[rd] = processor.gpr[rs];
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rd != 0) {
                     if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
                         if (processor.gpr[rt] == 0) {
@@ -1080,20 +1692,38 @@ group root
                         );
                     }
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RDRSRT("movz", rd, rs, rt);`
-        }
 
-        op MOVN(000000:rs:rt:rd:00000:001011)
-        {
-            interpret = `
+return Dis_RDRSRT("movz", rd, rs, rt);
+}
+}
+
+public static final class MOVN {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if ((rd != 0) && (processor.gpr[rt] != 0)) {
                     processor.gpr[rd] = processor.gpr[rs];
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rd != 0) {
                     if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
                         if (processor.gpr[rt] != 0) {
@@ -1114,20 +1744,38 @@ group root
                         );
                     }
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RDRSRT("movn", rd, rs, rt);`
-        }
 
-        op MAX(000000:rs:rt:rd:00000:101100)
-        {
-            interpret = `
+return Dis_RDRSRT("movn", rd, rs, rt);
+}
+}
+
+public static final class MAX {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = Processor.max(processor.gpr[rs], processor.gpr[rt]);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rd != 0) {
                     if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
                         processor.fix_gpr(rd, Processor.max(processor.gpr[rs], processor.gpr[rt]));
@@ -1145,20 +1793,38 @@ group root
                         );
                     }
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RDRSRT("max", rd, rs, rt);`
-        }
 
-        op MIN(000000:rs:rt:rd:00000:101101)
-        {
-            interpret = `
+return Dis_RDRSRT("max", rd, rs, rt);
+}
+}
+
+public static final class MIN {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = Processor.min(processor.gpr[rs], processor.gpr[rt]);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rd != 0) {
                     if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
                         processor.fix_gpr(rd, Processor.min(processor.gpr[rs], processor.gpr[rt]));
@@ -1176,20 +1842,36 @@ group root
                         );
                     }
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RDRSRT("min", rd, rs, rt);`
-        }
 
-        op CLZ(000000:rs:00000:rd:00000:010110)
-        {
-            interpret = `
+return Dis_RDRSRT("min", rd, rs, rt);
+}
+}
+
+public static final class CLZ {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = Integer.numberOfLeadingZeros(processor.gpr[rs]);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rd != 0) {
                     if (processor.tracked_gpr[rs].fixed) {
                         processor.fix_gpr(rd, Integer.numberOfLeadingZeros(processor.gpr[rs]));
@@ -1204,20 +1886,35 @@ group root
                         );
                     }
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RDRS("clz", rd, rs);`
-        }
 
-        op CLO(000000:rs:00000:rd:00000:010111)
-        {
-            interpret = `
+return Dis_RDRS("clz", rd, rs);
+}
+}
+
+public static final class CLO {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = Integer.numberOfLeadingZeros(~processor.gpr[rs]);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rd != 0) {
                     if (processor.tracked_gpr[rs].fixed) {
                         processor.fix_gpr(rd, Integer.numberOfLeadingZeros(~processor.gpr[rs]));
@@ -1232,20 +1929,39 @@ group root
                         );
                     }
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RDRS("clo", rd, rs);`
-        }
 
-        op EXT(011111:rs:rt:msb:lsb:000000)
-        {
-            interpret = `
+return Dis_RDRS("clo", rd, rs);
+}
+}
+
+public static final class EXT {
+static void interpret(Processor processor, int insn) {
+	int lsb = (insn>>6)&31;
+	int msb = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if (rt != 0) {
                     processor.gpr[rt] = Processor.extractBits(processor.gpr[rs], lsb, msb+1);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int lsb = (insn>>6)&31;
+	int msb = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rt != 0) {
                     if (processor.tracked_gpr[rs].fixed) {
                         processor.fix_gpr(rt, Processor.extractBits(processor.gpr[rs], lsb, msb+1));
@@ -1264,20 +1980,41 @@ group root
                         );
                     }
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int lsb = (insn>>6)&31;
+	int msb = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_Ext(rt, rs, lsb, msb);`
-        }
 
-        op INS(011111:rs:rt:msb:lsb:000100)
-        {
-            interpret = `
+return Dis_Ext(rt, rs, lsb, msb);
+}
+}
+
+public static final class INS {
+static void interpret(Processor processor, int insn) {
+	int lsb = (insn>>6)&31;
+	int msb = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if (rt != 0) {
                     processor.gpr[rt] = Processor.insertBits(processor.gpr[rt], processor.gpr[rs], lsb, msb);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int lsb = (insn>>6)&31;
+	int msb = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 if (rt != 0) {
                     if (processor.tracked_gpr[rs].fixed) {
                         processor.fix_gpr(rt, Processor.insertBits(processor.gpr[rt], processor.gpr[rs], lsb, msb));
@@ -1299,21 +2036,35 @@ group root
                         );
                     }
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int lsb = (insn>>6)&31;
+	int msb = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_Ins(rt, rs, lsb, msb);`
-        }
-    }
 
-    group MDU
-    {
-        op MULT(000000:rs:rt:00000:00000:011000)
-        {
-            interpret = `
+return Dis_Ins(rt, rs, lsb, msb);
+}
+}
+
+public static final class MULT {
+static void interpret(Processor processor, int insn) {
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 processor.hilo = ((long) processor.gpr[rs]) * ((long) processor.gpr[rt]);
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 processor.load_gpr(rs, false);
                 processor.load_gpr(rt, false);
                 processor.alter_hilo();
@@ -1325,18 +2076,33 @@ group root
                     processor.get_gpr(rt) +
                     ");"
                 );
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RSRT("mult", rs, rt);`
-        }
 
-        op MULTU(000000:rs:rt:00000:00000:011001)
-        {
-            interpret = `
+return Dis_RSRT("mult", rs, rt);
+}
+}
+
+public static final class MULTU {
+static void interpret(Processor processor, int insn) {
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 processor.hilo = (((long) processor.gpr[rs]) & 0xffffffff) * (((long) processor.gpr[rt]) & 0xffffffff);
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 processor.load_gpr(rs, false);
                 processor.load_gpr(rt, false);
                 processor.alter_hilo();
@@ -1348,18 +2114,33 @@ group root
                     processor.get_gpr(rt) +
                     ") & 0xffffffff);"
                 );
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RSRT("multu", rs, rt);`
-        }
 
-        op MADD(000000:rs:rt:00000:00000:011100)
-        {
-            interpret = `
+return Dis_RSRT("multu", rs, rt);
+}
+}
+
+public static final class MADD {
+static void interpret(Processor processor, int insn) {
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 processor.hilo += ((long) processor.gpr[rs]) * ((long) processor.gpr[rt]);
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 processor.load_gpr(rs, false);
                 processor.load_gpr(rt, false);
                 processor.load_hilo(false);
@@ -1372,18 +2153,33 @@ group root
                     processor.get_gpr(rt) +
                     ");"
                 );
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RSRT("madd", rs, rt);`
-        }
 
-        op MADDU(000000:rs:rt:00000:00000:011101)
-        {
-            interpret = `
+return Dis_RSRT("madd", rs, rt);
+}
+}
+
+public static final class MADDU {
+static void interpret(Processor processor, int insn) {
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 processor.hilo += (((long) processor.gpr[rs]) & 0xffffffff) * (((long) processor.gpr[rt]) & 0xffffffff);
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 processor.load_gpr(rs, false);
                 processor.load_gpr(rt, false);
                 processor.load_hilo(false);
@@ -1396,18 +2192,33 @@ group root
                     processor.get_gpr(rt) +
                     ") & 0xffffffff);"
                 );
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RSRT("maddu", rs, rt);`
-        }
 
-        op MSUB(000000:rs:rt:00000:00000:101110)
-        {
-            interpret = `
+return Dis_RSRT("maddu", rs, rt);
+}
+}
+
+public static final class MSUB {
+static void interpret(Processor processor, int insn) {
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 processor.hilo -= ((long) processor.gpr[rs]) * ((long) processor.gpr[rt]);
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 processor.load_gpr(rs, false);
                 processor.load_gpr(rt, false);
                 processor.load_hilo(false);
@@ -1420,18 +2231,33 @@ group root
                     processor.get_gpr(rt) +
                     ");"
                 );
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RSRT("msub", rs, rt);`
-        }
 
-        op MSUBU(000000:rs:rt:00000:00000:101111)
-        {
-            interpret = `
+return Dis_RSRT("msub", rs, rt);
+}
+}
+
+public static final class MSUBU {
+static void interpret(Processor processor, int insn) {
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 processor.hilo -= (((long) processor.gpr[rs]) & 0xffffffff) * (((long) processor.gpr[rt]) & 0xffffffff);
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 processor.load_gpr(rs, false);
                 processor.load_gpr(rt, false);
                 processor.load_hilo(false);
@@ -1444,18 +2270,33 @@ group root
                     processor.get_gpr(rt) +
                     ") & 0xffffffff);"
                 );
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RSRT("msubu", rs, rt);`
-        }
 
-        op DIV(000000:rs:rt:00000:00000:011010)
-        {
-            interpret = `
+return Dis_RSRT("msubu", rs, rt);
+}
+}
+
+public static final class DIV {
+static void interpret(Processor processor, int insn) {
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 processor.hilo = Processor.signedDivMod(processor.gpr[rs], processor.gpr[rt]);
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 processor.load_gpr(rs, false);
                 processor.load_gpr(rt, false);
                 processor.alter_hilo();
@@ -1467,18 +2308,33 @@ group root
                     processor.get_gpr(rt) +
                     ");"
                 );
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RSRT("div", rs, rt);`
-        }
 
-        op DIVU(000000:rs:rt:00000:00000:011011)
-        {
-            interpret = `
+return Dis_RSRT("div", rs, rt);
+}
+}
+
+public static final class DIVU {
+static void interpret(Processor processor, int insn) {
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 processor.hilo = Processor.unsignedDivMod((((long) processor.gpr[rs]) & 0xffffffff), (((long) processor.gpr[rt]) & 0xffffffff));
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 processor.load_gpr(rs, false);
                 processor.load_gpr(rt, false);
                 processor.alter_hilo();
@@ -1490,20 +2346,33 @@ group root
                     processor.get_gpr(rt) +
                     ") & 0xffffffff);"
                 );
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RSRT("divu", rs, rt);`
-        }
 
-        op MFHI(000000:00000:00000:rd:00000:010000)
-        {
-            interpret = `
+return Dis_RSRT("divu", rs, rt);
+}
+}
+
+public static final class MFHI {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = processor.hi();
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
 
-            compile = `
+
+
                 if (rd != 0) {
                     processor.load_hilo(false);
                     processor.alter_gpr(rd);
@@ -1514,20 +2383,32 @@ group root
                         " >>> 32);"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
 
-            disasm = `return Dis_RD("mfhi", rd);`
-        }
 
-        op MFLO(000000:00000:00000:rd:00000:010010)
-        {
-            interpret = `
+return Dis_RD("mfhi", rd);
+}
+}
+
+public static final class MFLO {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = processor.lo();
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
 
-            compile = `
+
+
                 if (rd != 0) {
                     processor.load_hilo(false);
                     processor.alter_gpr(rd);
@@ -1538,18 +2419,30 @@ group root
                         " & 0xffffffff);"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
 
-            disasm = `return Dis_RD("mflo", rd);`
-        }
 
-        op MTHI(000000:rs:00000:00000:00000:010001)
-        {
-            interpret = `
+return Dis_RD("mflo", rd);
+}
+}
+
+public static final class MTHI {
+static void interpret(Processor processor, int insn) {
+	int rs = (insn>>21)&31;
+
+
+
                 processor.hilo = (processor.hilo & 0xffffffff) | (((long) processor.gpr[rs]) << 32);
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 processor.load_gpr(rs, false);
                 processor.alter_hilo();
                 processor.current_bb.emit(
@@ -1560,18 +2453,30 @@ group root
                     processor.get_gpr(rs) +
                     " << 32);"
                     );
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RS("mthi", rs);`
-        }
 
-        op MTLO(000000:rs:00000:00000:00000:010011)
-        {
-            interpret = `
+return Dis_RS("mthi", rs);
+}
+}
+
+public static final class MTLO {
+static void interpret(Processor processor, int insn) {
+	int rs = (insn>>21)&31;
+
+
+
                 processor.hilo = ((processor.hilo >>> 32) << 32) | (((long) processor.gpr[rs]) & 0xffffffff);
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 processor.load_gpr(rs, false);
                 processor.alter_hilo();
                 processor.current_bb.emit(
@@ -1582,22 +2487,35 @@ group root
                     processor.get_gpr(rs) +
                     ") & 0xffffffff);"
                     );
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RS("mtlo", rs);`
-        }
-    }
 
-    group BCU
-    {
-        op BEQ(000100:rs:rt:imm16)
-        {
-            interpret = `
+return Dis_RS("mtlo", rs);
+}
+}
+
+public static final class BEQ {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 processor.npc = (processor.gpr[rs] == processor.gpr[rt]) ? Processor.branchTarget(processor.pc, Processor.signExtend(imm16)) : (processor.pc + 4);
                 processor.stepDelayslot();
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 boolean c = (processor.gpr[rs] == processor.gpr[rt]);
                 int target = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
                 boolean loop = (target == processor.current_bb.getEntry());
@@ -1626,211 +2544,485 @@ group root
                 processor.current_bb.emit(loop ? "continue;\n" : "break;\n");
                 processor.current_bb.freeze();
                 processor.current_bb = null;
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RSRTOFFSET("beq", rs, rt, imm16, address);`
-        }
 
-        op BEQL(010100:rs:rt:imm16)
-        {
-            interpret = `
-            `
+return Dis_RSRTOFFSET("beq", rs, rt, imm16, address);
+}
+}
 
-            compile = `
-            `
+public static final class BEQL {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RSRTOFFSET("beql", rs, rt, imm16, address);`
-        }
 
-        op BGEZ(000001:rs:00001:imm16)
-        {
-            interpret = `
-            `
 
-            compile = `
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RSOFFSET("bgez", rs, imm16, address);`
-        }
 
-        op BGEZAL(000001:rs:10001:imm16)
-        {
-            interpret = `
-            `
 
-            compile = `
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RSOFFSET("bgezal", rs, imm16, address);`
-        }
 
-        op BGEZALL(000001:rs:10011:imm16)
-        {
-            interpret = `
-            `
+return Dis_RSRTOFFSET("beql", rs, rt, imm16, address);
+}
+}
 
-            compile = `
-            `
+public static final class BGEZ {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RSOFFSET("bgezall", rs, imm16, address);`
-        }
 
-        op BGEZL(000001:rs:00011:imm16)
-        {
-            interpret = `
-            `
 
-            compile = `
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RSOFFSET("bgezl", rs, imm16, address);`
-        }
 
-        op BGTZ(000111:rs:00000:imm16)
-        {
-            interpret = `
-            `
 
-            compile = `
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RSOFFSET("bgtz", rs, imm16, address);`
-        }
 
-        op BGTZL(010111:rs:00000:imm16)
-        {
-            interpret = `
-            `
+return Dis_RSOFFSET("bgez", rs, imm16, address);
+}
+}
 
-            compile = `
-            `
+public static final class BGEZAL {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RSOFFSET("bgtzl", rs, imm16, address);`
-        }
 
-        op BLEZ(000110:rs:00000:imm16)
-        {
-            interpret = `
-            `
 
-            compile = `
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RSOFFSET("blez", rs, imm16, address);`
-        }
 
-        op BLEZL(010110:rs:00000:imm16)
-        {
-            interpret = `
-            `
 
-            compile = `
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RSOFFSET("blezl", rs, imm16, address);`
-        }
 
-        op BLTZ(000001:rs:00000:imm16)
-        {
-            interpret = `
-            `
+return Dis_RSOFFSET("bgezal", rs, imm16, address);
+}
+}
 
-            compile = `
-            `
+public static final class BGEZALL {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RSOFFSET("bltz", rs, imm16, address);`
-        }
 
-        op BLTZAL(000001:rs:10000:imm16)
-        {
-            interpret = `
-            `
 
-            compile = `
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RSOFFSET("bltzal", rs, imm16, address);`
-        }
 
-        op BLTZALL(000001:rs:10010:imm16)
-        {
-            interpret = `
-            `
 
-            compile = `
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RSOFFSET("bltzall", rs, imm16, address);`
-        }
 
-        op BLTZL(000001:rs:00010:imm16)
-        {
-            interpret = `
-            `
+return Dis_RSOFFSET("bgezall", rs, imm16, address);
+}
+}
 
-            compile = `
-            `
+public static final class BGEZL {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RSOFFSET("bltzl", rs, imm16, address);`
-        }
 
-        op BNE(000101:rs:rt:imm16)
-        {
-            interpret = `
+
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+
+
+return Dis_RSOFFSET("bgezl", rs, imm16, address);
+}
+}
+
+public static final class BGTZ {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+
+
+return Dis_RSOFFSET("bgtz", rs, imm16, address);
+}
+}
+
+public static final class BGTZL {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+
+
+return Dis_RSOFFSET("bgtzl", rs, imm16, address);
+}
+}
+
+public static final class BLEZ {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+
+
+return Dis_RSOFFSET("blez", rs, imm16, address);
+}
+}
+
+public static final class BLEZL {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+
+
+return Dis_RSOFFSET("blezl", rs, imm16, address);
+}
+}
+
+public static final class BLTZ {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+
+
+return Dis_RSOFFSET("bltz", rs, imm16, address);
+}
+}
+
+public static final class BLTZAL {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+
+
+return Dis_RSOFFSET("bltzal", rs, imm16, address);
+}
+}
+
+public static final class BLTZALL {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+
+
+return Dis_RSOFFSET("bltzall", rs, imm16, address);
+}
+}
+
+public static final class BLTZL {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rs = (insn>>21)&31;
+
+
+return Dis_RSOFFSET("bltzl", rs, imm16, address);
+}
+}
+
+public static final class BNE {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 processor.npc = (processor.gpr[rs] != processor.gpr[rt]) ? Processor.branchTarget(processor.pc, Processor.signExtend(imm16)) : (processor.pc + 4);
                 processor.stepDelayslot();
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
-            `
 
-            disasm = `return Dis_RSRTOFFSET("bne", rs, rt, imm16, address);`
-        }
 
-        op BNEL(010101:rs:rt:imm16)
-        {
-            interpret = `
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
-            `
 
-            disasm = `return Dis_RSRTOFFSET("bnel", rs, rt, imm16, address);`
-        }
+return Dis_RSRTOFFSET("bne", rs, rt, imm16, address);
+}
+}
 
-        op J(000010:imm26)
-        {
-            interpret = `
-            `
+public static final class BNEL {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
-            `
 
-            disasm = `return Dis_JUMP("j", imm26, address);`
-        }
 
-        op JAL(000011:imm26)
-        {
-            interpret = `
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
-            `
 
-            disasm = `return Dis_JUMP("jal", imm26, address);`
-        }
 
-        op JALR(000000:rs:00000:rd:00000:001001)
-        {
-            interpret = `
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+return Dis_RSRTOFFSET("bnel", rs, rt, imm16, address);
+}
+}
+
+public static final class J {
+static void interpret(Processor processor, int insn) {
+	int imm26 = (insn>>0)&67108863;
+
+
+
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm26 = (insn>>0)&67108863;
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+	int imm26 = (insn>>0)&67108863;
+
+
+return Dis_JUMP("j", imm26, address);
+}
+}
+
+public static final class JAL {
+static void interpret(Processor processor, int insn) {
+	int imm26 = (insn>>0)&67108863;
+
+
+
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm26 = (insn>>0)&67108863;
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+	int imm26 = (insn>>0)&67108863;
+
+
+return Dis_JUMP("jal", imm26, address);
+}
+}
+
+public static final class JALR {
+static void interpret(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rs = (insn>>21)&31;
+
+
+
                 if (rd != 0) {
                     processor.gpr[rd] = processor.pc + 4;
                 }
                 processor.npc = processor.gpr[rs];
                 processor.stepDelayslot();
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rd = (insn>>11)&31;
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 boolean loop = (processor.tracked_gpr[rs].fixed && (processor.gpr[rs] == processor.current_bb.getEntry()));
                 if (rd != 0) {
                     processor.fix_gpr(rd, processor.pc + 4);
@@ -1844,19 +3036,32 @@ group root
                 processor.current_bb.emit("break;");
                 processor.current_bb.freeze();
                 processor.current_bb = null;
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rd = (insn>>11)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RDRS("jalr", rd, rs);`
-        }
 
-        op JR(000000:rs:00000:00000:00000:001000)
-        {
-            interpret = `
+return Dis_RDRS("jalr", rd, rs);
+}
+}
+
+public static final class JR {
+static void interpret(Processor processor, int insn) {
+	int rs = (insn>>21)&31;
+
+
+
                 processor.npc = processor.gpr[rs];
                 processor.stepDelayslot();
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int rs = (insn>>21)&31;
 
-            compile = `
+
+
                 boolean loop = (processor.tracked_gpr[rs].fixed && (processor.gpr[rs] == processor.current_bb.getEntry()));
                 processor.current_bb.emit(
                     "processor.pc = " + processor.get_gpr(rs) + ";"
@@ -1867,19 +3072,31 @@ group root
                 processor.current_bb.emit(loop ? "continue;" : "break;");
                 processor.current_bb.freeze();
                 processor.current_bb = null;
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RS("jr", rs);`
-        }
 
-        op BC1F(010001:01000:00000:imm16)
-        {
-            interpret = `
+return Dis_RS("jr", rs);
+}
+}
+
+public static final class BC1F {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+
+
+
                 processor.npc = !processor.fcr31_c ? Processor.branchTarget(processor.pc, Processor.signExtend(imm16)) : (processor.pc + 4);
                 processor.stepDelayslot();
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
 
-            compile = `
+
+
                 int target = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
                 boolean loop = (target == processor.current_bb.getEntry());
                 processor.current_bb.emit("processor.pc = (!processor.fcr31_c) ? 0x" + Integer.toHexString(target) + " : processor.pc + 4;");
@@ -1889,19 +3106,31 @@ group root
                 processor.current_bb.emit(loop ? "continue;\n" : "break;\n");
                 processor.current_bb.freeze();
                 processor.current_bb = null;
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
 
-            disasm = `return Dis_OFFSET("bc1f", imm16, address);`
-        }
 
-        op BC1T(010001:01000:00001:imm16)
-        {
-            interpret = `
+return Dis_OFFSET("bc1f", imm16, address);
+}
+}
+
+public static final class BC1T {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+
+
+
                 processor.npc = processor.fcr31_c ? Processor.branchTarget(processor.pc, Processor.signExtend(imm16)) : (processor.pc + 4);
                 processor.stepDelayslot();
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
 
-            compile = `
+
+
                 int target = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
                 boolean loop = (target == processor.current_bb.getEntry());
                 processor.current_bb.emit("processor.pc = processor.fcr31_c ? 0x" + Integer.toHexString(target) + " : (processor.pc + 4);");
@@ -1911,23 +3140,35 @@ group root
                 processor.current_bb.emit(loop ? "continue;\n" : "break;\n");
                 processor.current_bb.freeze();
                 processor.current_bb = null;
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
 
-            disasm = `return Dis_OFFSET("bc1t", imm16, address);`
-        }
 
-        op BC1FL(010001:01000:00010:imm16)
-        {
-            interpret = `
+return Dis_OFFSET("bc1t", imm16, address);
+}
+}
+
+public static final class BC1FL {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+
+
+
                 if (!processor.fcr31_c) {
                     processor.npc = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
                     processor.stepDelayslot();
                 } else {
                     processor.pc += 4;
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
 
-            compile = `
+
+
                 int target = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
                 boolean loop = (target == processor.current_bb.getEntry());
                 processor.current_bb.emit(
@@ -1945,23 +3186,35 @@ group root
                 processor.current_bb.emit(loop ? "continue;\n" : "break;\n");
                 processor.current_bb.freeze();
                 processor.current_bb = null;
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
 
-            disasm = `return Dis_OFFSET("bc1fl", imm16, address);`
-        }
 
-        op BC1TL(010001:01000:00011:imm16)
-        {
-            interpret = `
+return Dis_OFFSET("bc1fl", imm16, address);
+}
+}
+
+public static final class BC1TL {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+
+
+
                 if (processor.fcr31_c) {
                     processor.npc = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
                     processor.stepDelayslot();
                 } else {
                     processor.pc += 4;
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
 
-            compile = `
+
+
                 int target = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
                 boolean loop = (target == processor.current_bb.getEntry());
                 processor.current_bb.emit(
@@ -1979,202 +3232,498 @@ group root
                 processor.current_bb.emit(loop ? "continue;\n" : "break;\n");
                 processor.current_bb.freeze();
                 processor.current_bb = null;
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
 
-            disasm = `return Dis_OFFSET("bc1tl", imm16, address);`
-        }
-    }
 
-    group LSU
-    {
-        op LB(100000:rs:rt:imm16)
-        {
-            interpret = `
-            `
+return Dis_OFFSET("bc1tl", imm16, address);
+}
+}
 
-            compile = `
-            `
+public static final class LB {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RTIMMRS("lb", rt, rs, imm16);`
-        }
 
-        op LBU(100100:rs:rt:imm16)
-        {
-            interpret = `
-            `
 
-            compile = `
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RTIMMRS("lbu", rt, rs, imm16);`
-        }
 
-        op LH(100001:rs:rt:imm16)
-        {
-            interpret = `
-            `
 
-            compile = `
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RTIMMRS("lh", rt, rs, imm16);`
-        }
 
-        op LHU(100101:rs:rt:imm16)
-        {
-            interpret = `
-            `
+return Dis_RTIMMRS("lb", rt, rs, imm16);
+}
+}
 
-            compile = `
-            `
+public static final class LBU {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RTIMMRS("lhu", rt, rs, imm16);`
-        }
 
-        op LW(100011:rs:rt:imm16)
-        {
-            interpret = `
-            `
 
-            compile = `
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RTIMMRS("lw", rt, rs, imm16);`
-        }
 
-        op LWL(100010:rs:rt:imm16)
-        {
-            interpret = `
-            `
 
-            compile = `
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RTIMMRS("lwl", rt, rs, imm16);`
-        }
 
-        op LWR(100110:rs:rt:imm16)
-        {
-            interpret = `
-            `
+return Dis_RTIMMRS("lbu", rt, rs, imm16);
+}
+}
 
-            compile = `
-            `
+public static final class LH {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RTIMMRS("lwr", rt, rs, imm16);`
-        }
 
-        op SB(101000:rs:rt:imm16)
-        {
-            interpret = `
-            `
 
-            compile = `
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RTIMMRS("sb", rt, rs, imm16);`
-        }
 
-        op SH(101001:rs:rt:imm16)
-        {
-            interpret = `
-            `
 
-            compile = `
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RTIMMRS("sh", rt, rs, imm16);`
-        }
 
-        op SW(101011:rs:rt:imm16)
-        {
-            interpret = `
-            `
+return Dis_RTIMMRS("lh", rt, rs, imm16);
+}
+}
 
-            compile = `
-            `
+public static final class LHU {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RTIMMRS("sw", rt, rs, imm16);`
-        }
 
-        op SWL(101010:rs:rt:imm16)
-        {
-            interpret = `
-            `
 
-            compile = `
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RTIMMRS("swl", rt, rs, imm16);`
-        }
 
-        op SWR(101110:rs:rt:imm16)
-        {
-            interpret = `
-            `
 
-            compile = `
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RTIMMRS("swr", rt, rs, imm16);`
-        }
 
-        op LL(110000:rs:rt:imm16)
-        {
-            interpret = `
-            `
+return Dis_RTIMMRS("lhu", rt, rs, imm16);
+}
+}
 
-            compile = `
-            `
+public static final class LW {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RTIMMRS("ll", rt, rs, imm16);`
-        }
 
-        op SC(111000:rs:rt:imm16)
-        {
-            interpret = `
-            `
 
-            compile = `
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_RTIMMRS("sc", rt, rs, imm16);`
-        }
 
-        op LWC1(110001:rs:ft:imm16)
-        {
-            interpret = `
-            `
 
-            compile = `
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_FTIMMRS("lwc1", ft, rs, imm16);`
-        }
 
-        op SWC1(111001:rs:ft:imm16)
-        {
-            interpret = `
-            `
+return Dis_RTIMMRS("lw", rt, rs, imm16);
+}
+}
 
-            compile = `
-            `
+public static final class LWL {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
 
-            disasm = `return Dis_FTIMMRS("swc1", ft, rs, imm16);`
-        }
-    }
 
-    group FPU
-    {
-        // cycles = `pitch/latency/repeat rate`
 
-        op ADD_S(010001:10000:ft:fs:fd:000000)
-        {
-            interpret = `
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+return Dis_RTIMMRS("lwl", rt, rs, imm16);
+}
+}
+
+public static final class LWR {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+return Dis_RTIMMRS("lwr", rt, rs, imm16);
+}
+}
+
+public static final class SB {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+return Dis_RTIMMRS("sb", rt, rs, imm16);
+}
+}
+
+public static final class SH {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+return Dis_RTIMMRS("sh", rt, rs, imm16);
+}
+}
+
+public static final class SW {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+return Dis_RTIMMRS("sw", rt, rs, imm16);
+}
+}
+
+public static final class SWL {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+return Dis_RTIMMRS("swl", rt, rs, imm16);
+}
+}
+
+public static final class SWR {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+return Dis_RTIMMRS("swr", rt, rs, imm16);
+}
+}
+
+public static final class LL {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+return Dis_RTIMMRS("ll", rt, rs, imm16);
+}
+}
+
+public static final class SC {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int rt = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+return Dis_RTIMMRS("sc", rt, rs, imm16);
+}
+}
+
+public static final class LWC1 {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int ft = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int ft = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int ft = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+return Dis_FTIMMRS("lwc1", ft, rs, imm16);
+}
+}
+
+public static final class SWC1 {
+static void interpret(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int ft = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static void compile(Processor processor, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int ft = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+	int imm16 = (insn>>0)&65535;
+	int ft = (insn>>16)&31;
+	int rs = (insn>>21)&31;
+
+
+return Dis_FTIMMRS("swc1", ft, rs, imm16);
+}
+}
+
+public static final class ADD_S {
+static void interpret(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
+	int ft = (insn>>16)&31;
+
+
+
                 processor.fpr[fd] = processor.fpr[fs] + processor.fpr[ft];
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
+	int ft = (insn>>16)&31;
 
-            compile = `
+
+
                 if (processor.tracked_fpr[fs].fixed & processor.tracked_fpr[ft].fixed) {
                     processor.fix_fpr(fd, processor.fpr[fs] + processor.fpr[ft]);
                 } else {
@@ -2190,18 +3739,36 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
+	int ft = (insn>>16)&31;
 
-            disasm = `return Dis_FDFSFT("add.s", fd, fs, ft);`
-        }
 
-        op SUB_S(010001:10000:ft:fs:fd:000001)
-        {
-            interpret = `
+return Dis_FDFSFT("add.s", fd, fs, ft);
+}
+}
+
+public static final class SUB_S {
+static void interpret(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
+	int ft = (insn>>16)&31;
+
+
+
                 processor.fpr[fd] = processor.fpr[fs] - processor.fpr[ft];
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
+	int ft = (insn>>16)&31;
 
-            compile = `
+
+
                 if (processor.tracked_fpr[fs].fixed & processor.tracked_fpr[ft].fixed) {
                     processor.fix_fpr(fd, processor.fpr[fs] - processor.fpr[ft]);
                 } else {
@@ -2217,18 +3784,36 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
+	int ft = (insn>>16)&31;
 
-            disasm = `return Dis_FDFSFT("sub.s", fd, fs, ft);`
-        }
 
-        op MUL_S(010001:10000:ft:fs:fd:000010)
-        {
-            interpret = `
+return Dis_FDFSFT("sub.s", fd, fs, ft);
+}
+}
+
+public static final class MUL_S {
+static void interpret(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
+	int ft = (insn>>16)&31;
+
+
+
                 processor.fpr[fd] = processor.fpr[fs] * processor.fpr[ft];
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
+	int ft = (insn>>16)&31;
 
-            compile = `
+
+
                 if (processor.tracked_fpr[fs].fixed & processor.tracked_fpr[ft].fixed) {
                     processor.fix_fpr(fd, processor.fpr[fs] * processor.fpr[ft]);
                 } else {
@@ -2244,18 +3829,36 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
+	int ft = (insn>>16)&31;
 
-            disasm = `return Dis_FDFSFT("mul.s", fd, fs, ft);`
-        }
 
-        op DIV_S(010001:10000:ft:fs:fd:000011)
-        {
-            interpret = `
+return Dis_FDFSFT("mul.s", fd, fs, ft);
+}
+}
+
+public static final class DIV_S {
+static void interpret(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
+	int ft = (insn>>16)&31;
+
+
+
                 processor.fpr[fd] = processor.fpr[fs] / processor.fpr[ft];
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
+	int ft = (insn>>16)&31;
 
-            compile = `
+
+
                 if (processor.tracked_fpr[fs].fixed & processor.tracked_fpr[ft].fixed) {
                     processor.fix_fpr(fd, processor.fpr[fs] / processor.fpr[ft]);
                 } else {
@@ -2271,18 +3874,34 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
+	int ft = (insn>>16)&31;
 
-            disasm = `return Dis_FDFSFT("div.s", fd, fs, ft);`
-        }
 
-        op SQRT_S(010001:10000:00000:fs:fd:000100)
-        {
-            interpret = `
+return Dis_FDFSFT("div.s", fd, fs, ft);
+}
+}
+
+public static final class SQRT_S {
+static void interpret(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
+
+
+
                 processor.fpr[fd] = (float) Math.sqrt(processor.fpr[fs]);
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
 
-            compile = `
+
+
                 if (processor.tracked_fpr[fs].fixed) {
                     processor.fix_fpr(fd, (float) Math.sqrt(processor.fpr[fs]));
                 } else {
@@ -2295,18 +3914,33 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
 
-            disasm = `return Dis_FDFS("sqrt.s", fd, fs);`
-        }
 
-        op ABS_S(010001:10000:00000:fs:fd:000101)
-        {
-            interpret = `
+return Dis_FDFS("sqrt.s", fd, fs);
+}
+}
+
+public static final class ABS_S {
+static void interpret(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
+
+
+
                 processor.fpr[fd] = Math.abs(processor.fpr[fs]);
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
 
-            compile = `
+
+
                 if (processor.tracked_fpr[fs].fixed) {
                     processor.fix_fpr(fd, Math.abs(processor.fpr[fs]));
                 } else {
@@ -2319,18 +3953,33 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
 
-            disasm = `return Dis_FDFS("abs.s", fd, fs);`
-        }
 
-        op MOV_S(010001:10000:00000:fs:fd:000110)
-        {
-            interpret = `
+return Dis_FDFS("abs.s", fd, fs);
+}
+}
+
+public static final class MOV_S {
+static void interpret(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
+
+
+
                 processor.fpr[fd] = processor.fpr[fs];
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
 
-            compile = `
+
+
                 if (processor.tracked_fpr[fs].fixed) {
                     processor.fix_fpr(fd, processor.fpr[fs]);
                 } else {
@@ -2343,18 +3992,33 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
 
-            disasm = `return Dis_FDFS("mov.s", fd, fs);`
-        }
 
-        op NEG_S(010001:10000:00000:fs:fd:000111)
-        {
-            interpret = `
+return Dis_FDFS("mov.s", fd, fs);
+}
+}
+
+public static final class NEG_S {
+static void interpret(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
+
+
+
                 processor.fpr[fd] = 0.0f - processor.fpr[fs];
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
 
-            compile = `
+
+
                 if (processor.tracked_fpr[fs].fixed) {
                     processor.fix_fpr(fd, 0.0f - processor.fpr[fs]);
                 } else {
@@ -2367,18 +4031,33 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
 
-            disasm = `return Dis_FDFS("neg.s", fd, fs);`
-        }
 
-        op ROUND_W_S(010001:10000:00000:fs:fd:001100)
-        {
-            interpret = `
+return Dis_FDFS("neg.s", fd, fs);
+}
+}
+
+public static final class ROUND_W_S {
+static void interpret(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
+
+
+
                 processor.fpr[fd] = Float.intBitsToFloat(Math.round(processor.fpr[fs]));
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
 
-            compile = `
+
+
                 if (processor.tracked_fpr[fs].fixed) {
                     processor.fix_fpr(fd, Float.intBitsToFloat(Math.round(processor.fpr[fs])));
                 } else {
@@ -2391,18 +4070,33 @@ group root
                         "));"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
 
-            disasm = `return Dis_FDFS("round.w.s", fd, fs);`
-        }
 
-        op TRUNC_W_S(010001:10000:00000:fs:fd:001101)
-        {
-            interpret = `
+return Dis_FDFS("round.w.s", fd, fs);
+}
+}
+
+public static final class TRUNC_W_S {
+static void interpret(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
+
+
+
                 processor.fpr[fd] = Float.intBitsToFloat((int) (processor.fpr[fs]));
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
 
-            compile = `
+
+
                 if (processor.tracked_fpr[fs].fixed) {
                     processor.fix_fpr(fd, Float.intBitsToFloat((int) (processor.fpr[fs])));
                 } else {
@@ -2415,18 +4109,33 @@ group root
                         "));"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
 
-            disasm = `return Dis_FDFS("trunc.w.s", fd, fs);`
-        }
 
-        op CEIL_W_S(010001:10000:00000:fs:fd:001110)
-        {
-            interpret = `
+return Dis_FDFS("trunc.w.s", fd, fs);
+}
+}
+
+public static final class CEIL_W_S {
+static void interpret(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
+
+
+
                 processor.fpr[fd] = Float.intBitsToFloat((int) Math.ceil(processor.fpr[fs]));
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
 
-            compile = `
+
+
                 if (processor.tracked_fpr[fs].fixed) {
                     processor.fix_fpr(fd, Float.intBitsToFloat((int) Math.ceil(processor.fpr[fs])));
                 } else {
@@ -2439,18 +4148,33 @@ group root
                         "));"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
 
-            disasm = `return Dis_FDFS("ceil.w.s", fd, fs);`
-        }
 
-        op FLOOR_W_S(010001:10000:00000:fs:fd:001111)
-        {
-            interpret = `
+return Dis_FDFS("ceil.w.s", fd, fs);
+}
+}
+
+public static final class FLOOR_W_S {
+static void interpret(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
+
+
+
                 processor.fpr[fd] = Float.intBitsToFloat((int) Math.floor(processor.fpr[fs]));
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
 
-            compile = `
+
+
                 if (processor.tracked_fpr[fs].fixed) {
                     processor.fix_fpr(fd, Float.intBitsToFloat((int) Math.floor(processor.fpr[fs])));
                 } else {
@@ -2463,18 +4187,33 @@ group root
                         "));"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
 
-            disasm = `return Dis_FDFS("floor.w.s", fd, fs);`
-        }
 
-        op CVT_S_W(010001:10100:00000:fs:fd:100000)
-        {
-            interpret = `
+return Dis_FDFS("floor.w.s", fd, fs);
+}
+}
+
+public static final class CVT_S_W {
+static void interpret(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
+
+
+
                 processor.fpr[fd] = (float) Float.floatToRawIntBits(processor.fpr[fs]);
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
 
-            compile = `
+
+
                 if (processor.tracked_fpr[fs].fixed) {
                     processor.fix_fpr(fd, (float) Float.floatToRawIntBits(processor.fpr[fs]));
                 } else {
@@ -2487,14 +4226,24 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
 
-            disasm = `return Dis_FDFS("cvt.s.w", fd, fs);`
-        }
 
-        op CVT_W_S(010001:10000:00000:fs:fd:100100)
-        {
-            interpret = `
+return Dis_FDFS("cvt.s.w", fd, fs);
+}
+}
+
+public static final class CVT_W_S {
+static void interpret(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
+
+
+
                 switch (processor.fcr31_rm) {
                     case 1:
                         processor.fpr[fd] = Float.intBitsToFloat((int) (processor.fpr[fs]));
@@ -2509,9 +4258,14 @@ group root
                         processor.fpr[fd] = Float.intBitsToFloat((int) Math.rint(processor.fpr[fs]));
                         break;
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
 
-            compile = `
+
+
                 processor.load_fpr(fs, false);
                 processor.alter_fpr(fd);
                 processor.current_bb.emit(
@@ -2542,14 +4296,25 @@ group root
                             "break;\n" +
                     "}\n"
                 );
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int fd = (insn>>6)&31;
+	int fs = (insn>>11)&31;
 
-            disasm = `return Dis_FDFS("cvt.w.s", fd, fs);`
-        }
 
-        op C_COND_S(010001:10000:ft:fs:00000:11:fcond)
-        {
-            interpret = `
+return Dis_FDFS("cvt.w.s", fd, fs);
+}
+}
+
+public static final class C_COND_S {
+static void interpret(Processor processor, int insn) {
+	int fcond = (insn>>0)&15;
+	int fs = (insn>>11)&31;
+	int ft = (insn>>16)&31;
+
+
+
                 float x = processor.fpr[fs];
                 float y = processor.fpr[ft];
                 boolean unordered = ((fcond & 1) != 0) && (Float.isNaN(x) || Float.isNaN(y));
@@ -2566,9 +4331,15 @@ group root
 
                     processor.fcr31_c = less || equal;
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int fcond = (insn>>0)&15;
+	int fs = (insn>>11)&31;
+	int ft = (insn>>16)&31;
 
-            compile = `
+
+
                 processor.load_fpr(fs, false);
                 processor.load_fpr(ft, false);
                 processor.current_bb.emit(
@@ -2587,20 +4358,36 @@ group root
                         "processor.fcr31_c = less || equal;" +
                     "}\n}\n"
                 );
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int fcond = (insn>>0)&15;
+	int fs = (insn>>11)&31;
+	int ft = (insn>>16)&31;
 
-            disasm = `return Dis_Cconds(fcond, fs, ft);`
-        }
 
-        op MFC1(010001:00000:rt:fs:00000:000000)
-        {
-            interpret = `
+return Dis_Cconds(fcond, fs, ft);
+}
+}
+
+public static final class MFC1 {
+static void interpret(Processor processor, int insn) {
+	int fs = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+
+
+
                 if (rt != 0) {
                     processor.gpr[rt] = Float.floatToRawIntBits(processor.fpr[fs]);
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int fs = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            compile = `
+
+
                 if (rt != 0) {
                     if (processor.tracked_fpr[fs].fixed) {
                         processor.fix_gpr(rt, Float.floatToRawIntBits(processor.fpr[fs]));
@@ -2615,14 +4402,24 @@ group root
                         );
                     }
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int fs = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            disasm = `return Dis_RTFS("mfc1", rt, fs);`
-        }
 
-        op CFC1(010001:00010:rt:c1cr:00000:000000)
-        {
-            interpret = `
+return Dis_RTFS("mfc1", rt, fs);
+}
+}
+
+public static final class CFC1 {
+static void interpret(Processor processor, int insn) {
+	int c1cr = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+
+
+
                 if (rt != 0) {
                     switch (c1cr) {
                     case 0:                        
@@ -2634,9 +4431,14 @@ group root
                         break;
                     }
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int c1cr = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            compile = `
+
+
                 if (rt != 0) {
                     switch (c1cr) {
                     case 0:
@@ -2656,19 +4458,33 @@ group root
                         break;
                     }
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int c1cr = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
 
-            disasm = `return Dis_RTFC("cfc1", rt, c1cr);`
-        }
+return Dis_RTFC("cfc1", rt, c1cr);
+}
+}
 
-        op MTC1(010001:00100:rt:fs:00000:000000)
-        {
-            interpret = `
+public static final class MTC1 {
+static void interpret(Processor processor, int insn) {
+	int fs = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+
+
+
                 processor.fpr[fs] = Float.intBitsToFloat(processor.gpr[rt]);
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int fs = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            compile = `
+
+
                 if (processor.tracked_gpr[rt].fixed) {
                     processor.fix_fpr(fs, Float.intBitsToFloat(processor.gpr[rt]));
                 } else {
@@ -2681,14 +4497,24 @@ group root
                         ");"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int fs = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            disasm = `return Dis_RTFS("mtc1", rt, fs);`
-        }
 
-        op CTC1(010001:00110:rt:c1cr:00000:000000)
-        {
-            interpret = `
+return Dis_RTFS("mtc1", rt, fs);
+}
+}
+
+public static final class CTC1 {
+static void interpret(Processor processor, int insn) {
+	int c1cr = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+
+
+
                 if (c1cr == 31) {
                     int bits = processor.gpr[rt] & 0x01800003;
                     processor.fcr31_rm = bits & 3;
@@ -2696,9 +4522,14 @@ group root
                     processor.fcr31_fs = (bits > 1);
                     processor.fcr31_c = (bits >> 1) == 1;
                 }
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int c1cr = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            compile = `
+
+
                 if (c1cr == 31) {
                     processor.load_gpr(rt, false);
                     processor.current_bb.emit(
@@ -2711,56 +4542,119 @@ group root
                         "}\n"
                     );
                 }
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int c1cr = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            disasm = `return Dis_RTFC("ctc1", rt, c1cr);`
-        }
-    }
 
-    group COP0
-    {
-        op MFC0(010000:00000:rt:c0dr:00000:000000)
-        {
-            interpret = `
-            `
+return Dis_RTFC("ctc1", rt, c1cr);
+}
+}
 
-            compile = `
-            `
+public static final class MFC0 {
+static void interpret(Processor processor, int insn) {
+	int c0dr = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            disasm = `return "Unimplemented MFC0";`
-        }
 
-        op CFC0(010000:00010:rt:c0cr:00000:000000)
-        {
-            interpret = `
-            `
 
-            compile = `
-            `
+            
+}
+static void compile(Processor processor, int insn) {
+	int c0dr = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            disasm = `return "Unimplemented CFC0";`
-        }
 
-        op MTC0(010000:00100:rt:c0dr:00000:000000)
-        {
-            interpret = `
-            `
 
-            compile = `
-            `
+            
+}
+static String disasm(int address, int insn) {
+	int c0dr = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            disasm = `return "Unimplemented MTC0";`
-        }
 
-        op CTC0(010000:00110:rt:c0cr:00000:000000)
-        {
-            interpret = `
-            `
+return "Unimplemented MFC0";
+}
+}
 
-            compile = `
-            `
+public static final class CFC0 {
+static void interpret(Processor processor, int insn) {
+	int c0cr = (insn>>11)&31;
+	int rt = (insn>>16)&31;
 
-            disasm = `return "Unimplemented CTC0";`
-        }
-    }
+
+
+            
+}
+static void compile(Processor processor, int insn) {
+	int c0cr = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+	int c0cr = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+
+
+return "Unimplemented CFC0";
+}
+}
+
+public static final class MTC0 {
+static void interpret(Processor processor, int insn) {
+	int c0dr = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+
+
+
+            
+}
+static void compile(Processor processor, int insn) {
+	int c0dr = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+	int c0dr = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+
+
+return "Unimplemented MTC0";
+}
+}
+
+public static final class CTC0 {
+static void interpret(Processor processor, int insn) {
+	int c0cr = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+
+
+
+            
+}
+static void compile(Processor processor, int insn) {
+	int c0cr = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+
+
+
+            
+}
+static String disasm(int address, int insn) {
+	int c0cr = (insn>>11)&31;
+	int rt = (insn>>16)&31;
+
+
+return "Unimplemented CTC0";
+}
+}
+
 }
