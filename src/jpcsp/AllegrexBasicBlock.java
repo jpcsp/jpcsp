@@ -37,6 +37,10 @@ public class AllegrexBasicBlock {
     protected Processor processor = null;
     protected int execution_count = 1;
 
+    public final int getEntry() {
+        return entry;
+    }
+    
     public AllegrexBasicBlock(Processor processor, int entry) {
         this.processor = processor;
         this.entry = entry;
