@@ -827,9 +827,27 @@ group root
         op SEB(011111:00000:rt:rd:10000:100001)
         {
             interpret = `
+                if (rd != 0) {
+                    processor.gpr[rd] = Processor.signExtend8(processor.gpr[rt]);
+                }
             `
 
             compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, Processor.signExtend8(processor.gpr[rt]));
+                } else {
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = Processor.signExtend8(" +
+                        processor.get_gpr(rt) +
+                        ");"
+                    );
+                }
             `
 
             disasm = `return Dis_RDRT("seb", rd, rt);`
@@ -838,53 +856,148 @@ group root
         op SEH(011111:00000:rt:rd:11000:100000)
         {
             interpret = `
+                if (rd != 0) {
+                    processor.gpr[rd] = Processor.signExtend(processor.gpr[rt]);
+                }
             `
 
             compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, Processor.signExtend(processor.gpr[rt]));
+                } else {
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = Processor.signExtend(" +
+                        processor.get_gpr(rt) +
+                        ");"
+                    );
+                }
             `
 
-            disasm = `return Dis_RDRT("seb", rd, rt);`
+            disasm = `return Dis_RDRT("seh", rd, rt);`
         }
 
         op BITREV(011111:00000:rt:rd:10100:100000)
         {
             interpret = `
+                if (rd != 0) {
+                    processor.gpr[rd] = Integer.reverse(processor.gpr[rt]);
+                }
             `
 
             compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, Integer.reverse(processor.gpr[rt]));
+                } else {
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = Integer.reverse(" +
+                        processor.get_gpr(rt) +
+                        ");"
+                    );
+                }
             `
 
-            disasm = `return Dis_RDRT("seb", rd, rt);`
+            disasm = `return Dis_RDRT("bitrev", rd, rt);`
         }
 
         op WSBH(011111:00000:rt:rd:00010:100000)
         {
             interpret = `
+                if (rd != 0) {
+                    processor.gpr[rd] = Integer.rotateRight(Integer.reverseBytes(processor.gpr[rt]), 16);
+                }
             `
 
             compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, Integer.rotateRight(Integer.reverseBytes(processor.gpr[rt]), 16));
+                } else {
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = Integer.rotateRight(Integer.reverseBytes(" +
+                        processor.get_gpr(rt) +
+                        "), 16);"
+                    );
+                }
             `
 
-            disasm = `return Dis_RDRT("seb", rd, rt);`
+            disasm = `return Dis_RDRT("wsbh", rd, rt);`
         }
 
         op WSBW(011111:00000:rt:rd:00011:100000)
         {
             interpret = `
+                if (rd != 0) {
+                    processor.gpr[rd] = Integer.reverseBytes(processor.gpr[rt]);
+                }
             `
 
             compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, Integer.reverseBytes(processor.gpr[rt]));
+                } else {
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = Integer.reverseBytes(" +
+                        processor.get_gpr(rt) +
+                        ");"
+                    );
+                }
             `
 
-            disasm = `return Dis_RDRT("seb", rd, rt);`
+            disasm = `return Dis_RDRT("wsbw", rd, rt);`
         }
 
         op MOVZ(000000:rs:rt:rd:00000:001010)
         {
             interpret = `
+                if ((rd != 0) && (processor.gpr[rt] == 0)) {
+                    processor.gpr[rd] = processor.gpr[rs];
+                }
             `
 
             compile = `
+                if (rd != 0) {
+                    if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                        if (processor.gpr[rt] == 0) {
+                            processor.fix_gpr(rd, processor.gpr[rs]);
+                        }
+                    } else {
+                        processor.load_gpr(rs, false);
+                        processor.load_gpr(rt, false);
+                        processor.alter_gpr(rd);
+                        processor.current_bb.emit(
+                            "if (" +
+                            processor.get_gpr(rt) +
+                            " == 0) {\n" +
+                            processor.get_gpr(rd) +
+                            " = " +
+                            processor.get_gpr(rs) +
+                            ";}\n"
+                        );
+                    }
+                }
             `
 
             disasm = `return Dis_RDRSRT("movz", rd, rs, rt);`
@@ -893,9 +1006,32 @@ group root
         op MOVN(000000:rs:rt:rd:00000:001011)
         {
             interpret = `
+                if ((rd != 0) && (processor.gpr[rt] != 0)) {
+                    processor.gpr[rd] = processor.gpr[rs];
+                }
             `
 
             compile = `
+                if (rd != 0) {
+                    if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                        if (processor.gpr[rt] != 0) {
+                            processor.fix_gpr(rd, processor.gpr[rs]);
+                        }
+                    } else {
+                        processor.load_gpr(rs, false);
+                        processor.load_gpr(rt, false);
+                        processor.alter_gpr(rd);
+                        processor.current_bb.emit(
+                            "if (" +
+                            processor.get_gpr(rt) +
+                            " != 0) {\n" +
+                            processor.get_gpr(rd) +
+                            " = " +
+                            processor.get_gpr(rs) +
+                            ";}\n"
+                        );
+                    }
+                }
             `
 
             disasm = `return Dis_RDRSRT("movn", rd, rs, rt);`
@@ -904,9 +1040,29 @@ group root
         op MAX(000000:rs:rt:rd:00000:101100)
         {
             interpret = `
+                if (rd != 0) {
+                    processor.gpr[rd] = Processor.max(processor.gpr[rs], processor.gpr[rt]);
+                }
             `
 
             compile = `
+                if (rd != 0) {
+                    if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                        processor.fix_gpr(rd, Processor.max(processor.gpr[rs], processor.gpr[rt]));
+                    } else {
+                        processor.load_gpr(rs, false);
+                        processor.load_gpr(rt, false);
+                        processor.alter_gpr(rd);
+                        processor.current_bb.emit(
+                            processor.get_gpr(rd) +
+                            " = Processor.max(" +
+                            processor.get_gpr(rs) +
+                            ", " +
+                            processor.get_gpr(rt) +
+                            "));"
+                        );
+                    }
+                }
             `
 
             disasm = `return Dis_RDRSRT("max", rd, rs, rt);`
@@ -915,9 +1071,29 @@ group root
         op MIN(000000:rs:rt:rd:00000:101101)
         {
             interpret = `
+                if (rd != 0) {
+                    processor.gpr[rd] = Processor.min(processor.gpr[rs], processor.gpr[rt]);
+                }
             `
 
             compile = `
+                if (rd != 0) {
+                    if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                        processor.fix_gpr(rd, Processor.min(processor.gpr[rs], processor.gpr[rt]));
+                    } else {
+                        processor.load_gpr(rs, false);
+                        processor.load_gpr(rt, false);
+                        processor.alter_gpr(rd);
+                        processor.current_bb.emit(
+                            processor.get_gpr(rd) +
+                            " = Processor.min(" +
+                            processor.get_gpr(rs) +
+                            ", " +
+                            processor.get_gpr(rt) +
+                            "));"
+                        );
+                    }
+                }
             `
 
             disasm = `return Dis_RDRSRT("min", rd, rs, rt);`
@@ -926,31 +1102,86 @@ group root
         op CLZ(000000:rs:00000:rd:00000:010110)
         {
             interpret = `
+                if (rd != 0) {
+                    processor.gpr[rd] = Integer.numberOfLeadingZeros(processor.gpr[rs]);
+                }
             `
 
             compile = `
+                if (rd != 0) {
+                    if (processor.tracked_gpr[rs].fixed) {
+                        processor.fix_gpr(rd, Integer.numberOfLeadingZeros(processor.gpr[rs]));
+                    } else {
+                        processor.load_gpr(rs, false);
+                        processor.alter_gpr(rd);
+                        processor.current_bb.emit(
+                            processor.get_gpr(rd) +
+                            " = Integer.numberOfLeadingZeros(" +
+                            processor.get_gpr(rs) +
+                            ");"
+                        );
+                    }
+                }
             `
 
-            disasm = `return Dis_RDRS("seb", rd, rs);`
+            disasm = `return Dis_RDRS("clz", rd, rs);`
         }
 
         op CLO(000000:rs:00000:rd:00000:010111)
         {
             interpret = `
+                if (rd != 0) {
+                    processor.gpr[rd] = Integer.numberOfLeadingZeros(~processor.gpr[rs]);
+                }
             `
 
             compile = `
+                if (rd != 0) {
+                    if (processor.tracked_gpr[rs].fixed) {
+                        processor.fix_gpr(rd, Integer.numberOfLeadingZeros(~processor.gpr[rs]));
+                    } else {
+                        processor.load_gpr(rs, false);
+                        processor.alter_gpr(rd);
+                        processor.current_bb.emit(
+                            processor.get_gpr(rd) +
+                            " = Integer.numberOfLeadingZeros(~" +
+                            processor.get_gpr(rs) +
+                            ");"
+                        );
+                    }
+                }
             `
 
-            disasm = `return Dis_RDRS("seb", rd, rs);`
+            disasm = `return Dis_RDRS("clo", rd, rs);`
         }
 
         op EXT(011111:rs:rt:msb:lsb:000000)
         {
             interpret = `
+                if (rt != 0) {
+                    processor.gpr[rt] = Processor.extractBits(processor.gpr[rs], lsb, msb+1);
+                }
             `
 
             compile = `
+                if (rt != 0) {
+                    if (processor.tracked_gpr[rs].fixed) {
+                        processor.fix_gpr(rt, Processor.extractBits(processor.gpr[rs], lsb, msb+1));
+                    } else {
+                        processor.load_gpr(rs, false);
+                        processor.alter_gpr(rt);
+                        processor.current_bb.emit(
+                            processor.get_gpr(rt) +
+                            " = Processor.extractBits(" +
+                            processor.get_gpr(rs) +
+                            ", " +
+                            lsb +
+                            ", " +
+                            (msb+1) +
+                            ");"
+                        );
+                    }
+                }
             `
 
             disasm = `return Dis_Ext(rt, rs, lsb, msb);`
@@ -959,9 +1190,33 @@ group root
         op INS(011111:rs:rt:msb:lsb:000100)
         {
             interpret = `
+                if (rt != 0) {
+                    processor.gpr[rt] = Processor.insertBits(processor.gpr[rt], processor.gpr[rs], lsb, msb);
+                }
             `
 
             compile = `
+                if (rt != 0) {
+                    if (processor.tracked_gpr[rs].fixed) {
+                        processor.fix_gpr(rt, Processor.insertBits(processor.gpr[rt], processor.gpr[rs], lsb, msb));
+                    } else {
+                        processor.load_gpr(rs, false);
+                        processor.load_gpr(rt, false);
+                        processor.alter_gpr(rt);
+                        processor.current_bb.emit(
+                            processor.get_gpr(rt) +
+                            " = Processor.insertBits(" +
+                            processor.get_gpr(rt) +
+                            ", " +
+                            processor.get_gpr(rs) +
+                            ", " +
+                            lsb +
+                            ", " +
+                            msb +
+                            ");"
+                        );
+                    }
+                }
             `
 
             disasm = `return Dis_Ins(rt, rs, lsb, msb);`
@@ -973,9 +1228,21 @@ group root
         op MULT(000000:rs:rt:00000:00000:011000)
         {
             interpret = `
+                processor.hilo = ((long) processor.gpr[rs]) * ((long) processor.gpr[rt]);
             `
 
             compile = `
+                processor.load_gpr(rs, false);
+                processor.load_gpr(rt, false);
+                processor.alter_hilo();
+                processor.current_bb.emit(
+                    processor.get_hilo() +
+                    " = ((long) " +
+                    processor.get_gpr(rs) +
+                    ") * ((long) " +
+                    processor.get_gpr(rt) +
+                    ");"
+                );
             `
 
             disasm = `return Dis_RSRT("mult", rs, rt);`
@@ -984,9 +1251,21 @@ group root
         op MULTU(000000:rs:rt:00000:00000:011001)
         {
             interpret = `
+                processor.hilo = (((long) processor.gpr[rs]) & 0xffffffff) * (((long) processor.gpr[rt]) & 0xffffffff);
             `
 
             compile = `
+                processor.load_gpr(rs, false);
+                processor.load_gpr(rt, false);
+                processor.alter_hilo();
+                processor.current_bb.emit(
+                    processor.get_hilo() +
+                    " = (((long) " +
+                    processor.get_gpr(rs) +
+                    ") & 0xffffffff) * (((long) " +
+                    processor.get_gpr(rt) +
+                    ") & 0xffffffff);"
+                );
             `
 
             disasm = `return Dis_RSRT("multu", rs, rt);`
@@ -995,9 +1274,22 @@ group root
         op MADD(000000:rs:rt:00000:00000:011100)
         {
             interpret = `
+                processor.hilo += ((long) processor.gpr[rs]) * ((long) processor.gpr[rt]);
             `
 
             compile = `
+                processor.load_gpr(rs, false);
+                processor.load_gpr(rt, false);
+                processor.load_hilo(false);
+                processor.alter_hilo();
+                processor.current_bb.emit(
+                    processor.get_hilo() +
+                    " += ((long) " +
+                    processor.get_gpr(rs) +
+                    ") * ((long) " +
+                    processor.get_gpr(rt) +
+                    ");"
+                );
             `
 
             disasm = `return Dis_RSRT("madd", rs, rt);`
@@ -1006,9 +1298,22 @@ group root
         op MADDU(000000:rs:rt:00000:00000:011101)
         {
             interpret = `
+                processor.hilo += (((long) processor.gpr[rs]) & 0xffffffff) * (((long) processor.gpr[rt]) & 0xffffffff);
             `
 
             compile = `
+                processor.load_gpr(rs, false);
+                processor.load_gpr(rt, false);
+                processor.load_hilo(false);
+                processor.alter_hilo();
+                processor.current_bb.emit(
+                    processor.get_hilo() +
+                    " += (((long) " +
+                    processor.get_gpr(rs) +
+                    ") & 0xffffffff) * (((long) " +
+                    processor.get_gpr(rt) +
+                    ") & 0xffffffff);"
+                );
             `
 
             disasm = `return Dis_RSRT("maddu", rs, rt);`
@@ -1017,9 +1322,22 @@ group root
         op MSUB(000000:rs:rt:00000:00000:101110)
         {
             interpret = `
+                processor.hilo -= ((long) processor.gpr[rs]) * ((long) processor.gpr[rt]);
             `
 
             compile = `
+                processor.load_gpr(rs, false);
+                processor.load_gpr(rt, false);
+                processor.load_hilo(false);
+                processor.alter_hilo();
+                processor.current_bb.emit(
+                    processor.get_hilo() +
+                    " += ((long) " +
+                    processor.get_gpr(rs) +
+                    ") * ((long) " +
+                    processor.get_gpr(rt) +
+                    ");"
+                );
             `
 
             disasm = `return Dis_RSRT("msub", rs, rt);`
@@ -1028,9 +1346,22 @@ group root
         op MSUBU(000000:rs:rt:00000:00000:101111)
         {
             interpret = `
+                processor.hilo -= (((long) processor.gpr[rs]) & 0xffffffff) * (((long) processor.gpr[rt]) & 0xffffffff);
             `
 
             compile = `
+                processor.load_gpr(rs, false);
+                processor.load_gpr(rt, false);
+                processor.load_hilo(false);
+                processor.alter_hilo();
+                processor.current_bb.emit(
+                    processor.get_hilo() +
+                    " -= (((long) " +
+                    processor.get_gpr(rs) +
+                    ") & 0xffffffff) * (((long) " +
+                    processor.get_gpr(rt) +
+                    ") & 0xffffffff);"
+                );
             `
 
             disasm = `return Dis_RSRT("msubu", rs, rt);`
@@ -1039,9 +1370,21 @@ group root
         op DIV(000000:rs:rt:00000:00000:011010)
         {
             interpret = `
+                processor.hilo = Processor.signedDivMod(processor.gpr[rs], processor.gpr[rt]);
             `
 
             compile = `
+                processor.load_gpr(rs, false);
+                processor.load_gpr(rt, false);
+                processor.alter_hilo();
+                processor.current_bb.emit(
+                    processor.get_hilo() +
+                    " = Processor.signedDivMod(" +
+                    processor.get_gpr(rs) +
+                    ", " +
+                    processor.get_gpr(rt) +
+                    ");"
+                );
             `
 
             disasm = `return Dis_RSRT("div", rs, rt);`
@@ -1050,9 +1393,21 @@ group root
         op DIVU(000000:rs:rt:00000:00000:011011)
         {
             interpret = `
+                processor.hilo = Processor.unsignedDivMod((((long) processor.gpr[rs]) & 0xffffffff), (((long) processor.gpr[rt]) & 0xffffffff));
             `
 
             compile = `
+                processor.load_gpr(rs, false);
+                processor.load_gpr(rt, false);
+                processor.alter_hilo();
+                processor.current_bb.emit(
+                    processor.get_hilo() +
+                    " = Processor.unsignedDivMod(((long) " +
+                    processor.get_gpr(rs) +
+                    ") & 0xffffffff, ((long) " +
+                    processor.get_gpr(rt) +
+                    ") & 0xffffffff);"
+                );
             `
 
             disasm = `return Dis_RSRT("divu", rs, rt);`
@@ -1061,9 +1416,22 @@ group root
         op MFHI(000000:00000:00000:rd:00000:010000)
         {
             interpret = `
+                if (rd != 0) {
+                    processor.gpr[rd] = processor.hi();
+                }
             `
 
             compile = `
+                if (rd != 0) {
+                    processor.load_hilo(false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = (int) (" +
+                        processor.get_hilo() +
+                        " >>> 32);"
+                    );
+                }
             `
 
             disasm = `return Dis_RD("mfhi", rd);`
@@ -1072,9 +1440,22 @@ group root
         op MFLO(000000:00000:00000:rd:00000:010010)
         {
             interpret = `
+                if (rd != 0) {
+                    processor.gpr[rd] = processor.lo();
+                }
             `
 
             compile = `
+                if (rd != 0) {
+                    processor.load_hilo(false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = (int) (" +
+                        processor.get_hilo() +
+                        " & 0xffffffff);"
+                    );
+                }
             `
 
             disasm = `return Dis_RD("mflo", rd);`
@@ -1083,9 +1464,20 @@ group root
         op MTHI(000000:rs:00000:00000:00000:010001)
         {
             interpret = `
+                processor.hilo = (processor.hilo & 0xffffffff) | (((long) processor.gpr[rs]) << 32);
             `
 
             compile = `
+                processor.load_gpr(rs, false);
+                processor.alter_hilo();
+                processor.current_bb.emit(
+                    processor.get_hilo() +
+                    " = (" +
+                    processor.get_hilo() +
+                    " & 0xffffffff) | (((long) " +
+                    processor.get_gpr(rs) +
+                    " << 32);"
+                    );
             `
 
             disasm = `return Dis_RS("mthi", rs);`
@@ -1094,9 +1486,20 @@ group root
         op MTLO(000000:rs:00000:00000:00000:010011)
         {
             interpret = `
+                processor.hilo = ((processor.hilo >>> 32) << 32) | (((long) processor.gpr[rs]) & 0xffffffff);
             `
 
             compile = `
+                processor.load_gpr(rs, false);
+                processor.alter_hilo();
+                processor.current_bb.emit(
+                    processor.get_hilo() +
+                    " = ((" +
+                    processor.get_hilo() +
+                    " >>> 32) << 32) | (((long) " +
+                    processor.get_gpr(rs) +
+                    ") & 0xffffffff);"
+                    );
             `
 
             disasm = `return Dis_RS("mtlo", rs);`
