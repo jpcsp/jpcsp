@@ -25,8 +25,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import jpcsp.Emulator;
 import jpcsp.GeneralJpcspException;
 import jpcsp.Memory;
@@ -40,6 +45,8 @@ public class ThreadMan {
     private static HashMap<Integer, SceKernelThreadInfo> threadlist;
     private SceKernelThreadInfo current_thread;
     private int rootThreadUid;
+    private SceKernelThreadInfo idle0, idle1;
+    private int continuousIdleCycles; // watch dog timer
 
     // stack allocation
     private static int stackAllocated;
@@ -65,12 +72,47 @@ public class ThreadMan {
         // Clear stack allocation info
         stackAllocated = 0;
 
+        install_idle_threads();
+
         current_thread = new SceKernelThreadInfo("root", entry_addr, 0x20, 0x40000, attr);
         rootThreadUid = current_thread.uid;
 
         // Switch in this thread
         current_thread.status = PspThreadStatus.PSP_THREAD_RUNNING;
         current_thread.restoreContext();
+    }
+
+    private void install_idle_threads() {
+        // Generate 2 idle threads which can toggle between each other when there are no ready threads
+        int instruction_addiu = // addiu a0, zr, 0
+            ((jpcsp.AllegrexOpcodes.ADDIU & 0x3f) << 26)
+            | ((0 & 0x1f) << 21)
+            | ((4 & 0x1f) << 16);
+        int instruction_lui = // lui ra, 0x08000000
+            ((jpcsp.AllegrexOpcodes.LUI & 0x3f) << 26)
+            | ((31 & 0x1f) << 16)
+            | (0x0800 & 0x0000ffff);
+        int instruction_jr = // jr ra
+            ((jpcsp.AllegrexOpcodes.SPECIAL & 0x3f) << 26)
+            | (jpcsp.AllegrexOpcodes.JR & 0x3f)
+            | ((31 & 0x1f) << 21);
+        int instruction_syscall = // syscall <code>
+            ((jpcsp.AllegrexOpcodes.SPECIAL & 0x3f) << 26)
+            | (jpcsp.AllegrexOpcodes.SYSCALL & 0x3f)
+            | ((0x201c & 0x000fffff) << 6);
+
+        Memory.get_instance().write32(MemoryMap.START_RAM + 0, instruction_addiu);
+        Memory.get_instance().write32(MemoryMap.START_RAM + 4, instruction_lui);
+        Memory.get_instance().write32(MemoryMap.START_RAM + 8, instruction_jr);
+        Memory.get_instance().write32(MemoryMap.START_RAM + 12, instruction_syscall);
+
+        idle0 = new SceKernelThreadInfo("idle0", MemoryMap.START_RAM, 0x7f, 0x0, 0x0);
+        idle0.status = PspThreadStatus.PSP_THREAD_READY;
+
+        idle1 = new SceKernelThreadInfo("idle1", MemoryMap.START_RAM, 0x7f, 0x0, 0x0);
+        idle1.status = PspThreadStatus.PSP_THREAD_READY;
+
+        continuousIdleCycles = 0;
     }
 
     /** to be called from the main emulation loop */
@@ -89,10 +131,21 @@ public class ThreadMan {
                 current_thread.status = PspThreadStatus.PSP_THREAD_STOPPED;
                 contextSwitch(nextThread());
             }
+
+            // Watch dog timer
+            if (current_thread == idle0 || current_thread == idle1) {
+                continuousIdleCycles++;
+                // TODO figure out a decent number of cycles to wait
+                if (continuousIdleCycles > 1000) {
+                    System.out.println("Watch dog timer - pausing emulator");
+                    Emulator.PauseEmu();
+                }
+            } else {
+                continuousIdleCycles = 0;
+            }
         } else {
-            // idle thread
-            // Look for a new thread to switch in
-            contextSwitch(nextThread());
+            // We always need to be in a thread! we shouldn't get here.
+            System.out.println("No ready threads!");
         }
 
         Iterator<SceKernelThreadInfo> it = threadlist.values().iterator();
@@ -137,6 +190,13 @@ public class ThreadMan {
                 current_thread.status = PspThreadStatus.PSP_THREAD_READY;
             // save registers
             current_thread.saveContext();
+
+            /*
+            System.out.println("saveContext SceUID=" + Integer.toHexString(current_thread.uid)
+                + " name:" + current_thread.name
+                + " PC:" + Integer.toHexString(current_thread.pcreg)
+                + " NPC:" + Integer.toHexString(current_thread.npcreg));
+            */
         }
 
         if (newthread != null) {
@@ -145,7 +205,16 @@ public class ThreadMan {
             newthread.wakeupCount++; // check
             // restore registers
             newthread.restoreContext();
-            System.out.println("ThreadMan: switched to thread SceUID=" + Integer.toHexString(newthread.uid) + " name:'" + newthread.name + "'");
+
+            //System.out.println("ThreadMan: switched to thread SceUID=" + Integer.toHexString(newthread.uid) + " name:'" + newthread.name + "'");
+            /*
+            System.out.println("restoreContext SceUID=" + Integer.toHexString(newthread.uid)
+                + " name:" + newthread.name
+                + " PC:" + Integer.toHexString(newthread.pcreg)
+                + " NPC:" + Integer.toHexString(newthread.npcreg));
+            */
+
+            //Emulator.PauseEmu();
         } else {
             System.out.println("No ready threads - pausing emulator");
             Emulator.PauseEmu();
@@ -154,43 +223,27 @@ public class ThreadMan {
         current_thread = newthread;
     }
 
-    // A ring buffer would be so nice here...
-    // TODO thread priorities
     // This function must have the property of never returning current_thread, unless current_thread is already null
     private SceKernelThreadInfo nextThread() {
+        Collection<SceKernelThreadInfo> c;
+        List<SceKernelThreadInfo> list;
         Iterator<SceKernelThreadInfo> it;
         SceKernelThreadInfo found = null;
-        boolean foundcurrent = (current_thread == null) ? true : false;
 
-        // Find the thread AFTER the current thread with status PSP_THREAD_READY
-        it = threadlist.values().iterator();
+        // Find the thread with status PSP_THREAD_READY and the highest priority
+        // In this implementation low priority threads can get starved
+        c = threadlist.values();
+        list = new LinkedList<SceKernelThreadInfo>(c);
+        Collections.sort(list, idle0); // We need an instance of SceKernelThreadInfo for the comparator, so we use idle0
+        it = list.iterator();
         while(it.hasNext()) {
             SceKernelThreadInfo thread = it.next();
+            //System.out.println("nextThread pri=" + Integer.toHexString(thread.currentPriority) + " name:" + thread.name + " status:" + thread.status);
 
-            if (!foundcurrent && thread == current_thread) {
-                foundcurrent = true;
-            } else if (foundcurrent && thread.status == PspThreadStatus.PSP_THREAD_READY) {
+            if (thread != current_thread &&
+                thread.status == PspThreadStatus.PSP_THREAD_READY) {
                 found = thread;
                 break;
-            }
-        }
-
-        if (found == null && current_thread != null) {
-            // Find the thread BEFORE the current thread with status PSP_THREAD_READY
-            foundcurrent = false;
-            it = threadlist.values().iterator();
-            while(it.hasNext()) {
-                SceKernelThreadInfo thread = it.next();
-
-                if (!foundcurrent && thread == current_thread) {
-                    foundcurrent = true;
-                    break;
-                }
-
-                if (!foundcurrent && thread.status == PspThreadStatus.PSP_THREAD_READY) {
-                    found = thread;
-                    break;
-                }
             }
         }
 
@@ -206,7 +259,7 @@ public class ThreadMan {
         SceKernelThreadInfo thread = new SceKernelThreadInfo(name, a1, a2, a3, t0);
 
         System.out.println("sceKernelCreateThread SceUID=" + Integer.toHexString(thread.uid)
-            + " PC=" + Integer.toHexString(thread.pcreg) + " name:'" + thread.name + "' attr:" + Integer.toHexString(t1));
+            + " name:'" + thread.name + "' PC=" + Integer.toHexString(thread.pcreg) + " attr:" + Integer.toHexString(t1));
 
         Emulator.getProcessor().gpr[2] = thread.uid;
         //return thread.uid;
@@ -249,7 +302,7 @@ public class ThreadMan {
         if (thread == null) {
             Emulator.getProcessor().gpr[2] = 0x80020198; //notfoundthread
         } else {
-            //System.out.println("sceKernelStartThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
+            System.out.println("sceKernelStartThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
             // Set return value before context switch!
             Emulator.getProcessor().gpr[2] = 0;
 
@@ -263,24 +316,26 @@ public class ThreadMan {
     }
 
     /** exit the current thread */
-    public void ThreadMan_sceKernelExitThread(int a0) {
-        System.out.println("sceKernelExitThread SceUID=" + Integer.toHexString(current_thread.uid) + " name:'" + current_thread.name + "'");
+    public void ThreadMan_sceKernelExitThread(int exitStatus) {
+        System.out.println("sceKernelExitThread SceUID=" + Integer.toHexString(current_thread.uid)
+            + " name:'" + current_thread.name + "' exitStatus:" + exitStatus);
+
         current_thread.status = PspThreadStatus.PSP_THREAD_STOPPED;
-        current_thread.exitStatus = a0;
+        current_thread.exitStatus = exitStatus;
         contextSwitch(nextThread());
 
         Emulator.getProcessor().gpr[2] = 0;
-        //return 0;
     }
 
     /** exit the current thread, then delete it */
-    public void ThreadMan_sceKernelExitDeleteThread(int a0) throws GeneralJpcspException {
+    public void ThreadMan_sceKernelExitDeleteThread(int exitStatus) throws GeneralJpcspException {
         SceKernelThreadInfo thread = current_thread; // save a reference for post context switch operations
-        System.out.println("sceKernelExitDeleteThread SceUID=" + Integer.toHexString(current_thread.uid) + " name:'" + current_thread.name + "'");
+        System.out.println("sceKernelExitDeleteThread SceUID=" + Integer.toHexString(current_thread.uid)
+            + " name:'" + current_thread.name + "' exitStatus:" + exitStatus);
 
         // Exit
         current_thread.status = PspThreadStatus.PSP_THREAD_STOPPED;
-        current_thread.exitStatus = a0;
+        current_thread.exitStatus = exitStatus;
         contextSwitch(nextThread());
 
         // Mark thread for deletion
@@ -323,7 +378,8 @@ public class ThreadMan {
     /** sleep the current thread for a certain number of microseconds */
     public void ThreadMan_sceKernelDelayThread(int a0) {
         current_thread.status = PspThreadStatus.PSP_THREAD_WAITING;
-        current_thread.delaysteps = a0; // TODO delaysteps = a0 * steprate
+        //current_thread.delaysteps = a0 * 200000000 / 1000000; // TODO delaysteps = a0 * steprate
+        current_thread.delaysteps = a0; // test version
         current_thread.do_callbacks = false;
         contextSwitch(nextThread());
 
@@ -335,7 +391,8 @@ public class ThreadMan {
         String name = readStringZ(Memory.get_instance().mainmemory, (a0 & 0x3fffffff) - MemoryMap.START_RAM);
         SceKernelCallbackInfo callback = new SceKernelCallbackInfo(name, current_thread.uid, a1, a2);
 
-        System.out.println("sceKernelCreateCallback SceUID=" + Integer.toHexString(callback.uid) + " PC=" + Integer.toHexString(callback.callback_addr) + " name:'" + callback.name + "'");
+        System.out.println("sceKernelCreateCallback SceUID=" + Integer.toHexString(callback.uid)
+            + " PC=" + Integer.toHexString(callback.callback_addr) + " name:'" + callback.name + "'");
 
         Emulator.getProcessor().gpr[2] = callback.uid;
     }
@@ -432,7 +489,7 @@ public class ThreadMan {
         return p;
     }
 
-    private class SceKernelThreadInfo {
+    private class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         // SceKernelThreadInfo <http://psp.jim.sh/pspsdk-doc/structSceKernelThreadInfo.html>
         private String name;
         private int attr;
@@ -460,7 +517,7 @@ public class ThreadMan {
         private int[] gpr;
         private float[] fpr;
         private float[] vpr;
-        private int delaysteps;
+        private long delaysteps;
         private boolean do_delete;
         private boolean do_callbacks; // in this implementation, only valid for PSP_THREAD_WAITING and PSP_THREAD_SUSPEND
 
@@ -529,7 +586,18 @@ public class ThreadMan {
                 cpu.gpr[i] = gpr[i];
             }
 
+            // Assuming context switching only happens on syscall,
+            // we always execute npc after a syscall,
+            // so we can set pc = npc regardless of cop0.status.bd.
+            //if (!cpu.cop0_status_bd)
+                cpu.pc = cpu.npc;
+
             // TODO check attr for PSP_THREAD_ATTR_VFPU and restore vfpu registers
+        }
+
+        /** For use in the scheduler */
+        public int compare(SceKernelThreadInfo o1, SceKernelThreadInfo o2) {
+            return o1.currentPriority - o2.currentPriority;
         }
     }
 }
