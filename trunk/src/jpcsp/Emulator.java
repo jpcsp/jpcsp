@@ -64,6 +64,11 @@ public class Emulator implements Runnable {
         if (!mediaImplemented) {
             throw new IOException("This kind of file format still not supported.");
         }
+
+        // Delete breakpoints and reset to PC
+        if (debugger != null) {
+            debugger.resetDebugger();
+        }
     }
 
     private void delay(long numberCyclesDelay) {
