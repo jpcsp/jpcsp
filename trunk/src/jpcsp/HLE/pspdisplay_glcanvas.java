@@ -17,17 +17,21 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE;
 
-import jpcsp.graphics.VideoEngine;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.nio.Buffer;
 //import com.sun.opengl.util.Animator;
 import com.sun.opengl.util.texture.Texture;
 import com.sun.opengl.util.texture.TextureData;
 import com.sun.opengl.util.texture.TextureIO;
-import java.nio.Buffer;
 import javax.media.opengl.GL;
 import javax.media.opengl.GLAutoDrawable;
 import javax.media.opengl.GLCanvas;
 import javax.media.opengl.GLEventListener;
 import javax.media.opengl.Threading;
+import jpcsp.graphics.VideoEngine;
 
 /**
  *
@@ -44,13 +48,12 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
 
     private BufferInfo currentBufferInfo;
     private BufferInfo lastBufferInfo;
-    private BufferInfo deleteBufferInfo;
+    private List<BufferInfo> deferredDeleteList;
 
     private int reshape_width, reshape_height;
 
     private boolean doupdatetexture; // Call currentBufferInfo.updateTexture()
     private boolean docreatetexture; // Call currentBufferInfo.createTexture()
-    private boolean dodeletetexture; // Call deleteBufferInfo.dispose()
 
     public static GL getDrawable(){
         return get_instance().getGL();
@@ -72,15 +75,31 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
         //final Animator animator = new Animator(this);
         //animator.start();
 
-        waitObject = new Object();
+        //waitObject = new Object(); // broken
 
         currentBufferInfo = null;
         lastBufferInfo = null;
-        deleteBufferInfo = null;
+        deferredDeleteList = Collections.synchronizedList(new LinkedList<BufferInfo>());
 
         doupdatetexture = false;
         docreatetexture = false;
-        dodeletetexture = false;
+    }
+
+    /** call this when loading new media, otherwise the previous app's buffers
+     * may get mixed up with the new app's so won't refresh properly. */
+    public void invalidateBufferCache() {
+        if (lastBufferInfo != null) {
+            deferredDeleteList.add(lastBufferInfo);
+            lastBufferInfo = null;
+        }
+
+        if (currentBufferInfo != null) {
+            deferredDeleteList.add(currentBufferInfo);
+            currentBufferInfo = null;
+        }
+
+        doupdatetexture = false;
+        docreatetexture = false;
     }
 
     // Here pspdisplay shares its GL pixel data with pspdisplay_glcanvas
@@ -107,14 +126,7 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
             //System.out.println("new buffer");
             if (lastBufferInfo != null) {
                 //System.out.println("deleting old buffer");
-                deleteBufferInfo = lastBufferInfo;
-                dodeletetexture = true;
-
-                /* testing: this should fail when opening a 2nd pbp because it gets called from emu thread
-                deleteBufferInfo.dispose();
-                deleteBufferInfo = null;
-                dodeletetexture = false;
-                */
+                deferredDeleteList.add(lastBufferInfo);
             }
 
             lastBufferInfo = currentBufferInfo;
@@ -127,7 +139,7 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
 
     // If UPDATE_BLOCKS = true, then this function blocks, so don't hold the DisplayList lock when you call it
     public void updateImage() {
-        //System.out.println("update tex (deferred)");
+        //System.out.println("updateImage (deferred)");
 
         // Update the texture from the shared Buffer
         doupdatetexture = true;
@@ -179,10 +191,15 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
         GL gl = drawable.getGL();
         gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
 
-        if (dodeletetexture) {
-            deleteBufferInfo.dispose();
-            deleteBufferInfo = null;
-            dodeletetexture = false;
+        // Apparently we only need to use a synchronized when we use an iterator, not for adding new elements
+        // http://java.sun.com/javase/6/docs/api/java/util/Collections.html#synchronizedList(java.util.List)
+        synchronized(deferredDeleteList) {
+            Iterator<BufferInfo> it = deferredDeleteList.iterator();
+            while(it.hasNext()) {
+                BufferInfo bufferInfo = it.next();
+                bufferInfo.dispose();
+                it.remove();
+            }
         }
 
         if (currentBufferInfo != null) {
@@ -197,7 +214,8 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
                 currentBufferInfo.updateTexture();
                 doupdatetexture = false;
             }
-/*
+
+/* disabled for micket
             // Execute queued display lists
             VideoEngine ve = VideoEngine.getEngine(gl, true, true);
             ve.update();
@@ -218,7 +236,6 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
             gl.glBegin(GL.GL_QUADS);
                 //gl.glNormal3f(0.0f, 0.0f, 1.0f);
 
-                // 512x512 texture, so tex coords go for 480x272
                 gl.glTexCoord2f(0.0f, 0.0f);
                 gl.glVertex3f(0.0f, 0.0f, 0.0f);
 
@@ -231,7 +248,8 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
                 gl.glTexCoord2f(0.0f, currentBufferInfo.v);
                 gl.glVertex3f(0.0f, 272.0f, 0.0f);
             gl.glEnd();
-/*
+
+/* disabled for micket
             // Restore VideoEngine's GL_PROJECTION matrix
             gl.glMatrixMode(GL.GL_PROJECTION);
             gl.glPopMatrix();
@@ -273,6 +291,7 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
                 case 1: pixelType = GL.GL_UNSIGNED_SHORT_1_5_5_5_REV; break;
                 case 2: pixelType = GL.GL_UNSIGNED_SHORT_4_4_4_4_REV; break;
                 default:
+                // Both of these formats should be doing the same thing
                 //case 3: pixelType = GL.GL_UNSIGNED_INT_8_8_8_8_REV; break;
                 case 3: pixelType = GL.GL_UNSIGNED_BYTE; break;
             }
@@ -309,6 +328,7 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
             if (tex != null) {
                 //System.err.println("dispose " + Thread.currentThread());
                 tex.dispose();
+                tex = null;
             }
         }
 
