@@ -72,11 +72,11 @@ public class pspge {
         DisplayList.addDisplayList(displayList);
         log("The list " + displayList.toString());
 
+        if (displayList.status == DisplayList.QUEUED)
+            pspdisplay.get_instance().setDirty(true);
 
         Emulator.getProcessor().gpr[2] = displayList.id;
         DisplayList.Unlock();
-
-        pspdisplay_glcanvas.get_instance().updateImage();
     }
 
     public void sceGeListDeQueue(int qid) {
@@ -93,8 +93,6 @@ public class pspge {
     }
 
     public void sceGeListUpdateStallAddr(int qid, int stallAddress) {
-        boolean update = false;
-
         DisplayList.Lock();
         DisplayList displayList = DisplayList.getDisplayList(qid);
         if (displayList != null) {
@@ -108,7 +106,7 @@ public class pspge {
             displayList.stallAddress = stallAddress;
             if (displayList.pc != displayList.stallAddress) {
                 displayList.status = DisplayList.QUEUED;
-                update = true;
+                pspdisplay.get_instance().setDirty(true);
             }
 
             Emulator.getProcessor().gpr[2] = 0;
@@ -117,9 +115,6 @@ public class pspge {
             Emulator.getProcessor().gpr[2] = -1;
         }
         DisplayList.Unlock();
-
-        if (update)
-            pspdisplay_glcanvas.get_instance().updateImage();
     }
 
     /* Not sure if this is correct

@@ -47,8 +47,6 @@ public class pspdisplay {
     //private pspdisplay_frame frame;
     private pspdisplay_glcanvas frame;
     private long lastUpdate;
-    private long lastWrite;
-    private int lastWriteCount;
     private int bottomaddr;
     private boolean refreshRequired;
 
@@ -80,9 +78,12 @@ public class pspdisplay {
         bufferwidth = 512;
         pixelformat = PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_8888;
         sync = 0;
+
         bottomaddr = topaddr + bufferwidth * height * pixelformat.getBytesPerPixel();
 
+        pspdisplay_glcanvas.get_instance().invalidateBufferCache();
         updateDispSettings();
+        refreshRequired = true;
     }
 
     private void updateDispSettings() {
@@ -102,11 +103,8 @@ public class pspdisplay {
         long now = System.currentTimeMillis();
         if (now - lastUpdate > 1000 / 60)
         {
-            if (refreshRequired /*&&
-                // Stopped writing to vram 10th second ago, or written enough times to get a complete frame
-                (now - lastWrite > 100 || lastWriteCount >= 480 * 272)*/) {
+            if (refreshRequired) {
                 pspdisplay_glcanvas.get_instance().updateImage();
-                //lastWriteCount = 0;
                 refreshRequired = false;
             }
             lastUpdate = now;
@@ -125,6 +123,7 @@ public class pspdisplay {
             this.height = height;
 
             bottomaddr = topaddr + bufferwidth * height * pixelformat.getBytesPerPixel();
+            updateDispSettings();
             refreshRequired = true;
 
             Emulator.getProcessor().gpr[2] = 0;
@@ -153,64 +152,55 @@ public class pspdisplay {
             this.sync = sync;
 
             bottomaddr = topaddr + bufferwidth * height * this.pixelformat.getBytesPerPixel();
-            refreshRequired = true;
-
-            //System.out.println("sceDisplaySetFrameBuf topaddr=" + Integer.toHexString(topaddr) + " psm=" + this.pixelformat + " bpp=" + this.pixelformat.getBytesPerPixel());
             updateDispSettings();
+            refreshRequired = true;
 
             Emulator.getProcessor().gpr[2] = 0;
         }
     }
 
-    public void sceDisplayWaitVblankStart()
-    {
+    public void sceDisplayWaitVblankStart() {
         //System.out.println("sceDisplayWaitVblankStart");
-
+        long now = System.currentTimeMillis();
         int micros;
 
-        // TODO calculate time to next frame in microseconds, with 60 frames per second
-        micros = 1;
+        // Delay up to the next frame update (60 fps)
+        // TODO it would probably be more accurate if we suspend the current thread, and then wake it up when the vblank starts
+        if (now - lastUpdate < 1000 / 60) {
+            micros = (int)(now - lastUpdate) * 1000;
+        } else {
+            micros = 0;
+        }
         //ThreadMan.get_instance().ThreadMan_sceKernelDelayThread(micros);
+        ThreadMan.get_instance().ThreadMan_sceKernelDelayThread(0); // test version
 
         Emulator.getProcessor().gpr[2] = 0;
     }
 
+    /** Use this to indicate a refresh is required.
+     * We are cheating and not updating at true 60 fps, but only at 60 fps AND dirty bit is set. */
+    public void setDirty(boolean dirty) {
+        refreshRequired = dirty;
+    }
+
     public void write8(int address, int data) {
         address &= 0x3fffffff;
-        //if (address >= MemoryMap.START_VRAM && address <= MemoryMap.END_VRAM)
-        {
-            if (address >= topaddr && address < bottomaddr) {
-                refreshRequired = true;
-            }
-
-            //lastWrite = System.currentTimeMillis();
-            //lastWriteCount++;
+        if (address >= topaddr && address < bottomaddr) {
+            setDirty(true);
         }
     }
 
     public void write16(int address, int data) {
         address &= 0x3fffffff;
-        //if (address >= MemoryMap.START_VRAM && address <= MemoryMap.END_VRAM)
-        {
-            if (address >= topaddr && address < bottomaddr) {
-                refreshRequired = true;
-            }
-
-            //lastWrite = System.currentTimeMillis();
-            //lastWriteCount++;
+        if (address >= topaddr && address < bottomaddr) {
+            setDirty(true);
         }
     }
 
     public void write32(int address, int data) {
         address &= 0x3fffffff;
-        //if (address >= MemoryMap.START_VRAM && address <= MemoryMap.END_VRAM)
-        {
-            if (address >= topaddr && address < bottomaddr) {
-                refreshRequired = true;
-            }
-
-            //lastWrite = System.currentTimeMillis();
-            //lastWriteCount++;
+        if (address >= topaddr && address < bottomaddr) {
+            setDirty(true);
         }
     }
 
