@@ -41,12 +41,12 @@ import jpcsp.util.OptionPaneMultiple;
  * @author  shadow
  */
 public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOwner{
-    int DebuggerPC;
-    Emulator emu;
+    private int DebuggerPC;
+    private Emulator emu;
     private DefaultListModel listmodel = new DefaultListModel();
-    int opcode_address; // store the address of the opcode used for offsetdecode
-    DisasmOpcodes disOp = new DisasmOpcodes();
-    ArrayList<Integer> breakpoints = new ArrayList<Integer>();
+    private int opcode_address; // store the address of the opcode used for offsetdecode
+    private DisasmOpcodes disOp = new DisasmOpcodes();
+    private ArrayList<Integer> breakpoints = new ArrayList<Integer>();
     /** Creates new form DisassemblerFrame */
     public DisassemblerFrame(Emulator emu) {
         this.emu=emu;
@@ -57,6 +57,12 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         RefreshDebugger();
     }
 
+    /** Delete breakpoints and reset to PC */
+    public void resetDebugger() {
+        DeleteAllBreakpoints();
+        DebuggerPC = 0;
+        RefreshDebugger();
+    }
 
     public void RefreshDebugger() {
         int t;
@@ -694,24 +700,30 @@ private void disasmListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:
 }//GEN-LAST:event_disasmListMouseClicked
 
 private void AddBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddBreakpointActionPerformed
-          String value =(String)disasmList.getSelectedValue();
-          if(value != null)
-          {
+    String value =(String)disasmList.getSelectedValue();
+    if (value != null) {
+        try {
             String address = value.substring(0, 8);
             int addr = Integer.parseInt(address,16);
             breakpoints.add(addr);
             RefreshDebugger();
-          }
-          else
-          {
-            JpcspDialogManager.showInformation(this, "Breakpoint Help : " + "Select the line to add a breakpoint to.");
-          }
+        } catch(NumberFormatException e) {
+            // Ignore it, probably already a breakpoint there
+        }
+    } else {
+        JpcspDialogManager.showInformation(this, "Breakpoint Help : " + "Select the line to add a breakpoint to.");
+    }
 }//GEN-LAST:event_AddBreakpointActionPerformed
 
 private void DeleteAllBreakpointsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DeleteAllBreakpointsActionPerformed
-       if(!breakpoints.isEmpty())
-            breakpoints.clear();
+    DeleteAllBreakpoints();
 }//GEN-LAST:event_DeleteAllBreakpointsActionPerformed
+
+public void DeleteAllBreakpoints() {
+    if (!breakpoints.isEmpty())
+        breakpoints.clear();
+}
+
 
 private void DeleteBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DeleteBreakpointActionPerformed
           String value =(String)disasmList.getSelectedValue();
