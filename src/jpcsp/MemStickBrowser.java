@@ -141,7 +141,7 @@ private void LoadButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
    //step 4: okay we can load eboot.pbp now :)
            try {
             emu.load(eboot.getPath());
-            pspiofilemgr.get_instance().getfilepath("ms0/PSP/GAME/" + (String)browserlist.getSelectedValue());
+            pspiofilemgr.get_instance().setfilepath("ms0/PSP/GAME/" + (String)browserlist.getSelectedValue());
             gui.setTitle(MetaInformation.FULL_NAME + " - " + (String)browserlist.getSelectedValue());
         } catch (IOException e) {
             e.printStackTrace();

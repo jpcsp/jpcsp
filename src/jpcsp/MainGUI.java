@@ -58,23 +58,23 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     /** Creates new form MainGUI */
     public MainGUI() {
         emulator = new Emulator(this);
-        
+
         /*next two lines are for overlay menus over joglcanvas*/
         JPopupMenu.setDefaultLightWeightPopupEnabled(false);
         ToolTipManager.sharedInstance().setLightWeightPopupEnabled(false);
         //end of
-        
+
         initComponents();
         int pos[] = Settings.get_instance().readWindowPos("mainwindow");
         setLocation(pos[0], pos[1]);
         setTitle(version);
-        
+
         /*add glcanvas to frame and pack frame to get the canvas size*/
         getContentPane().add(pspdisplay_glcanvas.get_instance(), java.awt.BorderLayout.CENTER);
         pspdisplay_glcanvas.get_instance().addKeyListener(this);
         this.addComponentListener(this);
         pack();
-        
+
         //logging console window stuff
         consolewin = new ConsoleWindow();
         snapConsole = Settings.get_instance().readBoolOptions("guisettings/snapLogwindow");
@@ -87,7 +87,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         }
         if (Settings.get_instance().readBoolOptions("guisettings/openLogwindow"))
             consolewin.setVisible(true);
-        
+
     }
 
     /** This method is called from within the constructor to
@@ -288,7 +288,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 private void ToggleConsoleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ToggleConsoleActionPerformed
     if (!consolewin.isVisible()) {
         mainwindowPos = this.getLocation();
-        
+
         if (snapConsole)
             consolewin.setLocation(mainwindowPos.x, mainwindowPos.y + getHeight());
     }
@@ -339,7 +339,7 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
             emulator.load(file.getPath());
             String findpath = file.getParent();
             System.out.println(findpath);
-            pspiofilemgr.get_instance().getfilepath(findpath);
+            pspiofilemgr.get_instance().setfilepath(findpath);
             this.setTitle(version + " - " + file.getName());
         } catch (IOException e) {
             e.printStackTrace();
@@ -459,7 +459,7 @@ private void exitEmu() {
     if (Settings.get_instance().readBoolOptions("guisettings/saveWindowPos"))
         Settings.get_instance().writeWindowPos("mainwindow", getLocation());
     Settings.get_instance().writeBoolOptions("guisettings/snapLogwindow", snapConsole);
-    
+
     System.exit(0);
 }
 
@@ -563,7 +563,7 @@ public void RefreshButtons()
             Point newPos = this.getLocation();
             Point consolePos = consolewin.getLocation();
             Dimension mainwindowSize = this.getSize();
-            
+
             if (consolePos.x == mainwindowPos.x &&
                 consolePos.y == mainwindowPos.y + mainwindowSize.height) {
                 consolewin.setLocation(newPos.x, newPos.y + mainwindowSize.height);
