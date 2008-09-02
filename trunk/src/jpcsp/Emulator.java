@@ -517,7 +517,10 @@ public class Emulator implements Runnable {
         stop = true ;
         run = resume = pause = false;
     }*/
-
+    public static void setFpsTitle(String fps)
+    {
+         gui.setMainTitle(fps);
+    }
     public static Processor getProcessor() {
         return cpu;
     }
