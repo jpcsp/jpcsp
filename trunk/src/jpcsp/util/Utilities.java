@@ -68,7 +68,7 @@ public class Utilities {
         //readByte() isn't more correct? (already exists one readUWord() method to unsign values)
         return (f.readUnsignedByte() | (f.readUnsignedByte() << 8) | (f.readUnsignedByte() << 16) | (f.readUnsignedByte() << 24));
     }
-    
+
     public static void readBytesToBuffer(
         RandomAccessFile f, ByteBuffer buf,
         int offset, int size) throws IOException
@@ -101,11 +101,23 @@ public class Utilities {
         }
         return sb.toString();
     }
-    
+
     public static String readStringZ(ByteBuffer buf, int offset) {
         StringBuffer sb = new StringBuffer();
         byte b;
         for (;;) {
+            b = buf.get(offset++);
+            if (b == 0)
+                break;
+            sb.append((char)b);
+        }
+        return sb.toString();
+    }
+
+    public static String readStringNZ(ByteBuffer buf, int offset, int n) {
+        StringBuffer sb = new StringBuffer();
+        byte b;
+        for (; n > 0; n--) {
             b = buf.get(offset++);
             if (b == 0)
                 break;

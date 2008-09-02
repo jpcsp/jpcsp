@@ -132,7 +132,7 @@ private void LoadButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
             return;
    }
    //step 3: check if the select directory contains an eboot.pbp file
-   File eboot = new File("ms0/PSP/GAME/" + (String)browserlist.getSelectedValue() + "/eboot.pbp");
+   File eboot = new File("ms0/PSP/GAME/" + (String)browserlist.getSelectedValue() + "/EBOOT.PBP");
    if(!eboot.exists())//GEN-LAST:event_LoadButtonActionPerformed
    {
         JOptionPane.showMessageDialog(this, "There isn't an eboot.pbp on the selected directory","jpcsp Error",JOptionPane.ERROR_MESSAGE);
