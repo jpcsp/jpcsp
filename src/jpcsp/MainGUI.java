@@ -496,6 +496,20 @@ public void RefreshButtons()
     RunButton.setSelected(emulator.run && !emulator.pause);
     PauseButton.setSelected(emulator.run && emulator.pause);
 }
+public void setMainTitle(String message)
+{
+     String oldtitle = getTitle();
+     int sub = oldtitle.indexOf("average");
+     if(sub!=-1)
+     {
+      String newtitle= oldtitle.substring(0, sub-1);
+      setTitle(newtitle + " " + message);
+     }
+     else
+     {
+         setTitle(oldtitle + " " + message);
+     }
+}
     /**
     * @param args the command line arguments
     */

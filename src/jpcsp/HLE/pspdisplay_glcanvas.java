@@ -30,8 +30,7 @@ import javax.media.opengl.GL;
 import javax.media.opengl.GLAutoDrawable;
 import javax.media.opengl.GLCanvas;
 import javax.media.opengl.GLEventListener;
-import javax.media.opengl.Threading;
-import jpcsp.graphics.VideoEngine;
+import jpcsp.Emulator;
 
 /**
  *
@@ -265,8 +264,33 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
             callingThread = null;
             */
         }
+        reportFPSStats();
     }
-
+    private long prevStatsTime = 0;            
+    private long frameCount = 0;       
+    private long actualframeCount = 0;                
+    private double averageFPS = 0.0; 
+    /** 
+    *  Reports the FPS statistics 
+    *  The statistics:
+    *  - the actual frame rate is calculated every second (1000L msecs)
+    */     
+    protected void reportFPSStats()
+    {
+        frameCount++;
+        long timeNow = System.nanoTime();
+        long realElapsedTime = (timeNow - prevStatsTime) / 1000000L;   // time since last stats collection
+        
+        if (realElapsedTime > 1000L) // update once per second (FPS = frames per second)
+        {
+            averageFPS = (double)(frameCount - actualframeCount);
+            actualframeCount = frameCount;
+            prevStatsTime = timeNow;
+            
+            //System.out.println("averageFPS: " + averageFPS);
+            Emulator.setFpsTitle("averageFPS: " + averageFPS);
+        }            
+    } 
     public void displayChanged(GLAutoDrawable drawable, boolean modeChanged, boolean deviceChanged) {
     }
 
