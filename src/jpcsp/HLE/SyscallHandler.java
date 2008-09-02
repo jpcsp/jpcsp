@@ -374,12 +374,18 @@ public class SyscallHandler {
               //  case 0x20ff:
               //      pspge.get_instance().sceGeUnsetCallback(gpr[4]);
               //      break;
-             //       sceRtcGetTickResolution(0x2100),
-		// sceRtcGetCurrentTick(0x2101),
+                case 0x2100:
+                    psprtc.get_instance().sceRtcGetTickResolution();
+                    break;
+                case 0x2101:
+                    psprtc.get_instance().sceRtcGetCurrentTick(gpr[4]);
+                    break;
 		// sceRtc_011F03C1(0x2102),
 		// sceRtc_029CA3B3(0x2103),
 		// sceRtcGetCurrentClock(0x2104),
-		// sceRtcGetCurrentClockLocalTime(0x2105),
+                case 0x2105:
+                    psprtc.get_instance().sceRtcGetCurrentClockLocalTime(gpr[4]);
+                    break;
 		// sceRtcConvertUtcToLocalTime(0x2106),
 		// sceRtcConvertLocalTimeToUTC(0x2107),
 		// sceRtcIsLeapYear(0x2108),
