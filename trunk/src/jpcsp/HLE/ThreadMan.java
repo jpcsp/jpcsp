@@ -255,6 +255,8 @@ public class ThreadMan {
         String name = readStringZ(Memory.get_instance().mainmemory, (a0 & 0x3fffffff) - MemoryMap.START_RAM);
 
         // TODO use t1/SceKernelThreadOptParam?
+        if (t1 != 0)
+            System.out.println("sceKernelCreateThread unhandled SceKernelThreadOptParam");
 
         SceKernelThreadInfo thread = new SceKernelThreadInfo(name, a1, a2, a3, t0);
 
@@ -303,15 +305,20 @@ public class ThreadMan {
             Emulator.getProcessor().gpr[2] = 0x80020198; //notfoundthread
         } else {
             System.out.println("sceKernelStartThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
-            // Set return value before context switch!
-            Emulator.getProcessor().gpr[2] = 0;
 
-            //thread.status = PspThreadStatus.PSP_THREAD_READY;
-            // We will start the thread immediately so we don't have to save a1 and a2 somewhere
-            contextSwitch(thread);
-            // set arguments
-            Emulator.getProcessor().gpr[4] = a1; // a0 = a1;
-            Emulator.getProcessor().gpr[5] = a2; // a1 = a2;
+            // Copy user data to the new thread's stack, since we are not
+            // starting the thread immediately, only marking it as ready,
+            // the data needs to be saved somewhere safe.
+            Memory mem = Memory.get_instance();
+            for (int i = 0; i < a1; i++)
+                mem.write8(thread.stack_addr - a1 + i, (byte)mem.read8(a2 + i));
+
+            thread.gpr[29] -= a1; // Adjust sp for size of user data
+            thread.gpr[4] = a1; // a0 = a1
+            thread.gpr[5] = thread.gpr[29]; // a1 = pointer to copy of data at a2
+            thread.status = PspThreadStatus.PSP_THREAD_READY;
+
+            Emulator.getProcessor().gpr[2] = 0;
         }
     }
 
