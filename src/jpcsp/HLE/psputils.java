@@ -83,6 +83,13 @@ public class psputils {
         // We'll use the address of the ctx as a key
         Mt19937List.remove(ctx_addr); // Remove records of any already existing context at a0
         Mt19937List.put(ctx_addr, new SceKernelUtilsMt19937Context(seed));
+
+        // We'll overwrite all the context memory, 628 bytes
+        Memory mem = Memory.get_instance();
+        for (int i = 0; i < 628; i += 4) {
+            mem.write32(ctx_addr + i, 0xcdcdcdcd);
+        }
+
         Emulator.getProcessor().gpr[2] = 0;
     }
 

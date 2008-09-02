@@ -338,7 +338,7 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
         try {
             emulator.load(file.getPath());
             String findpath = file.getParent();
-            System.out.println(findpath);
+            //System.out.println(findpath);
             pspiofilemgr.get_instance().setfilepath(findpath);
             this.setTitle(version + " - " + file.getName());
         } catch (IOException e) {

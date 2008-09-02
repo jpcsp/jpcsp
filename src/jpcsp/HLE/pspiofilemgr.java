@@ -23,6 +23,7 @@ package jpcsp.HLE;
 
 //import java.io.BufferedOutputStream;
 import java.io.RandomAccessFile;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 //import java.io.PrintStream;
@@ -39,6 +40,8 @@ import static jpcsp.util.Utilities.*;
 public class pspiofilemgr {
     private static pspiofilemgr  instance;
     private static HashMap<Integer, IoInfo> filelist;
+    private static HashMap<Integer, IoDirInfo> dirlist;
+
     public final static int PSP_O_RDONLY  = 0x0001;
     public final static int PSP_O_WRONLY  = 0x0002;
     public final static int PSP_O_RDWR    = (PSP_O_RDONLY | PSP_O_WRONLY);
@@ -50,6 +53,10 @@ public class pspiofilemgr {
     public final static int PSP_O_EXCL    = 0x0800;
     public final static int PSP_O_NOWAIT  = 0x8000;
 
+    public final static int PSP_SEEK_SET  = 0;
+    public final static int PSP_SEEK_CUR  = 1;
+    public final static int PSP_SEEK_END  = 2;
+
     private final boolean debug = true; //enable/disable debug
 
     public static pspiofilemgr get_instance() {
@@ -59,9 +66,9 @@ public class pspiofilemgr {
         return instance;
     }
 
-    public pspiofilemgr()
-    {
-      filelist = new HashMap<Integer, IoInfo>();
+    public pspiofilemgr() {
+        filelist = new HashMap<Integer, IoInfo>();
+        dirlist = new HashMap<Integer, IoDirInfo>();
     }
 
     private String getDeviceFilePath(String pspfilename) {
@@ -167,18 +174,20 @@ public class pspiofilemgr {
     }
 
     public void sceIoWrite(int uid, int data_addr, int size) {
-        if (debug) System.out.println("sceIoWrite - uid " + Integer.toHexString(uid) + " data " + Integer.toHexString(data_addr) + " size " + size);
+        //if (debug) System.out.println("sceIoWrite - uid " + Integer.toHexString(uid) + " data " + Integer.toHexString(data_addr) + " size " + size);
         data_addr &= 0x3fffffff; // remove kernel/cache bits
 
         if (uid == 1) { // stdout
-            String stdout = readStringZ(Memory.get_instance().mainmemory, data_addr - MemoryMap.START_RAM);
+            String stdout = readStringNZ(Memory.get_instance().mainmemory, data_addr - MemoryMap.START_RAM, size);
             System.out.print(stdout);
             Emulator.getProcessor().gpr[2] = size;
         } else if (uid == 2) { // stderr
-            String stderr = readStringZ(Memory.get_instance().mainmemory, data_addr - MemoryMap.START_RAM);
+            String stderr = readStringNZ(Memory.get_instance().mainmemory, data_addr - MemoryMap.START_RAM, size);
             System.out.print(stderr);
             Emulator.getProcessor().gpr[2] = size;
         } else {
+            if (debug) System.out.println("sceIoWrite - uid " + Integer.toHexString(uid) + " data " + Integer.toHexString(data_addr) + " size " + size);
+
             try {
                 SceUIDMan.get_instance().checkUidPurpose(uid, "IOFileManager-File", true);
                 IoInfo info = filelist.get(uid);
@@ -244,25 +253,180 @@ public class pspiofilemgr {
         }
     }
 
-    public void sceIoDopen(int a0)
-    {
-        String name = readStringZ(Memory.get_instance().mainmemory, (a0 & 0x3fffffff) - MemoryMap.START_RAM);
-        System.out.println("sceIoDopen dir = " + name);
-        Emulator.getProcessor().gpr[2] = -1;
+    // TODO sceIoLseek with 64-bit offset parameter and return value
+    public void sceIoLseek32(int uid, int offset, int whence) {
+        if (debug) System.out.println("sceIoLseek32 - uid " + Integer.toHexString(uid) + " offset " + offset + " whence " + whence);
 
+        if (uid == 1 || uid == 2 || uid == 3) { // stdio
+            System.out.println("sceIoLseek32 - can't seek on stdio uid " + Integer.toHexString(uid));
+            Emulator.getProcessor().gpr[2] = -1;
+        } else {
+            try {
+                SceUIDMan.get_instance().checkUidPurpose(uid, "IOFileManager-File", true);
+                IoInfo info = filelist.get(uid);
+                if (info == null) {
+                    System.out.println("sceIoLseek32 - unknown uid " + Integer.toHexString(uid));
+                    Emulator.getProcessor().gpr[2] = -1;
+                } else {
+                    switch(whence) {
+                        case PSP_SEEK_SET:
+                            info.f.seek(offset);
+                            break;
+                        case PSP_SEEK_CUR:
+                            info.f.seek(info.f.getFilePointer() + offset);
+                            break;
+                        case PSP_SEEK_END:
+                            info.f.seek(info.f.length() - offset);
+                            break;
+                        default:
+                            System.out.println("sceIoLseek32 - unhandled whence " + whence);
+                            break;
+                    }
+                    Emulator.getProcessor().gpr[2] = (int)info.f.getFilePointer();
+                }
+            } catch(GeneralJpcspException e) {
+                e.printStackTrace();
+                Emulator.getProcessor().gpr[2] = -1;
+            } catch(IOException e) {
+                e.printStackTrace();
+                Emulator.getProcessor().gpr[2] = -1;
+            }
+        }
     }
 
-    public void sceIoChdir(int a0)
-    {
-        String name = readStringZ(Memory.get_instance().mainmemory, (a0 & 0x3fffffff) - MemoryMap.START_RAM);
-        System.out.println("sceIoChdir = " + name);
+    public void sceIoMkdir(int dir_addr, int permissions) {
+        String dir = readStringZ(Memory.get_instance().mainmemory, (dir_addr & 0x3fffffff) - MemoryMap.START_RAM);
+        if (debug) System.out.println("sceIoMkdir dir = " + dir);
+        // TODO
         Emulator.getProcessor().gpr[2] = -1;
+    }
+
+    public void sceIoChdir(int path_addr) {
+        String path = readStringZ(Memory.get_instance().mainmemory, (path_addr & 0x3fffffff) - MemoryMap.START_RAM);
+        if (debug) System.out.println("sceIoChdir path = " + path);
+        // TODO
+        Emulator.getProcessor().gpr[2] = -1;
+    }
+
+    public void sceIoDopen(int dirname_addr) {
+        String dirname = readStringZ(Memory.get_instance().mainmemory, (dirname_addr & 0x3fffffff) - MemoryMap.START_RAM);
+        if (debug) System.out.println("sceIoDopen dirname = " + dirname);
+
+        String pcfilename = getDeviceFilePath(dirname);
+        if (pcfilename != null) {
+            File f = new File(pcfilename);
+            if (f.isDirectory()) {
+                IoDirInfo info = new IoDirInfo(pcfilename, f);
+                Emulator.getProcessor().gpr[2] = info.uid;
+            } else {
+                Emulator.getProcessor().gpr[2] = -1;
+            }
+        } else {
+            Emulator.getProcessor().gpr[2] = -1;
+        }
+    }
+
+    /** @param dir_addr address of a dirent struct */
+    public void sceIoDread(int uid, int dir_addr) {
+        if (debug) System.out.println("sceIoDread - uid " + Integer.toHexString(uid) + " dir " + Integer.toHexString(dir_addr));
+
+        try {
+            SceUIDMan.get_instance().checkUidPurpose(uid, "IOFileManager-Directory", true);
+            IoDirInfo info = dirlist.get(uid);
+            if (info == null) {
+                System.out.println("sceIoDread - unknown uid " + Integer.toHexString(uid));
+                Emulator.getProcessor().gpr[2] = -1;
+            } else if (info.hasNext()) {
+                //String filename = info.path + "/" + info.next(); // TODO is the separator needed?
+                String filename = info.next(); // TODO is the separator needed?
+                System.out.println("sceIoDread - filename '" + filename + "'");
+
+                //String pcfilename = getDeviceFilePath(filename);
+                //String pcfilename = getDeviceFilePath(info.path + "/" + filename);
+                //SceIoStat stat = stat(pcfilename);
+                SceIoStat stat = stat(info.path + "/" + filename);
+                if (stat != null) {
+                    SceIoDirent dirent = new SceIoDirent(stat, filename);
+                    dirent.write(Memory.get_instance(), dir_addr);
+                    Emulator.getProcessor().gpr[2] = 1; // TODO "> 0", so number of files remaining?
+                } else {
+                    System.out.println("sceIoDread - stat failed");
+                    Emulator.getProcessor().gpr[2] = -1;
+                }
+            } else {
+                System.out.println("sceIoDread - no more files");
+                Emulator.getProcessor().gpr[2] = 0;
+            }
+        } catch(GeneralJpcspException e) {
+            e.printStackTrace();
+            Emulator.getProcessor().gpr[2] = -1;
+        }
+    }
+
+    public void sceIoDclose(int uid) {
+        if (debug) System.out.println("sceIoDclose - uid " + Integer.toHexString(uid));
+
+        try {
+            SceUIDMan.get_instance().checkUidPurpose(uid, "IOFileManager-Directory", true);
+
+            IoDirInfo info = dirlist.remove(uid);
+            if (info == null) {
+                System.out.println("sceIoDclose - unknown uid " + Integer.toHexString(uid));
+                Emulator.getProcessor().gpr[2] = -1;
+            } else {
+                SceUIDMan.get_instance().releaseUid(info.uid, "IOFileManager-Directory");
+                Emulator.getProcessor().gpr[2] = 0;
+            }
+        } catch(GeneralJpcspException e) {
+            e.printStackTrace();
+            Emulator.getProcessor().gpr[2] = -1;
+        }
+    }
+
+    /** @param pcfilename can be null for convenience
+     * @returns null on error */
+    private SceIoStat stat(String pcfilename) {
+        SceIoStat stat = null;
+        if (pcfilename != null) {
+            File file = new File(pcfilename);
+            if (file.exists()) {
+                int mode = (file.canRead() ? 4 : 0) + (file.canWrite() ? 2 : 0) + (file.canExecute() ? 1 : 0);
+                int attr = 0; // file/dir? posix puts that in mode
+                long size = file.length();
+                long mtime = file.lastModified();
+
+                // octal extend into user and group
+                mode = mode + mode * 8 + mode * 16;
+
+                // TODO convert mtime from seconds to ScePspDateTime (see sceRtc)
+
+                stat = new SceIoStat(mode, attr, size,
+                    new ScePspDateTime(), new ScePspDateTime(),
+                    new ScePspDateTime());
+            }
+        }
+        return stat;
+    }
+
+    public void sceIoGetstat(int file_addr, int stat_addr) {
+        String filename = readStringZ(Memory.get_instance().mainmemory, (file_addr & 0x3fffffff) - MemoryMap.START_RAM);
+        if (debug) System.out.println("sceIoGetstat - file " + Integer.toHexString(file_addr) + " stat " + Integer.toHexString(stat_addr));
+
+        String pcfilename = getDeviceFilePath(filename);
+        SceIoStat stat = stat(pcfilename);
+        if (stat != null) {
+            stat.write(Memory.get_instance(), stat_addr);
+            Emulator.getProcessor().gpr[2] = 0;
+        } else {
+            Emulator.getProcessor().gpr[2] = -1;
+        }
     }
 
     //the following sets the filepath from memstick manager.
     private String filepath;
     public void setfilepath(String filepath)
     {
+        System.out.println("pspiofilemgr - filepath " + filepath);
         this.filepath = filepath;
     }
 
@@ -284,6 +448,36 @@ public class pspiofilemgr {
             this.permissions = permissions;
             uid = SceUIDMan.get_instance().getNewUid("IOFileManager-File");
             filelist.put(uid, this);
+        }
+    }
+
+    class IoDirInfo {
+        final String path;
+        final String[] filenames;
+        int position;
+        final int uid;
+
+        public IoDirInfo(String path, File f) {
+            this.path = path;
+
+            filenames = f.list();
+            position = 0;
+
+            uid = SceUIDMan.get_instance().getNewUid("IOFileManager-Directory");
+            dirlist.put(uid, this);
+        }
+
+        public boolean hasNext() {
+            return (position < filenames.length);
+        }
+
+        public String next() {
+            String filename = null;
+            if (position < filenames.length) {
+                filename = filenames[position];
+                position++;
+            }
+            return filename;
         }
     }
 

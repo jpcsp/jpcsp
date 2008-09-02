@@ -199,41 +199,51 @@ public class SyscallHandler {
 		// sceIoGetAsyncStat(0x208a),
 		// sceIoChangeAsyncPriority(0x208b),
 		// sceIoSetAsyncCallback(0x208c),
-		case 0x208d:// sceIoClose
+                case 0x208d:// sceIoClose
                     pspiofilemgr.get_instance().sceIoClose(gpr[4]);
                     break;
 		// sceIoCloseAsync(0x208e),
-		case 0x208f:// sceIoOpen
-                    pspiofilemgr.get_instance().sceIoOpen(gpr[4],gpr[5],gpr[6]);
+                case 0x208f:// sceIoOpen
+                    pspiofilemgr.get_instance().sceIoOpen(gpr[4], gpr[5], gpr[6]);
                     break;
 		// sceIoOpenAsync(0x2090),
                 case 0x2091: //sceIoRead
-		   pspiofilemgr.get_instance().sceIoRead(gpr[4],gpr[5],gpr[6]);
-                   break;
+                    pspiofilemgr.get_instance().sceIoRead(gpr[4], gpr[5], gpr[6]);
+                    break;
 		// sceIoReadAsync(0x2092),
-		case 0x2093:// sceIoWrite
-                    pspiofilemgr.get_instance().sceIoWrite(gpr[4],gpr[5],gpr[6]);
+                case 0x2093:// sceIoWrite
+                    pspiofilemgr.get_instance().sceIoWrite(gpr[4], gpr[5], gpr[6]);
                     break;
 		// sceIoWriteAsync(0x2094),
 		// sceIoLseek(0x2095),
 		// sceIoLseekAsync(0x2096),
-		// sceIoLseek32(0x2097),
+                case 0x2097:
+                    pspiofilemgr.get_instance().sceIoLseek32(gpr[4], gpr[5], gpr[6]);
+                    break;
 		// sceIoLseek32Async(0x2098),
 		// sceIoIoctl(0x2099),
 		// sceIoIoctlAsync(0x209a),
-	       case 0x209b://sceIoDopen
+            case 0x209b://sceIoDopen
                     pspiofilemgr.get_instance().sceIoDopen(gpr[4]);
                     break;
-		// sceIoDread(0x209c),
-		// sceIoDclose(0x209d),
+            case 0x209c:
+                    pspiofilemgr.get_instance().sceIoDread(gpr[4], gpr[5]);
+                    break;
+            case 0x209d:
+                    pspiofilemgr.get_instance().sceIoDclose(gpr[4]);
+                    break;
 		// sceIoRemove(0x209e),
-		// sceIoMkdir(0x209f),
+            case 0x209f:
+                    pspiofilemgr.get_instance().sceIoMkdir(gpr[4], gpr[5]);
+                    break;
 		// sceIoRmdir(0x20a0),
-	        case 0x20a1: //sceChDir
+                case 0x20a1: //sceChDir
                     pspiofilemgr.get_instance().sceIoChdir(gpr[4]);
                     break;
 		// sceIoSync(0x20a2),
-		// sceIoGetstat(0x20a3),
+                case 0x20a3:
+                    pspiofilemgr.get_instance().sceIoGetstat(gpr[4], gpr[5]);
+                    break;
 		// sceIoChstat(0x20a4),
 		// sceIoRename(0x20a5),
 		// sceIoDevctl(0x20a6),
