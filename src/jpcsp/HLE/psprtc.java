@@ -52,12 +52,13 @@ public class psprtc {
         Calendar rightNow = Calendar.getInstance();
         
         Memory mem = Memory.get_instance();
-        mem.write16(a0, (short)rightNow.MONTH);
-        mem.write16(a0 +2, (short)rightNow.DAY_OF_MONTH);
-        mem.write16(a0 +4, (short)rightNow.HOUR);
-        mem.write16(a0 +6, (short)rightNow.MINUTE);
-        mem.write16(a0 +8, (short)rightNow.SECOND);
-        mem.write32(a0 +10, rightNow.MILLISECOND);
+        mem.write16(a0, (short)rightNow.get(Calendar.YEAR));
+        mem.write16(a0 +2, (short)rightNow.get(Calendar.MONTH));
+        mem.write16(a0 +4, (short)rightNow.get(Calendar.DAY_OF_MONTH));
+        mem.write16(a0 +6, (short)rightNow.get(Calendar.HOUR));
+        mem.write16(a0 +8, (short)rightNow.get(Calendar.MINUTE));
+        mem.write16(a0 +10, (short)rightNow.get(Calendar.SECOND));
+        mem.write32(a0 +12, rightNow.get(Calendar.MILLISECOND));
                 
         Emulator.getProcessor().gpr[2] = 0;
     }
