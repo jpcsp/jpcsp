@@ -420,7 +420,9 @@ public class SyscallHandler {
 		// sceAudioOutputBlocking(0x2125),
 		// sceAudioOutputPanned(0x2126),
 		// sceAudioOutputPannedBlocking(0x2127),
-		// sceAudioChReserve(0x2128),
+                case 0x2128:
+                    pspAudio.get_instance().sceAudioChReserve(gpr[4], gpr[5], gpr[6]);
+                    break;
 		// sceAudioOneshotOutput(0x2129),
 		// sceAudioChRelease(0x212a),
 		// sceAudio_B011922F(0x212b),
