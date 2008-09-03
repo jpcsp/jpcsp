@@ -81,6 +81,18 @@ public class pspiofilemgr {
              * either if it is from openfile menu*/
             int findslash = pspfilename.indexOf("/");
             filename = filepath +"/"+ pspfilename.substring(findslash+1,pspfilename.length());
+        }
+        else if (!pspfilename.contains("/"))//maybe absolute path
+        {
+            if(pspfilename.contains("'"))
+            {
+              filename = filepath +"/"+ pspfilename.replace("'", ""); // remove '  //found on nesterj emu   
+            }
+            else
+            {
+              filename= filepath +"/"+  pspfilename;
+            }
+       
         } else {
             System.out.println("pspiofilemgr - Unsupported device '" + pspfilename + "'");
         }
@@ -297,13 +309,15 @@ public class pspiofilemgr {
     public void sceIoMkdir(int dir_addr, int permissions) {
         String dir = readStringZ(Memory.get_instance().mainmemory, (dir_addr & 0x3fffffff) - MemoryMap.START_RAM);
         if (debug) System.out.println("sceIoMkdir dir = " + dir);
-        // TODO
-        Emulator.getProcessor().gpr[2] = -1;
+        //should work okay..
+        File f = new File(filepath + "/" + dir);
+        f.mkdir();
+        Emulator.getProcessor().gpr[2] = 0;
     }
 
     public void sceIoChdir(int path_addr) {
         String path = readStringZ(Memory.get_instance().mainmemory, (path_addr & 0x3fffffff) - MemoryMap.START_RAM);
-        if (debug) System.out.println("sceIoChdir path = " + path);
+        if (debug) System.out.println("(Unimplement):sceIoChdir path = " + path);
         // TODO
         Emulator.getProcessor().gpr[2] = -1;
     }
@@ -312,7 +326,7 @@ public class pspiofilemgr {
         String dirname = readStringZ(Memory.get_instance().mainmemory, (dirname_addr & 0x3fffffff) - MemoryMap.START_RAM);
         if (debug) System.out.println("sceIoDopen dirname = " + dirname);
 
-        String pcfilename = getDeviceFilePath(dirname);
+         String pcfilename = getDeviceFilePath(dirname);
         if (pcfilename != null) {
             File f = new File(pcfilename);
             if (f.isDirectory()) {
