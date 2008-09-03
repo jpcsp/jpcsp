@@ -31,6 +31,7 @@ import javax.media.opengl.GLAutoDrawable;
 import javax.media.opengl.GLCanvas;
 import javax.media.opengl.GLEventListener;
 import jpcsp.Emulator;
+import jpcsp.graphics.VideoEngine;
 
 /**
  *
@@ -41,7 +42,7 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
 
     // In theory we can protect shared access to videoram if only 1 thread can run at a time,
     // so this option lets us block the emu thread while the GL thread updates.
-    private final static boolean UPDATE_BLOCKS = true;
+    private final static boolean UPDATE_BLOCKS = false; // implementation needs fixing
     private Object callingThread;
     private Object waitObject;
 
@@ -175,12 +176,13 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
         gl.glMatrixMode(GL.GL_MODELVIEW);
         gl.glLoadIdentity();*/
 
-
+        /*
       GL gl = drawable.getGL();
       gl.glViewport(0, 0, width, height);
       gl.glMatrixMode(GL.GL_PROJECTION);
       gl.glLoadIdentity();
       gl.glOrtho(0, 480, 272, 0, -1.0, 1.0);
+        */
 
         reshape_width = width;
         reshape_height = height;
@@ -214,7 +216,6 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
                 doupdatetexture = false;
             }
 
-/* disabled for micket
             // Execute queued display lists
             VideoEngine ve = VideoEngine.getEngine(gl, true, true);
             ve.update();
@@ -228,7 +229,7 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
             gl.glPushMatrix(); // Save VideoEngine's GL_PROJECTION matrix
             gl.glLoadIdentity();
             gl.glOrtho(0, 480, 272, 0, -1.0, 1.0);
-*/
+
             gl.glEnable(GL.GL_TEXTURE_2D);
             currentBufferInfo.tex.bind();
 
@@ -248,14 +249,12 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
                 gl.glVertex3f(0.0f, 272.0f, 0.0f);
             gl.glEnd();
 
-/* disabled for micket
             // Restore VideoEngine's GL_PROJECTION matrix
             gl.glMatrixMode(GL.GL_PROJECTION);
             gl.glPopMatrix();
 
             // Restore VideoEngine's GL_TEXTURE_2D, current matrix mode, viewport settings
             gl.glPopAttrib();
-*/
         }
 
         if (UPDATE_BLOCKS && callingThread != null) {
@@ -266,31 +265,34 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
         }
         reportFPSStats();
     }
-    private long prevStatsTime = 0;            
-    private long frameCount = 0;       
-    private long actualframeCount = 0;                
-    private double averageFPS = 0.0; 
-    /** 
-    *  Reports the FPS statistics 
+    private long prevStatsTime = 0;
+    private long frameCount = 0;
+    private long actualframeCount = 0;
+    private long reportCount = 0;
+    private double averageFPS = 0.0;
+    /**
+    *  Reports the FPS statistics
     *  The statistics:
     *  - the actual frame rate is calculated every second (1000L msecs)
-    */     
+    */
     protected void reportFPSStats()
     {
         frameCount++;
         long timeNow = System.nanoTime();
         long realElapsedTime = (timeNow - prevStatsTime) / 1000000L;   // time since last stats collection
-        
+
         if (realElapsedTime > 1000L) // update once per second (FPS = frames per second)
         {
-            averageFPS = (double)(frameCount - actualframeCount);
+            reportCount++;
+            int lastFPS = (int)(frameCount - actualframeCount);
+            averageFPS = (double)frameCount / reportCount;
             actualframeCount = frameCount;
             prevStatsTime = timeNow;
-            
+
             //System.out.println("averageFPS: " + averageFPS);
-            Emulator.setFpsTitle("averageFPS: " + averageFPS);
-        }            
-    } 
+            Emulator.setFpsTitle("averageFPS: " + String.format("%.1f", averageFPS) + " lastFPS: " + lastFPS);
+        }
+    }
     public void displayChanged(GLAutoDrawable drawable, boolean modeChanged, boolean deviceChanged) {
     }
 
