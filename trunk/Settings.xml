@@ -3,8 +3,8 @@
 
     <windowspos>
         <mainwindow>
-            <x>0</x>
-            <y>0</y>
+            <x>193</x>
+            <y>210</y>
         </mainwindow>
        <disassembler>
          <x>50</x>
@@ -23,8 +23,8 @@
          <y>5</y>
        </registers>
       <logwindow>
-        <x>0</x>
-        <y>354</y>
+        <x>193</x>
+        <y>560</y>
       </logwindow>
     </windowspos>
         

@@ -38,6 +38,7 @@ import jpcsp.HLE.pspdisplay_glcanvas;
 import jpcsp.HLE.pspiofilemgr;
 import jpcsp.util.JpcspDialogManager;
 import jpcsp.util.MetaInformation;
+import jpcsp.umdiso.*;
 
 /**
  *
@@ -105,6 +106,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         ResetButton = new javax.swing.JButton();
         MenuBar = new javax.swing.JMenuBar();
         FileMenu = new javax.swing.JMenu();
+        openUmd = new javax.swing.JMenuItem();
         OpenFile = new javax.swing.JMenuItem();
         OpenMemStick = new javax.swing.JMenuItem();
         ExitEmu = new javax.swing.JMenuItem();
@@ -170,6 +172,14 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         getContentPane().add(jToolBar1, java.awt.BorderLayout.NORTH);
 
         FileMenu.setText("File");
+
+        openUmd.setText("Open UMD (ISO)");
+        openUmd.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                openUmdActionPerformed(evt);
+            }
+        });
+        FileMenu.add(openUmd);
 
         OpenFile.setText("OpenFile");
         OpenFile.addActionListener(new java.awt.event.ActionListener() {
@@ -455,6 +465,36 @@ private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:even
     exitEmu();
 }//GEN-LAST:event_formWindowClosing
 
+private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openUmdActionPerformed
+        PauseEmu();//GEN-LAST:event_openUmdActionPerformed
+        if(consolewin!=null)
+          consolewin.clearScreenMessages();
+
+    final JFileChooser fc = makeJFileChooser();
+    int returnVal = fc.showOpenDialog(this);
+
+    if (userChooseSomething(returnVal)) {
+        File file = fc.getSelectedFile();
+        //This is where a real application would open the file.
+        
+        try {
+            UmdIsoReader iso = new UmdIsoReader(file.getPath());
+            UmdIsoFile bootBin = iso.getFile("PSP_GAME/SYSDIR/boot.bin");
+            byte[] bootData = new byte[(int)bootBin.getSize()];
+            bootBin.read(bootData);
+        } catch (IOException e) {
+            e.printStackTrace();
+            JpcspDialogManager.showError(this, "IO Error : " + e.getMessage());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JpcspDialogManager.showError(this, "Critical Error : " + ex.getMessage());
+        }
+    } else {
+        return; //user cancel the action
+
+    }
+}
+
 private void exitEmu() {
     if (Settings.get_instance().readBoolOptions("guisettings/saveWindowPos"))
         Settings.get_instance().writeWindowPos("mainwindow", getLocation());
@@ -550,6 +590,7 @@ public void setMainTitle(String message)
     private javax.swing.JMenuItem SetttingsMenu;
     private javax.swing.JMenuItem ToggleConsole;
     private javax.swing.JToolBar jToolBar1;
+    private javax.swing.JMenuItem openUmd;
     // End of variables declaration//GEN-END:variables
     private boolean userChooseSomething(int returnVal) {
         return returnVal == JFileChooser.APPROVE_OPTION;
