@@ -43,6 +43,17 @@ public class VideoEngine {
     private int zbp, zbw; // depth buffer pointer and width
     private int psm; // pixel format
 
+    private boolean proj_upload_start;
+    private int proj_upload_x;
+    private int proj_upload_y;
+    private float[] proj_matrix = new float[4 * 4];
+
+
+    private boolean world_upload_start;
+    private int world_upload_x;
+    private int world_upload_y;
+    private float[] world_matrix = new float[4 * 4];
+
     private boolean listIsOver;
     private DisplayList actualList; // The currently executing list
 
@@ -94,6 +105,8 @@ public class VideoEngine {
     private void executeList(DisplayList list) {
         actualList = list;
         listIsOver = false;
+
+        log("executeList id " + list.id);
 
         while (!listIsOver &&
             actualList.pc != actualList.stallAddress &&
@@ -165,6 +178,68 @@ public class VideoEngine {
                 } else {
                     gl.glDisable(GL.GL_TEXTURE_2D);
                     log("sceGuDisable(GU_TEXTURE_2D)");
+                }
+                break;
+
+            case WMS:
+                // TODO figure out how to handle the separate MODEL and VIEW/WORLD matrix stacks
+                gl.glMatrixMode(GL.GL_MODELVIEW);
+                world_upload_start = true;
+                log("sceGumMatrixMode GU_WORLD");
+                break;
+
+            case WORLD:
+                if (world_upload_start) {
+                    world_upload_x = 0;
+                    world_upload_y = 0;
+                    world_upload_start = false;
+                }
+
+                if (world_upload_y < 4) {
+                    if (world_upload_x < 3) {
+                        world_matrix[world_upload_x + world_upload_y * 4] = floatArgument;
+
+                        world_upload_x++;
+                        if (world_upload_x == 3) {
+                            world_matrix[world_upload_x + world_upload_y * 4] = (world_upload_y == 3) ? 1.0f : 0.0f;
+                            world_upload_x = 0;
+                            world_upload_y++;
+                            if (world_upload_y == 4) {
+                                log("glLoadMatrixf", world_matrix);
+                                gl.glLoadMatrixf(world_matrix, 0);
+                            }
+                        }
+                    }
+                }
+                break;
+
+            case PMS:
+                gl.glMatrixMode(GL.GL_PROJECTION);
+                proj_upload_start = true;
+                log("sceGumMatrixMode GU_PROJECTION");
+                break;
+
+            case PROJ:
+                if (proj_upload_start) {
+                    proj_upload_x = 0;
+                    proj_upload_y = 0;
+                    proj_upload_start = false;
+                }
+
+                if (proj_upload_y < 4) {
+                    if (proj_upload_x < 4) {
+                        proj_matrix[proj_upload_x + proj_upload_y * 4] = floatArgument;
+
+                        proj_upload_x++;
+                        if (proj_upload_x == 4) {
+                            proj_upload_x = 0;
+                            proj_upload_y++;
+                            if (proj_upload_y == 4) {
+                                log("glLoadMatrixf", proj_matrix);
+                                gl.glLoadMatrixf(proj_matrix, 0);
+                            }
+                        }
+                    }
                 }
                 break;
 
@@ -334,6 +409,12 @@ public class VideoEngine {
 
     private void log(String commandString, int value) {
         log(commandString+SPACE+value);
+    }
+
+    private void log(String commandString, float[] matrix) {
+        for (int y = 0; y < 4; y++) {
+            log(commandString+SPACE+String.format("%.1f %.1f %.1f %.1f", matrix[0 + y * 4], matrix[1 + y * 4], matrix[2 + y * 4], matrix[3 + y * 4]));
+        }
     }
 
     private void setHardwareAcc(boolean hardwareAccelerate) {
