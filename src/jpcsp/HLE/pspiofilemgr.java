@@ -73,35 +73,56 @@ public class pspiofilemgr {
 
     private String getDeviceFilePath(String pspfilename) {
         String filename = null;
-        if (pspfilename.substring(0, 3).matches("ms0")) { //found on fileio demo
+
+        // on PSP: device:/path
+        // on PC: device/path
+        int findcolon = pspfilename.indexOf(":");
+        if (findcolon != -1) {
+            // Device absolute
+            filename = pspfilename.substring(0, findcolon) + pspfilename.substring(findcolon + 1);
+            //if (debug) System.out.println("'" + pspfilename.substring(0, findcolon) + "' '" + pspfilename.substring(findcolon + 1) + "'");
+        } else if (pspfilename.startsWith("/")) {
+            // Relative
+            filename = filepath + pspfilename;
+        } else {
+            // Relative
+            filename = filepath + "/" + pspfilename;
+        }
+
+        //if (debug) System.out.println("getDeviceFilePath filename = " + filename);
+
+        /* Old version
+        if (pspfilename.startsWith("ms0")) { //found on fileio demo
             int findslash = pspfilename.indexOf("/");
-            filename = "ms0/" + pspfilename.substring(findslash+1,pspfilename.length());
-        } else if(pspfilename.substring(0,1).matches("/")) {
-            /*that absolute way will work either it is from memstrick browser
-             * either if it is from openfile menu*/
-            int findslash = pspfilename.indexOf("/");
-            filename = filepath +"/"+ pspfilename.substring(findslash+1,pspfilename.length());
+            filename = "ms0/" + pspfilename.substring(findslash+1);
+        } else if (pspfilename.startsWith("/")) { //relative to where EBOOT.PBP is
+            //that absolute way will work either it is from memstrick browser
+            // either if it is from openfile menu
+            filename = filepath + "/" + pspfilename.substring(1);
         }
         else if (!pspfilename.contains("/"))//maybe absolute path
         {
             if(pspfilename.contains("'"))
             {
-              filename = filepath +"/"+ pspfilename.replace("'", ""); // remove '  //found on nesterj emu   
+              if (debug) System.out.println("getDeviceFilePath removing ' character");
+              filename = filepath +"/"+ pspfilename.replace("'", ""); // remove '  //found on nesterj emu
             }
             else
             {
               filename= filepath +"/"+  pspfilename;
             }
-       
+
         } else {
             System.out.println("pspiofilemgr - Unsupported device '" + pspfilename + "'");
         }
+        */
+
         return filename;
     }
 
     public void sceIoOpen(int filename_addr, int flags, int permissions) {
         String filename = readStringZ(Memory.get_instance().mainmemory, (filename_addr & 0x3fffffff) - MemoryMap.START_RAM);
-        if (debug) System.out.println("sceIoOpen name = " + filename + " flags = " + Integer.toHexString(flags) + " permissions = " + Integer.toOctalString(permissions));
+        if (debug) System.out.println("sceIoOpen filename = " + filename + " flags = " + Integer.toHexString(flags) + " permissions = " + Integer.toOctalString(permissions));
 
         if (debug) {
             if ((flags & PSP_O_RDONLY) == PSP_O_RDONLY) System.out.println("PSP_O_RDONLY");
@@ -146,10 +167,27 @@ public class pspiofilemgr {
         try {
             String pcfilename = getDeviceFilePath(filename);
             if (pcfilename != null) {
-                if (debug) System.out.println("pspiofilemgr - opening file '" + pcfilename + "'");
-                RandomAccessFile f = new RandomAccessFile(pcfilename, mode);
-                IoInfo info = new IoInfo(f, mode, flags, permissions);
-                Emulator.getProcessor().gpr[2] = info.uid;
+                if (debug) System.out.println("pspiofilemgr - opening file " + pcfilename);
+
+                // First check if the file already exists
+                File file = new File(pcfilename);
+                if (file.exists() &&
+                    (flags & PSP_O_CREAT) == PSP_O_CREAT &&
+                    (flags & PSP_O_EXCL) == PSP_O_EXCL) {
+                    // PSP_O_CREAT + PSP_O_EXCL + file already exists = error
+                    if (debug) System.out.println("sceIoOpen - file already exists (PSP_O_CREAT + PSP_O_EXCL)");
+                    Emulator.getProcessor().gpr[2] = -1;
+                } else {
+                    if (file.exists() &&
+                        (flags & PSP_O_TRUNC) == PSP_O_TRUNC) {
+                        if (debug) System.out.println("sceIoOpen - file already exists, deleting UNIMPLEMENT (PSP_O_TRUNC)");
+                        //file.delete();
+                    }
+
+                    RandomAccessFile raf = new RandomAccessFile(pcfilename, mode);
+                    IoInfo info = new IoInfo(raf, mode, flags, permissions);
+                    Emulator.getProcessor().gpr[2] = info.uid;
+                }
             } else {
                 Emulator.getProcessor().gpr[2] = -1;
             }
@@ -310,29 +348,42 @@ public class pspiofilemgr {
         String dir = readStringZ(Memory.get_instance().mainmemory, (dir_addr & 0x3fffffff) - MemoryMap.START_RAM);
         if (debug) System.out.println("sceIoMkdir dir = " + dir);
         //should work okay..
-        File f = new File(filepath + "/" + dir);
-        f.mkdir();
-        Emulator.getProcessor().gpr[2] = 0;
+        String pcfilename = getDeviceFilePath(dir);
+        if (pcfilename != null) {
+            File f = new File(pcfilename);
+            f.mkdir();
+            Emulator.getProcessor().gpr[2] = 0;
+        } else {
+            Emulator.getProcessor().gpr[2] = -1;
+        }
     }
 
     public void sceIoChdir(int path_addr) {
         String path = readStringZ(Memory.get_instance().mainmemory, (path_addr & 0x3fffffff) - MemoryMap.START_RAM);
-        if (debug) System.out.println("(Unimplement):sceIoChdir path = " + path);
-        // TODO
-        Emulator.getProcessor().gpr[2] = -1;
+        if (debug) System.out.println("(Unverified):sceIoChdir path = " + path);
+
+        // TODO/check correctness
+        String pcfilename = getDeviceFilePath(path);
+        if (pcfilename != null) {
+            filepath = pcfilename;
+            Emulator.getProcessor().gpr[2] = 0;
+        } else {
+            Emulator.getProcessor().gpr[2] = -1;
+        }
     }
 
     public void sceIoDopen(int dirname_addr) {
         String dirname = readStringZ(Memory.get_instance().mainmemory, (dirname_addr & 0x3fffffff) - MemoryMap.START_RAM);
         if (debug) System.out.println("sceIoDopen dirname = " + dirname);
 
-         String pcfilename = getDeviceFilePath(dirname);
+        String pcfilename = getDeviceFilePath(dirname);
         if (pcfilename != null) {
             File f = new File(pcfilename);
             if (f.isDirectory()) {
                 IoDirInfo info = new IoDirInfo(pcfilename, f);
                 Emulator.getProcessor().gpr[2] = info.uid;
             } else {
+                if (debug) System.out.println("sceIoDopen not a directory!");
                 Emulator.getProcessor().gpr[2] = -1;
             }
         } else {
@@ -340,9 +391,8 @@ public class pspiofilemgr {
         }
     }
 
-    /** @param dir_addr address of a dirent struct */
-    public void sceIoDread(int uid, int dir_addr) {
-        if (debug) System.out.println("sceIoDread - uid " + Integer.toHexString(uid) + " dir " + Integer.toHexString(dir_addr));
+    public void sceIoDread(int uid, int dirent_addr) {
+        if (debug) System.out.println("sceIoDread - uid = " + Integer.toHexString(uid) + " dirent = " + Integer.toHexString(dirent_addr));
 
         try {
             SceUIDMan.get_instance().checkUidPurpose(uid, "IOFileManager-Directory", true);
@@ -353,15 +403,15 @@ public class pspiofilemgr {
             } else if (info.hasNext()) {
                 //String filename = info.path + "/" + info.next(); // TODO is the separator needed?
                 String filename = info.next(); // TODO is the separator needed?
-                System.out.println("sceIoDread - filename '" + filename + "'");
+                System.out.println("sceIoDread - filename = " + filename);
 
                 //String pcfilename = getDeviceFilePath(filename);
                 //String pcfilename = getDeviceFilePath(info.path + "/" + filename);
                 //SceIoStat stat = stat(pcfilename);
-                SceIoStat stat = stat(info.path + "/" + filename);
+                SceIoStat stat = stat(info.path + filename);
                 if (stat != null) {
                     SceIoDirent dirent = new SceIoDirent(stat, filename);
-                    dirent.write(Memory.get_instance(), dir_addr);
+                    dirent.write(Memory.get_instance(), dirent_addr);
                     Emulator.getProcessor().gpr[2] = 1; // TODO "> 0", so number of files remaining?
                 } else {
                     System.out.println("sceIoDread - stat failed");
@@ -378,7 +428,7 @@ public class pspiofilemgr {
     }
 
     public void sceIoDclose(int uid) {
-        if (debug) System.out.println("sceIoDclose - uid " + Integer.toHexString(uid));
+        if (debug) System.out.println("sceIoDclose - uid = " + Integer.toHexString(uid));
 
         try {
             SceUIDMan.get_instance().checkUidPurpose(uid, "IOFileManager-Directory", true);
@@ -402,21 +452,29 @@ public class pspiofilemgr {
     private SceIoStat stat(String pcfilename) {
         SceIoStat stat = null;
         if (pcfilename != null) {
+            if (debug) System.out.println("stat - pcfilename = " + pcfilename);
             File file = new File(pcfilename);
             if (file.exists()) {
                 int mode = (file.canRead() ? 4 : 0) + (file.canWrite() ? 2 : 0) + (file.canExecute() ? 1 : 0);
-                int attr = 0; // file/dir? posix puts that in mode
+                int attr = 0;
                 long size = file.length();
                 long mtime = file.lastModified();
 
-                // octal extend into user and group
-                mode = mode + mode * 8 + mode * 16;
+                // Octal extend into user and group
+                mode = mode + mode * 8 + mode * 64;
+                //if (debug) System.out.println("stat - permissions = " + Integer.toOctalString(mode));
 
-                // TODO convert mtime from seconds to ScePspDateTime (see sceRtc)
+                // Set attr (dir/file) and copy into mode
+                if (file.isDirectory())
+                    attr |= 0x10;
+                if (file.isFile())
+                    attr |= 0x20;
+                mode |= attr << 8;
 
+                // Java can't see file create/access time
                 stat = new SceIoStat(mode, attr, size,
-                    new ScePspDateTime(), new ScePspDateTime(),
-                    new ScePspDateTime());
+                    new ScePspDateTime(0), new ScePspDateTime(0),
+                    new ScePspDateTime(mtime));
             }
         }
         return stat;
@@ -424,7 +482,7 @@ public class pspiofilemgr {
 
     public void sceIoGetstat(int file_addr, int stat_addr) {
         String filename = readStringZ(Memory.get_instance().mainmemory, (file_addr & 0x3fffffff) - MemoryMap.START_RAM);
-        if (debug) System.out.println("sceIoGetstat - file " + Integer.toHexString(file_addr) + " stat " + Integer.toHexString(stat_addr));
+        if (debug) System.out.println("sceIoGetstat - file = " + filename + " stat = " + Integer.toHexString(stat_addr));
 
         String pcfilename = getDeviceFilePath(filename);
         SceIoStat stat = stat(pcfilename);

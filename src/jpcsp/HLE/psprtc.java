@@ -25,42 +25,36 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 
 public class psprtc {
-    
+
     private static psprtc instance;
-    
+
     private psprtc() {
     }
-    
+
     public static psprtc get_instance() {
         if (instance == null) {
             instance = new psprtc();
         }
         return instance;
     }
-    
+
     public void sceRtcGetTickResolution() {
         /* 1000 ticks a second */
         Emulator.getProcessor().gpr[2] = 1000;
     }
-    
+
     public void sceRtcGetCurrentTick(int a0) {
         Memory.get_instance().write64(a0, System.currentTimeMillis());
         Emulator.getProcessor().gpr[2] = 0;
     }
-    
+
     public void sceRtcGetCurrentClockLocalTime(int a0) {
-        Calendar rightNow = Calendar.getInstance();
-        
+        ScePspDateTime pspTime = new ScePspDateTime();
         Memory mem = Memory.get_instance();
-        mem.write16(a0, (short)rightNow.get(Calendar.YEAR));
-        mem.write16(a0 +2, (short)rightNow.get(Calendar.MONTH));
-        mem.write16(a0 +4, (short)rightNow.get(Calendar.DAY_OF_MONTH));
-        mem.write16(a0 +6, (short)rightNow.get(Calendar.HOUR));
-        mem.write16(a0 +8, (short)rightNow.get(Calendar.MINUTE));
-        mem.write16(a0 +10, (short)rightNow.get(Calendar.SECOND));
-        mem.write32(a0 +12, rightNow.get(Calendar.MILLISECOND));
-                
+
+        pspTime.write(mem, a0);
+
         Emulator.getProcessor().gpr[2] = 0;
     }
-    
+
 }

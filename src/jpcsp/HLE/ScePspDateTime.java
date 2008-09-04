@@ -16,9 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
+import java.util.Calendar;
+import java.util.Date;
 import jpcsp.Memory;
 
-/** http://psp.jim.sh/pspsdk-doc/structScePspDateTime.html */
+/**
+ * http://psp.jim.sh/pspsdk-doc/structScePspDateTime.html
+ * http://psp.jim.sh/pspsdk-doc/structpspTime.html */
 public class ScePspDateTime {
     public int year;
     public int month;
@@ -28,14 +32,32 @@ public class ScePspDateTime {
     public int second;
     public int microsecond;
 
+    /** @param time Unix time, seconds since the epoch/1970. */
+    public ScePspDateTime(long time) {
+        Calendar cal = Calendar.getInstance();
+        Date date = new Date(time);
+        cal.setTime(date);
+
+        this.year = cal.get(Calendar.YEAR);
+        this.month = 1 + cal.get(Calendar.MONTH); // check
+        this.day = cal.get(Calendar.DAY_OF_MONTH);
+        this.hour = cal.get(Calendar.HOUR);
+        this.minute = cal.get(Calendar.MINUTE);
+        this.second = cal.get(Calendar.SECOND);
+        this.microsecond = cal.get(Calendar.MILLISECOND);
+    }
+
+    /** All fields will be initialised to the time the object was created. */
     public ScePspDateTime() {
-        this.year = 0;
-        this.month = 0;
-        this.day = 0;
-        this.hour = 0;
-        this.minute = 0;
-        this.second = 0;
-        this.microsecond = 0;
+        Calendar cal = Calendar.getInstance();
+
+        this.year = cal.get(Calendar.YEAR);
+        this.month = 1 + cal.get(Calendar.MONTH); // check
+        this.day = cal.get(Calendar.DAY_OF_MONTH);
+        this.hour = cal.get(Calendar.HOUR);
+        this.minute = cal.get(Calendar.MINUTE);
+        this.second = cal.get(Calendar.SECOND);
+        this.microsecond = cal.get(Calendar.MILLISECOND);
     }
 
     public ScePspDateTime(int year, int month, int day,
