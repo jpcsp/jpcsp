@@ -87,7 +87,7 @@ public class VideoEngine {
         //System.err.println("update start");
         DisplayList.Lock();
         Iterator<DisplayList> it = DisplayList.iterator();
-        while(it.hasNext()) {
+        while(it.hasNext() && !Emulator.pause) {
             DisplayList list = it.next();
             if (list.status == DisplayList.QUEUED) {
                 //System.err.println("executeList");
@@ -185,7 +185,7 @@ public class VideoEngine {
                 // TODO figure out how to handle the separate MODEL and VIEW/WORLD matrix stacks
                 gl.glMatrixMode(GL.GL_MODELVIEW);
                 world_upload_start = true;
-                log("sceGumMatrixMode GU_WORLD");
+                log("sceGumMatrixMode GU_MODEL");
                 break;
 
             case WORLD:
@@ -323,7 +323,7 @@ public class VideoEngine {
                         log(helper.getCommandString(PRIM) + " triangle_fans");
                         break;
                     case PRIM_SPRITES:
-                        log(helper.getCommandString(PRIM) + " sprites");
+                        log(helper.getCommandString(PRIM) + " sprites UNIMPLEMENTED");
                         break;
                 }
 
@@ -348,12 +348,24 @@ public class VideoEngine {
                         break;
                 }
                 break;
+
             case SHADE:
-                int SETTED_MODEL = normalArgument | 0x01; //bit 0
-                SETTED_MODEL = (SETTED_MODEL == 0x01) ? SHADE_TYPE_SMOOTH : SHADE_TYPE_FLAT;
-                //drawable.glShadeModel(SETTED_MODEL);
-                log(helper.getCommandString(SHADE) + " " + ((SETTED_MODEL==0x01) ? "smooth" : "flat"));
+            {
+                int SETTED_MODEL = (normalArgument != 0) ? GL.GL_SMOOTH : GL.GL_FLAT;
+                gl.glShadeModel(SETTED_MODEL);
+                log(helper.getCommandString(SHADE) + " " + ((normalArgument != 0) ? "smooth" : "flat"));
                 break;
+            }
+
+            /* Disabled, has a side effect that makes the triangle in ortho.pbp all blue, we probably didnt't initialise something correctly/yet
+            case FFACE:
+            {
+                int frontFace = (normalArgument != 0) ? GL.GL_CW : GL.GL_CCW;
+                gl.glFrontFace(frontFace);
+                log(helper.getCommandString(FFACE) + " " + ((normalArgument != 0) ? "clockwise" : "counter-clockwise"));
+                break;
+            }
+            */
 
             case JUMP:
                 int npc = (normalArgument | actualList.base) & 0xFFFFFFFC;

@@ -40,6 +40,11 @@ import jpcsp.graphics.VideoEngine;
 public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
     private static pspdisplay_glcanvas instance;
 
+    // use this to toggle between GE/VideoEngine and direct frame buffer (example: pspDebugScreen)
+    // TODO use fbo/pbo or something so GE and writes to psp framebuffer
+    private final static boolean DISABLE_FRAMEBUFFER = false;
+    private final static boolean DISABLE_GE = true;
+
     // In theory we can protect shared access to videoram if only 1 thread can run at a time,
     // so this option lets us block the emu thread while the GL thread updates.
     private final static boolean UPDATE_BLOCKS = false; // implementation needs fixing
@@ -216,45 +221,58 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
                 doupdatetexture = false;
             }
 
-            // Execute queued display lists
-            VideoEngine ve = VideoEngine.getEngine(gl, true, true);
-            ve.update();
+            if (!DISABLE_GE) {
+                // Execute queued display lists
+                VideoEngine ve = VideoEngine.getEngine(gl, true, true);
+                ve.update();
+            }
 
-            // Save VideoEngine's GL_TEXTURE_2D, current matrix mode, viewport settings
-            gl.glPushAttrib(GL.GL_ENABLE_BIT|GL.GL_TRANSFORM_BIT|GL.GL_VIEWPORT_BIT);
+            if (!DISABLE_FRAMEBUFFER &&
+                currentBufferInfo.tex != null) {
+                // Save VideoEngine's GL_TEXTURE_2D, current matrix mode, viewport settings
+                gl.glPushAttrib(GL.GL_ENABLE_BIT|GL.GL_TRANSFORM_BIT|GL.GL_VIEWPORT_BIT);
 
-            // Setup these here, since VideoEngine may have changed them
-            gl.glViewport(0, 0, reshape_width, reshape_height);
-            gl.glMatrixMode(GL.GL_PROJECTION);
-            gl.glPushMatrix(); // Save VideoEngine's GL_PROJECTION matrix
-            gl.glLoadIdentity();
-            gl.glOrtho(0, 480, 272, 0, -1.0, 1.0);
+                // Setup these here, since VideoEngine may have changed them
+                gl.glViewport(0, 0, reshape_width, reshape_height);
+                gl.glMatrixMode(GL.GL_PROJECTION);
+                gl.glPushMatrix(); // Save VideoEngine's GL_PROJECTION matrix
+                gl.glLoadIdentity();
+                gl.glOrtho(0, 480, 272, 0, -1.0, 1.0);
 
-            gl.glEnable(GL.GL_TEXTURE_2D);
-            currentBufferInfo.tex.bind();
+                gl.glMatrixMode(GL.GL_MODELVIEW);
+                gl.glPushMatrix();
+                gl.glLoadIdentity();
 
-            gl.glBegin(GL.GL_QUADS);
-                //gl.glNormal3f(0.0f, 0.0f, 1.0f);
+                gl.glEnable(GL.GL_TEXTURE_2D);
+                currentBufferInfo.tex.bind();
 
-                gl.glTexCoord2f(0.0f, 0.0f);
-                gl.glVertex3f(0.0f, 0.0f, 0.0f);
+                gl.glBegin(GL.GL_QUADS);
+                    //gl.glNormal3f(0.0f, 0.0f, 1.0f);
 
-                gl.glTexCoord2f(currentBufferInfo.u, 0.0f);
-                gl.glVertex3f(480.0f, 0.0f, 0.0f);
+                    gl.glTexCoord2f(0.0f, 0.0f);
+                    gl.glVertex3f(0.0f, 0.0f, 0.0f);
 
-                gl.glTexCoord2f(currentBufferInfo.u, currentBufferInfo.v);
-                gl.glVertex3f((float)currentBufferInfo.width, (float)currentBufferInfo.height, 0.0f);
+                    gl.glTexCoord2f(currentBufferInfo.u, 0.0f);
+                    gl.glVertex3f(480.0f, 0.0f, 0.0f);
 
-                gl.glTexCoord2f(0.0f, currentBufferInfo.v);
-                gl.glVertex3f(0.0f, 272.0f, 0.0f);
-            gl.glEnd();
+                    gl.glTexCoord2f(currentBufferInfo.u, currentBufferInfo.v);
+                    gl.glVertex3f((float)currentBufferInfo.width, (float)currentBufferInfo.height, 0.0f);
 
-            // Restore VideoEngine's GL_PROJECTION matrix
-            gl.glMatrixMode(GL.GL_PROJECTION);
-            gl.glPopMatrix();
+                    gl.glTexCoord2f(0.0f, currentBufferInfo.v);
+                    gl.glVertex3f(0.0f, 272.0f, 0.0f);
+                gl.glEnd();
 
-            // Restore VideoEngine's GL_TEXTURE_2D, current matrix mode, viewport settings
-            gl.glPopAttrib();
+                // Restore VideoEngine's GL_MODELVIEW matrix
+                gl.glMatrixMode(GL.GL_MODELVIEW);
+                gl.glPopMatrix();
+
+                // Restore VideoEngine's GL_PROJECTION matrix
+                gl.glMatrixMode(GL.GL_PROJECTION);
+                gl.glPopMatrix();
+
+                // Restore VideoEngine's GL_TEXTURE_2D, current matrix mode, viewport settings
+                gl.glPopAttrib();
+            }
         }
 
         if (UPDATE_BLOCKS && callingThread != null) {
@@ -331,8 +349,10 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
                 false, false, false,
                 buffer, null);
 
-            if (tex != null)
+            if (tex != null) {
                 tex.dispose();
+                tex = null;
+            }
 
             tex = TextureIO.newTexture(inputData);
             tex.setTexParameteri(GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
@@ -346,7 +366,11 @@ public class pspdisplay_glcanvas extends GLCanvas implements GLEventListener{
 
         // Call from GL thread
         public void updateTexture() {
-            tex.updateImage(inputData);
+            if (tex != null) {
+                tex.updateImage(inputData);
+            } else {
+                System.out.println("updateTexture tex is null");
+            }
         }
 
         // Call from GL thread

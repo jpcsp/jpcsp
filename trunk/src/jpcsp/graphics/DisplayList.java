@@ -33,7 +33,7 @@ public class DisplayList {
     public static final int GU_HEAD = 1;
 
     private static HashMap<Integer, DisplayList> displayLists;
-    private static int ids = 0;
+    private static int ids;
     private static Object lock = new Object();
     private static int lockvalue = 1;
 
@@ -67,6 +67,7 @@ public class DisplayList {
 
     public static synchronized void Initialise() {
         displayLists = new HashMap<Integer, DisplayList>();
+        ids = 0;
     }
 
     public static synchronized void addDisplayList(DisplayList list) {
