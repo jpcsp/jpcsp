@@ -11,7 +11,7 @@
           <SubComponents>
             <MenuItem class="javax.swing.JMenuItem" name="openUmd">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Open UMD (ISO)"/>
+                <Property name="text" type="java.lang.String" value="Load UMD (ISO)"/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="openUmdActionPerformed"/>
@@ -19,7 +19,7 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="OpenFile">
               <Properties>
-                <Property name="text" type="java.lang.String" value="OpenFile"/>
+                <Property name="text" type="java.lang.String" value="Load File"/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="OpenFileActionPerformed"/>
@@ -27,7 +27,7 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="OpenMemStick">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Open MemStick"/>
+                <Property name="text" type="java.lang.String" value="Load MemStick"/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="OpenMemStickActionPerformed"/>

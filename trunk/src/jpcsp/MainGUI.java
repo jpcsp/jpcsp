@@ -173,7 +173,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         FileMenu.setText("File");
 
-        openUmd.setText("Open UMD (ISO)");
+        openUmd.setText("Load UMD (ISO)");
         openUmd.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 openUmdActionPerformed(evt);
@@ -181,7 +181,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         FileMenu.add(openUmd);
 
-        OpenFile.setText("OpenFile");
+        OpenFile.setText("Load File");
         OpenFile.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 OpenFileActionPerformed(evt);
@@ -189,7 +189,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         FileMenu.add(OpenFile);
 
-        OpenMemStick.setText("Open MemStick");
+        OpenMemStick.setText("Load MemStick");
         OpenMemStick.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 OpenMemStickActionPerformed(evt);

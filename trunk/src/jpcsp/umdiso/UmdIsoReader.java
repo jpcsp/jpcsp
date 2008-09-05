@@ -7,7 +7,6 @@ package jpcsp.umdiso;
 
 import java.io.*;
 import jpcsp.umdiso.iso9660.*;
-import com.jcraft.jzlib.*;
 
 import java.util.zip.*;
 
@@ -111,10 +110,10 @@ public class UmdIsoReader {
             return;
         }
         
-        throw new UnsupportedEncodingException("Unsupported file format or corrupt file.");
+        throw new IOException("Unsupported file format or corrupt file.");
     }
     
-    public byte[] readSector(int sectorNumber) throws IOException, UnsupportedEncodingException, DataFormatException
+    public byte[] readSector(int sectorNumber) throws IOException
     {
         if((sectorNumber<0)||(sectorNumber>=numSectors))
             throw new ArrayIndexOutOfBoundsException("Sector number " + sectorNumber + " out of bounds.");
@@ -128,45 +127,48 @@ public class UmdIsoReader {
             return bytes;
         }
 
-        if(format==FileFormat.CompressedCSO)
-        {
-            int sectorOffset = sectorOffsets[sectorNumber];
-            int sectorEnd    = sectorOffsets[sectorNumber+1];
-            
-            if(sectorOffset<0)
+        try {
+            if(format==FileFormat.CompressedCSO)
             {
-                int realOffset = (sectorOffset&0x7fffffff)<<offsetShift;
+                int sectorOffset = sectorOffsets[sectorNumber];
+                int sectorEnd    = sectorOffsets[sectorNumber+1];
 
-                byte[] bytes = new byte[2048];
+                if(sectorOffset<0)
+                {
+                    int realOffset = (sectorOffset&0x7fffffff)<<offsetShift;
 
-                fileReader.seek(realOffset);
-                fileReader.read(bytes);
-                return bytes;
+                    byte[] bytes = new byte[2048];
+
+                    fileReader.seek(realOffset);
+                    fileReader.read(bytes);
+                    return bytes;
+                }
+
+                sectorEnd <<= offsetShift;
+                sectorOffset <<= offsetShift;
+
+                int compressedLength = (sectorEnd - sectorOffset);
+
+                byte[] compressedData = new byte[compressedLength];
+
+                fileReader.seek(sectorOffset);
+                fileReader.read(compressedData);
+
+                Inflater inf = new Inflater();
+
+                byte[] data = new byte[2048];
+
+                inf.setInput(compressedData);
+                inf.inflate(data);
+                inf.end();
             }
-            
-            sectorEnd <<= offsetShift;
-            sectorOffset <<= offsetShift;
-            
-            int compressedLength = (sectorEnd - sectorOffset);
-            
-            byte[] compressedData = new byte[compressedLength];
-            
-            fileReader.seek(sectorOffset);
-            fileReader.read(compressedData);
-            
-            Inflater inf = new Inflater();
-            
-            byte[] data = new byte[2048];
-            
-            inf.setInput(compressedData);
-            inf.inflate(data);
-            inf.end();
         }
-        
-        throw new UnsupportedEncodingException("Unsupported file format or corrupt file.");
+        catch(DataFormatException e) { throw new IOException(e.getMessage(),e.getCause()); }
+
+        throw new IOException("Unsupported file format or corrupt file.");
     }
     
-    public UmdIsoFile getFile(String filePath) throws IOException, FileNotFoundException
+    public UmdIsoFile getFile(String filePath) throws IOException, FileNotFoundException, DataFormatException
     {
         Iso9660Directory dir = new Iso9660Handler(this);
 
