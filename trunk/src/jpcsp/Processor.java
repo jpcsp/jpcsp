@@ -361,7 +361,7 @@ public class Processor implements AllegrexInstructions {
         // RAW conflict (Using the result of previous FPU instructions)
         cycles = Math.max(cycles, Math.max(fpr_cycles[fs], fpr_cycles[ft]));
     }
-    private final AllegrexDecoder decoder = new AllegrexDecoder();
+    protected final AllegrexDecoder decoder = new AllegrexDecoder();
 
     public void step() {
 
