@@ -38,16 +38,25 @@ public class pspAudio {
     public pspAudio()
     {
       pspchannels = new int[8];
-      
+
     }
+
+    public void sceAudioOutputPannedBlocking(int a0 , int a1 ,int a2, int a3)
+    {
+        // TODO
+        // this is going to spam:
+        System.out.println("(Unimplement)sceAudioOutputPannedBlocking ...");
+        Emulator.getProcessor().gpr[2] = 0; //just return success
+    }
+
     public void sceAudioChReserve(int a0 , int a1 ,int a2)
     {
         System.out.println("(Unimplement)sceAudioChReserve channel= " + a0 + " samplecount = " + a1 + " format = " + a2);
-        if(a0 == -1) //PSP_AUDIO_NEXT_CHANNEL 
+        if(a0 == -1) //PSP_AUDIO_NEXT_CHANNEL
         {
              //get next available channel
         }
-        Emulator.getProcessor().gpr[2] = 0; //just return the first channel
+        Emulator.getProcessor().gpr[2] = -1; //just return the first channel
     }
-    
+
 }

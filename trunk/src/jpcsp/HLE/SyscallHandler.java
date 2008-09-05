@@ -287,7 +287,9 @@ public class SyscallHandler {
                     break;
 		// sceKernelGetGPI(0x20c1),
 		// sceKernelSetGPO(0x20c2),
-		// sceKernelLibcClock(0x20c3),
+                case 0x20c3:
+                    psputils.get_instance().sceKernelLibcClock();
+                    break;
                 case 0x20c4:
                     psputils.get_instance().sceKernelLibcTime(gpr[4]);
                     break;
@@ -419,7 +421,9 @@ public class SyscallHandler {
 		// sceAudioOutput(0x2124),
 		// sceAudioOutputBlocking(0x2125),
 		// sceAudioOutputPanned(0x2126),
-		// sceAudioOutputPannedBlocking(0x2127),
+                case 0x2127:
+                    pspAudio.get_instance().sceAudioOutputPannedBlocking(gpr[4], gpr[5], gpr[6], gpr[7]);
+                    break;
                 case 0x2128:
                     pspAudio.get_instance().sceAudioChReserve(gpr[4], gpr[5], gpr[6]);
                     break;
@@ -455,7 +459,9 @@ public class SyscallHandler {
 		// sceDisplayGetBrightness(0x2142),
 		// sceDisplayGetVcount(0x2143),
 		// sceDisplayIsVblank(0x2144),
-		// sceDisplayWaitVblank(0x2145),
+                case 0x2145:
+                    pspdisplay.get_instance().sceDisplayWaitVblank();
+                    break;
 		// sceDisplayWaitVblankCB(0x2146),
                 case 0x2147:
                     pspdisplay.get_instance().sceDisplayWaitVblankStart();
