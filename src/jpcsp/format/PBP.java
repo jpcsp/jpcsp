@@ -97,7 +97,11 @@ public class PBP {
             info = this.toString();
         }
     }
-
+    public void readPSF(RandomAccessFile f) throws IOException {
+           f.seek(p_offset_param_sfo);
+           PSF psf1= new PSF(p_offset_param_sfo);
+           psf1.read(f);
+    }
     @Override
     public String toString() {
         StringBuffer str = new StringBuffer();
