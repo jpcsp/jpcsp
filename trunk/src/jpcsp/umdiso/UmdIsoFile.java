@@ -6,12 +6,13 @@
 package jpcsp.umdiso;
 
 import java.io.*;
+import java.util.zip.DataFormatException;
 
 /**
  *
  * @author gigaherz
  */
-public class UmdIsoFile extends java.io.InputStream {
+public class UmdIsoFile extends InputStream {
 
     private int startSectorNumber;
     private int currentSectorNumber;
@@ -23,7 +24,7 @@ public class UmdIsoFile extends java.io.InputStream {
     
     UmdIsoReader internalReader;
     
-    public UmdIsoFile(UmdIsoReader reader, int startSector, long lengthInBytes) throws IOException
+    public UmdIsoFile(UmdIsoReader reader, int startSector, long lengthInBytes) throws IOException, DataFormatException
     {
         startSectorNumber = startSector;
         currentSectorNumber = startSectorNumber;
@@ -43,7 +44,9 @@ public class UmdIsoFile extends java.io.InputStream {
         if(sectorOffset==2048)
         {
             currentSectorNumber++;
-            currentSector = internalReader.readSector(currentSectorNumber);
+            try {
+                currentSector = internalReader.readSector(currentSectorNumber);
+            } catch(DataFormatException e) { throw new IOException(e.getMessage(),e.getCause()); }
             sectorOffset = 0;
         }
         currentOffset++;
@@ -54,53 +57,24 @@ public class UmdIsoFile extends java.io.InputStream {
     @Override
     public void reset() throws IOException
     {
-        currentSectorNumber = startSectorNumber;
-        currentSector = internalReader.readSector(currentSectorNumber);
-        currentOffset = 0;
-        sectorOffset = 0;
+        seek(0);
     }
     
     @Override
-    public long skip(long n)
+    public long skip(long n) throws IOException
     {
-        long skipped=0;
         long oldOffset = currentOffset;
-        long endOffset = currentOffset + n;
+        long newOffset = currentOffset + n;
         
-        if(endOffset>=maxOffset)
+        if(n<0)
+            return n;
+        
+        if(newOffset>=maxOffset)
         {
-            try {
-                long newOffset = maxOffset;
-                int newSectorNumber = (int)(newOffset / 2048);
-                currentSector = internalReader.readSector(newSectorNumber);
-                currentOffset = newOffset;
-                currentSectorNumber = newSectorNumber;
-                sectorOffset = (int)(currentOffset % 2048);
-                return (maxOffset - oldOffset);
-            }
-            catch(IOException e)
-            {
-                return 0;
-            }
+            newOffset = maxOffset;
         }
         
-        try {
-            int oldSectorNumber = currentSectorNumber;
-            long newOffset = endOffset;
-            int newSectorNumber = (int)(newOffset / 2048);
-            if(oldSectorNumber != newSectorNumber)
-            {
-                currentSector = internalReader.readSector(newSectorNumber);
-            }
-            currentOffset = newOffset;
-            currentSectorNumber = newSectorNumber;
-            sectorOffset = (int)(currentOffset % 2048);
-            return (endOffset - oldOffset);
-        }
-        catch(IOException e)
-        {
-            return 0;
-        }
+        return seek(currentOffset+n)-currentOffset;
     }
     
     public long getSize()
@@ -108,4 +82,31 @@ public class UmdIsoFile extends java.io.InputStream {
         return maxOffset;
     }
     
+    public long seek(long offset) throws IOException
+    {
+        long endOffset = offset;
+ 
+        if((offset<0)||(offset>=maxOffset))
+            throw new IndexOutOfBoundsException("Seek offset " + offset + " out of bounds.");
+        
+        try {
+            int oldSectorNumber = currentSectorNumber;
+            long newOffset = endOffset;
+            int newSectorNumber = (int)(newOffset / 2048);
+            if(oldSectorNumber != newSectorNumber)
+            {
+                try {
+                    currentSector = internalReader.readSector(newSectorNumber);
+                } catch(DataFormatException e) { throw new IOException(e.getMessage(),e.getCause()); }
+            }
+            currentOffset = newOffset;
+            currentSectorNumber = newSectorNumber;
+            sectorOffset = (int)(currentOffset % 2048);
+            return endOffset;
+        }
+        catch(IOException e)
+        {
+            return currentOffset;
+        }
+    }
 }
