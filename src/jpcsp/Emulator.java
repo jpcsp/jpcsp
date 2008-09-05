@@ -404,8 +404,8 @@ public class Emulator implements Runnable {
 
         jpcsp.HLE.ThreadMan.get_instance().Initialise(cpu.pc, romManager.getPSPModuleInfo().getM_attr());
         jpcsp.HLE.psputils.get_instance().Initialise();
-        jpcsp.HLE.pspdisplay.get_instance().Initialise();
         jpcsp.HLE.pspge.get_instance().Initialise();
+        jpcsp.HLE.pspdisplay.get_instance().Initialise();
     }
 
     private void initDebugWindowsByPbp() {

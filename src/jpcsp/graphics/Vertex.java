@@ -97,30 +97,72 @@ public class Vertex {
         return ptr_vertex + i * vertexSize;
     }
 
+    // soywiz uses the "float" GL calls even if it the type is 8 or 16 bit, this could still be wrong
     public void output(GL gl, Memory mem, int addr) {
-        switch (color) {
-            case 1: case 2: case 3: /* TODO */ addr += 1; break;
-            case 4: case 5: case 6: /* TODO */ addr += 2; break;
+        float u, v;
+        switch(texture) {
+            case 1:
+                u = Emulator.getMemory().read8(addr); addr += 1;
+                v = Emulator.getMemory().read8(addr); addr += 1;
+                gl.glTexCoord2f(u, v);
+                break;
+            case 2:
+                u = Emulator.getMemory().read16(addr); addr += 2;
+                v = Emulator.getMemory().read16(addr); addr += 2;
+                gl.glTexCoord2f(u, v);
+                break;
+            case 3:
+                u = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+                v = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+                gl.glTexCoord2f(u, v);
+                break;
+        }
+
+        float r, g, b, a;
+        switch(color) {
+            case 1: case 2: case 3: System.out.println("unimplemented color type"); addr += 1; break;
+            case 4: case 5: case 6: System.out.println("unimplemented color type"); addr += 2; break;
             case 7: { // GU_COLOR_8888
                 int packed = mem.read32(addr); addr += 4;
-                float r = (float)((packed      ) & 0xff) / 255;
-                float g = (float)((packed >>  8) & 0xff) / 255;
-                float b = (float)((packed >> 16) & 0xff) / 255;
-                float a = (float)((packed >> 24) & 0xff) / 255;
+                r = (float)((packed      ) & 0xff) / 255;
+                g = (float)((packed >>  8) & 0xff) / 255;
+                b = (float)((packed >> 16) & 0xff) / 255;
+                a = (float)((packed >> 24) & 0xff) / 255;
                 gl.glColor4f(r, g, b, a);
                 break;
             }
         }
 
-        // TODO texture uv and normals
+        float nx, ny, nz;
+        switch(normal) {
+            case 1:
+                nx = Emulator.getMemory().read8(addr); addr += 1;
+                ny = Emulator.getMemory().read8(addr); addr += 1;
+                nz = Emulator.getMemory().read8(addr); addr += 1;
+                gl.glNormal3f(nx, ny, nz);
+                break;
+            case 2:
+                nx = Emulator.getMemory().read16(addr); addr += 2;
+                ny = Emulator.getMemory().read16(addr); addr += 2;
+                nz = Emulator.getMemory().read16(addr); addr += 2;
+                gl.glNormal3f(nx, ny, nz);
+                break;
+            case 3:
+                nx = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+                ny = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+                nz = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+                gl.glNormal3f(nx, ny, nz);
+                break;
+        }
 
-        switch (position) {
-            case 1: /* TODO */ addr += 1; break;
-            case 2: /* TODO */ addr += 2; break;
+        float x, y, z;
+        switch(position) {
+            case 1: System.out.println("unimplemented vertex type"); addr += 1; break;
+            case 2: System.out.println("unimplemented vertex type"); addr += 2; break;
             case 3: { // GU_VERTEX_32BITF
-                float x = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-                float y = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-                float z = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+                x = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+                y = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+                z = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
                 gl.glVertex3f(x, y, z);
                 break;
             }
