@@ -37,7 +37,7 @@ public class Memory {
     private static Memory instance = null;
 
     private byte[]     all; // all psp memory is held in here
-    private int[]      map; // hold map of memory
+    private static int[]      map; // hold map of memory
     private ByteBuffer buf; // for easier memory reads/writes
 
     public ByteBuffer scratchpad;
@@ -111,7 +111,7 @@ public class Memory {
     }
 
 
-    private int indexFromAddr(int address) throws Exception {
+    public static int indexFromAddr(int address) throws Exception {
         int index = map[address >>> PAGE_SHIFT];
         if (index == -1) {
             throw new Exception(
@@ -162,6 +162,16 @@ public class Memory {
         }
     }
 
+    public int read32(int page, int address) {
+        try {
+            return buf.getInt(page + (address & PAGE_MASK));
+        } catch (Exception e) {
+            System.out.println("read32 - " + e.getMessage());
+            Emulator.PauseEmu();
+            return 0;
+        }
+    }
+
     public void write8(int address, byte data) {
         try {
             int page = indexFromAddr(address);
@@ -172,6 +182,16 @@ public class Memory {
             Emulator.PauseEmu();
         }
     }
+    
+    public void write8(int page, int address, byte data) {
+        try {
+            buf.put(page + (address & PAGE_MASK), data);
+            pspdisplay.get_instance().write8(address, data);
+        } catch (Exception e) {
+            System.out.println("write8 - " + e.getMessage());
+            Emulator.PauseEmu();
+        }
+    }    
 
     public void write16(int address, short data) {
         try {
@@ -187,6 +207,16 @@ public class Memory {
     public void write32(int address, int data) {
         try {
             int page = indexFromAddr(address);
+            buf.putInt(page + (address & PAGE_MASK), data);
+            pspdisplay.get_instance().write32(address, data);
+        } catch (Exception e) {
+            System.out.println("write32 - " + e.getMessage());
+            Emulator.PauseEmu();
+        }
+    }
+
+    public void write32(int page, int address, int data) {
+        try {
             buf.putInt(page + (address & PAGE_MASK), data);
             pspdisplay.get_instance().write32(address, data);
         } catch (Exception e) {
