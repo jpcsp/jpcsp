@@ -24,7 +24,7 @@ public class UmdIsoFile extends InputStream {
     
     UmdIsoReader internalReader;
     
-    public UmdIsoFile(UmdIsoReader reader, int startSector, long lengthInBytes) throws IOException, DataFormatException
+    public UmdIsoFile(UmdIsoReader reader, int startSector, long lengthInBytes) throws IOException
     {
         startSectorNumber = startSector;
         currentSectorNumber = startSectorNumber;
@@ -44,9 +44,7 @@ public class UmdIsoFile extends InputStream {
         if(sectorOffset==2048)
         {
             currentSectorNumber++;
-            try {
-                currentSector = internalReader.readSector(currentSectorNumber);
-            } catch(DataFormatException e) { throw new IOException(e.getMessage(),e.getCause()); }
+            currentSector = internalReader.readSector(currentSectorNumber);
             sectorOffset = 0;
         }
         currentOffset++;
@@ -95,9 +93,7 @@ public class UmdIsoFile extends InputStream {
             int newSectorNumber = (int)(newOffset / 2048);
             if(oldSectorNumber != newSectorNumber)
             {
-                try {
-                    currentSector = internalReader.readSector(newSectorNumber);
-                } catch(DataFormatException e) { throw new IOException(e.getMessage(),e.getCause()); }
+                currentSector = internalReader.readSector(newSectorNumber);
             }
             currentOffset = newOffset;
             currentSectorNumber = newSectorNumber;
