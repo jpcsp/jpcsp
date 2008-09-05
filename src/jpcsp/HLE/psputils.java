@@ -31,7 +31,8 @@ import jpcsp.Processor;
 
 public class psputils {
     private static psputils instance;
-    private static HashMap<Integer, SceKernelUtilsMt19937Context> Mt19937List;
+    private int initialclocks;
+    private HashMap<Integer, SceKernelUtilsMt19937Context> Mt19937List;
 
     public static psputils get_instance() {
         if (instance == null) {
@@ -46,7 +47,7 @@ public class psputils {
     /** call this when resetting the emulator */
     public void Initialise() {
         //System.out.println("Utils: Initialise");
-
+        initialclocks = (int)System.nanoTime(); // seconds * 1 million
         Mt19937List = new HashMap<Integer, SceKernelUtilsMt19937Context>();
     }
 
@@ -57,6 +58,15 @@ public class psputils {
         if (time_t_addr != 0)
             Memory.get_instance().write32(time_t_addr, seconds);
         Emulator.getProcessor().gpr[2] = seconds;
+    }
+
+    /** returns the number of clocks since the "process" started.
+     * Current implemention uses clocks since Initialise was last called, and
+     * we are using clocks = seconds * CLOCKS_PER_SEC, where CLOCKS_PER_SEC
+     * is 1 million (1000000). */
+    public void sceKernelLibcClock() {
+        int clocks = (int)System.nanoTime() - initialclocks; // seconds * 1 million
+        Emulator.getProcessor().gpr[2] = clocks;
     }
 
     public void sceKernelDcacheWritebackAll() {

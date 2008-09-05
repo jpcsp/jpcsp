@@ -177,6 +177,11 @@ public class pspdisplay {
         Emulator.getProcessor().gpr[2] = 0;
     }
 
+    public void sceDisplayWaitVblank() {
+        // TODO
+        sceDisplayWaitVblankStart();
+    }
+
     /** Use this to indicate a refresh is required.
      * We are cheating and not updating at true 60 fps, but only at 60 fps AND dirty bit is set. */
     public void setDirty(boolean dirty) {

@@ -77,6 +77,11 @@ public class ThreadMan {
         current_thread = new SceKernelThreadInfo("root", entry_addr, 0x20, 0x40000, attr);
         rootThreadUid = current_thread.uid;
 
+        // Set user mode bit if kernel mode bit is not present
+        if ((current_thread.attr & PSP_THREAD_ATTR_KERNEL) != PSP_THREAD_ATTR_KERNEL) {
+            current_thread.attr |= PSP_THREAD_ATTR_USER;
+        }
+
         // Switch in this thread
         current_thread.status = PspThreadStatus.PSP_THREAD_RUNNING;
         current_thread.restoreContext();
@@ -251,20 +256,37 @@ public class ThreadMan {
     }
 
 
-    public void ThreadMan_sceKernelCreateThread(int a0, int a1, int a2, int a3, int t0, int t1) {
-        String name = readStringZ(Memory.get_instance().mainmemory, (a0 & 0x3fffffff) - MemoryMap.START_RAM);
+    public void ThreadMan_sceKernelCreateThread(int name_addr, int entry_addr,
+        int initPriority, int stackSize, int attr, int option_addr) {
+        String name = readStringZ(Memory.get_instance().mainmemory,
+            (name_addr & 0x3fffffff) - MemoryMap.START_RAM);
 
-        // TODO use t1/SceKernelThreadOptParam?
-        if (t1 != 0)
+        // TODO use option_addr/SceKernelThreadOptParam?
+        if (option_addr != 0)
             System.out.println("sceKernelCreateThread unhandled SceKernelThreadOptParam");
 
-        SceKernelThreadInfo thread = new SceKernelThreadInfo(name, a1, a2, a3, t0);
+        SceKernelThreadInfo thread = new SceKernelThreadInfo(name, entry_addr, initPriority, stackSize, attr);
 
         System.out.println("sceKernelCreateThread SceUID=" + Integer.toHexString(thread.uid)
-            + " name:'" + thread.name + "' PC=" + Integer.toHexString(thread.pcreg) + " attr:" + Integer.toHexString(t1));
+            + " name:'" + thread.name + "' PC=" + Integer.toHexString(thread.pcreg)
+            + " attr:" + Integer.toHexString(attr));
+
+        // Inherit kernel mode if user mode bit is not set
+        if ((current_thread.attr & PSP_THREAD_ATTR_KERNEL) == PSP_THREAD_ATTR_KERNEL &&
+            (attr & PSP_THREAD_ATTR_USER) != PSP_THREAD_ATTR_USER) {
+            System.out.println("sceKernelCreateThread inheriting kernel mode");
+            thread.attr |= PSP_THREAD_ATTR_KERNEL;
+        }
+        // Inherit user mode
+        if ((current_thread.attr & PSP_THREAD_ATTR_USER) == PSP_THREAD_ATTR_USER) {
+            if ((thread.attr & PSP_THREAD_ATTR_USER) != PSP_THREAD_ATTR_USER)
+                System.out.println("sceKernelCreateThread inheriting user mode");
+            thread.attr |= PSP_THREAD_ATTR_USER;
+            // Always remove kernel mode bit
+            thread.attr &= ~PSP_THREAD_ATTR_KERNEL;
+        }
 
         Emulator.getProcessor().gpr[2] = thread.uid;
-        //return thread.uid;
     }
 
     /** terminate thread a0 */
@@ -490,10 +512,26 @@ public class ThreadMan {
         }
     }
 
+    private static final int PSP_THREAD_ATTR_USER = 0x80000000;
+    private static final int PSP_THREAD_ATTR_USBWLAN = 0xa0000000;
+    private static final int PSP_THREAD_ATTR_VSH = 0xc0000000;
+    private static final int PSP_THREAD_ATTR_KERNEL = 0x00001000; // TODO are module/thread attr interchangeable?
+    private static final int PSP_THREAD_ATTR_VFPU = 0x00004000;
+    private static final int PSP_THREAD_ATTR_SCRATCH_SRAM = 0x00008000;
+    private static final int PSP_THREAD_ATTR_NO_FILLSTACK = 0x00100000; // Disables filling the stack with 0xFF on creation.
+    private static final int PSP_THREAD_ATTR_CLEAR_STACK = 0x00200000; // Clear the stack when the thread is deleted.
+
     private int mallocStack(int size) {
         int p = 0x09f00000 - stackAllocated;
         stackAllocated += size;
         return p;
+    }
+
+    private void memset(int address, byte c, int length) {
+        Memory mem = Memory.get_instance();
+        for (int i = 0; i < length; i++) {
+            mem.write8(address + i, c);
+        }
     }
 
     private class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
@@ -537,6 +575,8 @@ public class ThreadMan {
 
             status = PspThreadStatus.PSP_THREAD_SUSPEND;
             stack_addr = mallocStack(stackSize); // TODO MemoryMan.mallocFromEnd(stackSize);
+            if ((attr & PSP_THREAD_ATTR_NO_FILLSTACK) != PSP_THREAD_ATTR_NO_FILLSTACK)
+                memset(stack_addr - stackSize + 1, (byte)0xFF, stackSize);
             gpReg_addr = 0; // ?
             currentPriority = initPriority;
             waitType = 0; // ?

@@ -33,7 +33,7 @@ public class PSF {
      private long offsetkeytable;
      private long offsetvaluetable;
      private long numberofkeypairs;
-     
+
      //index table
      /*
 0 	1 	2 	ul16 Offset of the key name into the key table (in bytes)
@@ -63,14 +63,14 @@ public class PSF {
          offsetkeytable= readUWord(f);
          offsetvaluetable= readUWord(f);
          numberofkeypairs= readUWord(f);
-         
+
          offset_keyname = new int[(int)numberofkeypairs];
-         alignment  = new byte[(byte)numberofkeypairs];
-         datatype = new byte[(byte)numberofkeypairs];
+         alignment  = new byte[(int)numberofkeypairs];
+         datatype = new byte[(int)numberofkeypairs];
          value_size = new long[(int)numberofkeypairs];
          value_size_padding = new long[(int)numberofkeypairs];
-         offset_data_value = new long[(int)numberofkeypairs]; 
-         
+         offset_data_value = new long[(int)numberofkeypairs];
+
          /*System.out.println(psfversion);
          System.out.println(offsetkeytable);
          System.out.println(offsetvaluetable);
@@ -98,13 +98,18 @@ public class PSF {
             Key = readStringZ(f);
             if(datatype[i]==2)
             {
+               // String may not be in english!
                f.seek(p_offset_param_sfo + offsetvaluetable+offset_data_value[i]);
-               System.out.println(Key + " " + readStringZ(f));
+               System.out.println(Key + " string = " + readStringZ(f));
             }
             else if(datatype[i]==4)
             {
                f.seek(p_offset_param_sfo + offsetvaluetable+offset_data_value[i]);
-               System.out.println(Key + " "  + readUWord(f));
+               System.out.println(Key + " int = "  + readUWord(f));
+            }
+            else
+            {
+                System.out.println(Key + " UNIMPLEMENT DATATYPE " + datatype[i]);
             }
          }
      }
