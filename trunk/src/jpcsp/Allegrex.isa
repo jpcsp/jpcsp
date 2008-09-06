@@ -10,7 +10,9 @@ field
     vt_m:3; vt_c:2; vt_r:2; vt_x:1; vt_o:1;
     vd_m:3; vd_c:2; vd_r:2; vd_x:1; vd_o:1;
 
-    imm3:3; imm5:5; imm7:7; imm14:14; imm16:16; imm20:20; imm26:26;
+    one:1; two:1;
+
+    imm3:3; imm5:5; imm7:7; imm8:8; imm14:14; imm16:16; imm20:20; imm26:26;
 
     negw:1; negz:1; negy:1; negx:1;
     cstw:1; cstz:1; csty:1; cstx:1;
@@ -1634,9 +1636,44 @@ group root
         op BEQL(010100:rs:rt:imm16)
         {
             interpret = `
+                boolean c = (processor.gpr[rs] == processor.gpr[rt]);
+                processor.npc = c ? Processor.branchTarget(processor.pc, Processor.signExtend(imm16)) : (processor.pc + 4);
+                if (c) {
+                    processor.stepDelayslot();
+                }
             `
 
             compile = `
+                boolean c = (processor.gpr[rs] == processor.gpr[rt]);
+                int target = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
+                boolean loop = (target == processor.current_bb.getEntry());
+                if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                    if (c) {
+                        processor.current_bb.emit("processor.pc = 0x" + Integer.toHexString(target) + ";");
+                    } else {
+                        processor.current_bb.emit("processor.pc += 4;");
+                    }
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.load_gpr(rt, false);
+                    processor.current_bb.emit(
+                        "processor.pc = (" +
+                        processor.get_gpr(rs) +
+                        " == " +
+                        processor.get_gpr(rt) +
+                        ") ? 0x" +
+                        Integer.toHexString(target) +
+                        " : (processor.pc + 4);"
+                    );
+                }
+                processor.npc = c ? target : (processor.pc + 4);
+                if (c) {
+                    processor.stepDelayslot();
+                }
+                processor.reset_register_tracking();
+                processor.current_bb.emit(loop ? "continue;\n" : "break;\n");
+                processor.current_bb.freeze();
+                processor.current_bb = null;
             `
 
             disasm = `return Dis_RSRTOFFSET("beql", rs, rt, imm16, address);`
@@ -1782,6 +1819,34 @@ group root
             `
 
             compile = `
+                boolean c = (processor.gpr[rs] != processor.gpr[rt]);
+                int target = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
+                boolean loop = (target == processor.current_bb.getEntry());
+                if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                    if (c) {
+                        processor.current_bb.emit("processor.pc = 0x" + Integer.toHexString(target) + ";");
+                    } else {
+                        processor.current_bb.emit("processor.pc += 4;");
+                    }
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.load_gpr(rt, false);
+                    processor.current_bb.emit(
+                        "processor.pc = (" +
+                        processor.get_gpr(rs) +
+                        " != " +
+                        processor.get_gpr(rt) +
+                        ") ? 0x" +
+                        Integer.toHexString(target) +
+                        " : (processor.pc + 4);"
+                    );
+                }
+                processor.npc = c ? target : (processor.pc + 4);
+                processor.stepDelayslot();
+                processor.reset_register_tracking();
+                processor.current_bb.emit(loop ? "continue;\n" : "break;\n");
+                processor.current_bb.freeze();
+                processor.current_bb = null;
             `
 
             disasm = `return Dis_RSRTOFFSET("bne", rs, rt, imm16, address);`
@@ -2763,4 +2828,999 @@ group root
             disasm = `return "Unimplemented CTC0";`
         }
     }
+
+    group VFPU0
+    {
+        op VADD(011000:000:vt:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VADD";`
+        }
+ 
+ 
+        op VSUB(011000:001:vt:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VSUB";`
+        }
+ 
+        op VSBN(011000:010:vt:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VSBN";`
+        }
+
+        op VDIV(011000:111:vt:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VDIV";`
+        }
+
+    }
+
+    group VFPU1
+    {
+        op VMUL(011001:000:vt:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VMUL";`
+        }
+
+        op VDOT(011001:001:vt:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VDOT";`
+        }
+ 
+        op VSCL(011001:010:vt:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VSCL";`
+        }
+ 
+        op VHDP(011001:100:vt:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VHDP";`
+        }
+ 
+        op VDET(011001:101:vt:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VDET";`
+        }
+ 
+        op VCRS(011001:110:vt:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VCRS";`
+        }
+
+    }
+
+    group VFPU2
+    {
+       op MFV(010010:00:011:rt:0:0000000:0:imm7)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented MFV";`
+        }
+ 
+        op MFVC(010010:00:011:rt:0:0000000:1:imm7)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented MFVC";`
+        }
+ 
+        op MTV(010010:00:111:rt:0:0000000:0:imm7)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented MTV";`
+        }
+ 
+        op MTVC(010010:00:111:rt:0:0000000:1:imm7)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented MTVC";`
+        }
+ 
+        op BVF(010010:01:000:imm3:00:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented BVF";`
+        }
+ 
+        op BVT(010010:01:000:imm3:01:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented BVF";`
+        }
+ 
+        op BVFL(010010:01:000:imm3:10:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented BVF";`
+        }
+ 
+        op BVTL(010010:01:000:imm3:11:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented BVF";`
+        }
+    }
+
+    group VFPU3
+    {
+        op VCMP(011011:000:vt:two:vs:one:0000:imm3)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VCMP";`
+        }
+ 
+        op VMIN(011011:010:vt:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VMIN";`
+        }
+ 
+        op VMAX(011011:011:vt:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VMAX";`
+        }
+ 
+        op VSCMP(011011:101:vt:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VSCMP";`
+        }
+
+        op VSGE(011011:110:vt:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VSGE";`
+        }
+
+        op VSLT(011011:100:vt:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VSLT";`
+        }
+    }
+
+    group VFPU4
+    {
+        op VMOV(110100:00:000:0:0000:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VMOV";`
+        }
+
+ 
+        op VABS(110100:00:000:0:0001:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VABS";`
+        }
+
+        op VNEG(110100:00:000:0:0010:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VNEG";`
+        }
+ 
+        op VIDT(110100:00:000:0:0011:two:0000000:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VIDT";`
+        }
+  
+        op VSAT0(110100:00:000:0:0100:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VSAT0";`
+        }
+  
+        op VSAT1(110100:00:000:0:0101:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VSAT1";`
+        }
+ 
+        op VZERO(110100:00:000:0:0110:two:0000000:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VZERO";`
+        }
+ 
+        op VONE(110100:00:000:0:0111:two:0000000:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VONE";`
+        }
+ 
+        op VRCP(110100:00:000:1:0000:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VRCP";`
+        }
+ 
+        op VRSQ(110100:00:000:1:0001:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VRSQ";`
+        }
+ 
+        op VSIN(110100:00:000:1:0010:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VSIN";`
+        }
+ 
+        op VCOS(110100:00:000:1:0011:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VCOS";`
+        }
+ 
+        op VEXP2(110100:00:000:1:0100:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VEXP2";`
+        }
+ 
+        op VLOG2(110100:00:000:1:0101:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VLOG2";`
+        }
+ 
+        op VSQRT(110100:00:000:1:0110:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VSQRT";`
+        }
+ 
+        op VASIN(110100:00:000:1:0111:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VASIN";`
+        }
+ 
+        op VNRCP(110100:00:000:1:1000:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VNRCP";`
+        }
+ 
+        op VNSIN(110100:00:000:1:1010:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VNSIN";`
+        }
+ 
+        op VREXP2(110100:00:000:1:1100:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VREXP2";`
+        }
+ 
+        op VRNDS(110100:00:001:00:000:two:vs:one:0000000)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VRNDS";`
+        }
+ 
+        op VRNDI(110100:00:001:00:001:two:0000000:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VRNDI";`
+        }
+ 
+        op VRNDF1(110100:00:001:00:010:two:0000000:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VRNDF1";`
+        }
+ 
+        op VRNDF2(110100:00:001:00:011:two:0000000:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VRNDF2";`
+        }
+ 
+        op VF2H(110100:00:001:10:010:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VF2H";`
+        }
+ 
+        op VH2F(110100:00:001:10:011:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VH2F";`
+        }
+ 
+        op VSBZ(110100:00:001:10:110:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VSBZ";`
+        }
+ 
+        op VLGB(110100:00:001:10:111:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VLGB";`
+        }
+ 
+        op VUC2I(110100:00:001:11:000:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VUC2I";`
+        }
+ 
+        op VC2I(110100:00:001:11:001:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VC2I";`
+        }
+ 
+        op VUS2I(110100:00:001:11:010:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VUS2I";`
+        }
+ 
+        op VS2I(110100:00:001:11:011:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VS2I";`
+        }
+ 
+        op VI2UC(110100:00:001:11:100:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VI2UC";`
+        }
+ 
+        op VI2C(110100:00:001:11:101:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VI2C";`
+        }
+ 
+        op VI2US(110100:00:001:11:110:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VI2US";`
+        }
+ 
+        op VI2S(110100:00:001:11:111:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VI2S";`
+        }
+ 
+        op VSRT1(110100:00:010:00000:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VSRT1";`
+        }
+ 
+        op VSRT2(110100:00:010:00001:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VSRT2";`
+        }
+ 
+        op VBFY1(110100:00:010:00010:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VBFY1";`
+        }
+ 
+        op VBFY2(110100:00:010:00011:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VBFY2";`
+        }
+ 
+        op VOCP(110100:00:010:00100:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VOCP";`
+        }
+ 
+        op VSOCP(110100:00:010:00101:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VSOCP";`
+        }
+ 
+        op VFAD(110100:00:010:00110:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VFAD";`
+        }
+ 
+        op VAVG(110100:00:010:00111:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VAVG";`
+        }
+ 
+        op VSRT3(110100:00:010:01000:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VSRT3";`
+        }
+ 
+        op VSRT4(110100:00:010:01001:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VSRT4";`
+        }
+ 
+        op VMFVC(110100:00:010:10000:imm8:0:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VMFVC";`
+        }
+ 
+        op VMTVC(110100:00:010:10001:0:vs:imm8)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VMTVC";`
+        }
+ 
+        op VT4444(110100:00:010:11001:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VT4444";`
+        }
+ 
+        op VT5551(110100:00:010:11010:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VT5551";`
+        }
+ 
+        op VT5650(110100:00:010:11011:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VT5650";`
+        }
+ 
+        op VCST(110100:00:011:00000:two:0000000:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VCST";`
+        }
+ 
+        op VF2IN(110100:10:000:00000:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VF2IN";`
+        }
+ 
+        op VF2IZ(110100:10:001:00000:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VF2IZ";`
+        }
+ 
+        op VF2IU(110100:10:010:00000:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VF2IU";`
+        }
+ 
+        op VF2ID(110100:10:011:00000:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VF2ID";`
+        }
+ 
+        op VI2F(110100:10:100:00000:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VI2F";`
+        }
+ 
+        op VCMOVT(110100:10:101:00:imm3:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VCMOVT";`
+        }
+ 
+        op VCMOVF(110100:10:101:01:imm3:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VCMOVF";`
+        }
+ 
+        op VWBN(110100:11:imm8:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VWBN";`
+        }
+ 
+    }
+
+    group VFPU5
+    {
+    
+    
+    
+        op VPFXS(110111:00:----:negw:negz:negy:negx:cstw:cstz:csty:cstx:absw:absz:absy:absx:swzw:swzz:swzy:swzx)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VPFXS";`
+        }
+
+        op VPFXT(110111:01:----:negw:negz:negy:negx:cstw:cstz:csty:cstx:absw:absz:absy:absx:swzw:swzz:swzy:swzx)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VPFXT";`
+        }
+
+        op VPFXD(110111:10:------------:mskw:mskz:msky:mskx:satw:satz:saty:satx)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VPFXD";`
+        }
+
+        op VIIM(110111:11:0:vd:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VIIM";`
+        }
+ 
+        op VFIM(110111:11:1:vd:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VFIM";`
+        }
+    }
+
 }
