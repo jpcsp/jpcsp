@@ -3636,6 +3636,130 @@ public class Instructions {
             return Dis_OFFSET("bc1tl", imm16, address);
         }
     };
+    public static final Instruction BVF = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+            return "Unimplemented BVF";
+        }
+    };
+    public static final Instruction BVT = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+            return "Unimplemented BVF";
+        }
+    };
+    public static final Instruction BVFL = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+            return "Unimplemented BVF";
+        }
+    };
+    public static final Instruction BVTL = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+            return "Unimplemented BVF";
+        }
+    };
     public static final Instruction LB = new Instruction() {
 
         @Override
@@ -4078,40 +4202,6 @@ public class Instructions {
             return Dis_RTIMMRS("ll", rt, rs, imm16);
         }
     };
-    public static final Instruction SC = new Instruction() {
-
-        @Override
-        public void interpret(Processor processor, int insn) {
-            int imm16 = (insn >> 0) & 65535;
-            int rt = (insn >> 16) & 31;
-            int rs = (insn >> 21) & 31;
-
-
-
-
-        }
-
-        @Override
-        public void compile(Processor processor, int insn) {
-            int imm16 = (insn >> 0) & 65535;
-            int rt = (insn >> 16) & 31;
-            int rs = (insn >> 21) & 31;
-
-
-
-
-        }
-
-        @Override
-        public String disasm(int address, int insn) {
-            int imm16 = (insn >> 0) & 65535;
-            int rt = (insn >> 16) & 31;
-            int rs = (insn >> 21) & 31;
-
-
-            return Dis_RTIMMRS("sc", rt, rs, imm16);
-        }
-    };
     public static final Instruction LWC1 = new Instruction() {
 
         @Override
@@ -4146,6 +4236,188 @@ public class Instructions {
             return Dis_FTIMMRS("lwc1", ft, rs, imm16);
         }
     };
+    public static final Instruction LVS = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int vt2 = (insn >> 0) & 3;
+            int imm14 = (insn >> 2) & 16383;
+            int vt5 = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int vt2 = (insn >> 0) & 3;
+            int imm14 = (insn >> 2) & 16383;
+            int vt5 = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int vt2 = (insn >> 0) & 3;
+            int imm14 = (insn >> 2) & 16383;
+            int vt5 = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+            return Dis_VTIMMRS("lv", 1, (vt5 | (vt2 << 5)), rs, (imm14 << 2));
+        }
+    };
+    public static final Instruction LVLQ = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int vt1 = (insn >> 0) & 1;
+            int imm14 = (insn >> 2) & 16383;
+            int vt5 = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int vt1 = (insn >> 0) & 1;
+            int imm14 = (insn >> 2) & 16383;
+            int vt5 = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int vt1 = (insn >> 0) & 1;
+            int imm14 = (insn >> 2) & 16383;
+            int vt5 = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+            return Dis_VTIMMRS("lvl", 4, (vt5 | (vt1 << 5)), rs, (imm14 << 2));
+        }
+    };
+    public static final Instruction LVRQ = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int vt1 = (insn >> 0) & 1;
+            int imm14 = (insn >> 2) & 16383;
+            int vt5 = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int vt1 = (insn >> 0) & 1;
+            int imm14 = (insn >> 2) & 16383;
+            int vt5 = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int vt1 = (insn >> 0) & 1;
+            int imm14 = (insn >> 2) & 16383;
+            int vt5 = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+            return Dis_VTIMMRS("lvr", 4, (vt5 | (vt1 << 5)), rs, (imm14 << 2));
+        }
+    };
+    public static final Instruction LVQ = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int vt1 = (insn >> 0) & 1;
+            int imm14 = (insn >> 2) & 16383;
+            int vt5 = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int vt1 = (insn >> 0) & 1;
+            int imm14 = (insn >> 2) & 16383;
+            int vt5 = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int vt1 = (insn >> 0) & 1;
+            int imm14 = (insn >> 2) & 16383;
+            int vt5 = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+            return Dis_VTIMMRS("lv", 4, (vt5 | (vt1 << 5)), rs, (imm14 << 2));
+        }
+    };
+    public static final Instruction SC = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int rt = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int rt = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int rt = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+            return Dis_RTIMMRS("sc", rt, rs, imm16);
+        }
+    };
     public static final Instruction SWC1 = new Instruction() {
 
         @Override
@@ -4178,6 +4450,191 @@ public class Instructions {
 
 
             return Dis_FTIMMRS("swc1", ft, rs, imm16);
+        }
+    };
+    public static final Instruction SVS = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int vt2 = (insn >> 0) & 3;
+            int imm14 = (insn >> 2) & 16383;
+            int vt5 = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int vt2 = (insn >> 0) & 3;
+            int imm14 = (insn >> 2) & 16383;
+            int vt5 = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int vt2 = (insn >> 0) & 3;
+            int imm14 = (insn >> 2) & 16383;
+            int vt5 = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+            return Dis_VTIMMRS("sv", 1, (vt5 | (vt2 << 5)), rs, (imm14 << 2));
+        }
+    };
+    public static final Instruction SVLQ = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int vt1 = (insn >> 0) & 1;
+            int imm14 = (insn >> 2) & 16383;
+            int vt5 = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int vt1 = (insn >> 0) & 1;
+            int imm14 = (insn >> 2) & 16383;
+            int vt5 = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int vt1 = (insn >> 0) & 1;
+            int imm14 = (insn >> 2) & 16383;
+            int vt5 = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+            return Dis_VTIMMRS("svl", 4, (vt5 | (vt1 << 5)), rs, (imm14 << 2));
+        }
+    };
+    public static final Instruction SVRQ = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int vt1 = (insn >> 0) & 1;
+            int imm14 = (insn >> 2) & 16383;
+            int vt5 = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int vt1 = (insn >> 0) & 1;
+            int imm14 = (insn >> 2) & 16383;
+            int vt5 = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int vt1 = (insn >> 0) & 1;
+            int imm14 = (insn >> 2) & 16383;
+            int vt5 = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+            return Dis_VTIMMRS("svr", 4, (vt5 | (vt1 << 5)), rs, (imm14 << 2));
+        }
+    };
+    public static final Instruction SVQ = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int vt1 = (insn >> 0) & 1;
+            int imm14 = (insn >> 2) & 16383;
+            int vt5 = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int vt1 = (insn >> 0) & 1;
+            int imm14 = (insn >> 2) & 16383;
+            int vt5 = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int vt1 = (insn >> 0) & 1;
+            int imm14 = (insn >> 2) & 16383;
+            int vt5 = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+            return Dis_VTIMMRS("lv", 4, (vt5 | (vt1 << 5)), rs, (imm14 << 2));
+        }
+    };
+    public static final Instruction SWB = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int vt1 = (insn >> 0) & 1;
+            int imm14 = (insn >> 2) & 16383;
+            int vt5 = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int vt1 = (insn >> 0) & 1;
+            int imm14 = (insn >> 2) & 16383;
+            int vt5 = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int vt1 = (insn >> 0) & 1;
+            int imm14 = (insn >> 2) & 16383;
+            int vt5 = (insn >> 16) & 31;
+            int rs = (insn >> 21) & 31;
+
+
+            return Dis_VTIMMRS("swb", 4, (vt5 | (vt1 << 5)), rs, (imm14 << 2));
         }
     };
     public static final Instruction ADD_S = new Instruction() {
@@ -5748,130 +6205,6 @@ public class Instructions {
 
 
             return "Unimplemented MTVC";
-        }
-    };
-    public static final Instruction BVF = new Instruction() {
-
-        @Override
-        public void interpret(Processor processor, int insn) {
-            int imm16 = (insn >> 0) & 65535;
-            int imm3 = (insn >> 18) & 7;
-
-
-
-
-        }
-
-        @Override
-        public void compile(Processor processor, int insn) {
-            int imm16 = (insn >> 0) & 65535;
-            int imm3 = (insn >> 18) & 7;
-
-
-
-
-        }
-
-        @Override
-        public String disasm(int address, int insn) {
-            int imm16 = (insn >> 0) & 65535;
-            int imm3 = (insn >> 18) & 7;
-
-
-            return "Unimplemented BVF";
-        }
-    };
-    public static final Instruction BVT = new Instruction() {
-
-        @Override
-        public void interpret(Processor processor, int insn) {
-            int imm16 = (insn >> 0) & 65535;
-            int imm3 = (insn >> 18) & 7;
-
-
-
-
-        }
-
-        @Override
-        public void compile(Processor processor, int insn) {
-            int imm16 = (insn >> 0) & 65535;
-            int imm3 = (insn >> 18) & 7;
-
-
-
-
-        }
-
-        @Override
-        public String disasm(int address, int insn) {
-            int imm16 = (insn >> 0) & 65535;
-            int imm3 = (insn >> 18) & 7;
-
-
-            return "Unimplemented BVF";
-        }
-    };
-    public static final Instruction BVFL = new Instruction() {
-
-        @Override
-        public void interpret(Processor processor, int insn) {
-            int imm16 = (insn >> 0) & 65535;
-            int imm3 = (insn >> 18) & 7;
-
-
-
-
-        }
-
-        @Override
-        public void compile(Processor processor, int insn) {
-            int imm16 = (insn >> 0) & 65535;
-            int imm3 = (insn >> 18) & 7;
-
-
-
-
-        }
-
-        @Override
-        public String disasm(int address, int insn) {
-            int imm16 = (insn >> 0) & 65535;
-            int imm3 = (insn >> 18) & 7;
-
-
-            return "Unimplemented BVF";
-        }
-    };
-    public static final Instruction BVTL = new Instruction() {
-
-        @Override
-        public void interpret(Processor processor, int insn) {
-            int imm16 = (insn >> 0) & 65535;
-            int imm3 = (insn >> 18) & 7;
-
-
-
-
-        }
-
-        @Override
-        public void compile(Processor processor, int insn) {
-            int imm16 = (insn >> 0) & 65535;
-            int imm3 = (insn >> 18) & 7;
-
-
-
-
-        }
-
-        @Override
-        public String disasm(int address, int insn) {
-            int imm16 = (insn >> 0) & 65535;
-            int imm3 = (insn >> 18) & 7;
-
-
-            return "Unimplemented BVF";
         }
     };
     public static final Instruction VCMP = new Instruction() {
@@ -8525,6 +8858,554 @@ public class Instructions {
 
 
             return "Unimplemented VFIM";
+        }
+    };
+    public static final Instruction VMMUL = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+            return "Unimplemented VMMUL";
+        }
+    };
+    public static final Instruction VHTFM2 = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int vs = (insn >> 8) & 127;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int vs = (insn >> 8) & 127;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int vs = (insn >> 8) & 127;
+            int vt = (insn >> 16) & 127;
+
+
+            return "Unimplemented VHTFM2";
+        }
+    };
+    public static final Instruction VTFM2 = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int vs = (insn >> 8) & 127;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int vs = (insn >> 8) & 127;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int vs = (insn >> 8) & 127;
+            int vt = (insn >> 16) & 127;
+
+
+            return "Unimplemented VTFM2";
+        }
+    };
+    public static final Instruction VHTFM3 = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int vs = (insn >> 8) & 127;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int vs = (insn >> 8) & 127;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int vs = (insn >> 8) & 127;
+            int vt = (insn >> 16) & 127;
+
+
+            return "Unimplemented VHTFM3";
+        }
+    };
+    public static final Instruction VTFM3 = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int vs = (insn >> 8) & 127;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int vs = (insn >> 8) & 127;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int vs = (insn >> 8) & 127;
+            int vt = (insn >> 16) & 127;
+
+
+            return "Unimplemented VTFM3";
+        }
+    };
+    public static final Instruction VHTFM4 = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int vs = (insn >> 8) & 127;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int vs = (insn >> 8) & 127;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int vs = (insn >> 8) & 127;
+            int vt = (insn >> 16) & 127;
+
+
+            return "Unimplemented VHTFM4";
+        }
+    };
+    public static final Instruction VTFM4 = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int vs = (insn >> 8) & 127;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int vs = (insn >> 8) & 127;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int vs = (insn >> 8) & 127;
+            int vt = (insn >> 16) & 127;
+
+
+            return "Unimplemented VTFM4";
+        }
+    };
+    public static final Instruction VMSCL = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+            return "Unimplemented VMSCL";
+        }
+    };
+    public static final Instruction VQMUL = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int vs = (insn >> 8) & 127;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int vs = (insn >> 8) & 127;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int vs = (insn >> 8) & 127;
+            int vt = (insn >> 16) & 127;
+
+
+            return Dis_VDVSVT("VQMUL", 4, vd, vs, vt);
+        }
+    };
+    public static final Instruction VMMOV = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VMMOV";
+        }
+    };
+    public static final Instruction VMIDT = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VMIDT";
+        }
+    };
+    public static final Instruction VMZERO = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VMZERO";
+        }
+    };
+    public static final Instruction VMONE = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VMONE";
+        }
+    };
+    public static final Instruction VROT = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int imm5 = (insn >> 16) & 31;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int imm5 = (insn >> 16) & 31;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int imm5 = (insn >> 16) & 31;
+
+
+            return "Unimplemented VROT";
+        }
+    };
+    public static final Instruction VNOP = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+
+
+            return "VNOP";
+        }
+    };
+    public static final Instruction VFLUSH = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+
+
+            return "VFLUSH";
+        }
+    };
+    public static final Instruction VSYNC = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+
+
+            return "VSYNC";
         }
     };
 }
