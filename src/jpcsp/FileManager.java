@@ -52,12 +52,28 @@ public class FileManager {
     private long elfoffset = 0;
     private long baseoffset = 0;
     private List<DeferredStub> deferredImports;
-
+    private SeekableDataInput iso;
     public FileManager(String filePath) throws FileNotFoundException, IOException {
         this.filePath = filePath;
         loadAndDefine(filePath);
     }
+    public FileManager(SeekableDataInput iso)
+    {
+        this.iso=iso;
+        elfoffset = 0;
+        baseoffset = 0;
+         setActualFile(iso);
+         moduleInfo = new PSPModuleInfo();
+         deferredImports = new LinkedList<DeferredStub>();
+         try {
+          elf = new Elf32(iso);
+          processElf();
+         }catch(IOException e)
+         {
+             
+         }
 
+    }
     public PSPModuleInfo getPSPModuleInfo() {
         return moduleInfo;
     }
@@ -241,7 +257,7 @@ public class FileManager {
             if ((shdr.getSh_flags() & ShFlags.Allocate.getValue()) == ShFlags.Allocate.getValue()) {
                 switch (shdr.getSh_type()) {
                     case 1: //ShType.PROGBITS
-                        //System.out.println("FEED MEMORY WITH IT!");
+                        ///System.out.println("FEED MEMORY WITH IT!");
 
                         f.seek(elfoffset + shdr.getSh_offset());
                         int offsettoread = (int) getBaseoffset() + (int) shdr.getSh_addr() - MemoryMap.START_RAM;
