@@ -2665,6 +2665,11 @@ public class Instructions {
 
 
 
+            boolean c = (processor.gpr[rs] == processor.gpr[rt]);
+            processor.npc = c ? Processor.branchTarget(processor.pc, Processor.signExtend(imm16)) : (processor.pc + 4);
+            if (c) {
+                processor.stepDelayslot();
+            }
 
         }
 
@@ -2675,6 +2680,35 @@ public class Instructions {
 
 
 
+            boolean c = (processor.gpr[rs] == processor.gpr[rt]);
+            int target = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
+            boolean loop = (target == processor.current_bb.getEntry());
+            if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                if (c) {
+                    processor.current_bb.emit("processor.pc = 0x" + Integer.toHexString(target) + ";");
+                } else {
+                    processor.current_bb.emit("processor.pc += 4;");
+                }
+            } else {
+                processor.load_gpr(rs, false);
+                processor.load_gpr(rt, false);
+                processor.current_bb.emit(
+                        "processor.pc = (" +
+                        processor.get_gpr(rs) +
+                        " == " +
+                        processor.get_gpr(rt) +
+                        ") ? 0x" +
+                        Integer.toHexString(target) +
+                        " : (processor.pc + 4);");
+            }
+            processor.npc = c ? target : (processor.pc + 4);
+            if (c) {
+                processor.stepDelayslot();
+            }
+            processor.reset_register_tracking();
+            processor.current_bb.emit(loop ? "continue;\n" : "break;\n");
+            processor.current_bb.freeze();
+            processor.current_bb = null;
 
         }
 
@@ -3057,6 +3091,33 @@ public class Instructions {
 
 
 
+            boolean c = (processor.gpr[rs] != processor.gpr[rt]);
+            int target = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
+            boolean loop = (target == processor.current_bb.getEntry());
+            if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                if (c) {
+                    processor.current_bb.emit("processor.pc = 0x" + Integer.toHexString(target) + ";");
+                } else {
+                    processor.current_bb.emit("processor.pc += 4;");
+                }
+            } else {
+                processor.load_gpr(rs, false);
+                processor.load_gpr(rt, false);
+                processor.current_bb.emit(
+                        "processor.pc = (" +
+                        processor.get_gpr(rs) +
+                        " != " +
+                        processor.get_gpr(rt) +
+                        ") ? 0x" +
+                        Integer.toHexString(target) +
+                        " : (processor.pc + 4);");
+            }
+            processor.npc = c ? target : (processor.pc + 4);
+            processor.stepDelayslot();
+            processor.reset_register_tracking();
+            processor.current_bb.emit(loop ? "continue;\n" : "break;\n");
+            processor.current_bb.freeze();
+            processor.current_bb = null;
 
         }
 
@@ -4914,6 +4975,3131 @@ public class Instructions {
 
 
             return "Unimplemented CTC0";
+        }
+    }
+
+    public static final class VADD {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+            return "Unimplemented VADD";
+        }
+    }
+
+    public static final class VSUB {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+            return "Unimplemented VSUB";
+        }
+    }
+
+    public static final class VSBN {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+            return "Unimplemented VSBN";
+        }
+    }
+
+    public static final class VDIV {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+            return "Unimplemented VDIV";
+        }
+    }
+
+    public static final class VMUL {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+            return "Unimplemented VMUL";
+        }
+    }
+
+    public static final class VDOT {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+            return "Unimplemented VDOT";
+        }
+    }
+
+    public static final class VSCL {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+            return "Unimplemented VSCL";
+        }
+    }
+
+    public static final class VHDP {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+            return "Unimplemented VHDP";
+        }
+    }
+
+    public static final class VDET {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+            return "Unimplemented VDET";
+        }
+    }
+
+    public static final class VCRS {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+            return "Unimplemented VCRS";
+        }
+    }
+
+    public static final class MFV {
+
+        static void interpret(Processor processor, int insn) {
+            int imm7 = (insn >> 0) & 127;
+            int rt = (insn >> 16) & 31;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int imm7 = (insn >> 0) & 127;
+            int rt = (insn >> 16) & 31;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int imm7 = (insn >> 0) & 127;
+            int rt = (insn >> 16) & 31;
+
+
+            return "Unimplemented MFV";
+        }
+    }
+
+    public static final class MFVC {
+
+        static void interpret(Processor processor, int insn) {
+            int imm7 = (insn >> 0) & 127;
+            int rt = (insn >> 16) & 31;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int imm7 = (insn >> 0) & 127;
+            int rt = (insn >> 16) & 31;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int imm7 = (insn >> 0) & 127;
+            int rt = (insn >> 16) & 31;
+
+
+            return "Unimplemented MFVC";
+        }
+    }
+
+    public static final class MTV {
+
+        static void interpret(Processor processor, int insn) {
+            int imm7 = (insn >> 0) & 127;
+            int rt = (insn >> 16) & 31;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int imm7 = (insn >> 0) & 127;
+            int rt = (insn >> 16) & 31;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int imm7 = (insn >> 0) & 127;
+            int rt = (insn >> 16) & 31;
+
+
+            return "Unimplemented MTV";
+        }
+    }
+
+    public static final class MTVC {
+
+        static void interpret(Processor processor, int insn) {
+            int imm7 = (insn >> 0) & 127;
+            int rt = (insn >> 16) & 31;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int imm7 = (insn >> 0) & 127;
+            int rt = (insn >> 16) & 31;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int imm7 = (insn >> 0) & 127;
+            int rt = (insn >> 16) & 31;
+
+
+            return "Unimplemented MTVC";
+        }
+    }
+
+    public static final class BVF {
+
+        static void interpret(Processor processor, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+            return "Unimplemented BVF";
+        }
+    }
+
+    public static final class BVT {
+
+        static void interpret(Processor processor, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+            return "Unimplemented BVF";
+        }
+    }
+
+    public static final class BVFL {
+
+        static void interpret(Processor processor, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+            return "Unimplemented BVF";
+        }
+    }
+
+    public static final class BVTL {
+
+        static void interpret(Processor processor, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+            return "Unimplemented BVF";
+        }
+    }
+
+    public static final class VCMP {
+
+        static void interpret(Processor processor, int insn) {
+            int imm3 = (insn >> 0) & 7;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int imm3 = (insn >> 0) & 7;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int imm3 = (insn >> 0) & 7;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+            return "Unimplemented VCMP";
+        }
+    }
+
+    public static final class VMIN {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+            return "Unimplemented VMIN";
+        }
+    }
+
+    public static final class VMAX {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+            return "Unimplemented VMAX";
+        }
+    }
+
+    public static final class VSCMP {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+            return "Unimplemented VSCMP";
+        }
+    }
+
+    public static final class VSGE {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+            return "Unimplemented VSGE";
+        }
+    }
+
+    public static final class VSLT {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int vt = (insn >> 16) & 127;
+
+
+            return "Unimplemented VSLT";
+        }
+    }
+
+    public static final class VMOV {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VMOV";
+        }
+    }
+
+    public static final class VABS {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VABS";
+        }
+    }
+
+    public static final class VNEG {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VNEG";
+        }
+    }
+
+    public static final class VIDT {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VIDT";
+        }
+    }
+
+    public static final class VSAT0 {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VSAT0";
+        }
+    }
+
+    public static final class VSAT1 {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VSAT1";
+        }
+    }
+
+    public static final class VZERO {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VZERO";
+        }
+    }
+
+    public static final class VONE {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VONE";
+        }
+    }
+
+    public static final class VRCP {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VRCP";
+        }
+    }
+
+    public static final class VRSQ {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VRSQ";
+        }
+    }
+
+    public static final class VSIN {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VSIN";
+        }
+    }
+
+    public static final class VCOS {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VCOS";
+        }
+    }
+
+    public static final class VEXP2 {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VEXP2";
+        }
+    }
+
+    public static final class VLOG2 {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VLOG2";
+        }
+    }
+
+    public static final class VSQRT {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VSQRT";
+        }
+    }
+
+    public static final class VASIN {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VASIN";
+        }
+    }
+
+    public static final class VNRCP {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VNRCP";
+        }
+    }
+
+    public static final class VNSIN {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VNSIN";
+        }
+    }
+
+    public static final class VREXP2 {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VREXP2";
+        }
+    }
+
+    public static final class VRNDS {
+
+        static void interpret(Processor processor, int insn) {
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VRNDS";
+        }
+    }
+
+    public static final class VRNDI {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VRNDI";
+        }
+    }
+
+    public static final class VRNDF1 {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VRNDF1";
+        }
+    }
+
+    public static final class VRNDF2 {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VRNDF2";
+        }
+    }
+
+    public static final class VF2H {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VF2H";
+        }
+    }
+
+    public static final class VH2F {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VH2F";
+        }
+    }
+
+    public static final class VSBZ {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VSBZ";
+        }
+    }
+
+    public static final class VLGB {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VLGB";
+        }
+    }
+
+    public static final class VUC2I {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VUC2I";
+        }
+    }
+
+    public static final class VC2I {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VC2I";
+        }
+    }
+
+    public static final class VUS2I {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VUS2I";
+        }
+    }
+
+    public static final class VS2I {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VS2I";
+        }
+    }
+
+    public static final class VI2UC {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VI2UC";
+        }
+    }
+
+    public static final class VI2C {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VI2C";
+        }
+    }
+
+    public static final class VI2US {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VI2US";
+        }
+    }
+
+    public static final class VI2S {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VI2S";
+        }
+    }
+
+    public static final class VSRT1 {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VSRT1";
+        }
+    }
+
+    public static final class VSRT2 {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VSRT2";
+        }
+    }
+
+    public static final class VBFY1 {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VBFY1";
+        }
+    }
+
+    public static final class VBFY2 {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VBFY2";
+        }
+    }
+
+    public static final class VOCP {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VOCP";
+        }
+    }
+
+    public static final class VSOCP {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VSOCP";
+        }
+    }
+
+    public static final class VFAD {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VFAD";
+        }
+    }
+
+    public static final class VAVG {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VAVG";
+        }
+    }
+
+    public static final class VSRT3 {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VSRT3";
+        }
+    }
+
+    public static final class VSRT4 {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VSRT4";
+        }
+    }
+
+    public static final class VMFVC {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int imm8 = (insn >> 8) & 255;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int imm8 = (insn >> 8) & 255;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int imm8 = (insn >> 8) & 255;
+
+
+            return "Unimplemented VMFVC";
+        }
+    }
+
+    public static final class VMTVC {
+
+        static void interpret(Processor processor, int insn) {
+            int imm8 = (insn >> 0) & 255;
+            int vs = (insn >> 8) & 127;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int imm8 = (insn >> 0) & 255;
+            int vs = (insn >> 8) & 127;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int imm8 = (insn >> 0) & 255;
+            int vs = (insn >> 8) & 127;
+
+
+            return "Unimplemented VMTVC";
+        }
+    }
+
+    public static final class VT4444 {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VT4444";
+        }
+    }
+
+    public static final class VT5551 {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VT5551";
+        }
+    }
+
+    public static final class VT5650 {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VT5650";
+        }
+    }
+
+    public static final class VCST {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VCST";
+        }
+    }
+
+    public static final class VF2IN {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VF2IN";
+        }
+    }
+
+    public static final class VF2IZ {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VF2IZ";
+        }
+    }
+
+    public static final class VF2IU {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VF2IU";
+        }
+    }
+
+    public static final class VF2ID {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VF2ID";
+        }
+    }
+
+    public static final class VI2F {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+
+
+            return "Unimplemented VI2F";
+        }
+    }
+
+    public static final class VCMOVT {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int imm3 = (insn >> 16) & 7;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int imm3 = (insn >> 16) & 7;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int imm3 = (insn >> 16) & 7;
+
+
+            return "Unimplemented VCMOVT";
+        }
+    }
+
+    public static final class VCMOVF {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int imm3 = (insn >> 16) & 7;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int imm3 = (insn >> 16) & 7;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int imm3 = (insn >> 16) & 7;
+
+
+            return "Unimplemented VCMOVF";
+        }
+    }
+
+    public static final class VWBN {
+
+        static void interpret(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int imm8 = (insn >> 16) & 255;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int imm8 = (insn >> 16) & 255;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int vd = (insn >> 0) & 127;
+            int one = (insn >> 7) & 1;
+            int vs = (insn >> 8) & 127;
+            int two = (insn >> 15) & 1;
+            int imm8 = (insn >> 16) & 255;
+
+
+            return "Unimplemented VWBN";
+        }
+    }
+
+    public static final class VPFXS {
+
+        static void interpret(Processor processor, int insn) {
+            int swzx = (insn >> 0) & 3;
+            int swzy = (insn >> 2) & 3;
+            int swzz = (insn >> 4) & 3;
+            int swzw = (insn >> 6) & 3;
+            int absx = (insn >> 8) & 1;
+            int absy = (insn >> 9) & 1;
+            int absz = (insn >> 10) & 1;
+            int absw = (insn >> 11) & 1;
+            int cstx = (insn >> 12) & 1;
+            int csty = (insn >> 13) & 1;
+            int cstz = (insn >> 14) & 1;
+            int cstw = (insn >> 15) & 1;
+            int negx = (insn >> 16) & 1;
+            int negy = (insn >> 17) & 1;
+            int negz = (insn >> 18) & 1;
+            int negw = (insn >> 19) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int swzx = (insn >> 0) & 3;
+            int swzy = (insn >> 2) & 3;
+            int swzz = (insn >> 4) & 3;
+            int swzw = (insn >> 6) & 3;
+            int absx = (insn >> 8) & 1;
+            int absy = (insn >> 9) & 1;
+            int absz = (insn >> 10) & 1;
+            int absw = (insn >> 11) & 1;
+            int cstx = (insn >> 12) & 1;
+            int csty = (insn >> 13) & 1;
+            int cstz = (insn >> 14) & 1;
+            int cstw = (insn >> 15) & 1;
+            int negx = (insn >> 16) & 1;
+            int negy = (insn >> 17) & 1;
+            int negz = (insn >> 18) & 1;
+            int negw = (insn >> 19) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int swzx = (insn >> 0) & 3;
+            int swzy = (insn >> 2) & 3;
+            int swzz = (insn >> 4) & 3;
+            int swzw = (insn >> 6) & 3;
+            int absx = (insn >> 8) & 1;
+            int absy = (insn >> 9) & 1;
+            int absz = (insn >> 10) & 1;
+            int absw = (insn >> 11) & 1;
+            int cstx = (insn >> 12) & 1;
+            int csty = (insn >> 13) & 1;
+            int cstz = (insn >> 14) & 1;
+            int cstw = (insn >> 15) & 1;
+            int negx = (insn >> 16) & 1;
+            int negy = (insn >> 17) & 1;
+            int negz = (insn >> 18) & 1;
+            int negw = (insn >> 19) & 1;
+
+
+            return "Unimplemented VPFXS";
+        }
+    }
+
+    public static final class VPFXT {
+
+        static void interpret(Processor processor, int insn) {
+            int swzx = (insn >> 0) & 3;
+            int swzy = (insn >> 2) & 3;
+            int swzz = (insn >> 4) & 3;
+            int swzw = (insn >> 6) & 3;
+            int absx = (insn >> 8) & 1;
+            int absy = (insn >> 9) & 1;
+            int absz = (insn >> 10) & 1;
+            int absw = (insn >> 11) & 1;
+            int cstx = (insn >> 12) & 1;
+            int csty = (insn >> 13) & 1;
+            int cstz = (insn >> 14) & 1;
+            int cstw = (insn >> 15) & 1;
+            int negx = (insn >> 16) & 1;
+            int negy = (insn >> 17) & 1;
+            int negz = (insn >> 18) & 1;
+            int negw = (insn >> 19) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int swzx = (insn >> 0) & 3;
+            int swzy = (insn >> 2) & 3;
+            int swzz = (insn >> 4) & 3;
+            int swzw = (insn >> 6) & 3;
+            int absx = (insn >> 8) & 1;
+            int absy = (insn >> 9) & 1;
+            int absz = (insn >> 10) & 1;
+            int absw = (insn >> 11) & 1;
+            int cstx = (insn >> 12) & 1;
+            int csty = (insn >> 13) & 1;
+            int cstz = (insn >> 14) & 1;
+            int cstw = (insn >> 15) & 1;
+            int negx = (insn >> 16) & 1;
+            int negy = (insn >> 17) & 1;
+            int negz = (insn >> 18) & 1;
+            int negw = (insn >> 19) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int swzx = (insn >> 0) & 3;
+            int swzy = (insn >> 2) & 3;
+            int swzz = (insn >> 4) & 3;
+            int swzw = (insn >> 6) & 3;
+            int absx = (insn >> 8) & 1;
+            int absy = (insn >> 9) & 1;
+            int absz = (insn >> 10) & 1;
+            int absw = (insn >> 11) & 1;
+            int cstx = (insn >> 12) & 1;
+            int csty = (insn >> 13) & 1;
+            int cstz = (insn >> 14) & 1;
+            int cstw = (insn >> 15) & 1;
+            int negx = (insn >> 16) & 1;
+            int negy = (insn >> 17) & 1;
+            int negz = (insn >> 18) & 1;
+            int negw = (insn >> 19) & 1;
+
+
+            return "Unimplemented VPFXT";
+        }
+    }
+
+    public static final class VPFXD {
+
+        static void interpret(Processor processor, int insn) {
+            int satx = (insn >> 0) & 3;
+            int saty = (insn >> 2) & 3;
+            int satz = (insn >> 4) & 3;
+            int satw = (insn >> 6) & 3;
+            int mskx = (insn >> 8) & 1;
+            int msky = (insn >> 9) & 1;
+            int mskz = (insn >> 10) & 1;
+            int mskw = (insn >> 11) & 1;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int satx = (insn >> 0) & 3;
+            int saty = (insn >> 2) & 3;
+            int satz = (insn >> 4) & 3;
+            int satw = (insn >> 6) & 3;
+            int mskx = (insn >> 8) & 1;
+            int msky = (insn >> 9) & 1;
+            int mskz = (insn >> 10) & 1;
+            int mskw = (insn >> 11) & 1;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int satx = (insn >> 0) & 3;
+            int saty = (insn >> 2) & 3;
+            int satz = (insn >> 4) & 3;
+            int satw = (insn >> 6) & 3;
+            int mskx = (insn >> 8) & 1;
+            int msky = (insn >> 9) & 1;
+            int mskz = (insn >> 10) & 1;
+            int mskw = (insn >> 11) & 1;
+
+
+            return "Unimplemented VPFXD";
+        }
+    }
+
+    public static final class VIIM {
+
+        static void interpret(Processor processor, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int vd = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int vd = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int vd = (insn >> 16) & 127;
+
+
+            return "Unimplemented VIIM";
+        }
+    }
+
+    public static final class VFIM {
+
+        static void interpret(Processor processor, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int vd = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static void compile(Processor processor, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int vd = (insn >> 16) & 127;
+
+
+
+
+        }
+
+        static String disasm(int address, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int vd = (insn >> 16) & 127;
+
+
+            return "Unimplemented VFIM";
         }
     }
 }
