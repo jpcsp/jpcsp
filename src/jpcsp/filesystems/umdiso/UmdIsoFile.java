@@ -57,7 +57,11 @@ public class UmdIsoFile extends SeekableInputStream {
         }
         currentOffset++;
         
-        return Ubyte(currentSector[sectorOffset++]); // make unsigned
+        int debuggingVariable = Ubyte(currentSector[sectorOffset++]); // make unsigned
+        
+        assert (debuggingVariable>=0);
+        
+        return debuggingVariable;
         
     }
     
@@ -102,7 +106,7 @@ public class UmdIsoFile extends SeekableInputStream {
         
         int oldSectorNumber = currentSectorNumber;
         long newOffset = endOffset;
-        int newSectorNumber = (int)(newOffset / 2048);
+        int newSectorNumber = startSectorNumber + (int)(newOffset / 2048);
         if(oldSectorNumber != newSectorNumber)
         {
             currentSector = internalReader.readSector(newSectorNumber);
@@ -142,8 +146,7 @@ public class UmdIsoFile extends SeekableInputStream {
     @Override
     public int readUnsignedByte() throws IOException
     {
-        DataInputStream s = new DataInputStream(this);
-        return s.readUnsignedByte();
+        return read();
     }
     
     @Override
