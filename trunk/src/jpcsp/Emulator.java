@@ -58,7 +58,17 @@ public class Emulator implements Runnable {
         controller = new Controller();
         mainThread = new Thread(this);
     }
-
+    public void load(SeekableDataInput f)throws IOException
+    {
+        initNewPsp();
+        romManager = new FileManager(f);
+        initElf32();
+        
+                // Delete breakpoints and reset to PC
+        if (debugger != null) {
+            debugger.resetDebugger();
+        }
+    }
     public void load(String filename) throws IOException {
         //  here load fileName, iso or etc...
         processLoading(filename);
