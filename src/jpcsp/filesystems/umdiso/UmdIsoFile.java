@@ -38,8 +38,11 @@ public class UmdIsoFile extends SeekableInputStream {
     @Override
     public int read() throws IOException
     {
+        // I hate Java. Actuall I hate whoever decided to make "byte" signed,
+        // and then decided that streams would have a read() function returning a value [0..255], and -1 for EOF
+        
         if(currentOffset == maxOffset)
-            throw new java.io.EOFException();
+            return -1; //throw new java.io.EOFException();
         
         if(sectorOffset==2048)
         {
@@ -48,7 +51,8 @@ public class UmdIsoFile extends SeekableInputStream {
             sectorOffset = 0;
         }
         currentOffset++;
-        return currentSector[sectorOffset++];
+        
+        return (currentSector[sectorOffset++]+256)&255; // make unsigned
         
     }
     
