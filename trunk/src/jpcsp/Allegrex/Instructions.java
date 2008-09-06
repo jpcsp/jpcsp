@@ -26,24 +26,35 @@ import static jpcsp.Debugger.DisassemblerModule.DisHelper.*;
  */
 public class Instructions {
 
-    public static final class NOP {
+    public static abstract class Instruction {
 
-        static void interpret(Processor processor, int insn) {
+        public abstract void interpret(Processor processor, int insn);
+
+        public abstract void compile(Processor processor, int insn);
+
+        public abstract String disasm(int address, int insn);
+    }
+    public static final Instruction NOP = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
 
 
             return "nop";
         }
-    }
+    };
+    public static final Instruction CACHE = new Instruction() {
 
-    public static final class CACHE {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -52,7 +63,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -61,7 +73,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -69,11 +82,11 @@ public class Instructions {
 
             return Dis_CCIMMRS("cache", rt, signExtend(imm16), rs);
         }
-    }
+    };
+    public static final Instruction SYSCALL = new Instruction() {
 
-    public static final class SYSCALL {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm20 = (insn >> 6) & 1048575;
 
 
@@ -81,7 +94,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm20 = (insn >> 6) & 1048575;
 
 
@@ -89,32 +103,35 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm20 = (insn >> 6) & 1048575;
 
 
             return Dis_Syscall(imm20);
         }
-    }
+    };
+    public static final Instruction ERET = new Instruction() {
 
-    public static final class ERET {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
 
 
             return "eret";
         }
-    }
+    };
+    public static final Instruction BREAK = new Instruction() {
 
-    public static final class BREAK {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm20 = (insn >> 6) & 1048575;
 
 
@@ -122,7 +139,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm20 = (insn >> 6) & 1048575;
 
 
@@ -130,32 +148,35 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm20 = (insn >> 6) & 1048575;
 
 
             return Dis_Break(imm20);
         }
-    }
+    };
+    public static final Instruction SYNC = new Instruction() {
 
-    public static final class SYNC {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
 
 
             return "sync";
         }
-    }
+    };
+    public static final Instruction ADD = new Instruction() {
 
-    public static final class ADD {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -169,7 +190,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -196,7 +218,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -204,11 +227,11 @@ public class Instructions {
 
             return Dis_RDRSRT("add", rd, rs, rt);
         }
-    }
+    };
+    public static final Instruction ADDU = new Instruction() {
 
-    public static final class ADDU {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -221,7 +244,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -248,7 +272,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -256,11 +281,11 @@ public class Instructions {
 
             return Dis_RDRSRT("addu", rd, rs, rt);
         }
-    }
+    };
+    public static final Instruction ADDI = new Instruction() {
 
-    public static final class ADDI {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -274,7 +299,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -300,7 +326,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -308,11 +335,11 @@ public class Instructions {
 
             return Dis_RTRSIMM("addi", rt, rs, signExtend(imm16));
         }
-    }
+    };
+    public static final Instruction ADDIU = new Instruction() {
 
-    public static final class ADDIU {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -325,7 +352,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -351,7 +379,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -359,11 +388,11 @@ public class Instructions {
 
             return Dis_RTRSIMM("addiu", rt, rs, signExtend(imm16));
         }
-    }
+    };
+    public static final Instruction AND = new Instruction() {
 
-    public static final class AND {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -376,7 +405,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -403,7 +433,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -411,11 +442,11 @@ public class Instructions {
 
             return Dis_RDRSRT("and", rd, rs, rt);
         }
-    }
+    };
+    public static final Instruction ANDI = new Instruction() {
 
-    public static final class ANDI {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -428,7 +459,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -454,7 +486,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -462,11 +495,11 @@ public class Instructions {
 
             return Dis_RTRSIMM("andi", rt, rs, zeroExtend(imm16));
         }
-    }
+    };
+    public static final Instruction NOR = new Instruction() {
 
-    public static final class NOR {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -479,7 +512,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -506,7 +540,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -514,11 +549,11 @@ public class Instructions {
 
             return Dis_RDRSRT("nor", rd, rs, rt);
         }
-    }
+    };
+    public static final Instruction OR = new Instruction() {
 
-    public static final class OR {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -531,7 +566,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -558,7 +594,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -566,11 +603,11 @@ public class Instructions {
 
             return Dis_RDRSRT("or", rd, rs, rt);
         }
-    }
+    };
+    public static final Instruction ORI = new Instruction() {
 
-    public static final class ORI {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -583,7 +620,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -609,7 +647,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -617,11 +656,11 @@ public class Instructions {
 
             return Dis_RTRSIMM("ori", rt, rs, zeroExtend(imm16));
         }
-    }
+    };
+    public static final Instruction XOR = new Instruction() {
 
-    public static final class XOR {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -634,7 +673,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -661,7 +701,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -669,11 +710,11 @@ public class Instructions {
 
             return Dis_RDRSRT("xor", rd, rs, rt);
         }
-    }
+    };
+    public static final Instruction XORI = new Instruction() {
 
-    public static final class XORI {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -686,7 +727,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -712,7 +754,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -720,11 +763,11 @@ public class Instructions {
 
             return Dis_RTRSIMM("xori", rt, rs, zeroExtend(imm16));
         }
-    }
+    };
+    public static final Instruction SLL = new Instruction() {
 
-    public static final class SLL {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int sa = (insn >> 6) & 31;
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
@@ -737,7 +780,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int sa = (insn >> 6) & 31;
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
@@ -763,7 +807,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int sa = (insn >> 6) & 31;
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
@@ -771,11 +816,11 @@ public class Instructions {
 
             return Dis_RDRTSA("sll", rd, rt, sa);
         }
-    }
+    };
+    public static final Instruction SLLV = new Instruction() {
 
-    public static final class SLLV {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -788,7 +833,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -815,7 +861,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -823,11 +870,11 @@ public class Instructions {
 
             return Dis_RDRTRS("sllv", rd, rt, rs);
         }
-    }
+    };
+    public static final Instruction SRA = new Instruction() {
 
-    public static final class SRA {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int sa = (insn >> 6) & 31;
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
@@ -840,7 +887,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int sa = (insn >> 6) & 31;
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
@@ -866,7 +914,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int sa = (insn >> 6) & 31;
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
@@ -874,11 +923,11 @@ public class Instructions {
 
             return Dis_RDRTSA("sra", rd, rt, sa);
         }
-    }
+    };
+    public static final Instruction SRAV = new Instruction() {
 
-    public static final class SRAV {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -891,7 +940,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -918,7 +968,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -926,11 +977,11 @@ public class Instructions {
 
             return Dis_RDRTRS("srav", rd, rt, rs);
         }
-    }
+    };
+    public static final Instruction SRL = new Instruction() {
 
-    public static final class SRL {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int sa = (insn >> 6) & 31;
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
@@ -943,7 +994,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int sa = (insn >> 6) & 31;
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
@@ -969,7 +1021,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int sa = (insn >> 6) & 31;
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
@@ -977,11 +1030,11 @@ public class Instructions {
 
             return Dis_RDRTSA("srl", rd, rt, sa);
         }
-    }
+    };
+    public static final Instruction SRLV = new Instruction() {
 
-    public static final class SRLV {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -994,7 +1047,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1021,7 +1075,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1029,11 +1084,11 @@ public class Instructions {
 
             return Dis_RDRTRS("srlv", rd, rt, rs);
         }
-    }
+    };
+    public static final Instruction ROTR = new Instruction() {
 
-    public static final class ROTR {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int sa = (insn >> 6) & 31;
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
@@ -1046,7 +1101,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int sa = (insn >> 6) & 31;
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
@@ -1072,7 +1128,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int sa = (insn >> 6) & 31;
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
@@ -1080,11 +1137,11 @@ public class Instructions {
 
             return Dis_RDRTSA("rotr", rd, rt, sa);
         }
-    }
+    };
+    public static final Instruction ROTRV = new Instruction() {
 
-    public static final class ROTRV {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1097,7 +1154,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1124,7 +1182,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1132,11 +1191,11 @@ public class Instructions {
 
             return Dis_RDRTRS("rotrv", rd, rt, rs);
         }
-    }
+    };
+    public static final Instruction SLT = new Instruction() {
 
-    public static final class SLT {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1149,7 +1208,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1176,7 +1236,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1184,11 +1245,11 @@ public class Instructions {
 
             return Dis_RDRSRT("slt", rd, rs, rt);
         }
-    }
+    };
+    public static final Instruction SLTI = new Instruction() {
 
-    public static final class SLTI {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1201,7 +1262,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1227,7 +1289,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1235,11 +1298,11 @@ public class Instructions {
 
             return Dis_RTRSIMM("slti", rt, rs, signExtend(imm16));
         }
-    }
+    };
+    public static final Instruction SLTU = new Instruction() {
 
-    public static final class SLTU {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1252,7 +1315,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1279,7 +1343,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1287,11 +1352,11 @@ public class Instructions {
 
             return Dis_RDRSRT("sltu", rd, rs, rt);
         }
-    }
+    };
+    public static final Instruction SLTIU = new Instruction() {
 
-    public static final class SLTIU {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1304,7 +1369,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1330,7 +1396,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1338,11 +1405,11 @@ public class Instructions {
 
             return Dis_RTRSIMM("sltiu", rt, rs, signExtend(imm16));
         }
-    }
+    };
+    public static final Instruction SUB = new Instruction() {
 
-    public static final class SUB {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1355,7 +1422,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1382,7 +1450,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1390,11 +1459,11 @@ public class Instructions {
 
             return Dis_RDRSRT("sub", rd, rs, rt);
         }
-    }
+    };
+    public static final Instruction SUBU = new Instruction() {
 
-    public static final class SUBU {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1407,7 +1476,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1434,7 +1504,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1442,11 +1513,11 @@ public class Instructions {
 
             return Dis_RDRSRT("subu", rd, rs, rt);
         }
-    }
+    };
+    public static final Instruction LUI = new Instruction() {
 
-    public static final class LUI {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
 
@@ -1458,7 +1529,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
 
@@ -1471,18 +1543,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
 
 
             return Dis_RTIMM("lui", rt, zeroExtend(imm16));
         }
-    }
+    };
+    public static final Instruction SEB = new Instruction() {
 
-    public static final class SEB {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
@@ -1494,7 +1567,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
@@ -1517,18 +1591,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
 
             return Dis_RDRT("seb", rd, rt);
         }
-    }
+    };
+    public static final Instruction SEH = new Instruction() {
 
-    public static final class SEH {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
@@ -1540,7 +1615,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
@@ -1563,18 +1639,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
 
             return Dis_RDRT("seh", rd, rt);
         }
-    }
+    };
+    public static final Instruction BITREV = new Instruction() {
 
-    public static final class BITREV {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
@@ -1586,7 +1663,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
@@ -1609,18 +1687,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
 
             return Dis_RDRT("bitrev", rd, rt);
         }
-    }
+    };
+    public static final Instruction WSBH = new Instruction() {
 
-    public static final class WSBH {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
@@ -1632,7 +1711,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
@@ -1655,18 +1735,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
 
             return Dis_RDRT("wsbh", rd, rt);
         }
-    }
+    };
+    public static final Instruction WSBW = new Instruction() {
 
-    public static final class WSBW {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
@@ -1678,7 +1759,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
@@ -1701,18 +1783,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
 
             return Dis_RDRT("wsbw", rd, rt);
         }
-    }
+    };
+    public static final Instruction MOVZ = new Instruction() {
 
-    public static final class MOVZ {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1725,7 +1808,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1754,7 +1838,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1762,11 +1847,11 @@ public class Instructions {
 
             return Dis_RDRSRT("movz", rd, rs, rt);
         }
-    }
+    };
+    public static final Instruction MOVN = new Instruction() {
 
-    public static final class MOVN {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1779,7 +1864,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1808,7 +1894,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1816,11 +1903,11 @@ public class Instructions {
 
             return Dis_RDRSRT("movn", rd, rs, rt);
         }
-    }
+    };
+    public static final Instruction MAX = new Instruction() {
 
-    public static final class MAX {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1833,7 +1920,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1859,7 +1947,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1867,11 +1956,11 @@ public class Instructions {
 
             return Dis_RDRSRT("max", rd, rs, rt);
         }
-    }
+    };
+    public static final Instruction MIN = new Instruction() {
 
-    public static final class MIN {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1884,7 +1973,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1910,7 +2000,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -1918,11 +2009,11 @@ public class Instructions {
 
             return Dis_RDRSRT("min", rd, rs, rt);
         }
-    }
+    };
+    public static final Instruction CLZ = new Instruction() {
 
-    public static final class CLZ {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rs = (insn >> 21) & 31;
 
@@ -1934,7 +2025,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rs = (insn >> 21) & 31;
 
@@ -1956,18 +2048,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
             int rs = (insn >> 21) & 31;
 
 
             return Dis_RDRS("clz", rd, rs);
         }
-    }
+    };
+    public static final Instruction CLO = new Instruction() {
 
-    public static final class CLO {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rs = (insn >> 21) & 31;
 
@@ -1979,7 +2072,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rs = (insn >> 21) & 31;
 
@@ -2001,18 +2095,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
             int rs = (insn >> 21) & 31;
 
 
             return Dis_RDRS("clo", rd, rs);
         }
-    }
+    };
+    public static final Instruction EXT = new Instruction() {
 
-    public static final class EXT {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int lsb = (insn >> 6) & 31;
             int msb = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
@@ -2026,7 +2121,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int lsb = (insn >> 6) & 31;
             int msb = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
@@ -2054,7 +2150,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int lsb = (insn >> 6) & 31;
             int msb = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
@@ -2063,11 +2160,11 @@ public class Instructions {
 
             return Dis_Ext(rt, rs, lsb, msb);
         }
-    }
+    };
+    public static final Instruction INS = new Instruction() {
 
-    public static final class INS {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int lsb = (insn >> 6) & 31;
             int msb = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
@@ -2081,7 +2178,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int lsb = (insn >> 6) & 31;
             int msb = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
@@ -2112,7 +2210,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int lsb = (insn >> 6) & 31;
             int msb = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
@@ -2121,11 +2220,11 @@ public class Instructions {
 
             return Dis_Ins(rt, rs, lsb, msb);
         }
-    }
+    };
+    public static final Instruction MULT = new Instruction() {
 
-    public static final class MULT {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
 
@@ -2135,7 +2234,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
 
@@ -2154,18 +2254,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
 
 
             return Dis_RSRT("mult", rs, rt);
         }
-    }
+    };
+    public static final Instruction MULTU = new Instruction() {
 
-    public static final class MULTU {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
 
@@ -2175,7 +2276,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
 
@@ -2194,18 +2296,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
 
 
             return Dis_RSRT("multu", rs, rt);
         }
-    }
+    };
+    public static final Instruction MADD = new Instruction() {
 
-    public static final class MADD {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
 
@@ -2215,7 +2318,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
 
@@ -2235,18 +2339,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
 
 
             return Dis_RSRT("madd", rs, rt);
         }
-    }
+    };
+    public static final Instruction MADDU = new Instruction() {
 
-    public static final class MADDU {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
 
@@ -2256,7 +2361,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
 
@@ -2276,18 +2382,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
 
 
             return Dis_RSRT("maddu", rs, rt);
         }
-    }
+    };
+    public static final Instruction MSUB = new Instruction() {
 
-    public static final class MSUB {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
 
@@ -2297,7 +2404,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
 
@@ -2317,18 +2425,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
 
 
             return Dis_RSRT("msub", rs, rt);
         }
-    }
+    };
+    public static final Instruction MSUBU = new Instruction() {
 
-    public static final class MSUBU {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
 
@@ -2338,7 +2447,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
 
@@ -2358,18 +2468,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
 
 
             return Dis_RSRT("msubu", rs, rt);
         }
-    }
+    };
+    public static final Instruction DIV = new Instruction() {
 
-    public static final class DIV {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
 
@@ -2379,7 +2490,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
 
@@ -2398,18 +2510,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
 
 
             return Dis_RSRT("div", rs, rt);
         }
-    }
+    };
+    public static final Instruction DIVU = new Instruction() {
 
-    public static final class DIVU {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
 
@@ -2419,7 +2532,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
 
@@ -2438,18 +2552,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
 
 
             return Dis_RSRT("divu", rs, rt);
         }
-    }
+    };
+    public static final Instruction MFHI = new Instruction() {
 
-    public static final class MFHI {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
 
 
@@ -2460,7 +2575,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
 
 
@@ -2477,17 +2593,18 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
 
 
             return Dis_RD("mfhi", rd);
         }
-    }
+    };
+    public static final Instruction MFLO = new Instruction() {
 
-    public static final class MFLO {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
 
 
@@ -2498,7 +2615,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
 
 
@@ -2515,17 +2633,18 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
 
 
             return Dis_RD("mflo", rd);
         }
-    }
+    };
+    public static final Instruction MTHI = new Instruction() {
 
-    public static final class MTHI {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rs = (insn >> 21) & 31;
 
 
@@ -2534,7 +2653,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rs = (insn >> 21) & 31;
 
 
@@ -2551,17 +2671,18 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rs = (insn >> 21) & 31;
 
 
             return Dis_RS("mthi", rs);
         }
-    }
+    };
+    public static final Instruction MTLO = new Instruction() {
 
-    public static final class MTLO {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rs = (insn >> 21) & 31;
 
 
@@ -2570,7 +2691,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rs = (insn >> 21) & 31;
 
 
@@ -2587,17 +2709,18 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rs = (insn >> 21) & 31;
 
 
             return Dis_RS("mtlo", rs);
         }
-    }
+    };
+    public static final Instruction BEQ = new Instruction() {
 
-    public static final class BEQ {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -2609,7 +2732,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -2646,7 +2770,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -2654,11 +2779,11 @@ public class Instructions {
 
             return Dis_RSRTOFFSET("beq", rs, rt, imm16, address);
         }
-    }
+    };
+    public static final Instruction BEQL = new Instruction() {
 
-    public static final class BEQL {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -2673,7 +2798,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -2712,7 +2838,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -2720,11 +2847,11 @@ public class Instructions {
 
             return Dis_RSRTOFFSET("beql", rs, rt, imm16, address);
         }
-    }
+    };
+    public static final Instruction BGEZ = new Instruction() {
 
-    public static final class BGEZ {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
@@ -2733,7 +2860,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
@@ -2742,18 +2870,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
 
             return Dis_RSOFFSET("bgez", rs, imm16, address);
         }
-    }
+    };
+    public static final Instruction BGEZAL = new Instruction() {
 
-    public static final class BGEZAL {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
@@ -2762,7 +2891,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
@@ -2771,18 +2901,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
 
             return Dis_RSOFFSET("bgezal", rs, imm16, address);
         }
-    }
+    };
+    public static final Instruction BGEZALL = new Instruction() {
 
-    public static final class BGEZALL {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
@@ -2791,7 +2922,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
@@ -2800,18 +2932,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
 
             return Dis_RSOFFSET("bgezall", rs, imm16, address);
         }
-    }
+    };
+    public static final Instruction BGEZL = new Instruction() {
 
-    public static final class BGEZL {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
@@ -2820,7 +2953,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
@@ -2829,18 +2963,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
 
             return Dis_RSOFFSET("bgezl", rs, imm16, address);
         }
-    }
+    };
+    public static final Instruction BGTZ = new Instruction() {
 
-    public static final class BGTZ {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
@@ -2849,7 +2984,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
@@ -2858,18 +2994,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
 
             return Dis_RSOFFSET("bgtz", rs, imm16, address);
         }
-    }
+    };
+    public static final Instruction BGTZL = new Instruction() {
 
-    public static final class BGTZL {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
@@ -2878,7 +3015,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
@@ -2887,18 +3025,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
 
             return Dis_RSOFFSET("bgtzl", rs, imm16, address);
         }
-    }
+    };
+    public static final Instruction BLEZ = new Instruction() {
 
-    public static final class BLEZ {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
@@ -2907,7 +3046,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
@@ -2916,18 +3056,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
 
             return Dis_RSOFFSET("blez", rs, imm16, address);
         }
-    }
+    };
+    public static final Instruction BLEZL = new Instruction() {
 
-    public static final class BLEZL {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
@@ -2936,7 +3077,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
@@ -2945,18 +3087,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
 
             return Dis_RSOFFSET("blezl", rs, imm16, address);
         }
-    }
+    };
+    public static final Instruction BLTZ = new Instruction() {
 
-    public static final class BLTZ {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
@@ -2965,7 +3108,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
@@ -2974,18 +3118,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
 
             return Dis_RSOFFSET("bltz", rs, imm16, address);
         }
-    }
+    };
+    public static final Instruction BLTZAL = new Instruction() {
 
-    public static final class BLTZAL {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
@@ -2994,7 +3139,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
@@ -3003,18 +3149,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
 
             return Dis_RSOFFSET("bltzal", rs, imm16, address);
         }
-    }
+    };
+    public static final Instruction BLTZALL = new Instruction() {
 
-    public static final class BLTZALL {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
@@ -3023,7 +3170,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
@@ -3032,18 +3180,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
 
             return Dis_RSOFFSET("bltzall", rs, imm16, address);
         }
-    }
+    };
+    public static final Instruction BLTZL = new Instruction() {
 
-    public static final class BLTZL {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
@@ -3052,7 +3201,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
@@ -3061,18 +3211,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rs = (insn >> 21) & 31;
 
 
             return Dis_RSOFFSET("bltzl", rs, imm16, address);
         }
-    }
+    };
+    public static final Instruction BNE = new Instruction() {
 
-    public static final class BNE {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3084,7 +3235,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3121,7 +3273,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3129,11 +3282,11 @@ public class Instructions {
 
             return Dis_RSRTOFFSET("bne", rs, rt, imm16, address);
         }
-    }
+    };
+    public static final Instruction BNEL = new Instruction() {
 
-    public static final class BNEL {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3143,7 +3296,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3153,7 +3307,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3161,11 +3316,11 @@ public class Instructions {
 
             return Dis_RSRTOFFSET("bnel", rs, rt, imm16, address);
         }
-    }
+    };
+    public static final Instruction J = new Instruction() {
 
-    public static final class J {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm26 = (insn >> 0) & 67108863;
 
 
@@ -3173,7 +3328,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm26 = (insn >> 0) & 67108863;
 
 
@@ -3181,17 +3337,18 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm26 = (insn >> 0) & 67108863;
 
 
             return Dis_JUMP("j", imm26, address);
         }
-    }
+    };
+    public static final Instruction JAL = new Instruction() {
 
-    public static final class JAL {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm26 = (insn >> 0) & 67108863;
 
 
@@ -3199,7 +3356,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm26 = (insn >> 0) & 67108863;
 
 
@@ -3207,17 +3365,18 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm26 = (insn >> 0) & 67108863;
 
 
             return Dis_JUMP("jal", imm26, address);
         }
-    }
+    };
+    public static final Instruction JALR = new Instruction() {
 
-    public static final class JALR {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rs = (insn >> 21) & 31;
 
@@ -3231,7 +3390,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rd = (insn >> 11) & 31;
             int rs = (insn >> 21) & 31;
 
@@ -3252,18 +3412,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rd = (insn >> 11) & 31;
             int rs = (insn >> 21) & 31;
 
 
             return Dis_RDRS("jalr", rd, rs);
         }
-    }
+    };
+    public static final Instruction JR = new Instruction() {
 
-    public static final class JR {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int rs = (insn >> 21) & 31;
 
 
@@ -3273,7 +3434,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int rs = (insn >> 21) & 31;
 
 
@@ -3290,17 +3452,18 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int rs = (insn >> 21) & 31;
 
 
             return Dis_RS("jr", rs);
         }
-    }
+    };
+    public static final Instruction BC1F = new Instruction() {
 
-    public static final class BC1F {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
 
 
@@ -3310,7 +3473,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
 
 
@@ -3327,17 +3491,18 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
 
 
             return Dis_OFFSET("bc1f", imm16, address);
         }
-    }
+    };
+    public static final Instruction BC1T = new Instruction() {
 
-    public static final class BC1T {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
 
 
@@ -3347,7 +3512,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
 
 
@@ -3364,17 +3530,18 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
 
 
             return Dis_OFFSET("bc1t", imm16, address);
         }
-    }
+    };
+    public static final Instruction BC1FL = new Instruction() {
 
-    public static final class BC1FL {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
 
 
@@ -3388,7 +3555,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
 
 
@@ -3411,17 +3579,18 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
 
 
             return Dis_OFFSET("bc1fl", imm16, address);
         }
-    }
+    };
+    public static final Instruction BC1TL = new Instruction() {
 
-    public static final class BC1TL {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
 
 
@@ -3435,7 +3604,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
 
 
@@ -3458,17 +3628,18 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
 
 
             return Dis_OFFSET("bc1tl", imm16, address);
         }
-    }
+    };
+    public static final Instruction LB = new Instruction() {
 
-    public static final class LB {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3478,7 +3649,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3488,7 +3660,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3496,11 +3669,11 @@ public class Instructions {
 
             return Dis_RTIMMRS("lb", rt, rs, imm16);
         }
-    }
+    };
+    public static final Instruction LBU = new Instruction() {
 
-    public static final class LBU {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3510,7 +3683,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3520,7 +3694,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3528,11 +3703,11 @@ public class Instructions {
 
             return Dis_RTIMMRS("lbu", rt, rs, imm16);
         }
-    }
+    };
+    public static final Instruction LH = new Instruction() {
 
-    public static final class LH {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3542,7 +3717,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3552,7 +3728,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3560,11 +3737,11 @@ public class Instructions {
 
             return Dis_RTIMMRS("lh", rt, rs, imm16);
         }
-    }
+    };
+    public static final Instruction LHU = new Instruction() {
 
-    public static final class LHU {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3574,7 +3751,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3584,7 +3762,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3592,11 +3771,11 @@ public class Instructions {
 
             return Dis_RTIMMRS("lhu", rt, rs, imm16);
         }
-    }
+    };
+    public static final Instruction LW = new Instruction() {
 
-    public static final class LW {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3606,7 +3785,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3616,7 +3796,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3624,11 +3805,11 @@ public class Instructions {
 
             return Dis_RTIMMRS("lw", rt, rs, imm16);
         }
-    }
+    };
+    public static final Instruction LWL = new Instruction() {
 
-    public static final class LWL {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3638,7 +3819,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3648,7 +3830,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3656,11 +3839,11 @@ public class Instructions {
 
             return Dis_RTIMMRS("lwl", rt, rs, imm16);
         }
-    }
+    };
+    public static final Instruction LWR = new Instruction() {
 
-    public static final class LWR {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3670,7 +3853,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3680,7 +3864,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3688,11 +3873,11 @@ public class Instructions {
 
             return Dis_RTIMMRS("lwr", rt, rs, imm16);
         }
-    }
+    };
+    public static final Instruction SB = new Instruction() {
 
-    public static final class SB {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3702,7 +3887,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3712,7 +3898,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3720,11 +3907,11 @@ public class Instructions {
 
             return Dis_RTIMMRS("sb", rt, rs, imm16);
         }
-    }
+    };
+    public static final Instruction SH = new Instruction() {
 
-    public static final class SH {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3734,7 +3921,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3744,7 +3932,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3752,11 +3941,11 @@ public class Instructions {
 
             return Dis_RTIMMRS("sh", rt, rs, imm16);
         }
-    }
+    };
+    public static final Instruction SW = new Instruction() {
 
-    public static final class SW {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3766,7 +3955,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3776,7 +3966,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3784,11 +3975,11 @@ public class Instructions {
 
             return Dis_RTIMMRS("sw", rt, rs, imm16);
         }
-    }
+    };
+    public static final Instruction SWL = new Instruction() {
 
-    public static final class SWL {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3798,7 +3989,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3808,7 +4000,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3816,11 +4009,11 @@ public class Instructions {
 
             return Dis_RTIMMRS("swl", rt, rs, imm16);
         }
-    }
+    };
+    public static final Instruction SWR = new Instruction() {
 
-    public static final class SWR {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3830,7 +4023,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3840,7 +4034,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3848,11 +4043,11 @@ public class Instructions {
 
             return Dis_RTIMMRS("swr", rt, rs, imm16);
         }
-    }
+    };
+    public static final Instruction LL = new Instruction() {
 
-    public static final class LL {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3862,7 +4057,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3872,7 +4068,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3880,11 +4077,11 @@ public class Instructions {
 
             return Dis_RTIMMRS("ll", rt, rs, imm16);
         }
-    }
+    };
+    public static final Instruction SC = new Instruction() {
 
-    public static final class SC {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3894,7 +4091,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3904,7 +4102,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int rt = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3912,11 +4111,11 @@ public class Instructions {
 
             return Dis_RTIMMRS("sc", rt, rs, imm16);
         }
-    }
+    };
+    public static final Instruction LWC1 = new Instruction() {
 
-    public static final class LWC1 {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int ft = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3926,7 +4125,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int ft = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3936,7 +4136,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int ft = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3944,11 +4145,11 @@ public class Instructions {
 
             return Dis_FTIMMRS("lwc1", ft, rs, imm16);
         }
-    }
+    };
+    public static final Instruction SWC1 = new Instruction() {
 
-    public static final class SWC1 {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int ft = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3958,7 +4159,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int ft = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3968,7 +4170,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int ft = (insn >> 16) & 31;
             int rs = (insn >> 21) & 31;
@@ -3976,11 +4179,11 @@ public class Instructions {
 
             return Dis_FTIMMRS("swc1", ft, rs, imm16);
         }
-    }
+    };
+    public static final Instruction ADD_S = new Instruction() {
 
-    public static final class ADD_S {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
             int ft = (insn >> 16) & 31;
@@ -3991,7 +4194,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
             int ft = (insn >> 16) & 31;
@@ -4015,7 +4219,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
             int ft = (insn >> 16) & 31;
@@ -4023,11 +4228,11 @@ public class Instructions {
 
             return Dis_FDFSFT("add.s", fd, fs, ft);
         }
-    }
+    };
+    public static final Instruction SUB_S = new Instruction() {
 
-    public static final class SUB_S {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
             int ft = (insn >> 16) & 31;
@@ -4038,7 +4243,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
             int ft = (insn >> 16) & 31;
@@ -4062,7 +4268,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
             int ft = (insn >> 16) & 31;
@@ -4070,11 +4277,11 @@ public class Instructions {
 
             return Dis_FDFSFT("sub.s", fd, fs, ft);
         }
-    }
+    };
+    public static final Instruction MUL_S = new Instruction() {
 
-    public static final class MUL_S {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
             int ft = (insn >> 16) & 31;
@@ -4085,7 +4292,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
             int ft = (insn >> 16) & 31;
@@ -4109,7 +4317,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
             int ft = (insn >> 16) & 31;
@@ -4117,11 +4326,11 @@ public class Instructions {
 
             return Dis_FDFSFT("mul.s", fd, fs, ft);
         }
-    }
+    };
+    public static final Instruction DIV_S = new Instruction() {
 
-    public static final class DIV_S {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
             int ft = (insn >> 16) & 31;
@@ -4132,7 +4341,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
             int ft = (insn >> 16) & 31;
@@ -4156,7 +4366,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
             int ft = (insn >> 16) & 31;
@@ -4164,11 +4375,11 @@ public class Instructions {
 
             return Dis_FDFSFT("div.s", fd, fs, ft);
         }
-    }
+    };
+    public static final Instruction SQRT_S = new Instruction() {
 
-    public static final class SQRT_S {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
@@ -4178,7 +4389,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
@@ -4198,18 +4410,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
 
             return Dis_FDFS("sqrt.s", fd, fs);
         }
-    }
+    };
+    public static final Instruction ABS_S = new Instruction() {
 
-    public static final class ABS_S {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
@@ -4219,7 +4432,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
@@ -4239,18 +4453,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
 
             return Dis_FDFS("abs.s", fd, fs);
         }
-    }
+    };
+    public static final Instruction MOV_S = new Instruction() {
 
-    public static final class MOV_S {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
@@ -4260,7 +4475,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
@@ -4280,18 +4496,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
 
             return Dis_FDFS("mov.s", fd, fs);
         }
-    }
+    };
+    public static final Instruction NEG_S = new Instruction() {
 
-    public static final class NEG_S {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
@@ -4301,7 +4518,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
@@ -4321,18 +4539,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
 
             return Dis_FDFS("neg.s", fd, fs);
         }
-    }
+    };
+    public static final Instruction ROUND_W_S = new Instruction() {
 
-    public static final class ROUND_W_S {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
@@ -4342,7 +4561,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
@@ -4362,18 +4582,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
 
             return Dis_FDFS("round.w.s", fd, fs);
         }
-    }
+    };
+    public static final Instruction TRUNC_W_S = new Instruction() {
 
-    public static final class TRUNC_W_S {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
@@ -4383,7 +4604,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
@@ -4403,18 +4625,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
 
             return Dis_FDFS("trunc.w.s", fd, fs);
         }
-    }
+    };
+    public static final Instruction CEIL_W_S = new Instruction() {
 
-    public static final class CEIL_W_S {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
@@ -4424,7 +4647,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
@@ -4444,18 +4668,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
 
             return Dis_FDFS("ceil.w.s", fd, fs);
         }
-    }
+    };
+    public static final Instruction FLOOR_W_S = new Instruction() {
 
-    public static final class FLOOR_W_S {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
@@ -4465,7 +4690,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
@@ -4485,18 +4711,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
 
             return Dis_FDFS("floor.w.s", fd, fs);
         }
-    }
+    };
+    public static final Instruction CVT_S_W = new Instruction() {
 
-    public static final class CVT_S_W {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
@@ -4506,7 +4733,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
@@ -4526,18 +4754,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
 
             return Dis_FDFS("cvt.s.w", fd, fs);
         }
-    }
+    };
+    public static final Instruction CVT_W_S = new Instruction() {
 
-    public static final class CVT_W_S {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
@@ -4560,7 +4789,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
@@ -4598,18 +4828,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int fd = (insn >> 6) & 31;
             int fs = (insn >> 11) & 31;
 
 
             return Dis_FDFS("cvt.w.s", fd, fs);
         }
-    }
+    };
+    public static final Instruction C_COND_S = new Instruction() {
 
-    public static final class C_COND_S {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int fcond = (insn >> 0) & 15;
             int fs = (insn >> 11) & 31;
             int ft = (insn >> 16) & 31;
@@ -4635,7 +4866,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int fcond = (insn >> 0) & 15;
             int fs = (insn >> 11) & 31;
             int ft = (insn >> 16) & 31;
@@ -4662,7 +4894,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int fcond = (insn >> 0) & 15;
             int fs = (insn >> 11) & 31;
             int ft = (insn >> 16) & 31;
@@ -4670,11 +4903,11 @@ public class Instructions {
 
             return Dis_Cconds(fcond, fs, ft);
         }
-    }
+    };
+    public static final Instruction MFC1 = new Instruction() {
 
-    public static final class MFC1 {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int fs = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
@@ -4686,7 +4919,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int fs = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
@@ -4708,18 +4942,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int fs = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
 
             return Dis_RTFS("mfc1", rt, fs);
         }
-    }
+    };
+    public static final Instruction CFC1 = new Instruction() {
 
-    public static final class CFC1 {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int c1cr = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
@@ -4739,7 +4974,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int c1cr = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
@@ -4765,18 +5001,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int c1cr = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
 
             return Dis_RTFC("cfc1", rt, c1cr);
         }
-    }
+    };
+    public static final Instruction MTC1 = new Instruction() {
 
-    public static final class MTC1 {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int fs = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
@@ -4786,7 +5023,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int fs = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
@@ -4806,18 +5044,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int fs = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
 
             return Dis_RTFS("mtc1", rt, fs);
         }
-    }
+    };
+    public static final Instruction CTC1 = new Instruction() {
 
-    public static final class CTC1 {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int c1cr = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
@@ -4833,7 +5072,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int c1cr = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
@@ -4853,18 +5093,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int c1cr = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
 
             return Dis_RTFC("ctc1", rt, c1cr);
         }
-    }
+    };
+    public static final Instruction MFC0 = new Instruction() {
 
-    public static final class MFC0 {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int c0dr = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
@@ -4873,7 +5114,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int c0dr = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
@@ -4882,18 +5124,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int c0dr = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
 
             return "Unimplemented MFC0";
         }
-    }
+    };
+    public static final Instruction CFC0 = new Instruction() {
 
-    public static final class CFC0 {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int c0cr = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
@@ -4902,7 +5145,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int c0cr = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
@@ -4911,18 +5155,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int c0cr = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
 
             return "Unimplemented CFC0";
         }
-    }
+    };
+    public static final Instruction MTC0 = new Instruction() {
 
-    public static final class MTC0 {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int c0dr = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
@@ -4931,7 +5176,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int c0dr = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
@@ -4940,18 +5186,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int c0dr = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
 
             return "Unimplemented MTC0";
         }
-    }
+    };
+    public static final Instruction CTC0 = new Instruction() {
 
-    public static final class CTC0 {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int c0cr = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
@@ -4960,7 +5207,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int c0cr = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
@@ -4969,18 +5217,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int c0cr = (insn >> 11) & 31;
             int rt = (insn >> 16) & 31;
 
 
             return "Unimplemented CTC0";
         }
-    }
+    };
+    public static final Instruction VADD = new Instruction() {
 
-    public static final class VADD {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -4992,7 +5241,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5004,7 +5254,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5014,11 +5265,11 @@ public class Instructions {
 
             return "Unimplemented VADD";
         }
-    }
+    };
+    public static final Instruction VSUB = new Instruction() {
 
-    public static final class VSUB {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5030,7 +5281,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5042,7 +5294,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5052,11 +5305,11 @@ public class Instructions {
 
             return "Unimplemented VSUB";
         }
-    }
+    };
+    public static final Instruction VSBN = new Instruction() {
 
-    public static final class VSBN {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5068,7 +5321,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5080,7 +5334,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5090,11 +5345,11 @@ public class Instructions {
 
             return "Unimplemented VSBN";
         }
-    }
+    };
+    public static final Instruction VDIV = new Instruction() {
 
-    public static final class VDIV {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5106,7 +5361,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5118,7 +5374,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5128,11 +5385,11 @@ public class Instructions {
 
             return "Unimplemented VDIV";
         }
-    }
+    };
+    public static final Instruction VMUL = new Instruction() {
 
-    public static final class VMUL {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5144,7 +5401,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5156,7 +5414,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5166,11 +5425,11 @@ public class Instructions {
 
             return "Unimplemented VMUL";
         }
-    }
+    };
+    public static final Instruction VDOT = new Instruction() {
 
-    public static final class VDOT {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5182,7 +5441,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5194,7 +5454,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5204,11 +5465,11 @@ public class Instructions {
 
             return "Unimplemented VDOT";
         }
-    }
+    };
+    public static final Instruction VSCL = new Instruction() {
 
-    public static final class VSCL {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5220,7 +5481,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5232,7 +5494,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5242,11 +5505,11 @@ public class Instructions {
 
             return "Unimplemented VSCL";
         }
-    }
+    };
+    public static final Instruction VHDP = new Instruction() {
 
-    public static final class VHDP {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5258,7 +5521,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5270,7 +5534,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5280,11 +5545,11 @@ public class Instructions {
 
             return "Unimplemented VHDP";
         }
-    }
+    };
+    public static final Instruction VDET = new Instruction() {
 
-    public static final class VDET {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5296,7 +5561,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5308,7 +5574,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5318,11 +5585,11 @@ public class Instructions {
 
             return "Unimplemented VDET";
         }
-    }
+    };
+    public static final Instruction VCRS = new Instruction() {
 
-    public static final class VCRS {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5334,7 +5601,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5346,7 +5614,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5356,11 +5625,11 @@ public class Instructions {
 
             return "Unimplemented VCRS";
         }
-    }
+    };
+    public static final Instruction MFV = new Instruction() {
 
-    public static final class MFV {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm7 = (insn >> 0) & 127;
             int rt = (insn >> 16) & 31;
 
@@ -5369,7 +5638,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm7 = (insn >> 0) & 127;
             int rt = (insn >> 16) & 31;
 
@@ -5378,18 +5648,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm7 = (insn >> 0) & 127;
             int rt = (insn >> 16) & 31;
 
 
             return "Unimplemented MFV";
         }
-    }
+    };
+    public static final Instruction MFVC = new Instruction() {
 
-    public static final class MFVC {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm7 = (insn >> 0) & 127;
             int rt = (insn >> 16) & 31;
 
@@ -5398,7 +5669,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm7 = (insn >> 0) & 127;
             int rt = (insn >> 16) & 31;
 
@@ -5407,18 +5679,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm7 = (insn >> 0) & 127;
             int rt = (insn >> 16) & 31;
 
 
             return "Unimplemented MFVC";
         }
-    }
+    };
+    public static final Instruction MTV = new Instruction() {
 
-    public static final class MTV {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm7 = (insn >> 0) & 127;
             int rt = (insn >> 16) & 31;
 
@@ -5427,7 +5700,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm7 = (insn >> 0) & 127;
             int rt = (insn >> 16) & 31;
 
@@ -5436,18 +5710,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm7 = (insn >> 0) & 127;
             int rt = (insn >> 16) & 31;
 
 
             return "Unimplemented MTV";
         }
-    }
+    };
+    public static final Instruction MTVC = new Instruction() {
 
-    public static final class MTVC {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm7 = (insn >> 0) & 127;
             int rt = (insn >> 16) & 31;
 
@@ -5456,7 +5731,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm7 = (insn >> 0) & 127;
             int rt = (insn >> 16) & 31;
 
@@ -5465,18 +5741,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm7 = (insn >> 0) & 127;
             int rt = (insn >> 16) & 31;
 
 
             return "Unimplemented MTVC";
         }
-    }
+    };
+    public static final Instruction BVF = new Instruction() {
 
-    public static final class BVF {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int imm3 = (insn >> 18) & 7;
 
@@ -5485,7 +5762,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int imm3 = (insn >> 18) & 7;
 
@@ -5494,47 +5772,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
-            int imm16 = (insn >> 0) & 65535;
-            int imm3 = (insn >> 18) & 7;
-
-
-            return "Unimplemented BVF";
-        }
-    }
-
-    public static final class BVT {
-
-        static void interpret(Processor processor, int insn) {
-            int imm16 = (insn >> 0) & 65535;
-            int imm3 = (insn >> 18) & 7;
-
-
-
-
-        }
-
-        static void compile(Processor processor, int insn) {
-            int imm16 = (insn >> 0) & 65535;
-            int imm3 = (insn >> 18) & 7;
-
-
-
-
-        }
-
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int imm3 = (insn >> 18) & 7;
 
 
             return "Unimplemented BVF";
         }
-    }
+    };
+    public static final Instruction BVT = new Instruction() {
 
-    public static final class BVFL {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int imm3 = (insn >> 18) & 7;
 
@@ -5543,7 +5793,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int imm3 = (insn >> 18) & 7;
 
@@ -5552,47 +5803,81 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
-            int imm16 = (insn >> 0) & 65535;
-            int imm3 = (insn >> 18) & 7;
-
-
-            return "Unimplemented BVF";
-        }
-    }
-
-    public static final class BVTL {
-
-        static void interpret(Processor processor, int insn) {
-            int imm16 = (insn >> 0) & 65535;
-            int imm3 = (insn >> 18) & 7;
-
-
-
-
-        }
-
-        static void compile(Processor processor, int insn) {
-            int imm16 = (insn >> 0) & 65535;
-            int imm3 = (insn >> 18) & 7;
-
-
-
-
-        }
-
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int imm3 = (insn >> 18) & 7;
 
 
             return "Unimplemented BVF";
         }
-    }
+    };
+    public static final Instruction BVFL = new Instruction() {
 
-    public static final class VCMP {
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
 
-        static void interpret(Processor processor, int insn) {
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+            return "Unimplemented BVF";
+        }
+    };
+    public static final Instruction BVTL = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+
+
+        }
+
+        @Override
+        public void compile(Processor processor, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+
+
+        }
+
+        @Override
+        public String disasm(int address, int insn) {
+            int imm16 = (insn >> 0) & 65535;
+            int imm3 = (insn >> 18) & 7;
+
+
+            return "Unimplemented BVF";
+        }
+    };
+    public static final Instruction VCMP = new Instruction() {
+
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm3 = (insn >> 0) & 7;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5604,7 +5889,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm3 = (insn >> 0) & 7;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5616,7 +5902,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm3 = (insn >> 0) & 7;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5626,11 +5913,11 @@ public class Instructions {
 
             return "Unimplemented VCMP";
         }
-    }
+    };
+    public static final Instruction VMIN = new Instruction() {
 
-    public static final class VMIN {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5642,7 +5929,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5654,7 +5942,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5664,11 +5953,11 @@ public class Instructions {
 
             return "Unimplemented VMIN";
         }
-    }
+    };
+    public static final Instruction VMAX = new Instruction() {
 
-    public static final class VMAX {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5680,7 +5969,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5692,7 +5982,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5702,11 +5993,11 @@ public class Instructions {
 
             return "Unimplemented VMAX";
         }
-    }
+    };
+    public static final Instruction VSCMP = new Instruction() {
 
-    public static final class VSCMP {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5718,7 +6009,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5730,7 +6022,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5740,11 +6033,11 @@ public class Instructions {
 
             return "Unimplemented VSCMP";
         }
-    }
+    };
+    public static final Instruction VSGE = new Instruction() {
 
-    public static final class VSGE {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5756,7 +6049,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5768,7 +6062,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5778,11 +6073,11 @@ public class Instructions {
 
             return "Unimplemented VSGE";
         }
-    }
+    };
+    public static final Instruction VSLT = new Instruction() {
 
-    public static final class VSLT {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5794,7 +6089,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5806,7 +6102,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5816,11 +6113,11 @@ public class Instructions {
 
             return "Unimplemented VSLT";
         }
-    }
+    };
+    public static final Instruction VMOV = new Instruction() {
 
-    public static final class VMOV {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5831,7 +6128,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5842,7 +6140,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5851,11 +6150,11 @@ public class Instructions {
 
             return "Unimplemented VMOV";
         }
-    }
+    };
+    public static final Instruction VABS = new Instruction() {
 
-    public static final class VABS {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5866,7 +6165,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5877,7 +6177,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5886,11 +6187,11 @@ public class Instructions {
 
             return "Unimplemented VABS";
         }
-    }
+    };
+    public static final Instruction VNEG = new Instruction() {
 
-    public static final class VNEG {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5901,7 +6202,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5912,7 +6214,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5921,11 +6224,11 @@ public class Instructions {
 
             return "Unimplemented VNEG";
         }
-    }
+    };
+    public static final Instruction VIDT = new Instruction() {
 
-    public static final class VIDT {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int two = (insn >> 15) & 1;
@@ -5935,7 +6238,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int two = (insn >> 15) & 1;
@@ -5945,7 +6249,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int two = (insn >> 15) & 1;
@@ -5953,11 +6258,11 @@ public class Instructions {
 
             return "Unimplemented VIDT";
         }
-    }
+    };
+    public static final Instruction VSAT0 = new Instruction() {
 
-    public static final class VSAT0 {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5968,7 +6273,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5979,7 +6285,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -5988,11 +6295,11 @@ public class Instructions {
 
             return "Unimplemented VSAT0";
         }
-    }
+    };
+    public static final Instruction VSAT1 = new Instruction() {
 
-    public static final class VSAT1 {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6003,7 +6310,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6014,7 +6322,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6023,11 +6332,11 @@ public class Instructions {
 
             return "Unimplemented VSAT1";
         }
-    }
+    };
+    public static final Instruction VZERO = new Instruction() {
 
-    public static final class VZERO {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int two = (insn >> 15) & 1;
@@ -6037,7 +6346,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int two = (insn >> 15) & 1;
@@ -6047,7 +6357,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int two = (insn >> 15) & 1;
@@ -6055,11 +6366,11 @@ public class Instructions {
 
             return "Unimplemented VZERO";
         }
-    }
+    };
+    public static final Instruction VONE = new Instruction() {
 
-    public static final class VONE {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int two = (insn >> 15) & 1;
@@ -6069,7 +6380,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int two = (insn >> 15) & 1;
@@ -6079,7 +6391,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int two = (insn >> 15) & 1;
@@ -6087,11 +6400,11 @@ public class Instructions {
 
             return "Unimplemented VONE";
         }
-    }
+    };
+    public static final Instruction VRCP = new Instruction() {
 
-    public static final class VRCP {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6102,7 +6415,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6113,7 +6427,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6122,11 +6437,11 @@ public class Instructions {
 
             return "Unimplemented VRCP";
         }
-    }
+    };
+    public static final Instruction VRSQ = new Instruction() {
 
-    public static final class VRSQ {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6137,7 +6452,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6148,7 +6464,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6157,11 +6474,11 @@ public class Instructions {
 
             return "Unimplemented VRSQ";
         }
-    }
+    };
+    public static final Instruction VSIN = new Instruction() {
 
-    public static final class VSIN {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6172,7 +6489,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6183,7 +6501,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6192,11 +6511,11 @@ public class Instructions {
 
             return "Unimplemented VSIN";
         }
-    }
+    };
+    public static final Instruction VCOS = new Instruction() {
 
-    public static final class VCOS {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6207,7 +6526,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6218,7 +6538,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6227,11 +6548,11 @@ public class Instructions {
 
             return "Unimplemented VCOS";
         }
-    }
+    };
+    public static final Instruction VEXP2 = new Instruction() {
 
-    public static final class VEXP2 {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6242,7 +6563,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6253,7 +6575,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6262,11 +6585,11 @@ public class Instructions {
 
             return "Unimplemented VEXP2";
         }
-    }
+    };
+    public static final Instruction VLOG2 = new Instruction() {
 
-    public static final class VLOG2 {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6277,7 +6600,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6288,7 +6612,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6297,11 +6622,11 @@ public class Instructions {
 
             return "Unimplemented VLOG2";
         }
-    }
+    };
+    public static final Instruction VSQRT = new Instruction() {
 
-    public static final class VSQRT {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6312,7 +6637,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6323,7 +6649,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6332,11 +6659,11 @@ public class Instructions {
 
             return "Unimplemented VSQRT";
         }
-    }
+    };
+    public static final Instruction VASIN = new Instruction() {
 
-    public static final class VASIN {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6347,7 +6674,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6358,7 +6686,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6367,11 +6696,11 @@ public class Instructions {
 
             return "Unimplemented VASIN";
         }
-    }
+    };
+    public static final Instruction VNRCP = new Instruction() {
 
-    public static final class VNRCP {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6382,7 +6711,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6393,7 +6723,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6402,11 +6733,11 @@ public class Instructions {
 
             return "Unimplemented VNRCP";
         }
-    }
+    };
+    public static final Instruction VNSIN = new Instruction() {
 
-    public static final class VNSIN {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6417,7 +6748,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6428,7 +6760,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6437,11 +6770,11 @@ public class Instructions {
 
             return "Unimplemented VNSIN";
         }
-    }
+    };
+    public static final Instruction VREXP2 = new Instruction() {
 
-    public static final class VREXP2 {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6452,7 +6785,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6463,7 +6797,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6472,11 +6807,11 @@ public class Instructions {
 
             return "Unimplemented VREXP2";
         }
-    }
+    };
+    public static final Instruction VRNDS = new Instruction() {
 
-    public static final class VRNDS {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
             int two = (insn >> 15) & 1;
@@ -6486,7 +6821,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
             int two = (insn >> 15) & 1;
@@ -6496,7 +6832,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
             int two = (insn >> 15) & 1;
@@ -6504,11 +6841,11 @@ public class Instructions {
 
             return "Unimplemented VRNDS";
         }
-    }
+    };
+    public static final Instruction VRNDI = new Instruction() {
 
-    public static final class VRNDI {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int two = (insn >> 15) & 1;
@@ -6518,7 +6855,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int two = (insn >> 15) & 1;
@@ -6528,7 +6866,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int two = (insn >> 15) & 1;
@@ -6536,11 +6875,11 @@ public class Instructions {
 
             return "Unimplemented VRNDI";
         }
-    }
+    };
+    public static final Instruction VRNDF1 = new Instruction() {
 
-    public static final class VRNDF1 {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int two = (insn >> 15) & 1;
@@ -6550,7 +6889,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int two = (insn >> 15) & 1;
@@ -6560,7 +6900,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int two = (insn >> 15) & 1;
@@ -6568,11 +6909,11 @@ public class Instructions {
 
             return "Unimplemented VRNDF1";
         }
-    }
+    };
+    public static final Instruction VRNDF2 = new Instruction() {
 
-    public static final class VRNDF2 {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int two = (insn >> 15) & 1;
@@ -6582,7 +6923,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int two = (insn >> 15) & 1;
@@ -6592,7 +6934,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int two = (insn >> 15) & 1;
@@ -6600,11 +6943,11 @@ public class Instructions {
 
             return "Unimplemented VRNDF2";
         }
-    }
+    };
+    public static final Instruction VF2H = new Instruction() {
 
-    public static final class VF2H {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6615,7 +6958,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6626,7 +6970,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6635,11 +6980,11 @@ public class Instructions {
 
             return "Unimplemented VF2H";
         }
-    }
+    };
+    public static final Instruction VH2F = new Instruction() {
 
-    public static final class VH2F {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6650,7 +6995,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6661,7 +7007,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6670,11 +7017,11 @@ public class Instructions {
 
             return "Unimplemented VH2F";
         }
-    }
+    };
+    public static final Instruction VSBZ = new Instruction() {
 
-    public static final class VSBZ {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6685,7 +7032,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6696,7 +7044,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6705,11 +7054,11 @@ public class Instructions {
 
             return "Unimplemented VSBZ";
         }
-    }
+    };
+    public static final Instruction VLGB = new Instruction() {
 
-    public static final class VLGB {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6720,7 +7069,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6731,7 +7081,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6740,11 +7091,11 @@ public class Instructions {
 
             return "Unimplemented VLGB";
         }
-    }
+    };
+    public static final Instruction VUC2I = new Instruction() {
 
-    public static final class VUC2I {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6755,7 +7106,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6766,7 +7118,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6775,11 +7128,11 @@ public class Instructions {
 
             return "Unimplemented VUC2I";
         }
-    }
+    };
+    public static final Instruction VC2I = new Instruction() {
 
-    public static final class VC2I {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6790,7 +7143,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6801,7 +7155,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6810,11 +7165,11 @@ public class Instructions {
 
             return "Unimplemented VC2I";
         }
-    }
+    };
+    public static final Instruction VUS2I = new Instruction() {
 
-    public static final class VUS2I {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6825,7 +7180,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6836,7 +7192,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6845,11 +7202,11 @@ public class Instructions {
 
             return "Unimplemented VUS2I";
         }
-    }
+    };
+    public static final Instruction VS2I = new Instruction() {
 
-    public static final class VS2I {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6860,7 +7217,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6871,7 +7229,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6880,11 +7239,11 @@ public class Instructions {
 
             return "Unimplemented VS2I";
         }
-    }
+    };
+    public static final Instruction VI2UC = new Instruction() {
 
-    public static final class VI2UC {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6895,7 +7254,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6906,7 +7266,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6915,11 +7276,11 @@ public class Instructions {
 
             return "Unimplemented VI2UC";
         }
-    }
+    };
+    public static final Instruction VI2C = new Instruction() {
 
-    public static final class VI2C {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6930,7 +7291,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6941,7 +7303,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6950,11 +7313,11 @@ public class Instructions {
 
             return "Unimplemented VI2C";
         }
-    }
+    };
+    public static final Instruction VI2US = new Instruction() {
 
-    public static final class VI2US {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6965,7 +7328,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6976,7 +7340,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -6985,11 +7350,11 @@ public class Instructions {
 
             return "Unimplemented VI2US";
         }
-    }
+    };
+    public static final Instruction VI2S = new Instruction() {
 
-    public static final class VI2S {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7000,7 +7365,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7011,7 +7377,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7020,11 +7387,11 @@ public class Instructions {
 
             return "Unimplemented VI2S";
         }
-    }
+    };
+    public static final Instruction VSRT1 = new Instruction() {
 
-    public static final class VSRT1 {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7035,7 +7402,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7046,7 +7414,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7055,11 +7424,11 @@ public class Instructions {
 
             return "Unimplemented VSRT1";
         }
-    }
+    };
+    public static final Instruction VSRT2 = new Instruction() {
 
-    public static final class VSRT2 {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7070,7 +7439,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7081,7 +7451,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7090,11 +7461,11 @@ public class Instructions {
 
             return "Unimplemented VSRT2";
         }
-    }
+    };
+    public static final Instruction VBFY1 = new Instruction() {
 
-    public static final class VBFY1 {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7105,7 +7476,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7116,7 +7488,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7125,11 +7498,11 @@ public class Instructions {
 
             return "Unimplemented VBFY1";
         }
-    }
+    };
+    public static final Instruction VBFY2 = new Instruction() {
 
-    public static final class VBFY2 {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7140,7 +7513,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7151,7 +7525,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7160,11 +7535,11 @@ public class Instructions {
 
             return "Unimplemented VBFY2";
         }
-    }
+    };
+    public static final Instruction VOCP = new Instruction() {
 
-    public static final class VOCP {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7175,7 +7550,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7186,7 +7562,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7195,11 +7572,11 @@ public class Instructions {
 
             return "Unimplemented VOCP";
         }
-    }
+    };
+    public static final Instruction VSOCP = new Instruction() {
 
-    public static final class VSOCP {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7210,7 +7587,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7221,7 +7599,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7230,11 +7609,11 @@ public class Instructions {
 
             return "Unimplemented VSOCP";
         }
-    }
+    };
+    public static final Instruction VFAD = new Instruction() {
 
-    public static final class VFAD {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7245,7 +7624,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7256,7 +7636,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7265,11 +7646,11 @@ public class Instructions {
 
             return "Unimplemented VFAD";
         }
-    }
+    };
+    public static final Instruction VAVG = new Instruction() {
 
-    public static final class VAVG {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7280,7 +7661,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7291,7 +7673,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7300,11 +7683,11 @@ public class Instructions {
 
             return "Unimplemented VAVG";
         }
-    }
+    };
+    public static final Instruction VSRT3 = new Instruction() {
 
-    public static final class VSRT3 {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7315,7 +7698,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7326,7 +7710,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7335,11 +7720,11 @@ public class Instructions {
 
             return "Unimplemented VSRT3";
         }
-    }
+    };
+    public static final Instruction VSRT4 = new Instruction() {
 
-    public static final class VSRT4 {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7350,7 +7735,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7361,7 +7747,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7370,11 +7757,11 @@ public class Instructions {
 
             return "Unimplemented VSRT4";
         }
-    }
+    };
+    public static final Instruction VMFVC = new Instruction() {
 
-    public static final class VMFVC {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int imm8 = (insn >> 8) & 255;
 
@@ -7383,7 +7770,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int imm8 = (insn >> 8) & 255;
 
@@ -7392,18 +7780,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int imm8 = (insn >> 8) & 255;
 
 
             return "Unimplemented VMFVC";
         }
-    }
+    };
+    public static final Instruction VMTVC = new Instruction() {
 
-    public static final class VMTVC {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm8 = (insn >> 0) & 255;
             int vs = (insn >> 8) & 127;
 
@@ -7412,7 +7801,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm8 = (insn >> 0) & 255;
             int vs = (insn >> 8) & 127;
 
@@ -7421,18 +7811,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm8 = (insn >> 0) & 255;
             int vs = (insn >> 8) & 127;
 
 
             return "Unimplemented VMTVC";
         }
-    }
+    };
+    public static final Instruction VT4444 = new Instruction() {
 
-    public static final class VT4444 {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7443,7 +7834,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7454,7 +7846,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7463,11 +7856,11 @@ public class Instructions {
 
             return "Unimplemented VT4444";
         }
-    }
+    };
+    public static final Instruction VT5551 = new Instruction() {
 
-    public static final class VT5551 {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7478,7 +7871,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7489,7 +7883,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7498,11 +7893,11 @@ public class Instructions {
 
             return "Unimplemented VT5551";
         }
-    }
+    };
+    public static final Instruction VT5650 = new Instruction() {
 
-    public static final class VT5650 {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7513,7 +7908,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7524,7 +7920,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7533,11 +7930,11 @@ public class Instructions {
 
             return "Unimplemented VT5650";
         }
-    }
+    };
+    public static final Instruction VCST = new Instruction() {
 
-    public static final class VCST {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int two = (insn >> 15) & 1;
@@ -7547,7 +7944,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int two = (insn >> 15) & 1;
@@ -7557,7 +7955,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int two = (insn >> 15) & 1;
@@ -7565,11 +7964,11 @@ public class Instructions {
 
             return "Unimplemented VCST";
         }
-    }
+    };
+    public static final Instruction VF2IN = new Instruction() {
 
-    public static final class VF2IN {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7580,7 +7979,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7591,7 +7991,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7600,11 +8001,11 @@ public class Instructions {
 
             return "Unimplemented VF2IN";
         }
-    }
+    };
+    public static final Instruction VF2IZ = new Instruction() {
 
-    public static final class VF2IZ {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7615,7 +8016,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7626,7 +8028,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7635,11 +8038,11 @@ public class Instructions {
 
             return "Unimplemented VF2IZ";
         }
-    }
+    };
+    public static final Instruction VF2IU = new Instruction() {
 
-    public static final class VF2IU {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7650,7 +8053,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7661,7 +8065,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7670,11 +8075,11 @@ public class Instructions {
 
             return "Unimplemented VF2IU";
         }
-    }
+    };
+    public static final Instruction VF2ID = new Instruction() {
 
-    public static final class VF2ID {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7685,7 +8090,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7696,7 +8102,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7705,11 +8112,11 @@ public class Instructions {
 
             return "Unimplemented VF2ID";
         }
-    }
+    };
+    public static final Instruction VI2F = new Instruction() {
 
-    public static final class VI2F {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7720,7 +8127,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7731,7 +8139,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7740,11 +8149,11 @@ public class Instructions {
 
             return "Unimplemented VI2F";
         }
-    }
+    };
+    public static final Instruction VCMOVT = new Instruction() {
 
-    public static final class VCMOVT {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7756,7 +8165,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7768,7 +8178,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7778,11 +8189,11 @@ public class Instructions {
 
             return "Unimplemented VCMOVT";
         }
-    }
+    };
+    public static final Instruction VCMOVF = new Instruction() {
 
-    public static final class VCMOVF {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7794,7 +8205,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7806,7 +8218,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7816,11 +8229,11 @@ public class Instructions {
 
             return "Unimplemented VCMOVF";
         }
-    }
+    };
+    public static final Instruction VWBN = new Instruction() {
 
-    public static final class VWBN {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7832,7 +8245,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7844,7 +8258,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int vd = (insn >> 0) & 127;
             int one = (insn >> 7) & 1;
             int vs = (insn >> 8) & 127;
@@ -7854,11 +8269,11 @@ public class Instructions {
 
             return "Unimplemented VWBN";
         }
-    }
+    };
+    public static final Instruction VPFXS = new Instruction() {
 
-    public static final class VPFXS {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int swzx = (insn >> 0) & 3;
             int swzy = (insn >> 2) & 3;
             int swzz = (insn >> 4) & 3;
@@ -7881,7 +8296,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int swzx = (insn >> 0) & 3;
             int swzy = (insn >> 2) & 3;
             int swzz = (insn >> 4) & 3;
@@ -7904,7 +8320,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int swzx = (insn >> 0) & 3;
             int swzy = (insn >> 2) & 3;
             int swzz = (insn >> 4) & 3;
@@ -7925,11 +8342,11 @@ public class Instructions {
 
             return "Unimplemented VPFXS";
         }
-    }
+    };
+    public static final Instruction VPFXT = new Instruction() {
 
-    public static final class VPFXT {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int swzx = (insn >> 0) & 3;
             int swzy = (insn >> 2) & 3;
             int swzz = (insn >> 4) & 3;
@@ -7952,7 +8369,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int swzx = (insn >> 0) & 3;
             int swzy = (insn >> 2) & 3;
             int swzz = (insn >> 4) & 3;
@@ -7975,7 +8393,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int swzx = (insn >> 0) & 3;
             int swzy = (insn >> 2) & 3;
             int swzz = (insn >> 4) & 3;
@@ -7996,11 +8415,11 @@ public class Instructions {
 
             return "Unimplemented VPFXT";
         }
-    }
+    };
+    public static final Instruction VPFXD = new Instruction() {
 
-    public static final class VPFXD {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int satx = (insn >> 0) & 3;
             int saty = (insn >> 2) & 3;
             int satz = (insn >> 4) & 3;
@@ -8015,7 +8434,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int satx = (insn >> 0) & 3;
             int saty = (insn >> 2) & 3;
             int satz = (insn >> 4) & 3;
@@ -8030,7 +8450,8 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int satx = (insn >> 0) & 3;
             int saty = (insn >> 2) & 3;
             int satz = (insn >> 4) & 3;
@@ -8043,11 +8464,11 @@ public class Instructions {
 
             return "Unimplemented VPFXD";
         }
-    }
+    };
+    public static final Instruction VIIM = new Instruction() {
 
-    public static final class VIIM {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int vd = (insn >> 16) & 127;
 
@@ -8056,7 +8477,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int vd = (insn >> 16) & 127;
 
@@ -8065,18 +8487,19 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int vd = (insn >> 16) & 127;
 
 
             return "Unimplemented VIIM";
         }
-    }
+    };
+    public static final Instruction VFIM = new Instruction() {
 
-    public static final class VFIM {
-
-        static void interpret(Processor processor, int insn) {
+        @Override
+        public void interpret(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int vd = (insn >> 16) & 127;
 
@@ -8085,7 +8508,8 @@ public class Instructions {
 
         }
 
-        static void compile(Processor processor, int insn) {
+        @Override
+        public void compile(Processor processor, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int vd = (insn >> 16) & 127;
 
@@ -8094,12 +8518,13 @@ public class Instructions {
 
         }
 
-        static String disasm(int address, int insn) {
+        @Override
+        public String disasm(int address, int insn) {
             int imm16 = (insn >> 0) & 65535;
             int vd = (insn >> 16) & 127;
 
 
             return "Unimplemented VFIM";
         }
-    }
+    };
 }
