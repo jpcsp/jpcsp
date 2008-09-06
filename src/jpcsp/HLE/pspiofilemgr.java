@@ -22,7 +22,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE;
 
 //import java.io.BufferedOutputStream;
-import java.io.RandomAccessFile;
+import jpcsp.filesystems.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -144,7 +144,7 @@ public class pspiofilemgr {
         } else if ((flags & PSP_O_RDONLY) == PSP_O_RDONLY) {
             mode = "r";
         } else if ((flags & PSP_O_WRONLY) == PSP_O_WRONLY) {
-            // RandomAccessFile doesn't support write only
+            // SeekableRandomFile doesn't support write only
             mode = "rw";
         } else {
             System.out.println("sceIoOpen - unhandled flags " + Integer.toHexString(flags));
@@ -184,7 +184,7 @@ public class pspiofilemgr {
                         //file.delete();
                     }
 
-                    RandomAccessFile raf = new RandomAccessFile(pcfilename, mode);
+                    SeekableRandomFile raf = new SeekableRandomFile(pcfilename, mode);
                     IoInfo info = new IoInfo(raf, mode, flags, permissions);
                     Emulator.getProcessor().gpr[2] = info.uid;
                 }
@@ -504,7 +504,7 @@ public class pspiofilemgr {
 
     class IoInfo {
         // Internal settings
-        final RandomAccessFile f;
+        final SeekableRandomFile f;
         final String mode;
 
         // PSP settings
@@ -513,7 +513,7 @@ public class pspiofilemgr {
 
         final int uid;
 
-        public IoInfo(RandomAccessFile f, String mode, int flags, int permissions) {
+        public IoInfo(SeekableRandomFile f, String mode, int flags, int permissions) {
             this.f = f;
             this.mode = mode;
             this.flags = flags;

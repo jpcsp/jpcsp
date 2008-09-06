@@ -17,7 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.format;
 
 import java.io.IOException;
-import java.io.RandomAccessFile;
+import jpcsp.filesystems.*;
 import jpcsp.MemoryMap;
 import jpcsp.util.Utilities;
 import static jpcsp.util.Utilities.*;
@@ -44,7 +44,7 @@ public class Elf32Header {
     private int e_shnum;
     private int e_shstrndx;
 
-    private void read(RandomAccessFile f) throws IOException {
+    private void read(SeekableRandomFile f) throws IOException {
         e_magic = readUWord(f);
         e_class = readUByte(f);
         e_data = readUByte(f);
@@ -66,7 +66,7 @@ public class Elf32Header {
     }
 
 
-     public Elf32Header(RandomAccessFile f) throws IOException {
+     public Elf32Header(SeekableRandomFile f) throws IOException {
         read(f);
     }
 

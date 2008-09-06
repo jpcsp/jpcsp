@@ -3,10 +3,10 @@
  * and open the template in the editor.
  */
 
-package jpcsp.umdiso;
+package jpcsp.filesystems.umdiso;
 
 import java.io.*;
-import jpcsp.umdiso.iso9660.*;
+import jpcsp.filesystems.umdiso.iso9660.*;
 
 import java.util.zip.*;
 

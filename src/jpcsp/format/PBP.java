@@ -19,7 +19,7 @@ package jpcsp.format;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
+import jpcsp.filesystems.*;
 import static jpcsp.util.Utilities.*;
 
 public class PBP {
@@ -70,7 +70,7 @@ public class PBP {
         return info;
     }
 
-    public PBP(RandomAccessFile f) throws IOException {
+    public PBP(SeekableRandomFile f) throws IOException {
         size_pbp = (int)f.length();
         p_magic = readUWord(f);
         if (isValid())
@@ -97,7 +97,7 @@ public class PBP {
             info = this.toString();
         }
     }
-    public void readPSF(RandomAccessFile f) throws IOException {
+    public void readPSF(SeekableRandomFile f) throws IOException {
            f.seek(p_offset_param_sfo);
            PSF psf1= new PSF(p_offset_param_sfo);
            psf1.read(f);
@@ -173,7 +173,7 @@ public class PBP {
         return dir.delete();
     }
 
-    public static void unpackPBP(RandomAccessFile f) throws IOException {
+    public static void unpackPBP(SeekableRandomFile f) throws IOException {
         f.seek(0);//seek to 0
         PBP pbp = new PBP(f);
         if (!pbp.isValid())

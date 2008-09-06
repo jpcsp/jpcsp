@@ -3,11 +3,11 @@
  * and open the template in the editor.
  */
 
-package jpcsp.umdiso.iso9660;
+package jpcsp.filesystems.umdiso.iso9660;
 
 import java.io.*;
 import java.util.Vector;
-import jpcsp.umdiso.*;
+import jpcsp.filesystems.umdiso.*;
 
 /**
  *

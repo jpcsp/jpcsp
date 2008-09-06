@@ -18,7 +18,7 @@ package jpcsp;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
+import jpcsp.filesystems.*;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
@@ -41,7 +41,7 @@ public class FileManager {
     private PBP pbp;
     private Elf32 elf;
     private PSP psp;
-    private RandomAccessFile actualFile;
+    private SeekableRandomFile actualFile;
     private String filePath;
     public final static int FORMAT_ELF = 0;
     public final static int FORMAT_PBP = 10;
@@ -70,16 +70,16 @@ public class FileManager {
         return elf;
     }
 
-    public RandomAccessFile getActualFile() {
+    public SeekableRandomFile getActualFile() {
         return actualFile;
     }
 
-    private void setActualFile(RandomAccessFile f) {
+    private void setActualFile(SeekableRandomFile f) {
         actualFile = f;
     }
 
     private void loadAndDefine(String filePath) throws FileNotFoundException, IOException {
-        RandomAccessFile f = new RandomAccessFile(filePath, "r");
+        SeekableRandomFile f = new SeekableRandomFile(filePath, "r");
         setActualFile(f);
         try {
             elfoffset = 0;
@@ -221,7 +221,7 @@ public class FileManager {
         secondStep(sectionheaders, shstrtab, getActualFile(), getPSPModuleInfo());
     }
 
-    private Elf32SectionHeader firstStep(Elf32Header ehdr, RandomAccessFile f, List<Elf32SectionHeader> sectionheaders) throws IOException {
+    private Elf32SectionHeader firstStep(Elf32Header ehdr, SeekableRandomFile f, List<Elf32SectionHeader> sectionheaders) throws IOException {
         /** Read the ELF section headers (1st pass) */
         getElf32().setListSectionHeader(sectionheaders); //make the connection
 
@@ -267,7 +267,7 @@ public class FileManager {
         return shstrtab;
     }
 
-    private void secondStep(List<Elf32SectionHeader> sectionheaders, Elf32SectionHeader shstrtab, RandomAccessFile f, PSPModuleInfo moduleinfo) throws IOException {
+    private void secondStep(List<Elf32SectionHeader> sectionheaders, Elf32SectionHeader shstrtab, SeekableRandomFile f, PSPModuleInfo moduleinfo) throws IOException {
         // 2nd pass generate info string for the GUI and get module infos
         //moduleinfo = new PSPModuleInfo(); moved to loadAndDefine()
         StringBuffer shsb = new StringBuffer();

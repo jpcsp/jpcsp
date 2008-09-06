@@ -17,7 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.format;
 
 import java.io.IOException;
-import java.io.RandomAccessFile;
+import jpcsp.filesystems.*;
 import jpcsp.Memory;
 import static jpcsp.util.Utilities.*;
 
@@ -35,7 +35,7 @@ public class Elf32StubHeader
     private long s_text;
 
     public static int sizeof() { return 20; }
-    public Elf32StubHeader(RandomAccessFile f) throws IOException
+    public Elf32StubHeader(SeekableRandomFile f) throws IOException
     {
         s_modulenamez = "";
 

@@ -38,7 +38,7 @@ import jpcsp.HLE.pspdisplay_glcanvas;
 import jpcsp.HLE.pspiofilemgr;
 import jpcsp.util.JpcspDialogManager;
 import jpcsp.util.MetaInformation;
-import jpcsp.umdiso.*;
+import jpcsp.filesystems.umdiso.*;
 
 /**
  *
@@ -480,7 +480,7 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         try {
             UmdIsoReader iso = new UmdIsoReader(file.getPath());
             UmdIsoFile bootBin = iso.getFile("PSP_GAME/SYSDIR/boot.bin");
-            byte[] bootData = new byte[(int)bootBin.getSize()];
+            byte[] bootData = new byte[(int)bootBin.length()];
             bootBin.read(bootData);
         } catch (IOException e) {
             e.printStackTrace();
