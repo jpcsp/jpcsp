@@ -18,7 +18,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.format;
 
 import java.io.IOException;
-import java.io.RandomAccessFile;
+import jpcsp.filesystems.*;
 import static jpcsp.util.Utilities.*;
 /**
  *
@@ -52,7 +52,7 @@ public class PSF {
      {
          this.p_offset_param_sfo = p_offset_param_sfo;
      }
-     public void read(RandomAccessFile f)throws IOException {
+     public void read(SeekableRandomFile f)throws IOException {
          fileidentify= readUWord(f);
          if(psfident != fileidentify)
          {

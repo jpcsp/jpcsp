@@ -18,7 +18,7 @@ package jpcsp.format;
 
 import jpcsp.util.*;
 import java.io.IOException;
-import java.io.RandomAccessFile;
+import jpcsp.filesystems.*;
 import static jpcsp.util.Utilities.*;
 
 public class Elf32Relocate {
@@ -30,7 +30,7 @@ public class Elf32Relocate {
         return 8;
     }
 
-    public void read(RandomAccessFile f) throws IOException {
+    public void read(SeekableRandomFile f) throws IOException {
         setR_offset(readUWord(f));
         setR_info(readUWord(f));
     }

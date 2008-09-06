@@ -28,6 +28,7 @@ import jpcsp.format.Elf32SectionHeader;
 import jpcsp.format.Elf32SectionHeader.ShType;
 import jpcsp.format.Elf32StubHeader;
 import static jpcsp.util.Utilities.*;
+import jpcsp.filesystems.*;
 
 public class Emulator implements Runnable {
 

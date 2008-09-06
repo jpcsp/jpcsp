@@ -18,7 +18,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.format;
 
 import java.io.IOException;
-import java.io.RandomAccessFile;
+import jpcsp.filesystems.*;
 import static jpcsp.util.Utilities.*;
 
 /**
@@ -28,10 +28,10 @@ import static jpcsp.util.Utilities.*;
 public class PSP {  /* format ~PSP */
     private long e_magic; 
     
-    private void read(RandomAccessFile f) throws IOException {
+    private void read(SeekableRandomFile f) throws IOException {
         e_magic = readUWord(f);
     }
-    public PSP(RandomAccessFile f) throws IOException {
+    public PSP(SeekableRandomFile f) throws IOException {
         read(f);
     }
 
