@@ -35,11 +35,11 @@ public class Elf32ProgramHeader {
         return 32;
     }
 
-    public Elf32ProgramHeader(SeekableRandomFile f) throws IOException {
+    public Elf32ProgramHeader(SeekableDataInput f) throws IOException {
         read(f);
     }
 
-    private void read(SeekableRandomFile f) throws IOException {
+    private void read(SeekableDataInput f) throws IOException {
         p_type = readUWord(f);
         p_offset = readUWord(f);
         p_vaddr = readUWord(f);

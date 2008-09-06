@@ -30,7 +30,7 @@ public class Elf32Relocate {
         return 8;
     }
 
-    public void read(SeekableRandomFile f) throws IOException {
+    public void read(SeekableDataInput f) throws IOException {
         setR_offset(readUWord(f));
         setR_info(readUWord(f));
     }

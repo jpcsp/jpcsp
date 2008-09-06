@@ -39,7 +39,7 @@ public class Elf32SectionHeader {
         return 40;
     }
 
-    public Elf32SectionHeader(SeekableRandomFile f) throws IOException {
+    public Elf32SectionHeader(SeekableDataInput f) throws IOException {
         sh_name = readUWord(f);
         sh_type = readWord(f);
         sh_flags = readWord(f);

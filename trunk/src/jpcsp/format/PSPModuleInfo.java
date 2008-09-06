@@ -33,7 +33,7 @@ public class PSPModuleInfo {
     private String m_namez = ""; // String version of m_name
 
 
-    public void read(SeekableRandomFile f) throws IOException {
+    public void read(SeekableDataInput f) throws IOException {
         m_attr = readUHalf(f);
         m_version = readUHalf(f);
         f.readFully(getM_name());

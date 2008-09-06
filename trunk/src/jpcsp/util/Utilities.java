@@ -51,32 +51,32 @@ public class Utilities {
         return Integer.toHexString(0x10000 | value).substring(1).toUpperCase();
     }
 
-    public static long readUWord(SeekableRandomFile f) throws IOException {
+    public static long readUWord(SeekableDataInput f) throws IOException {
         long l = (f.readUnsignedByte() | (f.readUnsignedByte() << 8) | (f.readUnsignedByte() << 16) | (f.readUnsignedByte() << 24));
         return (l & 0xFFFFFFFFL);
     }
 
-    public static int readUByte(SeekableRandomFile f) throws IOException {
+    public static int readUByte(SeekableDataInput f) throws IOException {
         return f.readUnsignedByte();
     }
 
-    public static int readUHalf(SeekableRandomFile f) throws IOException {
+    public static int readUHalf(SeekableDataInput f) throws IOException {
         return f.readUnsignedByte() | (f.readUnsignedByte() << 8);
     }
 
-    public static int readWord(SeekableRandomFile f) throws IOException {
+    public static int readWord(SeekableDataInput f) throws IOException {
         //readByte() isn't more correct? (already exists one readUWord() method to unsign values)
         return (f.readUnsignedByte() | (f.readUnsignedByte() << 8) | (f.readUnsignedByte() << 16) | (f.readUnsignedByte() << 24));
     }
 
     public static void readBytesToBuffer(
-        SeekableRandomFile f, ByteBuffer buf,
+        SeekableDataInput f, ByteBuffer buf,
         int offset, int size) throws IOException
     {
-        f.read(buf.array(), offset + buf.arrayOffset(), size);
+        f.readFully(buf.array(), offset + buf.arrayOffset(), size);
     }
 
-    public static String readStringZ(SeekableRandomFile f) throws IOException {
+    public static String readStringZ(SeekableDataInput f) throws IOException {
         StringBuffer sb = new StringBuffer();
         int b;
         for (;;) {

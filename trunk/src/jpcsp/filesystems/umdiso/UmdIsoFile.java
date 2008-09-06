@@ -35,6 +35,11 @@ public class UmdIsoFile extends SeekableInputStream {
         internalReader = reader;
     }
     
+    private int Ubyte(byte b)
+    {
+        return ((int)b)&255;
+    }
+    
     @Override
     public int read() throws IOException
     {
@@ -52,7 +57,7 @@ public class UmdIsoFile extends SeekableInputStream {
         }
         currentOffset++;
         
-        return (currentSector[sectorOffset++]+256)&255; // make unsigned
+        return Ubyte(currentSector[sectorOffset++]); // make unsigned
         
     }
     

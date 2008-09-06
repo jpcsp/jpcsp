@@ -33,7 +33,7 @@ public class Elf32 {
         return sectionheaders;
     }
 
-    public Elf32(SeekableRandomFile f) throws IOException {
+    public Elf32(SeekableDataInput f) throws IOException {
         header = new Elf32Header(f);
         ElfInfo = header.toString();
         ProgInfo = "";
