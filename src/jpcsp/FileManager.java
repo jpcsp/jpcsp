@@ -41,7 +41,7 @@ public class FileManager {
     private PBP pbp;
     private Elf32 elf;
     private PSP psp;
-    private SeekableRandomFile actualFile;
+    private SeekableDataInput actualFile;
     private String filePath;
     public final static int FORMAT_ELF = 0;
     public final static int FORMAT_PBP = 10;
@@ -70,11 +70,11 @@ public class FileManager {
         return elf;
     }
 
-    public SeekableRandomFile getActualFile() {
+    public SeekableDataInput getActualFile() {
         return actualFile;
     }
 
-    private void setActualFile(SeekableRandomFile f) {
+    private void setActualFile(SeekableDataInput f) {
         actualFile = f;
     }
 
@@ -221,7 +221,7 @@ public class FileManager {
         secondStep(sectionheaders, shstrtab, getActualFile(), getPSPModuleInfo());
     }
 
-    private Elf32SectionHeader firstStep(Elf32Header ehdr, SeekableRandomFile f, List<Elf32SectionHeader> sectionheaders) throws IOException {
+    private Elf32SectionHeader firstStep(Elf32Header ehdr, SeekableDataInput f, List<Elf32SectionHeader> sectionheaders) throws IOException {
         /** Read the ELF section headers (1st pass) */
         getElf32().setListSectionHeader(sectionheaders); //make the connection
 
@@ -267,7 +267,7 @@ public class FileManager {
         return shstrtab;
     }
 
-    private void secondStep(List<Elf32SectionHeader> sectionheaders, Elf32SectionHeader shstrtab, SeekableRandomFile f, PSPModuleInfo moduleinfo) throws IOException {
+    private void secondStep(List<Elf32SectionHeader> sectionheaders, Elf32SectionHeader shstrtab, SeekableDataInput f, PSPModuleInfo moduleinfo) throws IOException {
         // 2nd pass generate info string for the GUI and get module infos
         //moduleinfo = new PSPModuleInfo(); moved to loadAndDefine()
         StringBuffer shsb = new StringBuffer();

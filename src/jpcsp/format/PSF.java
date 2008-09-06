@@ -52,7 +52,7 @@ public class PSF {
      {
          this.p_offset_param_sfo = p_offset_param_sfo;
      }
-     public void read(SeekableRandomFile f)throws IOException {
+     public void read(SeekableDataInput f)throws IOException {
          fileidentify= readUWord(f);
          if(psfident != fileidentify)
          {

@@ -28,10 +28,10 @@ import static jpcsp.util.Utilities.*;
 public class PSP {  /* format ~PSP */
     private long e_magic; 
     
-    private void read(SeekableRandomFile f) throws IOException {
+    private void read(SeekableDataInput f) throws IOException {
         e_magic = readUWord(f);
     }
-    public PSP(SeekableRandomFile f) throws IOException {
+    public PSP(SeekableDataInput f) throws IOException {
         read(f);
     }
 

@@ -70,7 +70,7 @@ public class PBP {
         return info;
     }
 
-    public PBP(SeekableRandomFile f) throws IOException {
+    public PBP(SeekableDataInput f) throws IOException {
         size_pbp = (int)f.length();
         p_magic = readUWord(f);
         if (isValid())
@@ -97,7 +97,7 @@ public class PBP {
             info = this.toString();
         }
     }
-    public void readPSF(SeekableRandomFile f) throws IOException {
+    public void readPSF(SeekableDataInput f) throws IOException {
            f.seek(p_offset_param_sfo);
            PSF psf1= new PSF(p_offset_param_sfo);
            psf1.read(f);
@@ -173,7 +173,7 @@ public class PBP {
         return dir.delete();
     }
 
-    public static void unpackPBP(SeekableRandomFile f) throws IOException {
+    public static void unpackPBP(SeekableDataInput f) throws IOException {
         f.seek(0);//seek to 0
         PBP pbp = new PBP(f);
         if (!pbp.isValid())

@@ -44,7 +44,7 @@ public class Elf32Header {
     private int e_shnum;
     private int e_shstrndx;
 
-    private void read(SeekableRandomFile f) throws IOException {
+    private void read(SeekableDataInput f) throws IOException {
         e_magic = readUWord(f);
         e_class = readUByte(f);
         e_data = readUByte(f);
@@ -66,7 +66,7 @@ public class Elf32Header {
     }
 
 
-     public Elf32Header(SeekableRandomFile f) throws IOException {
+     public Elf32Header(SeekableDataInput f) throws IOException {
         read(f);
     }
 

@@ -35,7 +35,7 @@ public class UmdIsoReader {
     
     private int Ubyte(byte b)
     {
-        return (256+b)&255;
+        return ((int)b)&255;
     }
     
     private int BytesToInt(byte[] bytes, int offset) throws ArrayIndexOutOfBoundsException

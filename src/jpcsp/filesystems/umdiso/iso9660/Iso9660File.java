@@ -22,9 +22,9 @@ public class Iso9660File {
     
     private int Ubyte(byte b)
     {
-        return (256+b)&255;
+        return ((int)b)&255;
     }
-
+    
     public Iso9660File(byte[] data, int length) throws IOException
     {
 

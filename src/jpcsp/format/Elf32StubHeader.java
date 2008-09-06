@@ -35,7 +35,7 @@ public class Elf32StubHeader
     private long s_text;
 
     public static int sizeof() { return 20; }
-    public Elf32StubHeader(SeekableRandomFile f) throws IOException
+    public Elf32StubHeader(SeekableDataInput f) throws IOException
     {
         s_modulenamez = "";
 
