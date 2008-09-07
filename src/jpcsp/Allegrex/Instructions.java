@@ -24,16 +24,8 @@ import static jpcsp.Debugger.DisassemblerModule.DisHelper.*;
  *
  * @author hli
  */
-public class Instructions {
+public class Instructions extends Common  {
 
-    public static abstract class Instruction {
-
-        public abstract void interpret(Processor processor, int insn);
-
-        public abstract void compile(Processor processor, int insn);
-
-        public abstract String disasm(int address, int insn);
-    }
     public static final Instruction NOP = new Instruction() {
 
         @Override
