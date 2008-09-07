@@ -553,20 +553,95 @@ public class Syscallv15 {
        {0x2210,0xfc4516f3},//sceUtilitySetNetParam
 
        /*added random syscalls numbers */
-       /*found on Jazz homebrew game */
-       {0x2211,0x565C0B0E}, //sceKernelRegisterDefaultExceptionHandler
-       {0x2212,0xD8779AC6},//sceKernelIcacheClearAll
-       {0x2213,0xcf8a41b1},//sceKernelFindModuleByName
+
+       /*sceAtrac3plus  found in puzzle booble */     
+       {0x2211,0xD1F59FDB},//sceAtracStartEntry
+       {0x2212,0xD5C28CC0},//sceAtracEndEntry
+       {0x2213,0x780F88D1},//sceAtracGetAtracID
+       {0x2214,0x61EB33F5},//sceAtracReleaseAtracID
+       {0x2215,0x0E2A73AB},//sceAtracSetData
+       {0x2216,0x3F6E26B5},//sceAtracSetHalfwayBuffer
+       {0x2217,0x7A20E7AF},//sceAtracSetDataAndGetID
+       {0x2218,0x0FAE370E},//sceAtracSetHalfwayBufferAndGetID
+       {0x2219,0x6A8C3CD5},//sceAtracDecodeData
+       {0x221a,0x9AE849A7},//sceAtracGetRemainFrame
+       {0x221b,0x5D268707},//sceAtracGetStreamDataInfo
+       {0x221c,0x7DB31251},//sceAtracAddStreamData
+       {0x221d,0x83E85EA0},//sceAtracGetSecondBufferInfo
+       {0x221e,0x83BF7AFD},//sceAtracSetSecondBuffer
+       {0x221f,0xE23E3A35},//sceAtracGetNextDecodePosition
+       {0x2220,0xA2BBA8BE},//sceAtracGetSoundSample
+       {0x2221,0x31668BAA},//sceAtracGetChannel
+       {0x2222,0xD6A5F2F7},//sceAtracGetMaxSample
+       {0x2223,0x36FAABFB},//sceAtracGetNextSample
+       {0x2224,0xA554A158},//sceAtracGetBitrate
+       {0x2225,0xFAA4F89B},//sceAtracGetLoopStatus
+       {0x2226,0x868120B5},//sceAtracSetLoopNum
+       {0x2227,0xCA3CA3D2},//sceAtracGetBufferInfoForReseting
+       {0x2228,0x644E5607},//sceAtracResetPlayPosition
+       {0x2229,0xE88F759B},//sceAtracGetInternalErrorInfo
+       /*sce Net */
+       {0x222a,0x39af39a6},//sceNetInit
+       {0x222b,0x281928A9},//sceNetTerm
+       {0x222c,0x50647530},//sceNetFreeThreadinfo
+       {0x222d,0xAD6844C6},//sceNetThreadAbort
+       {0x222e,0x89360950},//sceNetEtherNtostr
+       {0x222f,0xD27961C9},//sceNetEtherStrton
+       {0x2230,0x0BF0A3AE},//sceNetGetLocalEtherAddr
+       {0x2231,0xCC393E48},//sceNetGetMallocStat
+       /* InterruptManagerForKernel */
+       	{0x2232,0x092968F4},//sceKernelCpuSuspendIntr
+	{0x2233,0x5F10D406},//sceKernelCpuResumeIntr
+	{0x2234,0x3B84732D},//sceKernelCpuResumeIntrWithSync
+        {0x2235,0xFE28C6D9},//sceKernelIsIntrContext
+	{0x2236,0x53991063},//InterruptManagerForKernel_53991063
+        {0x2237,0x468BC716},//sceKernelGetInterruptExitCount
+	{0x2238,0x43CD40EF},//ReturnToThread
+	{0x2239,0x85F7766D},//SaveThreadContext
+	{0x223a,0x02314986},//sceKernelCpuEnableIntr
+	{0x223b,0x00B6B0F3},//QueryInterruptManCB
+	{0x223c,0x58DD8978},//sceKernelRegisterIntrHandler
+	{0x223d,0x15894D0B},//InterruptManagerForKernel_15894D0B
+	{0x223e,0xF987B1F0},//sceKernelReleaseIntrHandler
+	{0x223f,0xB5A15B30},//sceKernelSetIntrLevel
+	{0x2240,0x43A7BBDC},//InterruptManagerForKernel_43A7BBDC
+	{0x2241,0x02475AAF},//sceKernelIsInterruptOccurred
+	{0x2242,0x4D6E7305},//sceKernelEnableIntr
+	{0x2243,0x750E2507},//sceKernelSuspendIntr
+	{0x2244,0xD774BA45},//sceKernelDisableIntr
+	{0x2245,0x494D6D2B},//sceKernelResumeIntr
+	{0x2246,0x2CD783A1},//RegisterContextHooks
+	{0x2247,0x55242A8B},//ReleaseContextHooks
+	{0x2248,0x27BC9A45},//UnSupportIntr
+	{0x2249,0x0E224D66},//SupportIntr
+	{0x224a,0x272766F8},//sceKernelRegisterDebuggerIntrHandler
+	{0x224b,0xB386A459},//sceKernelReleaseDebuggerIntrHandler
+	{0x224c,0xCDC86B64},//sceKernelCallSubIntrHandler
+	{0x224d,0xD6878EB6},//sceKernelGetUserIntrStack
+	{0x224e,0xF4454E44},//sceKernelCallUserIntrHandler
+	{0x224f,0xCA04A2B9},//sceKernelRegisterSubIntrHandler
+	{0x2250,0xD61E6961},//sceKernelReleaseSubIntrHandler
+	{0x2251,0xFB8E22EC},//sceKernelEnableSubIntr
+	{0x2252,0x8A389411},//sceKernelDisableSubIntr
+	{0x2253,0x5CB5A78B},//sceKernelSuspendSubIntr
+	{0x2254,0x7860E0DC},//sceKernelResumeSubIntr
+	{0x2255,0xFC4374B8},//sceKernelIsSubInterruptOccurred
+	{0x2256,0xD2E8363F},//InterruptManagerForKernel_D2E8363F
+	{0x2257,0x30C08374},//sceKernelGetCpuClockCounter
+	{0x2258,0x35634A64},//sceKernelGetCpuClockCounterWide
+	{0x2259,0x2DC9709B},//_sceKernelGetCpuClockCounterLow
+	{0x225a,0xE9E652A9},//_sceKernelGetCpuClockCounterHigh
+	{0x225b,0x0FC68A56},//sceKernelSetPrimarySyscallHandler
+	{0x225c,0xF4D443F3},//sceKernelRegisterSystemCallTable
+	{0x225e,0x8B61808B},//sceKernelQuerySystemCall
+					
+       
+       
+              /*found on Jazz homebrew game */
+       {0x225f,0x565C0B0E}, //sceKernelRegisterDefaultExceptionHandler
+       {0x2260,0xD8779AC6},//sceKernelIcacheClearAll
+       {0x2261,0xcf8a41b1},//sceKernelFindModuleByName
        //end of jazz
-       /*found on NesterJ Nes emu v1.20 */
-       {0x2214,0x39af39a6},//sceNetInit
-       {0x2215,0x281928A9},//sceNetTerm
-       {0x2216,0x50647530},//sceNetFreeThreadinfo
-       {0x2217,0xAD6844C6},//sceNetThreadAbort
-       {0x2218,0x89360950},//sceNetEtherNtostr
-       {0x2219,0xD27961C9},//sceNetEtherStrton
-       {0x221a,0x0BF0A3AE},//sceNetGetLocalEtherAddr
-       {0x221b,0xCC393E48}//sceNetGetMallocStat
 
    };
    
