@@ -22,6 +22,10 @@ public class Common {
 
         public abstract String disasm(int address, int insn);
 
+        public void resetCount() {
+            count = 0;
+        }
+        
         public void increaseCount() {
             count++;
         }
@@ -32,6 +36,13 @@ public class Common {
         
         public Instruction instance(int insn) {
             return this;
+        }
+        
+        public Instruction(int index) {
+            jpcsp.Allegrex.Common.m_instances[index] = this;
+        }
+
+        public Instruction() {
         }
     }
 
@@ -53,7 +64,7 @@ public class Common {
         }
 
         @Override
-        public abstract Instruction instance(int insn);
+        public abstract Instruction instance(int insn);        
     }
     public static final Instruction UNK = new Instruction() {
 
@@ -70,4 +81,10 @@ public class Common {
             return "Unknown instruction (" + Integer.toHexString(insn) + " " + Integer.toString(insn, 2) + ") at 0x" + Integer.toHexString(address);
         }
     };
+    
+    protected static Instruction[] m_instances = new Instruction[234];
+    
+    public static final Instruction[] instructions() {
+        return m_instances;
+    }
 }
