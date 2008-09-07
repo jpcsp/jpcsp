@@ -40,6 +40,7 @@ import jpcsp.util.JpcspDialogManager;
 import jpcsp.util.MetaInformation;
 import jpcsp.filesystems.umdiso.*;
 import jpcsp.format.Elf32;
+import jpcsp.format.PSF;
 
 /**
  *
@@ -480,6 +481,13 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         
         try {
             UmdIsoReader iso = new UmdIsoReader(file.getPath());
+            UmdIsoFile paramSfo = iso.getFile("PSP_GAME/param.sfo");
+            
+            System.out.println("---- Loading param.sfo from UMD ----");
+            PSF params = new PSF(0);
+            params.read(paramSfo);
+            System.out.println("------------------------------------");
+            
             UmdIsoFile bootBin = iso.getFile("PSP_GAME/SYSDIR/boot.bin");
             emulator.load(bootBin);
         } catch (IOException e) {
