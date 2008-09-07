@@ -619,28 +619,66 @@ public class Syscallv15 {
 	{0x224c,0xCDC86B64},//sceKernelCallSubIntrHandler
 	{0x224d,0xD6878EB6},//sceKernelGetUserIntrStack
 	{0x224e,0xF4454E44},//sceKernelCallUserIntrHandler
-	{0x224f,0xCA04A2B9},//sceKernelRegisterSubIntrHandler
-	{0x2250,0xD61E6961},//sceKernelReleaseSubIntrHandler
-	{0x2251,0xFB8E22EC},//sceKernelEnableSubIntr
-	{0x2252,0x8A389411},//sceKernelDisableSubIntr
-	{0x2253,0x5CB5A78B},//sceKernelSuspendSubIntr
-	{0x2254,0x7860E0DC},//sceKernelResumeSubIntr
-	{0x2255,0xFC4374B8},//sceKernelIsSubInterruptOccurred
-	{0x2256,0xD2E8363F},//InterruptManagerForKernel_D2E8363F
-	{0x2257,0x30C08374},//sceKernelGetCpuClockCounter
-	{0x2258,0x35634A64},//sceKernelGetCpuClockCounterWide
-	{0x2259,0x2DC9709B},//_sceKernelGetCpuClockCounterLow
-	{0x225a,0xE9E652A9},//_sceKernelGetCpuClockCounterHigh
-	{0x225b,0x0FC68A56},//sceKernelSetPrimarySyscallHandler
-	{0x225c,0xF4D443F3},//sceKernelRegisterSystemCallTable
-	{0x225e,0x8B61808B},//sceKernelQuerySystemCall
-					
-       
+	{0x224f,0x30C08374},//sceKernelGetCpuClockCounter
+	{0x2250,0x35634A64},//sceKernelGetCpuClockCounterWide
+	{0x2251,0x2DC9709B},//_sceKernelGetCpuClockCounterLow
+	{0x2252,0xE9E652A9},//_sceKernelGetCpuClockCounterHigh
+	{0x2253,0x0FC68A56},//sceKernelSetPrimarySyscallHandler
+	{0x2254,0xF4D443F3},//sceKernelRegisterSystemCallTable
+	{0x2255,0x8B61808B},//sceKernelQuerySystemCall
+        /*sceMpeg */
+        {0x2256,0x21FF80E4},//sceMpegQueryStreamOffset</NAME>
+	{0x2257,0x611E9E11},//sceMpegQueryStreamSize</NAME>
+	{0x2258,0x682A619B},//sceMpegInit</NAME>
+	{0x2259,0x874624D6},//sceMpegFinish</NAME>
+	{0x225a,0xC132E22F},//sceMpegQueryMemSize</NAME>
+	{0x225b,0xD8C5F121},//sceMpegCreate</NAME>
+	{0x225c,0x606A4649},//sceMpegDelete</NAME>
+	{0x225d,0x42560F23},//sceMpegRegistStream</NAME>
+	{0x225e,0x591A4AA2},//sceMpegUnRegistStream</NAME>
+	{0x225f,0xA780CF7E},//sceMpegMallocAvcEsBuf</NAME>
+	{0x2260,0xCEB870B1},//sceMpegFreeAvcEsBuf</NAME>
+	{0x2261,0xF8DCB679},//sceMpegQueryAtracEsSize</NAME>
+	{0x2262,0xC02CF6B5},//sceMpegQueryPcmEsSize</NAME>
+	{0x2263,0x167AFD9E},//sceMpegInitAu</NAME>
+	{0x2264,0x234586AE},//sceMpegChangeGetAvcAuMode</NAME>
+	{0x2265,0x9DCFB7EA},//sceMpegChangeGetAuMode</NAME>
+	{0x2266,0xFE246728},//sceMpegGetAvcAu</NAME>
+	{0x2267,0x8C1E027D},//sceMpegGetPcmAu</NAME>
+	{0x2268,0xE1CE83A7},//sceMpegGetAtracAu</NAME>
+	{0x2269,0x500F0429},//sceMpegFlushStream</NAME>
+	{0x226a,0x707B7629},//sceMpegFlushAllStream</NAME>
+	{0x226b,0x0E3C2E9D},//sceMpegAvcDecode</NAME>
+	{0x226c,0x0F6C18D7},//sceMpegAvcDecodeDetail</NAME>
+	{0x226d,0xA11C7026},//sceMpegAvcDecodeMode</NAME>
+	{0x226e,0x740FCCD1},//sceMpegAvcDecodeStop</NAME>
+	{0x226f,0x4571CC64},//sceMpegAvcDecodeFlush</NAME>
+	{0x2270,0x211A057C},//sceMpegAvcQueryYCbCrSize</NAME>
+	{0x2271,0x67179B1B},//sceMpegAvcInitYCbCr</NAME>
+	{0x2272,0xF0EB1125},//sceMpegAvcDecodeYCbCr</NAME>
+	{0x2273,0xF2930C9C},//sceMpegAvcDecodeStopYCbCr</NAME>
+	{0x2274,0x31BD0272},//sceMpegAvcCsc</NAME>
+	{0x2275,0x800C44DF},//sceMpegAtracDecode</NAME>
+	{0x2276,0xD7A29F46},//sceMpegRingbufferQueryMemSize</NAME>
+	{0x2277,0x37295ED8},//sceMpegRingbufferConstruct</NAME>
+	{0x2278,0x13407F13},//sceMpegRingbufferDestruct</NAME>
+	{0x2279,0xB240A59E},//sceMpegRingbufferPut</NAME>
+	{0x227a,0xB5F6DC87},//sceMpegRingbufferAvailableSize</NAME>
+	{0x227b,0x11CAB459},//sceMpeg_11CAB459</NAME>
+	{0x227c,0x3C37A7A6},//sceMpegNextAvcRpAu</NAME>
+	{0x227d,0xB27711A8},//sceMpeg_B27711A8</NAME>
+	{0x227e,0xD4DD6E75},//sceMpeg_D4DD6E75</NAME>
+	{0x227f,0xC345DED2},//sceMpeg_C345DED2</NAME>
+	{0x2280,0xAB0E9556},//sceMpeg_AB0E9556</NAME>
+	{0x2281,0xCF3547A2},//sceMpegAvcDecodeDetail2</NAME>
+	{0x2282,0x988E9E12},//sceMpeg_988E9E12</NAME>
+								
+        
        
               /*found on Jazz homebrew game */
-       {0x225f,0x565C0B0E}, //sceKernelRegisterDefaultExceptionHandler
-       {0x2260,0xD8779AC6},//sceKernelIcacheClearAll
-       {0x2261,0xcf8a41b1},//sceKernelFindModuleByName
+       {0x2283,0x565C0B0E}, //sceKernelRegisterDefaultExceptionHandler
+       {0x2284,0xD8779AC6},//sceKernelIcacheClearAll
+       {0x2285,0xcf8a41b1},//sceKernelFindModuleByName
        //end of jazz
 
    };
