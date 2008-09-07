@@ -394,9 +394,12 @@ public class Processor implements AllegrexInstructions {
 
         int insn = (Memory.get_instance()).read32(pc);
 
-        jpcsp.Allegrex.Common.Instruction i = jpcsp.Allegrex.Decoder.instruction(insn);
-        i.increaseCount();
-        System.out.printf("count for %s : %d\n", Integer.toString(insn, 2), i.getCount());
+        if (false)
+        {
+            jpcsp.Allegrex.Common.Instruction i = jpcsp.Allegrex.Decoder.instruction(insn);
+            i.increaseCount();
+            System.out.printf("count for 0x%08x : %d\n", insn, i.getCount());
+        }
         // by default, any Allegrex instruction takes 1 cycle at least
         cycles += 1;
 
@@ -410,10 +413,12 @@ public class Processor implements AllegrexInstructions {
     public void stepDelayslot() {
         int insn = (Memory.get_instance()).read32(pc);
 
-        jpcsp.Allegrex.Common.Instruction i = jpcsp.Allegrex.Decoder.instruction(insn);
-        i.increaseCount();
-        System.out.printf("count for %s : %d\n", Integer.toString(insn, 2), i.getCount());
-
+        if (false)
+        {
+            jpcsp.Allegrex.Common.Instruction i = jpcsp.Allegrex.Decoder.instruction(insn);
+            i.increaseCount();
+            System.out.printf("count for 0x%08x : %d\n", insn, i.getCount());
+        }
         // by default, any Allegrex instruction takes 1 cycle at least
         cycles += 1;
 
