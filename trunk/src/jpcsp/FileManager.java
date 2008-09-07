@@ -305,7 +305,7 @@ public class FileManager {
                 }
                 if (SectionName.length() > 0) {
                     
-                    //shdr.setSh_namez(SectionName);
+                    shdr.setSh_namez(SectionName);
                     shsb.append(SectionName + "\n");
                     //System.out.println(SectionName);
                     // Get module infos
