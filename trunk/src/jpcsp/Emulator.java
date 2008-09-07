@@ -130,8 +130,8 @@ public class Emulator implements Runnable {
         // Relocation
         if (elf.getHeader().requiresRelocation()) {
             for (Elf32SectionHeader shdr : elf.getListSectionHeader()) {
-                if (shdr.getSh_type() == ShType.PRXREL.getValue() || // 0x700000A0
-                        shdr.getSh_type() == ShType.REL.getValue()) // 0x00000009
+                if (shdr.getSh_type() == ShType.PRXREL.getValue() /*|| // 0x700000A0
+                        shdr.getSh_type() == ShType.REL.getValue()*/) // 0x00000009
                 {
                     Elf32Relocate rel = new Elf32Relocate();
                     romManager.getActualFile().seek(romManager.getElfoffset() + shdr.getSh_offset());
