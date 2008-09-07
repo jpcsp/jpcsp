@@ -14,12 +14,22 @@ public class Common {
 
     public static abstract class Instruction {
 
+        private int count = 0;
+        
         public abstract void interpret(Processor processor, int insn);
 
         public abstract void compile(Processor processor, int insn);
 
         public abstract String disasm(int address, int insn);
 
+        public void increaseCount() {
+            count++;
+        }
+        
+        public int getCount() {
+            return count;
+        }
+        
         public Instruction instance(int insn) {
             return this;
         }
