@@ -18,13 +18,15 @@ package jpcsp.Allegrex;
 
 import jpcsp.Processor;
 
+import jpcsp.Allegrex.Common.*;
+
 import static jpcsp.Debugger.DisassemblerModule.DisHelper.*;
 
 /**
  *
  * @author hli
  */
-public class Instructions extends Common  {
+public class Instructions {
 
     public static final Instruction NOP = new Instruction() {
 
@@ -9363,7 +9365,7 @@ public class Instructions extends Common  {
         public String disasm(int address, int insn) {
 
 
-            return "VNOP";
+            return "vnop";
         }
     };
     public static final Instruction VFLUSH = new Instruction() {
@@ -9380,7 +9382,7 @@ public class Instructions extends Common  {
         public String disasm(int address, int insn) {
 
 
-            return "VFLUSH";
+            return "vflush";
         }
     };
     public static final Instruction VSYNC = new Instruction() {
@@ -9397,7 +9399,7 @@ public class Instructions extends Common  {
         public String disasm(int address, int insn) {
 
 
-            return "VSYNC";
+            return "vsync";
         }
     };
 }
