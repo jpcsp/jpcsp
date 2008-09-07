@@ -165,6 +165,32 @@ public class DisHelper {
         "Config", "LLAddr", "WatchLo", "WatchHi", "XContext", "cop0reg21", "cop0reg22", "cop0reg23",
         "cop0reg24", "EBase", "ECC", "CacheErr", "TagLo", "TagHi", "ErrorPC", "cop0reg31"
     };
+    static String vsuffix[] = {
+        ".s",
+        ".p",
+        ".t",
+        ".q"
+    };
+    private static final String ccondsNames[] = {
+        "c.f.s",
+        "c.un.s",
+        "c.eq.s",
+        "c.ueq.s",
+        "c.olt.s",
+        "c.ult.s",
+        "c.ole.s",
+        "c.ule.s",
+        "c.sf.s",
+        "c.ngle.s",
+        "c.seq.s",
+        "c.ngl.s",
+        "c.lt.s",
+        "c.nge.s",
+        "c.le.s",
+        "c.ngt.s"
+    };
+
+    
     //New helpers
     public static String Dis_RDRTSA(String opname, int rd, int rt, int sa) {
         if ((rd == 0) && sa == 0) {
@@ -348,25 +374,6 @@ public class DisHelper {
         return opname + " " + gprNames[rt] + ", " + fcrNames[fc];
     }
 
-    private static final String ccondsNames[] = {
-        "c.f.s",
-        "c.un.s",
-        "c.eq.s",
-        "c.ueq.s",
-        "c.olt.s",
-        "c.ult.s",
-        "c.ole.s",
-        "c.ule.s",
-        "c.sf.s",
-        "c.ngle.s",
-        "c.seq.s",
-        "c.ngl.s",
-        "c.lt.s",
-        "c.nge.s",
-        "c.le.s",
-        "c.ngt.s"
-    };
-
     public static String Dis_Cconds(int cconds, int fs, int ft) {
         return ccondsNames[cconds] + " " + fprNames[fs] + ", " + fprNames[ft];
     }
@@ -377,18 +384,18 @@ public class DisHelper {
     }
 
     public static String Dis_VTIMMRS(String opname, int vsize, int vt, int rs, int imm) {
-        return opname + " " + vprNames[vsize-1][vt] + ", " + imm + " (" + gprNames[rs] + ")";
+        return opname + vsuffix[vsize-1] + " " + vprNames[vsize-1][vt] + ", " + imm + " (" + gprNames[rs] + ")";
     }
 
     public static String Dis_VDVSVT(String opname, int vsize, int vd, int vs, int vt) {
-        return opname + " " + vprNames[vsize-1][vd] + ", " + vprNames[vsize-1][vs] + ", " + vprNames[vsize-1][vt];
+        return opname + vsuffix[vsize-1] + " " + vprNames[vsize-1][vd] + ", " + vprNames[vsize-1][vs] + ", " + vprNames[vsize-1][vt];
     }
 
     public static String Dis_VDVSVT1(String opname, int vsize, int vd, int vs, int vt) {
-        return opname + " " + vprNames[vsize-1][vd] + ", " + vprNames[vsize-1][vs] + ", " + vprNames[0][vt];
+        return opname + vsuffix[vsize-1] + " " + vprNames[vsize-1][vd] + ", " + vprNames[vsize-1][vs] + ", " + vprNames[0][vt];
     }
 
     public static String Dis_VD1VSVT(String opname, int vsize, int vd, int vs, int vt) {
-        return opname + " " + vprNames[0][vd] + ", " + vprNames[vsize-1][vs] + ", " + vprNames[vsize-1][vt];
+        return opname + vsuffix[vsize-1] + " " + vprNames[0][vd] + ", " + vprNames[vsize-1][vs] + ", " + vprNames[vsize-1][vt];
     }
 }
