@@ -4,7 +4,7 @@ field
 
     fs:5; fd:5; ft:5; fcond:4;
 
-    vs:7; vt:7; vd:7; vcond:4;
+    vs:7; vt:7; vd:7; vcond:4; vt1:1; vt2:2; vt5:5;
 
     vs_m:3; vs_c:2; vs_r:2; vs_x:1; vs_o:1;
     vt_m:3; vt_c:2; vt_r:2; vt_x:1; vt_o:1;
@@ -103,7 +103,9 @@ group root
             interpret = `
                 // just ignore overflow exception as it is useless
                 if (rd != 0) {
-                    processor.gpr[rd] = processor.gpr[rs] + processor.gpr[rt];
+                    CpuState cpu = processor.cpu;
+
+                    cpu.gpr[rd] = cpu.gpr[rs] + cpu.gpr[rt];
                 }
             `
 
@@ -2048,6 +2050,50 @@ group root
 
             disasm = `return Dis_OFFSET("bc1tl", imm16, address);`
         }
+
+        op BVF(010010:01:000:imm3:00:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented BVF";`
+        }
+ 
+        op BVT(010010:01:000:imm3:01:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented BVF";`
+        }
+ 
+        op BVFL(010010:01:000:imm3:10:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented BVF";`
+        }
+ 
+        op BVTL(010010:01:000:imm3:11:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented BVF";`
+        }
     }
 
     group LSU
@@ -2195,17 +2241,6 @@ group root
             disasm = `return Dis_RTIMMRS("ll", rt, rs, imm16);`
         }
 
-        op SC(111000:rs:rt:imm16)
-        {
-            interpret = `
-            `
-
-            compile = `
-            `
-
-            disasm = `return Dis_RTIMMRS("sc", rt, rs, imm16);`
-        }
-
         op LWC1(110001:rs:ft:imm16)
         {
             interpret = `
@@ -2215,6 +2250,61 @@ group root
             `
 
             disasm = `return Dis_FTIMMRS("lwc1", ft, rs, imm16);`
+        }
+
+        op LVS(110010:rs:vt5:imm14:vt2)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_VTIMMRS("lv", 1, (vt5|(vt2<<5)), rs, (imm14 << 2));`
+        }
+
+        op LVLQ(110101:rs:vt5:imm14:0:vt1)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_VTIMMRS("lvl", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
+        }
+
+        op LVRQ(110101:rs:vt5:imm14:1:vt1)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_VTIMMRS("lvr", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
+        }
+
+        op LVQ(110110:rs:vt5:imm14:0:vt1)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_VTIMMRS("lv", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
+        }
+
+        op SC(111000:rs:rt:imm16)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_RTIMMRS("sc", rt, rs, imm16);`
         }
 
         op SWC1(111001:rs:ft:imm16)
@@ -2227,6 +2317,61 @@ group root
 
             disasm = `return Dis_FTIMMRS("swc1", ft, rs, imm16);`
         }
+
+        op SVS(111010:rs:vt5:imm14:vt2)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_VTIMMRS("sv", 1, (vt5|(vt2<<5)), rs, (imm14 << 2));`
+        }
+
+        op SVLQ(111101:rs:vt5:imm14:0:vt1)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_VTIMMRS("svl", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
+        }
+
+        op SVRQ(111101:rs:vt5:imm14:1:vt1)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_VTIMMRS("svr", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
+        }
+
+        op SVQ(111110:rs:vt5:imm14:0:vt1)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_VTIMMRS("lv", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
+        }
+
+        op SWB(111110:rs:vt5:imm14:1:vt1)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_VTIMMRS("swb", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
+        }
     }
 
     group FPU
@@ -2236,7 +2381,8 @@ group root
         op ADD_S(010001:10000:ft:fs:fd:000000)
         {
             interpret = `
-                processor.fpr[fd] = processor.fpr[fs] + processor.fpr[ft];
+                FpuState fpu = processor.fpu;
+                fpu.fpr[fd] = fpu.fpr[fs] + fpu.fpr[ft];
             `
 
             compile = `
@@ -2263,7 +2409,8 @@ group root
         op SUB_S(010001:10000:ft:fs:fd:000001)
         {
             interpret = `
-                processor.fpr[fd] = processor.fpr[fs] - processor.fpr[ft];
+                FpuState fpu = processor.fpu;
+                fpu.fpr[fd] = fpu.fpr[fs] + (0.0f - fpu.fpr[ft]);
             `
 
             compile = `
@@ -2290,7 +2437,8 @@ group root
         op MUL_S(010001:10000:ft:fs:fd:000010)
         {
             interpret = `
-                processor.fpr[fd] = processor.fpr[fs] * processor.fpr[ft];
+                FpuState fpu = processor.fpu;
+                fpu.fpr[fd] = fpu.fpr[fs] * fpu.fpr[ft];
             `
 
             compile = `
@@ -2317,7 +2465,8 @@ group root
         op DIV_S(010001:10000:ft:fs:fd:000011)
         {
             interpret = `
-                processor.fpr[fd] = processor.fpr[fs] / processor.fpr[ft];
+                FpuState fpu = processor.fpu;
+                fpu.fpr[fd] = fpu.fpr[fs] / fpu.fpr[ft];
             `
 
             compile = `
@@ -2344,7 +2493,8 @@ group root
         op SQRT_S(010001:10000:00000:fs:fd:000100)
         {
             interpret = `
-                processor.fpr[fd] = (float) Math.sqrt(processor.fpr[fs]);
+                FpuState fpu = processor.fpu;
+                fpu.fpr[fd] = (float) Math.sqrt(fpu.fpr[fs]);
             `
 
             compile = `
@@ -2368,7 +2518,8 @@ group root
         op ABS_S(010001:10000:00000:fs:fd:000101)
         {
             interpret = `
-                processor.fpr[fd] = Math.abs(processor.fpr[fs]);
+                FpuState fpu = processor.fpu;
+                fpu.fpr[fd] = Math.abs(fpu.fpr[fs]);
             `
 
             compile = `
@@ -2392,7 +2543,8 @@ group root
         op MOV_S(010001:10000:00000:fs:fd:000110)
         {
             interpret = `
-                processor.fpr[fd] = processor.fpr[fs];
+                FpuState fpu = processor.fpu;
+                fpu.fpr[fd] = fpu.fpr[fs];
             `
 
             compile = `
@@ -2416,7 +2568,8 @@ group root
         op NEG_S(010001:10000:00000:fs:fd:000111)
         {
             interpret = `
-                processor.fpr[fd] = 0.0f - processor.fpr[fs];
+                FpuState fpu = processor.fpu;
+                fpu.fpr[fd] = 0.0f - fpu.fpr[fs];
             `
 
             compile = `
@@ -2440,7 +2593,8 @@ group root
         op ROUND_W_S(010001:10000:00000:fs:fd:001100)
         {
             interpret = `
-                processor.fpr[fd] = Float.intBitsToFloat(Math.round(processor.fpr[fs]));
+                FpuState fpu = processor.fpu;
+                fpu.fpr[fd] = Float.intBitsToFloat(Math.round(fpu.fpr[fs]));
             `
 
             compile = `
@@ -2464,7 +2618,8 @@ group root
         op TRUNC_W_S(010001:10000:00000:fs:fd:001101)
         {
             interpret = `
-                processor.fpr[fd] = Float.intBitsToFloat((int) (processor.fpr[fs]));
+                FpuState fpu = processor.fpu;
+                fpu.fpr[fd] = Float.intBitsToFloat((int) (fpu.fpr[fs]));
             `
 
             compile = `
@@ -2488,7 +2643,8 @@ group root
         op CEIL_W_S(010001:10000:00000:fs:fd:001110)
         {
             interpret = `
-                processor.fpr[fd] = Float.intBitsToFloat((int) Math.ceil(processor.fpr[fs]));
+                FpuState fpu = processor.fpu;
+                fpu.fpr[fd] = Float.intBitsToFloat((int) Math.ceil(fpu.fpr[fs]));
             `
 
             compile = `
@@ -2512,7 +2668,8 @@ group root
         op FLOOR_W_S(010001:10000:00000:fs:fd:001111)
         {
             interpret = `
-                processor.fpr[fd] = Float.intBitsToFloat((int) Math.floor(processor.fpr[fs]));
+                FpuState fpu = processor.fpu;
+                fpu.fpr[fd] = Float.intBitsToFloat((int) Math.floor(fpu.fpr[fs]));
             `
 
             compile = `
@@ -2536,7 +2693,8 @@ group root
         op CVT_S_W(010001:10100:00000:fs:fd:100000)
         {
             interpret = `
-                processor.fpr[fd] = (float) Float.floatToRawIntBits(processor.fpr[fs]);
+                FpuState fpu = processor.fpu;
+                fpu.fpr[fd] = (float) Float.floatToRawIntBits(fpu.fpr[fs]);
             `
 
             compile = `
@@ -2560,18 +2718,19 @@ group root
         op CVT_W_S(010001:10000:00000:fs:fd:100100)
         {
             interpret = `
-                switch (processor.fcr31_rm) {
+                FpuState fpu = processor.fpu;
+                switch (fpu.fcr31.rm) {
                     case 1:
-                        processor.fpr[fd] = Float.intBitsToFloat((int) (processor.fpr[fs]));
+                        fpu.fpr[fd] = Float.intBitsToFloat((int) (fpu.fpr[fs]));
                         break;
                     case 2:
-                        processor.fpr[fd] = Float.intBitsToFloat((int) Math.ceil(processor.fpr[fs]));
+                        fpu.fpr[fd] = Float.intBitsToFloat((int) Math.ceil(fpu.fpr[fs]));
                         break;
                     case 3:
-                        processor.fpr[fd] = Float.intBitsToFloat((int) Math.floor(processor.fpr[fs]));
+                        fpu.fpr[fd] = Float.intBitsToFloat((int) Math.floor(fpu.fpr[fs]));
                         break;
                     default:
-                        processor.fpr[fd] = Float.intBitsToFloat((int) Math.rint(processor.fpr[fs]));
+                        fpu.fpr[fd] = Float.intBitsToFloat((int) Math.rint(fpu.fpr[fs]));
                         break;
                 }
             `
@@ -2615,8 +2774,9 @@ group root
         op C_COND_S(010001:10000:ft:fs:00000:11:fcond)
         {
             interpret = `
-                float x = processor.fpr[fs];
-                float y = processor.fpr[ft];
+                FpuState fpu = processor.fpu;
+                float x = fpu.fpr[fs];
+                float y = fpu.fpr[ft];
                 boolean unordered = ((fcond & 1) != 0) && (Float.isNaN(x) || Float.isNaN(y));
 
                 if (unordered) {
@@ -2624,12 +2784,12 @@ group root
                     //if ((fcond & 8) != 0) {
                     //}
 
-                    processor.fcr31_c = true;
+                    fpu.fcr31.c = true;
                 } else {
                     boolean equal = ((fcond & 2) != 0) && (x == y);
                     boolean less = ((fcond & 4) != 0) && (x < y);
 
-                    processor.fcr31_c = less || equal;
+                    fpu.fcr31.c = less || equal;
                 }
             `
 
@@ -2660,8 +2820,10 @@ group root
         op MFC1(010001:00000:rt:fs:00000:000000)
         {
             interpret = `
+                CpuState cpu = processor.cpu;
+                FpuState fpu = processor.fpu;
                 if (rt != 0) {
-                    processor.gpr[rt] = Float.floatToRawIntBits(processor.fpr[fs]);
+                    cpu.gpr[rt] = Float.floatToRawIntBits(fpu.fpr[fs]);
                 }
             `
 
@@ -2688,14 +2850,16 @@ group root
         op CFC1(010001:00010:rt:c1cr:00000:000000)
         {
             interpret = `
+                CpuState cpu = processor.cpu;
+                FpuState fpu = processor.fpu;
                 if (rt != 0) {
                     switch (c1cr) {
                     case 0:                        
-                        processor.gpr[rt] = (Processor.fcr0_imp << 8) | (Processor.fcr0_rev);
+                        cpu.gpr[rt] = (FpuState.Fcr0.imp << 8) | (FpuState.Fcr0.rev);
                         break;
 
                     case 31:
-                        processor.gpr[rt] = (processor.fcr31_fs ? (1 << 24) : 0) | (processor.fcr31_c ? (1 << 23) : 0) | (processor.fcr31_rm & 3);
+                        cpu.gpr[rt] = (fpu.fcr31.fs ? (1 << 24) : 0) | (fpu.fcr31.c ? (1 << 23) : 0) | (fpu.fcr31.rm & 3);
                         break;
                     }
                 }
@@ -2730,7 +2894,9 @@ group root
         op MTC1(010001:00100:rt:fs:00000:000000)
         {
             interpret = `
-                processor.fpr[fs] = Float.intBitsToFloat(processor.gpr[rt]);
+                CpuState cpu = processor.cpu;
+                FpuState fpu = processor.fpu;
+                fpu.fpr[fs] = Float.intBitsToFloat(cpu.gpr[rt]);
             `
 
             compile = `
@@ -2754,12 +2920,14 @@ group root
         op CTC1(010001:00110:rt:c1cr:00000:000000)
         {
             interpret = `
+                CpuState cpu = processor.cpu;
+                FpuState fpu = processor.fpu;
                 if (c1cr == 31) {
-                    int bits = processor.gpr[rt] & 0x01800003;
-                    processor.fcr31_rm = bits & 3;
+                    int bits = cpu.gpr[rt] & 0x01800003;
+                    fpu.fcr31.rm = bits & 3;
                     bits >>= 23;
-                    processor.fcr31_fs = (bits > 1);
-                    processor.fcr31_c = (bits >> 1) == 1;
+                    fpu.fcr31.fs = (bits > 1);
+                    fpu.fcr31.c = (bits >> 1) == 1;
                 }
             `
 
@@ -2834,6 +3002,14 @@ group root
         op VADD(011000:000:vt:two:vs:one:vd)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two<<1);               
+                float[] x = vfpu.loadVs(vsize, vs);
+                float[] y = vfpu.loadVt(vsize, vt);
+                for (int i = 0; i < vsize; ++i) {
+                    x[i] += y[i];
+                }
+                vfpu.saveVd(vsize, vd, x);
             `
 
             compile = `
@@ -2846,6 +3022,14 @@ group root
         op VSUB(011000:001:vt:two:vs:one:vd)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two<<1);               
+                float[] x = vfpu.loadVs(vsize, vs);
+                float[] y = vfpu.loadVt(vsize, vt);
+                for (int i = 0; i < vsize; ++i) {
+                    x[i] += (0.0f - y[i]);
+                }
+                vfpu.saveVd(vsize, vd, x);
             `
 
             compile = `
@@ -2857,6 +3041,13 @@ group root
         op VSBN(011000:010:vt:two:vs:one:vd)
         {
             interpret = `
+                if (one + two == 0) {
+                    VfpuState vfpu = processor.vfpu;
+                    float[] x = vfpu.loadVs(1, vs);
+                    float[] y = vfpu.loadVt(1, vt);
+                    x[0] = Math.scalb(x[0], Float.floatToRawIntBits(y[0]));
+                    vfpu.saveVd(1, vd, x);
+                }
             `
 
             compile = `
@@ -2868,6 +3059,14 @@ group root
         op VDIV(011000:111:vt:two:vs:one:vd)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two<<1);               
+                float[] x = vfpu.loadVs(vsize, vs);
+                float[] y = vfpu.loadVt(vsize, vt);
+                for (int i = 0; i < vsize; ++i) {
+                    x[i] /= y[i];
+                }
+                vfpu.saveVd(vsize, vd, x);
             `
 
             compile = `
@@ -2883,6 +3082,14 @@ group root
         op VMUL(011001:000:vt:two:vs:one:vd)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two<<1);               
+                float[] x = vfpu.loadVs(vsize, vs);
+                float[] y = vfpu.loadVt(vsize, vt);
+                for (int i = 0; i < vsize; ++i) {
+                    x[i] *= y[i];
+                }
+                vfpu.saveVd(vsize, vd, x);
             `
 
             compile = `
@@ -2894,6 +3101,17 @@ group root
         op VDOT(011001:001:vt:two:vs:one:vd)
         {
             interpret = `
+                if ((one | two) == 1) {
+                    VfpuState vfpu = processor.vfpu;
+                    int vsize = 1 + one + (two<<1);               
+                    float[] x = vfpu.loadVs(vsize, vs);
+                    float[] y = vfpu.loadVt(vsize, vt);
+                    float[] z = new float[1];
+                    for (int i = 0; i < vsize; ++i) {
+                        z[0] += x[i] * y[i];
+                    }
+                    vfpu.saveVd(1, vd, z);
+                }
             `
 
             compile = `
@@ -2905,6 +3123,16 @@ group root
         op VSCL(011001:010:vt:two:vs:one:vd)
         {
             interpret = `
+                if ((one | two) == 1) {
+                    VfpuState vfpu = processor.vfpu;
+                    int vsize = 1 + one + (two<<1);               
+                    float[] x = vfpu.loadVs(vsize, vs);
+                    float[] y = vfpu.loadVt(1, vt);
+                    for (int i = 0; i < vsize; ++i) {
+                        x[i] *= y[0];
+                    }
+                    vfpu.saveVd(vsize, vd, x);
+                }
             `
 
             compile = `
@@ -2916,6 +3144,18 @@ group root
         op VHDP(011001:100:vt:two:vs:one:vd)
         {
             interpret = `
+                if ((one | two) == 1) {
+                    VfpuState vfpu = processor.vfpu;
+                    int vsize = 1 + one + (two<<1);               
+                    float[] x = vfpu.loadVs(vsize - 1, vs);
+                    float[] y = vfpu.loadVt(vsize, vt);
+                    float[] z = new float[1];
+                    z[0] = y[vsize - 1];
+                    for (int i = 0; i < vsize - 1; ++i) {
+                        z[0] += x[i] * y[i];
+                    }
+                    vfpu.saveVd(1, vd, z);
+                }
             `
 
             compile = `
@@ -2927,6 +3167,14 @@ group root
         op VDET(011001:101:vt:two:vs:one:vd)
         {
             interpret = `
+                if ((one == 1) && (two == 0)) {
+                    VfpuState vfpu = processor.vfpu;
+                    float[] x = vfpu.loadVs(2, vs);
+                    float[] y = vfpu.loadVt(2, vt);
+                    float[] z = new float[1];
+                    z[0] = x[0] * y[1] - x[1] * y[0];
+                    vfpu.saveVd(1, vd, z);
+                }
             `
 
             compile = `
@@ -2938,6 +3186,16 @@ group root
         op VCRS(011001:110:vt:two:vs:one:vd)
         {
             interpret = `
+                if ((one == 0) && (two == 1)) {
+                    VfpuState vfpu = processor.vfpu;
+                    float[] x = vfpu.loadVs(3, vs);
+                    float[] y = vfpu.loadVt(3, vt);
+                    float[] z = new float[3];
+                    z[0] = x[1] * y[2];
+                    z[1] = x[2] * y[0];
+                    z[2] = x[0] * y[1];
+                    vfpu.saveVd(3, vd, z);
+                }
             `
 
             compile = `
@@ -2992,51 +3250,7 @@ group root
             `
 
             disasm = `return "Unimplemented MTVC";`
-        }
- 
-        op BVF(010010:01:000:imm3:00:imm16)
-        {
-            interpret = `
-            `
-
-            compile = `
-            `
-
-            disasm = `return "Unimplemented BVF";`
-        }
- 
-        op BVT(010010:01:000:imm3:01:imm16)
-        {
-            interpret = `
-            `
-
-            compile = `
-            `
-
-            disasm = `return "Unimplemented BVF";`
-        }
- 
-        op BVFL(010010:01:000:imm3:10:imm16)
-        {
-            interpret = `
-            `
-
-            compile = `
-            `
-
-            disasm = `return "Unimplemented BVF";`
-        }
- 
-        op BVTL(010010:01:000:imm3:11:imm16)
-        {
-            interpret = `
-            `
-
-            compile = `
-            `
-
-            disasm = `return "Unimplemented BVF";`
-        }
+        } 
     }
 
     group VFPU3
@@ -3044,6 +3258,65 @@ group root
         op VCMP(011011:000:vt:two:vs:one:0000:imm3)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two << 1);
+
+                boolean ccOr = false;
+                boolean ccAnd = true;
+
+                if ((imm3 & 8) == 0) {
+                    boolean ccNot = ((imm3 & 4) == 4);
+
+                    boolean cc = false;
+
+                    float[] x = vfpu.loadVs(vsize, vs);
+                    float[] y = vfpu.loadVt(vsize, vt);
+
+                    for (int i = 0; i < vsize; ++i) {
+                        switch (imm3 & 3) {
+                            case 0:
+                                cc = ccNot;
+                                break;
+
+                            case 1:
+                                cc = ccNot ? (x[i] != y[i]) : (x[i] == y[i]);
+                                break;
+
+                            case 2:
+                                cc = ccNot ? (x[i] >= y[i]) : (x[i] < y[i]);
+                                break;
+
+                            case 3:
+                                cc = ccNot ? (x[i] > y[i]) : (x[i] <= y[i]);
+                                break;
+                        }
+
+                        vfpu.vcr.cc[i] = cc;
+                        ccOr = ccOr || cc;
+                        ccAnd = ccAnd && cc;
+                    }
+
+                } else {
+                    float[] x = vfpu.loadVs(vsize, vs);
+
+                    for (int i = 0; i < vsize; ++i) {
+                        boolean cc;
+                        if ((imm3 & 3) == 0) {
+                            cc = ((imm3 & 4) == 0) ? (x[i] == 0.0f) : (x[i] != 0.0f);
+                        } else {
+                            cc = (((imm3 & 1) == 1) && Float.isNaN(x[i])) ||
+                                 (((imm3 & 2) == 2) && Float.isInfinite(x[i]));
+                            if ((imm3 & 4) == 4) {
+                                cc = !cc;
+                            }
+                        }
+                        vfpu.vcr.cc[i] = cc;
+                        ccOr = ccOr || cc;
+                        ccAnd = ccAnd && cc;
+                    }
+                }
+                vfpu.vcr.cc[4] = ccOr;
+                vfpu.vcr.cc[5] = ccAnd;
             `
 
             compile = `
@@ -3055,6 +3328,14 @@ group root
         op VMIN(011011:010:vt:two:vs:one:vd)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two<<1);               
+                float[] x = vfpu.loadVs(vsize, vs);
+                float[] y = vfpu.loadVt(vsize, vt);
+                for (int i = 0; i < vsize; ++i) {
+                    x[i] = Math.min(x[i], y[i]);
+                }
+                vfpu.saveVd(vsize, vd, x);
             `
 
             compile = `
@@ -3066,6 +3347,14 @@ group root
         op VMAX(011011:011:vt:two:vs:one:vd)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two<<1);               
+                float[] x = vfpu.loadVs(vsize, vs);
+                float[] y = vfpu.loadVt(vsize, vt);
+                for (int i = 0; i < vsize; ++i) {
+                    x[i] = Math.max(x[i], y[i]);
+                }
+                vfpu.saveVd(vsize, vd, x);
             `
 
             compile = `
@@ -3077,6 +3366,14 @@ group root
         op VSCMP(011011:101:vt:two:vs:one:vd)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two<<1);               
+                float[] x = vfpu.loadVs(vsize, vs);
+                float[] y = vfpu.loadVt(vsize, vt);
+                for (int i = 0; i < vsize; ++i) {
+                    x[i] = Math.signum(x[i] + (0.0f - y[i]));
+                }
+                vfpu.saveVd(vsize, vd, x);
             `
 
             compile = `
@@ -3088,6 +3385,14 @@ group root
         op VSGE(011011:110:vt:two:vs:one:vd)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two<<1);               
+                float[] x = vfpu.loadVs(vsize, vs);
+                float[] y = vfpu.loadVt(vsize, vt);
+                for (int i = 0; i < vsize; ++i) {
+                    x[i] = (x[i] >= y[i]) ? 1.0f : 0.0f;
+                }
+                vfpu.saveVd(vsize, vd, x);
             `
 
             compile = `
@@ -3099,6 +3404,14 @@ group root
         op VSLT(011011:100:vt:two:vs:one:vd)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two<<1);               
+                float[] x = vfpu.loadVs(vsize, vs);
+                float[] y = vfpu.loadVt(vsize, vt);
+                for (int i = 0; i < vsize; ++i) {
+                    x[i] = (x[i] < y[i]) ? 1.0f : 0.0f;
+                }
+                vfpu.saveVd(vsize, vd, x);
             `
 
             compile = `
@@ -3113,6 +3426,10 @@ group root
         op VMOV(110100:00:000:0:0000:two:vs:one:vd)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two<<1);               
+                float[] x = vfpu.loadVs(vsize, vs);
+                vfpu.saveVd(vsize, vd, x);
             `
 
             compile = `
@@ -3125,6 +3442,13 @@ group root
         op VABS(110100:00:000:0:0001:two:vs:one:vd)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two<<1);               
+                float[] x = vfpu.loadVs(vsize, vs);
+                for (int i = 0; i < vsize; ++i) {
+                    x[i] = Math.abs(x[i]);
+                }
+                vfpu.saveVd(vsize, vd, x);
             `
 
             compile = `
@@ -3136,6 +3460,13 @@ group root
         op VNEG(110100:00:000:0:0010:two:vs:one:vd)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two<<1);               
+                float[] x = vfpu.loadVs(vsize, vs);
+                for (int i = 0; i < vsize; ++i) {
+                    x[i] = 0.0f - x[i];
+                }
+                vfpu.saveVd(vsize, vd, x);
             `
 
             compile = `
@@ -3147,6 +3478,18 @@ group root
         op VIDT(110100:00:000:0:0011:two:0000000:one:vd)
         {
             interpret = `
+                if (one == 1) {
+                    VfpuState vfpu = processor.vfpu;
+                    int vsize = 1 + one + (two<<1);               
+                    float[] x = new float[vsize];
+                    int id = vd & 3;
+                    for (int i = 0; i < vsize; ++i) {
+                        if (id == i) {
+                            x[i] =  1.0f;
+                        }
+                    }
+                    vfpu.saveVd(vsize, vd, x);
+                }
             `
 
             compile = `
@@ -3158,6 +3501,13 @@ group root
         op VSAT0(110100:00:000:0:0100:two:vs:one:vd)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two<<1);               
+                float[] x = vfpu.loadVs(vsize, vs);
+                for (int i = 0; i < vsize; ++i) {
+                    x[i] = Math.min(Math.max(0.0f, x[i]), 1.0f);
+                }
+                vfpu.saveVd(vsize, vd, x);
             `
 
             compile = `
@@ -3169,6 +3519,13 @@ group root
         op VSAT1(110100:00:000:0:0101:two:vs:one:vd)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two<<1);               
+                float[] x = vfpu.loadVs(vsize, vs);
+                for (int i = 0; i < vsize; ++i) {
+                    x[i] = Math.min(Math.max(-1.0f, x[i]), 1.0f);
+                }
+                vfpu.saveVd(vsize, vd, x);
             `
 
             compile = `
@@ -3180,6 +3537,9 @@ group root
         op VZERO(110100:00:000:0:0110:two:0000000:one:vd)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two<<1);               
+                vfpu.saveVd(vsize, vd, new float[vsize]);
             `
 
             compile = `
@@ -3191,6 +3551,13 @@ group root
         op VONE(110100:00:000:0:0111:two:0000000:one:vd)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two<<1);
+                float[] x = new float[vsize];
+                for (int i = 0; i < vsize; ++i) {
+                    x[i] = 1.0f;
+                }
+                vfpu.saveVd(vsize, vd, new float[vsize]);
             `
 
             compile = `
@@ -3202,6 +3569,13 @@ group root
         op VRCP(110100:00:000:1:0000:two:vs:one:vd)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two<<1);               
+                float[] x = vfpu.loadVs(vsize, vs);
+                for (int i = 0; i < vsize; ++i) {
+                    x[i] = 1.0f / x[i];
+                }
+                vfpu.saveVd(vsize, vd, x);
             `
 
             compile = `
@@ -3213,6 +3587,13 @@ group root
         op VRSQ(110100:00:000:1:0001:two:vs:one:vd)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two<<1);               
+                float[] x = vfpu.loadVs(vsize, vs);
+                for (int i = 0; i < vsize; ++i) {
+                    x[i] = (float)(1.0 / Math.sqrt(x[i]));
+                }
+                vfpu.saveVd(vsize, vd, x);
             `
 
             compile = `
@@ -3224,6 +3605,13 @@ group root
         op VSIN(110100:00:000:1:0010:two:vs:one:vd)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two<<1);               
+                float[] x = vfpu.loadVs(vsize, vs);
+                for (int i = 0; i < vsize; ++i) {
+                    x[i] = (float)Math.sin(2.0 * Math.PI * x[i]);
+                }
+                vfpu.saveVd(vsize, vd, x);
             `
 
             compile = `
@@ -3235,6 +3623,13 @@ group root
         op VCOS(110100:00:000:1:0011:two:vs:one:vd)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two<<1);               
+                float[] x = vfpu.loadVs(vsize, vs);
+                for (int i = 0; i < vsize; ++i) {
+                    x[i] = (float)Math.cos(2.0 * Math.PI * x[i]);
+                }
+                vfpu.saveVd(vsize, vd, x);
             `
 
             compile = `
@@ -3246,6 +3641,13 @@ group root
         op VEXP2(110100:00:000:1:0100:two:vs:one:vd)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two<<1);               
+                float[] x = vfpu.loadVs(vsize, vs);
+                for (int i = 0; i < vsize; ++i) {
+                    x[i] = (float)Math.pow(2.0, x[i]);
+                }
+                vfpu.saveVd(vsize, vd, x);
             `
 
             compile = `
@@ -3257,6 +3659,13 @@ group root
         op VLOG2(110100:00:000:1:0101:two:vs:one:vd)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two<<1);               
+                float[] x = vfpu.loadVs(vsize, vs);
+                for (int i = 0; i < vsize; ++i) {
+                    x[i] = (float)(Math.log(x[i]) / Math.log(2.0));
+                }
+                vfpu.saveVd(vsize, vd, x);
             `
 
             compile = `
@@ -3268,6 +3677,13 @@ group root
         op VSQRT(110100:00:000:1:0110:two:vs:one:vd)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two<<1);               
+                float[] x = vfpu.loadVs(vsize, vs);
+                for (int i = 0; i < vsize; ++i) {
+                    x[i] = (float)(Math.sqrt(x[i]));
+                }
+                vfpu.saveVd(vsize, vd, x);
             `
 
             compile = `
@@ -3279,6 +3695,13 @@ group root
         op VASIN(110100:00:000:1:0111:two:vs:one:vd)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two<<1);               
+                float[] x = vfpu.loadVs(vsize, vs);
+                for (int i = 0; i < vsize; ++i) {
+                    x[i] = (float)(Math.asin(x[i]) * 0.5 / Math.PI);
+                }
+                vfpu.saveVd(vsize, vd, x);
             `
 
             compile = `
@@ -3290,6 +3713,13 @@ group root
         op VNRCP(110100:00:000:1:1000:two:vs:one:vd)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two<<1);               
+                float[] x = vfpu.loadVs(vsize, vs);
+                for (int i = 0; i < vsize; ++i) {
+                    x[i] = 0.0f - (1.0f / x[i]);
+                }
+                vfpu.saveVd(vsize, vd, x);
             `
 
             compile = `
@@ -3301,6 +3731,13 @@ group root
         op VNSIN(110100:00:000:1:1010:two:vs:one:vd)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two<<1);               
+                float[] x = vfpu.loadVs(vsize, vs);
+                for (int i = 0; i < vsize; ++i) {
+                    x[i] = 0.0f - (float)Math.sin(2.0 * Math.PI * x[i]);
+                }
+                vfpu.saveVd(vsize, vd, x);
             `
 
             compile = `
@@ -3312,6 +3749,13 @@ group root
         op VREXP2(110100:00:000:1:1100:two:vs:one:vd)
         {
             interpret = `
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two<<1);               
+                float[] x = vfpu.loadVs(vsize, vs);
+                for (int i = 0; i < vsize; ++i) {
+                    x[i] = (float)(1.0 / Math.pow(2.0, x[i]));
+                }
+                vfpu.saveVd(vsize, vd, x);
             `
 
             compile = `
@@ -3764,9 +4208,6 @@ group root
 
     group VFPU5
     {
-    
-    
-    
         op VPFXS(110111:00:----:negw:negz:negy:negx:cstw:cstz:csty:cstx:absw:absz:absy:absx:swzw:swzz:swzy:swzx)
         {
             interpret = `
@@ -3823,4 +4264,197 @@ group root
         }
     }
 
+    group VFPU6
+    {
+        op VMMUL(111100:000:vt:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VMMUL";`
+        }
+
+        op VHTFM2(111100:001:vt:0:vs:0:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VHTFM2";`
+        }
+
+        op VTFM2(111100:001:vt:0:vs:1:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VTFM2";`
+        }
+
+        op VHTFM3(111100:010:vt:0:vs:1:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VHTFM3";`
+        }
+
+        op VTFM3(111100:010:vt:1:vs:0:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VTFM3";`
+        }
+
+        op VHTFM4(111100:011:vt:1:vs:0:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VHTFM4";`
+        }
+
+        op VTFM4(111100:011:vt:1:vs:1:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VTFM4";`
+        }
+
+        op VMSCL(111100:100:vt:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VMSCL";`
+        }
+
+        op VQMUL(111100:101:vt:1:vs:1:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Dis_VDVSVT("VQMUL", 4, vd, vs, vt);`
+        }
+
+        op VMMOV(111100:111:00:00000:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VMMOV";`
+        }
+
+        op VMIDT(111100:111:00:00011:two:0000000:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VMIDT";`
+        }
+
+        op VMZERO(111100:111:00:00110:two:0000000:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VMZERO";`
+        }
+
+        op VMONE(111100:111:00:00111:two:0000000:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VMONE";`
+        }
+
+        op VROT(111100:111:01:imm5:two:vs:one:vd)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VROT";`
+        }
+
+    }
+
+    group VFPU7
+    {
+        op VNOP(111111:1111111111:00000:00000000000)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "vnop";`
+        }
+
+        op VFLUSH(111111:1111111111:00000:10000001101)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "vflush";`
+        }
+
+        op VSYNC(111111:1111111111:00000:01100100000)
+        {
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "vsync";`
+        }
+    }
 }

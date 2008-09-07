@@ -29,15 +29,22 @@ import javassist.CtNewMethod;
 public class AllegrexBasicBlock {
 
     protected int entry;
+    protected int size;
     protected StringBuffer buffer = new StringBuffer();
     protected boolean freezed = false;
     protected static ClassPool pool = ClassPool.getDefault();
     protected Method method = null;
-    protected long creation_timestamp = 0;
+    protected long creationTimestamp = 0;
     protected Processor processor = null;
-    protected int execution_count = 1;
+    protected int executionCount = 1;
+    protected Integer branchTrue = null;
+    protected Integer branchFalse = null;
 
     public final int getEntry() {
+        return entry;
+    }
+    
+    public final int getSize() {
         return entry;
     }
     
@@ -45,7 +52,7 @@ public class AllegrexBasicBlock {
         this.processor = processor;
         this.entry = entry;
 
-        creation_timestamp = System.currentTimeMillis();
+        creationTimestamp = System.currentTimeMillis();
 
         processor.tracked_gpr = new Processor.RegisterTracking[32];
     }

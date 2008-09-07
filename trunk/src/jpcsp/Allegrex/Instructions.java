@@ -179,7 +179,9 @@ public class Instructions {
 
             // just ignore overflow exception as it is useless
             if (rd != 0) {
-                processor.gpr[rd] = processor.gpr[rs] + processor.gpr[rt];
+                CpuState cpu = processor.cpu;
+
+                cpu.gpr[rd] = cpu.gpr[rs] + cpu.gpr[rt];
             }
 
         }
@@ -5689,6 +5691,14 @@ public class Instructions {
 
 
 
+            VfpuState vfpu = processor.vfpu;
+            int vsize = 1 + one + (two << 1);
+            float[] x = vfpu.loadVs(vsize, vs);
+            float[] y = vfpu.loadVt(vsize, vt);
+            for (int i = 0; i < vsize; ++i) {
+                x[i] += y[i];
+            }
+            vfpu.saveVd(vsize, vd, x);
 
         }
 
@@ -5729,6 +5739,14 @@ public class Instructions {
 
 
 
+            VfpuState vfpu = processor.vfpu;
+            int vsize = 1 + one + (two << 1);
+            float[] x = vfpu.loadVs(vsize, vs);
+            float[] y = vfpu.loadVt(vsize, vt);
+            for (int i = 0; i < vsize; ++i) {
+                x[i] += (0.0f - y[i]);
+            }
+            vfpu.saveVd(vsize, vd, x);
 
         }
 
@@ -5769,6 +5787,13 @@ public class Instructions {
 
 
 
+            if (one + two == 0) {
+                VfpuState vfpu = processor.vfpu;
+                float[] x = vfpu.loadVs(1, vs);
+                float[] y = vfpu.loadVt(1, vt);
+                x[0] = Math.scalb(x[0], Float.floatToRawIntBits(y[0]));
+                vfpu.saveVd(1, vd, x);
+            }
 
         }
 
@@ -5809,6 +5834,14 @@ public class Instructions {
 
 
 
+            VfpuState vfpu = processor.vfpu;
+            int vsize = 1 + one + (two << 1);
+            float[] x = vfpu.loadVs(vsize, vs);
+            float[] y = vfpu.loadVt(vsize, vt);
+            for (int i = 0; i < vsize; ++i) {
+                x[i] /= y[i];
+            }
+            vfpu.saveVd(vsize, vd, x);
 
         }
 
@@ -5849,6 +5882,14 @@ public class Instructions {
 
 
 
+            VfpuState vfpu = processor.vfpu;
+            int vsize = 1 + one + (two << 1);
+            float[] x = vfpu.loadVs(vsize, vs);
+            float[] y = vfpu.loadVt(vsize, vt);
+            for (int i = 0; i < vsize; ++i) {
+                x[i] *= y[i];
+            }
+            vfpu.saveVd(vsize, vd, x);
 
         }
 
@@ -5889,6 +5930,17 @@ public class Instructions {
 
 
 
+            if ((one | two) == 1) {
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two << 1);
+                float[] x = vfpu.loadVs(vsize, vs);
+                float[] y = vfpu.loadVt(vsize, vt);
+                float[] z = new float[1];
+                for (int i = 0; i < vsize; ++i) {
+                    z[0] += x[i] * y[i];
+                }
+                vfpu.saveVd(1, vd, z);
+            }
 
         }
 
@@ -5929,6 +5981,16 @@ public class Instructions {
 
 
 
+            if ((one | two) == 1) {
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two << 1);
+                float[] x = vfpu.loadVs(vsize, vs);
+                float[] y = vfpu.loadVt(1, vt);
+                for (int i = 0; i < vsize; ++i) {
+                    x[i] *= y[0];
+                }
+                vfpu.saveVd(vsize, vd, x);
+            }
 
         }
 
@@ -5969,6 +6031,18 @@ public class Instructions {
 
 
 
+            if ((one | two) == 1) {
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two << 1);
+                float[] x = vfpu.loadVs(vsize - 1, vs);
+                float[] y = vfpu.loadVt(vsize, vt);
+                float[] z = new float[1];
+                z[0] = y[vsize - 1];
+                for (int i = 0; i < vsize - 1; ++i) {
+                    z[0] += x[i] * y[i];
+                }
+                vfpu.saveVd(1, vd, z);
+            }
 
         }
 
@@ -6009,6 +6083,14 @@ public class Instructions {
 
 
 
+            if ((one == 1) && (two == 0)) {
+                VfpuState vfpu = processor.vfpu;
+                float[] x = vfpu.loadVs(2, vs);
+                float[] y = vfpu.loadVt(2, vt);
+                float[] z = new float[1];
+                z[0] = x[0] * y[1] - x[1] * y[0];
+                vfpu.saveVd(1, vd, z);
+            }
 
         }
 
@@ -6049,6 +6131,16 @@ public class Instructions {
 
 
 
+            if ((one == 0) && (two == 1)) {
+                VfpuState vfpu = processor.vfpu;
+                float[] x = vfpu.loadVs(3, vs);
+                float[] y = vfpu.loadVt(3, vt);
+                float[] z = new float[3];
+                z[0] = x[1] * y[2];
+                z[1] = x[2] * y[0];
+                z[2] = x[0] * y[1];
+                vfpu.saveVd(3, vd, z);
+            }
 
         }
 
@@ -6253,6 +6345,14 @@ public class Instructions {
 
 
 
+            VfpuState vfpu = processor.vfpu;
+            int vsize = 1 + one + (two << 1);
+            float[] x = vfpu.loadVs(vsize, vs);
+            float[] y = vfpu.loadVt(vsize, vt);
+            for (int i = 0; i < vsize; ++i) {
+                x[i] = Math.min(x[i], y[i]);
+            }
+            vfpu.saveVd(vsize, vd, x);
 
         }
 
@@ -6293,6 +6393,14 @@ public class Instructions {
 
 
 
+            VfpuState vfpu = processor.vfpu;
+            int vsize = 1 + one + (two << 1);
+            float[] x = vfpu.loadVs(vsize, vs);
+            float[] y = vfpu.loadVt(vsize, vt);
+            for (int i = 0; i < vsize; ++i) {
+                x[i] = Math.max(x[i], y[i]);
+            }
+            vfpu.saveVd(vsize, vd, x);
 
         }
 
@@ -6333,6 +6441,14 @@ public class Instructions {
 
 
 
+            VfpuState vfpu = processor.vfpu;
+            int vsize = 1 + one + (two << 1);
+            float[] x = vfpu.loadVs(vsize, vs);
+            float[] y = vfpu.loadVt(vsize, vt);
+            for (int i = 0; i < vsize; ++i) {
+                x[i] = Math.signum(x[i] + (0.0f - y[i]));
+            }
+            vfpu.saveVd(vsize, vd, x);
 
         }
 
@@ -6373,6 +6489,14 @@ public class Instructions {
 
 
 
+            VfpuState vfpu = processor.vfpu;
+            int vsize = 1 + one + (two << 1);
+            float[] x = vfpu.loadVs(vsize, vs);
+            float[] y = vfpu.loadVt(vsize, vt);
+            for (int i = 0; i < vsize; ++i) {
+                x[i] = (x[i] >= y[i]) ? 1.0f : 0.0f;
+            }
+            vfpu.saveVd(vsize, vd, x);
 
         }
 
@@ -6413,6 +6537,14 @@ public class Instructions {
 
 
 
+            VfpuState vfpu = processor.vfpu;
+            int vsize = 1 + one + (two << 1);
+            float[] x = vfpu.loadVs(vsize, vs);
+            float[] y = vfpu.loadVt(vsize, vt);
+            for (int i = 0; i < vsize; ++i) {
+                x[i] = (x[i] < y[i]) ? 1.0f : 0.0f;
+            }
+            vfpu.saveVd(vsize, vd, x);
 
         }
 
@@ -6452,6 +6584,10 @@ public class Instructions {
 
 
 
+            VfpuState vfpu = processor.vfpu;
+            int vsize = 1 + one + (two << 1);
+            float[] x = vfpu.loadVs(vsize, vs);
+            vfpu.saveVd(vsize, vd, x);
 
         }
 
@@ -6489,6 +6625,13 @@ public class Instructions {
 
 
 
+            VfpuState vfpu = processor.vfpu;
+            int vsize = 1 + one + (two << 1);
+            float[] x = vfpu.loadVs(vsize, vs);
+            for (int i = 0; i < vsize; ++i) {
+                x[i] = Math.abs(x[i]);
+            }
+            vfpu.saveVd(vsize, vd, x);
 
         }
 
@@ -6526,6 +6669,13 @@ public class Instructions {
 
 
 
+            VfpuState vfpu = processor.vfpu;
+            int vsize = 1 + one + (two << 1);
+            float[] x = vfpu.loadVs(vsize, vs);
+            for (int i = 0; i < vsize; ++i) {
+                x[i] = 0.0f - x[i];
+            }
+            vfpu.saveVd(vsize, vd, x);
 
         }
 
@@ -6562,6 +6712,18 @@ public class Instructions {
 
 
 
+            if (one == 1) {
+                VfpuState vfpu = processor.vfpu;
+                int vsize = 1 + one + (two << 1);
+                float[] x = new float[vsize];
+                int id = vd & 3;
+                for (int i = 0; i < vsize; ++i) {
+                    if (id == i) {
+                        x[i] = 1.0f;
+                    }
+                }
+                vfpu.saveVd(vsize, vd, x);
+            }
 
         }
 
@@ -6597,6 +6759,13 @@ public class Instructions {
 
 
 
+            VfpuState vfpu = processor.vfpu;
+            int vsize = 1 + one + (two << 1);
+            float[] x = vfpu.loadVs(vsize, vs);
+            for (int i = 0; i < vsize; ++i) {
+                x[i] = Math.min(Math.max(0.0f, x[i]), 1.0f);
+            }
+            vfpu.saveVd(vsize, vd, x);
 
         }
 
@@ -6634,6 +6803,13 @@ public class Instructions {
 
 
 
+            VfpuState vfpu = processor.vfpu;
+            int vsize = 1 + one + (two << 1);
+            float[] x = vfpu.loadVs(vsize, vs);
+            for (int i = 0; i < vsize; ++i) {
+                x[i] = Math.min(Math.max(-1.0f, x[i]), 1.0f);
+            }
+            vfpu.saveVd(vsize, vd, x);
 
         }
 
@@ -6670,6 +6846,9 @@ public class Instructions {
 
 
 
+            VfpuState vfpu = processor.vfpu;
+            int vsize = 1 + one + (two << 1);
+            vfpu.saveVd(vsize, vd, new float[vsize]);
 
         }
 
@@ -6704,6 +6883,13 @@ public class Instructions {
 
 
 
+            VfpuState vfpu = processor.vfpu;
+            int vsize = 1 + one + (two << 1);
+            float[] x = new float[vsize];
+            for (int i = 0; i < vsize; ++i) {
+                x[i] = 1.0f;
+            }
+            vfpu.saveVd(vsize, vd, new float[vsize]);
 
         }
 
@@ -6739,6 +6925,13 @@ public class Instructions {
 
 
 
+            VfpuState vfpu = processor.vfpu;
+            int vsize = 1 + one + (two << 1);
+            float[] x = vfpu.loadVs(vsize, vs);
+            for (int i = 0; i < vsize; ++i) {
+                x[i] = 1.0f / x[i];
+            }
+            vfpu.saveVd(vsize, vd, x);
 
         }
 
@@ -6776,6 +6969,13 @@ public class Instructions {
 
 
 
+            VfpuState vfpu = processor.vfpu;
+            int vsize = 1 + one + (two << 1);
+            float[] x = vfpu.loadVs(vsize, vs);
+            for (int i = 0; i < vsize; ++i) {
+                x[i] = (float) (1.0 / Math.sqrt(x[i]));
+            }
+            vfpu.saveVd(vsize, vd, x);
 
         }
 
@@ -6813,6 +7013,13 @@ public class Instructions {
 
 
 
+            VfpuState vfpu = processor.vfpu;
+            int vsize = 1 + one + (two << 1);
+            float[] x = vfpu.loadVs(vsize, vs);
+            for (int i = 0; i < vsize; ++i) {
+                x[i] = (float) Math.sin(2.0 * Math.PI * x[i]);
+            }
+            vfpu.saveVd(vsize, vd, x);
 
         }
 
@@ -6850,6 +7057,13 @@ public class Instructions {
 
 
 
+            VfpuState vfpu = processor.vfpu;
+            int vsize = 1 + one + (two << 1);
+            float[] x = vfpu.loadVs(vsize, vs);
+            for (int i = 0; i < vsize; ++i) {
+                x[i] = (float) Math.cos(2.0 * Math.PI * x[i]);
+            }
+            vfpu.saveVd(vsize, vd, x);
 
         }
 
@@ -6887,6 +7101,13 @@ public class Instructions {
 
 
 
+            VfpuState vfpu = processor.vfpu;
+            int vsize = 1 + one + (two << 1);
+            float[] x = vfpu.loadVs(vsize, vs);
+            for (int i = 0; i < vsize; ++i) {
+                x[i] = (float) Math.pow(2.0, x[i]);
+            }
+            vfpu.saveVd(vsize, vd, x);
 
         }
 
@@ -6924,6 +7145,13 @@ public class Instructions {
 
 
 
+            VfpuState vfpu = processor.vfpu;
+            int vsize = 1 + one + (two << 1);
+            float[] x = vfpu.loadVs(vsize, vs);
+            for (int i = 0; i < vsize; ++i) {
+                x[i] = (float) (Math.log(x[i]) / Math.log(2.0));
+            }
+            vfpu.saveVd(vsize, vd, x);
 
         }
 
@@ -6961,6 +7189,13 @@ public class Instructions {
 
 
 
+            VfpuState vfpu = processor.vfpu;
+            int vsize = 1 + one + (two << 1);
+            float[] x = vfpu.loadVs(vsize, vs);
+            for (int i = 0; i < vsize; ++i) {
+                x[i] = (float) (Math.sqrt(x[i]));
+            }
+            vfpu.saveVd(vsize, vd, x);
 
         }
 
@@ -6998,6 +7233,13 @@ public class Instructions {
 
 
 
+            VfpuState vfpu = processor.vfpu;
+            int vsize = 1 + one + (two << 1);
+            float[] x = vfpu.loadVs(vsize, vs);
+            for (int i = 0; i < vsize; ++i) {
+                x[i] = (float) (Math.asin(x[i]) * 0.5 / Math.PI);
+            }
+            vfpu.saveVd(vsize, vd, x);
 
         }
 
@@ -7035,6 +7277,13 @@ public class Instructions {
 
 
 
+            VfpuState vfpu = processor.vfpu;
+            int vsize = 1 + one + (two << 1);
+            float[] x = vfpu.loadVs(vsize, vs);
+            for (int i = 0; i < vsize; ++i) {
+                x[i] = 0.0f - (1.0f / x[i]);
+            }
+            vfpu.saveVd(vsize, vd, x);
 
         }
 
@@ -7072,6 +7321,13 @@ public class Instructions {
 
 
 
+            VfpuState vfpu = processor.vfpu;
+            int vsize = 1 + one + (two << 1);
+            float[] x = vfpu.loadVs(vsize, vs);
+            for (int i = 0; i < vsize; ++i) {
+                x[i] = 0.0f - (float) Math.sin(2.0 * Math.PI * x[i]);
+            }
+            vfpu.saveVd(vsize, vd, x);
 
         }
 
@@ -7109,6 +7365,13 @@ public class Instructions {
 
 
 
+            VfpuState vfpu = processor.vfpu;
+            int vsize = 1 + one + (two << 1);
+            float[] x = vfpu.loadVs(vsize, vs);
+            for (int i = 0; i < vsize; ++i) {
+                x[i] = (float) (1.0 / Math.pow(2.0, x[i]));
+            }
+            vfpu.saveVd(vsize, vd, x);
 
         }
 

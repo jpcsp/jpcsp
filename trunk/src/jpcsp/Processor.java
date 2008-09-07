@@ -18,11 +18,16 @@ package jpcsp;
 
 //import static jpcsp.AllegrexInstructions;
 import jpcsp.HLE.SyscallHandler;
+import jpcsp.Allegrex.*;
 import java.util.HashMap;
 import java.util.Map;
 
 public class Processor implements AllegrexInstructions {
 
+    public CpuState cpu;
+    public FpuState fpu;
+    public VfpuState vfpu;
+    
     public static final int fcr0_imp = 0; /* FPU design number */
 
     public static final int fcr0_rev = 0; /* FPU revision bumber */
@@ -60,10 +65,10 @@ public class Processor implements AllegrexInstructions {
 
     public class RegisterTracking {
 
-        public boolean loaded = false;
-        public boolean dirty = false;
-        public boolean fixed = false;
-        public boolean labeled = false;
+        public boolean loaded = false; // load the register content if not already done
+        public boolean dirty = false; // save the register content back at basic block termination
+        public boolean fixed = false; // the register helds a constant value
+        public boolean labeled = false; // an associated local variable is created
     }
     public RegisterTracking tracked_gpr[];
     public RegisterTracking tracked_fpr[];
@@ -98,8 +103,14 @@ public class Processor implements AllegrexInstructions {
         tracked_gpr = new RegisterTracking[32];
         tracked_fpr = new RegisterTracking[32];
         tracked_hilo = new RegisterTracking();
-        
+
         reset_register_tracking();
+        
+        for (jpcsp.Allegrex.Common.Instruction insn : jpcsp.Allegrex.Common.instructions()) {
+            if (insn != null) {
+                insn.resetCount();
+            }
+        }
     }
 
     public void fix_gpr(int register, int value) {
@@ -243,7 +254,7 @@ public class Processor implements AllegrexInstructions {
             tracked_gpr[0].dirty = false;
             tracked_gpr[0].fixed = true;
             tracked_gpr[0].labeled = false;
-            
+
             for (int i = 0; i < 32; ++i) {
                 if (tracked_fpr[i].labeled) {
                     if (tracked_fpr[i].dirty) {
@@ -256,7 +267,7 @@ public class Processor implements AllegrexInstructions {
                     current_bb.emit("processor.hilo = hilo;");
                 }
             }
-        }
+        }        
     }
 
     public int hi() {
@@ -369,7 +380,7 @@ public class Processor implements AllegrexInstructions {
         if (!interpreter_only && current_bb == null) {
             current_bb = basic_blocks.get(pc);
             if (current_bb != null) {
-                current_bb.execution_count++;
+                current_bb.executionCount++;
                 current_bb.execute();
                 current_bb = null;
                 return;
@@ -383,6 +394,9 @@ public class Processor implements AllegrexInstructions {
 
         int insn = (Memory.get_instance()).read32(pc);
 
+        jpcsp.Allegrex.Common.Instruction i = jpcsp.Allegrex.Decoder.instruction(insn);
+        i.increaseCount();
+        System.out.printf("count for %s : %d\n", Integer.toString(insn, 2), i.getCount());
         // by default, any Allegrex instruction takes 1 cycle at least
         cycles += 1;
 
@@ -395,6 +409,10 @@ public class Processor implements AllegrexInstructions {
 
     public void stepDelayslot() {
         int insn = (Memory.get_instance()).read32(pc);
+
+        jpcsp.Allegrex.Common.Instruction i = jpcsp.Allegrex.Decoder.instruction(insn);
+        i.increaseCount();
+        System.out.printf("count for %s : %d\n", Integer.toString(insn, 2), i.getCount());
 
         // by default, any Allegrex instruction takes 1 cycle at least
         cycles += 1;
@@ -1758,12 +1776,6 @@ public class Processor implements AllegrexInstructions {
     private float[] loadVs(int vsize, int vs) {
         float[] result = new float[vsize];
 
-
-
-
-
-
-
         int m, r, c;
 
         m = (vs >> 2) & 7;
@@ -1843,12 +1855,6 @@ public class Processor implements AllegrexInstructions {
     private float[] loadVt(int vsize, int vt) {
         float[] result = new float[vsize];
 
-
-
-
-
-
-
         int m, r, c;
 
         m = (vt >> 2) & 7;
@@ -1926,12 +1932,6 @@ public class Processor implements AllegrexInstructions {
     }
 
     private void saveVd(int vsize, int vd, float[] result) {
-
-
-
-
-
-
         int m, r, c;
 
         m = (vd >> 2) & 7;
@@ -2049,8 +2049,7 @@ public class Processor implements AllegrexInstructions {
         float[] x1 = loadVs(vsize, vs);
         float[] x2 = loadVt(vsize, vt);
 
-        for (int i = 0; i <
-                vsize; ++i) {
+        for (int i = 0; i < vsize; ++i) {
             x1[i] += x2[i];
         }
 
@@ -2062,8 +2061,7 @@ public class Processor implements AllegrexInstructions {
         float[] x1 = loadVs(vsize, vs);
         float[] x2 = loadVt(vsize, vt);
 
-        for (int i = 0; i <
-                vsize; ++i) {
+        for (int i = 0; i < vsize; ++i) {
             x1[i] -= x2[i];
         }
 
@@ -2089,8 +2087,7 @@ public class Processor implements AllegrexInstructions {
         float[] x1 = loadVs(vsize, vs);
         float[] x2 = loadVt(vsize, vt);
 
-        for (int i = 0; i <
-                vsize; ++i) {
+        for (int i = 0; i < vsize; ++i) {
             x1[i] /= x2[i];
         }
 
@@ -2102,8 +2099,7 @@ public class Processor implements AllegrexInstructions {
         float[] x1 = loadVs(vsize, vs);
         float[] x2 = loadVt(vsize, vt);
 
-        for (int i = 0; i <
-                vsize; ++i) {
+        for (int i = 0; i < vsize; ++i) {
             x1[i] *= x2[i];
         }
 
@@ -2120,8 +2116,7 @@ public class Processor implements AllegrexInstructions {
         float[] x2 = loadVt(vsize, vt);
         float[] x3 = new float[1];
 
-        for (int i = 0; i <
-                vsize; ++i) {
+        for (int i = 0; i < vsize; ++i) {
             x3[0] += x1[i] * x2[i];
         }
 
@@ -2144,8 +2139,7 @@ public class Processor implements AllegrexInstructions {
         float[] x3 = new float[1];
 
         int i;
-        for (i = 0; i <
-                vsize - 1; ++i) {
+        for (i = 0; i < vsize - 1; ++i) {
             x3[0] += x1[i] * x2[i];
         }
 
@@ -2200,8 +2194,7 @@ public class Processor implements AllegrexInstructions {
             float[] x1 = loadVs(vsize, vs);
             float[] x2 = loadVt(vsize, vt);
 
-            for (int i = 0; i <
-                    vsize; ++i) {
+            for (int i = 0; i < vsize; ++i) {
                 switch (cond & 3) {
                     case 0:
                         cc = not;
@@ -2232,8 +2225,7 @@ public class Processor implements AllegrexInstructions {
         } else {
             float[] x1 = loadVs(vsize, vs);
 
-            for (int i = 0; i <
-                    vsize; ++i) {
+            for (int i = 0; i < vsize; ++i) {
                 boolean cc;
                 if ((cond & 3) == 0) {
                     cc = ((cond & 4) == 0) ? (x1[i] == 0.0f) : (x1[i] != 0.0f);
@@ -2262,8 +2254,7 @@ public class Processor implements AllegrexInstructions {
         float[] x1 = loadVs(vsize, vs);
         float[] x2 = loadVt(vsize, vt);
 
-        for (int i = 0; i <
-                vsize; ++i) {
+        for (int i = 0; i < vsize; ++i) {
             x1[i] = Math.min(x1[i], x2[i]);
         }
 
@@ -2275,8 +2266,7 @@ public class Processor implements AllegrexInstructions {
         float[] x1 = loadVs(vsize, vs);
         float[] x2 = loadVt(vsize, vt);
 
-        for (int i = 0; i <
-                vsize; ++i) {
+        for (int i = 0; i < vsize; ++i) {
             x1[i] = Math.max(x1[i], x2[i]);
         }
 
@@ -2288,8 +2278,7 @@ public class Processor implements AllegrexInstructions {
         float[] x1 = loadVs(vsize, vs);
         float[] x2 = loadVt(vsize, vt);
 
-        for (int i = 0; i <
-                vsize; ++i) {
+        for (int i = 0; i < vsize; ++i) {
             x1[i] = Math.signum(x1[i] - x2[i]);
         }
 
@@ -2301,8 +2290,7 @@ public class Processor implements AllegrexInstructions {
         float[] x1 = loadVs(vsize, vs);
         float[] x2 = loadVt(vsize, vt);
 
-        for (int i = 0; i <
-                vsize; ++i) {
+        for (int i = 0; i < vsize; ++i) {
             x1[i] = (x1[i] >= x2[i]) ? 1.0f : 0.0f;
         }
 
@@ -2314,8 +2302,7 @@ public class Processor implements AllegrexInstructions {
         float[] x1 = loadVs(vsize, vs);
         float[] x2 = loadVt(vsize, vt);
 
-        for (int i = 0; i <
-                vsize; ++i) {
+        for (int i = 0; i < vsize; ++i) {
             x1[i] = (x1[i] < x2[i]) ? 1.0f : 0.0f;
         }
 
@@ -2548,19 +2535,3 @@ public class Processor implements AllegrexInstructions {
         assert (gpr[4] == -1);
     }
 }
-/*
-LUI rt, uimm16 {
-processor.gpr_is_constant[rt] = true;
-processor.gpr[rt] = uimm16 << 16;
-}
-
-ORI rt, rs, uimm16 {
-if (processor.gpr_is_constant[rs]) {
-processor.gpr_is_constant[rt] = true;
-processor.gpr[rt] = processor.gpr[rs] | unsignedExtend(imm16);  
-} else {
-emit("processor.gpr[rt] = " + processor.gpr_value[%0]); 
-processor.gpr_is_constant[rt] = false;
-}
-}
- */
