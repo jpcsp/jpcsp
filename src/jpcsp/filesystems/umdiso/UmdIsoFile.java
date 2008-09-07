@@ -7,6 +7,7 @@ package jpcsp.filesystems.umdiso;
 
 import java.io.*;
 import jpcsp.filesystems.*;
+import jpcsp.util.Utilities.*;
 
 /**
  *
@@ -101,8 +102,8 @@ public class UmdIsoFile extends SeekableInputStream {
     {
         long endOffset = offset;
  
-        if((offset<0)||(offset>=maxOffset))
-            throw new IndexOutOfBoundsException("Seek offset " + offset + " out of bounds.");
+        if(offset<0)
+            throw new IOException("Seek offset " + offset + " out of bounds.");
         
         int oldSectorNumber = currentSectorNumber;
         long newOffset = endOffset;
@@ -126,46 +127,51 @@ public class UmdIsoFile extends SeekableInputStream {
     @Override
     public byte readByte() throws IOException
     {
+        if(currentOffset>=maxOffset)
+            throw new EOFException();
+        
         return (byte)read();
     }
     
     @Override
     public short readShort() throws IOException
     {
-        DataInputStream s = new DataInputStream(this);
-        return s.readShort();
+        return (short)(readUnsignedByte() | (((int)readByte())<<8));
     }
     
     @Override
     public int readInt() throws IOException
     {
-        DataInputStream s = new DataInputStream(this);
-        return s.readInt();
+        return (readUnsignedByte() | (((int)readUnsignedByte())<<8) | (((int)readUnsignedByte())<<16) | (((int)readByte())<<24));
     }
     
     @Override
     public int readUnsignedByte() throws IOException
     {
+        if(currentOffset>=maxOffset)
+            throw new EOFException();
+        
         return read();
     }
     
     @Override
     public int readUnsignedShort() throws IOException
     {
-        DataInputStream s = new DataInputStream(this);
-        return s.readUnsignedShort();
+        return ((int)readShort())&0xFFFF;
     }
     
     @Override
     public long readLong() throws IOException
     {
-        DataInputStream s = new DataInputStream(this);
-        return s.readLong();
+        return (((long)readInt())&0xFFFFFFFFl) | (((long)readInt())<<32);
     }
     
     @Override
     public float readFloat() throws IOException
     {
+        if(currentOffset>=maxOffset)
+            throw new EOFException();
+        
         DataInputStream s = new DataInputStream(this);
         return s.readFloat();
     }
@@ -173,6 +179,9 @@ public class UmdIsoFile extends SeekableInputStream {
     @Override
     public double readDouble() throws IOException
     {
+        if(currentOffset>=maxOffset)
+            throw new EOFException();
+        
         DataInputStream s = new DataInputStream(this);
         return s.readDouble();
     }
@@ -180,13 +189,15 @@ public class UmdIsoFile extends SeekableInputStream {
     @Override
     public boolean readBoolean() throws IOException
     {
-        DataInputStream s = new DataInputStream(this);
-        return s.readBoolean();
+        return (readUnsignedByte()!=0);
     }
     
     @Override
     public char readChar() throws IOException
     {
+        if(currentOffset>=maxOffset)
+            throw new EOFException();
+        
         DataInputStream s = new DataInputStream(this);
         return s.readChar();
     }
@@ -194,6 +205,9 @@ public class UmdIsoFile extends SeekableInputStream {
     @Override
     public String readUTF() throws IOException
     {
+        if(currentOffset>=maxOffset)
+            throw new EOFException();
+
         DataInputStream s = new DataInputStream(this);
         return s.readUTF();
     }
@@ -201,6 +215,9 @@ public class UmdIsoFile extends SeekableInputStream {
     @Override
     public String readLine() throws IOException
     {
+        if(currentOffset>=maxOffset)
+            throw new EOFException();
+        
         DataInputStream s = new DataInputStream(this);
         return s.readLine();
     }
@@ -208,12 +225,18 @@ public class UmdIsoFile extends SeekableInputStream {
     @Override
     public void readFully(byte[] b, int off, int len) throws IOException
     {
+        if(currentOffset>=maxOffset)
+            throw new EOFException();
+        
         read(b, off, len);
     }
     
     @Override
     public void readFully(byte[] b) throws IOException
     {
+        if(currentOffset>=maxOffset)
+            throw new EOFException();
+
         read(b);
     }
     
