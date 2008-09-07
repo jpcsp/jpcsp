@@ -295,11 +295,19 @@ public class FileManager {
             // Resolve section name (if possible)
             if (shstrtab != null) {
                 f.seek(elfoffset + shstrtab.getSh_offset() + shdr.getSh_name());
-                String SectionName = Utilities.readStringZ(f);
+                String SectionName = "";//Utilities.readStringZ(f);
+                try{
+                    SectionName = Utilities.readStringZ(f);
+                    
+                }
+                catch(IOException e){
+                    
+                }
                 if (SectionName.length() > 0) {
-                    shdr.setSh_namez(SectionName);
+                    
+                    //shdr.setSh_namez(SectionName);
                     shsb.append(SectionName + "\n");
-
+                    //System.out.println(SectionName);
                     // Get module infos
                     if (SectionName.matches(".rodata.sceModuleInfo")) {
                         f.seek(elfoffset + shdr.getSh_offset());
@@ -317,7 +325,6 @@ public class FileManager {
                     }
                 }
             }
-
             // Add this section header's info
             shsb.append(shdr.toString());
             SectionCounter++;
