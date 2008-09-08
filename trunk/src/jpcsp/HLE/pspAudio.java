@@ -56,7 +56,7 @@ public class pspAudio {
         {
              //get next available channel
         }
-        Emulator.getProcessor().gpr[2] = 0; //just return the first channel
+        Emulator.getProcessor().gpr[2] = -1; //just return the first channel
     }
 
 }
