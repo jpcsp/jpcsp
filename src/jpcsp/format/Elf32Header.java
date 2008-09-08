@@ -17,8 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.format;
 
 import java.io.IOException;
-import jpcsp.filesystems.*;
 import jpcsp.MemoryMap;
+import java.nio.ByteBuffer;
 import jpcsp.util.Utilities;
 import static jpcsp.util.Utilities.*;
 
@@ -44,12 +44,12 @@ public class Elf32Header {
     private int e_shnum;
     private int e_shstrndx;
 
-    private void read(SeekableDataInput f) throws IOException {
+    private void read(ByteBuffer f) throws IOException {
         e_magic = readUWord(f);
         e_class = readUByte(f);
         e_data = readUByte(f);
         e_idver = readUByte(f);
-        f.readFully(getE_pad());         //can raise EOF exception
+        f.get(getE_pad());         //can raise EOF exception
         e_type = readUHalf(f);
         e_machine = readUHalf(f);
         e_version = readUWord(f);
@@ -66,7 +66,7 @@ public class Elf32Header {
     }
 
 
-     public Elf32Header(SeekableDataInput f) throws IOException {
+     public Elf32Header(ByteBuffer f) throws IOException {
         read(f);
     }
 

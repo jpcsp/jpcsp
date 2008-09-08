@@ -18,7 +18,7 @@ package jpcsp.format;
 
 import jpcsp.util.*;
 import java.io.IOException;
-import jpcsp.filesystems.*;
+import java.nio.ByteBuffer;
 import static jpcsp.util.Utilities.*;
 
 public class Elf32Relocate {
@@ -30,7 +30,7 @@ public class Elf32Relocate {
         return 8;
     }
 
-    public void read(SeekableDataInput f) throws IOException {
+    public void read(ByteBuffer f) throws IOException {
         setR_offset(readUWord(f));
         setR_info(readUWord(f));
     }

@@ -18,7 +18,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.format;
 
 import java.io.IOException;
-import jpcsp.filesystems.*;
+import java.nio.ByteBuffer;
 import static jpcsp.util.Utilities.*;
 /**
  *
@@ -52,7 +52,7 @@ public class PSF {
      {
          this.p_offset_param_sfo = p_offset_param_sfo;
      }
-     public void read(SeekableDataInput f)throws IOException {
+     public void read(ByteBuffer f)throws IOException {
          fileidentify= readUWord(f);
          if(psfident != fileidentify)
          {
@@ -94,17 +94,17 @@ public class PSF {
          String Key;
          for(int i=0; i<numberofkeypairs; i++)
          {
-             f.seek(p_offset_param_sfo + offsetkeytable+offset_keyname[i]);
+             f.position((int)(p_offset_param_sfo + offsetkeytable+offset_keyname[i]));
             Key = readStringZ(f);
             if(datatype[i]==2)
             {
                // String may not be in english!
-               f.seek(p_offset_param_sfo + offsetvaluetable+offset_data_value[i]);
+               f.position((int)(p_offset_param_sfo + offsetvaluetable+offset_data_value[i]));
                System.out.println(Key + " string = " + readStringZ(f));
             }
             else if(datatype[i]==4)
             {
-               f.seek(p_offset_param_sfo + offsetvaluetable+offset_data_value[i]);
+               f.position((int)(p_offset_param_sfo + offsetvaluetable+offset_data_value[i]));
                System.out.println(Key + " int = "  + readUWord(f));
             }
             else

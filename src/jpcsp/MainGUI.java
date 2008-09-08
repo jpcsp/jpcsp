@@ -25,6 +25,9 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
@@ -39,7 +42,6 @@ import jpcsp.HLE.pspiofilemgr;
 import jpcsp.util.JpcspDialogManager;
 import jpcsp.util.MetaInformation;
 import jpcsp.filesystems.umdiso.*;
-import jpcsp.format.Elf32;
 import jpcsp.format.PSF;
 
 /**
@@ -169,6 +171,11 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         ResetButton.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
         ResetButton.setIconTextGap(2);
         ResetButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        ResetButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ResetButtonActionPerformed(evt);
+            }
+        });
         jToolBar1.add(ResetButton);
 
         getContentPane().add(jToolBar1, java.awt.BorderLayout.NORTH);
@@ -228,6 +235,11 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         EmulationMenu.add(PauseEmu);
 
         ResetEmu.setText("Reset");
+        ResetEmu.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ResetEmuActionPerformed(evt);
+            }
+        });
         EmulationMenu.add(ResetEmu);
 
         MenuBar.add(EmulationMenu);
@@ -348,7 +360,11 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
         File file = fc.getSelectedFile();
         //This is where a real application would open the file.
         try {
-            emulator.load(file.getPath());
+           //emulator.load(file.getPath());
+           // Create a read-only memory-mapped file
+            FileChannel roChannel = new RandomAccessFile(file, "r").getChannel();
+            ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
+            emulator.load(readbuffer);
             String findpath = file.getParent();
             //System.out.println(findpath);
             pspiofilemgr.get_instance().setfilepath(findpath);
@@ -469,7 +485,7 @@ private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:even
 
 private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openUmdActionPerformed
         PauseEmu();//GEN-LAST:event_openUmdActionPerformed
-        if(consolewin!=null)
+       if(consolewin!=null)
           consolewin.clearScreenMessages();
 
     final JFileChooser fc = makeJFileChooser();
@@ -486,11 +502,18 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             
             System.out.println("---- Loading param.sfo from UMD ----");
             PSF params = new PSF(0);
-            params.read(paramSfo);
+            byte[] sfo = new byte[(int)paramSfo.length()];
+            paramSfo.read(sfo);
+            ByteBuffer buf = ByteBuffer.wrap(sfo);
+            params.read(buf);
             System.out.println("------------------------------------");
             
             UmdIsoFile bootBin = iso.getFile("PSP_GAME/SYSDIR/boot.bin");
-            emulator.load(bootBin);
+            byte[] bootfile = new byte[(int)bootBin.length()];
+            bootBin.read(bootfile);
+            ByteBuffer buf1 = ByteBuffer.wrap(bootfile);
+            emulator.load(buf1);
+          
         } catch (IOException e) {
             e.printStackTrace();
             JpcspDialogManager.showError(this, "IO Error : " + e.getMessage());
@@ -503,6 +526,16 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
     }
 }
+
+private void ResetEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetEmuActionPerformed
+// TODO add your handling code here:
+}//GEN-LAST:event_ResetEmuActionPerformed
+
+private void ResetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetButtonActionPerformed
+// TODO add your handling code here:
+}//GEN-LAST:event_ResetButtonActionPerformed
+
+
 
 private void exitEmu() {
     if (Settings.get_instance().readBoolOptions("guisettings/saveWindowPos"))

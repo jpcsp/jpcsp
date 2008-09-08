@@ -72,10 +72,16 @@ public class Utilities {
     public static void readBytesToBuffer(
         SeekableDataInput f, ByteBuffer buf,
         int offset, int size) throws IOException
-    {
+    {  
         f.readFully(buf.array(), offset + buf.arrayOffset(), size);
     }
-
+    public static void copyByteBuffertoByteBuffer(ByteBuffer src, ByteBuffer dst , int offset , int size)throws IOException
+    {
+        byte[] data = new byte[size];
+        src.get(data);
+        dst.position(offset);
+        dst.put(data);
+    }
     public static String readStringZ(SeekableDataInput f) throws IOException {
         StringBuffer sb = new StringBuffer();
         int b;
@@ -113,7 +119,17 @@ public class Utilities {
         }
         return sb.toString();
     }
-
+    public static String readStringZ(ByteBuffer buf) throws IOException {
+        StringBuffer sb = new StringBuffer();
+        byte b;
+        for (;;) {
+              b = (byte)readUByte(buf);
+            if (b == 0)
+                break;
+            sb.append((char)b);
+        }
+        return sb.toString();
+    }
     public static String readStringNZ(ByteBuffer buf, int offset, int n) {
         StringBuffer sb = new StringBuffer();
         byte b;
@@ -124,5 +140,27 @@ public class Utilities {
             sb.append((char)b);
         }
         return sb.toString();
+    }
+   public static short getUnsignedByte (ByteBuffer bb) throws IOException 
+   {
+      return ((short)(bb.get() & 0xff));
+   }
+   public static short readUByte(ByteBuffer buf) throws IOException 
+   {
+     return getUnsignedByte(buf);   
+   }
+   public static int readUHalf(ByteBuffer buf) throws IOException 
+   {
+       return getUnsignedByte(buf) | (getUnsignedByte(buf) << 8);
+   }
+    public static long readUWord(ByteBuffer buf) throws IOException 
+    {
+        long l = (getUnsignedByte(buf) | (getUnsignedByte(buf) << 8 ) | (getUnsignedByte(buf) << 16 ) | (getUnsignedByte(buf) << 24));
+        return (l & 0xFFFFFFFFL);  
+
+    }
+    public static int readWord(ByteBuffer buf) throws IOException 
+    {
+        return (getUnsignedByte(buf) | (getUnsignedByte(buf) << 8 ) | (getUnsignedByte(buf) << 16 ) | (getUnsignedByte(buf) << 24));
     }
 }

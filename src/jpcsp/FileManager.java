@@ -41,7 +41,7 @@ public class FileManager {
     private PBP pbp;
     private Elf32 elf;
     private PSP psp;
-    private SeekableDataInput actualFile;
+    private ByteBuffer actualFile;
     private String filePath;
     public final static int FORMAT_ELF = 0;
     public final static int FORMAT_PBP = 10;
@@ -53,13 +53,13 @@ public class FileManager {
     private long baseoffset = 0;
     private List<DeferredStub> deferredImports;
     private SeekableDataInput iso;
-    public FileManager(String filePath) throws FileNotFoundException, IOException {
-        this.filePath = filePath;
-        loadAndDefine(filePath);
+    public FileManager(ByteBuffer f) throws FileNotFoundException, IOException {
+        //this.filePath = filePath;
+        loadAndDefine(f);
     }
     public FileManager(SeekableDataInput iso)
     {
-        this.iso=iso;
+       /* this.iso=iso;
         elfoffset = 0;
         baseoffset = 0;
          setActualFile(iso);
@@ -71,7 +71,7 @@ public class FileManager {
          }catch(IOException e)
          {
              
-         }
+         }*/
 
     }
     public PSPModuleInfo getPSPModuleInfo() {
@@ -86,16 +86,16 @@ public class FileManager {
         return elf;
     }
 
-    public SeekableDataInput getActualFile() {
+    public ByteBuffer getActualFile() {
         return actualFile;
     }
 
-    private void setActualFile(SeekableDataInput f) {
+    private void setActualFile(ByteBuffer f) {
         actualFile = f;
     }
 
-    private void loadAndDefine(String filePath) throws FileNotFoundException, IOException {
-        SeekableRandomFile f = new SeekableRandomFile(filePath, "r");
+    private void loadAndDefine(ByteBuffer f) throws FileNotFoundException, IOException {
+        //SeekableRandomFile f = new SeekableRandomFile(filePath, "r");
         setActualFile(f);
         try {
             elfoffset = 0;
@@ -175,14 +175,14 @@ public class FileManager {
                 getPBP().unpackPBP(getActualFile());
             }
             elfoffset = getPBP().getOffsetPspData();
-            getActualFile().seek(elfoffset); //seek the new offset
+            getActualFile().position((int)elfoffset); //seek the new offset
 
             PbpInfo = getPBP().toString(); //inteast this use PBP.getInfo()
 
             elf = new Elf32(getActualFile()); //the elf of pbp
             if(!getElf32().getHeader().isValid())//probably not an elf
             {
-              getActualFile().seek(elfoffset); //seek again to elfoffset
+              getActualFile().position((int)elfoffset); //seek again to elfoffset
               psp = new PSP(getActualFile());
               if(psp.isValid())//check if it is an encrypted file
               {
@@ -198,7 +198,7 @@ public class FileManager {
             type = FORMAT_PBP;
         } else {
             elfoffset = 0;
-            getActualFile().seek(0);
+            getActualFile().position(0);
             getPBP().setInfo("-----NOT A PBP FILE---------\n");
         }
     }
@@ -208,7 +208,7 @@ public class FileManager {
         StringBuffer phsb = new StringBuffer();
 
         for (int i = 0; i < getElf32().getHeader().getE_phnum(); i++) {
-            getActualFile().seek(elfoffset + getElf32().getHeader().getE_phoff() + (i * getElf32().getHeader().getE_phentsize()));
+            getActualFile().position((int)(elfoffset + getElf32().getHeader().getE_phoff() + (i * getElf32().getHeader().getE_phentsize())));
             Elf32ProgramHeader phdr = new Elf32ProgramHeader(getActualFile());
             programheaders.add(phdr);
 
@@ -237,13 +237,13 @@ public class FileManager {
         secondStep(sectionheaders, shstrtab, getActualFile(), getPSPModuleInfo());
     }
 
-    private Elf32SectionHeader firstStep(Elf32Header ehdr, SeekableDataInput f, List<Elf32SectionHeader> sectionheaders) throws IOException {
+    private Elf32SectionHeader firstStep(Elf32Header ehdr, ByteBuffer f, List<Elf32SectionHeader> sectionheaders) throws IOException {
         /** Read the ELF section headers (1st pass) */
         getElf32().setListSectionHeader(sectionheaders); //make the connection
 
         Elf32SectionHeader shstrtab = null;
         for (int i = 0; i < ehdr.getE_shnum(); i++) {
-            f.seek(elfoffset + ehdr.getE_shoff() + (i * ehdr.getE_shentsize()));
+            f.position((int)(elfoffset + ehdr.getE_shoff() + (i * ehdr.getE_shentsize())));
             Elf32SectionHeader shdr = new Elf32SectionHeader(f);
             sectionheaders.add(shdr);
 
@@ -259,14 +259,13 @@ public class FileManager {
                     case 1: //ShType.PROGBITS
                         ///System.out.println("FEED MEMORY WITH IT!");
 
-                        f.seek(elfoffset + shdr.getSh_offset());
+                        f.position((int)(elfoffset + shdr.getSh_offset()));
                         int offsettoread = (int) getBaseoffset() + (int) shdr.getSh_addr() - MemoryMap.START_RAM;
                         
                         /***************************************
                          * Load a block on main memory ....
                          ***************************************/
-                        
-                        Utilities.readBytesToBuffer(f, Memory.get_instance().mainmemory, offsettoread, (int) shdr.getSh_size());
+                        Utilities.copyByteBuffertoByteBuffer(f, Memory.get_instance().mainmemory, offsettoread, (int) shdr.getSh_size());
                         break;
                     case 8: // ShType.NOBITS
                         //System.out.println("NO BITS");
@@ -283,7 +282,7 @@ public class FileManager {
         return shstrtab;
     }
 
-    private void secondStep(List<Elf32SectionHeader> sectionheaders, Elf32SectionHeader shstrtab, SeekableDataInput f, PSPModuleInfo moduleinfo) throws IOException {
+    private void secondStep(List<Elf32SectionHeader> sectionheaders, Elf32SectionHeader shstrtab, ByteBuffer f, PSPModuleInfo moduleinfo) throws IOException {
         // 2nd pass generate info string for the GUI and get module infos
         //moduleinfo = new PSPModuleInfo(); moved to loadAndDefine()
         StringBuffer shsb = new StringBuffer();
@@ -294,9 +293,9 @@ public class FileManager {
 
             // Resolve section name (if possible)
             if (shstrtab != null) {
-                f.seek(elfoffset + shstrtab.getSh_offset() + shdr.getSh_name());
+                f.position((int)(elfoffset + shstrtab.getSh_offset() + shdr.getSh_name()));
                 String SectionName = "";//Utilities.readStringZ(f);
-                try{
+               try{
                     SectionName = Utilities.readStringZ(f);
                     
                 }
@@ -310,7 +309,7 @@ public class FileManager {
                     //System.out.println(SectionName);
                     // Get module infos
                     if (SectionName.matches(".rodata.sceModuleInfo")) {
-                        f.seek(elfoffset + shdr.getSh_offset());
+                        f.position((int)((elfoffset + shdr.getSh_offset())));
                         moduleinfo.read(f);
                         //System.out.println(Long.toHexString(moduleinfo.m_gp));
 

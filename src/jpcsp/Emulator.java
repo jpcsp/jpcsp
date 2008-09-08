@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.LinkedList;
 import jpcsp.Debugger.MemoryViewer;
@@ -30,8 +31,10 @@ import jpcsp.format.Elf32StubHeader;
 import static jpcsp.util.Utilities.*;
 import jpcsp.filesystems.*;
 
-public class Emulator implements Runnable {
+import jpcsp.util.Utilities;
 
+public class Emulator implements Runnable {
+public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
     private static Processor cpu;
     private static Recompiler rec;
     private static Controller controller;
@@ -40,8 +43,6 @@ public class Emulator implements Runnable {
     private Thread mainThread;
     public static boolean run = false;
     public static boolean pause = false;
-    //public boolean stop = false;
-    //public boolean resume = false;
     private static MainGUI gui;
     private static DisassemblerFrame debugger;
     private static MemoryViewer memview;
@@ -69,9 +70,9 @@ public class Emulator implements Runnable {
             debugger.resetDebugger();
         }
     }
-    public void load(String filename) throws IOException {
+    public void load(ByteBuffer f) throws IOException {
         //  here load fileName, iso or etc...
-        processLoading(filename);
+        processLoading(f);
         if (!mediaImplemented) {
             throw new IOException("This kind of file format still not supported.");
         }
@@ -82,15 +83,9 @@ public class Emulator implements Runnable {
         }
     }
 
-    private void delay(long numberCyclesDelay) {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-
-
-    private void processLoading(String fileName) throws IOException {
+    private void processLoading(ByteBuffer f) throws IOException {
         initNewPsp();
-        romManager = new FileManager(fileName);
+        romManager = new FileManager(f);
 
         switch (romManager.getType()) {
             case FileManager.FORMAT_ELF:
@@ -134,7 +129,7 @@ public class Emulator implements Runnable {
                         shdr.getSh_type() == ShType.REL.getValue()*/) // 0x00000009
                 {
                     Elf32Relocate rel = new Elf32Relocate();
-                    romManager.getActualFile().seek(romManager.getElfoffset() + shdr.getSh_offset());
+                    romManager.getActualFile().position((int)(romManager.getElfoffset() + shdr.getSh_offset()));
 
                     int RelCount = (int) shdr.getSh_size() / Elf32Relocate.sizeof();
                     System.out.println(shdr.getSh_namez() + ": relocating " + RelCount + " entries");
@@ -327,6 +322,7 @@ public class Emulator implements Runnable {
             }
         }
         int numberoffailedNIDS=0;
+        int numberofloadedNIDS=0;
         // Imports
         for (Elf32SectionHeader shdr : elf.getListSectionHeader()) {
             if (shdr.getSh_namez().equals(".lib.stub")) {
@@ -380,7 +376,7 @@ public class Emulator implements Runnable {
                                     | ((code & 0x000fffff) << 6);
 
                                 mem.write32(importAddress + 4, instruction);
-
+                                numberofloadedNIDS++;
                                 //System.out.println("Mapped NID " + Integer.toHexString(nid) + " to syscall " + Integer.toHexString(code));
                             }
                             else
@@ -397,6 +393,7 @@ public class Emulator implements Runnable {
                 romManager.addDeferredImports(deferred);
             }
         }
+        System.out.println(numberofloadedNIDS + " NIDS loaded");
         if(numberoffailedNIDS>0) System.out.println("Total Failed to load NIDS = " + numberoffailedNIDS);
     }
 
@@ -436,18 +433,6 @@ public class Emulator implements Runnable {
             memview.RefreshMemory();
     }
 
-   /* public void run() throws GeneralJpcspException {
-        // basic code, just one thread by now... it's just a view
-       // run = true;
-        while (run == true) {
-            cpu.step();
-            jpcsp.HLE.ThreadMan.get_instance().step();
-            jpcsp.HLE.pspdisplay.get_instance().step();
-            //gpu.draw();
-            controller.checkControllerState();
-            //delay(cpu.numberCyclesDelay());
-        }
-    }*/
     @Override
     public void run()
     {
@@ -477,9 +462,6 @@ public class Emulator implements Runnable {
     }
     public synchronized void RunEmu()
     {
-        //run =true;
-        //checkStatus();
-
         if (!mediaImplemented)
             return;
 
@@ -514,22 +496,6 @@ public class Emulator implements Runnable {
                 memview.RefreshMemory();
         }
     }
-   /* public void pause() {
-        pause = true;
-        run = resume = stop = false;
-    }
-
-    public void resume() throws GeneralJpcspException {
-        resume = true;
-        run = pause = stop = false;
-        run();
-    }
-
-    public void stop() {
-        //probally make more and more!!!... stuffs here
-        stop = true ;
-        run = resume = pause = false;
-    }*/
     public static void setFpsTitle(String fps)
     {
          gui.setMainTitle(fps);
@@ -544,17 +510,6 @@ public class Emulator implements Runnable {
 
     public static Controller getController() {
         return controller;
-    }
-
-    public void checkStatus()
-    {
-      if(run) System.out.println("emu is running");
-      else System.out.println("emu not running");
-
-      if(pause) System.out.println("emu is paused");
-      //if(resume) System.out.println("emu is resumed");
-      //if(stop) System.out.println("emu is stopped");
-
     }
 
     public void setDebugger(DisassemblerFrame debugger) {

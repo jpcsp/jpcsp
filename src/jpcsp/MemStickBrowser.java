@@ -19,6 +19,9 @@ package jpcsp;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import javax.swing.DefaultListModel;
 import javax.swing.JOptionPane;
 import jpcsp.HLE.pspiofilemgr;
@@ -140,7 +143,9 @@ private void LoadButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
    }
    //step 4: okay we can load eboot.pbp now :)
            try {
-            emu.load(eboot.getPath());
+           FileChannel roChannel = new RandomAccessFile(eboot, "r").getChannel();
+            ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
+            emu.load(readbuffer);
             pspiofilemgr.get_instance().setfilepath("ms0/PSP/GAME/" + (String)browserlist.getSelectedValue());
             gui.setTitle(MetaInformation.FULL_NAME + " - " + (String)browserlist.getSelectedValue());
         } catch (IOException e) {
