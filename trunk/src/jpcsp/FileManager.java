@@ -301,7 +301,7 @@ public class FileManager {
                     
                 }
                 catch(IOException e){
-                    
+                    System.out.println("ERROR:SectionNames can't be found.NIDs can't be load");
                 }
                 if (SectionName.length() > 0) {
                     

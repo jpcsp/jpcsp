@@ -473,8 +473,9 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
           consolewin.clearScreenMessages();
 
     final JFileChooser fc = makeJFileChooser();
+    fc.setDialogTitle("Open umd iso");
     int returnVal = fc.showOpenDialog(this);
-
+    
     if (userChooseSomething(returnVal)) {
         File file = fc.getSelectedFile();
         //This is where a real application would open the file.
