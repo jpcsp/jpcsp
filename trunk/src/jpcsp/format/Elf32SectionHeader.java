@@ -17,7 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.format;
 
 import java.io.IOException;
-import jpcsp.filesystems.*;
+import java.nio.ByteBuffer;
 import jpcsp.Memory;
 import static jpcsp.util.Utilities.*;
 
@@ -39,7 +39,7 @@ public class Elf32SectionHeader {
         return 40;
     }
 
-    public Elf32SectionHeader(SeekableDataInput f) throws IOException {
+    public Elf32SectionHeader(ByteBuffer f) throws IOException {
         sh_name = readUWord(f);
         sh_type = readWord(f);
         sh_flags = readWord(f);

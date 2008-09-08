@@ -18,9 +18,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.format;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import jpcsp.filesystems.*;
 import static jpcsp.util.Utilities.*;
-
 /**
  *
  * @author shadow
@@ -28,10 +28,10 @@ import static jpcsp.util.Utilities.*;
 public class PSP {  /* format ~PSP */
     private long e_magic; 
     
-    private void read(SeekableDataInput f) throws IOException {
+    private void read(ByteBuffer f) throws IOException {
         e_magic = readUWord(f);
     }
-    public PSP(SeekableDataInput f) throws IOException {
+    public PSP(ByteBuffer f) throws IOException {
         read(f);
     }
 

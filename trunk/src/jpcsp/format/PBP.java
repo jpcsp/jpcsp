@@ -19,6 +19,7 @@ package jpcsp.format;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import jpcsp.filesystems.*;
 import static jpcsp.util.Utilities.*;
 
@@ -70,8 +71,8 @@ public class PBP {
         return info;
     }
 
-    public PBP(SeekableDataInput f) throws IOException {
-        size_pbp = (int)f.length();
+    public PBP(ByteBuffer f) throws IOException {
+        size_pbp = (int)f.capacity();
         p_magic = readUWord(f);
         if (isValid())
         {
@@ -97,8 +98,8 @@ public class PBP {
             info = this.toString();
         }
     }
-    public void readPSF(SeekableDataInput f) throws IOException {
-           f.seek(p_offset_param_sfo);
+    public void readPSF(ByteBuffer f) throws IOException {
+           f.position((int)p_offset_param_sfo);
            PSF psf1= new PSF(p_offset_param_sfo);
            psf1.read(f);
     }
@@ -173,8 +174,8 @@ public class PBP {
         return dir.delete();
     }
 
-    public static void unpackPBP(SeekableDataInput f) throws IOException {
-        f.seek(0);//seek to 0
+    public static void unpackPBP(ByteBuffer f) throws IOException {
+        f.position(0);//seek to 0
         PBP pbp = new PBP(f);
         if (!pbp.isValid())
         {
@@ -183,66 +184,66 @@ public class PBP {
         File dir = new File(PBP_UNPACK_PATH_PREFIX);
         deleteDir(dir);//delete all files and directory
         dir.mkdir();
-        if (pbp.size_param_sfo > 0) {
+         if (pbp.size_param_sfo > 0) {
             byte[] data = new byte[pbp.size_param_sfo];
-            f.seek(pbp.p_offset_param_sfo);
-            f.readFully(data);
+            f.position((int)pbp.p_offset_param_sfo);
+            f.get(data);
             FileOutputStream f1 = new FileOutputStream(PBP_UNPACK_PATH_PREFIX + "param.sfo");
             f1.write(data);
             f1.close();
         }
         if (pbp.size_icon0_png > 0) {
             byte[] data = new byte[pbp.size_icon0_png];
-            f.seek(pbp.p_offset_icon0_png);
-            f.readFully(data);
+            f.position((int)pbp.p_offset_icon0_png);
+            f.get(data);
             FileOutputStream f1 = new FileOutputStream(PBP_UNPACK_PATH_PREFIX + "icon0.png");
             f1.write(data);
             f1.close();
         }
         if (pbp.size_icon1_pmf > 0) {
             byte[] data = new byte[pbp.size_icon1_pmf];
-            f.seek(pbp.p_offset_icon1_pmf);
-            f.readFully(data);
+            f.position((int)pbp.p_offset_icon1_pmf);
+            f.get(data);
             FileOutputStream f1 = new FileOutputStream(PBP_UNPACK_PATH_PREFIX + "icon1.pmf");
             f1.write(data);
             f1.close();
         }
         if (pbp.size_pic0_png > 0) {
             byte[] data = new byte[pbp.size_pic0_png];
-            f.seek(pbp.p_offset_pic0_png);
-            f.readFully(data);
+            f.position((int)pbp.p_offset_pic0_png);
+            f.get(data);
             FileOutputStream f1 = new FileOutputStream(PBP_UNPACK_PATH_PREFIX + "pic0.png");
             f1.write(data);
             f1.close();
         }
         if (pbp.size_pic1_png > 0) {
             byte[] data = new byte[pbp.size_pic1_png];
-            f.seek(pbp.p_offset_pic1_png);
-            f.readFully(data);
+            f.position((int)pbp.p_offset_pic1_png);
+            f.get(data);
             FileOutputStream f1 = new FileOutputStream(PBP_UNPACK_PATH_PREFIX + "pic1.png");
             f1.write(data);
             f1.close();
         }
         if (pbp.size_snd0_at3 > 0) {
             byte[] data = new byte[pbp.size_snd0_at3];
-            f.seek(pbp.p_offset_snd0_at3);
-            f.readFully(data);
+            f.position((int)pbp.p_offset_snd0_at3);
+            f.get(data);
             FileOutputStream f1 = new FileOutputStream(PBP_UNPACK_PATH_PREFIX + "snd0.at3");
             f1.write(data);
             f1.close();
         }
         if (pbp.size_psp_data > 0) {
             byte[] data = new byte[pbp.size_psp_data ];
-            f.seek(pbp.p_offset_psp_data);
-            f.readFully(data);
+            f.position((int)pbp.p_offset_psp_data);
+            f.get(data);
             FileOutputStream f1 = new FileOutputStream(PBP_UNPACK_PATH_PREFIX + "data.psp");
             f1.write(data);
             f1.close();
         }
         if (pbp.size_psar_data  > 0) {
             byte[] data = new byte[pbp.size_psar_data];
-            f.seek(pbp.p_offset_psar_data);
-            f.readFully(data);
+            f.position((int)pbp.p_offset_psar_data);
+            f.get(data);
             FileOutputStream f1 = new FileOutputStream(PBP_UNPACK_PATH_PREFIX + "data.psar");
             f1.write(data);
             f1.close();
