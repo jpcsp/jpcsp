@@ -418,32 +418,34 @@ public class SyscallHandler {
 		// sceRtcFormatRFC3339LocalTime(0x2121),
 		// sceRtcParseDateTime(0x2122),
 		// sceRtcParseRFC3339(0x2123),
-		// sceAudioOutput(0x2124),
-		// sceAudioOutputBlocking(0x2125),
-		// sceAudioOutputPanned(0x2126),
+		case 0x2124: pspAudio.get_instance().sceAudioOutput(gpr[4], gpr[5], gpr[6]); break;
+		case 0x2125: pspAudio.get_instance().sceAudioOutputBlocking(gpr[4], gpr[5], gpr[6]); break;
+		case 0x2126: pspAudio.get_instance().sceAudioOutputPanned(gpr[4], gpr[5], gpr[6], gpr[7]); break;
                 case 0x2127:
                     pspAudio.get_instance().sceAudioOutputPannedBlocking(gpr[4], gpr[5], gpr[6], gpr[7]);
                     break;
                 case 0x2128:
                     pspAudio.get_instance().sceAudioChReserve(gpr[4], gpr[5], gpr[6]);
                     break;
-		// sceAudioOneshotOutput(0x2129),
-		// sceAudioChRelease(0x212a),
-		// sceAudio_B011922F(0x212b),
-		// sceAudioSetChannelDataLen(0x212c),
-		// sceAudioChangeChannelConfig(0x212d),
-		// sceAudioChangeChannelVolume(0x212e),
-		// sceAudio_38553111(0x212f),
-		// sceAudio_5C37C0AE(0x2130),
-		// sceAudio_E0727056(0x2131),
-		// sceAudioInputBlocking(0x2132),
-		// sceAudioInput(0x2133),
-		// sceAudioGetInputLength(0x2134),
-		// sceAudioWaitInputEnd(0x2135),
-		// sceAudioInputInit(0x2136),
-		// sceAudio_E926D3FB(0x2137),
-		// sceAudio_A633048E(0x2138),
-		// sceAudioGetChannelRestLen(0x2139),
+		//case 0x2129: pspAudio.get_instance().sceAudioOneshotOutput(); break;
+		case 0x212a: pspAudio.get_instance().sceAudioChRelease(gpr[4]); break;
+		//case 0x212b: pspAudio.get_instance().sceAudio_B011922F(); break;
+		case 0x212c: pspAudio.get_instance().sceAudioSetChannelDataLen(gpr[4], gpr[5]); break;
+		//case 0x212d: pspAudio.get_instance().sceAudioChangeChannelConfig(gpr[4], gpr[5]); break;
+		case 0x212e: pspAudio.get_instance().sceAudioChangeChannelVolume(gpr[4], gpr[5], gpr[6]); break;
+		//case 0x212f: pspAudio.get_instance().sceAudio_38553111(); break;
+		//case 0x2130: pspAudio.get_instance().sceAudio_5C37C0AE(); break;
+		//case 0x2131: pspAudio.get_instance().sceAudio_E0727056(); break;
+		//case 0x2132: pspAudio.get_instance().sceAudioInputBlocking(gpr[4], gpr[5], gpr[6]); break;
+		//case 0x2133: pspAudio.get_instance().sceAudioInput(gpr[4], gpr[5], gpr[6]); break;
+		//case 0x2134: pspAudio.get_instance().sceAudioGetInputLength(); break;
+		//case 0x2135: pspAudio.get_instance().sceAudioWaitInputEnd(); break;
+		//case 0x2136: pspAudio.get_instance().sceAudioInputInit(gpr[4], gpr[5], gpr[6]); break;
+		//case 0x2137: pspAudio.get_instance().sceAudio_E926D3FB(); break;
+		//case 0x2138: pspAudio.get_instance().sceAudio_A633048E(); break;
+		case 0x2139: pspAudio.get_instance().sceAudioGetChannelRestLen(gpr[4]); break;
+		                    
+		
                 case 0x213a:
                     pspdisplay.get_instance().sceDisplaySetMode(gpr[4], gpr[5], gpr[6]);
                     break;
