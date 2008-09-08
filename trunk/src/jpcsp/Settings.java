@@ -19,7 +19,6 @@ package jpcsp;
 import java.awt.Point;
 import java.awt.event.KeyEvent;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -38,15 +37,13 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathFactory;
+
+import jpcsp.Controller.keyCode;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-
-import jpcsp.Controller.keyCode;
 
 /**
 *
@@ -55,8 +52,11 @@ import jpcsp.Controller.keyCode;
 public class Settings {
    
    private final static String SETTINGS_FILE_NAME = "Settings.xml";
+   private final static String DEFAULT_SETTINGS_FILE_NAME = "/jpcsp/DefaultSettings.xml";
 
     private static Settings instance = null;
+
+	private Document doc;
 
     public static Settings get_instance() {
         if (instance == null) {
@@ -79,11 +79,7 @@ public class Settings {
        try {
           XPathFactory xpathFactory = XPathFactory.newInstance();
           XPath xpath = xpathFactory.newXPath();
-          XPathExpression expr = xpath.compile(path);
-          FileInputStream settingsIn = new FileInputStream(SETTINGS_FILE_NAME);
-          InputSource source = new InputSource(settingsIn);
-          String value = expr.evaluate(source);
-          settingsIn.close();
+          String value = xpath.evaluate(path, getSettingsDocument());
           
           // System.out.println(path + " = " + value);
           
@@ -97,24 +93,41 @@ public class Settings {
     /**
      * Gets the xml document containing settings
      * @return
+     * @throws ParserConfigurationException 
      * @throws ParserConfigurationException
      * @throws IOException
      * @throws SAXException
      */
-    private Document getSettingsDocument() throws ParserConfigurationException, SAXException, IOException {
-       DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-       DocumentBuilder builder= dbFactory.newDocumentBuilder();
-       
-        Document doc = builder.parse(new File(SETTINGS_FILE_NAME));
-       
-        return doc;
+    private Document getSettingsDocument() throws ParserConfigurationException {
+    	if (doc == null) {
+    		DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder builder = dbFactory.newDocumentBuilder();			
+			try {
+				
+				doc = builder.parse(new File(SETTINGS_FILE_NAME));
+				
+			} catch (Exception e) {
+				System.out.println("Error while loading existing settings. Restoring default settings.");
+				e.printStackTrace();
+				try {
+					doc = builder.parse(getClass().getResourceAsStream(DEFAULT_SETTINGS_FILE_NAME));
+					System.out.println("Default settings loaded successfully");
+				} catch (Exception e1) {
+					e1.printStackTrace();
+					System.out.println("Unable to load default settings");
+				}
+			}
+
+			
+		}
+		return doc;
     }
    
     /**
      * Write settings in file
      * @param doc Settings as XML document
      */
-    private void writeSettings(Document doc) {
+    private void writeSettings() {
        try {
             FileOutputStream fileOutputStream = new FileOutputStream(SETTINGS_FILE_NAME);
             TransformerFactory tFactory = TransformerFactory.newInstance();
@@ -164,8 +177,6 @@ public class Settings {
         coord[1]=Integer.toString(pos.y);
         
         try {
-           Document doc = getSettingsDocument();
-           
             XPathFactory xpathFactory = XPathFactory.newInstance();
             XPath xpath = xpathFactory.newXPath();
           
@@ -175,7 +186,7 @@ public class Settings {
             posX.replaceChild(doc.createTextNode(coord[0]), posX.getFirstChild());
             posY.replaceChild(doc.createTextNode(coord[1]), posY.getFirstChild());
            
-            writeSettings(doc);
+            writeSettings();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -183,21 +194,19 @@ public class Settings {
    
    public void writeWindowSize(String windowname, String[] dimension) {
       try {
-         Document doc = getSettingsDocument();
-           
-            XPathFactory xpathFactory = XPathFactory.newInstance();
-          XPath xpath = xpathFactory.newXPath();
-          
-            Element dimX = (Element) xpath.evaluate("//guisettings/windowsize/" + windowname + "/x", doc, XPathConstants.NODE);
-            Element dimY = (Element) xpath.evaluate("//guisettings/windowsize/" + windowname + "/y", doc, XPathConstants.NODE);
-           
-            dimX.replaceChild(doc.createTextNode(dimension[0]), dimX.getFirstChild());
-            dimY.replaceChild(doc.createTextNode(dimension[1]), dimY.getFirstChild());
-           
-            writeSettings(doc);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+			XPathFactory xpathFactory = XPathFactory.newInstance();
+			XPath xpath = xpathFactory.newXPath();
+
+			Element dimX = (Element) xpath.evaluate("//guisettings/windowsize/" + windowname + "/x", doc, XPathConstants.NODE);
+			Element dimY = (Element) xpath.evaluate("//guisettings/windowsize/" + windowname + "/y", doc, XPathConstants.NODE);
+
+			dimX.replaceChild(doc.createTextNode(dimension[0]), dimX.getFirstChild());
+			dimY.replaceChild(doc.createTextNode(dimension[1]), dimY.getFirstChild());
+
+			writeSettings();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
     }
    
     public boolean readBoolOptions(String option)
@@ -210,30 +219,26 @@ public class Settings {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        if(value==1) return true;
-        else return false;
+        return value == 1;
     }
    
-    public void writeBoolOptions(String option,boolean value)
-    {
-          String state = value ? "1" : "0";
-           
-            try {
-               Document doc = getSettingsDocument();
-               
-                XPathFactory xpathFactory = XPathFactory.newInstance();
-              XPath xpath = xpathFactory.newXPath();
-              
-                Element emuOption = (Element) xpath.evaluate("//" + option, doc, XPathConstants.NODE);
-               
-                emuOption.replaceChild(doc.createTextNode(state), emuOption.getFirstChild());
-               
-                writeSettings(doc);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-       
-    }
+    public void writeBoolOptions(String option, boolean value) {
+		String state = value ? "1" : "0";
+
+		try {
+			XPathFactory xpathFactory = XPathFactory.newInstance();
+			XPath xpath = xpathFactory.newXPath();
+
+			Element emuOption = (Element) xpath.evaluate("//" + option, doc, XPathConstants.NODE);
+
+			emuOption.replaceChild(doc.createTextNode(state), emuOption.getFirstChild());
+
+			writeSettings();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+	}
    
     public HashMap<Integer, keyCode> loadKeys() {
         HashMap<Integer, keyCode> m = new HashMap<Integer, keyCode>(22);
@@ -318,19 +323,17 @@ public class Settings {
    
     public void writeKeyOption(String keyName, int key) {
         try {
-           Document doc = getSettingsDocument();
-           
-            XPathFactory xpathFactory = XPathFactory.newInstance();
-          XPath xpath = xpathFactory.newXPath();
-          
-            Element keyNameEl = (Element) xpath.evaluate("//emuoptions/keys/" + keyName, doc, XPathConstants.NODE);
-           
-            keyNameEl.replaceChild(doc.createTextNode(String.valueOf(key)), keyNameEl.getFirstChild());
-           
-            writeSettings(doc);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+			XPathFactory xpathFactory = XPathFactory.newInstance();
+			XPath xpath = xpathFactory.newXPath();
+
+			Element keyNameEl = (Element) xpath.evaluate("//emuoptions/keys/" + keyName, doc, XPathConstants.NODE);
+
+			keyNameEl.replaceChild(doc.createTextNode(String.valueOf(key)), keyNameEl.getFirstChild());
+
+			writeSettings();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
     }
    
 }
