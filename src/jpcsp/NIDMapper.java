@@ -34,84 +34,15 @@ public class NIDMapper {
         return instance;
     }
 
-    private NIDMapper() {
-        //Initialise("syscalls.txt", "FW 1.50");
-    }
-
-    /**
-     * @param filename "syscalls.txt"
-     * @param firmwareversion one of: "FW 1.00", "FW 1.50", "FW 1.52", "FW 2.00"
-     * or any other supported FW in syscalls.txt. */
-    public void Initialise(String filename, String firmwareversion) {
-        //System.out.println("NIDMapper: Initialise");
-
-        //nidToSyscall  =...; // assigned inside loadSyscallsTxt
+    public void Initialise() {
         moduleToNidTable = new HashMap<String, HashMap<Integer, Integer>>();
-
-        // Load syscalls.txt (3-way syscall/nid/function name mappings)
-        loadSyscallsTxt(filename, firmwareversion);
-    }
-
-    public void loadSyscallsTxt(String filename, String firmwareversion) {
-        final int STAGE_SEARCH = 0;
-        final int STAGE_PARSE = 1;
-        final int STAGE_DONE = 2;
-        int stage = STAGE_SEARCH;
-        int count = 0;
-
-        nidToSyscall = new HashMap<Integer, Integer>();
-
-        try {
-            FileReader fr = new FileReader(filename);
-            BufferedReader br = new BufferedReader(fr);
-            String line;
-
-            while((line = br.readLine()) != null &&
-                stage != STAGE_DONE) {
-                switch(stage) {
-                    case STAGE_SEARCH:
-                        if (line.equals(firmwareversion)) {
-                            stage = STAGE_PARSE;
-                        }
-                        break;
-
-                    case STAGE_PARSE:
-                        if (line.startsWith("FW ")) {
-                            stage = STAGE_DONE;
-                        } else {
-                            // lines are in this format: syscall,nid,name
-                            String[] part = line.split(",");
-                            if (part.length == 3) {
-                                int syscall = Integer.parseInt(part[0].substring(2), 16);
-                                long nid = Long.parseLong(part[1].substring(2), 16);
-                                nidToSyscall.put((int)nid, syscall);
-                                count++;
-                            }
-                        }
-                        break;
-
-                    default:
-                        break;
-                }
-            }
-
-            br.close();
-            fr.close();
-        } catch(FileNotFoundException e) {
-            System.out.println("File not found: " + filename);
-            System.out.println("Using internal syscall mapping");
-            for(int i=0; i<syscalls.length; i++)
-            {
+       nidToSyscall = new HashMap<Integer, Integer>();
+        for(int i=0; i<syscalls.length; i++)
+        {
                int syscall = syscalls[i][0];
                long nid = syscalls[i][1];
-                //System.out.println(syscall);
                 nidToSyscall.put((int)nid,syscall);
-            }
-        } catch(Exception e) {
-            e.printStackTrace();
-        }
-
-        //System.out.println("Loaded " + count + " syscalls");
+         }
     }
 
     /** returns -1 if the nid couldn't be mapped */

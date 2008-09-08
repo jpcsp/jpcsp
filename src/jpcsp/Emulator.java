@@ -326,7 +326,7 @@ public class Emulator implements Runnable {
                 }
             }
         }
-
+        int numberoffailedNIDS=0;
         // Imports
         for (Elf32SectionHeader shdr : elf.getListSectionHeader()) {
             if (shdr.getSh_namez().equals(".lib.stub")) {
@@ -388,6 +388,7 @@ public class Emulator implements Runnable {
                                 // Save nid for deferred fixup
                                 deferred.add(new DeferredStub(stubHeader.getModuleNamez(), importAddress, nid));
                                 System.out.println("Failed to map NID " + Integer.toHexString(nid) + " (load time)");
+                                numberoffailedNIDS++;
                             }
                         }
                     }
@@ -396,6 +397,7 @@ public class Emulator implements Runnable {
                 romManager.addDeferredImports(deferred);
             }
         }
+        if(numberoffailedNIDS>0) System.out.println("Total Failed to load NIDS = " + numberoffailedNIDS);
     }
 
     private void initCpuBy(Elf32 elf) {
@@ -428,7 +430,7 @@ public class Emulator implements Runnable {
     private void initNewPsp() {
         getProcessor().reset();
         Memory.get_instance().NullMemory();
-        NIDMapper.get_instance().Initialise("syscalls.txt", "FW 1.50");
+        NIDMapper.get_instance().Initialise();
 
         if (memview != null)
             memview.RefreshMemory();
