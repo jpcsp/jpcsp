@@ -358,29 +358,33 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
 
     if (userChooseSomething(returnVal)) {
         File file = fc.getSelectedFile();
-        //This is where a real application would open the file.
-        try {
-           //emulator.load(file.getPath());
-           // Create a read-only memory-mapped file
-            FileChannel roChannel = new RandomAccessFile(file, "r").getChannel();
-            ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
-            emulator.load(readbuffer);
-            String findpath = file.getParent();
-            //System.out.println(findpath);
-            pspiofilemgr.get_instance().setfilepath(findpath);
-            this.setTitle(version + " - " + file.getName());
-        } catch (IOException e) {
-            e.printStackTrace();
-            JpcspDialogManager.showError(this, "IO Error : " + e.getMessage());
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            JpcspDialogManager.showError(this, "Critical Error : " + ex.getMessage());
-        }
+        loadFile(file);
     } else {
         return; //user cancel the action
 
     }
 }//GEN-LAST:event_OpenFileActionPerformed
+
+public void loadFile(File file) {
+	//This is where a real application would open the file.
+	try {
+	   //emulator.load(file.getPath());
+	   // Create a read-only memory-mapped file
+	    FileChannel roChannel = new RandomAccessFile(file, "r").getChannel();
+	    ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
+	    emulator.load(readbuffer);
+	    String findpath = file.getParent();
+	    //System.out.println(findpath);
+	    pspiofilemgr.get_instance().setfilepath(findpath);
+	    this.setTitle(version + " - " + file.getName());
+	} catch (IOException e) {
+	    e.printStackTrace();
+	    JpcspDialogManager.showError(this, "IO Error : " + e.getMessage());
+	} catch (Exception ex) {
+	    ex.printStackTrace();
+	    JpcspDialogManager.showError(this, "Critical Error : " + ex.getMessage());
+	}
+}
 
 private void PauseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PauseButtonActionPerformed
     TogglePauseEmu();
@@ -466,7 +470,7 @@ private void OpenMemStickActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     if(memstick==null)
      {
 
-      memstick = new MemStickBrowser(emulator, this);
+      memstick = new MemStickBrowser(this, new File("ms0/PSP/GAME"));
       Point mainwindow = this.getLocation();
       memstick.setLocation(mainwindow.x+100, mainwindow.y+50);
       memstick.setVisible(true);
@@ -496,36 +500,40 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         File file = fc.getSelectedFile();
         //This is where a real application would open the file.
         
-        try {
-            UmdIsoReader iso = new UmdIsoReader(file.getPath());
-            UmdIsoFile paramSfo = iso.getFile("PSP_GAME/param.sfo");
-            
-            System.out.println("---- Loading param.sfo from UMD ----");
-            PSF params = new PSF(0);
-            byte[] sfo = new byte[(int)paramSfo.length()];
-            paramSfo.read(sfo);
-            ByteBuffer buf = ByteBuffer.wrap(sfo);
-            params.read(buf);
-            System.out.println(params);
-            System.out.println("------------------------------------");
-            
-            UmdIsoFile bootBin = iso.getFile("PSP_GAME/SYSDIR/boot.bin");
-            byte[] bootfile = new byte[(int)bootBin.length()];
-            bootBin.read(bootfile);
-            ByteBuffer buf1 = ByteBuffer.wrap(bootfile);
-            emulator.load(buf1);
-          
-        } catch (IOException e) {
-            e.printStackTrace();
-            JpcspDialogManager.showError(this, "IO Error : " + e.getMessage());
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            JpcspDialogManager.showError(this, "Critical Error : " + ex.getMessage());
-        }
+        loadUMD(file);
     } else {
         return; //user cancel the action
 
     }
+}
+
+public void loadUMD(File file) {
+	try {
+	    UmdIsoReader iso = new UmdIsoReader(file.getPath());
+	    UmdIsoFile paramSfo = iso.getFile("PSP_GAME/param.sfo");
+	    
+	    System.out.println("---- Loading param.sfo from UMD ----");
+	    PSF params = new PSF(0);
+	    byte[] sfo = new byte[(int)paramSfo.length()];
+	    paramSfo.read(sfo);
+	    ByteBuffer buf = ByteBuffer.wrap(sfo);
+	    params.read(buf);
+	    System.out.println(params);
+	    System.out.println("------------------------------------");
+	    
+	    UmdIsoFile bootBin = iso.getFile("PSP_GAME/SYSDIR/boot.bin");
+	    byte[] bootfile = new byte[(int)bootBin.length()];
+	    bootBin.read(bootfile);
+	    ByteBuffer buf1 = ByteBuffer.wrap(bootfile);
+	    emulator.load(buf1);
+	  
+	} catch (IOException e) {
+	    e.printStackTrace();
+	    JpcspDialogManager.showError(this, "IO Error : " + e.getMessage());
+	} catch (Exception ex) {
+	    ex.printStackTrace();
+	    JpcspDialogManager.showError(this, "Critical Error : " + ex.getMessage());
+	}
 }
 
 private void ResetEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetEmuActionPerformed
