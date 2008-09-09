@@ -18,7 +18,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.format;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
+
 import static jpcsp.util.Utilities.*;
 /**
  *
@@ -48,6 +52,9 @@ public class PSF {
      private long[] value_size;
      private long[] value_size_padding;
      private long[] offset_data_value;
+     
+     HashMap<String, Object> map = new HashMap<String, Object>();
+     
      public PSF(long p_offset_param_sfo)
      {
          this.p_offset_param_sfo = p_offset_param_sfo;
@@ -100,17 +107,54 @@ public class PSF {
             {
                // String may not be in english!
                f.position((int)(p_offset_param_sfo + offsetvaluetable+offset_data_value[i]));
-               System.out.println(Key + " string = " + readStringZ(f));
+               String value = readStringZ(f);
+               map.put(Key, value);
+               //System.out.println(Key + " string = " + value);
             }
             else if(datatype[i]==4)
             {
                f.position((int)(p_offset_param_sfo + offsetvaluetable+offset_data_value[i]));
-               System.out.println(Key + " int = "  + readUWord(f));
+               long value = readUWord(f);
+               map.put(Key, value);
+               //System.out.println(Key + " int = "  + value);
+            }
+            else if(datatype[i] == 0)
+            {
+            	f.position((int)(p_offset_param_sfo + offsetvaluetable+offset_data_value[i]));
+            	byte[] value = new byte[(int) value_size[i]];
+            	f.get(value);
+            	map.put(Key, value);
+            	//System.out.println(Key + " = <binary data>");
             }
             else
             {
                 System.out.println(Key + " UNIMPLEMENT DATATYPE " + datatype[i]);
             }
-         }
+         } 
+     }
+     
+     public String toString() {
+    	 StringBuilder sb = new StringBuilder();
+    	 for(Map.Entry<String, Object> entry : map.entrySet()) {
+    		 sb.append(entry.getKey()).append(" = ");
+    		 if(entry.getValue() instanceof Array)
+    			 sb.append("<binary data>");
+    		 else
+    			 sb.append(entry.getValue());
+    		 sb.append('\n');
+    	 }
+    	 return sb.toString();
+     }
+     
+     public Object get(String key) {
+    	 return map.get(key);
+     }
+     
+     public String getString(String key) {
+    	 return (String)map.get(key);
+     }
+     
+     public long getNumeric(String key) {
+    	 return (Long)map.get(key);
      }
 }

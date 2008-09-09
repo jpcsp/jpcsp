@@ -473,7 +473,7 @@ private void OpenMemStickActionPerformed(java.awt.event.ActionEvent evt) {//GEN-
     }
     else
     {
-      memstick.RefreshWindow();
+      memstick.refreshFiles();
       memstick.setVisible(true);
     }
 
@@ -506,6 +506,7 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
             paramSfo.read(sfo);
             ByteBuffer buf = ByteBuffer.wrap(sfo);
             params.read(buf);
+            System.out.println(params);
             System.out.println("------------------------------------");
             
             UmdIsoFile bootBin = iso.getFile("PSP_GAME/SYSDIR/boot.bin");

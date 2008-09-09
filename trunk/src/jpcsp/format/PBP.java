@@ -98,10 +98,14 @@ public class PBP {
             info = this.toString();
         }
     }
-    public void readPSF(ByteBuffer f) throws IOException {
+    public PSF readPSF(ByteBuffer f) throws IOException {
+    	if(p_offset_param_sfo > 0) {
            f.position((int)p_offset_param_sfo);
            PSF psf1= new PSF(p_offset_param_sfo);
            psf1.read(f);
+           return psf1;
+    	}
+    	return null;
     }
     @Override
     public String toString() {
@@ -160,7 +164,11 @@ public class PBP {
         return p_offset_psar_data;
     }
 
-    public static boolean deleteDir(File dir) {
+    public int getSizeIcon0() {
+		return size_icon0_png;
+	}
+
+	public static boolean deleteDir(File dir) {
         if (dir.isDirectory()) {
             String[] children = dir.list();
             for (int i=0; i<children.length; i++) {
