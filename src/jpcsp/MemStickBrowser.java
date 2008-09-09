@@ -20,6 +20,8 @@ import java.awt.Component;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileNotFoundException;
@@ -27,6 +29,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.zip.DataFormatException;
 
 import javax.swing.GroupLayout;
 import javax.swing.Icon;
@@ -47,7 +50,8 @@ import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 
-import jpcsp.HLE.pspiofilemgr;
+import jpcsp.filesystems.umdiso.UmdIsoFile;
+import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PBP;
 import jpcsp.format.PSF;
 import jpcsp.util.MetaInformation;
@@ -108,7 +112,8 @@ public class MemStickBrowser extends JDialog {
 			programs = path.listFiles(new FileFilter() {
 				@Override
 				public boolean accept(File file) {
-					if (file.getName().toLowerCase().endsWith(".pbp"))
+					String lower = file.getName().toLowerCase();
+					if (lower.endsWith(".pbp") || lower.endsWith(".iso"))
 						return true;
 					if (file.isDirectory()) {
 						File eboot[] = file.listFiles(new FileFilter() {
@@ -138,19 +143,38 @@ public class MemStickBrowser extends JDialog {
 						});
 						programs[i] = eboot[0];
 					}
-					FileChannel roChannel = new RandomAccessFile(programs[i], "r").getChannel();
-					ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
-					pbps[i] = new PBP(readbuffer);
-					psfs[i] = pbps[i].readPSF(readbuffer);
-					if(pbps[i].getSizeIcon0() > 0) {
-						byte[] icon0 = new byte[pbps[i].getSizeIcon0()];
-						readbuffer.position((int) pbps[i].getOffsetIcon0());
-						readbuffer.get(icon0);
-						icons[i] = new ImageIcon(icon0);
+					if(programs[i].getName().toLowerCase().endsWith(".pbp")) {
+						FileChannel roChannel = new RandomAccessFile(programs[i], "r").getChannel();
+						ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
+						pbps[i] = new PBP(readbuffer);
+						psfs[i] = pbps[i].readPSF(readbuffer);
+						if(pbps[i].getSizeIcon0() > 0) {
+							byte[] icon0 = new byte[pbps[i].getSizeIcon0()];
+							readbuffer.position((int) pbps[i].getOffsetIcon0());
+							readbuffer.get(icon0);
+							icons[i] = new ImageIcon(icon0);
+						}
+					} else {
+						UmdIsoReader iso = new UmdIsoReader(programs[i].getPath());
+			            UmdIsoFile paramSfo = iso.getFile("PSP_GAME/param.sfo");
+			            
+			            psfs[i] = new PSF(0);
+			            byte[] sfo = new byte[(int)paramSfo.length()];
+			            paramSfo.read(sfo);
+			            ByteBuffer buf = ByteBuffer.wrap(sfo);
+			            psfs[i].read(buf);
+			            
+			            UmdIsoFile icon0umd = iso.getFile("PSP_GAME/ICON0.PNG");
+			            byte[] icon0 = new byte[(int) icon0umd.length()];
+			            icon0umd.read(icon0);
+			            icons[i] = new ImageIcon(icon0);
 					}
 				} catch (FileNotFoundException e) {
 					e.printStackTrace();
 				} catch (IOException e) {
+					e.printStackTrace();
+				} catch (DataFormatException e) {
+					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 	            
@@ -182,7 +206,11 @@ public class MemStickBrowser extends JDialog {
 					}
 					return title;
 				case 2:
-					return programs[rowIndex].getCanonicalPath();
+					String prgPath = programs[rowIndex].getCanonicalPath();
+					File cwd = new File(".");
+					if(prgPath.startsWith(cwd.getCanonicalPath()))
+						prgPath = prgPath.substring(cwd.getCanonicalPath().length() + 1);
+					return prgPath;
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -201,18 +229,19 @@ public class MemStickBrowser extends JDialog {
 	private ImageIcon[] icons;
 	private PBP[] pbps;
 	private PSF[] psfs;
-
+	private File path;
 	/**
 	 * @param arg0
 	 */
-	public MemStickBrowser(final Emulator emu, Frame arg0) {
+	public MemStickBrowser(MainGUI arg0, File path) {
 		super(arg0);
 		
+		this.path = path;
 		setModal(true);
 		
 		setTitle("Memory Stick Browser");
 		setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-		table = new JTable(new MemStickTableModel(new File("ms0/PSP/GAME")), new MemStickTableColumnModel());
+		table = new JTable(new MemStickTableModel(path), new MemStickTableColumnModel());
 		table.setFillsViewportHeight(true);
 		table.setRowHeight(80);
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_NEXT_COLUMN);
@@ -225,6 +254,14 @@ public class MemStickBrowser extends JDialog {
 			public void valueChanged(ListSelectionEvent e) {
 				loadButton.setEnabled(!((ListSelectionModel)e.getSource()).isSelectionEmpty());
 			}});
+		table.addMouseListener(new MouseAdapter() {
+
+			@Override
+			public void mouseClicked(MouseEvent arg0) {
+				if(arg0.getClickCount() == 2 && arg0.getButton() == MouseEvent.BUTTON1)
+					loadSelectedfile();				
+			}
+		});
 
 		for (int c = 0; c < table.getColumnCount() - 1; c++) {
 			DefaultTableColumnModel colModel = (DefaultTableColumnModel) table
@@ -272,21 +309,7 @@ public class MemStickBrowser extends JDialog {
 		loadButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				try {
-					File selectedPBP = programs[table.getSelectedRow()];
-					FileChannel roChannel = new RandomAccessFile(selectedPBP, "r").getChannel();
-					ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int) roChannel.size());
-					emu.load(readbuffer);
-					pspiofilemgr.get_instance().setfilepath(selectedPBP.getParentFile().getCanonicalPath());
-					((Frame)getParent()).setTitle(MetaInformation.FULL_NAME + " - "
-							+ table.getModel().getValueAt(table.getSelectedRow(), 1));
-					setVisible(false);
-					dispose();
-				} catch (IOException e1) {
-					e1.printStackTrace();
-				} catch (Exception e2) {
-					e2.printStackTrace();
-				}
+				loadSelectedfile();
 			}
 		});
 
@@ -306,9 +329,23 @@ public class MemStickBrowser extends JDialog {
 	}
 
 	public void refreshFiles() {
-		table.setModel(new MemStickTableModel(new File("ms0/PSP/GAME")));
+		table.setModel(new MemStickTableModel(path));
 	}
 	
+	private void loadSelectedfile() {
+		File selectedFile = programs[table.getSelectedRow()];
+		String lower = selectedFile.getName().toLowerCase();
+		if (lower.endsWith(".pbp"))
+			((MainGUI) getParent()).loadFile(selectedFile);
+		else
+			((MainGUI) getParent()).loadUMD(selectedFile);
+
+		((Frame) getParent()).setTitle(MetaInformation.FULL_NAME + " - "
+				+ table.getModel().getValueAt(table.getSelectedRow(), 1));
+		setVisible(false);
+		dispose();
+	}
+
 	/**
 	 * @param args
 	 */
@@ -318,7 +355,7 @@ public class MemStickBrowser extends JDialog {
 		} catch (Exception e) {
 			e.printStackTrace();
 		} 
-		MemStickBrowser msb = new MemStickBrowser(null, null);
+		MemStickBrowser msb = new MemStickBrowser(null, new File("ms0/PSP/Game"));
 		msb.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 		msb.setVisible(true);
 	}
