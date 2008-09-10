@@ -329,6 +329,10 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                 Memory mem = Memory.get_instance();
                 int stubHeadersAddress = (int)(romManager.getBaseoffset() + shdr.getSh_addr());
                 int stubHeadersCount = (int)(shdr.getSh_size() / Elf32StubHeader.sizeof());
+                
+                //HACK!
+                if(stubHeadersCount>10)
+                    stubHeadersCount = 10;
 
                 Elf32StubHeader stubHeader;
                 List<DeferredStub> deferred = new LinkedList<DeferredStub>();
@@ -341,9 +345,11 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                     stubHeader = new Elf32StubHeader(mem, stubHeadersAddress);
                     stubHeader.setModuleNamez(readStringZ(mem.mainmemory, (int)(stubHeader.getOffsetModuleName() - MemoryMap.START_RAM)));
                     stubHeadersAddress += Elf32StubHeader.sizeof(); //stubHeader.s_size * 4;
-                    //System.out.println(stubHeader.toString());
+                    System.out.println(stubHeader.toString());
+                    
+                    int importsCount = stubHeader.getImports();
 
-                    for (int j = 0; j < stubHeader.getImports(); j++)
+                    for (int j = 0; j < importsCount; j++)
                     {
                         int nid = mem.read32((int)(stubHeader.getOffsetNid() + j * 4));
                         int importAddress = (int)(stubHeader.getOffsetText() + j * 8);
