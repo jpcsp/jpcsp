@@ -8,7 +8,8 @@ package jpcsp.filesystems.umdiso;
 import java.io.*;
 import jpcsp.filesystems.umdiso.iso9660.*;
 
-import java.util.zip.*;
+//import java.util.zip.*;
+import org.bolet.jgz.*;
 
 /**
  *
@@ -56,7 +57,8 @@ public class UmdIsoReader {
             u32[] sector offsets (as many as image size / sector size, I guess)
         */
         
-        format=FileFormat.Unknown;
+        format = FileFormat.Uncompressed;
+        numSectors = (int)(fileReader.length() / 2048);
         
         byte[] id = new byte[24];
 
@@ -90,13 +92,13 @@ public class UmdIsoReader {
             }
             
             //sectorOffsets[numSectors] = (int)(fileReader.length() - sectorOffsets[numSectors-1]);
-            return;
+            //return;
         }
         
         id = new byte[6];
 
-        fileReader.seek(16*2048);
-        fileReader.read(id);
+        UmdIsoFile f = new UmdIsoFile(this, 16, 2048);
+        f.read(id);
         
         if((((char)id[1])=='C')&&
            (((char)id[2])=='D')&&
@@ -104,11 +106,14 @@ public class UmdIsoReader {
            (((char)id[4])=='0')&&
            (((char)id[5])=='1'))
         {
-             // assume uncompressed for now
-            numSectors = (int)(fileReader.length() / 2048);
-            format = FileFormat.Uncompressed;
+            if(format == FileFormat.Uncompressed)
+            {
+                numSectors = (int)(fileReader.length() / 2048);
+                format = FileFormat.Uncompressed;
+            }
             return;
         }
+        else format = FileFormat.Unknown;
         
         throw new IOException("Unsupported file format or corrupt file.");
     }
@@ -158,17 +163,23 @@ public class UmdIsoReader {
 
                 byte[] data = new byte[2048];
 
-                inf.setInput(compressedData);
-                inf.inflate(data);
-                inf.end();
+                ByteArrayInputStream b = new ByteArrayInputStream(compressedData);
+                inf.reset(b);
+                //inf.setRawStream(b);
+                inf.readAll(data,0,data.length);
+                return data;
             }
         }
-        catch(DataFormatException e) { throw new IOException(e.getMessage(),e.getCause()); }
+        catch(IOException e) 
+        {
+            throw new IOException(e.getMessage(),e.getCause()); 
+        }
 
+        
         throw new IOException("Unsupported file format or corrupt file.");
     }
     
-    public UmdIsoFile getFile(String filePath) throws IOException, FileNotFoundException, DataFormatException
+    public UmdIsoFile getFile(String filePath) throws IOException, FileNotFoundException
     {
         Iso9660Directory dir = new Iso9660Handler(this);
 
