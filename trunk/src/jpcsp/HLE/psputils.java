@@ -70,23 +70,23 @@ public class psputils {
     }
 
     public void sceKernelDcacheWritebackAll() {
-        // Don't do anything for now
+        System.out.println("(Unimplement):sceKernelDcacheWritebackAll");
     }
 
     public void sceKernelDcacheWritebackInvalidateAll() {
-        // Don't do anything for now
+        System.out.println("(Unimplement):sceKernelDcacheWritebackInvalidateAll");
     }
 
     public void sceKernelDcacheWritebackRange(int p_addr, int size) {
-        // Don't do anything for now
+        System.out.println("(Unimplement):sceKernelDcacheWritebackRange");
     }
 
     public void sceKernelDcacheWritebackInvalidateRange(int p_addr, int size) {
-        // Don't do anything for now
+       System.out.println("(Unimplement):sceKernelDcacheWritebackInvalidateRange");
     }
 
     public void sceKernelDcacheInvalidateRange(int p_addr, int size) {
-        // Don't do anything for now
+        System.out.println("(Unimplement):sceKernelDcacheInvalidateRange");
     }
 
     public void sceKernelUtilsMt19937Init(int ctx_addr, int seed) {
