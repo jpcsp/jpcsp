@@ -40,6 +40,7 @@
 	<emuoptions>
 		<pbpunpack>1</pbpunpack>
 		<recompiler>0</recompiler>
+                <umdbrowser>0</umdbrowser>
 		<keys>
 			<up>38</up>
 			<down>40</down>

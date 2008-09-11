@@ -17,6 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp;
 
+import jpcsp.GUI.SettingsGUI;
+import jpcsp.GUI.MemStickBrowser;
 import java.awt.Dimension;
 import java.awt.Point;
 import java.awt.event.ComponentEvent;
@@ -37,6 +39,7 @@ import jpcsp.Debugger.ConsoleWindow;
 import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
 import jpcsp.Debugger.ElfHeaderInfo;
 import jpcsp.Debugger.MemoryViewer;
+import jpcsp.GUI.UmdBrowser;
 import jpcsp.HLE.pspdisplay_glcanvas;
 import jpcsp.HLE.pspiofilemgr;
 import jpcsp.util.JpcspDialogManager;
@@ -57,6 +60,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     SettingsGUI setgui;
     MemStickBrowser memstick;
     Emulator emulator;
+    UmdBrowser umdbrowser;
     private Point mainwindowPos; // stores the last known window position
     private boolean snapConsole = true;
 
@@ -182,7 +186,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         FileMenu.setText("File");
 
-        openUmd.setText("Load UMD (ISO)");
+        openUmd.setText("Load UMD ");
         openUmd.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 openUmdActionPerformed(evt);
@@ -491,20 +495,35 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
         PauseEmu();//GEN-LAST:event_openUmdActionPerformed
        if(consolewin!=null)
           consolewin.clearScreenMessages();
+   if (Settings.get_instance().readBoolOptions("emuoptions/umdbrowser"))
+   {
+      if(umdbrowser==null)
+      {
 
+      umdbrowser = new UmdBrowser(this, new File("umdimages/"));
+      Point mainwindow = this.getLocation();
+      umdbrowser.setLocation(mainwindow.x+100, mainwindow.y+50);
+      umdbrowser.setVisible(true);
+     }
+     else
+     {
+      umdbrowser.refreshFiles();
+      umdbrowser.setVisible(true);
+     } 
+   }
+   else
+   {
     final JFileChooser fc = makeJFileChooser();
     fc.setDialogTitle("Open umd iso");
     int returnVal = fc.showOpenDialog(this);
     
     if (userChooseSomething(returnVal)) {
-        File file = fc.getSelectedFile();
-        //This is where a real application would open the file.
-        
+        File file = fc.getSelectedFile();      
         loadUMD(file);
     } else {
         return; //user cancel the action
-
     }
+   }
 }
 
 public void loadUMD(File file) {
