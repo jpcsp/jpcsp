@@ -15,8 +15,9 @@ You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package jpcsp;
+package jpcsp.GUI;
 
+import jpcsp.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.HashMap;
@@ -52,7 +53,11 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         snapConsoleCheck.setSelected(enabled);
         enabled = Settings.get_instance().readBoolOptions("emuoptions/recompiler");
         recompilerCheck.setSelected(enabled);
-        
+        enabled = Settings.get_instance().readBoolOptions("emuoptions/umdbrowser");
+        if(enabled)
+            umdBrowser.setSelected(true);
+        else
+            ClassicOpenDialogumd.setSelected(true);
         /* load current config and set the config */
         loadKeys();
         
@@ -186,6 +191,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
     private void initComponents() {
         java.awt.GridBagConstraints gridBagConstraints;
 
+        buttonGroup1 = new javax.swing.ButtonGroup();
         jButtonOK = new javax.swing.JButton();
         jButtonCancel = new javax.swing.JButton();
         jTabbedPane1 = new javax.swing.JTabbedPane();
@@ -195,6 +201,8 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         openLogwindowCheck = new javax.swing.JCheckBox();
         snapConsoleCheck = new javax.swing.JCheckBox();
         recompilerCheck = new javax.swing.JCheckBox();
+        umdBrowser = new javax.swing.JRadioButton();
+        ClassicOpenDialogumd = new javax.swing.JRadioButton();
         bg = new javax.swing.JPanel();
         fgPanel = new javax.swing.JPanel();
         fieldStart = new javax.swing.JTextField();
@@ -247,6 +255,17 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         snapConsoleCheck.setText("snap console to main window");
 
         recompilerCheck.setText("use recompiler");
+        recompilerCheck.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                recompilerCheckActionPerformed(evt);
+            }
+        });
+
+        buttonGroup1.add(umdBrowser);
+        umdBrowser.setText("Use umd Browser");
+
+        buttonGroup1.add(ClassicOpenDialogumd);
+        ClassicOpenDialogumd.setText("Use Classic Open Dialog for Umd");
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -256,18 +275,21 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                 .addContainerGap(20, Short.MAX_VALUE)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(recompilerCheck)
+                        .addComponent(ClassicOpenDialogumd)
                         .addContainerGap())
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGroup(jPanel1Layout.createSequentialGroup()
-                            .addComponent(pbpunpackcheck, javax.swing.GroupLayout.DEFAULT_SIZE, 564, Short.MAX_VALUE)
-                            .addContainerGap())
-                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                .addComponent(openLogwindowCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(saveWindowPosCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(snapConsoleCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 169, Short.MAX_VALUE))
-                            .addGap(399, 399, 399)))))
+                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addComponent(pbpunpackcheck, javax.swing.GroupLayout.DEFAULT_SIZE, 564, Short.MAX_VALUE)
+                                .addContainerGap())
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(openLogwindowCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(saveWindowPosCheck, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(snapConsoleCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 169, Short.MAX_VALUE)
+                                    .addComponent(recompilerCheck))
+                                .addGap(399, 399, 399)))
+                        .addComponent(umdBrowser))))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -280,9 +302,13 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                 .addComponent(openLogwindowCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(snapConsoleCheck)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(recompilerCheck)
-                .addContainerGap(178, Short.MAX_VALUE))
+                .addGap(18, 18, 18)
+                .addComponent(umdBrowser)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(ClassicOpenDialogumd)
+                .addContainerGap(111, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab("General", jPanel1);
@@ -729,6 +755,10 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
    Settings.get_instance().writeBoolOptions("guisettings/openLogwindow", openLogwindowCheck.isSelected());
    Settings.get_instance().writeBoolOptions("guisettings/snapLogwindow", snapConsoleCheck.isSelected());
    Settings.get_instance().writeBoolOptions("emuoptions/recompiler", recompilerCheck.isSelected());
+   if(umdBrowser.isSelected())
+      Settings.get_instance().writeBoolOptions("emuoptions/umdbrowser", true);
+   else
+      Settings.get_instance().writeBoolOptions("emuoptions/umdbrowser", false);
    Settings.get_instance().writeKeys(currentKeys);
    
    if (controller != null)
@@ -826,9 +856,15 @@ private void fieldAnalogLeftMouseClicked(java.awt.event.MouseEvent evt) {//GEN-F
     setKey(fieldAnalogLeft, keyCode.ANLEFT);
 }//GEN-LAST:event_fieldAnalogLeftMouseClicked
 
+private void recompilerCheckActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_recompilerCheckActionPerformed
+// TODO add your handling code here:
+}//GEN-LAST:event_recompilerCheckActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JRadioButton ClassicOpenDialogumd;
     private javax.swing.JPanel bg;
     private javax.swing.JLabel bgLabel1;
+    private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.JPanel fgPanel;
     private javax.swing.JTextField fieldAnalogDown;
     private javax.swing.JTextField fieldAnalogLeft;
@@ -861,6 +897,7 @@ private void fieldAnalogLeftMouseClicked(java.awt.event.MouseEvent evt) {//GEN-F
     private javax.swing.JCheckBox recompilerCheck;
     private javax.swing.JCheckBox saveWindowPosCheck;
     private javax.swing.JCheckBox snapConsoleCheck;
+    private javax.swing.JRadioButton umdBrowser;
     // End of variables declaration//GEN-END:variables
 
 }

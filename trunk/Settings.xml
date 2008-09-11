@@ -3,16 +3,16 @@
 
     <windowspos>
         <mainwindow>
-            <x>193</x>
-            <y>210</y>
+            <x>390</x>
+            <y>271</y>
         </mainwindow>
        <disassembler>
          <x>50</x>
          <y>50</y>
        </disassembler>
        <elfheader>
-         <x>143</x>
-         <y>328</y>
+         <x>305</x>
+         <y>332</y>
        </elfheader>
        <memoryview>
          <x>100</x>
@@ -23,8 +23,8 @@
          <y>5</y>
        </registers>
       <logwindow>
-        <x>193</x>
-        <y>560</y>
+        <x>390</x>
+        <y>625</y>
       </logwindow>
     </windowspos>
         
@@ -43,6 +43,7 @@
   <emuoptions>
       <pbpunpack>1</pbpunpack>
       <recompiler>0</recompiler>
+      <umdbrowser>1</umdbrowser>
       <keys>
           <up>38</up>
           <down>40</down>

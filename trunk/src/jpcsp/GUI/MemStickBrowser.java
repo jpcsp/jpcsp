@@ -14,8 +14,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp;
+package jpcsp.GUI;
 
+import jpcsp.*;
 import java.awt.Component;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
@@ -29,7 +30,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.zip.DataFormatException;
+
 
 import javax.swing.GroupLayout;
 import javax.swing.Icon;
@@ -113,7 +114,7 @@ public class MemStickBrowser extends JDialog {
 				@Override
 				public boolean accept(File file) {
 					String lower = file.getName().toLowerCase();
-					if (lower.endsWith(".pbp") || lower.endsWith(".iso"))
+					if (lower.endsWith(".pbp"))
 						return true;
 					if (file.isDirectory()) {
 						File eboot[] = file.listFiles(new FileFilter() {
@@ -154,21 +155,7 @@ public class MemStickBrowser extends JDialog {
 							readbuffer.get(icon0);
 							icons[i] = new ImageIcon(icon0);
 						}
-					} else {
-						UmdIsoReader iso = new UmdIsoReader(programs[i].getPath());
-			            UmdIsoFile paramSfo = iso.getFile("PSP_GAME/param.sfo");
-			            
-			            psfs[i] = new PSF(0);
-			            byte[] sfo = new byte[(int)paramSfo.length()];
-			            paramSfo.read(sfo);
-			            ByteBuffer buf = ByteBuffer.wrap(sfo);
-			            psfs[i].read(buf);
-			            
-			            UmdIsoFile icon0umd = iso.getFile("PSP_GAME/ICON0.PNG");
-			            byte[] icon0 = new byte[(int) icon0umd.length()];
-			            icon0umd.read(icon0);
-			            icons[i] = new ImageIcon(icon0);
-					}
+					} 
 				} catch (FileNotFoundException e) {
 					e.printStackTrace();
 				} catch (IOException e) {
@@ -329,12 +316,7 @@ public class MemStickBrowser extends JDialog {
 	
 	private void loadSelectedfile() {
 		File selectedFile = programs[table.getSelectedRow()];
-		String lower = selectedFile.getName().toLowerCase();
-		if (lower.endsWith(".pbp"))
 			((MainGUI) getParent()).loadFile(selectedFile);
-		else
-			((MainGUI) getParent()).loadUMD(selectedFile);
-
 		((Frame) getParent()).setTitle(MetaInformation.FULL_NAME + " - "
 				+ table.getModel().getValueAt(table.getSelectedRow(), 1));
 		setVisible(false);

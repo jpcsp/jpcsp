@@ -11,7 +11,7 @@
           <SubComponents>
             <MenuItem class="javax.swing.JMenuItem" name="openUmd">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Load UMD (ISO)"/>
+                <Property name="text" type="java.lang.String" value="Load UMD "/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="openUmdActionPerformed"/>

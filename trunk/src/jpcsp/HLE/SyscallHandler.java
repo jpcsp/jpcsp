@@ -324,11 +324,21 @@ public class SyscallHandler {
 		// sceKernelQueryModuleInfo(0x20d9),
 		// ModuleMgrForUser_F0A26395(0x20da),
 		// ModuleMgrForUser_D8B73127(0x20db),
-		// sceKernelMaxFreeMemSize(0x20dc),
-		// sceKernelTotalFreeMemSize(0x20dd),
-		// sceKernelAllocPartitionMemory(0x20de),
-		// sceKernelFreePartitionMemory(0x20df),
-		// sceKernelGetBlockHeadAddr(0x20e0),
+                case 0x20dc:
+                    pspSysMem.get_instance().sceKernelMaxFreeMemSize();
+                    break;
+                case 0x20dd:
+                    pspSysMem.get_instance().sceKernelTotalFreeMemSize();
+                    break;
+                case 0x20de:
+                    pspSysMem.get_instance().sceKernelAllocPartitionMemory(gpr[4], gpr[5], gpr[6], gpr[7]);
+                    break;
+                case 0x20df:
+                    pspSysMem.get_instance().sceKernelFreePartitionMemory(gpr[4]);
+                    break;
+                case 0x20e0:
+                    pspSysMem.get_instance().sceKernelGetBlockHeadAddr(gpr[4]);
+                    break;
 		// SysMemUserForUser_13A5ABEF(0x20e1),
 		// sceKernelDevkitVersion(0x20e2),
 		// sceKernelPowerLock(0x20e3),
