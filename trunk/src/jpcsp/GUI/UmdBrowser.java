@@ -69,8 +69,9 @@ public class UmdBrowser extends JDialog {
 
 			@Override
 			public Component getTableCellRendererComponent(JTable table,
-					Object obj, boolean isSelected, boolean hasFocus,
-					int row, int column) {
+                                Object obj, boolean isSelected, boolean hasFocus,
+                                int row, int column) 
+            {
 				if(obj instanceof Icon) {
 					setText("");
 					setIcon((Icon) obj);
@@ -139,30 +140,32 @@ public class UmdBrowser extends JDialog {
 			
 			for (int i = 0; i < programs.length; ++i) {
 				try {
-					if(programs[i].isDirectory()) {
-						File eboot[] = programs[i].listFiles(new FileFilter() {
-							@Override
-							public boolean accept(File arg0) {
-								return arg0.getName().equalsIgnoreCase("eboot.pbp");
-							}
-						});
-						programs[i] = eboot[0];
-					}
+                        if(programs[i].isDirectory()) {
+                                File eboot[] = programs[i].listFiles(new FileFilter() {
+                                        @Override
+                                        public boolean accept(File arg0) {
+                                                return arg0.getName().equalsIgnoreCase("eboot.pbp");
+                                        }
+                                });
+                                programs[i] = eboot[0];
+                        }
+                                    
+                        if(!programs[i].isDirectory())
+                        {
+                            UmdIsoReader iso = new UmdIsoReader(programs[i].getPath());
+                            UmdIsoFile paramSfo = iso.getFile("PSP_GAME/param.sfo");
 
-				    UmdIsoReader iso = new UmdIsoReader(programs[i].getPath());
-			            UmdIsoFile paramSfo = iso.getFile("PSP_GAME/param.sfo");
-			            
-			            psfs[i] = new PSF(0);
-			            byte[] sfo = new byte[(int)paramSfo.length()];
-			            paramSfo.read(sfo);
-			            ByteBuffer buf = ByteBuffer.wrap(sfo);
-			            psfs[i].read(buf);
-			            
-			            UmdIsoFile icon0umd = iso.getFile("PSP_GAME/ICON0.PNG");
-			            byte[] icon0 = new byte[(int) icon0umd.length()];
-			            icon0umd.read(icon0);
-			            icons[i] = new ImageIcon(icon0);
-					
+                            psfs[i] = new PSF(0);
+                            byte[] sfo = new byte[(int)paramSfo.length()];
+                            paramSfo.read(sfo);
+                            ByteBuffer buf = ByteBuffer.wrap(sfo);
+                            psfs[i].read(buf);
+
+                            UmdIsoFile icon0umd = iso.getFile("PSP_GAME/ICON0.PNG");
+                            byte[] icon0 = new byte[(int) icon0umd.length()];
+                            icon0umd.read(icon0);
+                            icons[i] = new ImageIcon(icon0);
+                        }
 				} catch (FileNotFoundException e) {
 					e.printStackTrace();
 				} catch (IOException e) {

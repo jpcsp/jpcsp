@@ -50,7 +50,7 @@ public class Iso9660File {
         
         if((fileLBA<0)||(fileSize<0))
         {
-            throw new IOException("WTF?! Size of lba < 0?!");
+            throw new IOException("WTF?! Size or lba < 0?!");
         }
 
         int fileNameLength = data[31];
