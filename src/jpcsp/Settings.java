@@ -239,7 +239,35 @@ public class Settings {
 		}
 
 	}
-   
+    public String readStringOptions(String option)
+    {
+        String v="";
+        try {
+            v = readXmlSetting("//" + option);
+            
+           
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return v;
+    }
+        public void writeStringOptions(String option,String value) {
+		String state = value;
+
+		try {
+			XPathFactory xpathFactory = XPathFactory.newInstance();
+			XPath xpath = xpathFactory.newXPath();
+
+			Element emuOption = (Element) xpath.evaluate("//" + option, doc, XPathConstants.NODE);
+
+			emuOption.replaceChild(doc.createTextNode(state), emuOption.getFirstChild());
+
+			writeSettings();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+	}
     public HashMap<Integer, keyCode> loadKeys() {
         HashMap<Integer, keyCode> m = new HashMap<Integer, keyCode>(22);
        
