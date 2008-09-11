@@ -499,8 +499,8 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
    {
       if(umdbrowser==null)
       {
-
-      umdbrowser = new UmdBrowser(this, new File("umdimages/"));
+      
+      umdbrowser = new UmdBrowser(this, new File(Settings.get_instance().readStringOptions("emuoptions/umdpath") + "/"));
       Point mainwindow = this.getLocation();
       umdbrowser.setLocation(mainwindow.x+100, mainwindow.y+50);
       umdbrowser.setVisible(true);
