@@ -331,7 +331,7 @@ public class SyscallHandler {
                     pspSysMem.get_instance().sceKernelTotalFreeMemSize();
                     break;
                 case 0x20de:
-                    pspSysMem.get_instance().sceKernelAllocPartitionMemory(gpr[4], gpr[5], gpr[6], gpr[7]);
+                    pspSysMem.get_instance().sceKernelAllocPartitionMemory(gpr[4], gpr[5], gpr[6], gpr[7],gpr[8]);
                     break;
                 case 0x20df:
                     pspSysMem.get_instance().sceKernelFreePartitionMemory(gpr[4]);

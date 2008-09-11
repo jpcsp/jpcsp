@@ -20,13 +20,17 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
+import jpcsp.Memory;
+import jpcsp.MemoryMap;
+import static jpcsp.util.Utilities.*;
 /**
  *
  * @author shadow
  */
 public class pspSysMem {
     private static pspSysMem instance;
-
+    public enum PspSysMemBlockTypes{ PSP_SMEM_Low ,PSP_SMEM_High,PSP_SMEM_Addr};
+    
     public static pspSysMem get_instance() {
         if (instance == null) {
             instance = new pspSysMem();
@@ -41,9 +45,15 @@ public class pspSysMem {
     {
         System.out.println("Unimplement:sceKernelTotalFreeMemSize");
     }
-    public void sceKernelAllocPartitionMemory(int a0, int a1, int a2, int a3)
+    public void sceKernelAllocPartitionMemory(int a0, int a1, int a2, int a3,int t0)
     {
-        System.out.println("Unimplement:sceKernelAllocPartitionMemory");
+        int partitionid=a0;
+        String name = readStringZ(Memory.get_instance().mainmemory, (a1 & 0x3fffffff) - MemoryMap.START_RAM);
+        int type=a2; //PspSysMemBlockTypes;
+        int size=a3;
+        int address=t0;//If type is PSP_SMEM_Addr, then addr specifies the lowest address allocate the block from.
+        
+        System.out.println("(Unimplement):sceKernelAllocPartitionMemory partitionid ="+partitionid + " name =" + name + " type="+ type + " size=" + size + " address= "+ Integer.toHexString(address));
     }
     public void sceKernelFreePartitionMemory(int a0)
     {

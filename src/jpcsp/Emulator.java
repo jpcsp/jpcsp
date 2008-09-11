@@ -392,6 +392,21 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
 
                 romManager.addDeferredImports(deferred);
             }
+            //test the instruction counter
+            //if (/*shdr.getSh_namez().equals(".text") || */shdr.getSh_namez().equals(".init") /*|| shdr.getSh_namez().equals(".fini")*/) {
+            /*   
+               int sectionAddress = (int)(romManager.getBaseoffset() + shdr.getSh_addr());
+               System.out.println(Integer.toHexString(sectionAddress) + " size = " + shdr.getSh_size());
+               for(int i =0; i< shdr.getSh_size(); i+=4)
+               {
+                 int memread32 = Memory.get_instance().read32(sectionAddress+i);
+                 //System.out.println(memread32);
+                 jpcsp.Allegrex.Decoder.instruction(memread32).increaseCount();
+               }
+               
+               
+            }
+            System.out.println(jpcsp.Allegrex.Instructions.ADDIU.getCount());*/
         }
         System.out.println(numberofloadedNIDS + " NIDS loaded");
         if(numberoffailedNIDS>0) System.out.println("Total Failed to load NIDS = " + numberoffailedNIDS);
