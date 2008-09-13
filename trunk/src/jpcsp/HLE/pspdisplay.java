@@ -128,7 +128,6 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                 refreshRequired = false;
             }
             lastUpdate = now;
-            reportFPSStats();
         }
     }
     
@@ -336,6 +335,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             temp.put(pixels);
             drawFrameBuffer(gl, false, false);
         }
+        
+        reportFPSStats();
     }
     
     @Override
@@ -409,7 +410,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         } else {
             if (pixelformat != this.pixelformat ||
                 bufferwidth != this.bufferwidth ||
-                height      != this.height)
+                makePow2(height) != makePow2(this.height))
             {
                 createTex = true;
             }
@@ -460,6 +461,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     
     public void sceDisplayWaitVblankStart() {
         // TODO: implement sceDisplayWaitVblankStart
+        ThreadMan.get_instance().ThreadMan_sceKernelDelayThread(0);
         Emulator.getProcessor().gpr[2] = 0;
     }
     
@@ -470,6 +472,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     
     public void sceDisplayWaitVblank() {
         // TODO: implement sceDisplayWaitVblank
+        ThreadMan.get_instance().ThreadMan_sceKernelDelayThread(0);
         Emulator.getProcessor().gpr[2] = 0;
     }
     
