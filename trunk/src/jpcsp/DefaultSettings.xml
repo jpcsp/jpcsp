@@ -40,6 +40,7 @@
 	<emuoptions>
 		<pbpunpack>1</pbpunpack>
 		<recompiler>0</recompiler>
+                <disablege>0</disablege>
                 <umdbrowser>0</umdbrowser>
                 <umdpath>umdimages</umdpath>
 		<keys>
