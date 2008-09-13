@@ -672,13 +672,43 @@ public class Syscallv15 {
 	{0x2280,0xAB0E9556},//sceMpeg_AB0E9556</NAME>
 	{0x2281,0xCF3547A2},//sceMpegAvcDecodeDetail2</NAME>
 	{0x2282,0x988E9E12},//sceMpeg_988E9E12</NAME>
-								
-        
+	/*sceNetInet	*/
+        {0x2283,0x17943399},//sceNetInetInit
+        {0x2284,0xA9ED66B9},//sceNetInetTerm
+        {0x2285,0xDB094E1B},//sceNetInetAccept
+        {0x2286,0x1A33F9AE},//sceNetInetBind
+        {0x2287,0x8D7284EA},//sceNetInetClose
+        {0x2288,0x805502DD},//sceNetInetCloseWithRST
+        {0x2289,0x410B34AA},//sceNetInetConnect
+        {0x228a,0xE247B6D6},//sceNetInetGetpeername
+        {0x228b,0x162E6FD5},//sceNetInetGetsockname
+        {0x228c,0x4A114C7C},//sceNetInetGetsockopt
+        {0x228d,0xD10A1A7A},//sceNetInetListen
+        {0x228e,0xFAABB1DD},//sceNetInetPoll
+        {0x228f,0xCDA85C99},//sceNetInetRecv
+        {0x2290,0xC91142E4},//sceNetInetRecvfrom
+        {0x2291,0xEECE61D2},//sceNetInetRecvmsg
+        {0x2292,0x5BE8D595},//sceNetInetSelect
+        {0x2293,0x7AA671BC},//sceNetInetSend
+        {0x2294,0x05038FC7},//sceNetInetSendto
+        {0x2295,0x774E36F4},//sceNetInetSendmsg
+        {0x2296,0x2FE71FE7},//sceNetInetSetsockopt
+        {0x2297,0x4CFE4E56},//sceNetInetShutdown
+        {0x2298,0x8B7B220F},//sceNetInetSocket
+        {0x2299,0x80A21ABD},//sceNetInetSocketAbort
+        {0x229a,0xFBABE411},//sceNetInetGetErrno
+        {0x229b,0xB3888AD4},//sceNetInetGetTcpcbstat
+        {0x229c,0x39B0C7D3},//sceNetInetGetUdpcbstat
+        {0x229d,0xB75D5B0A},//sceNetInetInetAddr
+        {0x229e,0x1BDF5D13},//sceNetInetInetAton
+        {0x229f,0xD0792666},//sceNetInetInetNtop
+        {0x22a0,0xE30B8C19},//sceNetInetInetPton
+    
        
               /*found on Jazz homebrew game */
-       {0x2283,0x565C0B0E}, //sceKernelRegisterDefaultExceptionHandler
-       {0x2284,0xD8779AC6},//sceKernelIcacheClearAll
-       {0x2285,0xcf8a41b1},//sceKernelFindModuleByName
+       {0x22a1,0x565C0B0E}, //sceKernelRegisterDefaultExceptionHandler
+       {0x22a2,0xD8779AC6},//sceKernelIcacheClearAll
+       {0x22a3,0xcf8a41b1},//sceKernelFindModuleByName
        //end of jazz
 
    };
