@@ -357,7 +357,6 @@ public class VideoEngine {
                 break;
             }
 
-            /* Disabled, has a side effect that makes the triangle in ortho.pbp all blue, we probably didnt't initialise something correctly/yet
             case FFACE:
             {
                 int frontFace = (normalArgument != 0) ? GL.GL_CW : GL.GL_CCW;
@@ -365,7 +364,7 @@ public class VideoEngine {
                 log(helper.getCommandString(FFACE) + " " + ((normalArgument != 0) ? "clockwise" : "counter-clockwise"));
                 break;
             }
-            */
+            
 
             case JUMP:
                 int npc = (normalArgument | actualList.base) & 0xFFFFFFFC;
