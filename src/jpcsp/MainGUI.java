@@ -39,6 +39,7 @@ import javax.swing.UIManager;
 import jpcsp.Debugger.ConsoleWindow;
 import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
 import jpcsp.Debugger.ElfHeaderInfo;
+import jpcsp.Debugger.InstructionCounter;
 import jpcsp.Debugger.MemoryViewer;
 import jpcsp.GUI.UmdBrowser;
 import jpcsp.HLE.pspdisplay;
@@ -62,6 +63,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     MemStickBrowser memstick;
     Emulator emulator;
     UmdBrowser umdbrowser;
+    InstructionCounter instructioncounter;
     private Point mainwindowPos; // stores the last known window position
     private boolean snapConsole = true;
 
@@ -136,6 +138,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         EnterMemoryViewer = new javax.swing.JMenuItem();
         ToggleConsole = new javax.swing.JMenuItem();
         ElfHeaderViewer = new javax.swing.JMenuItem();
+        InstructionCounter = new javax.swing.JMenuItem();
         HelpMenu = new javax.swing.JMenu();
         About = new javax.swing.JMenuItem();
 
@@ -300,6 +303,14 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         DebugMenu.add(ElfHeaderViewer);
+
+        InstructionCounter.setText("Instruction Counter");
+        InstructionCounter.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                InstructionCounterActionPerformed(evt);
+            }
+        });
+        DebugMenu.add(InstructionCounter);
 
         MenuBar.add(DebugMenu);
 
@@ -570,6 +581,22 @@ private void ResetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
 // TODO add your handling code here:
 }//GEN-LAST:event_ResetButtonActionPerformed
 
+private void InstructionCounterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_InstructionCounterActionPerformed
+    if(instructioncounter==null)
+     {
+      PauseEmu();
+      instructioncounter = new InstructionCounter(emulator);
+      Point mainwindow = this.getLocation();
+      instructioncounter.setLocation(mainwindow.x+100, mainwindow.y+50);
+      instructioncounter.setVisible(true);
+     }
+     else
+     {
+         instructioncounter.setVisible(true);
+         instructioncounter.RefreshWindow();
+     }
+}//GEN-LAST:event_InstructionCounterActionPerformed
+
 
 
 private void exitEmu() {
@@ -654,6 +681,7 @@ public void setMainTitle(String message)
     private javax.swing.JMenuItem ExitEmu;
     private javax.swing.JMenu FileMenu;
     private javax.swing.JMenu HelpMenu;
+    private javax.swing.JMenuItem InstructionCounter;
     private javax.swing.JMenuBar MenuBar;
     private javax.swing.JMenuItem OpenFile;
     private javax.swing.JMenuItem OpenMemStick;

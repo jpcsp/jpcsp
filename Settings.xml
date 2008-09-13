@@ -3,8 +3,8 @@
 
     <windowspos>
         <mainwindow>
-            <x>390</x>
-            <y>271</y>
+            <x>72</x>
+            <y>317</y>
         </mainwindow>
        <disassembler>
          <x>50</x>
@@ -23,8 +23,8 @@
          <y>5</y>
        </registers>
       <logwindow>
-        <x>390</x>
-        <y>629</y>
+        <x>72</x>
+        <y>675</y>
       </logwindow>
     </windowspos>
         
@@ -37,12 +37,13 @@
     
     <saveWindowPos>1</saveWindowPos>
     <openLogwindow>1</openLogwindow>
-    <snapLogwindow>1</snapLogwindow>
+    <snapLogwindow>0</snapLogwindow>
   </guisettings>
   
   <emuoptions>
       <pbpunpack>1</pbpunpack>
       <recompiler>0</recompiler>
+      <disablege>0</disablege>
       <umdbrowser>1</umdbrowser>
       <umdpath>umdimages</umdpath>
       <keys>
