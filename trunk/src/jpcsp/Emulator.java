@@ -47,6 +47,10 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
     private static DisassemblerFrame debugger;
     private static MemoryViewer memview;
 
+    public static int[] textsection = new int[2];
+    public static int[] initsection = new int[2];
+    public static int[] finisection = new int[2];
+    public static int[] Stubtextsection=new int[2];
     public Emulator(MainGUI gui) {
         this.gui = gui;
         cpu = new Processor();
@@ -392,6 +396,28 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
 
                 romManager.addDeferredImports(deferred);
             }
+            //the following are used for the instruction counter panel
+            if(shdr.getSh_namez().equals(".text"))
+            {
+                textsection[0] = (int)(romManager.getBaseoffset() + shdr.getSh_addr());
+                textsection[1] = (int)shdr.getSh_size();
+            }
+            if(shdr.getSh_namez().equals(".init"))
+            {
+                initsection[0] = (int)(romManager.getBaseoffset() + shdr.getSh_addr());
+                initsection[1] = (int)shdr.getSh_size();
+            }
+            if(shdr.getSh_namez().equals(".fini"))
+            {
+                finisection[0] = (int)(romManager.getBaseoffset() + shdr.getSh_addr());
+                finisection[1] = (int)shdr.getSh_size();
+            }
+            if(shdr.getSh_namez().equals(".sceStub.text"))
+            {
+                Stubtextsection[0] = (int)(romManager.getBaseoffset() + shdr.getSh_addr());
+                Stubtextsection[1] = (int)shdr.getSh_size();
+            }
+            
             //test the instruction counter
             //if (/*shdr.getSh_namez().equals(".text") || */shdr.getSh_namez().equals(".init") /*|| shdr.getSh_namez().equals(".fini")*/) {
             /*   
