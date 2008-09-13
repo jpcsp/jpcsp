@@ -20,6 +20,7 @@ package jpcsp;
 import jpcsp.GUI.SettingsGUI;
 import jpcsp.GUI.MemStickBrowser;
 import java.awt.Dimension;
+import java.awt.Insets;
 import java.awt.Point;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
@@ -40,7 +41,7 @@ import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
 import jpcsp.Debugger.ElfHeaderInfo;
 import jpcsp.Debugger.MemoryViewer;
 import jpcsp.GUI.UmdBrowser;
-import jpcsp.HLE.pspdisplay_glcanvas;
+import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.pspiofilemgr;
 import jpcsp.util.JpcspDialogManager;
 import jpcsp.util.MetaInformation;
@@ -79,10 +80,16 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         setTitle(version);
 
         /*add glcanvas to frame and pack frame to get the canvas size*/
-        getContentPane().add(pspdisplay_glcanvas.get_instance(), java.awt.BorderLayout.CENTER);
-        pspdisplay_glcanvas.get_instance().addKeyListener(this);
+        getContentPane().add(pspdisplay.get_instance(), java.awt.BorderLayout.CENTER);
+        pspdisplay.get_instance().addKeyListener(this);
         this.addComponentListener(this);
         pack();
+        
+        Insets insets = this.getInsets();
+        Dimension minSize = new Dimension(
+            480 + insets.left + insets.right,
+            272 + insets.top + insets.bottom);
+        this.setMinimumSize(minSize);
 
         //logging console window stuff
         consolewin = new ConsoleWindow();

@@ -22,224 +22,459 @@ package jpcsp.HLE;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-
+import javax.media.opengl.GL;
+import javax.media.opengl.GLAutoDrawable;
+import javax.media.opengl.GLCanvas;
+import javax.media.opengl.GLEventListener;
 import jpcsp.Emulator;
-import jpcsp.MainGUI;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.Settings;
+import jpcsp.graphics.VideoEngine;
 
-public class pspdisplay {
+/**
+ * @author shadow, aisesal
+ */
+public final class pspdisplay extends GLCanvas implements GLEventListener {
     private static pspdisplay instance;
-
-    // PSP state
-    private int mode, width, height;
-    private int topaddr, bufferwidth, sync;
-    private PspDisplayPixelFormats pixelformat;
-
-    // HLE state, native rendering surface
-    private ByteBuffer bb; // ByteBuffer backs TextureData (sent to pspdisplay_frame)
-
-    // This was just going to be a window, but JOGL requires all operations to
-    // take place inside its own thread, so texture manipulations are currently
-    // done in there. It is good enough for frame buffer emulation using simple
-    // boolean flags to defer operations to execute in the JOGL thread, but will
-    // need redesigning for when we want to emulate GU -> OpenGL.
-    //private pspdisplay_frame frame;
-    private pspdisplay_glcanvas frame;
-    private long lastUpdate;
-    private int bottomaddr;
-    private boolean refreshRequired;
-
     public static pspdisplay get_instance() {
-        if (instance == null) {
+        if (instance == null)
             instance = new pspdisplay();
-        }
         return instance;
     }
-
+    
+    // PspDisplayPixelFormats enum
+    public static final int PSP_DISPLAY_PIXEL_FORMAT_565  = 0;
+    public static final int PSP_DISPLAY_PIXEL_FORMAT_5551 = 1;
+    public static final int PSP_DISPLAY_PIXEL_FORMAT_4444 = 2;
+    public static final int PSP_DISPLAY_PIXEL_FORMAT_8888 = 3;
+    
+    // PspDisplaySetBufSync enum
+    public static final int PSP_DISPLAY_SETBUF_IMMEDIATE = 0;
+    public static final int PSP_DISPLAY_SETBUF_NEXTFRAME = 1;
+    
+    // PspDisplayErrorCodes enum
+    public static final int PSP_DISPLAY_ERROR_OK       = 0;
+    public static final int PSP_DISPLAY_ERROR_POINTER  = 0x80000103;
+    public static final int PSP_DISPLAY_ERROR_ARGUMENT = 0x80000107;
+    
+    public boolean disableGE;
+    
+    // current display mode
+    private int mode;
+    private int width;
+    private int height;
+    
+    // current framebuffer settings
+    private int topaddr;
+    private int bufferwidth;
+    private int pixelformat;
+    private int sync;
+    
+    // additional variables
+    private int bottomaddr;
+    private boolean refreshRequired;
+    private long lastUpdate;
+    
+    // Canvas fields
+    private ByteBuffer pixels;
+    private ByteBuffer temp;
+    private int canvasWidth;
+    private int canvasHeight;
+    private boolean createTex;
+    private int texFb;
+    private float texS;
+    private float texT;
+    
+    // fps counter variables
+    private long prevStatsTime = 0;
+    private long frameCount = 0;
+    private long actualframeCount = 0;
+    private long reportCount = 0;
+    private double averageFPS = 0.0;
+    
     private pspdisplay() {
+        setSize(480, 272);
+        addGLEventListener(this);
+        texFb = -1;
     }
-
+    
     public void Initialise() {
-        // Create a window here
-        // TODO do it the netbeans way (internal window)
-        if (frame != null) {
-            //frame.cleanup();
-            frame = null;
-        }
-        //frame = new pspdisplay_frame();
-        //frame = new pspdisplay_glcanvas().get_instance();
-
-        // If we initialise these here we can remove checks for uninitialised variables later on
-        mode = 0;
-        width = 480;
-        height = 272;
-        topaddr = MemoryMap.START_VRAM;
+        mode        = 0;
+        width       = 480;
+        height      = 272;
+        topaddr     = MemoryMap.START_VRAM;
         bufferwidth = 512;
-        pixelformat = PspDisplayPixelFormats.PSP_DISPLAY_PIXEL_FORMAT_8888;
-        sync = 0;
-
-        bottomaddr = topaddr + bufferwidth * height * pixelformat.getBytesPerPixel();
-
-        pspdisplay_glcanvas.get_instance().invalidateBufferCache();
-        updateDispSettings();
+        pixelformat = PSP_DISPLAY_PIXEL_FORMAT_8888;
+        sync        = PSP_DISPLAY_SETBUF_IMMEDIATE;
+        
+        bottomaddr =
+            topaddr + bufferwidth * height * getPixelFormatBytes(pixelformat);
+        
         refreshRequired = true;
+        createTex = true;
+        
+        disableGE =
+            Settings.get_instance().readBoolOptions("emuoptions/disablege");
+        
+        getPixels();
     }
-
-    private void updateDispSettings() {
-        byte[] all = Memory.get_instance().videoram.array();
-
-        bb = ByteBuffer.wrap(
-            all,
-            Memory.get_instance().videoram.arrayOffset() + topaddr - MemoryMap.START_VRAM,
-            bottomaddr - topaddr).slice();
-        bb.order(ByteOrder.LITTLE_ENDIAN);
-
-        pspdisplay_glcanvas.get_instance().updateDispSettings(
-            bb, width, height, bufferwidth, pixelformat.getValue(), topaddr);
-    }
-
+    
     public void step() {
         long now = System.currentTimeMillis();
-        if (now - lastUpdate > 1000 / 60)
-        {
+        if (now - lastUpdate > 1000 / 60) {
             if (refreshRequired) {
-                pspdisplay_glcanvas.get_instance().updateImage();
+                display();
                 refreshRequired = false;
             }
             lastUpdate = now;
+            reportFPSStats();
         }
     }
+    
+    public void write8(int address, int data) {
+        address &= 0x3FFFFFFF;
+        if (address >= topaddr && address < bottomaddr)
+            setDirty(true);
+    }
+    
+    public void write16(int address, int data) {
+        address &= 0x3FFFFFFF;
+        if (address >= topaddr && address < bottomaddr)
+            setDirty(true);
+    }
+    
+    public void write32(int address, int data) {
+        address &= 0x3FFFFFFF;
+        if (address >= topaddr && address < bottomaddr)
+            setDirty(true);
+    }
+    
+    public void setDirty(boolean dirty) {
+        refreshRequired = dirty;
+    }
+    
+    private static int getPixelFormatBytes(int pixelformat) {
+        return pixelformat == PSP_DISPLAY_PIXEL_FORMAT_8888 ? 4 : 2;
+    }
+    
+    private static int getPixelFormatGL(int pixelformat) {
+        switch (pixelformat) {
+        case PSP_DISPLAY_PIXEL_FORMAT_565:
+            return GL.GL_UNSIGNED_SHORT_5_6_5_REV;
+        case PSP_DISPLAY_PIXEL_FORMAT_5551:
+            return GL.GL_UNSIGNED_SHORT_1_5_5_5_REV;
+        case PSP_DISPLAY_PIXEL_FORMAT_4444:
+            return GL.GL_UNSIGNED_SHORT_4_4_4_4_REV;
+        default:
+            return GL.GL_UNSIGNED_BYTE;
+        }
+    }
+    
+    private void getPixels() {
+        Memory memory = Emulator.getMemory();
+        byte[] all = memory.videoram.array();
+        pixels = ByteBuffer.wrap(
+            all,
+            topaddr - MemoryMap.START_VRAM + memory.videoram.arrayOffset(),
+            bottomaddr - topaddr).slice();
+        pixels.order(ByteOrder.LITTLE_ENDIAN);
+    }
+    
+    private int makePow2(int n) {
+        --n;
+        n = (n >>  1) | n;
+        n = (n >>  2) | n;
+        n = (n >>  4) | n;
+        n = (n >>  8) | n;
+        n = (n >> 16) | n;
+        return ++n;
+    }
+    
+    private void reportFPSStats() {
+        frameCount++;
+        long timeNow = System.nanoTime();
+        long realElapsedTime = (timeNow - prevStatsTime) / 1000000L;
 
-    public void sceDisplaySetMode(int mode, int width, int height)
+        if (realElapsedTime > 1000L) {
+            reportCount++;
+            int lastFPS = (int)(frameCount - actualframeCount);
+            averageFPS = (double)frameCount / reportCount;
+            actualframeCount = frameCount;
+            prevStatsTime = timeNow;
+
+            Emulator.setFpsTitle("averageFPS: " + String.format("%.1f", averageFPS) + " lastFPS: " + lastFPS);
+        }
+    }
+    
+    private void drawFrameBuffer(final GL gl, boolean first, boolean invert) {
+        gl.glPushAttrib(GL.GL_ALL_ATTRIB_BITS);
+        
+        if (first)
+            gl.glViewport(0, 0, width, height);
+        else
+            gl.glViewport(0, 0, canvasWidth, canvasHeight);
+        
+        gl.glDisable(GL.GL_DEPTH_TEST);
+        
+        gl.glMatrixMode(GL.GL_PROJECTION);
+        gl.glPushMatrix();
+        gl.glLoadIdentity();
+        
+        if (invert)
+            gl.glOrtho(0.0, width, height, 0.0, -1.0, 1.0);
+        else
+            gl.glOrtho(0.0, width, 0.0, height, -1.0, 1.0);
+        
+        gl.glMatrixMode(GL.GL_MODELVIEW);
+        gl.glPushMatrix();
+        gl.glLoadIdentity();
+        
+        gl.glEnable(GL.GL_TEXTURE_2D);
+        gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
+        gl.glBegin(GL.GL_QUADS);
+        
+        gl.glColor3f(1.0f, 1.0f, 1.0f);
+        
+        gl.glTexCoord2f(0.0f, 0.0f);
+        gl.glVertex2f(0.0f, 0.0f);
+        
+        gl.glTexCoord2f(0.0f, texT);
+        gl.glVertex2f(0.0f, height);
+        
+        gl.glTexCoord2f(texS, texT);
+        gl.glVertex2f(width, height);
+        
+        gl.glTexCoord2f(texS, 0.0f);
+        gl.glVertex2f(width, 0.0f);
+        
+        gl.glEnd();
+        
+        gl.glMatrixMode(GL.GL_MODELVIEW);
+        gl.glPopMatrix();
+        gl.glMatrixMode(GL.GL_PROJECTION);
+        gl.glPopMatrix();
+        gl.glMatrixMode(GL.GL_MODELVIEW);
+        gl.glPopAttrib();
+    }
+    
+    // GLEventListener methods
+    
+    @Override
+    public void init(GLAutoDrawable drawable) {
+        final GL gl = drawable.getGL();
+        gl.setSwapInterval(1);
+    }
+    
+    @Override
+    public void display(GLAutoDrawable drawable) {
+        final GL gl = drawable.getGL();
+        
+        if (createTex) {
+            int[] textures = new int[1];
+            if (texFb != -1) {
+                textures[0] = texFb;
+                gl.glDeleteTextures(1, textures, 0);
+            }
+            gl.glGenTextures(1, textures, 0);
+            texFb = textures[0];
+            
+            gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
+            gl.glTexImage2D(
+                GL.GL_TEXTURE_2D, 0,
+                GL.GL_RGBA,
+                bufferwidth, makePow2(height), 0,
+                GL.GL_RGBA,
+                getPixelFormatGL(pixelformat), null);
+            gl.glTexParameteri(
+                GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
+            gl.glTexParameteri(
+                GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
+            gl.glTexParameteri(
+                GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP);
+            gl.glTexParameteri(
+                GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP);
+            
+            temp = ByteBuffer.allocate(
+                bufferwidth * makePow2(height) *
+                getPixelFormatBytes(pixelformat));
+            temp.order(ByteOrder.LITTLE_ENDIAN);
+            
+            createTex = false;
+        }
+        
+        if (texFb == -1) {
+            gl.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+            gl.glClear(GL.GL_COLOR_BUFFER_BIT);
+            return;
+        }
+        
+        pixels.clear();
+        gl.glTexSubImage2D(
+            GL.GL_TEXTURE_2D, 0,
+            0, 0, bufferwidth, height,
+            GL.GL_RGBA, getPixelFormatGL(pixelformat), pixels);
+        
+        if (disableGE) {
+            drawFrameBuffer(gl, false, true);
+        } else {
+            drawFrameBuffer(gl, true, true);
+            
+            gl.glViewport(0, 0, width, height);
+            VideoEngine.getEngine(gl, true, true).update();
+        
+            gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
+            gl.glCopyTexSubImage2D(
+                GL.GL_TEXTURE_2D, 0,
+                0, 0, 0, 0, width, height);
+        
+            temp.clear();
+            pixels.clear();
+            gl.glGetTexImage(
+                GL.GL_TEXTURE_2D, 0, GL.GL_RGBA,
+                getPixelFormatGL(pixelformat), temp);
+            temp.put(pixels);
+            drawFrameBuffer(gl, false, false);
+        }
+    }
+    
+    @Override
+    public void reshape(
+        GLAutoDrawable drawable,
+        int x, int y,
+        int width, int height)
     {
-        System.out.println("sceDisplaySetMode(mode=" + mode + ",width=" + width + ",height=" + height + ")");
-
+        canvasWidth  = width;
+        canvasHeight = height;
+    }
+    
+    @Override
+    public void displayChanged(
+        GLAutoDrawable drawable,
+        boolean modeChanged,
+        boolean displayChanged)
+    {   
+    }
+    
+    // HLE functions
+    
+    public void sceDisplaySetMode(int mode, int width, int height) {
+        System.out.println(
+            "sceDisplaySetMode(mode=" + mode +
+            ",width=" + width +
+            ",height=" + height + ")");
+        
         if (width <= 0 || height <= 0) {
             Emulator.getProcessor().gpr[2] = -1;
         } else {
-            this.mode = mode;
-            this.width = width;
+            this.mode   = mode;
+            this.width  = width;
             this.height = height;
-
-            bottomaddr = topaddr + bufferwidth * height * pixelformat.getBytesPerPixel();
-            updateDispSettings();
+            
+            bottomaddr =
+                topaddr + bufferwidth * height *
+                getPixelFormatBytes(pixelformat);
+            
             refreshRequired = true;
-
+            
             Emulator.getProcessor().gpr[2] = 0;
         }
     }
-
-    public void sceDisplaySetFrameBuf(int topaddr, int bufferwidth, int pixelformat, int sync)
+    
+    public void sceDisplayGetMode(int pmode, int pwidth, int pheight) {
+        Memory memory = Emulator.getMemory();
+        if (!memory.isAddressGood(pmode  ) ||
+            !memory.isAddressGood(pwidth ) ||
+            !memory.isAddressGood(pheight))
+        {
+            Emulator.getProcessor().gpr[2] = -1;
+        } else {
+            memory.write32(pmode  , mode  );
+            memory.write32(pwidth , width );
+            memory.write32(pheight, height);
+            Emulator.getProcessor().gpr[2] = 0;
+        }
+    }
+    
+    public void sceDisplaySetFrameBuf(
+        int topaddr, int bufferwidth, int pixelformat, int sync)
     {
-        //System.out.println("sceDisplaySetFrameBuf");
-
-        // Discard the kernel/cache bits
-        topaddr = topaddr & 0x3fffffff;
-
+        topaddr &= 0x3FFFFFFF;
         if (topaddr < MemoryMap.START_VRAM || topaddr >= MemoryMap.END_VRAM ||
-            bufferwidth <= 0 || // TODO power of 2 check
+            bufferwidth <= 0 || (bufferwidth & (bufferwidth - 1)) != 0 ||
             pixelformat < 0 || pixelformat > 3 ||
             sync < 0 || sync > 1)
         {
             Emulator.getProcessor().gpr[2] = -1;
-        }
-        else
-        {
-            this.topaddr = topaddr; // 0x44000000
-            this.bufferwidth = bufferwidth; // power of 2 TODO check and return -1 on failure
-            this.pixelformat = PspDisplayPixelFormats.findValue(pixelformat);
-            this.sync = sync;
-
-            bottomaddr = topaddr + bufferwidth * height * this.pixelformat.getBytesPerPixel();
-            updateDispSettings();
+        } else {
+            if (pixelformat != this.pixelformat ||
+                bufferwidth != this.bufferwidth ||
+                height      != this.height)
+            {
+                createTex = true;
+            }
+            
+            this.topaddr     = topaddr;
+            this.bufferwidth = bufferwidth;
+            this.pixelformat = pixelformat;
+            this.sync        = sync;
+            
+            bottomaddr =
+                topaddr + bufferwidth * height *
+                getPixelFormatBytes(pixelformat);
+            getPixels();
+            
+            texS = (float)width / (float)bufferwidth;
+            texT = (float)height / (float)makePow2(height);
+            
             refreshRequired = true;
-
+            display();
+            
             Emulator.getProcessor().gpr[2] = 0;
         }
     }
-
-    public void sceDisplayWaitVblankStart() {
-        //System.out.println("sceDisplayWaitVblankStart");
-        long now = System.currentTimeMillis();
-        int micros;
-
-        // Delay up to the next frame update (60 fps)
-        // TODO it would probably be more accurate if we suspend the current thread, and then wake it up when the vblank starts
-        if (now - lastUpdate < 1000 / 60) {
-            micros = (int)(now - lastUpdate) * 1000;
+    
+    public void sceDisplayGetFrameBuf(
+        int topaddr, int bufferwidth, int pixelformat, int sync)
+    {
+        Memory memory = Emulator.getMemory();
+        if (!memory.isAddressGood(topaddr    ) ||
+            !memory.isAddressGood(bufferwidth) ||
+            !memory.isAddressGood(pixelformat) ||
+            !memory.isAddressGood(sync))
+        {
+            Emulator.getProcessor().gpr[2] = -1;
         } else {
-            micros = 0;
+            memory.write32(topaddr    , this.topaddr    );
+            memory.write32(bufferwidth, this.bufferwidth);
+            memory.write32(pixelformat, this.pixelformat);
+            memory.write32(sync       , this.sync       );
+            Emulator.getProcessor().gpr[2] = 0;
         }
-        //ThreadMan.get_instance().ThreadMan_sceKernelDelayThread(micros);
-        ThreadMan.get_instance().ThreadMan_sceKernelDelayThread(0); // test version
-
+    }
+    
+    public void sceDisplayGetVcount() {
+        // TODO: implement sceDisplayGetVcount
         Emulator.getProcessor().gpr[2] = 0;
     }
-
+    
+    public void sceDisplayWaitVblankStart() {
+        // TODO: implement sceDisplayWaitVblankStart
+        Emulator.getProcessor().gpr[2] = 0;
+    }
+    
+    public void sceDisplayWaitVblankStartCB() {
+        // TODO: implement sceDisplayWaitVblankStartCB
+        Emulator.getProcessor().gpr[2] = 0;
+    }
+    
     public void sceDisplayWaitVblank() {
-        // TODO
-        sceDisplayWaitVblankStart();
+        // TODO: implement sceDisplayWaitVblank
+        Emulator.getProcessor().gpr[2] = 0;
     }
-
-    /** Use this to indicate a refresh is required.
-     * We are cheating and not updating at true 60 fps, but only at 60 fps AND dirty bit is set. */
-    public void setDirty(boolean dirty) {
-        refreshRequired = dirty;
-    }
-
-    public void write8(int address, int data) {
-        address &= 0x3fffffff;
-        if (address >= topaddr && address < bottomaddr) {
-            setDirty(true);
-        }
-    }
-
-    public void write16(int address, int data) {
-        address &= 0x3fffffff;
-        if (address >= topaddr && address < bottomaddr) {
-            setDirty(true);
-        }
-    }
-
-    public void write32(int address, int data) {
-        address &= 0x3fffffff;
-        if (address >= topaddr && address < bottomaddr) {
-            setDirty(true);
-        }
-    }
-
-    // Do we really need this enum? it's just overhead
-    public enum PspDisplayPixelFormats {
-        PSP_DISPLAY_PIXEL_FORMAT_565(0, 2),
-        PSP_DISPLAY_PIXEL_FORMAT_5551(1, 2),
-        PSP_DISPLAY_PIXEL_FORMAT_4444(2, 2),
-        PSP_DISPLAY_PIXEL_FORMAT_8888(3, 4);
-
-        private int value;
-        private int bytesPerPixel;
-
-        private PspDisplayPixelFormats(int value, int bytesPerPixel) {
-            this.value = value;
-            this.bytesPerPixel = bytesPerPixel;
-        }
-
-        public int getValue() {
-            return value;
-        }
-
-        public int getBytesPerPixel() {
-            return bytesPerPixel;
-        }
-
-        public static PspDisplayPixelFormats findValue(int pixelformat) {
-            // int -> enum via reverse lookup, Java enums are stupid
-            for (PspDisplayPixelFormats format : PspDisplayPixelFormats.values()) {
-                if (format.getValue() == pixelformat) {
-                    return format;
-                }
-            }
-            return PSP_DISPLAY_PIXEL_FORMAT_8888;
-        }
+    
+    public void sceDisplayWaitVblankCB() {
+        // TODO: implement sceDisplayWaitVblankCB
+        Emulator.getProcessor().gpr[2] = 0;
     }
 }
