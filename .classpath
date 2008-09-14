@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="lib" path="dist/Jpcsp.jar"/>
-	<classpathentry kind="lib" path="dist/lib/gluegen-rt.jar"/>
-	<classpathentry kind="lib" path="dist/lib/jdom1.1.jar"/>
-	<classpathentry kind="lib" path="dist/lib/jogl.jar"/>
 	<classpathentry kind="lib" path="lib/GLUEGEN-RT/gluegen-rt.jar"/>
 	<classpathentry kind="lib" path="lib/javassist.jar"/>
 	<classpathentry kind="lib" path="lib/JOGL/jogl.jar"/>
