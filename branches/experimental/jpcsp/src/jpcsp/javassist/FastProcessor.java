@@ -976,14 +976,20 @@ public class FastProcessor extends Processor {
 
     @Override
     public void doBC1F(int simm16) {
-    	super.doBC1F(simm16);
-    	recompiler.doBC1F(simm16);
+    	int branch = branchTarget(pc, simm16);
+        npc = !fcr31_c ? branch : (pc + 4);
+        currentDynaCode.addJavaInstruction("if (!processor.fcr31_c) { processor.npc = 0x" + Integer.toHexString(branch)+"; } else { processor.npc = 0x" + Integer.toHexString(pc+4) +";}");
+        stepDelayslot();        
+        currentDynaCode = null;
     }
 
     @Override
     public void doBC1T(int simm16) {
-    	super.doBC1T(simm16);
-    	recompiler.doBC1T(simm16);
+    	int branch = branchTarget(pc, simm16);
+        npc = fcr31_c ? branch : (pc + 4);
+        currentDynaCode.addJavaInstruction("if (processor.fcr31_c) { processor.npc = 0x" + Integer.toHexString(branch)+"; } else { processor.npc = 0x" + Integer.toHexString(pc+4) +";}");
+        stepDelayslot();        
+        currentDynaCode = null;
     }
 
     @Override

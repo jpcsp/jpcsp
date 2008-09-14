@@ -55,7 +55,7 @@ public class DynaCode {
 
 	public void addJavaInstruction(String javaCode) {
 		if (! freezed ) {
-			if (javaCode.endsWith(";") || javaCode.endsWith("}")) {
+			if (javaCode.endsWith(";") || javaCode.endsWith("}") || javaCode.endsWith("{")) {
 				javaBuffer.append( javaCode + "\n");				
 			} else {
 				javaBuffer.append( javaCode);

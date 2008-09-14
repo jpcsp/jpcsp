@@ -15,7 +15,6 @@ You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.javassist;
-
 import jpcsp.AllegrexDecoder;
 import jpcsp.AllegrexInstructions;
 import jpcsp.Memory;
@@ -222,8 +221,23 @@ public class JavassistRecompiler implements AllegrexInstructions {
 
 	@Override
 	public void doCCONDS(int fs, int ft, int cond) {
-		System.err.println("CCONDS Instruction is not supported by recompiler");
+		dynaCode.addLocal("float x");
+		dynaCode.addLocal("float y");
+		dynaCode.addLocal("boolean unordered");
+		dynaCode.addJavaInstruction("x = " + dynaCode.getFPRCodeRepr(fs) + ";"); 
+		dynaCode.addJavaInstruction("y = " + dynaCode.getFPRCodeRepr(ft) + ";"); 
+		dynaCode.addJavaInstruction("unordered = ((" + cond + " & 1) != 0) && (Float.isNaN(x) || Float.isNaN(y));");
 
+		dynaCode.addJavaInstruction("if (unordered) {");
+		dynaCode.addJavaInstruction("if ((" + cond + " & 8) != 0) {");
+		dynaCode.addJavaInstruction("processor.doUNK(\"C.cond.S instruction raises an Unordered exception\");");
+		dynaCode.addJavaInstruction("}");
+		dynaCode.addJavaInstruction("processor.fcr31_c = true;");
+		dynaCode.addJavaInstruction("} else {");
+		dynaCode.addJavaInstruction("boolean equal = ((" + cond + " & 2) != 0) && (x == y);");
+		dynaCode.addJavaInstruction("boolean less = ((" + cond + " & 4) != 0) && (x < y);");
+		dynaCode.addJavaInstruction("processor.fcr31_c = less || equal;");
+		dynaCode.addJavaInstruction("}");
 	}
 
 	@Override
@@ -743,8 +757,11 @@ public class JavassistRecompiler implements AllegrexInstructions {
 
 	@Override
 	public void doSEH(int rd, int rt) {
-		System.err.println("SEH Instruction is not supported by recompiler");
-
+		if (dynaCode.getFixedValue(rt) != null) {
+			dynaCode.gprAssignValue(rd, (dynaCode.getFixedValue(rt) << 16) >> 16);
+		} else {
+			dynaCode.gprAssignExpression(rd, "(" + dynaCode.getGPRCodeRepr(rt) + " << 16) >> 16");
+		}
 	}
 
 	@Override
