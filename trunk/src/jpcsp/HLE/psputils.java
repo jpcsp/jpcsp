@@ -64,9 +64,11 @@ public class psputils {
      * Current implemention uses clocks since Initialise was last called, and
      * we are using clocks = seconds * CLOCKS_PER_SEC, where CLOCKS_PER_SEC
      * is 1 million (1000000). */
+    protected int currentClocks = 0;
     public void sceKernelLibcClock() {
-        int clocks = (int)System.nanoTime() - initialclocks; // seconds * 1 million
-        Emulator.getProcessor().gpr[2] = clocks;
+        //int clocks = (int)System.nanoTime() - initialclocks; // seconds * 1 million
+    	currentClocks += 100;	// FIXME: quick hack to fix NesterJ
+        Emulator.getProcessor().gpr[2] = currentClocks;
     }
 
     public void sceKernelDcacheWritebackAll() {
