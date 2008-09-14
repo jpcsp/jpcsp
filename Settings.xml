@@ -45,7 +45,7 @@
       <recompiler>0</recompiler>
       <disablege>0</disablege>
       <umdbrowser>1</umdbrowser>
-      <umdpath>C:\Documents and Settings\shadow\My Documents\umdimages</umdpath>
+      <umdpath>umdimages</umdpath>
       <keys>
           <up>38</up>
           <down>40</down>
