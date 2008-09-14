@@ -1,0 +1,26 @@
+What's new for PSPTris
+
+Version 0.6 (07th of May 2006)
+--------------------------------
+Fixes:
+	- The keyhandling are more responsive (quicker) in the game.
+	- The blockhandling has been rewritten, so rotation etc. should work correct now.
+	- Better handling when entering highscores (it automatically selects next position after having entered a character).
+	- Updated the danzeff OSK so that it doesn't need the transperant images. This saves 1 MB of system memory. (the transperancy still works).
+	- Mute the music while the game is paused.
+	- Update the bricks so that there are more differences in the colors.
+
+Features:
+	- New gametype has been added (matching colors).
+	- Game instructions added to the menu.
+	- A line counter has been added to the classic game.
+	- Exploding effect added when removing lines/balls.
+	- Sounds effects has been added to the game.
+
+
+Version 0.5 (29th of April 2006)
+--------------------------------
+Fixes:
+
+Features:
+	- Initial release (so everything is new :) )
