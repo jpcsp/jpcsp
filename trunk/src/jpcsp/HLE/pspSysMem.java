@@ -2,6 +2,9 @@
 Function:
 - http://psp.jim.sh/pspsdk-doc/group__SysMem.html
 
+Notes:
+Current allocation scheme doesn't handle partitions, freeing blocks or the
+space consumed by the program image.
 
 This file is part of jpcsp.
 
@@ -20,6 +23,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
+import java.util.HashMap;
+import jpcsp.Emulator;
+import jpcsp.GeneralJpcspException;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import static jpcsp.util.Utilities.*;
@@ -29,39 +35,181 @@ import static jpcsp.util.Utilities.*;
  */
 public class pspSysMem {
     private static pspSysMem instance;
-    public enum PspSysMemBlockTypes{ PSP_SMEM_Low ,PSP_SMEM_High,PSP_SMEM_Addr};
-    
+
+    private static HashMap<Integer, SysMemInfo> blockList;
+    private int heapTop, heapBottom;
+
+    // PspSysMemBlockTypes
+    public static final int PSP_SMEM_Low = 0;
+    public static final int PSP_SMEM_High = 1;
+    public static final int PSP_SMEM_Addr = 2;
+
+    private pspSysMem() { }
+
     public static pspSysMem get_instance() {
         if (instance == null) {
             instance = new pspSysMem();
         }
         return instance;
     }
-    public void sceKernelMaxFreeMemSize()
+
+    public void Initialise()
     {
-        System.out.println("Unimplement:sceKernelMaxFreeMemSize");
-    }
-    public void sceKernelTotalFreeMemSize()
-    {
-        System.out.println("Unimplement:sceKernelTotalFreeMemSize");
-    }
-    public void sceKernelAllocPartitionMemory(int a0, int a1, int a2, int a3,int t0)
-    {
-        int partitionid=a0;
-        String name = readStringZ(Memory.get_instance().mainmemory, (a1 & 0x3fffffff) - MemoryMap.START_RAM);
-        int type=a2; //PspSysMemBlockTypes;
-        int size=a3;
-        int address=t0;//If type is PSP_SMEM_Addr, then addr specifies the lowest address allocate the block from.
-        
-        System.out.println("(Unimplement):sceKernelAllocPartitionMemory partitionid ="+partitionid + " name =" + name + " type="+ type + " size=" + size + " address= "+ Integer.toHexString(address));
-    }
-    public void sceKernelFreePartitionMemory(int a0)
-    {
-        System.out.println("Unimplement:sceKernelFreePartitionMemory");
-    }
-    public void sceKernelGetBlockHeadAddr(int a0)
-    {
-        System.out.println("Unimplement:sceKernelGetBlockHeadAddr");
+        blockList = new HashMap<Integer, SysMemInfo>();
+
+        // TODO grab the actual size from Emulator/FileManager
+        int programSize = 0x400000;
+
+        heapBottom = MemoryMap.START_RAM + 0x800000 + programSize;
+        heapTop = MemoryMap.END_RAM;
     }
 
+    // Allocates to 64-byte alignment
+    // TODO use the partitionid
+    public int malloc(int partitionid, int type, int size, int addr)
+    {
+        int allocatedAddress = 0;
+
+        // TODO check when we are running out of mem!
+        if (type == PSP_SMEM_Low)
+        {
+            allocatedAddress = heapBottom;
+            allocatedAddress = (allocatedAddress + 63) & ~63;
+            heapBottom = allocatedAddress + size;
+        }
+        else if (type == PSP_SMEM_Addr)
+        {
+            allocatedAddress = heapBottom;
+            if (allocatedAddress < addr)
+                allocatedAddress = addr;
+            allocatedAddress = (allocatedAddress + 63) & ~63;
+            heapBottom = allocatedAddress + size;
+        }
+        else if (type == PSP_SMEM_High)
+        {
+            allocatedAddress = (heapTop - (size + 63)) & ~63;
+            heapTop = allocatedAddress;
+        }
+
+        return allocatedAddress;
+    }
+
+    // For internal use, example: ThreadMan allocating stack space
+    public void free(int addr)
+    {
+        // TODO reverse lookup on blockList, get SysMemInfo and call free
+    }
+    
+    public void free(SysMemInfo info)
+    {
+        // TODO
+    }
+    
+    public void sceKernelMaxFreeMemSize()
+    {
+        int maxFree = heapTop - heapBottom;
+        System.out.println("sceKernelMaxFreeMemSize " + Integer.toHexString(maxFree));
+        Emulator.getProcessor().gpr[2] = maxFree;
+    }
+
+    public void sceKernelTotalFreeMemSize()
+    {
+        int totalFree = heapTop - heapBottom;
+        System.out.println("sceKernelTotalFreeMemSize " + Integer.toHexString(totalFree));
+        Emulator.getProcessor().gpr[2] = totalFree;
+    }
+
+    /**
+     * @param partitionid TODO probably user, kernel etc
+     * 0 = ?
+     * 1 = kernel?
+     * 2 = user?
+     * @param type If type is PSP_SMEM_Addr, then addr specifies the lowest
+     * address allocate the block from.
+     */
+    public void sceKernelAllocPartitionMemory(int partitionid, int pname, int type, int size, int addr)
+    {
+        pname &= 0x3fffffff;
+        addr &= 0x3fffffff;
+        String name = readStringZ(Memory.get_instance().mainmemory, pname - MemoryMap.START_RAM);
+
+        // print debug info
+        String typeStr;
+        switch(type) {
+            case PSP_SMEM_Low: typeStr = "PSP_SMEM_Low"; break;
+            case PSP_SMEM_High: typeStr = "PSP_SMEM_High"; break;
+            case PSP_SMEM_Addr: typeStr = "PSP_SMEM_Addr"; break;
+            default: typeStr = "UNHANDLED " + type; break;
+        }
+        System.out.println("sceKernelAllocPartitionMemory(partitionid=" + partitionid
+                + ",name='" + name + "',type=" + typeStr + ",size=" + size
+                + ",addr=" + Integer.toHexString(addr) + ")");
+
+        addr = malloc(partitionid, type, size, addr);
+        if (addr != 0)
+        {
+            SysMemInfo info = new SysMemInfo(partitionid, name, type, size, addr);
+            Emulator.getProcessor().gpr[2] = info.uid;
+        }
+        else
+        {
+            Emulator.getProcessor().gpr[2] = -1;
+        }
+    }
+
+    public void sceKernelFreePartitionMemory(int uid) throws GeneralJpcspException
+    {
+        SceUIDMan.get_instance().checkUidPurpose(uid, "SysMem", true);
+        SysMemInfo info = blockList.remove(uid);
+        if (info == null) {
+            System.out.println("sceKernelFreePartitionMemory unknown SceUID=" + Integer.toHexString(uid));
+            Emulator.getProcessor().gpr[2] = -1;
+        } else {
+            free(info);
+            System.out.println("UNIMPLEMENT:sceKernelFreePartitionMemory SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "'");
+            Emulator.getProcessor().gpr[2] = 0;
+        }
+    }
+
+    public void sceKernelGetBlockHeadAddr(int uid) throws GeneralJpcspException
+    {
+        SceUIDMan.get_instance().checkUidPurpose(uid, "SysMem", true);
+        SysMemInfo info = blockList.get(uid);
+        if (info == null) {
+            System.out.println("sceKernelGetBlockHeadAddr unknown SceUID=" + Integer.toHexString(uid));
+            Emulator.getProcessor().gpr[2] = -1;
+        } else {
+            System.out.println("sceKernelGetBlockHeadAddr SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "' headAddr:" + Integer.toHexString(info.addr));
+            Emulator.getProcessor().gpr[2] = info.addr;
+        }
+    }
+
+    public void sceKernelDevkitVersion()
+    {
+        // Return 1.5 for now
+        System.out.println("sceKernelDevkitVersion 0x01050100");
+        Emulator.getProcessor().gpr[2] = 0x01050100;
+    }
+
+    class SysMemInfo {
+        public final int uid;
+        public final int partitionid;
+        public final String name;
+        public final int type;
+        public final int size;
+        public final int addr;
+
+        public SysMemInfo(int partitionid, String name, int type,
+                int size, int addr) {
+            this.partitionid = partitionid;
+            this.name = name;
+            this.type = type;
+            this.size = size;
+            this.addr = addr;
+
+            uid = SceUIDMan.get_instance().getNewUid("SysMem");
+            blockList.put(uid, this);
+        }
+
+    }
 }

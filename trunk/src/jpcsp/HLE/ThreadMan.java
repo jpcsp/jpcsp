@@ -170,6 +170,7 @@ public class ThreadMan {
                 if (thread.do_delete) {
                     // TODO cleanup thread, example: free the stack, anything else?
                     // MemoryMan.free(thread.stack_addr);
+                    pspSysMem.get_instance().free(thread.stack_addr);
 
                     // Changed to thread safe iterator.remove
                     //threadlist.remove(thread.uid);
@@ -369,15 +370,6 @@ public class ThreadMan {
 
         // Mark thread for deletion
         thread.do_delete = true;
-
-        /* or we could just delete it here
-        // Delete
-        // TODO cleanup thread, example: free the stack, anything else?
-        // MemoryMan.free(thread.stack_addr);
-
-        threadlist.remove(thread.uid);
-        SceUIDMan.get_instance().releaseUid(thread.uid, "ThreadMan-thread");
-        */
         
         contextSwitch(nextThread());
     }
@@ -521,9 +513,12 @@ public class ThreadMan {
     private static final int PSP_THREAD_ATTR_CLEAR_STACK = 0x00200000; // Clear the stack when the thread is deleted.
 
     private int mallocStack(int size) {
+        /* 
         int p = 0x09f00000 - stackAllocated;
         stackAllocated += size;
         return p;
+         */
+        return pspSysMem.get_instance().malloc(2, pspSysMem.PSP_SMEM_High, size, 0);
     }
 
     private void memset(int address, byte c, int length) {

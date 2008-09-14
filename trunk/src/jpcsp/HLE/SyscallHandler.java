@@ -340,7 +340,9 @@ public class SyscallHandler {
                     pspSysMem.get_instance().sceKernelGetBlockHeadAddr(gpr[4]);
                     break;
 		// SysMemUserForUser_13A5ABEF(0x20e1),
-		// sceKernelDevkitVersion(0x20e2),
+                case 0x20e2:
+                    pspSysMem.get_instance().sceKernelDevkitVersion();
+                    break;
 		// sceKernelPowerLock(0x20e3),
 		// sceKernelPowerUnlock(0x20e4),
 		// sceKernelPowerTick(0x20e5),
