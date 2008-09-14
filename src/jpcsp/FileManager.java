@@ -108,7 +108,8 @@ public class FileManager {
 
             /*try pbp format*/
             pbp = new PBP(getActualFile());
-            System.out.println(pbp.readPSF(getActualFile()));
+            if (pbp.getOffsetParam() > 0)
+                System.out.println(pbp.readPSF(getActualFile()));
             processPbp();
             if (getType() == FORMAT_PBP) {
                 return;

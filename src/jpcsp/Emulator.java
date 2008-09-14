@@ -31,7 +31,7 @@ import jpcsp.format.Elf32StubHeader;
 import static jpcsp.util.Utilities.*;
 import jpcsp.filesystems.*;
 
-import jpcsp.util.Utilities;
+//import jpcsp.util.Utilities;
 
 public class Emulator implements Runnable {
 public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
@@ -326,7 +326,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
             }
         }
         int numberoffailedNIDS=0;
-        int numberofloadedNIDS=0;
+        int numberofmappedNIDS=0;
         // Imports
         for (Elf32SectionHeader shdr : elf.getListSectionHeader()) {
             if (shdr.getSh_namez().equals(".lib.stub")) {
@@ -380,7 +380,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                                     | ((code & 0x000fffff) << 6);
 
                                 mem.write32(importAddress + 4, instruction);
-                                numberofloadedNIDS++;
+                                numberofmappedNIDS++;
                                 //System.out.println("Mapped NID " + Integer.toHexString(nid) + " to syscall " + Integer.toHexString(code));
                             }
                             else
@@ -434,8 +434,8 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
             }
             System.out.println(jpcsp.Allegrex.Instructions.ADDIU.getCount());*/
         }
-        System.out.println(numberofloadedNIDS + " NIDS loaded");
-        if(numberoffailedNIDS>0) System.out.println("Total Failed to load NIDS = " + numberoffailedNIDS);
+        System.out.println(numberofmappedNIDS + " NIDS mapped");
+        if(numberoffailedNIDS>0) System.out.println("Total Failed to map NIDS = " + numberoffailedNIDS);
     }
 
     private void initCpuBy(Elf32 elf) {
@@ -453,6 +453,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
         cpu.gpr[31] = 0x08000004; //ra, should this be 0?
         // All other registers are uninitialised/random values
 
+        jpcsp.HLE.pspSysMem.get_instance().Initialise();
         jpcsp.HLE.ThreadMan.get_instance().Initialise(cpu.pc, romManager.getPSPModuleInfo().getM_attr());
         jpcsp.HLE.psputils.get_instance().Initialise();
         jpcsp.HLE.pspge.get_instance().Initialise();
