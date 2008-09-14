@@ -1,4 +1,6 @@
 /*
+Parts based on soywiz's pspemulator.
+
 This file is part of jpcsp.
 
 Jpcsp is free software: you can redistribute it and/or modify
@@ -35,7 +37,7 @@ public class VideoEngine {
     private boolean ha;
     private static final boolean isDebugMode = true;
     private static GeCommands helper;
-    private Vertex vertex = new Vertex();
+    private VertexInfo vinfo = new VertexInfo();
     private static final char SPACE = ' ';
 
     // TODO these currently here for testing only
@@ -159,16 +161,16 @@ public class VideoEngine {
                 log(helper.getCommandString(BASE) + " " + String.format("%08x", actualList.base));
                 break;
             case IADDR:
-                vertex.ptr_index = actualList.base | normalArgument;
-                log(helper.getCommandString(IADDR) + " " + String.format("%08x", vertex.ptr_index));
+                vinfo.ptr_index = actualList.base | normalArgument;
+                log(helper.getCommandString(IADDR) + " " + String.format("%08x", vinfo.ptr_index));
                 break;
             case VADDR:
-                vertex.ptr_vertex = actualList.base | normalArgument;
-                log(helper.getCommandString(VADDR) + " " + String.format("%08x", vertex.ptr_vertex));
+                vinfo.ptr_vertex = actualList.base | normalArgument;
+                log(helper.getCommandString(VADDR) + " " + String.format("%08x", vinfo.ptr_vertex));
                 break;
             case VTYPE:
-                vertex.processType(normalArgument);
-                log(helper.getCommandString(VTYPE) + " " + vertex.toString());
+                vinfo.processType(normalArgument);
+                log(helper.getCommandString(VTYPE) + " " + vinfo.toString());
                 break;
 
             case TME:
@@ -298,6 +300,7 @@ public class VideoEngine {
                 break;
 
             case PRIM:
+            {
                 int[] mapping = new int[] { GL.GL_POINTS, GL.GL_LINES, GL.GL_LINE_STRIP, GL.GL_TRIANGLES, GL.GL_TRIANGLE_STRIP, GL.GL_TRIANGLE_FAN };
                 int numberOfVertex = normalArgument & 0xFFFF;
                 int type = ((normalArgument >> 16) & 0x7);
@@ -323,7 +326,7 @@ public class VideoEngine {
                         log(helper.getCommandString(PRIM) + " triangle_fans");
                         break;
                     case PRIM_SPRITES:
-                        log(helper.getCommandString(PRIM) + " sprites UNIMPLEMENTED");
+                        log(helper.getCommandString(PRIM) + " sprites");
                         break;
                 }
 
@@ -337,17 +340,53 @@ public class VideoEngine {
                     case PRIM_TRIANGLE_FANS:
                         gl.glBegin(mapping[type]);
                             for (int i = 0; i < numberOfVertex; i++) {
-                                int addr = vertex.getAddress(i);
-                                vertex.output(gl, Emulator.getMemory(), addr);
+                                int addr = vinfo.getAddress(i);
+                                VertexState v = vinfo.readVertex(Emulator.getMemory(), addr);
+                                if (vinfo.texture  != 0) gl.glTexCoord2f(v.u, v.v);
+                                if (vinfo.color    != 0) gl.glColor4f(v.r, v.g, v.b, v.a);
+                                if (vinfo.normal   != 0) gl.glNormal3f(v.nx, v.ny, v.nz);
+                                if (vinfo.position != 0) gl.glVertex3f(v.px, v.py, v.pz);
                             }
                         gl.glEnd();
                         break;
 
                     case PRIM_SPRITES:
-                        // TODO
+                        gl.glPushAttrib(GL.GL_CULL_FACE);
+                        gl.glDisable(GL.GL_CULL_FACE);
+                        gl.glBegin(GL.GL_QUADS);
+                            for (int i = 0; i < numberOfVertex; i += 2) {
+                                int addr1 = vinfo.getAddress(i);
+                                int addr2 = vinfo.getAddress(i + 1);
+                                VertexState v1 = vinfo.readVertex(Emulator.getMemory(), addr1);
+                                VertexState v2 = vinfo.readVertex(Emulator.getMemory(), addr2);
+
+                                // V1
+                                if (vinfo.normal   != 0) gl.glNormal3f(v1.nx, v1.ny, v1.nz);
+                                if (vinfo.color    != 0) gl.glColor4f(v1.r, v1.g, v1.b, v1.a);
+
+                                if (vinfo.texture  != 0) gl.glTexCoord2f(v1.u, v1.v);
+                                if (vinfo.position != 0) gl.glVertex3f(v1.px, v1.py, v1.pz);
+
+                                if (vinfo.texture  != 0) gl.glTexCoord2f(v2.u, v1.v);
+                                if (vinfo.position != 0) gl.glVertex3f(v2.px, v1.py, v1.pz);
+
+                                // V2
+                                if (vinfo.normal   != 0) gl.glNormal3f(v2.nx, v2.ny, v2.nz);
+                                if (vinfo.color    != 0) gl.glColor4f(v2.r, v2.g, v2.b, v2.a);
+
+                                if (vinfo.texture  != 0) gl.glTexCoord2f(v2.u, v2.v);
+                                if (vinfo.position != 0) gl.glVertex3f(v2.px, v2.py, v1.pz);
+
+                                if (vinfo.texture  != 0) gl.glTexCoord2f(v1.u, v2.v);
+                                if (vinfo.position != 0) gl.glVertex3f(v1.px, v2.py, v1.pz);
+
+                            }
+                        gl.glEnd();
+                        gl.glPopAttrib();
                         break;
                 }
                 break;
+            }
 
             case SHADE:
             {
@@ -364,7 +403,7 @@ public class VideoEngine {
                 log(helper.getCommandString(FFACE) + " " + ((normalArgument != 0) ? "clockwise" : "counter-clockwise"));
                 break;
             }
-            
+
 
             case JUMP:
                 int npc = (normalArgument | actualList.base) & 0xFFFFFFFC;
