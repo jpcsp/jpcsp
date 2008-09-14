@@ -351,9 +351,9 @@ public class ThreadMan {
 
         current_thread.status = PspThreadStatus.PSP_THREAD_STOPPED;
         current_thread.exitStatus = exitStatus;
-        contextSwitch(nextThread());
-
         Emulator.getProcessor().gpr[2] = 0;
+        
+        contextSwitch(nextThread());
     }
 
     /** exit the current thread, then delete it */
@@ -365,7 +365,7 @@ public class ThreadMan {
         // Exit
         current_thread.status = PspThreadStatus.PSP_THREAD_STOPPED;
         current_thread.exitStatus = exitStatus;
-        contextSwitch(nextThread());
+        Emulator.getProcessor().gpr[2] = 0;
 
         // Mark thread for deletion
         thread.do_delete = true;
@@ -378,8 +378,8 @@ public class ThreadMan {
         threadlist.remove(thread.uid);
         SceUIDMan.get_instance().releaseUid(thread.uid, "ThreadMan-thread");
         */
-
-        Emulator.getProcessor().gpr[2] = 0;
+        
+        contextSwitch(nextThread());
     }
 
     /** sleep the current thread until a registered callback is triggered */
@@ -388,9 +388,9 @@ public class ThreadMan {
 
         current_thread.status = PspThreadStatus.PSP_THREAD_SUSPEND;
         current_thread.do_callbacks = true;
-        contextSwitch(nextThread());
-
         Emulator.getProcessor().gpr[2] = 0;
+        
+        contextSwitch(nextThread());
     }
 
     /** sleep the current thread */
@@ -399,9 +399,9 @@ public class ThreadMan {
 
         current_thread.status = PspThreadStatus.PSP_THREAD_SUSPEND;
         current_thread.do_callbacks = false;
-        contextSwitch(nextThread());
-
         Emulator.getProcessor().gpr[2] = 0;
+        
+        contextSwitch(nextThread());
     }
 
     /** sleep the current thread for a certain number of microseconds */
@@ -410,10 +410,9 @@ public class ThreadMan {
         //current_thread.delaysteps = a0 * 200000000 / 1000000; // TODO delaysteps = a0 * steprate
         current_thread.delaysteps = a0; // test version
         current_thread.do_callbacks = false;
-        contextSwitch(nextThread());
-
         Emulator.getProcessor().gpr[2] = 0;
-        //return 0;
+        
+        contextSwitch(nextThread());
     }
 
     public void ThreadMan_sceKernelCreateCallback(int a0, int a1, int a2) throws GeneralJpcspException {
