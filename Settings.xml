@@ -3,8 +3,8 @@
 
     <windowspos>
         <mainwindow>
-            <x>72</x>
-            <y>317</y>
+            <x>322</x>
+            <y>230</y>
         </mainwindow>
        <disassembler>
          <x>50</x>
@@ -23,8 +23,8 @@
          <y>5</y>
        </registers>
       <logwindow>
-        <x>72</x>
-        <y>675</y>
+        <x>329</x>
+        <y>585</y>
       </logwindow>
     </windowspos>
         
@@ -45,7 +45,7 @@
       <recompiler>0</recompiler>
       <disablege>0</disablege>
       <umdbrowser>1</umdbrowser>
-      <umdpath>umdimages</umdpath>
+      <umdpath>C:\Documents and Settings\shadow\My Documents\umdimages</umdpath>
       <keys>
           <up>38</up>
           <down>40</down>
