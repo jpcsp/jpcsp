@@ -26,6 +26,10 @@ public class ThreadMan {
 		return SingletonHolder.instance;
 	}
 	
+	private ThreadMan() {
+		pspSysMem.get_instance().Initialise();
+	}
+	
 	public Processor newProcessor() {
 		return new FastProcessor();
 	}
@@ -174,6 +178,7 @@ public class ThreadMan {
 	        // Delete
 	        // TODO cleanup thread, example: free the stack, anything else?
 	        // MemoryMan.free(thread.stack_addr);
+	        pspSysMem.get_instance().free(current_thread.stack_addr);
 	        
 	        threads.remove( current_thread.uid );
 	        SceUIDMan.get_instance().releaseUid(current_thread.uid, "ThreadMan-thread");

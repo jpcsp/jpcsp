@@ -69,7 +69,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         int t;
         int cnt;
         if (DebuggerPC == 0) {
-            // DebuggerPC = PSPThread.currentPSPThread().processor.pc;
+            DebuggerPC = PSPThread.currentPSPThread().processor.pc;
         }
         listmodel.clear();
 

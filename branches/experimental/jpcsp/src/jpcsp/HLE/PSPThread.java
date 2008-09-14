@@ -56,9 +56,7 @@ public class PSPThread extends Thread {
     private static int stackAllocated;	
 	
     private int mallocStack(int size) {
-        int p = 0x09f00000 - stackAllocated;
-        stackAllocated += size;
-        return p;
+        return pspSysMem.get_instance().malloc(2, pspSysMem.PSP_SMEM_High, size, 0);
     }
     
     private void memset(int address, byte c, int length) {

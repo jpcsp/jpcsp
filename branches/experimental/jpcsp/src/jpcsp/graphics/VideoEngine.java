@@ -85,21 +85,19 @@ public class VideoEngine {
     // call from GL thread
     public void update() {
         //System.err.println("update start");
-    	synchronized (this) {
-            DisplayList.Lock();
-            Iterator<DisplayList> it = DisplayList.iterator();
-            while(it.hasNext() && !Emulator.pause) {
-                DisplayList list = it.next();
-                if (list.status == DisplayList.QUEUED) {
-                    //System.err.println("executeList");
-                    executeList(list);
+        DisplayList.Lock();
+        Iterator<DisplayList> it = DisplayList.iterator();
+        while(it.hasNext() && !Emulator.pause) {
+            DisplayList list = it.next();
+            if (list.status == DisplayList.QUEUED) {
+                //System.err.println("executeList");
+                executeList(list);
 
-                    if (list.status == DisplayList.DONE)
-                        it.remove();
-                }
+                if (list.status == DisplayList.DONE)
+                    it.remove();
             }
-            DisplayList.Unlock();			
-		}
+        }
+        DisplayList.Unlock();			
         //System.err.println("update done");
     }
 
