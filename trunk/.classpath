@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="lib" path="dist/Jpcsp.jar"/>
+	<classpathentry kind="lib" path="dist/lib/gluegen-rt.jar"/>
+	<classpathentry kind="lib" path="dist/lib/jdom1.1.jar"/>
+	<classpathentry kind="lib" path="dist/lib/jogl.jar"/>
+	<classpathentry kind="lib" path="lib/GLUEGEN-RT/gluegen-rt.jar"/>
+	<classpathentry kind="lib" path="lib/javassist.jar"/>
+	<classpathentry kind="lib" path="lib/JOGL/jogl.jar"/>
+	<classpathentry kind="lib" path="lib/kawa-1.9.1.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="lib/jgz-0.2.jar"/>
+	<classpathentry kind="lib" path="lib/jide-oss-2.3.1/jide-oss-2.3.1.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
