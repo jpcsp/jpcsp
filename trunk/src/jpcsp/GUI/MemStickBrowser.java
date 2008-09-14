@@ -116,7 +116,9 @@ public class MemStickBrowser extends JDialog {
 					String lower = file.getName().toLowerCase();
 					if (lower.endsWith(".pbp"))
 						return true;
-					if (file.isDirectory()) {
+					if (file.isDirectory()
+							&& !file.getName().startsWith("%")
+							&& !file.getName().endsWith("%")) {
 						File eboot[] = file.listFiles(new FileFilter() {
 							@Override
 							public boolean accept(File arg0) {
@@ -135,6 +137,7 @@ public class MemStickBrowser extends JDialog {
 			
 			for (int i = 0; i < programs.length; ++i) {
 				try {
+					File metapbp = programs[i];
 					if(programs[i].isDirectory()) {
 						File eboot[] = programs[i].listFiles(new FileFilter() {
 							@Override
@@ -142,10 +145,37 @@ public class MemStickBrowser extends JDialog {
 								return arg0.getName().equalsIgnoreCase("eboot.pbp");
 							}
 						});
-						programs[i] = eboot[0];
+												
+						metapbp = programs[i] = eboot[0];
+						
+						File metadir = new File(programs[i].getParentFile().getParentFile().getPath()
+								+ File.separatorChar + "%" + programs[i].getParentFile().getName());
+						if(metadir.exists()) {
+							eboot = metadir.listFiles(new FileFilter() {
+								@Override
+								public boolean accept(File arg0) {
+									return arg0.getName().equalsIgnoreCase("eboot.pbp");
+								}
+							});
+							if(eboot.length > 0)
+								metapbp = eboot[0];
+						}
+						
+						metadir = new File(programs[i].getParentFile().getParentFile().getPath()
+								+ File.separatorChar + programs[i].getParentFile().getName() + "%");
+						if(metadir.exists()) {
+							eboot = metadir.listFiles(new FileFilter() {
+								@Override
+								public boolean accept(File arg0) {
+									return arg0.getName().equalsIgnoreCase("eboot.pbp");
+								}
+							});
+							if(eboot.length > 0)
+								metapbp = eboot[0];
+						}
 					}
 					if(programs[i].getName().toLowerCase().endsWith(".pbp")) {
-						FileChannel roChannel = new RandomAccessFile(programs[i], "r").getChannel();
+						FileChannel roChannel = new RandomAccessFile(metapbp, "r").getChannel();
 						ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
 						pbps[i] = new PBP(readbuffer);
 						psfs[i] = pbps[i].readPSF(readbuffer);
