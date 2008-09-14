@@ -24,6 +24,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import jpcsp.Emulator;
 import jpcsp.GeneralJpcspException;
 import jpcsp.Memory;
@@ -95,27 +96,48 @@ public class pspSysMem {
     }
 
     // For internal use, example: ThreadMan allocating stack space
+    // Also removes the associated SysMemInfo (if found) from blockList
     public void free(int addr)
     {
-        // TODO reverse lookup on blockList, get SysMemInfo and call free
+        boolean found = false;
+
+        // Reverse lookup on blockList, get SysMemInfo and call free
+        for (Iterator<SysMemInfo> it = blockList.values().iterator(); it.hasNext();)
+        {
+            SysMemInfo info = it.next();
+            if (info.addr == addr)
+            {
+                found = true;
+                free(info);
+                it.remove();
+                break;
+            }
+        }
+
+        if (!found)
+        {
+            System.out.println("ERROR failed to map addr to SysMemInfo, possibly bad/missing cleanup or double free in HLE");
+        }
     }
-    
+
     public void free(SysMemInfo info)
     {
         // TODO
     }
-    
+
     public void sceKernelMaxFreeMemSize()
     {
         int maxFree = heapTop - heapBottom;
-        System.out.println("sceKernelMaxFreeMemSize " + Integer.toHexString(maxFree));
+        System.out.println("sceKernelMaxFreeMemSize " + maxFree
+                + " (hex=" + Integer.toHexString(maxFree) + ")");
         Emulator.getProcessor().gpr[2] = maxFree;
     }
 
     public void sceKernelTotalFreeMemSize()
     {
         int totalFree = heapTop - heapBottom;
-        System.out.println("sceKernelTotalFreeMemSize " + Integer.toHexString(totalFree));
+        System.out.println("sceKernelTotalFreeMemSize " + totalFree
+                + " (hex=" + Integer.toHexString(totalFree) + ")");
         Emulator.getProcessor().gpr[2] = totalFree;
     }
 

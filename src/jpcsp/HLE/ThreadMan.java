@@ -44,12 +44,11 @@ public class ThreadMan {
     private static ThreadMan instance;
     private static HashMap<Integer, SceKernelThreadInfo> threadlist;
     private SceKernelThreadInfo current_thread;
-    private int rootThreadUid;
     private SceKernelThreadInfo idle0, idle1;
     private int continuousIdleCycles; // watch dog timer
 
-    // stack allocation
-    private static int stackAllocated;
+    // stack allocation MOVED TO PSPSYSMEM
+    //private static int stackAllocated;
 
     public static ThreadMan get_instance() {
         if (instance == null) {
@@ -69,13 +68,12 @@ public class ThreadMan {
 
         threadlist = new HashMap<Integer, SceKernelThreadInfo>();
 
-        // Clear stack allocation info
-        stackAllocated = 0;
+        // Clear stack allocation info MOVED TO PSPSYSMEM
+        //stackAllocated = 0;
 
         install_idle_threads();
 
         current_thread = new SceKernelThreadInfo("root", entry_addr, 0x20, 0x40000, attr);
-        rootThreadUid = current_thread.uid;
 
         // Set user mode bit if kernel mode bit is not present
         if ((current_thread.attr & PSP_THREAD_ATTR_KERNEL) != PSP_THREAD_ATTR_KERNEL) {
