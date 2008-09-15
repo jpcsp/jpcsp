@@ -137,12 +137,8 @@
       <SubComponents>
         <Component class="javax.swing.JTable" name="OpcodeTable">
           <Properties>
-            <Property name="model" type="javax.swing.table.TableModel" editor="org.netbeans.modules.form.editors2.TableModelEditor">
-              <Table columnCount="3" rowCount="234">
-                <Column editable="false" title="Opcode" type="java.lang.String"/>
-                <Column editable="false" title="Category" type="java.lang.String"/>
-                <Column editable="false" title="Count" type="java.lang.Object"/>
-              </Table>
+            <Property name="model" type="javax.swing.table.TableModel" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+              <Connection code="new javax.swing.table.DefaultTableModel(&#xa;    new Object [jpcsp.Allegrex.Common.instructions().length][3],&#xa;    new String [] {&#xa;        &quot;Opcode&quot;, &quot;Category&quot;, &quot;Count&quot;&#xa;    }&#xa;) {&#xa;    Class[] types = new Class [] {&#xa;        java.lang.String.class, java.lang.String.class, java.lang.Object.class&#xa;    };&#xa;    boolean[] canEdit = new boolean [] {&#xa;        false, false, false&#xa;    };&#xa;&#xa;    public Class getColumnClass(int columnIndex) {&#xa;        return types [columnIndex];&#xa;    }&#xa;&#xa;    public boolean isCellEditable(int rowIndex, int columnIndex) {&#xa;        return canEdit [columnIndex];&#xa;    }&#xa;}" type="code"/>
             </Property>
           </Properties>
           <AuxValues>

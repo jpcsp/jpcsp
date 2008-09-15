@@ -31,6 +31,13 @@ public class Instructions {
 
 
 public static final Instruction NOP = new Instruction(0) {
+
+@Override
+public final String name() { return "NOP"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 
@@ -48,6 +55,13 @@ return "nop";
 }
 };
 public static final Instruction ICACHE_INDEX_INVALIDATE = new Instruction(1) {
+
+@Override
+public final String name() { return "CACHE 0x04"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -71,6 +85,13 @@ return Common.disasmCODEIMMRS("cache", 0x04, signExtend(imm16), rs);
 }
 };
 public static final Instruction ICACHE_INDEX_UNLOCK = new Instruction(2) {
+
+@Override
+public final String name() { return "CACHE 0x06"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -94,6 +115,13 @@ return Common.disasmCODEIMMRS("cache", 0x06, signExtend(imm16), rs);
 }
 };
 public static final Instruction ICACHE_HIT_INVALIDATE = new Instruction(3) {
+
+@Override
+public final String name() { return "CACHE 0x08"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -117,6 +145,13 @@ return Common.disasmCODEIMMRS("cache", 0x08, signExtend(imm16), rs);
 }
 };
 public static final Instruction ICACHE_FILL = new Instruction(4) {
+
+@Override
+public final String name() { return "CACHE 0x0A"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -140,6 +175,13 @@ return Common.disasmCODEIMMRS("cache", 0x0A, signExtend(imm16), rs);
 }
 };
 public static final Instruction ICACHE_FILL_WITH_LOCK = new Instruction(5) {
+
+@Override
+public final String name() { return "CACHE 0x0B"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -163,6 +205,13 @@ return Common.disasmCODEIMMRS("cache", 0x0B, signExtend(imm16), rs);
 }
 };
 public static final Instruction DCACHE_INDEX_WRITEBACK_INVALIDATE = new Instruction(6) {
+
+@Override
+public final String name() { return "CACHE 0x14"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -186,6 +235,13 @@ return Common.disasmCODEIMMRS("cache", 0x14, signExtend(imm16), rs);
 }
 };
 public static final Instruction DCACHE_INDEX_UNLOCK = new Instruction(7) {
+
+@Override
+public final String name() { return "CACHE 0x16"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -209,6 +265,13 @@ return Common.disasmCODEIMMRS("cache", 0x16, signExtend(imm16), rs);
 }
 };
 public static final Instruction DCACHE_CREATE_DIRTY_EXCLUSIVE = new Instruction(8) {
+
+@Override
+public final String name() { return "CACHE 0x18"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -232,6 +295,13 @@ return Common.disasmCODEIMMRS("cache", 0x18, signExtend(imm16), rs);
 }
 };
 public static final Instruction DCACHE_HIT_INVALIDATE = new Instruction(9) {
+
+@Override
+public final String name() { return "CACHE 0x19"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -255,6 +325,13 @@ return Common.disasmCODEIMMRS("cache", 0x19, signExtend(imm16), rs);
 }
 };
 public static final Instruction DCACHE_HIT_WRITEBACK = new Instruction(10) {
+
+@Override
+public final String name() { return "CACHE 0x1A"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -278,6 +355,13 @@ return Common.disasmCODEIMMRS("cache", 0x1A, signExtend(imm16), rs);
 }
 };
 public static final Instruction DCACHE_HIT_WRITEBACK_INVALIDATE = new Instruction(11) {
+
+@Override
+public final String name() { return "CACHE 0x1B"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -301,6 +385,13 @@ return Common.disasmCODEIMMRS("cache", 0x1B, signExtend(imm16), rs);
 }
 };
 public static final Instruction DCACHE_CREATE_DIRTY_EXCLUSIVE_WITH_LOCK = new Instruction(12) {
+
+@Override
+public final String name() { return "CACHE 0x1C"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -324,6 +415,13 @@ return Common.disasmCODEIMMRS("cache", 0x1C, signExtend(imm16), rs);
 }
 };
 public static final Instruction DCACHE_FILL = new Instruction(13) {
+
+@Override
+public final String name() { return "CACHE 0x1E"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -347,6 +445,13 @@ return Common.disasmCODEIMMRS("cache", 0x1E, signExtend(imm16), rs);
 }
 };
 public static final Instruction DCACHE_FILL_WITH_LOCK = new Instruction(14) {
+
+@Override
+public final String name() { return "CACHE 0x1F"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -370,6 +475,13 @@ return Common.disasmCODEIMMRS("cache", 0x1F, signExtend(imm16), rs);
 }
 };
 public static final Instruction SYSCALL = new Instruction(15) {
+
+@Override
+public final String name() { return "SYSCALL"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm20 = (insn>>6)&1048575;
@@ -392,6 +504,13 @@ return Common.disasmSYSCALL(imm20);
 }
 };
 public static final Instruction ERET = new Instruction(16) {
+
+@Override
+public final String name() { return "ERET"; }
+
+@Override
+public final String category() { return "MIPS III"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 
@@ -411,6 +530,13 @@ return "eret";
 }
 };
 public static final Instruction BREAK = new Instruction(17) {
+
+@Override
+public final String name() { return "BREAK"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm20 = (insn>>6)&1048575;
@@ -433,6 +559,13 @@ return Common.disasmBREAK(imm20);
 }
 };
 public static final Instruction SYNC = new Instruction(18) {
+
+@Override
+public final String name() { return "SYNC"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 
@@ -452,6 +585,13 @@ return "sync";
 }
 };
 public static final Instruction ADD = new Instruction(19) {
+
+@Override
+public final String name() { return "ADD"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -500,6 +640,13 @@ return Common.disasmRDRSRT("add", rd, rs, rt);
 }
 };
 public static final Instruction ADDU = new Instruction(20) {
+
+@Override
+public final String name() { return "ADDU"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -547,6 +694,13 @@ return Common.disasmRDRSRT("addu", rd, rs, rt);
 }
 };
 public static final Instruction ADDI = new Instruction(21) {
+
+@Override
+public final String name() { return "ADDI"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -594,6 +748,13 @@ return Common.disasmRTRSIMM("addi", rt, rs, signExtend(imm16));
 }
 };
 public static final Instruction ADDIU = new Instruction(22) {
+
+@Override
+public final String name() { return "ADDIU"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -640,6 +801,13 @@ return Common.disasmRTRSIMM("addiu", rt, rs, signExtend(imm16));
 }
 };
 public static final Instruction AND = new Instruction(23) {
+
+@Override
+public final String name() { return "AND"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -687,6 +855,13 @@ return Common.disasmRDRSRT("and", rd, rs, rt);
 }
 };
 public static final Instruction ANDI = new Instruction(24) {
+
+@Override
+public final String name() { return "ANDI"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -733,6 +908,13 @@ return Common.disasmRTRSIMM("andi", rt, rs, zeroExtend(imm16));
 }
 };
 public static final Instruction NOR = new Instruction(25) {
+
+@Override
+public final String name() { return "NOR"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -780,6 +962,13 @@ return Common.disasmRDRSRT("nor", rd, rs, rt);
 }
 };
 public static final Instruction OR = new Instruction(26) {
+
+@Override
+public final String name() { return "OR"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -827,6 +1016,13 @@ return Common.disasmRDRSRT("or", rd, rs, rt);
 }
 };
 public static final Instruction ORI = new Instruction(27) {
+
+@Override
+public final String name() { return "ORI"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -873,6 +1069,13 @@ return Common.disasmRTRSIMM("ori", rt, rs, zeroExtend(imm16));
 }
 };
 public static final Instruction XOR = new Instruction(28) {
+
+@Override
+public final String name() { return "XOR"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -920,6 +1123,13 @@ return Common.disasmRDRSRT("xor", rd, rs, rt);
 }
 };
 public static final Instruction XORI = new Instruction(29) {
+
+@Override
+public final String name() { return "XORI"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -966,6 +1176,13 @@ return Common.disasmRTRSIMM("xori", rt, rs, zeroExtend(imm16));
 }
 };
 public static final Instruction SLL = new Instruction(30) {
+
+@Override
+public final String name() { return "SLL"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int sa = (insn>>6)&31;
@@ -1012,6 +1229,13 @@ return Common.disasmRDRTSA("sll", rd, rt, sa);
 }
 };
 public static final Instruction SLLV = new Instruction(31) {
+
+@Override
+public final String name() { return "SLLV"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -1059,6 +1283,13 @@ return Common.disasmRDRTRS("sllv", rd, rt, rs);
 }
 };
 public static final Instruction SRA = new Instruction(32) {
+
+@Override
+public final String name() { return "SRA"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int sa = (insn>>6)&31;
@@ -1105,6 +1336,13 @@ return Common.disasmRDRTSA("sra", rd, rt, sa);
 }
 };
 public static final Instruction SRAV = new Instruction(33) {
+
+@Override
+public final String name() { return "SRAV"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -1152,6 +1390,13 @@ return Common.disasmRDRTRS("srav", rd, rt, rs);
 }
 };
 public static final Instruction SRL = new Instruction(34) {
+
+@Override
+public final String name() { return "SRL"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int sa = (insn>>6)&31;
@@ -1198,6 +1443,13 @@ return Common.disasmRDRTSA("srl", rd, rt, sa);
 }
 };
 public static final Instruction SRLV = new Instruction(35) {
+
+@Override
+public final String name() { return "SRLV"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -1245,6 +1497,13 @@ return Common.disasmRDRTRS("srlv", rd, rt, rs);
 }
 };
 public static final Instruction ROTR = new Instruction(36) {
+
+@Override
+public final String name() { return "ROTR"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int sa = (insn>>6)&31;
@@ -1291,6 +1550,13 @@ return Common.disasmRDRTSA("rotr", rd, rt, sa);
 }
 };
 public static final Instruction ROTRV = new Instruction(37) {
+
+@Override
+public final String name() { return "ROTRV"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -1338,6 +1604,13 @@ return Common.disasmRDRTRS("rotrv", rd, rt, rs);
 }
 };
 public static final Instruction SLT = new Instruction(38) {
+
+@Override
+public final String name() { return "SLT"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -1385,6 +1658,13 @@ return Common.disasmRDRSRT("slt", rd, rs, rt);
 }
 };
 public static final Instruction SLTI = new Instruction(39) {
+
+@Override
+public final String name() { return "SLTI"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -1431,6 +1711,13 @@ return Common.disasmRTRSIMM("slti", rt, rs, signExtend(imm16));
 }
 };
 public static final Instruction SLTU = new Instruction(40) {
+
+@Override
+public final String name() { return "SLTU"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -1478,6 +1765,13 @@ return Common.disasmRDRSRT("sltu", rd, rs, rt);
 }
 };
 public static final Instruction SLTIU = new Instruction(41) {
+
+@Override
+public final String name() { return "SLTIU"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -1524,6 +1818,13 @@ return Common.disasmRTRSIMM("sltiu", rt, rs, signExtend(imm16));
 }
 };
 public static final Instruction SUB = new Instruction(42) {
+
+@Override
+public final String name() { return "SUB"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -1572,6 +1873,13 @@ return Common.disasmRDRSRT("sub", rd, rs, rt);
 }
 };
 public static final Instruction SUBU = new Instruction(43) {
+
+@Override
+public final String name() { return "SUBU"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -1619,6 +1927,13 @@ return Common.disasmRDRSRT("subu", rd, rs, rt);
 }
 };
 public static final Instruction LUI = new Instruction(44) {
+
+@Override
+public final String name() { return "LUI"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -1649,6 +1964,13 @@ return Common.disasmRTIMM("lui", rt, zeroExtend(imm16));
 }
 };
 public static final Instruction SEB = new Instruction(45) {
+
+@Override
+public final String name() { return "SEB"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -1690,6 +2012,13 @@ return Common.disasmRDRT("seb", rd, rt);
 }
 };
 public static final Instruction SEH = new Instruction(46) {
+
+@Override
+public final String name() { return "SEH"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -1731,6 +2060,13 @@ return Common.disasmRDRT("seh", rd, rt);
 }
 };
 public static final Instruction BITREV = new Instruction(47) {
+
+@Override
+public final String name() { return "BITREV"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -1772,6 +2108,13 @@ return Common.disasmRDRT("bitrev", rd, rt);
 }
 };
 public static final Instruction WSBH = new Instruction(48) {
+
+@Override
+public final String name() { return "WSBH"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -1813,6 +2156,13 @@ return Common.disasmRDRT("wsbh", rd, rt);
 }
 };
 public static final Instruction WSBW = new Instruction(49) {
+
+@Override
+public final String name() { return "WSBW"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -1854,6 +2204,13 @@ return Common.disasmRDRT("wsbw", rd, rt);
 }
 };
 public static final Instruction MOVZ = new Instruction(50) {
+
+@Override
+public final String name() { return "MOVZ"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -1903,6 +2260,13 @@ return Common.disasmRDRSRT("movz", rd, rs, rt);
 }
 };
 public static final Instruction MOVN = new Instruction(51) {
+
+@Override
+public final String name() { return "MOVN"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -1952,6 +2316,13 @@ return Common.disasmRDRSRT("movn", rd, rs, rt);
 }
 };
 public static final Instruction MAX = new Instruction(52) {
+
+@Override
+public final String name() { return "MAX"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -1998,6 +2369,13 @@ return Common.disasmRDRSRT("max", rd, rs, rt);
 }
 };
 public static final Instruction MIN = new Instruction(53) {
+
+@Override
+public final String name() { return "MIN"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -2044,6 +2422,13 @@ return Common.disasmRDRSRT("min", rd, rs, rt);
 }
 };
 public static final Instruction CLZ = new Instruction(54) {
+
+@Override
+public final String name() { return "CLZ"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -2084,6 +2469,13 @@ return Common.disasmRDRS("clz", rd, rs);
 }
 };
 public static final Instruction CLO = new Instruction(55) {
+
+@Override
+public final String name() { return "CLO"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -2124,6 +2516,13 @@ return Common.disasmRDRS("clo", rd, rs);
 }
 };
 public static final Instruction EXT = new Instruction(56) {
+
+@Override
+public final String name() { return "EXT"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int lsb = (insn>>6)&31;
@@ -2174,6 +2573,13 @@ return Common.disasmEXT(rt, rs, lsb, msb);
 }
 };
 public static final Instruction INS = new Instruction(57) {
+
+@Override
+public final String name() { return "INS"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int lsb = (insn>>6)&31;
@@ -2227,6 +2633,13 @@ return Common.disasmINS(rt, rs, lsb, msb);
 }
 };
 public static final Instruction MULT = new Instruction(58) {
+
+@Override
+public final String name() { return "MULT"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rt = (insn>>16)&31;
@@ -2264,6 +2677,13 @@ return Common.disasmRSRT("mult", rs, rt);
 }
 };
 public static final Instruction MULTU = new Instruction(59) {
+
+@Override
+public final String name() { return "MULTU"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rt = (insn>>16)&31;
@@ -2301,6 +2721,13 @@ return Common.disasmRSRT("multu", rs, rt);
 }
 };
 public static final Instruction MADD = new Instruction(60) {
+
+@Override
+public final String name() { return "MADD"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rt = (insn>>16)&31;
@@ -2339,6 +2766,13 @@ return Common.disasmRSRT("madd", rs, rt);
 }
 };
 public static final Instruction MADDU = new Instruction(61) {
+
+@Override
+public final String name() { return "MADDU"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rt = (insn>>16)&31;
@@ -2377,6 +2811,13 @@ return Common.disasmRSRT("maddu", rs, rt);
 }
 };
 public static final Instruction MSUB = new Instruction(62) {
+
+@Override
+public final String name() { return "MSUB"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rt = (insn>>16)&31;
@@ -2415,6 +2856,13 @@ return Common.disasmRSRT("msub", rs, rt);
 }
 };
 public static final Instruction MSUBU = new Instruction(63) {
+
+@Override
+public final String name() { return "MSUB"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rt = (insn>>16)&31;
@@ -2453,6 +2901,13 @@ return Common.disasmRSRT("msubu", rs, rt);
 }
 };
 public static final Instruction DIV = new Instruction(64) {
+
+@Override
+public final String name() { return "DIV"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rt = (insn>>16)&31;
@@ -2490,6 +2945,13 @@ return Common.disasmRSRT("div", rs, rt);
 }
 };
 public static final Instruction DIVU = new Instruction(65) {
+
+@Override
+public final String name() { return "DIVU"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rt = (insn>>16)&31;
@@ -2527,6 +2989,13 @@ return Common.disasmRSRT("divu", rs, rt);
 }
 };
 public static final Instruction MFHI = new Instruction(66) {
+
+@Override
+public final String name() { return "MFHI"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -2560,6 +3029,13 @@ return Common.disasmRD("mfhi", rd);
 }
 };
 public static final Instruction MFLO = new Instruction(67) {
+
+@Override
+public final String name() { return "MFLO"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -2593,6 +3069,13 @@ return Common.disasmRD("mflo", rd);
 }
 };
 public static final Instruction MTHI = new Instruction(68) {
+
+@Override
+public final String name() { return "MTHI"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rs = (insn>>21)&31;
@@ -2626,6 +3109,13 @@ return Common.disasmRS("mthi", rs);
 }
 };
 public static final Instruction MTLO = new Instruction(69) {
+
+@Override
+public final String name() { return "MTLO"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rs = (insn>>21)&31;
@@ -2659,6 +3149,13 @@ return Common.disasmRS("mtlo", rs);
 }
 };
 public static final Instruction BEQ = new Instruction(70) {
+
+@Override
+public final String name() { return "BEQ"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -2717,6 +3214,13 @@ return Common.disasmRSRTOFFSET("beq", rs, rt, imm16, address);
 }
 };
 public static final Instruction BEQL = new Instruction(71) {
+
+@Override
+public final String name() { return "BEQL"; }
+
+@Override
+public final String category() { return "MIPS II"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -2780,6 +3284,13 @@ return Common.disasmRSRTOFFSET("beql", rs, rt, imm16, address);
 }
 };
 public static final Instruction BGEZ = new Instruction(72) {
+
+@Override
+public final String name() { return "BGEZ"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -2805,6 +3316,13 @@ return Common.disasmRSOFFSET("bgez", rs, imm16, address);
 }
 };
 public static final Instruction BGEZAL = new Instruction(73) {
+
+@Override
+public final String name() { return "BGEZAL"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -2830,6 +3348,13 @@ return Common.disasmRSOFFSET("bgezal", rs, imm16, address);
 }
 };
 public static final Instruction BGEZALL = new Instruction(74) {
+
+@Override
+public final String name() { return "BGEZALL"; }
+
+@Override
+public final String category() { return "MIPS II"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -2855,6 +3380,13 @@ return Common.disasmRSOFFSET("bgezall", rs, imm16, address);
 }
 };
 public static final Instruction BGEZL = new Instruction(75) {
+
+@Override
+public final String name() { return "BGEZL"; }
+
+@Override
+public final String category() { return "MIPS II"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -2880,6 +3412,13 @@ return Common.disasmRSOFFSET("bgezl", rs, imm16, address);
 }
 };
 public static final Instruction BGTZ = new Instruction(76) {
+
+@Override
+public final String name() { return "BGTZ"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -2905,6 +3444,13 @@ return Common.disasmRSOFFSET("bgtz", rs, imm16, address);
 }
 };
 public static final Instruction BGTZL = new Instruction(77) {
+
+@Override
+public final String name() { return "BGTZL"; }
+
+@Override
+public final String category() { return "MIPS II"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -2930,6 +3476,13 @@ return Common.disasmRSOFFSET("bgtzl", rs, imm16, address);
 }
 };
 public static final Instruction BLEZ = new Instruction(78) {
+
+@Override
+public final String name() { return "BLEZ"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -2955,6 +3508,13 @@ return Common.disasmRSOFFSET("blez", rs, imm16, address);
 }
 };
 public static final Instruction BLEZL = new Instruction(79) {
+
+@Override
+public final String name() { return "BLEZL"; }
+
+@Override
+public final String category() { return "MIPS II"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -2980,6 +3540,13 @@ return Common.disasmRSOFFSET("blezl", rs, imm16, address);
 }
 };
 public static final Instruction BLTZ = new Instruction(80) {
+
+@Override
+public final String name() { return "BLTZ"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3005,6 +3572,13 @@ return Common.disasmRSOFFSET("bltz", rs, imm16, address);
 }
 };
 public static final Instruction BLTZAL = new Instruction(81) {
+
+@Override
+public final String name() { return "BLTZAL"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3030,6 +3604,13 @@ return Common.disasmRSOFFSET("bltzal", rs, imm16, address);
 }
 };
 public static final Instruction BLTZALL = new Instruction(82) {
+
+@Override
+public final String name() { return "BLTZALL"; }
+
+@Override
+public final String category() { return "MIPS II"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3055,6 +3636,13 @@ return Common.disasmRSOFFSET("bltzall", rs, imm16, address);
 }
 };
 public static final Instruction BLTZL = new Instruction(83) {
+
+@Override
+public final String name() { return "BLTZL"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3080,6 +3668,13 @@ return Common.disasmRSOFFSET("bltzl", rs, imm16, address);
 }
 };
 public static final Instruction BNE = new Instruction(84) {
+
+@Override
+public final String name() { return "BNE"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3138,6 +3733,13 @@ return Common.disasmRSRTOFFSET("bne", rs, rt, imm16, address);
 }
 };
 public static final Instruction BNEL = new Instruction(85) {
+
+@Override
+public final String name() { return "BNEL"; }
+
+@Override
+public final String category() { return "MIPS II"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3166,6 +3768,13 @@ return Common.disasmRSRTOFFSET("bnel", rs, rt, imm16, address);
 }
 };
 public static final Instruction J = new Instruction(86) {
+
+@Override
+public final String name() { return "J"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm26 = (insn>>0)&67108863;
@@ -3188,6 +3797,13 @@ return Common.disasmJUMP("j", imm26, address);
 }
 };
 public static final Instruction JAL = new Instruction(87) {
+
+@Override
+public final String name() { return "JAL"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm26 = (insn>>0)&67108863;
@@ -3214,6 +3830,13 @@ return Common.disasmJUMP("jal", imm26, address);
 }
 };
 public static final Instruction JALR = new Instruction(88) {
+
+@Override
+public final String name() { return "JALR"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rd = (insn>>11)&31;
@@ -3258,6 +3881,13 @@ return Common.disasmRDRS("jalr", rd, rs);
 }
 };
 public static final Instruction JR = new Instruction(89) {
+
+@Override
+public final String name() { return "JR"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int rs = (insn>>21)&31;
@@ -3293,6 +3923,13 @@ return Common.disasmRS("jr", rs);
 }
 };
 public static final Instruction BC1F = new Instruction(90) {
+
+@Override
+public final String name() { return "BC1F"; }
+
+@Override
+public final String category() { return "MIPS I/FPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3326,6 +3963,13 @@ return Common.disasmOFFSET("bc1f", imm16, address);
 }
 };
 public static final Instruction BC1T = new Instruction(91) {
+
+@Override
+public final String name() { return "BC1T"; }
+
+@Override
+public final String category() { return "MIPS I/FPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3359,6 +4003,13 @@ return Common.disasmOFFSET("bc1t", imm16, address);
 }
 };
 public static final Instruction BC1FL = new Instruction(92) {
+
+@Override
+public final String name() { return "BC1FL"; }
+
+@Override
+public final String category() { return "MIPS II/FPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3404,6 +4055,13 @@ return Common.disasmOFFSET("bc1fl", imm16, address);
 }
 };
 public static final Instruction BC1TL = new Instruction(93) {
+
+@Override
+public final String name() { return "BC1TL"; }
+
+@Override
+public final String category() { return "MIPS II/FPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3449,6 +4107,13 @@ return Common.disasmOFFSET("bc1tl", imm16, address);
 }
 };
 public static final Instruction BVF = new Instruction(94) {
+
+@Override
+public final String name() { return "BVF"; }
+
+@Override
+public final String category() { return "MIPS I/VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3474,6 +4139,13 @@ return "Unimplemented BVF";
 }
 };
 public static final Instruction BVT = new Instruction(95) {
+
+@Override
+public final String name() { return "BVT"; }
+
+@Override
+public final String category() { return "MIPS I/VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3499,6 +4171,13 @@ return "Unimplemented BVF";
 }
 };
 public static final Instruction BVFL = new Instruction(96) {
+
+@Override
+public final String name() { return "BVFL"; }
+
+@Override
+public final String category() { return "MIPS II/VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3524,6 +4203,13 @@ return "Unimplemented BVF";
 }
 };
 public static final Instruction BVTL = new Instruction(97) {
+
+@Override
+public final String name() { return "BVTL"; }
+
+@Override
+public final String category() { return "MIPS II/VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3549,6 +4235,13 @@ return "Unimplemented BVF";
 }
 };
 public static final Instruction LB = new Instruction(98) {
+
+@Override
+public final String name() { return "LB"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3577,6 +4270,13 @@ return Common.disasmRTIMMRS("lb", rt, rs, imm16);
 }
 };
 public static final Instruction LBU = new Instruction(99) {
+
+@Override
+public final String name() { return "LBU"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3605,6 +4305,13 @@ return Common.disasmRTIMMRS("lbu", rt, rs, imm16);
 }
 };
 public static final Instruction LH = new Instruction(100) {
+
+@Override
+public final String name() { return "LH"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3633,6 +4340,13 @@ return Common.disasmRTIMMRS("lh", rt, rs, imm16);
 }
 };
 public static final Instruction LHU = new Instruction(101) {
+
+@Override
+public final String name() { return "LHU"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3661,6 +4375,13 @@ return Common.disasmRTIMMRS("lhu", rt, rs, imm16);
 }
 };
 public static final Instruction LW = new Instruction(102) {
+
+@Override
+public final String name() { return "LW"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3689,6 +4410,13 @@ return Common.disasmRTIMMRS("lw", rt, rs, imm16);
 }
 };
 public static final Instruction LWL = new Instruction(103) {
+
+@Override
+public final String name() { return "LWL"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3717,6 +4445,13 @@ return Common.disasmRTIMMRS("lwl", rt, rs, imm16);
 }
 };
 public static final Instruction LWR = new Instruction(104) {
+
+@Override
+public final String name() { return "LWR"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3745,6 +4480,13 @@ return Common.disasmRTIMMRS("lwr", rt, rs, imm16);
 }
 };
 public static final Instruction SB = new Instruction(105) {
+
+@Override
+public final String name() { return "SB"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3773,6 +4515,13 @@ return Common.disasmRTIMMRS("sb", rt, rs, imm16);
 }
 };
 public static final Instruction SH = new Instruction(106) {
+
+@Override
+public final String name() { return "SH"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3801,6 +4550,13 @@ return Common.disasmRTIMMRS("sh", rt, rs, imm16);
 }
 };
 public static final Instruction SW = new Instruction(107) {
+
+@Override
+public final String name() { return "SW"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3829,6 +4585,13 @@ return Common.disasmRTIMMRS("sw", rt, rs, imm16);
 }
 };
 public static final Instruction SWL = new Instruction(108) {
+
+@Override
+public final String name() { return "SWL"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3857,6 +4620,13 @@ return Common.disasmRTIMMRS("swl", rt, rs, imm16);
 }
 };
 public static final Instruction SWR = new Instruction(109) {
+
+@Override
+public final String name() { return "SWR"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3885,6 +4655,13 @@ return Common.disasmRTIMMRS("swr", rt, rs, imm16);
 }
 };
 public static final Instruction LL = new Instruction(110) {
+
+@Override
+public final String name() { return "LL"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3913,6 +4690,13 @@ return Common.disasmRTIMMRS("ll", rt, rs, imm16);
 }
 };
 public static final Instruction LWC1 = new Instruction(111) {
+
+@Override
+public final String name() { return "LWC1"; }
+
+@Override
+public final String category() { return "MIPS I/FPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -3941,6 +4725,13 @@ return Common.disasmFTIMMRS("lwc1", ft, rs, imm16);
 }
 };
 public static final Instruction LVS = new Instruction(112) {
+
+@Override
+public final String name() { return "LVS"; }
+
+@Override
+public final String category() { return "MIPS I/VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vt2 = (insn>>0)&3;
@@ -3972,6 +4763,13 @@ return Common.disasmVTIMMRS("lv", 1, (vt5|(vt2<<5)), rs, (imm14 << 2));
 }
 };
 public static final Instruction LVLQ = new Instruction(113) {
+
+@Override
+public final String name() { return "LVLQ"; }
+
+@Override
+public final String category() { return "MIPS I/VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vt1 = (insn>>0)&1;
@@ -4003,6 +4801,13 @@ return Common.disasmVTIMMRS("lvl", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));
 }
 };
 public static final Instruction LVRQ = new Instruction(114) {
+
+@Override
+public final String name() { return "LVRQ"; }
+
+@Override
+public final String category() { return "MIPS I/VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vt1 = (insn>>0)&1;
@@ -4034,6 +4839,13 @@ return Common.disasmVTIMMRS("lvr", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));
 }
 };
 public static final Instruction LVQ = new Instruction(115) {
+
+@Override
+public final String name() { return "LVQ"; }
+
+@Override
+public final String category() { return "MIPS I/VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vt1 = (insn>>0)&1;
@@ -4065,6 +4877,13 @@ return Common.disasmVTIMMRS("lv", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));
 }
 };
 public static final Instruction SC = new Instruction(116) {
+
+@Override
+public final String name() { return "SC"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -4093,6 +4912,13 @@ return Common.disasmRTIMMRS("sc", rt, rs, imm16);
 }
 };
 public static final Instruction SWC1 = new Instruction(117) {
+
+@Override
+public final String name() { return "SWC1"; }
+
+@Override
+public final String category() { return "MIPS I/FPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -4121,6 +4947,13 @@ return Common.disasmFTIMMRS("swc1", ft, rs, imm16);
 }
 };
 public static final Instruction SVS = new Instruction(118) {
+
+@Override
+public final String name() { return "SVS"; }
+
+@Override
+public final String category() { return "MIPS I/VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vt2 = (insn>>0)&3;
@@ -4152,6 +4985,13 @@ return Common.disasmVTIMMRS("sv", 1, (vt5|(vt2<<5)), rs, (imm14 << 2));
 }
 };
 public static final Instruction SVLQ = new Instruction(119) {
+
+@Override
+public final String name() { return "SVLQ"; }
+
+@Override
+public final String category() { return "MIPS I/VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vt1 = (insn>>0)&1;
@@ -4183,6 +5023,13 @@ return Common.disasmVTIMMRS("svl", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));
 }
 };
 public static final Instruction SVRQ = new Instruction(120) {
+
+@Override
+public final String name() { return "SVRQ"; }
+
+@Override
+public final String category() { return "MIPS I/VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vt1 = (insn>>0)&1;
@@ -4214,6 +5061,13 @@ return Common.disasmVTIMMRS("svr", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));
 }
 };
 public static final Instruction SVQ = new Instruction(121) {
+
+@Override
+public final String name() { return "SVQ"; }
+
+@Override
+public final String category() { return "MIPS I/VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vt1 = (insn>>0)&1;
@@ -4245,6 +5099,13 @@ return Common.disasmVTIMMRS("lv", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));
 }
 };
 public static final Instruction SWB = new Instruction(122) {
+
+@Override
+public final String name() { return "SWB"; }
+
+@Override
+public final String category() { return "MIPS I/VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vt1 = (insn>>0)&1;
@@ -4276,6 +5137,13 @@ return Common.disasmVTIMMRS("swb", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));
 }
 };
 public static final Instruction ADD_S = new Instruction(123) {
+
+@Override
+public final String name() { return "ADD.S"; }
+
+@Override
+public final String category() { return "FPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int fd = (insn>>6)&31;
@@ -4321,6 +5189,13 @@ return Common.disasmFDFSFT("add.s", fd, fs, ft);
 }
 };
 public static final Instruction SUB_S = new Instruction(124) {
+
+@Override
+public final String name() { return "SUB.S"; }
+
+@Override
+public final String category() { return "FPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int fd = (insn>>6)&31;
@@ -4366,6 +5241,13 @@ return Common.disasmFDFSFT("sub.s", fd, fs, ft);
 }
 };
 public static final Instruction MUL_S = new Instruction(125) {
+
+@Override
+public final String name() { return "MUL.S"; }
+
+@Override
+public final String category() { return "FPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int fd = (insn>>6)&31;
@@ -4411,6 +5293,13 @@ return Common.disasmFDFSFT("mul.s", fd, fs, ft);
 }
 };
 public static final Instruction DIV_S = new Instruction(126) {
+
+@Override
+public final String name() { return "DIV.S"; }
+
+@Override
+public final String category() { return "FPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int fd = (insn>>6)&31;
@@ -4456,6 +5345,13 @@ return Common.disasmFDFSFT("div.s", fd, fs, ft);
 }
 };
 public static final Instruction SQRT_S = new Instruction(127) {
+
+@Override
+public final String name() { return "SQRT.S"; }
+
+@Override
+public final String category() { return "FPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int fd = (insn>>6)&31;
@@ -4495,6 +5391,13 @@ return Common.disasmFDFS("sqrt.s", fd, fs);
 }
 };
 public static final Instruction ABS_S = new Instruction(128) {
+
+@Override
+public final String name() { return "ABS.S"; }
+
+@Override
+public final String category() { return "FPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int fd = (insn>>6)&31;
@@ -4534,6 +5437,13 @@ return Common.disasmFDFS("abs.s", fd, fs);
 }
 };
 public static final Instruction MOV_S = new Instruction(129) {
+
+@Override
+public final String name() { return "MOV.S"; }
+
+@Override
+public final String category() { return "FPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int fd = (insn>>6)&31;
@@ -4573,6 +5483,13 @@ return Common.disasmFDFS("mov.s", fd, fs);
 }
 };
 public static final Instruction NEG_S = new Instruction(130) {
+
+@Override
+public final String name() { return "NEG.S"; }
+
+@Override
+public final String category() { return "FPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int fd = (insn>>6)&31;
@@ -4612,6 +5529,13 @@ return Common.disasmFDFS("neg.s", fd, fs);
 }
 };
 public static final Instruction ROUND_W_S = new Instruction(131) {
+
+@Override
+public final String name() { return "ROUND.W.S"; }
+
+@Override
+public final String category() { return "FPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int fd = (insn>>6)&31;
@@ -4651,6 +5575,13 @@ return Common.disasmFDFS("round.w.s", fd, fs);
 }
 };
 public static final Instruction TRUNC_W_S = new Instruction(132) {
+
+@Override
+public final String name() { return "TRUNC.W.S"; }
+
+@Override
+public final String category() { return "FPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int fd = (insn>>6)&31;
@@ -4690,6 +5621,13 @@ return Common.disasmFDFS("trunc.w.s", fd, fs);
 }
 };
 public static final Instruction CEIL_W_S = new Instruction(133) {
+
+@Override
+public final String name() { return "CEIL.W.S"; }
+
+@Override
+public final String category() { return "FPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int fd = (insn>>6)&31;
@@ -4729,6 +5667,13 @@ return Common.disasmFDFS("ceil.w.s", fd, fs);
 }
 };
 public static final Instruction FLOOR_W_S = new Instruction(134) {
+
+@Override
+public final String name() { return "FLOOR.W.S"; }
+
+@Override
+public final String category() { return "FPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int fd = (insn>>6)&31;
@@ -4768,6 +5713,13 @@ return Common.disasmFDFS("floor.w.s", fd, fs);
 }
 };
 public static final Instruction CVT_S_W = new Instruction(135) {
+
+@Override
+public final String name() { return "CVT.S.W"; }
+
+@Override
+public final String category() { return "FPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int fd = (insn>>6)&31;
@@ -4807,6 +5759,13 @@ return Common.disasmFDFS("cvt.s.w", fd, fs);
 }
 };
 public static final Instruction CVT_W_S = new Instruction(136) {
+
+@Override
+public final String name() { return "CVT.W.S"; }
+
+@Override
+public final String category() { return "FPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int fd = (insn>>6)&31;
@@ -4877,6 +5836,13 @@ return Common.disasmFDFS("cvt.w.s", fd, fs);
 }
 };
 public static final Instruction C_COND_S = new Instruction(137) {
+
+@Override
+public final String name() { return "C.cond.S"; }
+
+@Override
+public final String category() { return "FPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int fcond = (insn>>0)&15;
@@ -4940,6 +5906,13 @@ return Common.disasmCcondS(fcond, fs, ft);
 }
 };
 public static final Instruction MFC1 = new Instruction(138) {
+
+@Override
+public final String name() { return "MFC1"; }
+
+@Override
+public final String category() { return "MIPS I/FPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int fs = (insn>>11)&31;
@@ -4983,6 +5956,13 @@ return Common.disasmRTFS("mfc1", rt, fs);
 }
 };
 public static final Instruction CFC1 = new Instruction(139) {
+
+@Override
+public final String name() { return "CFC1"; }
+
+@Override
+public final String category() { return "MIPS I/FPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int c1cr = (insn>>11)&31;
@@ -5039,6 +6019,13 @@ return Common.disasmRTFC("cfc1", rt, c1cr);
 }
 };
 public static final Instruction MTC1 = new Instruction(140) {
+
+@Override
+public final String name() { return "MTC1"; }
+
+@Override
+public final String category() { return "MIPS I/FPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int fs = (insn>>11)&31;
@@ -5078,6 +6065,13 @@ return Common.disasmRTFS("mtc1", rt, fs);
 }
 };
 public static final Instruction CTC1 = new Instruction(141) {
+
+@Override
+public final String name() { return "CTC1"; }
+
+@Override
+public final String category() { return "MIPS I/FPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int c1cr = (insn>>11)&31;
@@ -5123,6 +6117,13 @@ return Common.disasmRTFC("ctc1", rt, c1cr);
 }
 };
 public static final Instruction MFC0 = new Instruction(142) {
+
+@Override
+public final String name() { return "MFC0"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int c0dr = (insn>>11)&31;
@@ -5148,6 +6149,13 @@ return "Unimplemented MFC0";
 }
 };
 public static final Instruction CFC0 = new Instruction(143) {
+
+@Override
+public final String name() { return "CFC0"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int c0cr = (insn>>11)&31;
@@ -5173,6 +6181,13 @@ return "Unimplemented CFC0";
 }
 };
 public static final Instruction MTC0 = new Instruction(144) {
+
+@Override
+public final String name() { return "MTC0"; }
+
+@Override
+public final String category() { return "MIPS I"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int c0dr = (insn>>11)&31;
@@ -5198,6 +6213,13 @@ return "Unimplemented MTC0";
 }
 };
 public static final Instruction CTC0 = new Instruction(145) {
+
+@Override
+public final String name() { return "CTC0"; }
+
+@Override
+public final String category() { return "ALLEGREX"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int c0cr = (insn>>11)&31;
@@ -5223,6 +6245,13 @@ return "Unimplemented CTC0";
 }
 };
 public static final Instruction VADD = new Instruction(146) {
+
+@Override
+public final String name() { return "VADD"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -5265,6 +6294,13 @@ return Common.disasmVDVSVT("vadd", 1+one+(two<<1), vd, vs, vt);
 }
 };
 public static final Instruction VSUB = new Instruction(147) {
+
+@Override
+public final String name() { return "VSUB"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -5307,6 +6343,13 @@ return Common.disasmVDVSVT("vsub", 1+one+(two<<1), vd, vs, vt);
 }
 };
 public static final Instruction VSBN = new Instruction(148) {
+
+@Override
+public final String name() { return "VSBN"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -5348,6 +6391,13 @@ return Common.disasmVDVSVT("vsbn", 1+one+(two<<1), vd, vs, vt);
 }
 };
 public static final Instruction VDIV = new Instruction(149) {
+
+@Override
+public final String name() { return "VDIV"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -5390,6 +6440,13 @@ return Common.disasmVDVSVT("vdiv", 1+one+(two<<1), vd, vs, vt);
 }
 };
 public static final Instruction VMUL = new Instruction(150) {
+
+@Override
+public final String name() { return "VMUL"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -5432,6 +6489,13 @@ return Common.disasmVDVSVT("vmul", 1+one+(two<<1), vd, vs, vt);
 }
 };
 public static final Instruction VDOT = new Instruction(151) {
+
+@Override
+public final String name() { return "VDOT"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -5477,6 +6541,13 @@ return Common.disasmVD1VSVT("vdot", 1+one+(two<<1), vd, vs, vt);
 }
 };
 public static final Instruction VSCL = new Instruction(152) {
+
+@Override
+public final String name() { return "VSCL"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -5521,6 +6592,13 @@ return Common.disasmVDVSVT1("vscl", 1+one+(two<<1), vd, vs, vt);
 }
 };
 public static final Instruction VHDP = new Instruction(153) {
+
+@Override
+public final String name() { return "VHDP"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -5567,6 +6645,13 @@ return Common.disasmVD1VSVT("vhdp", 1+one+(two<<1), vd, vs, vt);
 }
 };
 public static final Instruction VDET = new Instruction(154) {
+
+@Override
+public final String name() { return "VDET"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -5609,6 +6694,13 @@ return Common.disasmVD1VSVT("vdet", 1+one+(two<<1), vd, vs, vt);
 }
 };
 public static final Instruction VCRS = new Instruction(155) {
+
+@Override
+public final String name() { return "VCRS"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -5653,6 +6745,13 @@ return Common.disasmVDVSVT("vcrs", 1+one+(two<<1), vd, vs, vt);
 }
 };
 public static final Instruction MFV = new Instruction(156) {
+
+@Override
+public final String name() { return "MFV"; }
+
+@Override
+public final String category() { return "MIPS I/VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm7 = (insn>>0)&127;
@@ -5678,6 +6777,13 @@ return "Unimplemented MFV";
 }
 };
 public static final Instruction MFVC = new Instruction(157) {
+
+@Override
+public final String name() { return "MFVC"; }
+
+@Override
+public final String category() { return "MIPS I/VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm7 = (insn>>0)&127;
@@ -5703,6 +6809,13 @@ return "Unimplemented MFVC";
 }
 };
 public static final Instruction MTV = new Instruction(158) {
+
+@Override
+public final String name() { return "MTV"; }
+
+@Override
+public final String category() { return "MIPS I/VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm7 = (insn>>0)&127;
@@ -5728,6 +6841,13 @@ return "Unimplemented MTV";
 }
 };
 public static final Instruction MTVC = new Instruction(159) {
+
+@Override
+public final String name() { return "MTVC"; }
+
+@Override
+public final String category() { return "MIPS I/VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm7 = (insn>>0)&127;
@@ -5753,6 +6873,13 @@ return "Unimplemented MTVC";
 }
 };
 public static final Instruction VCMP = new Instruction(160) {
+
+@Override
+public final String name() { return "VCMP"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm3 = (insn>>0)&7;
@@ -5846,6 +6973,13 @@ return "Unimplemented VCMP";
 }
 };
 public static final Instruction VMIN = new Instruction(161) {
+
+@Override
+public final String name() { return "VMIN"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -5888,6 +7022,13 @@ return Common.disasmVDVSVT("vmin", 1+one+(two<<1), vd, vs, vt);
 }
 };
 public static final Instruction VMAX = new Instruction(162) {
+
+@Override
+public final String name() { return "VMAX"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -5930,6 +7071,13 @@ return Common.disasmVDVSVT("vmax", 1+one+(two<<1), vd, vs, vt);
 }
 };
 public static final Instruction VSCMP = new Instruction(163) {
+
+@Override
+public final String name() { return "VSCMP"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -5972,6 +7120,13 @@ return Common.disasmVDVSVT("vscmp", 1+one+(two<<1), vd, vs, vt);
 }
 };
 public static final Instruction VSGE = new Instruction(164) {
+
+@Override
+public final String name() { return "VSGE"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -6014,6 +7169,13 @@ return Common.disasmVDVSVT("vsge", 1+one+(two<<1), vd, vs, vt);
 }
 };
 public static final Instruction VSLT = new Instruction(165) {
+
+@Override
+public final String name() { return "VSLT"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -6056,6 +7218,13 @@ return Common.disasmVDVSVT("vslt", 1+one+(two<<1), vd, vs, vt);
 }
 };
 public static final Instruction VMOV = new Instruction(166) {
+
+@Override
+public final String name() { return "VMOV"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -6091,6 +7260,13 @@ return Common.disasmVDVS("vmov", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VABS = new Instruction(167) {
+
+@Override
+public final String name() { return "VABS"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -6129,6 +7305,13 @@ return Common.disasmVDVS("vabs", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VNEG = new Instruction(168) {
+
+@Override
+public final String name() { return "VNEG"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -6167,6 +7350,13 @@ return Common.disasmVDVS("vneg", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VIDT = new Instruction(169) {
+
+@Override
+public final String name() { return "VIDT"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -6207,6 +7397,13 @@ return Common.disasmVD("vidt", 1+one+(two<<1), vd);
 }
 };
 public static final Instruction VSAT0 = new Instruction(170) {
+
+@Override
+public final String name() { return "VSAT0"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -6245,6 +7442,13 @@ return Common.disasmVDVS("vsat0", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VSAT1 = new Instruction(171) {
+
+@Override
+public final String name() { return "VSAT1"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -6283,6 +7487,13 @@ return Common.disasmVDVS("vsat1", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VZERO = new Instruction(172) {
+
+@Override
+public final String name() { return "VZERO"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -6314,6 +7525,13 @@ return Common.disasmVD("vzero", 1+one+(two<<1), vd);
 }
 };
 public static final Instruction VONE = new Instruction(173) {
+
+@Override
+public final String name() { return "VONE"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -6349,6 +7567,13 @@ return Common.disasmVD("vone", 1+one+(two<<1), vd);
 }
 };
 public static final Instruction VRCP = new Instruction(174) {
+
+@Override
+public final String name() { return "VRCP"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -6387,6 +7612,13 @@ return Common.disasmVDVS("vrcp", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VRSQ = new Instruction(175) {
+
+@Override
+public final String name() { return "VRSQ"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -6425,6 +7657,13 @@ return Common.disasmVDVS("vrsq", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VSIN = new Instruction(176) {
+
+@Override
+public final String name() { return "VSIN"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -6463,6 +7702,13 @@ return Common.disasmVDVS("vsin", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VCOS = new Instruction(177) {
+
+@Override
+public final String name() { return "VCOS"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -6501,6 +7747,13 @@ return Common.disasmVDVS("vcos", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VEXP2 = new Instruction(178) {
+
+@Override
+public final String name() { return "VEXP2"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -6539,6 +7792,13 @@ return Common.disasmVDVS("vexp2", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VLOG2 = new Instruction(179) {
+
+@Override
+public final String name() { return "VLOG2"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -6577,6 +7837,13 @@ return Common.disasmVDVS("vlog2", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VSQRT = new Instruction(180) {
+
+@Override
+public final String name() { return "VSQRT"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -6615,6 +7882,13 @@ return Common.disasmVDVS("vsqrt", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VASIN = new Instruction(181) {
+
+@Override
+public final String name() { return "VASIN"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -6653,6 +7927,13 @@ return Common.disasmVDVS("vasin", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VNRCP = new Instruction(182) {
+
+@Override
+public final String name() { return "VNRCP"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -6691,6 +7972,13 @@ return Common.disasmVDVS("vnrcp", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VNSIN = new Instruction(183) {
+
+@Override
+public final String name() { return "VNSIN"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -6729,6 +8017,13 @@ return Common.disasmVDVS("vnsin", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VREXP2 = new Instruction(184) {
+
+@Override
+public final String name() { return "VREXP2"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -6767,6 +8062,13 @@ return Common.disasmVDVS("vrexp2", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VRNDS = new Instruction(185) {
+
+@Override
+public final String name() { return "VRNDS"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int one = (insn>>7)&1;
@@ -6795,6 +8097,13 @@ return Common.disasmVS("vrnds", 1+one+(two<<1), vs);
 }
 };
 public static final Instruction VRNDI = new Instruction(186) {
+
+@Override
+public final String name() { return "VRNDI"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -6823,6 +8132,13 @@ return Common.disasmVD("vrndi", 1+one+(two<<1), vd);
 }
 };
 public static final Instruction VRNDF1 = new Instruction(187) {
+
+@Override
+public final String name() { return "VRNDF1"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -6851,6 +8167,13 @@ return Common.disasmVD("vrndf1", 1+one+(two<<1), vd);
 }
 };
 public static final Instruction VRNDF2 = new Instruction(188) {
+
+@Override
+public final String name() { return "VRNDF2"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -6879,6 +8202,13 @@ return Common.disasmVD("vrndf2", 1+one+(two<<1), vd);
 }
 };
 public static final Instruction VF2H = new Instruction(189) {
+
+@Override
+public final String name() { return "VF2H"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -6910,6 +8240,13 @@ return "Unimplemented VF2H";
 }
 };
 public static final Instruction VH2F = new Instruction(190) {
+
+@Override
+public final String name() { return "VH2F"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -6941,6 +8278,13 @@ return "Unimplemented VH2F";
 }
 };
 public static final Instruction VSBZ = new Instruction(191) {
+
+@Override
+public final String name() { return "VSBZ"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -6972,6 +8316,13 @@ return "Unimplemented VSBZ";
 }
 };
 public static final Instruction VLGB = new Instruction(192) {
+
+@Override
+public final String name() { return "VLGB"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7003,6 +8354,13 @@ return Common.disasmVDVS("vlgb", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VUC2I = new Instruction(193) {
+
+@Override
+public final String name() { return "VUC2I"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7034,6 +8392,13 @@ return "Unimplemented VUC2I";
 }
 };
 public static final Instruction VC2I = new Instruction(194) {
+
+@Override
+public final String name() { return "VC2I"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7065,6 +8430,13 @@ return "Unimplemented VC2I";
 }
 };
 public static final Instruction VUS2I = new Instruction(195) {
+
+@Override
+public final String name() { return "VUS2I"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7096,6 +8468,13 @@ return "Unimplemented VUS2I";
 }
 };
 public static final Instruction VS2I = new Instruction(196) {
+
+@Override
+public final String name() { return "VS2I"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7127,6 +8506,13 @@ return "Unimplemented VS2I";
 }
 };
 public static final Instruction VI2UC = new Instruction(197) {
+
+@Override
+public final String name() { return "VI2UC"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7158,6 +8544,13 @@ return "Unimplemented VI2UC";
 }
 };
 public static final Instruction VI2C = new Instruction(198) {
+
+@Override
+public final String name() { return "VI2C"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7189,6 +8582,13 @@ return "Unimplemented VI2C";
 }
 };
 public static final Instruction VI2US = new Instruction(199) {
+
+@Override
+public final String name() { return "VI2US"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7220,6 +8620,13 @@ return "Unimplemented VI2US";
 }
 };
 public static final Instruction VI2S = new Instruction(200) {
+
+@Override
+public final String name() { return "VI2S"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7251,6 +8658,13 @@ return "Unimplemented VI2S";
 }
 };
 public static final Instruction VSRT1 = new Instruction(201) {
+
+@Override
+public final String name() { return "VSRT1"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7282,6 +8696,13 @@ return Common.disasmVDVS("vsrt1", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VSRT2 = new Instruction(202) {
+
+@Override
+public final String name() { return "VSRT2"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7313,6 +8734,13 @@ return Common.disasmVDVS("vsrt2", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VBFY1 = new Instruction(203) {
+
+@Override
+public final String name() { return "VBFY1"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7344,6 +8772,13 @@ return "Unimplemented VBFY1";
 }
 };
 public static final Instruction VBFY2 = new Instruction(204) {
+
+@Override
+public final String name() { return "VBFY2"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7375,6 +8810,13 @@ return "Unimplemented VBFY2";
 }
 };
 public static final Instruction VOCP = new Instruction(205) {
+
+@Override
+public final String name() { return "VOCP"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7406,6 +8848,13 @@ return Common.disasmVDVS("vocp", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VSOCP = new Instruction(206) {
+
+@Override
+public final String name() { return "VSOCP"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7437,6 +8886,13 @@ return "Unimplemented VSOCP";
 }
 };
 public static final Instruction VFAD = new Instruction(207) {
+
+@Override
+public final String name() { return "VFAD"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7468,6 +8924,13 @@ return Common.disasmVD1VS("vfad", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VAVG = new Instruction(208) {
+
+@Override
+public final String name() { return "VAVG"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7499,6 +8962,13 @@ return Common.disasmVD1VS("vavg", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VSRT3 = new Instruction(209) {
+
+@Override
+public final String name() { return "VSRT3"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7530,6 +9000,13 @@ return Common.disasmVDVS("vsrt3", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VSRT4 = new Instruction(210) {
+
+@Override
+public final String name() { return "VSRT4"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7561,6 +9038,13 @@ return Common.disasmVDVS("vsrt4", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VMFVC = new Instruction(211) {
+
+@Override
+public final String name() { return "VMFVC"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7586,6 +9070,13 @@ return "Unimplemented VMFVC";
 }
 };
 public static final Instruction VMTVC = new Instruction(212) {
+
+@Override
+public final String name() { return "VMTVC"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm8 = (insn>>0)&255;
@@ -7611,6 +9102,13 @@ return "Unimplemented VMTVC";
 }
 };
 public static final Instruction VT4444 = new Instruction(213) {
+
+@Override
+public final String name() { return "VT4444"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7642,6 +9140,13 @@ return "Unimplemented VT4444";
 }
 };
 public static final Instruction VT5551 = new Instruction(214) {
+
+@Override
+public final String name() { return "VT5551"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7673,6 +9178,13 @@ return "Unimplemented VT5551";
 }
 };
 public static final Instruction VT5650 = new Instruction(215) {
+
+@Override
+public final String name() { return "VT5650"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7704,6 +9216,13 @@ return "Unimplemented VT5650";
 }
 };
 public static final Instruction VCST = new Instruction(216) {
+
+@Override
+public final String name() { return "VCST"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7732,6 +9251,13 @@ return "Unimplemented VCST";
 }
 };
 public static final Instruction VF2IN = new Instruction(217) {
+
+@Override
+public final String name() { return "VF2IN"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7763,6 +9289,13 @@ return "Unimplemented VF2IN";
 }
 };
 public static final Instruction VF2IZ = new Instruction(218) {
+
+@Override
+public final String name() { return "VF2IZ"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7794,6 +9327,13 @@ return "Unimplemented VF2IZ";
 }
 };
 public static final Instruction VF2IU = new Instruction(219) {
+
+@Override
+public final String name() { return "VF2IU"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7825,6 +9365,13 @@ return "Unimplemented VF2IU";
 }
 };
 public static final Instruction VF2ID = new Instruction(220) {
+
+@Override
+public final String name() { return "VF2ID"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7856,6 +9403,13 @@ return "Unimplemented VF2ID";
 }
 };
 public static final Instruction VI2F = new Instruction(221) {
+
+@Override
+public final String name() { return "VI2F"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7887,6 +9441,13 @@ return "Unimplemented VI2F";
 }
 };
 public static final Instruction VCMOVT = new Instruction(222) {
+
+@Override
+public final String name() { return "VCMOVT"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7921,6 +9482,13 @@ return "Unimplemented VCMOVT";
 }
 };
 public static final Instruction VCMOVF = new Instruction(223) {
+
+@Override
+public final String name() { return "VCMOVF"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7955,6 +9523,13 @@ return "Unimplemented VCMOVF";
 }
 };
 public static final Instruction VWBN = new Instruction(224) {
+
+@Override
+public final String name() { return "VWBN"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -7989,6 +9564,13 @@ return "Unimplemented VWBN";
 }
 };
 public static final Instruction VPFXS = new Instruction(225) {
+
+@Override
+public final String name() { return "VPFXS"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int swzx = (insn>>0)&3;
@@ -8056,6 +9638,13 @@ return "Unimplemented VPFXS";
 }
 };
 public static final Instruction VPFXT = new Instruction(226) {
+
+@Override
+public final String name() { return "VPFXT"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int swzx = (insn>>0)&3;
@@ -8123,6 +9712,13 @@ return "Unimplemented VPFXT";
 }
 };
 public static final Instruction VPFXD = new Instruction(227) {
+
+@Override
+public final String name() { return "VPFXD"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int satx = (insn>>0)&3;
@@ -8166,6 +9762,13 @@ return "Unimplemented VPFXD";
 }
 };
 public static final Instruction VIIM = new Instruction(228) {
+
+@Override
+public final String name() { return "VIIM"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -8191,6 +9794,13 @@ return "Unimplemented VIIM";
 }
 };
 public static final Instruction VFIM = new Instruction(229) {
+
+@Override
+public final String name() { return "VFIM"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int imm16 = (insn>>0)&65535;
@@ -8216,6 +9826,13 @@ return "Unimplemented VFIM";
 }
 };
 public static final Instruction VMMUL = new Instruction(230) {
+
+@Override
+public final String name() { return "VMMUL"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -8250,6 +9867,13 @@ return "Unimplemented VMMUL";
 }
 };
 public static final Instruction VHTFM2 = new Instruction(231) {
+
+@Override
+public final String name() { return "VHTFM2"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -8278,6 +9902,13 @@ return "Unimplemented VHTFM2";
 }
 };
 public static final Instruction VTFM2 = new Instruction(232) {
+
+@Override
+public final String name() { return "VTFM2"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -8306,6 +9937,13 @@ return "Unimplemented VTFM2";
 }
 };
 public static final Instruction VHTFM3 = new Instruction(233) {
+
+@Override
+public final String name() { return "VHTFM3"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -8334,6 +9972,13 @@ return "Unimplemented VHTFM3";
 }
 };
 public static final Instruction VTFM3 = new Instruction(234) {
+
+@Override
+public final String name() { return "VTFM3"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -8362,6 +10007,13 @@ return "Unimplemented VTFM3";
 }
 };
 public static final Instruction VHTFM4 = new Instruction(235) {
+
+@Override
+public final String name() { return "VHTFM4"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -8390,6 +10042,13 @@ return "Unimplemented VHTFM4";
 }
 };
 public static final Instruction VTFM4 = new Instruction(236) {
+
+@Override
+public final String name() { return "VTFM4"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -8418,6 +10077,13 @@ return "Unimplemented VTFM4";
 }
 };
 public static final Instruction VMSCL = new Instruction(237) {
+
+@Override
+public final String name() { return "VMSCL"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -8452,6 +10118,13 @@ return "Unimplemented VMSCL";
 }
 };
 public static final Instruction VQMUL = new Instruction(238) {
+
+@Override
+public final String name() { return "VQMUL"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -8480,6 +10153,13 @@ return Common.disasmVDVSVT("VQMUL", 4, vd, vs, vt);
 }
 };
 public static final Instruction VMMOV = new Instruction(239) {
+
+@Override
+public final String name() { return "VMMOV"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -8511,6 +10191,13 @@ return "Unimplemented VMMOV";
 }
 };
 public static final Instruction VMIDT = new Instruction(240) {
+
+@Override
+public final String name() { return "VMIDT"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -8539,6 +10226,13 @@ return "Unimplemented VMIDT";
 }
 };
 public static final Instruction VMZERO = new Instruction(241) {
+
+@Override
+public final String name() { return "VMZERO"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -8567,6 +10261,13 @@ return "Unimplemented VMZERO";
 }
 };
 public static final Instruction VMONE = new Instruction(242) {
+
+@Override
+public final String name() { return "VMONE"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -8595,6 +10296,13 @@ return "Unimplemented VMONE";
 }
 };
 public static final Instruction VROT = new Instruction(243) {
+
+@Override
+public final String name() { return "VROT"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
@@ -8629,6 +10337,13 @@ return "Unimplemented VROT";
 }
 };
 public static final Instruction VNOP = new Instruction(244) {
+
+@Override
+public final String name() { return "VNOT"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 
@@ -8648,6 +10363,13 @@ return "vnop";
 }
 };
 public static final Instruction VFLUSH = new Instruction(245) {
+
+@Override
+public final String name() { return "VFLUSH"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 
@@ -8667,6 +10389,13 @@ return "vflush";
 }
 };
 public static final Instruction VSYNC = new Instruction(246) {
+
+@Override
+public final String name() { return "VSYNC"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
 @Override
 public void interpret(Processor processor, int insn) {
 

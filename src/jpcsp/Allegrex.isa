@@ -35,6 +35,10 @@ group root
     {
         op NOP(00000000000000000000000000000000)
         {
+            name=`NOP`
+
+            category=`MIPS I`
+
             interpret = ``
 
             compile = ``
@@ -44,6 +48,10 @@ group root
 
         op ICACHE_INDEX_INVALIDATE(101111:rs:00100:imm16)
         {
+            name=`CACHE 0x04`
+
+            category=`ALLEGREX`
+
             interpret = ``
 
             compile = ``
@@ -53,6 +61,10 @@ group root
 
         op ICACHE_INDEX_UNLOCK(101111:rs:00110:imm16)
         {
+            name=`CACHE 0x06`
+
+            category=`ALLEGREX`
+
             interpret = ``
 
             compile = ``
@@ -62,6 +74,10 @@ group root
 
         op ICACHE_HIT_INVALIDATE(101111:rs:01000:imm16)
         {
+            name=`CACHE 0x08`
+
+            category=`ALLEGREX`
+
             interpret = ``
 
             compile = ``
@@ -71,6 +87,10 @@ group root
 
         op ICACHE_FILL(101111:rs:01010:imm16)
         {
+            name=`CACHE 0x0A`
+
+            category=`ALLEGREX`
+
             interpret = ``
 
             compile = ``
@@ -80,6 +100,10 @@ group root
 
         op ICACHE_FILL_WITH_LOCK(101111:rs:01011:imm16)
         {
+            name=`CACHE 0x0B`
+
+            category=`ALLEGREX`
+
             interpret = ``
 
             compile = ``
@@ -89,6 +113,10 @@ group root
 
         op DCACHE_INDEX_WRITEBACK_INVALIDATE(101111:rs:10100:imm16)
         {
+            name=`CACHE 0x14`
+
+            category=`ALLEGREX`
+
             interpret = ``
 
             compile = ``
@@ -98,6 +126,10 @@ group root
 
         op DCACHE_INDEX_UNLOCK(101111:rs:10110:imm16)
         {
+            name=`CACHE 0x16`
+
+            category=`ALLEGREX`
+
             interpret = ``
 
             compile = ``
@@ -107,6 +139,10 @@ group root
 
         op DCACHE_CREATE_DIRTY_EXCLUSIVE(101111:rs:11000:imm16)
         {
+            name=`CACHE 0x18`
+
+            category=`ALLEGREX`
+
             interpret = ``
 
             compile = ``
@@ -116,6 +152,10 @@ group root
 
         op DCACHE_HIT_INVALIDATE(101111:rs:11001:imm16)
         {
+            name=`CACHE 0x19`
+
+            category=`ALLEGREX`
+
             interpret = ``
 
             compile = ``
@@ -125,6 +165,10 @@ group root
 
         op DCACHE_HIT_WRITEBACK(101111:rs:11010:imm16)
         {
+            name=`CACHE 0x1A`
+
+            category=`ALLEGREX`
+
             interpret = ``
 
             compile = ``
@@ -134,6 +178,10 @@ group root
 
         op DCACHE_HIT_WRITEBACK_INVALIDATE(101111:rs:11011:imm16)
         {
+            name=`CACHE 0x1B`
+
+            category=`ALLEGREX`
+
             interpret = ``
 
             compile = ``
@@ -143,6 +191,10 @@ group root
 
         op DCACHE_CREATE_DIRTY_EXCLUSIVE_WITH_LOCK(101111:rs:11100:imm16)
         {
+            name=`CACHE 0x1C`
+
+            category=`ALLEGREX`
+
             interpret = ``
 
             compile = ``
@@ -152,6 +204,10 @@ group root
 
         op DCACHE_FILL(101111:rs:11110:imm16)
         {
+            name=`CACHE 0x1E`
+
+            category=`ALLEGREX`
+
             interpret = ``
 
             compile = ``
@@ -161,6 +217,10 @@ group root
 
         op DCACHE_FILL_WITH_LOCK(101111:rs:11111:imm16)
         {
+            name=`CACHE 0x1F`
+
+            category=`ALLEGREX`
+
             interpret = ``
 
             compile = ``
@@ -170,6 +230,10 @@ group root
 
         op SYSCALL(000000:imm20:001100)
         {
+            name=`SYSCALL`
+
+            category=`MIPS I`
+
             interpret = `
             `
 
@@ -181,6 +245,10 @@ group root
 
         op ERET(010000:10000:00000:00000:00000:011000)
         {
+            name=`ERET`
+
+            category=`MIPS III`
+
             interpret = `
             `
 
@@ -192,6 +260,10 @@ group root
 
         op BREAK(000000:imm20:001101)
         {
+            name=`BREAK`
+
+            category=`MIPS I`
+
             interpret = `
             `
 
@@ -203,6 +275,10 @@ group root
 
         op SYNC(00000000000000000000000000001111)
         {
+            name=`SYNC`
+
+            category=`ALLEGREX`
+
             interpret = `
             `
 
@@ -217,6 +293,10 @@ group root
     {
         op ADD(000000:rs:rt:rd:00000:100000)
         {
+            name=`ADD`
+
+            category=`MIPS I`
+
             interpret = `
                 // just ignore overflow exception as it is useless
                 processor.cpu.doADDU(rd, rs, rt);
@@ -248,6 +328,10 @@ group root
 
         op ADDU(000000:rs:rt:rd:00000:100001)
         {
+            name=`ADDU`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doADDU(rd, rs, rt);
             `
@@ -278,6 +362,10 @@ group root
 
         op ADDI(001000:rs:rt:imm16)
         {
+            name=`ADDI`
+
+            category=`MIPS I`
+
             interpret = `
                 // just ignore overflow exception as it is useless
                 processor.cpu.doADDIU(rt, rs, imm16);
@@ -308,6 +396,10 @@ group root
 
         op ADDIU(001001:rs:rt:imm16)
         {
+            name=`ADDIU`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doADDIU(rt, rs, imm16);
             `
@@ -337,6 +429,10 @@ group root
 
         op AND(000000:rs:rt:rd:00000:100100)
         {
+            name=`AND`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doAND(rd, rs, rt);
             `
@@ -367,6 +463,10 @@ group root
 
         op ANDI(001100:rs:rt:imm16)
         {
+            name=`ANDI`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doANDI(rt, rs, imm16);
             `
@@ -396,6 +496,10 @@ group root
 
         op NOR(000000:rs:rt:rd:00000:100111)
         {
+            name=`NOR`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doNOR(rd, rs, rt);
             `
@@ -426,6 +530,10 @@ group root
 
         op OR(000000:rs:rt:rd:00000:100101)
         {
+            name=`OR`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doOR(rd, rs, rt);
             `
@@ -456,6 +564,10 @@ group root
 
         op ORI(001101:rs:rt:imm16)
         {
+            name=`ORI`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doORI(rt, rs, imm16);
             `
@@ -485,6 +597,10 @@ group root
 
         op XOR(000000:rs:rt:rd:00000:100110)
         {
+            name=`XOR`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doXOR(rd, rs, rt);
             `
@@ -515,6 +631,10 @@ group root
 
         op XORI(001110:rs:rt:imm16)
         {
+            name=`XORI`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doXORI(rt, rs, imm16);
             `
@@ -544,6 +664,10 @@ group root
 
         op SLL(000000:00000:rt:rd:sa:000000)
         {
+            name=`SLL`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doSLL(rd, rt, sa);
             `
@@ -573,6 +697,10 @@ group root
 
         op SLLV(000000:rs:rt:rd:00000:000100)
         {
+            name=`SLLV`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doSLLV(rd, rt, rs);
             `
@@ -603,6 +731,10 @@ group root
 
         op SRA(000000:00000:rt:rd:sa:000011)
         {
+            name=`SRA`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doSRA(rd, rt, sa);
             `
@@ -632,6 +764,10 @@ group root
 
         op SRAV(000000:rs:rt:rd:00000:000111)
         {
+            name=`SRAV`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doSRAV(rd, rt, rs);
             `
@@ -662,6 +798,10 @@ group root
 
         op SRL(000000:00000:rt:rd:sa:000010)
         {
+            name=`SRL`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doSRL(rd, rt, sa);
             `
@@ -691,6 +831,10 @@ group root
 
         op SRLV(000000:rs:rt:rd:00000:000110)
         {
+            name=`SRLV`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doSRLV(rd, rt, rs);
             `
@@ -721,6 +865,10 @@ group root
 
         op ROTR(000000:00001:rt:rd:sa:000010)
         {
+            name=`ROTR`
+
+            category=`ALLEGREX`
+
             interpret = `
                 processor.cpu.doROTR(rd, rt, sa);
             `
@@ -750,6 +898,10 @@ group root
 
         op ROTRV(000000:rs:rt:rd:00001:000110)
         {
+            name=`ROTRV`
+
+            category=`ALLEGREX`
+
             interpret = `
                 processor.cpu.doROTRV(rd, rt, rs);
             `
@@ -780,6 +932,10 @@ group root
 
         op SLT(000000:rs:rt:rd:00000:101010)
         {
+            name=`SLT`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doSLT(rd, rs, rt);
             `
@@ -810,6 +966,10 @@ group root
 
         op SLTI(001010:rs:rt:imm16)
         {
+            name=`SLTI`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doSLTI(rt, rs, imm16);
             `
@@ -839,6 +999,10 @@ group root
 
         op SLTU(000000:rs:rt:rd:00000:101011)
         {
+            name=`SLTU`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doSLTU(rd, rs, rt);
             `
@@ -869,6 +1033,10 @@ group root
 
         op SLTIU(001011:rs:rt:imm16)
         {
+            name=`SLTIU`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doSLTIU(rt, rs, imm16);
             `
@@ -898,6 +1066,10 @@ group root
 
         op SUB(000000:rs:rt:rd:00000:100010)
         {
+            name=`SUB`
+
+            category=`MIPS I`
+
             interpret = `
                 // just ignore overflow exception as it is useless
                 processor.cpu.doSUBU(rd, rs, rt);
@@ -929,6 +1101,10 @@ group root
 
         op SUBU(000000:rs:rt:rd:00000:100011)
         {
+            name=`SUBU`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doSUBU(rd, rs, rt);
             `
@@ -959,6 +1135,10 @@ group root
 
         op LUI(001111:00000:rt:imm16)
         {
+            name=`LUI`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doLUI(rt, imm16);
             `
@@ -975,6 +1155,10 @@ group root
 
         op SEB(011111:00000:rt:rd:10000:100001)
         {
+            name=`SEB`
+
+            category=`ALLEGREX`
+
             interpret = `
                 processor.cpu.doSEB(rd, rt);
             `
@@ -1002,6 +1186,10 @@ group root
 
         op SEH(011111:00000:rt:rd:11000:100000)
         {
+            name=`SEH`
+
+            category=`ALLEGREX`
+
             interpret = `
                 processor.cpu.doSEH(rd, rt);
             `
@@ -1029,6 +1217,10 @@ group root
 
         op BITREV(011111:00000:rt:rd:10100:100000)
         {
+            name=`BITREV`
+
+            category=`ALLEGREX`
+
             interpret = `
                 processor.cpu.doBITREV(rd, rt);
             `
@@ -1056,6 +1248,10 @@ group root
 
         op WSBH(011111:00000:rt:rd:00010:100000)
         {
+            name=`WSBH`
+
+            category=`ALLEGREX`
+
             interpret = `
                 processor.cpu.doWSBH(rd, rt);
             `
@@ -1083,6 +1279,10 @@ group root
 
         op WSBW(011111:00000:rt:rd:00011:100000)
         {
+            name=`WSBW`
+
+            category=`ALLEGREX`
+
             interpret = `
                 processor.cpu.doWSBW(rd, rt);
             `
@@ -1110,6 +1310,10 @@ group root
 
         op MOVZ(000000:rs:rt:rd:00000:001010)
         {
+            name=`MOVZ`
+
+            category=`ALLEGREX`
+
             interpret = `
                 processor.cpu.doMOVZ(rd, rs, rt);
             `
@@ -1142,6 +1346,10 @@ group root
 
         op MOVN(000000:rs:rt:rd:00000:001011)
         {
+            name=`MOVN`
+
+            category=`ALLEGREX`
+
             interpret = `
                 processor.cpu.doMOVN(rd, rs, rt);
             `
@@ -1174,6 +1382,10 @@ group root
 
         op MAX(000000:rs:rt:rd:00000:101100)
         {
+            name=`MAX`
+
+            category=`ALLEGREX`
+
             interpret = `
                 processor.cpu.doMAX(rd, rs, rt);
             `
@@ -1203,6 +1415,10 @@ group root
 
         op MIN(000000:rs:rt:rd:00000:101101)
         {
+            name=`MIN`
+
+            category=`ALLEGREX`
+
             interpret = `
                 processor.cpu.doMIN(rd, rs, rt);
             `
@@ -1232,6 +1448,10 @@ group root
 
         op CLZ(000000:rs:00000:rd:00000:010110)
         {
+            name=`CLZ`
+
+            category=`ALLEGREX`
+
             interpret = `
                 processor.cpu.doCLZ(rd, rs);
             `
@@ -1258,6 +1478,10 @@ group root
 
         op CLO(000000:rs:00000:rd:00000:010111)
         {
+            name=`CLO`
+
+            category=`ALLEGREX`
+
             interpret = `
                 processor.cpu.doCLO(rd, rs);
             `
@@ -1284,6 +1508,10 @@ group root
 
         op EXT(011111:rs:rt:msb:lsb:000000)
         {
+            name=`EXT`
+
+            category=`ALLEGREX`
+
             interpret = `
                 processor.cpu.doEXT(rt, rs, lsb, msb+1);
             `
@@ -1314,6 +1542,10 @@ group root
 
         op INS(011111:rs:rt:msb:lsb:000100)
         {
+            name=`INS`
+
+            category=`ALLEGREX`
+
             interpret = `
                 processor.cpu.doINS(rt, rs, lsb, msb);
             `
@@ -1350,6 +1582,10 @@ group root
     {
         op MULT(000000:rs:rt:00000:00000:011000)
         {
+            name=`MULT`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doMULT(rs, rt);
             `
@@ -1373,6 +1609,10 @@ group root
 
         op MULTU(000000:rs:rt:00000:00000:011001)
         {
+            name=`MULTU`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doMULTU(rs, rt);
             `
@@ -1396,6 +1636,10 @@ group root
 
         op MADD(000000:rs:rt:00000:00000:011100)
         {
+            name=`MADD`
+
+            category=`ALLEGREX`
+
             interpret = `
                 processor.cpu.doMADD(rs, rt);
             `
@@ -1420,6 +1664,10 @@ group root
 
         op MADDU(000000:rs:rt:00000:00000:011101)
         {
+            name=`MADDU`
+
+            category=`ALLEGREX`
+
             interpret = `
                 processor.cpu.doMADDU(rs, rt);
             `
@@ -1444,6 +1692,10 @@ group root
 
         op MSUB(000000:rs:rt:00000:00000:101110)
         {
+            name=`MSUB`
+
+            category=`ALLEGREX`
+
             interpret = `
                 processor.cpu.doMSUB(rs, rt);
             `
@@ -1468,6 +1720,10 @@ group root
 
         op MSUBU(000000:rs:rt:00000:00000:101111)
         {
+            name=`MSUB`
+
+            category=`ALLEGREX`
+
             interpret = `
                 processor.cpu.doMSUBU(rs, rt);
             `
@@ -1492,6 +1748,10 @@ group root
 
         op DIV(000000:rs:rt:00000:00000:011010)
         {
+            name=`DIV`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doDIV(rs, rt);
             `
@@ -1515,6 +1775,10 @@ group root
 
         op DIVU(000000:rs:rt:00000:00000:011011)
         {
+            name=`DIVU`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doDIVU(rs, rt);
             `
@@ -1538,6 +1802,10 @@ group root
 
         op MFHI(000000:00000:00000:rd:00000:010000)
         {
+            name=`MFHI`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doMFHI(rd);
             `
@@ -1560,6 +1828,10 @@ group root
 
         op MFLO(000000:00000:00000:rd:00000:010010)
         {
+            name=`MFLO`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doMFLO(rd);
             `
@@ -1582,6 +1854,10 @@ group root
 
         op MTHI(000000:rs:00000:00000:00000:010001)
         {
+            name=`MTHI`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doMTHI(rs);
             `
@@ -1604,6 +1880,10 @@ group root
 
         op MTLO(000000:rs:00000:00000:00000:010011)
         {
+            name=`MTLO`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.cpu.doMTLO(rs);
             `
@@ -1629,6 +1909,10 @@ group root
     {
         op BEQ(000100:rs:rt:imm16)
         {
+            name=`BEQ`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.npc = (processor.gpr[rs] == processor.gpr[rt]) ? Processor.branchTarget(processor.pc, Processor.signExtend(imm16)) : (processor.pc + 4);
                 processor.stepDelayslot();
@@ -1670,6 +1954,10 @@ group root
 
         op BEQL(010100:rs:rt:imm16)
         {
+            name=`BEQL`
+
+            category=`MIPS II`
+
             interpret = `
                 boolean c = (processor.gpr[rs] == processor.gpr[rt]);
                 processor.npc = c ? Processor.branchTarget(processor.pc, Processor.signExtend(imm16)) : (processor.pc + 4);
@@ -1716,6 +2004,10 @@ group root
 
         op BGEZ(000001:rs:00001:imm16)
         {
+            name=`BGEZ`
+
+            category=`MIPS I`
+
             interpret = `
             `
 
@@ -1727,6 +2019,10 @@ group root
 
         op BGEZAL(000001:rs:10001:imm16)
         {
+            name=`BGEZAL`
+
+            category=`MIPS I`
+
             interpret = `
             `
 
@@ -1738,6 +2034,10 @@ group root
 
         op BGEZALL(000001:rs:10011:imm16)
         {
+            name=`BGEZALL`
+
+            category=`MIPS II`
+
             interpret = `
             `
 
@@ -1749,6 +2049,10 @@ group root
 
         op BGEZL(000001:rs:00011:imm16)
         {
+            name=`BGEZL`
+
+            category=`MIPS II`
+
             interpret = `
             `
 
@@ -1760,6 +2064,10 @@ group root
 
         op BGTZ(000111:rs:00000:imm16)
         {
+            name=`BGTZ`
+
+            category=`MIPS I`
+
             interpret = `
             `
 
@@ -1771,6 +2079,10 @@ group root
 
         op BGTZL(010111:rs:00000:imm16)
         {
+            name=`BGTZL`
+
+            category=`MIPS II`
+
             interpret = `
             `
 
@@ -1782,6 +2094,10 @@ group root
 
         op BLEZ(000110:rs:00000:imm16)
         {
+            name=`BLEZ`
+
+            category=`MIPS I`
+
             interpret = `
             `
 
@@ -1793,6 +2109,10 @@ group root
 
         op BLEZL(010110:rs:00000:imm16)
         {
+            name=`BLEZL`
+
+            category=`MIPS II`
+
             interpret = `
             `
 
@@ -1804,6 +2124,10 @@ group root
 
         op BLTZ(000001:rs:00000:imm16)
         {
+            name=`BLTZ`
+
+            category=`MIPS I`
+
             interpret = `
             `
 
@@ -1815,6 +2139,10 @@ group root
 
         op BLTZAL(000001:rs:10000:imm16)
         {
+            name=`BLTZAL`
+
+            category=`MIPS I`
+
             interpret = `
             `
 
@@ -1826,6 +2154,10 @@ group root
 
         op BLTZALL(000001:rs:10010:imm16)
         {
+            name=`BLTZALL`
+
+            category=`MIPS II`
+
             interpret = `
             `
 
@@ -1837,6 +2169,10 @@ group root
 
         op BLTZL(000001:rs:00010:imm16)
         {
+            name=`BLTZL`
+
+            category=`MIPS I`
+
             interpret = `
             `
 
@@ -1848,6 +2184,10 @@ group root
 
         op BNE(000101:rs:rt:imm16)
         {
+            name=`BNE`
+
+            category=`MIPS I`
+
             interpret = `
                 processor.npc = (processor.gpr[rs] != processor.gpr[rt]) ? Processor.branchTarget(processor.pc, Processor.signExtend(imm16)) : (processor.pc + 4);
                 processor.stepDelayslot();
@@ -1889,6 +2229,10 @@ group root
 
         op BNEL(010101:rs:rt:imm16)
         {
+            name=`BNEL`
+
+            category=`MIPS II`
+
             interpret = `
             `
 
@@ -1900,6 +2244,10 @@ group root
 
         op J(000010:imm26)
         {
+            name=`J`
+
+            category=`MIPS I`
+
             interpret = `
             `
 
@@ -1911,6 +2259,10 @@ group root
 
         op JAL(000011:imm26)
         {
+            name=`JAL`
+
+            category=`MIPS I`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 cpu.gpr[31] = processor.pc + 4;
@@ -1926,6 +2278,10 @@ group root
 
         op JALR(000000:rs:00000:rd:00000:001001)
         {
+            name=`JALR`
+
+            category=`MIPS I`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 if (rd != 0) {
@@ -1956,6 +2312,10 @@ group root
 
         op JR(000000:rs:00000:00000:00000:001000)
         {
+            name=`JR`
+
+            category=`MIPS I`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 processor.npc = cpu.gpr[rs];
@@ -1980,6 +2340,10 @@ group root
 
         op BC1F(010001:01000:00000:imm16)
         {
+            name=`BC1F`
+
+            category=`MIPS I/FPU`
+
             interpret = `
                 processor.npc = !processor.fcr31_c ? Processor.branchTarget(processor.pc, Processor.signExtend(imm16)) : (processor.pc + 4);
                 processor.stepDelayslot();
@@ -2002,6 +2366,10 @@ group root
 
         op BC1T(010001:01000:00001:imm16)
         {
+            name=`BC1T`
+
+            category=`MIPS I/FPU`
+
             interpret = `
                 processor.npc = processor.fcr31_c ? Processor.branchTarget(processor.pc, Processor.signExtend(imm16)) : (processor.pc + 4);
                 processor.stepDelayslot();
@@ -2024,6 +2392,10 @@ group root
 
         op BC1FL(010001:01000:00010:imm16)
         {
+            name=`BC1FL`
+
+            category=`MIPS II/FPU`
+
             interpret = `
                 if (!processor.fcr31_c) {
                     processor.npc = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
@@ -2058,6 +2430,10 @@ group root
 
         op BC1TL(010001:01000:00011:imm16)
         {
+            name=`BC1TL`
+
+            category=`MIPS II/FPU`
+
             interpret = `
                 if (processor.fcr31_c) {
                     processor.npc = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
@@ -2092,6 +2468,10 @@ group root
 
         op BVF(010010:01:000:imm3:00:imm16)
         {
+            name=`BVF`
+
+            category=`MIPS I/VFPU`
+
             interpret = `
             `
 
@@ -2103,6 +2483,10 @@ group root
  
         op BVT(010010:01:000:imm3:01:imm16)
         {
+            name=`BVT`
+
+            category=`MIPS I/VFPU`
+
             interpret = `
             `
 
@@ -2114,6 +2498,10 @@ group root
  
         op BVFL(010010:01:000:imm3:10:imm16)
         {
+            name=`BVFL`
+
+            category=`MIPS II/VFPU`
+
             interpret = `
             `
 
@@ -2125,6 +2513,10 @@ group root
  
         op BVTL(010010:01:000:imm3:11:imm16)
         {
+            name=`BVTL`
+
+            category=`MIPS II/VFPU`
+
             interpret = `
             `
 
@@ -2139,6 +2531,10 @@ group root
     {
         op LB(100000:rs:rt:imm16)
         {
+            name=`LB`
+
+            category=`MIPS I`
+
             interpret = `
             `
 
@@ -2150,6 +2546,10 @@ group root
 
         op LBU(100100:rs:rt:imm16)
         {
+            name=`LBU`
+
+            category=`MIPS I`
+
             interpret = `
             `
 
@@ -2161,6 +2561,10 @@ group root
 
         op LH(100001:rs:rt:imm16)
         {
+            name=`LH`
+
+            category=`MIPS I`
+
             interpret = `
             `
 
@@ -2172,6 +2576,10 @@ group root
 
         op LHU(100101:rs:rt:imm16)
         {
+            name=`LHU`
+
+            category=`MIPS I`
+
             interpret = `
             `
 
@@ -2183,6 +2591,10 @@ group root
 
         op LW(100011:rs:rt:imm16)
         {
+            name=`LW`
+
+            category=`MIPS I`
+
             interpret = `
             `
 
@@ -2194,6 +2606,10 @@ group root
 
         op LWL(100010:rs:rt:imm16)
         {
+            name=`LWL`
+
+            category=`MIPS I`
+
             interpret = `
             `
 
@@ -2205,6 +2621,10 @@ group root
 
         op LWR(100110:rs:rt:imm16)
         {
+            name=`LWR`
+
+            category=`MIPS I`
+
             interpret = `
             `
 
@@ -2216,6 +2636,10 @@ group root
 
         op SB(101000:rs:rt:imm16)
         {
+            name=`SB`
+
+            category=`MIPS I`
+
             interpret = `
             `
 
@@ -2227,6 +2651,10 @@ group root
 
         op SH(101001:rs:rt:imm16)
         {
+            name=`SH`
+
+            category=`MIPS I`
+
             interpret = `
             `
 
@@ -2238,6 +2666,10 @@ group root
 
         op SW(101011:rs:rt:imm16)
         {
+            name=`SW`
+
+            category=`MIPS I`
+
             interpret = `
             `
 
@@ -2249,6 +2681,10 @@ group root
 
         op SWL(101010:rs:rt:imm16)
         {
+            name=`SWL`
+
+            category=`MIPS I`
+
             interpret = `
             `
 
@@ -2260,6 +2696,10 @@ group root
 
         op SWR(101110:rs:rt:imm16)
         {
+            name=`SWR`
+
+            category=`MIPS I`
+
             interpret = `
             `
 
@@ -2271,6 +2711,10 @@ group root
 
         op LL(110000:rs:rt:imm16)
         {
+            name=`LL`
+
+            category=`ALLEGREX`
+
             interpret = `
             `
 
@@ -2282,6 +2726,10 @@ group root
 
         op LWC1(110001:rs:ft:imm16)
         {
+            name=`LWC1`
+
+            category=`MIPS I/FPU`
+
             interpret = `
             `
 
@@ -2293,6 +2741,10 @@ group root
 
         op LVS(110010:rs:vt5:imm14:vt2)
         {
+            name=`LVS`
+
+            category=`MIPS I/VFPU`
+
             interpret = `
             `
 
@@ -2304,6 +2756,10 @@ group root
 
         op LVLQ(110101:rs:vt5:imm14:0:vt1)
         {
+            name=`LVLQ`
+
+            category=`MIPS I/VFPU`
+
             interpret = `
             `
 
@@ -2315,6 +2771,10 @@ group root
 
         op LVRQ(110101:rs:vt5:imm14:1:vt1)
         {
+            name=`LVRQ`
+
+            category=`MIPS I/VFPU`
+
             interpret = `
             `
 
@@ -2326,6 +2786,10 @@ group root
 
         op LVQ(110110:rs:vt5:imm14:0:vt1)
         {
+            name=`LVQ`
+
+            category=`MIPS I/VFPU`
+
             interpret = `
             `
 
@@ -2337,6 +2801,10 @@ group root
 
         op SC(111000:rs:rt:imm16)
         {
+            name=`SC`
+
+            category=`ALLEGREX`
+
             interpret = `
             `
 
@@ -2348,6 +2816,10 @@ group root
 
         op SWC1(111001:rs:ft:imm16)
         {
+            name=`SWC1`
+
+            category=`MIPS I/FPU`
+
             interpret = `
             `
 
@@ -2359,6 +2831,10 @@ group root
 
         op SVS(111010:rs:vt5:imm14:vt2)
         {
+            name=`SVS`
+
+            category=`MIPS I/VFPU`
+
             interpret = `
             `
 
@@ -2370,6 +2846,10 @@ group root
 
         op SVLQ(111101:rs:vt5:imm14:0:vt1)
         {
+            name=`SVLQ`
+
+            category=`MIPS I/VFPU`
+
             interpret = `
             `
 
@@ -2381,6 +2861,10 @@ group root
 
         op SVRQ(111101:rs:vt5:imm14:1:vt1)
         {
+            name=`SVRQ`
+
+            category=`MIPS I/VFPU`
+
             interpret = `
             `
 
@@ -2392,6 +2876,10 @@ group root
 
         op SVQ(111110:rs:vt5:imm14:0:vt1)
         {
+            name=`SVQ`
+
+            category=`MIPS I/VFPU`
+
             interpret = `
             `
 
@@ -2403,6 +2891,10 @@ group root
 
         op SWB(111110:rs:vt5:imm14:1:vt1)
         {
+            name=`SWB`
+
+            category=`MIPS I/VFPU`
+
             interpret = `
             `
 
@@ -2419,6 +2911,10 @@ group root
 
         op ADD_S(010001:10000:ft:fs:fd:000000)
         {
+            name=`ADD.S`
+
+            category=`FPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 cpu.fpr[fd] = cpu.fpr[fs] + cpu.fpr[ft];
@@ -2447,6 +2943,10 @@ group root
 
         op SUB_S(010001:10000:ft:fs:fd:000001)
         {
+            name=`SUB.S`
+
+            category=`FPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 cpu.fpr[fd] = cpu.fpr[fs] + (0.0f - cpu.fpr[ft]);
@@ -2475,6 +2975,10 @@ group root
 
         op MUL_S(010001:10000:ft:fs:fd:000010)
         {
+            name=`MUL.S`
+
+            category=`FPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 cpu.fpr[fd] = cpu.fpr[fs] * cpu.fpr[ft];
@@ -2503,6 +3007,10 @@ group root
 
         op DIV_S(010001:10000:ft:fs:fd:000011)
         {
+            name=`DIV.S`
+
+            category=`FPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 cpu.fpr[fd] = cpu.fpr[fs] / cpu.fpr[ft];
@@ -2531,6 +3039,10 @@ group root
 
         op SQRT_S(010001:10000:00000:fs:fd:000100)
         {
+            name=`SQRT.S`
+
+            category=`FPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 cpu.fpr[fd] = (float) Math.sqrt(cpu.fpr[fs]);
@@ -2556,6 +3068,10 @@ group root
 
         op ABS_S(010001:10000:00000:fs:fd:000101)
         {
+            name=`ABS.S`
+
+            category=`FPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 cpu.fpr[fd] = Math.abs(cpu.fpr[fs]);
@@ -2581,6 +3097,10 @@ group root
 
         op MOV_S(010001:10000:00000:fs:fd:000110)
         {
+            name=`MOV.S`
+
+            category=`FPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 cpu.fpr[fd] = cpu.fpr[fs];
@@ -2606,6 +3126,10 @@ group root
 
         op NEG_S(010001:10000:00000:fs:fd:000111)
         {
+            name=`NEG.S`
+
+            category=`FPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 cpu.fpr[fd] = 0.0f - cpu.fpr[fs];
@@ -2631,6 +3155,10 @@ group root
 
         op ROUND_W_S(010001:10000:00000:fs:fd:001100)
         {
+            name=`ROUND.W.S`
+
+            category=`FPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 cpu.fpr[fd] = Float.intBitsToFloat(Math.round(cpu.fpr[fs]));
@@ -2656,6 +3184,10 @@ group root
 
         op TRUNC_W_S(010001:10000:00000:fs:fd:001101)
         {
+            name=`TRUNC.W.S`
+
+            category=`FPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 cpu.fpr[fd] = Float.intBitsToFloat((int) (cpu.fpr[fs]));
@@ -2681,6 +3213,10 @@ group root
 
         op CEIL_W_S(010001:10000:00000:fs:fd:001110)
         {
+            name=`CEIL.W.S`
+
+            category=`FPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 cpu.fpr[fd] = Float.intBitsToFloat((int) Math.ceil(cpu.fpr[fs]));
@@ -2706,6 +3242,10 @@ group root
 
         op FLOOR_W_S(010001:10000:00000:fs:fd:001111)
         {
+            name=`FLOOR.W.S`
+
+            category=`FPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 cpu.fpr[fd] = Float.intBitsToFloat((int) Math.floor(cpu.fpr[fs]));
@@ -2731,6 +3271,10 @@ group root
 
         op CVT_S_W(010001:10100:00000:fs:fd:100000)
         {
+            name=`CVT.S.W`
+
+            category=`FPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 cpu.fpr[fd] = (float) Float.floatToRawIntBits(cpu.fpr[fs]);
@@ -2756,6 +3300,10 @@ group root
 
         op CVT_W_S(010001:10000:00000:fs:fd:100100)
         {
+            name=`CVT.W.S`
+
+            category=`FPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 switch (cpu.fcr31.rm) {
@@ -2812,6 +3360,10 @@ group root
 
         op C_COND_S(010001:10000:ft:fs:00000:11:fcond)
         {
+            name=`C.cond.S`
+
+            category=`FPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 float x = cpu.fpr[fs];
@@ -2858,6 +3410,10 @@ group root
 
         op MFC1(010001:00000:rt:fs:00000:000000)
         {
+            name=`MFC1`
+
+            category=`MIPS I/FPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 if (rt != 0) {
@@ -2887,6 +3443,10 @@ group root
 
         op CFC1(010001:00010:rt:c1cr:00000:000000)
         {
+            name=`CFC1`
+
+            category=`MIPS I/FPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 if (rt != 0) {
@@ -2930,6 +3490,10 @@ group root
 
         op MTC1(010001:00100:rt:fs:00000:000000)
         {
+            name=`MTC1`
+
+            category=`MIPS I/FPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 cpu.fpr[fs] = Float.intBitsToFloat(cpu.gpr[rt]);
@@ -2955,6 +3519,10 @@ group root
 
         op CTC1(010001:00110:rt:c1cr:00000:000000)
         {
+            name=`CTC1`
+
+            category=`MIPS I/FPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 if (c1cr == 31) {
@@ -2989,6 +3557,10 @@ group root
     {
         op MFC0(010000:00000:rt:c0dr:00000:000000)
         {
+            name=`MFC0`
+
+            category=`MIPS I`
+
             interpret = `
             `
 
@@ -3000,6 +3572,10 @@ group root
 
         op CFC0(010000:00010:rt:c0cr:00000:000000)
         {
+            name=`CFC0`
+
+            category=`ALLEGREX`
+
             interpret = `
             `
 
@@ -3011,6 +3587,10 @@ group root
 
         op MTC0(010000:00100:rt:c0dr:00000:000000)
         {
+            name=`MTC0`
+
+            category=`MIPS I`
+
             interpret = `
             `
 
@@ -3022,6 +3602,10 @@ group root
 
         op CTC0(010000:00110:rt:c0cr:00000:000000)
         {
+            name=`CTC0`
+
+            category=`ALLEGREX`
+
             interpret = `
             `
 
@@ -3036,6 +3620,10 @@ group root
     {
         op VADD(011000:000:vt:two:vs:one:vd)
         {
+            name=`VADD`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
@@ -3056,6 +3644,10 @@ group root
  
         op VSUB(011000:001:vt:two:vs:one:vd)
         {
+            name=`VSUB`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
@@ -3075,6 +3667,10 @@ group root
  
         op VSBN(011000:010:vt:two:vs:one:vd)
         {
+            name=`VSBN`
+
+            category=`VFPU`
+
             interpret = `
                 if (one + two == 0) {
                     CpuState cpu = processor.cpu;
@@ -3093,6 +3689,10 @@ group root
 
         op VDIV(011000:111:vt:two:vs:one:vd)
         {
+            name=`VDIV`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
@@ -3116,6 +3716,10 @@ group root
     {
         op VMUL(011001:000:vt:two:vs:one:vd)
         {
+            name=`VMUL`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
@@ -3135,6 +3739,10 @@ group root
 
         op VDOT(011001:001:vt:two:vs:one:vd)
         {
+            name=`VDOT`
+
+            category=`VFPU`
+
             interpret = `
                 if ((one | two) == 1) {
                     CpuState cpu = processor.cpu;
@@ -3157,6 +3765,10 @@ group root
  
         op VSCL(011001:010:vt:two:vs:one:vd)
         {
+            name=`VSCL`
+
+            category=`VFPU`
+
             interpret = `
                 if ((one | two) == 1) {
                     CpuState cpu = processor.cpu;
@@ -3178,6 +3790,10 @@ group root
  
         op VHDP(011001:100:vt:two:vs:one:vd)
         {
+            name=`VHDP`
+
+            category=`VFPU`
+
             interpret = `
                 if ((one | two) == 1) {
                     CpuState cpu = processor.cpu;
@@ -3201,6 +3817,10 @@ group root
  
         op VDET(011001:101:vt:two:vs:one:vd)
         {
+            name=`VDET`
+
+            category=`VFPU`
+
             interpret = `
                 if ((one == 1) && (two == 0)) {
                     CpuState cpu = processor.cpu;
@@ -3220,6 +3840,10 @@ group root
  
         op VCRS(011001:110:vt:two:vs:one:vd)
         {
+            name=`VCRS`
+
+            category=`VFPU`
+
             interpret = `
                 if ((one == 0) && (two == 1)) {
                     CpuState cpu = processor.cpu;
@@ -3245,6 +3869,10 @@ group root
     {
        op MFV(010010:00:011:rt:0:0000000:0:imm7)
         {
+            name=`MFV`
+
+            category=`MIPS I/VFPU`
+
             interpret = `
             `
 
@@ -3256,6 +3884,10 @@ group root
  
         op MFVC(010010:00:011:rt:0:0000000:1:imm7)
         {
+            name=`MFVC`
+
+            category=`MIPS I/VFPU`
+
             interpret = `
             `
 
@@ -3267,6 +3899,10 @@ group root
  
         op MTV(010010:00:111:rt:0:0000000:0:imm7)
         {
+            name=`MTV`
+
+            category=`MIPS I/VFPU`
+
             interpret = `
             `
 
@@ -3278,6 +3914,10 @@ group root
  
         op MTVC(010010:00:111:rt:0:0000000:1:imm7)
         {
+            name=`MTVC`
+
+            category=`MIPS I/VFPU`
+
             interpret = `
             `
 
@@ -3292,6 +3932,10 @@ group root
     {
         op VCMP(011011:000:vt:two:vs:one:0000:imm3)
         {
+            name=`VCMP`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two << 1);
@@ -3362,6 +4006,10 @@ group root
  
         op VMIN(011011:010:vt:two:vs:one:vd)
         {
+            name=`VMIN`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
@@ -3381,6 +4029,10 @@ group root
  
         op VMAX(011011:011:vt:two:vs:one:vd)
         {
+            name=`VMAX`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
@@ -3400,6 +4052,10 @@ group root
  
         op VSCMP(011011:101:vt:two:vs:one:vd)
         {
+            name=`VSCMP`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
@@ -3419,6 +4075,10 @@ group root
 
         op VSGE(011011:110:vt:two:vs:one:vd)
         {
+            name=`VSGE`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
@@ -3438,6 +4098,10 @@ group root
 
         op VSLT(011011:100:vt:two:vs:one:vd)
         {
+            name=`VSLT`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
@@ -3460,6 +4124,10 @@ group root
     {
         op VMOV(110100:00:000:0:0000:two:vs:one:vd)
         {
+            name=`VMOV`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
@@ -3476,6 +4144,10 @@ group root
  
         op VABS(110100:00:000:0:0001:two:vs:one:vd)
         {
+            name=`VABS`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
@@ -3494,6 +4166,10 @@ group root
 
         op VNEG(110100:00:000:0:0010:two:vs:one:vd)
         {
+            name=`VNEG`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
@@ -3512,6 +4188,10 @@ group root
  
         op VIDT(110100:00:000:0:0011:two:0000000:one:vd)
         {
+            name=`VIDT`
+
+            category=`VFPU`
+
             interpret = `
                 if (one == 1) {
                     CpuState cpu = processor.cpu;
@@ -3535,6 +4215,10 @@ group root
   
         op VSAT0(110100:00:000:0:0100:two:vs:one:vd)
         {
+            name=`VSAT0`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
@@ -3553,6 +4237,10 @@ group root
   
         op VSAT1(110100:00:000:0:0101:two:vs:one:vd)
         {
+            name=`VSAT1`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
@@ -3571,6 +4259,10 @@ group root
  
         op VZERO(110100:00:000:0:0110:two:0000000:one:vd)
         {
+            name=`VZERO`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
@@ -3585,6 +4277,10 @@ group root
  
         op VONE(110100:00:000:0:0111:two:0000000:one:vd)
         {
+            name=`VONE`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);
@@ -3603,6 +4299,10 @@ group root
  
         op VRCP(110100:00:000:1:0000:two:vs:one:vd)
         {
+            name=`VRCP`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
@@ -3621,6 +4321,10 @@ group root
  
         op VRSQ(110100:00:000:1:0001:two:vs:one:vd)
         {
+            name=`VRSQ`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
@@ -3639,6 +4343,10 @@ group root
  
         op VSIN(110100:00:000:1:0010:two:vs:one:vd)
         {
+            name=`VSIN`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
@@ -3657,6 +4365,10 @@ group root
  
         op VCOS(110100:00:000:1:0011:two:vs:one:vd)
         {
+            name=`VCOS`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
@@ -3675,6 +4387,10 @@ group root
  
         op VEXP2(110100:00:000:1:0100:two:vs:one:vd)
         {
+            name=`VEXP2`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
@@ -3693,6 +4409,10 @@ group root
  
         op VLOG2(110100:00:000:1:0101:two:vs:one:vd)
         {
+            name=`VLOG2`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
@@ -3711,6 +4431,10 @@ group root
  
         op VSQRT(110100:00:000:1:0110:two:vs:one:vd)
         {
+            name=`VSQRT`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
@@ -3729,6 +4453,10 @@ group root
  
         op VASIN(110100:00:000:1:0111:two:vs:one:vd)
         {
+            name=`VASIN`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
@@ -3747,6 +4475,10 @@ group root
  
         op VNRCP(110100:00:000:1:1000:two:vs:one:vd)
         {
+            name=`VNRCP`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
@@ -3765,6 +4497,10 @@ group root
  
         op VNSIN(110100:00:000:1:1010:two:vs:one:vd)
         {
+            name=`VNSIN`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
@@ -3783,6 +4519,10 @@ group root
  
         op VREXP2(110100:00:000:1:1100:two:vs:one:vd)
         {
+            name=`VREXP2`
+
+            category=`VFPU`
+
             interpret = `
                 CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
@@ -3801,6 +4541,10 @@ group root
  
         op VRNDS(110100:00:001:00:000:two:vs:one:0000000)
         {
+            name=`VRNDS`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -3812,6 +4556,10 @@ group root
  
         op VRNDI(110100:00:001:00:001:two:0000000:one:vd)
         {
+            name=`VRNDI`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -3823,6 +4571,10 @@ group root
  
         op VRNDF1(110100:00:001:00:010:two:0000000:one:vd)
         {
+            name=`VRNDF1`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -3834,6 +4586,10 @@ group root
  
         op VRNDF2(110100:00:001:00:011:two:0000000:one:vd)
         {
+            name=`VRNDF2`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -3845,6 +4601,10 @@ group root
  
         op VF2H(110100:00:001:10:010:two:vs:one:vd)
         {
+            name=`VF2H`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -3856,6 +4616,10 @@ group root
  
         op VH2F(110100:00:001:10:011:two:vs:one:vd)
         {
+            name=`VH2F`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -3867,6 +4631,10 @@ group root
  
         op VSBZ(110100:00:001:10:110:two:vs:one:vd)
         {
+            name=`VSBZ`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -3878,6 +4646,10 @@ group root
  
         op VLGB(110100:00:001:10:111:two:vs:one:vd)
         {
+            name=`VLGB`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -3889,6 +4661,10 @@ group root
  
         op VUC2I(110100:00:001:11:000:two:vs:one:vd)
         {
+            name=`VUC2I`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -3900,6 +4676,10 @@ group root
  
         op VC2I(110100:00:001:11:001:two:vs:one:vd)
         {
+            name=`VC2I`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -3911,6 +4691,10 @@ group root
  
         op VUS2I(110100:00:001:11:010:two:vs:one:vd)
         {
+            name=`VUS2I`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -3922,6 +4706,10 @@ group root
  
         op VS2I(110100:00:001:11:011:two:vs:one:vd)
         {
+            name=`VS2I`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -3933,6 +4721,10 @@ group root
  
         op VI2UC(110100:00:001:11:100:two:vs:one:vd)
         {
+            name=`VI2UC`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -3944,6 +4736,10 @@ group root
  
         op VI2C(110100:00:001:11:101:two:vs:one:vd)
         {
+            name=`VI2C`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -3955,6 +4751,10 @@ group root
  
         op VI2US(110100:00:001:11:110:two:vs:one:vd)
         {
+            name=`VI2US`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -3966,6 +4766,10 @@ group root
  
         op VI2S(110100:00:001:11:111:two:vs:one:vd)
         {
+            name=`VI2S`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -3977,6 +4781,10 @@ group root
  
         op VSRT1(110100:00:010:00000:two:vs:one:vd)
         {
+            name=`VSRT1`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -3988,6 +4796,10 @@ group root
  
         op VSRT2(110100:00:010:00001:two:vs:one:vd)
         {
+            name=`VSRT2`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -3999,6 +4811,10 @@ group root
  
         op VBFY1(110100:00:010:00010:two:vs:one:vd)
         {
+            name=`VBFY1`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4010,6 +4826,10 @@ group root
  
         op VBFY2(110100:00:010:00011:two:vs:one:vd)
         {
+            name=`VBFY2`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4021,6 +4841,10 @@ group root
  
         op VOCP(110100:00:010:00100:two:vs:one:vd)
         {
+            name=`VOCP`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4032,6 +4856,10 @@ group root
  
         op VSOCP(110100:00:010:00101:two:vs:one:vd)
         {
+            name=`VSOCP`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4043,6 +4871,10 @@ group root
  
         op VFAD(110100:00:010:00110:two:vs:one:vd)
         {
+            name=`VFAD`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4054,6 +4886,10 @@ group root
  
         op VAVG(110100:00:010:00111:two:vs:one:vd)
         {
+            name=`VAVG`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4065,6 +4901,10 @@ group root
  
         op VSRT3(110100:00:010:01000:two:vs:one:vd)
         {
+            name=`VSRT3`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4076,6 +4916,10 @@ group root
  
         op VSRT4(110100:00:010:01001:two:vs:one:vd)
         {
+            name=`VSRT4`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4087,6 +4931,10 @@ group root
  
         op VMFVC(110100:00:010:10000:imm8:0:vd)
         {
+            name=`VMFVC`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4098,6 +4946,10 @@ group root
  
         op VMTVC(110100:00:010:10001:0:vs:imm8)
         {
+            name=`VMTVC`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4109,6 +4961,10 @@ group root
  
         op VT4444(110100:00:010:11001:two:vs:one:vd)
         {
+            name=`VT4444`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4120,6 +4976,10 @@ group root
  
         op VT5551(110100:00:010:11010:two:vs:one:vd)
         {
+            name=`VT5551`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4131,6 +4991,10 @@ group root
  
         op VT5650(110100:00:010:11011:two:vs:one:vd)
         {
+            name=`VT5650`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4142,6 +5006,10 @@ group root
  
         op VCST(110100:00:011:00000:two:0000000:one:vd)
         {
+            name=`VCST`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4153,6 +5021,10 @@ group root
  
         op VF2IN(110100:10:000:00000:two:vs:one:vd)
         {
+            name=`VF2IN`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4164,6 +5036,10 @@ group root
  
         op VF2IZ(110100:10:001:00000:two:vs:one:vd)
         {
+            name=`VF2IZ`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4175,6 +5051,10 @@ group root
  
         op VF2IU(110100:10:010:00000:two:vs:one:vd)
         {
+            name=`VF2IU`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4186,6 +5066,10 @@ group root
  
         op VF2ID(110100:10:011:00000:two:vs:one:vd)
         {
+            name=`VF2ID`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4197,6 +5081,10 @@ group root
  
         op VI2F(110100:10:100:00000:two:vs:one:vd)
         {
+            name=`VI2F`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4208,6 +5096,10 @@ group root
  
         op VCMOVT(110100:10:101:00:imm3:two:vs:one:vd)
         {
+            name=`VCMOVT`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4219,6 +5111,10 @@ group root
  
         op VCMOVF(110100:10:101:01:imm3:two:vs:one:vd)
         {
+            name=`VCMOVF`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4230,6 +5126,10 @@ group root
  
         op VWBN(110100:11:imm8:two:vs:one:vd)
         {
+            name=`VWBN`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4245,6 +5145,10 @@ group root
     {
         op VPFXS(110111:00:----:negw:negz:negy:negx:cstw:cstz:csty:cstx:absw:absz:absy:absx:swzw:swzz:swzy:swzx)
         {
+            name=`VPFXS`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4256,6 +5160,10 @@ group root
 
         op VPFXT(110111:01:----:negw:negz:negy:negx:cstw:cstz:csty:cstx:absw:absz:absy:absx:swzw:swzz:swzy:swzx)
         {
+            name=`VPFXT`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4267,6 +5175,10 @@ group root
 
         op VPFXD(110111:10:------------:mskw:mskz:msky:mskx:satw:satz:saty:satx)
         {
+            name=`VPFXD`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4278,6 +5190,10 @@ group root
 
         op VIIM(110111:11:0:vd:imm16)
         {
+            name=`VIIM`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4289,6 +5205,10 @@ group root
  
         op VFIM(110111:11:1:vd:imm16)
         {
+            name=`VFIM`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4303,6 +5223,10 @@ group root
     {
         op VMMUL(111100:000:vt:two:vs:one:vd)
         {
+            name=`VMMUL`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4314,6 +5238,10 @@ group root
 
         op VHTFM2(111100:001:vt:0:vs:0:vd)
         {
+            name=`VHTFM2`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4325,6 +5253,10 @@ group root
 
         op VTFM2(111100:001:vt:0:vs:1:vd)
         {
+            name=`VTFM2`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4336,6 +5268,10 @@ group root
 
         op VHTFM3(111100:010:vt:0:vs:1:vd)
         {
+            name=`VHTFM3`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4347,6 +5283,10 @@ group root
 
         op VTFM3(111100:010:vt:1:vs:0:vd)
         {
+            name=`VTFM3`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4358,6 +5298,10 @@ group root
 
         op VHTFM4(111100:011:vt:1:vs:0:vd)
         {
+            name=`VHTFM4`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4369,6 +5313,10 @@ group root
 
         op VTFM4(111100:011:vt:1:vs:1:vd)
         {
+            name=`VTFM4`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4380,6 +5328,10 @@ group root
 
         op VMSCL(111100:100:vt:two:vs:one:vd)
         {
+            name=`VMSCL`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4391,6 +5343,10 @@ group root
 
         op VQMUL(111100:101:vt:1:vs:1:vd)
         {
+            name=`VQMUL`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4402,6 +5358,10 @@ group root
 
         op VMMOV(111100:111:00:00000:two:vs:one:vd)
         {
+            name=`VMMOV`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4413,6 +5373,10 @@ group root
 
         op VMIDT(111100:111:00:00011:two:0000000:one:vd)
         {
+            name=`VMIDT`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4424,6 +5388,10 @@ group root
 
         op VMZERO(111100:111:00:00110:two:0000000:one:vd)
         {
+            name=`VMZERO`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4435,6 +5403,10 @@ group root
 
         op VMONE(111100:111:00:00111:two:0000000:one:vd)
         {
+            name=`VMONE`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4446,6 +5418,10 @@ group root
 
         op VROT(111100:111:01:imm5:two:vs:one:vd)
         {
+            name=`VROT`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4461,6 +5437,10 @@ group root
     {
         op VNOP(111111:1111111111:00000:00000000000)
         {
+            name=`VNOT`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4472,6 +5452,10 @@ group root
 
         op VFLUSH(111111:1111111111:00000:10000001101)
         {
+            name=`VFLUSH`
+
+            category=`VFPU`
+
             interpret = `
             `
 
@@ -4483,6 +5467,10 @@ group root
 
         op VSYNC(111111:1111111111:00000:01100100000)
         {
+            name=`VSYNC`
+
+            category=`VFPU`
+
             interpret = `
             `
 
