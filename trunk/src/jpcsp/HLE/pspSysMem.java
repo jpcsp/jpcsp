@@ -56,14 +56,14 @@ public class pspSysMem {
         return instance;
     }
 
-    public void Initialise()
+    public void Initialise(int programStartAddr, int programSize)
     {
         blockList = new HashMap<Integer, SysMemInfo>();
 
-        // TODO grab the actual size from Emulator/FileManager
-        int programSize = 0x400000;
+        System.out.println("pspSysMem reserving " + programSize + " bytes at "
+                + String.format("%08x", programStartAddr) + " for app");
 
-        heapBottom = MemoryMap.START_RAM + 0x800000 + programSize;
+        heapBottom = programStartAddr + programSize;
         heapTop = MemoryMap.END_RAM;
     }
 

@@ -51,6 +51,7 @@ public class FileManager {
     private int type = -1;
     private long elfoffset = 0;
     private long baseoffset = 0;
+    private int loadAddressLow, loadAddressHigh; // The space consumed by the program image
     private List<DeferredStub> deferredImports;
     private SeekableDataInput iso;
     public FileManager(ByteBuffer f) throws FileNotFoundException, IOException {
@@ -70,7 +71,7 @@ public class FileManager {
           processElf();
          }catch(IOException e)
          {
-             
+
          }*/
 
     }
@@ -100,6 +101,9 @@ public class FileManager {
         try {
             elfoffset = 0;
             baseoffset = 0;
+
+            loadAddressLow = 0;
+            loadAddressHigh = 0;
 
             moduleInfo = new PSPModuleInfo();
             deferredImports = new LinkedList<DeferredStub>();
@@ -242,6 +246,9 @@ public class FileManager {
         /** Read the ELF section headers (1st pass) */
         getElf32().setListSectionHeader(sectionheaders); //make the connection
 
+        loadAddressLow = ((int)baseoffset > 0x08900000) ? (int)baseoffset : 0x08900000;
+        loadAddressHigh = (int)baseoffset;
+
         Elf32SectionHeader shstrtab = null;
         for (int i = 0; i < ehdr.getE_shnum(); i++) {
             f.position((int)(elfoffset + ehdr.getE_shoff() + (i * ehdr.getE_shentsize())));
@@ -262,11 +269,16 @@ public class FileManager {
 
                         f.position((int)(elfoffset + shdr.getSh_offset()));
                         int offsettoread = (int) getBaseoffset() + (int) shdr.getSh_addr() - MemoryMap.START_RAM;
-                        
+
                         /***************************************
                          * Load a block on main memory ....
                          ***************************************/
                         Utilities.copyByteBuffertoByteBuffer(f, Memory.get_instance().mainmemory, offsettoread, (int) shdr.getSh_size());
+
+                        if ((int)(baseoffset + shdr.getSh_addr()) < loadAddressLow)
+                            loadAddressLow = (int)(baseoffset + shdr.getSh_addr());
+                        if ((int)(baseoffset + shdr.getSh_addr() + shdr.getSh_size()) > loadAddressHigh)
+                            loadAddressHigh = (int)(baseoffset + shdr.getSh_addr() + shdr.getSh_size());
                         break;
                     case 8: // ShType.NOBITS
                         //System.out.println("NO BITS");
@@ -275,10 +287,18 @@ public class FileManager {
                         ByteBuffer mainmemory = Memory.get_instance().mainmemory;
                         for (int j = 0; j < (int)shdr.getSh_size(); j++)
                             mainmemory.put(offsettoread + j, (byte)0);
+
+                        if ((int)(baseoffset + shdr.getSh_addr()) < loadAddressLow)
+                            loadAddressLow = (int)(baseoffset + shdr.getSh_addr());
+                        if ((int)(baseoffset + shdr.getSh_addr() + shdr.getSh_size()) > loadAddressHigh)
+                            loadAddressHigh = (int)(baseoffset + shdr.getSh_addr() + shdr.getSh_size());
                         break;
                 }
             }
         }
+
+        //System.out.println("load image low=" + Integer.toHexString(loadAddressLow)
+        //            + " high=" + Integer.toHexString(loadAddressHigh) + "");
 
         return shstrtab;
     }
@@ -298,13 +318,13 @@ public class FileManager {
                 String SectionName = "";//Utilities.readStringZ(f);
                try{
                     SectionName = Utilities.readStringZ(f);
-                    
+
                 }
                 catch(IOException e){
                     System.out.println("ERROR:SectionNames can't be found.NIDs can't be load");
                 }
                 if (SectionName.length() > 0) {
-                    
+
                     shdr.setSh_namez(SectionName);
                     shsb.append(SectionName + "\n");
                     //System.out.println(SectionName);
@@ -340,6 +360,14 @@ public class FileManager {
 
     public long getElfoffset() {
         return elfoffset;
+    }
+
+    public int getLoadAddressLow() {
+        return loadAddressLow;
+    }
+
+    public int getLoadAddressHigh() {
+        return loadAddressHigh;
     }
 
     // TODO process deferred imports each time a new module is loaded
