@@ -24,6 +24,10 @@ public class Common {
 
         public abstract String disasm(int address, int insn);
 
+        public abstract String name();
+
+        public abstract String category();
+
         public void resetCount() {
             m_count = 0;
         }
@@ -71,6 +75,16 @@ public class Common {
 
         @Override
         public abstract Instruction instance(int insn);
+
+        @Override
+        public final String name() {
+            return null;
+        }
+
+        @Override
+        public final String category() {
+            return null;
+        }
     }
     public static final Instruction UNK = new Instruction() {
 
@@ -85,6 +99,16 @@ public class Common {
         @Override
         public String disasm(int address, int insn) {
             return String.format("Unknown instruction %32s (0x%08X)", Utilities.integerToBin(insn), insn);
+        }
+
+        @Override
+        public final String name() {
+            return "UNK";
+        }
+
+        @Override
+        public final String category() {
+            return "UNK";
         }
     };
     public static String[] gprNames = {

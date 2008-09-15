@@ -27,46 +27,59 @@ import java.io.IOException;
 import javax.swing.JFileChooser;
 import jpcsp.Emulator;
 import jpcsp.Memory;
+import jpcsp.Allegrex.Instructions.*;
+import jpcsp.Allegrex.Decoder;
+import jpcsp.Allegrex.Common.Instruction;
 
 /**
  *
  * @author  George
  */
 public class InstructionCounter extends javax.swing.JFrame implements PropertyChangeListener {
+
     private Task task;
     Emulator emu;
+
     /** Creates new form InstructionCounter */
     public InstructionCounter(Emulator emu) {
-        this.emu=emu;
+        this.emu = emu;
         initComponents();
         RefreshWindow();
     }
-    public void RefreshWindow()
-    {
+
+    public void RefreshWindow() {
         resetcounts();
         initcheck.setSelected(false);
         finicheck.setSelected(false);
         textcheck.setSelected(false);
         stubtextcheck.setSelected(false);
         areastatus.setText("");
-        if(emu.initsection[0]==0) initcheck.setEnabled(false);
-        else
-          initcheck.setEnabled(true); 
-        if(emu.finisection[0]==0) finicheck.setEnabled(false);
-        else
-           finicheck.setEnabled(true); 
-        if(emu.textsection[0]==0) textcheck.setEnabled(false);
-        else
-          textcheck.setEnabled(true);  
-        if(emu.Stubtextsection[0]==0) stubtextcheck.setEnabled(false);
-        else
-          stubtextcheck.setEnabled(true);  
-        
+        if (emu.initsection[0] == 0) {
+            initcheck.setEnabled(false);
+        } else {
+            initcheck.setEnabled(true);
+        }
+        if (emu.finisection[0] == 0) {
+            finicheck.setEnabled(false);
+        } else {
+            finicheck.setEnabled(true);
+        }
+        if (emu.textsection[0] == 0) {
+            textcheck.setEnabled(false);
+        } else {
+            textcheck.setEnabled(true);
+        }
+        if (emu.Stubtextsection[0] == 0) {
+            stubtextcheck.setEnabled(false);
+        } else {
+            stubtextcheck.setEnabled(true);
+        }
         areastatus.append("Found init section at " + Integer.toHexString(emu.initsection[0]) + " size " + emu.initsection[1] + "\n");
         areastatus.append("Found fini section at " + Integer.toHexString(emu.finisection[0]) + " size " + emu.finisection[1] + "\n");
         areastatus.append("Found text section at " + Integer.toHexString(emu.textsection[0]) + " size " + emu.textsection[1] + "\n");
         areastatus.append("Found stubtext section at " + Integer.toHexString(emu.Stubtextsection[0]) + " size " + emu.Stubtextsection[1] + "\n");
     }
+
     /** This method is called from within the constructor to
      * initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is
@@ -113,242 +126,7 @@ public class InstructionCounter extends javax.swing.JFrame implements PropertyCh
         jScrollPane1.setViewportView(areastatus);
 
         OpcodeTable.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null}
-            },
+            new Object [jpcsp.Allegrex.Common.instructions().length][3],
             new String [] {
                 "Opcode", "Category", "Count"
             }
@@ -433,60 +211,56 @@ public class InstructionCounter extends javax.swing.JFrame implements PropertyCh
     }// </editor-fold>//GEN-END:initComponents
 
 private void startbuttonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startbuttonActionPerformed
-       startbutton.setEnabled(false);
-        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-        //Instances of javax.swing.SwingWorker are not reusuable, so
-        //we create new instances as needed.
-        task = new Task();
-        task.addPropertyChangeListener(this);
-        task.execute();
+    startbutton.setEnabled(false);
+    setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+    //Instances of javax.swing.SwingWorker are not reusuable, so
+    //we create new instances as needed.
+    task = new Task();
+    task.addPropertyChangeListener(this);
+    task.execute();
 
 }//GEN-LAST:event_startbuttonActionPerformed
 
 private void SaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SaveActionPerformed
-        File file;
-        final JFileChooser fc = new JFileChooser();
-        fc.setDialogTitle("Save Instructions to File");
-        fc.setCurrentDirectory(new java.io.File("."));
-        fc.setSelectedFile( new File("instructionoutput.txt") );
-        int returnvalue = fc.showSaveDialog(this);
-        if(returnvalue == JFileChooser.APPROVE_OPTION)
-        {
-             file = fc.getSelectedFile();     
+    File file;
+    final JFileChooser fc = new JFileChooser();
+    fc.setDialogTitle("Save Instructions to File");
+    fc.setCurrentDirectory(new java.io.File("."));
+    fc.setSelectedFile(new File("instructionoutput.txt"));
+    int returnvalue = fc.showSaveDialog(this);
+    if (returnvalue == JFileChooser.APPROVE_OPTION) {
+        file = fc.getSelectedFile();
+    } else {
+        return;
+    }
+    BufferedWriter bufferedWriter = null;
+    try {
+
+        //Construct the BufferedWriter object
+        bufferedWriter = new BufferedWriter(new FileWriter(file));
+
+        //Start writing to the output stream
+        for (int i = 0; i < OpcodeTable.getRowCount(); i++) {
+
+            OpcodeTable.getValueAt(i, 1);
+            bufferedWriter.write(OpcodeTable.getValueAt(i, 0) + "  " + OpcodeTable.getValueAt(i, 1) + "  " + OpcodeTable.getValueAt(i, 2));
+            bufferedWriter.newLine();
         }
-        else
-        {
-          return;   
-        }
-       BufferedWriter bufferedWriter = null;
+    } catch (FileNotFoundException ex) {
+        ex.printStackTrace();
+    } catch (IOException ex) {
+        ex.printStackTrace();
+    } finally {
+        //Close the BufferedWriter
         try {
-
-            //Construct the BufferedWriter object
-            bufferedWriter = new BufferedWriter(new FileWriter(file));
-
-            //Start writing to the output stream
-           for(int i=0; i < OpcodeTable.getRowCount(); i++ )
-           {
-            
-            OpcodeTable.getValueAt(i,1);
-              bufferedWriter.write(OpcodeTable.getValueAt(i,0) + "  " + OpcodeTable.getValueAt(i,1) + "  " + OpcodeTable.getValueAt(i,2));
-              bufferedWriter.newLine();
-           }
-        } catch (FileNotFoundException ex) {
-            ex.printStackTrace();
+            if (bufferedWriter != null) {
+                bufferedWriter.flush();
+                bufferedWriter.close();
+            }
         } catch (IOException ex) {
             ex.printStackTrace();
-        } finally {
-            //Close the BufferedWriter
-            try {
-                if (bufferedWriter != null) {
-                    bufferedWriter.flush();
-                    bufferedWriter.close();
-                }
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
         }
+    }
 
 }//GEN-LAST:event_SaveActionPerformed
    /**
@@ -564,501 +338,31 @@ private void SaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:ev
             progressBar.setIndeterminate(false);
         }
     }
+    // Let's instanciate this private member so the two following methods
+    // can retrieve the right opcodes.  
+    public static jpcsp.Allegrex.Instructions INSTRUCTIONS = new jpcsp.Allegrex.Instructions();
+    
     public void refreshCounter()
     {
-        /*DefaultTableModel model = (DefaultTableModel)OpcodeTable.getModel();
-        int rows = model.getRowCount();
-        
-        for(int i = rows - 1; i >= 0; i--){
-            model.setValueAt(0, i,2);
-        }*/
-        
-        for(int i =0; i<instructionname.length; i++)
-        {
-            OpcodeTable.setValueAt(instructionname[i][0],i,0);
-            OpcodeTable.setValueAt(instructionname[i][1],i,1);
+        int i = 0;
+        for (Instruction insn : jpcsp.Allegrex.Common.instructions()) {
+            if (insn != null) {
+                OpcodeTable.setValueAt(insn.name(), i, 0);
+                OpcodeTable.setValueAt(insn.category(), i, 1);
+                OpcodeTable.setValueAt(insn.getCount(), i, 2);
+                i++;
+            }
         }
-        
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.ABS_S.getCount(),0,2);        
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.ADD.getCount(),1,2); 
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.ADDI.getCount(),2,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.ADDIU.getCount(),3,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.ADDU.getCount(),4,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.ADD_S.getCount(),5,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.AND.getCount(),6,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.ANDI.getCount(),7,2);      
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BC1F.getCount(),8,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BC1FL.getCount(),9,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BC1T.getCount(),10,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BC1TL.getCount(),11,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BEQ.getCount(),12,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BEQL.getCount(),13,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BGEZ.getCount(),14,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BGEZAL.getCount(),15,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BGEZALL.getCount(),16,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BGEZL.getCount(),17,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BGTZ.getCount(),18,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BGTZL.getCount(),19,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BITREV.getCount(),20,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BLEZ.getCount(),21,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BLEZL.getCount(),22,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BLTZ.getCount(),23,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BLTZAL.getCount(),24,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BLTZALL.getCount(),25,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BLTZL.getCount(),26,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BNE.getCount(),27,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BNEL.getCount(),28,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BREAK.getCount(),29,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BVF.getCount(),30,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BVFL.getCount(),31,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BVT.getCount(),32,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BVTL.getCount(),33,2);
-        //OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.CACHE.getCount(),34,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.CEIL_W_S.getCount(),35,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.CFC0.getCount(),36,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.CFC1.getCount(),37,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.CLO.getCount(),38,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.CLZ.getCount(),39,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.CTC0.getCount(),40,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.CTC1.getCount(),41,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.CVT_S_W.getCount(),42,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.CVT_W_S.getCount(),43,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.C_COND_S.getCount(),44,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.DIV.getCount(),45,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.DIVU.getCount(),46,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.DIV_S.getCount(),47,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.ERET.getCount(),48,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.EXT.getCount(),49,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.FLOOR_W_S.getCount(),50,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.INS.getCount(),51,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.J.getCount(),52,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.JAL.getCount(),53,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.JALR.getCount(),54,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.JR.getCount(),55,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.LB.getCount(),56,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.LBU.getCount(),57,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.LH.getCount(),58,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.LL.getCount(),59,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.LUI.getCount(),60,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.LVLQ.getCount(),61,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.LVQ.getCount(),62,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.LVS.getCount(),63,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.LW.getCount(),64,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.LWC1.getCount(),65,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.LWL.getCount(),66,2);
-        OpcodeTable.setValueAt( jpcsp.Allegrex.Instructions.LWR.getCount(),67,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.MADD.getCount(),68,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.MADDU.getCount(),69,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.MAX.getCount(),70,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.MFC0.getCount(),71,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.MFC1.getCount(),72,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.MFHI.getCount(),73,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.MFLO.getCount(),74,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.MFV.getCount(),75,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.MFVC.getCount(),76,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.MIN.getCount(),77,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.MOVN.getCount(),78,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.MOVZ.getCount(),79,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.MOV_S.getCount(),80,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.MSUB.getCount(),81,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.MSUBU.getCount(),82,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.MTC0.getCount(),83,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.MTC1.getCount(),84,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.MTHI.getCount(),85,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.MTLO.getCount(),86,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.MTV.getCount(),87,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.MTVC.getCount(),88,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.MULT.getCount(),89,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.MULTU.getCount(),90,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.MUL_S.getCount(),91,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.NEG_S.getCount(),92,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.NOP.getCount(),93,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.NOR.getCount(),94,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.OR.getCount(),95,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.ORI.getCount(),96,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.ROTR.getCount(),97,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.ROTRV.getCount(),98,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.ROUND_W_S.getCount(),99,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SB.getCount(),100,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SC.getCount(),101,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SEB.getCount(),102,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SEH.getCount(),103,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SH.getCount(),104,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SH.getCount(),105,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SLL.getCount(),106,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SLLV.getCount(),107,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SLT.getCount(),108,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SLTI.getCount(),109,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SLTIU.getCount(),110,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SLTU.getCount(),111,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SQRT_S.getCount(),112,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SRA.getCount(),113,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SRAV.getCount(),114,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SRL.getCount(),115,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SRLV.getCount(),116,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SUB.getCount(),117,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SUBU.getCount(),118,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SUB_S.getCount(),119,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SVLQ.getCount(),120,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SVQ.getCount(),121,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SVRQ.getCount(),122,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SVS.getCount(),123,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SW.getCount(),124,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SWB.getCount(),125,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SWC1.getCount(),126,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SWL.getCount(),127,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SWR.getCount(),128,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SYNC.getCount(),129,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.SYSCALL.getCount(),130,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.TRUNC_W_S.getCount(),131,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VABS.getCount(),132,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VADD.getCount(),133,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VASIN.getCount(),134,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VAVG.getCount(),135,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VBFY1.getCount(),136,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VBFY2.getCount(),137,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VC2I.getCount(),138,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VCMOVF.getCount(),139,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VCMOVT.getCount(),140,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VCMP.getCount(),141,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VCOS.getCount(),142,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VCRS.getCount(),143,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VCST.getCount(),144,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VDET.getCount(),145,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VDIV.getCount(),146,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VDOT.getCount(),147,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VEXP2.getCount(),148,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VF2H.getCount(),149,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VF2ID.getCount(),150,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VF2IN.getCount(),151,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VF2IU.getCount(),152,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VF2IZ.getCount(),153,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VFAD.getCount(),154,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VFIM.getCount(),155,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VFLUSH.getCount(),156,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VH2F.getCount(),157,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VHDP.getCount(),158,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VHTFM2.getCount(),159,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VHTFM3.getCount(),160,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VHTFM4.getCount(),161,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VI2C.getCount(),162,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VI2F.getCount(),163,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VI2S.getCount(),164,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VI2UC.getCount(),165,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VI2US.getCount(),166,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VIDT.getCount(),167,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VIIM.getCount(),168,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VLGB.getCount(),169,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VLOG2.getCount(),170,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VMAX.getCount(),171,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VMFVC.getCount(),172,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VMIDT.getCount(),173,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VMIN.getCount(),174,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VMMOV.getCount(),175,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VMMUL.getCount(),176,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VMONE.getCount(),177,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VMOV.getCount(),178,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VMSCL.getCount(),179,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VMTVC.getCount(),180,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VMUL.getCount(),181,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VMZERO.getCount(),182,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VNEG.getCount(),183,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VNOP.getCount(),184,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VNRCP.getCount(),185,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VNSIN.getCount(),186,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VOCP.getCount(),187,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VONE.getCount(),188,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VPFXD.getCount(),189,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VPFXS.getCount(),190,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VPFXT.getCount(),191,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VQMUL.getCount(),192,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VRCP.getCount(),193,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VREXP2.getCount(),194,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VRNDF1.getCount(),195,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VRNDF2.getCount(),196,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VRNDI.getCount(),197,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VRNDS.getCount(),198,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VROT.getCount(),199,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VRSQ.getCount(),200,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VS2I.getCount(),201,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VSAT0.getCount(),202,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VSAT1.getCount(),203,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VSBN.getCount(),204,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VSBZ.getCount(),205,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VSCL.getCount(),206,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VSCMP.getCount(),207,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VSGE.getCount(),208,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VSIN.getCount(),209,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VSLT.getCount(),210,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VSOCP.getCount(),211,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VSQRT.getCount(),212,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VSRT1.getCount(),213,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VSRT2.getCount(),214,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VSRT3.getCount(),215,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VSRT4.getCount(),216,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VSUB.getCount(),217,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VSYNC.getCount(),218,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VT4444.getCount(),219,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VT5551.getCount(),220,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VT5650.getCount(),221,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VTFM2.getCount(),222,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VTFM3.getCount(),223,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VTFM4.getCount(),224,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VUC2I.getCount(),225,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VUS2I.getCount(),226,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VWBN.getCount(),227,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VWBN.getCount(),228,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.VZERO.getCount(),229,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.WSBH.getCount(),230,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.WSBW.getCount(),231,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.XOR.getCount(),232,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.XORI.getCount(),233,2);
     }
     public void resetcounts()
     {
-      for (jpcsp.Allegrex.Common.Instruction insn : jpcsp.Allegrex.Common.instructions()) {
+        for (Instruction insn : jpcsp.Allegrex.Common.instructions()) {
             if (insn != null) {
                 insn.resetCount();
             }
         }
     }
-    String[][] instructionname = {
-        { "ABS_S" , "FPU" } ,             
-        {"ADD", "MAIN" }, 
-        {"ADDI", "MAIN" } ,
-        {"ADDIU", "MAIN" }, 
-        {"ADDU", "MAIN" } ,
-        {"ADD_S", "FPU"},
-        {"AND", "MAIN" } ,
-        {"ANDI", "MAIN" }, 
-        {"BC1F","MAIN"},
-        {"BC1FL","MAIN"},
-        {"BC1T","MAIN"},
-        {"BC1TL","MAIN"},
-        {"BEQ","MAIN"},
-        {"BEQL","MAIN"},
-        {"BGEZ","MAIN"},
-        {"BGEZAL","MAIN"},
-        {"BGEZALL","MAIN"},
-        {"BGEZL","MAIN"},
-        {"BGTZ","MAIN"},
-        {"BGTZL","MAIN"},
-        {"BITREV","MAIN"},
-        {"BLEZ","MAIN"},
-        {"BLEZL","MAIN"},
-        {"BLTZ","MAIN"},
-        {"BLTZAL","MAIN"},
-        {"BLTZALL","MAIN"},
-        {"BLTZL","MAIN"},
-        {"BNE","MAIN"},
-        {"BNEL","MAIN"},
-        {"BREAK","MAIN"},
-        {"BVF","VFPU"},
-        {"BVFL","VFPU"},
-        {"BVT","VFPU"},
-        {"BVTL","VFPU"},
-        {"CACHE","MAIN"},
-        {"CEIL_W_S","FPU" } ,
-        {"CFC0","FPU" } ,
-        {"CFC1","FPU" } ,
-        {"CLO","FPU" } ,
-        {"CLZ","FPU" } ,
-        {"CTC0","FPU" } ,
-        {"CTC1","FPU" } ,
-        {"CVT_S_W","FPU" } ,
-        {"CVT_W_S","FPU" } ,
-        {"C_COND_S","FPU" } ,
-        {"DIV","MAIN"},
-        {"DIVU","MAIN"},
-        {"DIV_S","MAIN"},
-        {"ERET","COP0"},
-        {"EXT","MAIN"},
-        {"FLOOR_W_S","FPU"},
-        {"INS","MAIN"},
-        {"J","MAIN"},
-        {"JAL","MAIN"},
-        {"JALR","MAIN"},
-        {"JR","MAIN"},
-        {"LB","MAIN"},
-        {"LBU","MAIN"},
-        {"LH","MAIN"},
-        {"LL","MAIN"},
-        {"LUI","MAIN"},
-        {"LVLQ","VFPU"},
-        {"LVQ","MAIN"},
-        {"LVS","MAIN"},
-        {"LW","MAIN"},
-        {"LWC1","MAIN"},
-        {"LWL","MAIN"},
-        {"LWR","MAIN"},
-        {"MADD","MAIN"},
-        {"MADDU","MAIN"},
-        {"MAX","MAIN"},
-        {"MFC0","COP0"},
-        {"MFC1","FPU"},
-        {"MFHI","MAIN"},
-        {"MFLO","MAIN"},
-        {"MFV","VFPU"},
-        {"MFVC","VFPU"},
-        {"MIN","MAIN"},
-        {"MOVN","MAIN"},
-        {"MOVZ","MAIN"},
-        {"MOV_S","FPU"},
-        {"MSUB","MAIN"},
-        {"MSUBU","MAIN"},
-        {"MTC0","COP0"},
-        {"MTC1","FPU"},
-        {"MTHI","MAIN"},
-        {"MTLO","MAIN"},
-        {"MTV","MAIN"},
-        {"MTVC","MAIN"},
-        {"MULT","MAIN"},
-        {"MULTU","MAIN"},
-        {"MUL_S","FPU"},
-        {"NEG_S","FPU"},
-        {"NOP","MAIN"},
-        {"NOR","MAIN"},
-        {"OR","MAIN"},
-        {"ORI","MAIN"},
-        {"ROTR","MAIN"},
-        {"ROTRV","MAIN"},
-        {"ROUND_W_S","FPU"},
-        {"SB","MAIN"},
-        {"SC","MAIN"},
-        {"SEB","MAIN"},
-        {"SEH","MAIN"},
-        {"SH","MAIN"},
-        {"SH","MAIN"},
-        {"SLL","MAIN"},
-        {"SLLV","MAIN"},
-        {"SLT","MAIN"},
-        {"SLTI","MAIN"},
-        {"SLTIU","MAIN"},
-        {"SLTU","MAIN"},
-        {"SQRT_S","FPU"},
-        {"SRA","MAIN"},
-        {"SRAV","MAIN"},
-        {"SRL","MAIN"},
-        {"SRLV","MAIN"},
-        {"SUB","MAIN"},
-        {"SUBU","MAIN"},
-        {"SUB_S","MAIN"},
-        {"SVLQ","VFPU"},
-        {"SVQ","MAIN"},
-        {"SVRQ","VFPU"},
-        {"SVS","MAIN"},
-        {"SW","MAIN"},
-        {"SWB","VFPU"},
-        {"SWC1","MAIN"},
-        {"SWL","MAIN"},
-        {"SWR","MAIN"},
-        {"SYNC","MAIN"},
-        {"SYSCALL","MAIN"},
-        {"TRUNC_W_S","FPU"},
-        {"VABS","VFPU"},
-        {"VADD","VFPU"},
-        {"VASIN","VFPU"},
-        {"VAVG","VFPU"},
-        {"VBFY1","VFPU"},
-        {"VBFY2","VFPU"},
-        {"VC2I","VFPU"},
-        {"VCMOVF","VFPU"},
-        {"VCMOVT","VFPU"},
-        {"VCMP","VFPU"},
-        {"VCOS","VFPU"},
-        {"VCRS","VFPU"},
-        {"VCST","VFPU"},
-        {"VDET","VFPU"},
-        {"VDIV","VFPU"},
-        {"VDOT","VFPU"},
-        {"VEXP2","VFPU"},
-        {"VF2H","VFPU"},
-        {"VF2ID","VFPU"},
-        {"VF2IN","VFPU"},
-        {"VF2IU","VFPU"},
-        {"VF2IZ","VFPU"},
-        {"VFAD","VFPU"},
-        {"VFIM","VFPU"},
-        {"VFLUSH","VFPU"},
-        {"VH2F","VFPU"},
-        {"VHDP","VFPU"},
-        {"VHTFM2","VFPU"},
-        {"VHTFM3","VFPU"},
-        {"VHTFM4","VFPU"},
-        {"VI2C","VFPU"},
-        {"VI2F","VFPU"},
-        {"VI2S","VFPU"},
-        {"VI2UC","VFPU"},
-        {"VI2US","VFPU"},
-        {"VIDT","VFPU"},
-        {"VIIM","VFPU"},
-        {"VLGB","VFPU"},
-        {"VLOG2","VFPU"},
-        {"VMAX","VFPU"},
-        {"VMFVC","VFPU"},
-        {"VMIDT","VFPU"},
-        {"VMIN","VFPU"},
-        {"VMMOV","VFPU"},
-        {"VMMUL","VFPU"},
-        {"VMONE","VFPU"},
-        {"VMOV","VFPU"},
-        {"VMSCL","VFPU"},
-        {"VMTVC","VFPU"},
-        {"VMUL","VFPU"},
-        {"VMZERO","VFPU"},
-        {"VNEG","VFPU"},
-        {"VNOP","VFPU"},
-        {"VNRCP","VFPU"},
-        {"VNSIN","VFPU"},
-        {"VOCP","VFPU"},
-        {"VONE","VFPU"},
-        {"VPFXD","VFPU"},
-        {"VPFXS","VFPU"},
-        {"VPFXT","VFPU"},
-        {"VQMUL","VFPU"},
-        {"VRCP","VFPU"},
-        {"VREXP2","VFPU"},
-        {"VRNDF1","VFPU"},
-        {"VRNDF2","VFPU"},
-        {"VRNDI","VFPU"},
-        {"VRNDS","VFPU"},
-        {"VROT","VFPU"},
-        {"VRSQ","VFPU"},
-        {"VS2I","VFPU"},
-        {"VSAT0","VFPU"},
-        {"VSAT1","VFPU"},
-        {"VSBN","VFPU"},
-        {"VSBZ","VFPU"},
-        {"VSCL","VFPU"},
-        {"VSCMP","VFPU"},
-        {"VSGE","VFPU"},
-        {"VSIN","VFPU"},
-        {"VSLT","VFPU"},
-        {"VSOCP","VFPU"},
-        {"VSQRT","VFPU"},
-        {"VSRT1","VFPU"},
-        {"VSRT2","VFPU"},
-        {"VSRT3","VFPU"},
-        {"VSRT4","VFPU"},
-        {"VSUB","VFPU"},
-        {"VSYNC","VFPU"},
-        {"VT4444","VFPU"},
-        {"VT5551","VFPU"},
-        {"VT5650","VFPU"},
-        {"VTFM2","VFPU"},
-        {"VTFM3","VFPU"},
-        {"VTFM4","VFPU"},
-        {"VUC2I","VFPU"},
-        {"VUS2I","VFPU"},
-        {"VWBN","VFPU"},
-        {"VWBN","VFPU"},
-        {"VZERO","VFPU"},
-        {"WSBH","MAIN"},
-        {"WSBW","MAIN"},
-        {"XOR","MAIN"},
-        {"XORI","MAIN"},
-    };
-    
+   
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTable OpcodeTable;
