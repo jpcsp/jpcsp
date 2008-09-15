@@ -18,6 +18,8 @@ package jpcsp.graphics;
 
 import java.util.Iterator;
 import java.util.HashMap;
+import java.util.concurrent.Semaphore;
+
 import jpcsp.Emulator;
 
 // Use the locks for reading/writing member variables and calling member methods
@@ -31,11 +33,11 @@ public class DisplayList {
     //sceGuSendList [int mode
     public static final int GU_TAIL = 0;
     public static final int GU_HEAD = 1;
+    
+    protected static Semaphore displayListLock = new Semaphore(1, true);
 
     private static HashMap<Integer, DisplayList> displayLists;
     private static int ids;
-    private static Object lock = new Object();
-    private static int lockvalue = 1;
 
     public int base;
     public int pc;
@@ -87,31 +89,16 @@ public class DisplayList {
     public static synchronized Iterator<DisplayList> iterator() {
         return displayLists.values().iterator();
     }
-
+    
     public static void Lock() {
-        synchronized (lock) {
-            //System.err.println("Lock");
-            try {
-                if (lockvalue == 0)
-                    throw new Exception("Lock");
-            } catch(Exception e) {
-                e.printStackTrace();
-            }
-
-            try {
-                while (lockvalue == 0) lock.wait();
-            } catch(InterruptedException e) {
-            }
-            lockvalue--;
+        try {
+            displayListLock.acquire();
+        } catch (InterruptedException e) {
         }
     }
 
     public static void Unlock() {
-        synchronized (lock) {
-            lockvalue++;
-            lock.notify();
-            //System.err.println("Unlock");
-        }
+        displayListLock.release();
     }
 
     @Override

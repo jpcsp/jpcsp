@@ -403,19 +403,19 @@ public class VideoEngine {
                 break;
             }
             case BCE:
-                if(normalArgument !=0)
+                if(normalArgument != 0)
                 {
                     gl.glEnable(GL.GL_CULL_FACE);
-                    log("sceGuDEnable(GL_CULL_FACE)");
+                    log("sceGuEnable(GU_CULL_FACE)");
                 }
                 else
                 {
                     gl.glDisable(GL.GL_CULL_FACE);
-                    log("sceGuDisable(GL_CULL_FACE)");
+                    log("sceGuDisable(GU_CULL_FACE)");
                 }    
                 break;
             case FGE:
-                if(normalArgument !=0)
+                if(normalArgument != 0)
                 {
                     gl.glEnable(GL.GL_FOG);
                     gl.glFogi(GL.GL_FOG_MODE, GL.GL_LINEAR);
@@ -430,15 +430,15 @@ public class VideoEngine {
                 } 
                 break;
             case ABE:
-                if(normalArgument !=0)
+                if(normalArgument != 0)
                 {
                     gl.glEnable(GL.GL_BLEND);
-                    log("sceGuDEnable(GL_BLEND)");
+                    log("sceGuEnable(GU_BLEND)");
                 }
                 else
                 {
                     gl.glDisable(GL.GL_BLEND);
-                    log("sceGuDisable(GL_BLEND)");
+                    log("sceGuDisable(GU_BLEND)");
                 }    
                 break;
             case JUMP:
