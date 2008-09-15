@@ -68,8 +68,8 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
         initNewPsp();
         romManager = new FileManager(f);
         initElf32();
-        
-                // Delete breakpoints and reset to PC
+
+        // Delete breakpoints and reset to PC
         if (debugger != null) {
             debugger.resetDebugger();
         }
@@ -417,10 +417,10 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                 Stubtextsection[0] = (int)(romManager.getBaseoffset() + shdr.getSh_addr());
                 Stubtextsection[1] = (int)shdr.getSh_size();
             }
-            
+
             //test the instruction counter
             //if (/*shdr.getSh_namez().equals(".text") || */shdr.getSh_namez().equals(".init") /*|| shdr.getSh_namez().equals(".fini")*/) {
-            /*   
+            /*
                int sectionAddress = (int)(romManager.getBaseoffset() + shdr.getSh_addr());
                System.out.println(Integer.toHexString(sectionAddress) + " size = " + shdr.getSh_size());
                for(int i =0; i< shdr.getSh_size(); i+=4)
@@ -429,8 +429,8 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                  //System.out.println(memread32);
                  jpcsp.Allegrex.Decoder.instruction(memread32).increaseCount();
                }
-               
-               
+
+
             }
             System.out.println(jpcsp.Allegrex.Instructions.ADDIU.getCount());*/
         }
@@ -453,7 +453,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
         cpu.gpr[31] = 0x08000004; //ra, should this be 0?
         // All other registers are uninitialised/random values
 
-        jpcsp.HLE.pspSysMem.get_instance().Initialise();
+        jpcsp.HLE.pspSysMem.get_instance().Initialise(romManager.getLoadAddressLow(), romManager.getLoadAddressHigh() - romManager.getLoadAddressLow());
         jpcsp.HLE.ThreadMan.get_instance().Initialise(cpu.pc, romManager.getPSPModuleInfo().getM_attr());
         jpcsp.HLE.psputils.get_instance().Initialise();
         jpcsp.HLE.pspge.get_instance().Initialise();
