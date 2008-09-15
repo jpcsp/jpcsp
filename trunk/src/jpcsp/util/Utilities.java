@@ -43,6 +43,10 @@ public class Utilities {
 
     }
 
+    public static String integerToBin(int value) {
+        return Long.toBinaryString(0x0000000100000000L|(((long)value)&0x00000000FFFFFFFFL)).substring(1);
+    }
+    
     public static String integerToHex(int value) {
         return Integer.toHexString(0x100 | value).substring(1).toUpperCase();
     }

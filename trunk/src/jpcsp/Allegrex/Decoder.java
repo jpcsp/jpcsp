@@ -147,7 +147,13 @@ public class Decoder {
         jpcsp.Allegrex.Common.UNK,
         jpcsp.Allegrex.Common.UNK,
         jpcsp.Allegrex.Instructions.SWR,
-        jpcsp.Allegrex.Instructions.CACHE,
+        new STUB() {
+
+            @Override
+            public Instruction instance(int insn) {
+                return table_11[(insn >> 17) & 0x0000000f].instance(insn);
+            }
+        },
         jpcsp.Allegrex.Instructions.LL,
         jpcsp.Allegrex.Instructions.LWC1,
         jpcsp.Allegrex.Instructions.LVS,
@@ -156,7 +162,7 @@ public class Decoder {
 
             @Override
             public Instruction instance(int insn) {
-                return table_11[(insn >> 16) & 0x0000003f].instance(insn);
+                return table_12[(insn >> 16) & 0x0000003f].instance(insn);
             }
         },
         new STUB() {
@@ -175,7 +181,7 @@ public class Decoder {
 
             @Override
             public Instruction instance(int insn) {
-                return table_12[(insn >> 24) & 0x00000003].instance(insn);
+                return table_13[(insn >> 24) & 0x00000003].instance(insn);
             }
         },
         jpcsp.Allegrex.Instructions.SC,
@@ -186,7 +192,7 @@ public class Decoder {
 
             @Override
             public Instruction instance(int insn) {
-                return table_13[(insn >> 23) & 0x00000007].instance(insn);
+                return table_14[(insn >> 23) & 0x00000007].instance(insn);
             }
         },
         new STUB() {
@@ -510,6 +516,64 @@ public class Decoder {
         jpcsp.Allegrex.Common.UNK,
     };
     public static final Instruction table_11[] = {
+        jpcsp.Allegrex.Common.UNK,
+        jpcsp.Allegrex.Common.UNK,
+        jpcsp.Allegrex.Instructions.ICACHE_INDEX_INVALIDATE,
+        jpcsp.Allegrex.Instructions.ICACHE_INDEX_UNLOCK,
+        jpcsp.Allegrex.Instructions.ICACHE_HIT_INVALIDATE,
+        new STUB() {
+
+            @Override
+            public Instruction instance(int insn) {
+                if ((insn & 0x00010000) == 0x00000000) {
+                    return jpcsp.Allegrex.Instructions.ICACHE_FILL;
+                } else {
+                    return jpcsp.Allegrex.Instructions.ICACHE_FILL_WITH_LOCK;
+                }
+            }
+        },
+        jpcsp.Allegrex.Common.UNK,
+        jpcsp.Allegrex.Common.UNK,
+        jpcsp.Allegrex.Common.UNK,
+        jpcsp.Allegrex.Common.UNK,
+        jpcsp.Allegrex.Instructions.DCACHE_INDEX_WRITEBACK_INVALIDATE,
+        jpcsp.Allegrex.Instructions.DCACHE_INDEX_UNLOCK,
+        new STUB() {
+
+            @Override
+            public Instruction instance(int insn) {
+                if ((insn & 0x00010000) == 0x00000000) {
+                    return jpcsp.Allegrex.Instructions.DCACHE_CREATE_DIRTY_EXCLUSIVE;
+                } else {
+                    return jpcsp.Allegrex.Instructions.DCACHE_HIT_INVALIDATE;
+                }
+            }
+        },
+        new STUB() {
+
+            @Override
+            public Instruction instance(int insn) {
+                if ((insn & 0x00010000) == 0x00000000) {
+                    return jpcsp.Allegrex.Instructions.DCACHE_HIT_WRITEBACK;
+                } else {
+                    return jpcsp.Allegrex.Instructions.DCACHE_HIT_WRITEBACK_INVALIDATE;
+                }
+            }
+        },
+        jpcsp.Allegrex.Instructions.DCACHE_CREATE_DIRTY_EXCLUSIVE_WITH_LOCK,
+        new STUB() {
+
+            @Override
+            public Instruction instance(int insn) {
+                if ((insn & 0x00010000) == 0x00000000) {
+                    return jpcsp.Allegrex.Instructions.DCACHE_FILL;
+                } else {
+                    return jpcsp.Allegrex.Instructions.DCACHE_FILL_WITH_LOCK;
+                }
+            }
+        },
+    };
+    public static final Instruction table_12[] = {
         new STUB() {
 
             @Override
@@ -1169,7 +1233,7 @@ public class Decoder {
             }
         },
     };
-    public static final Instruction table_12[] = {
+    public static final Instruction table_13[] = {
         jpcsp.Allegrex.Instructions.VPFXS,
         jpcsp.Allegrex.Instructions.VPFXT,
         jpcsp.Allegrex.Instructions.VPFXD,
@@ -1185,7 +1249,7 @@ public class Decoder {
             }
         },
     };
-    public static final Instruction table_13[] = {
+    public static final Instruction table_14[] = {
         jpcsp.Allegrex.Instructions.VMMUL,
         new STUB() {
 

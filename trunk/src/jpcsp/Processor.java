@@ -25,9 +25,7 @@ import java.util.Map;
 public class Processor implements AllegrexInstructions {
 
     public CpuState cpu;
-    public FpuState fpu;
-    public VfpuState vfpu;
-    
+
     public static final int fcr0_imp = 0; /* FPU design number */
 
     public static final int fcr0_rev = 0; /* FPU revision bumber */
@@ -105,10 +103,12 @@ public class Processor implements AllegrexInstructions {
         tracked_hilo = new RegisterTracking();
 
         reset_register_tracking();
-        
-        for (jpcsp.Allegrex.Common.Instruction insn : jpcsp.Allegrex.Common.instructions()) {
-            if (insn != null) {
-                insn.resetCount();
+
+        if (false) {
+            for (Common.Instruction insn : Common.instructions()) {
+                if (insn != null) {
+                    insn.resetCount();
+                }
             }
         }
     }
@@ -267,7 +267,7 @@ public class Processor implements AllegrexInstructions {
                     current_bb.emit("processor.hilo = hilo;");
                 }
             }
-        }        
+        }
     }
 
     public int hi() {
@@ -394,9 +394,8 @@ public class Processor implements AllegrexInstructions {
 
         int insn = (Memory.get_instance()).read32(pc);
 
-        if (false)
-        {
-            jpcsp.Allegrex.Common.Instruction i = jpcsp.Allegrex.Decoder.instruction(insn);
+        if (false) {
+            Common.Instruction i = Decoder.instruction(insn);
             i.increaseCount();
             System.out.printf("count for 0x%08x : %d\n", insn, i.getCount());
         }
@@ -413,9 +412,8 @@ public class Processor implements AllegrexInstructions {
     public void stepDelayslot() {
         int insn = (Memory.get_instance()).read32(pc);
 
-        if (false)
-        {
-            jpcsp.Allegrex.Common.Instruction i = jpcsp.Allegrex.Decoder.instruction(insn);
+        if (false) {
+            Common.Instruction i = Decoder.instruction(insn);
             i.increaseCount();
             System.out.printf("count for 0x%08x : %d\n", insn, i.getCount());
         }
