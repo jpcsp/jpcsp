@@ -263,7 +263,6 @@ public class VideoEngine {
             case ZPOS:
                 log(helper.getCommandString(ZPOS), floatArgument);
                 break;
-
             // sceGuOffset, can we discard these settings? it's only for clipping?
             case OFFSETX:
                 log("sceGuOffset x = " + (normalArgument >> 4));
@@ -403,8 +402,45 @@ public class VideoEngine {
                 log(helper.getCommandString(FFACE) + " " + ((normalArgument != 0) ? "clockwise" : "counter-clockwise"));
                 break;
             }
-
-
+            case BCE:
+                if(normalArgument !=0)
+                {
+                    gl.glEnable(GL.GL_CULL_FACE);
+                    log("sceGuDEnable(GL_CULL_FACE)");
+                }
+                else
+                {
+                    gl.glDisable(GL.GL_CULL_FACE);
+                    log("sceGuDisable(GL_CULL_FACE)");
+                }    
+                break;
+            case FGE:
+                if(normalArgument !=0)
+                {
+                    gl.glEnable(GL.GL_FOG);
+                    gl.glFogi(GL.GL_FOG_MODE, GL.GL_LINEAR);
+		    gl.glFogf(GL.GL_FOG_DENSITY, 0.1f);
+		    gl.glHint(GL.GL_FOG_HINT, GL.GL_DONT_CARE);
+                    log("sceGuEnable(GL_FOG)");
+                }
+                else
+                {
+                    gl.glDisable(GL.GL_FOG);
+                    log("sceGuDisable(GL_FOG)");
+                } 
+                break;
+            case ABE:
+                if(normalArgument !=0)
+                {
+                    gl.glEnable(GL.GL_BLEND);
+                    log("sceGuDEnable(GL_BLEND)");
+                }
+                else
+                {
+                    gl.glDisable(GL.GL_BLEND);
+                    log("sceGuDisable(GL_BLEND)");
+                }    
+                break;
             case JUMP:
                 int npc = (normalArgument | actualList.base) & 0xFFFFFFFC;
                 //I guess it must be unsign as psp player emulator
