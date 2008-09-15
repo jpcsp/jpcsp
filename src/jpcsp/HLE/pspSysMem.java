@@ -44,7 +44,9 @@ public class pspSysMem {
     public static final int PSP_SMEM_Low = 0;
     public static final int PSP_SMEM_High = 1;
     public static final int PSP_SMEM_Addr = 2;
-
+    public static final int PSP_SMEM_LowAligned = 3;
+    public static final int PSP_SMEM_HighAligned = 4;
+    
     private pspSysMem() { }
 
     public static pspSysMem get_instance() {
@@ -89,6 +91,17 @@ public class pspSysMem {
         else if (type == PSP_SMEM_High)
         {
             allocatedAddress = (heapTop - (size + 63)) & ~63;
+            heapTop = allocatedAddress;
+        }
+        else if (type == PSP_SMEM_LowAligned)
+        {
+            allocatedAddress = heapBottom;
+            allocatedAddress = (allocatedAddress + addr - 1) & ~(addr - 1);
+            heapBottom = allocatedAddress + size;
+        }
+        else if (type == PSP_SMEM_HighAligned)
+        {
+            allocatedAddress = (heapTop - (size + addr - 1)) & ~(addr - 1);
             heapTop = allocatedAddress;
         }
 
@@ -161,11 +174,13 @@ public class pspSysMem {
             case PSP_SMEM_Low: typeStr = "PSP_SMEM_Low"; break;
             case PSP_SMEM_High: typeStr = "PSP_SMEM_High"; break;
             case PSP_SMEM_Addr: typeStr = "PSP_SMEM_Addr"; break;
+            case PSP_SMEM_LowAligned: typeStr = "PSP_SMEM_LowAligned"; break;
+            case PSP_SMEM_HighAligned: typeStr = "PSP_SMEM_HighAligned"; break;
             default: typeStr = "UNHANDLED " + type; break;
         }
         System.out.println("sceKernelAllocPartitionMemory(partitionid=" + partitionid
                 + ",name='" + name + "',type=" + typeStr + ",size=" + size
-                + ",addr=" + Integer.toHexString(addr) + ")");
+                + ",addr=0x" + Integer.toHexString(addr) + ")");
 
         addr = malloc(partitionid, type, size, addr);
         if (addr != 0)
