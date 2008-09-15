@@ -35,7 +35,7 @@ public class PSPModuleInfo {
     public void read(ByteBuffer f) throws IOException {
         m_attr = readUHalf(f);
         m_version = readUHalf(f);
-        f.get(getM_name());
+        f.get(m_name);
         m_gp = readUWord(f);
         m_exports = readUWord(f); // .lib.ent
 
@@ -45,10 +45,12 @@ public class PSPModuleInfo {
         m_imp_end = readUWord(f);
 
         // Convert the array of bytes used for the module name to a Java String
-        // If we don't do it this way then there will be too many nul-bytes on the end, and some shells print them all!
-        int len;
-        for (len = 0; len < 28 && getM_name()[len] != 0; len++); // Why this?
-            m_namez = new String(getM_name(), 0, len);
+        // Calculate the length of the printable portion of the string, otherwise
+        // any extra trailing characters may be printed as garbage.
+        int len = 0;
+        while (len < 28 && m_name[len] != 0)
+            len++;
+        m_namez = new String(m_name, 0, len);
     }
 
     public int getM_attr() {
