@@ -103,9 +103,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             pos = Settings.get_instance().readWindowPos("logwindow");
             consolewin.setLocation(pos[0], pos[1]);
         }
-        if (Settings.get_instance().readBoolOptions("guisettings/openLogwindow"))
-            consolewin.setVisible(true);
-
     }
 
     /** This method is called from within the constructor to
@@ -666,7 +663,10 @@ public void setMainTitle(String message)
         java.awt.EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
-                new MainGUI().setVisible(true);
+                MainGUI maingui = new MainGUI();
+                maingui.setVisible(true);
+                if (Settings.get_instance().readBoolOptions("guisettings/openLogwindow"))
+                    maingui.consolewin.setVisible(true);
             }
         });
     }
