@@ -21,7 +21,7 @@ package jpcsp;
  * @author George
  */
 public class Syscallv15 {
-   static int syscalls[][] = {
+   public static int syscalls[][] = {
        {0x2000,0xca04a2b9}, //sceKernelRegisterSubIntrHandler
        {0x2001,0xd61e6961}, //sceKernelReleaseSubIntrHandler
        {0x2002,0xfb8e22ec}, //sceKernelEnableSubIntr

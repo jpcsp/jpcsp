@@ -613,7 +613,7 @@ private void SaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:ev
         OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BVFL.getCount(),31,2);
         OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BVT.getCount(),32,2);
         OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.BVTL.getCount(),33,2);
-        OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.CACHE.getCount(),34,2);
+        //OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.CACHE.getCount(),34,2);
         OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.CEIL_W_S.getCount(),35,2);
         OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.CFC0.getCount(),36,2);
         OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.CFC1.getCount(),37,2);

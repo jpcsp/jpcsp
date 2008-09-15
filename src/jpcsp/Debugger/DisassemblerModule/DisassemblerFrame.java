@@ -35,6 +35,9 @@ import jpcsp.Memory;
 import jpcsp.Settings;
 import jpcsp.util.JpcspDialogManager;
 import jpcsp.util.OptionPaneMultiple;
+import jpcsp.Allegrex.Instructions.*;
+import jpcsp.Allegrex.Decoder;
+import jpcsp.Allegrex.Common.Instruction;
 
 /**
  *
@@ -65,35 +68,26 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
     }
 
     public void RefreshDebugger() {
-        int t;
+        int pc;
         int cnt;
         if (DebuggerPC == 0) {
             DebuggerPC = Emulator.getProcessor().pc;
         }
         listmodel.clear();
 
-        for (t = DebuggerPC , cnt = 0; t < (DebuggerPC + 0x00000094); t += 0x00000004, cnt++) {
-            if (Memory.get_instance().isAddressGood((int) t)) {
-                int memread = Memory.get_instance().read32((int) t);
+        for (pc = DebuggerPC , cnt = 0; pc < (DebuggerPC + 0x00000094); pc += 0x00000004, cnt++) {
+            if (Memory.get_instance().isAddressGood(pc)) {
+                int opcode = Memory.get_instance().read32(pc);
+                
+                Instruction insn = Decoder.instruction(opcode);
 
-                if (memread == 0) {
-                     if(breakpoints.indexOf(t)!=-1)
-                          listmodel.addElement(String.format("<br>%08x:[%08x]: nop", t, memread));
-                     else
-                      listmodel.addElement(String.format("%08x:[%08x]: nop", t, memread));
+                if(breakpoints.indexOf(pc)!=-1) {
+                    listmodel.addElement(String.format("<*>%08X:[%08X]: %s", pc, opcode, insn.disasm(pc, opcode)));
                 } else {
-                    opcode_address = t;
-                    if(breakpoints.indexOf(t)!=-1)
-                    {
-                        listmodel.addElement(String.format("<br>%08x:[%08x]: %s", t, memread, disOp.disasm(memread,opcode_address)));
-                    }
-                    else
-                    {
-                        listmodel.addElement(String.format("%08x:[%08x]: %s", t, memread, disOp.disasm(memread,opcode_address)));
-                    }
+                    listmodel.addElement(String.format("   %08X:[%08X]: %s", pc, opcode, insn.disasm(pc, opcode)));
                 }
             } else {
-                listmodel.addElement(String.format("%08x: unmapped", t));
+                listmodel.addElement(String.format("   %08x: invalid address", pc));
             }
         }
     //refreshregisters
@@ -596,19 +590,16 @@ private void DumpCodeToTextActionPerformed(java.awt.event.ActionEvent evt) {//GE
             int End = Integer.parseInt(opt.getInput()[1],16);
             for(int i =Start; i<=End; i+=4)
             {
-                if (Memory.get_instance().isAddressGood((int) i)) {
-                    int memread = Memory.get_instance().read32((int) i);
-                    if (memread == 0) {
-                        bufferedWriter.write(String.format("%08x : [%08x]: nop", i, memread));
-                        bufferedWriter.newLine();
-                    } else {
-                        opcode_address = i;
-                        bufferedWriter.write(String.format("%08x : [%08x]: %s", i, memread, disOp.disasm(memread,opcode_address)));
-                        bufferedWriter.newLine();
-                    }
+                if (Memory.get_instance().isAddressGood(i)) {
+                    int opcode = Memory.get_instance().read32(i);
+                    
+                    Instruction insn = Decoder.instruction(opcode);
+                    
+                    bufferedWriter.write(String.format("%08x:[%08x]: %s", i, opcode, insn.disasm(i, opcode)));
+                    bufferedWriter.newLine();
                 } else {
                     // Should we even both printing these?
-                    bufferedWriter.write(String.format("%08x : unmapped", i));
+                    bufferedWriter.write(String.format("%08x: invalid address", i));
                     bufferedWriter.newLine();
                 }
             }
@@ -640,7 +631,7 @@ private void DumpCodeToTextActionPerformed(java.awt.event.ActionEvent evt) {//GE
 private void CopyAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CopyAddressActionPerformed
     String value = (String)disasmList.getSelectedValue();
     String address;
-    if(value.startsWith("<br>"))
+    if(value.startsWith("<*>"))
       address = value.substring(4, 12);
     else
       address = value.substring(0, 8);
@@ -729,7 +720,7 @@ private void DeleteBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//
           String value =(String)disasmList.getSelectedValue();
           if(value != null)
           {
-            boolean breakpointexists = value.startsWith("<br>");
+            boolean breakpointexists = value.startsWith("<*>");
             if(breakpointexists)
             {
               String address = value.substring(4, 12);

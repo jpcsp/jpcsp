@@ -8,7 +8,7 @@ package jpcsp.Allegrex;
  *
  * @author hli
  */
-public class FpuState {
+public class FpuState extends HiLoState {
 
     public static final class Fcr0 {
 
@@ -43,15 +43,8 @@ public class FpuState {
     public float[] fpr;
     public Fcr31 fcr31;
 
-    public void set(int reg, float value) {
-        fpr[reg] = value;
-    }
-
-    public float get(int reg) {
-        return fpr[reg];
-    }
-
     public void reset() {
+        super.reset();
         fpr = new float[32];
         fcr31 = new Fcr31();
     }
@@ -60,11 +53,16 @@ public class FpuState {
         reset();
     }
 
-    public FpuState(FpuState that) {
+    public void copy(FpuState that) {
+        super.copy(that);
         fpr = new float[32];
         for (int reg = 0; reg < 32; ++reg) {
             fpr[reg] = that.fpr[reg];
         }
         fcr31 = new Fcr31(that.fcr31);
+    }
+
+    public FpuState(FpuState that) {
+        copy(that);
     }
 }

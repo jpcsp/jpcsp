@@ -42,13 +42,130 @@ group root
             disasm = `return "nop";`
         }
 
-        op CACHE(101111:rs:rt:imm16)
+        op ICACHE_INDEX_INVALIDATE(101111:rs:00100:imm16)
         {
             interpret = ``
 
             compile = ``
 
-            disasm = `return Dis_CCIMMRS("cache", rt, signExtend(imm16), rs);`
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x04, signExtend(imm16), rs);`
+        }
+
+        op ICACHE_INDEX_UNLOCK(101111:rs:00110:imm16)
+        {
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x06, signExtend(imm16), rs);`
+        }
+
+        op ICACHE_HIT_INVALIDATE(101111:rs:01000:imm16)
+        {
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x08, signExtend(imm16), rs);`
+        }
+
+        op ICACHE_FILL(101111:rs:01010:imm16)
+        {
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x0A, signExtend(imm16), rs);`
+        }
+
+        op ICACHE_FILL_WITH_LOCK(101111:rs:01011:imm16)
+        {
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x0B, signExtend(imm16), rs);`
+        }
+
+        op DCACHE_INDEX_WRITEBACK_INVALIDATE(101111:rs:10100:imm16)
+        {
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x14, signExtend(imm16), rs);`
+        }
+
+        op DCACHE_INDEX_UNLOCK(101111:rs:10110:imm16)
+        {
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x16, signExtend(imm16), rs);`
+        }
+
+        op DCACHE_CREATE_DIRTY_EXCLUSIVE(101111:rs:11000:imm16)
+        {
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x18, signExtend(imm16), rs);`
+        }
+
+        op DCACHE_HIT_INVALIDATE(101111:rs:11001:imm16)
+        {
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x19, signExtend(imm16), rs);`
+        }
+
+        op DCACHE_HIT_WRITEBACK(101111:rs:11010:imm16)
+        {
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x1A, signExtend(imm16), rs);`
+        }
+
+        op DCACHE_HIT_WRITEBACK_INVALIDATE(101111:rs:11011:imm16)
+        {
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x1B, signExtend(imm16), rs);`
+        }
+
+        op DCACHE_CREATE_DIRTY_EXCLUSIVE_WITH_LOCK(101111:rs:11100:imm16)
+        {
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x1C, signExtend(imm16), rs);`
+        }
+
+        op DCACHE_FILL(101111:rs:11110:imm16)
+        {
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x1E, signExtend(imm16), rs);`
+        }
+
+        op DCACHE_FILL_WITH_LOCK(101111:rs:11111:imm16)
+        {
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x1F, signExtend(imm16), rs);`
         }
 
         op SYSCALL(000000:imm20:001100)
@@ -59,7 +176,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_Syscall(imm20);`
+            disasm = `return Common.disasmSYSCALL(imm20);`
         }
 
         op ERET(010000:10000:00000:00000:00000:011000)
@@ -81,7 +198,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_Break(imm20);`
+            disasm = `return Common.disasmBREAK(imm20);`
         }
 
         op SYNC(00000000000000000000000000001111)
@@ -102,11 +219,7 @@ group root
         {
             interpret = `
                 // just ignore overflow exception as it is useless
-                if (rd != 0) {
-                    CpuState cpu = processor.cpu;
-
-                    cpu.gpr[rd] = cpu.gpr[rs] + cpu.gpr[rt];
-                }
+                processor.cpu.doADDU(rd, rs, rt);
             `
 
             compile = `
@@ -130,15 +243,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRSRT("add", rd, rs, rt);`
+            disasm = `return Common.disasmRDRSRT("add", rd, rs, rt);`
         }
 
         op ADDU(000000:rs:rt:rd:00000:100001)
         {
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = processor.gpr[rs] + processor.gpr[rt];
-                }
+                processor.cpu.doADDU(rd, rs, rt);
             `
 
             compile = `
@@ -162,16 +273,14 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRSRT("addu", rd, rs, rt);`
+            disasm = `return Common.disasmRDRSRT("addu", rd, rs, rt);`
         }
 
         op ADDI(001000:rs:rt:imm16)
         {
             interpret = `
                 // just ignore overflow exception as it is useless
-                if (rt != 0) {
-                    processor.gpr[rt] = processor.gpr[rs] + Processor.signExtend(imm16);
-                }
+                processor.cpu.doADDIU(rt, rs, imm16);
             `
 
             compile = `
@@ -194,15 +303,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RTRSIMM("addi", rt, rs, signExtend(imm16));`
+            disasm = `return Common.disasmRTRSIMM("addi", rt, rs, signExtend(imm16));`
         }
 
         op ADDIU(001001:rs:rt:imm16)
         {
             interpret = `
-                if (rt != 0) {
-                    processor.gpr[rt] = processor.gpr[rs] + Processor.signExtend(imm16);
-                }
+                processor.cpu.doADDIU(rt, rs, imm16);
             `
 
             compile = `
@@ -225,15 +332,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RTRSIMM("addiu", rt, rs, signExtend(imm16));`
+            disasm = `return Common.disasmRTRSIMM("addiu", rt, rs, signExtend(imm16));`
         }
 
         op AND(000000:rs:rt:rd:00000:100100)
         {
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = processor.gpr[rs] & processor.gpr[rt];
-                }
+                processor.cpu.doAND(rd, rs, rt);
             `
 
             compile = `
@@ -257,15 +362,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRSRT("and", rd, rs, rt);`
+            disasm = `return Common.disasmRDRSRT("and", rd, rs, rt);`
         }
 
         op ANDI(001100:rs:rt:imm16)
         {
             interpret = `
-                if (rt != 0) {
-                    processor.gpr[rt] = processor.gpr[rs] & Processor.zeroExtend(imm16);
-                }
+                processor.cpu.doANDI(rt, rs, imm16);
             `
 
             compile = `
@@ -288,15 +391,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RTRSIMM("andi", rt, rs, zeroExtend(imm16));`
+            disasm = `return Common.disasmRTRSIMM("andi", rt, rs, zeroExtend(imm16));`
         }
 
         op NOR(000000:rs:rt:rd:00000:100111)
         {
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = ~(processor.gpr[rs] | processor.gpr[rt]);
-                }
+                processor.cpu.doNOR(rd, rs, rt);
             `
 
             compile = `
@@ -320,15 +421,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRSRT("nor", rd, rs, rt);`
+            disasm = `return Common.disasmRDRSRT("nor", rd, rs, rt);`
         }
 
         op OR(000000:rs:rt:rd:00000:100101)
         {
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = processor.gpr[rs] | processor.gpr[rt];
-                }
+                processor.cpu.doOR(rd, rs, rt);
             `
 
             compile = `
@@ -352,15 +451,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRSRT("or", rd, rs, rt);`
+            disasm = `return Common.disasmRDRSRT("or", rd, rs, rt);`
         }
 
         op ORI(001101:rs:rt:imm16)
         {
             interpret = `
-                if (rt != 0) {
-                    processor.gpr[rt] = processor.gpr[rs] | Processor.zeroExtend(imm16);
-                }
+                processor.cpu.doORI(rt, rs, imm16);
             `
 
             compile = `
@@ -383,15 +480,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RTRSIMM("ori", rt, rs, zeroExtend(imm16));`
+            disasm = `return Common.disasmRTRSIMM("ori", rt, rs, zeroExtend(imm16));`
         }
 
         op XOR(000000:rs:rt:rd:00000:100110)
         {
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = processor.gpr[rs] ^ processor.gpr[rt];
-                }
+                processor.cpu.doXOR(rd, rs, rt);
             `
 
             compile = `
@@ -415,15 +510,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRSRT("xor", rd, rs, rt);`
+            disasm = `return Common.disasmRDRSRT("xor", rd, rs, rt);`
         }
 
         op XORI(001110:rs:rt:imm16)
         {
             interpret = `
-                if (rt != 0) {
-                    processor.gpr[rt] = processor.gpr[rs] ^ Processor.zeroExtend(imm16);
-                }
+                processor.cpu.doXORI(rt, rs, imm16);
             `
 
             compile = `
@@ -446,15 +539,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RTRSIMM("xori", rt, rs, zeroExtend(imm16));`
+            disasm = `return Common.disasmRTRSIMM("xori", rt, rs, zeroExtend(imm16));`
         }
 
         op SLL(000000:00000:rt:rd:sa:000000)
         {
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = (processor.gpr[rt] << sa);
-                }
+                processor.cpu.doSLL(rd, rt, sa);
             `
 
             compile = `
@@ -477,15 +568,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRTSA("sll", rd, rt, sa);`
+            disasm = `return Common.disasmRDRTSA("sll", rd, rt, sa);`
         }
 
         op SLLV(000000:rs:rt:rd:00000:000100)
         {
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = processor.gpr[rt] << (processor.gpr[rs]&31);
-                }
+                processor.cpu.doSLLV(rd, rt, rs);
             `
 
             compile = `
@@ -509,15 +598,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRTRS("sllv", rd, rt, rs);`
+            disasm = `return Common.disasmRDRTRS("sllv", rd, rt, rs);`
         }
 
         op SRA(000000:00000:rt:rd:sa:000011)
         {
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = (processor.gpr[rt] >> sa);
-                }
+                processor.cpu.doSRA(rd, rt, sa);
             `
 
             compile = `
@@ -540,15 +627,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRTSA("sra", rd, rt, sa);`
+            disasm = `return Common.disasmRDRTSA("sra", rd, rt, sa);`
         }
 
         op SRAV(000000:rs:rt:rd:00000:000111)
         {
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = processor.gpr[rt] >> (processor.gpr[rs]&31);
-                }
+                processor.cpu.doSRAV(rd, rt, rs);
             `
 
             compile = `
@@ -572,15 +657,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRTRS("srav", rd, rt, rs);`
+            disasm = `return Common.disasmRDRTRS("srav", rd, rt, rs);`
         }
 
         op SRL(000000:00000:rt:rd:sa:000010)
         {
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = (processor.gpr[rt] >>> sa);
-                }
+                processor.cpu.doSRL(rd, rt, sa);
             `
 
             compile = `
@@ -603,15 +686,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRTSA("srl", rd, rt, sa);`
+            disasm = `return Common.disasmRDRTSA("srl", rd, rt, sa);`
         }
 
         op SRLV(000000:rs:rt:rd:00000:000110)
         {
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = processor.gpr[rt] >>> (processor.gpr[rs]&31);
-                }
+                processor.cpu.doSRLV(rd, rt, rs);
             `
 
             compile = `
@@ -635,15 +716,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRTRS("srlv", rd, rt, rs);`
+            disasm = `return Common.disasmRDRTRS("srlv", rd, rt, rs);`
         }
 
         op ROTR(000000:00001:rt:rd:sa:000010)
         {
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = Integer.rotateRight(processor.gpr[rt], sa);
-                }
+                processor.cpu.doROTR(rd, rt, sa);
             `
 
             compile = `
@@ -666,15 +745,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRTSA("rotr", rd, rt, sa);`
+            disasm = `return Common.disasmRDRTSA("rotr", rd, rt, sa);`
         }
 
         op ROTRV(000000:rs:rt:rd:00001:000110)
         {
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = Integer.rotateRight(processor.gpr[rt], processor.gpr[rs]);
-                }
+                processor.cpu.doROTRV(rd, rt, rs);
             `
 
             compile = `
@@ -698,15 +775,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRTRS("rotrv", rd, rt, rs);`
+            disasm = `return Common.disasmRDRTRS("rotrv", rd, rt, rs);`
         }
 
         op SLT(000000:rs:rt:rd:00000:101010)
         {
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = Processor.signedCompare(processor.gpr[rs], processor.gpr[rt]);
-                }
+                processor.cpu.doSLT(rd, rs, rt);
             `
 
             compile = `
@@ -730,15 +805,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRSRT("slt", rd, rs, rt);`
+            disasm = `return Common.disasmRDRSRT("slt", rd, rs, rt);`
         }
 
         op SLTI(001010:rs:rt:imm16)
         {
             interpret = `
-                if (rt != 0) {
-                    processor.gpr[rt] = Processor.signedCompare(processor.gpr[rs], Processor.signExtend(imm16));
-                }
+                processor.cpu.doSLTI(rt, rs, imm16);
             `
 
             compile = `
@@ -761,15 +834,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RTRSIMM("slti", rt, rs, signExtend(imm16));`
+            disasm = `return Common.disasmRTRSIMM("slti", rt, rs, signExtend(imm16));`
         }
 
         op SLTU(000000:rs:rt:rd:00000:101011)
         {
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = Processor.unsignedCompare(processor.gpr[rt], processor.gpr[rs]);
-                }
+                processor.cpu.doSLTU(rd, rs, rt);
             `
 
             compile = `
@@ -793,15 +864,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRSRT("sltu", rd, rs, rt);`
+            disasm = `return Common.disasmRDRSRT("sltu", rd, rs, rt);`
         }
 
         op SLTIU(001011:rs:rt:imm16)
         {
             interpret = `
-                if (rt != 0) {
-                    processor.gpr[rt] = Processor.unsignedCompare(processor.gpr[rs], Processor.signExtend(imm16));
-                }
+                processor.cpu.doSLTIU(rt, rs, imm16);
             `
 
             compile = `
@@ -824,16 +893,14 @@ group root
                 }
             `
 
-            disasm = `return Dis_RTRSIMM("sltiu", rt, rs, signExtend(imm16));`
+            disasm = `return Common.disasmRTRSIMM("sltiu", rt, rs, signExtend(imm16));`
         }
 
         op SUB(000000:rs:rt:rd:00000:100010)
         {
-            // ignore overflow exception as it is useless
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = processor.gpr[rs] - processor.gpr[rt];
-                }
+                // just ignore overflow exception as it is useless
+                processor.cpu.doSUBU(rd, rs, rt);
             `
 
             compile = `
@@ -857,15 +924,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRSRT("sub", rd, rs, rt);`
+            disasm = `return Common.disasmRDRSRT("sub", rd, rs, rt);`
         }
 
         op SUBU(000000:rs:rt:rd:00000:100011)
         {
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = processor.gpr[rs] - processor.gpr[rt];
-                }
+                processor.cpu.doSUBU(rd, rs, rt);
             `
 
             compile = `
@@ -889,15 +954,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRSRT("subu", rd, rs, rt);`
+            disasm = `return Common.disasmRDRSRT("subu", rd, rs, rt);`
         }
 
         op LUI(001111:00000:rt:imm16)
         {
             interpret = `
-                if (rt != 0) {
-                    processor.gpr[rt] = (imm16 << 16);
-                }
+                processor.cpu.doLUI(rt, imm16);
             `
 
             compile = `
@@ -907,15 +970,13 @@ group root
                 processor.fix_gpr(rt, (imm16 << 16));
             `
 
-            disasm = `return Dis_RTIMM("lui", rt, zeroExtend(imm16));`
+            disasm = `return Common.disasmRTIMM("lui", rt, zeroExtend(imm16));`
         }
 
         op SEB(011111:00000:rt:rd:10000:100001)
         {
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = Processor.signExtend8(processor.gpr[rt]);
-                }
+                processor.cpu.doSEB(rd, rt);
             `
 
             compile = `
@@ -936,15 +997,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRT("seb", rd, rt);`
+            disasm = `return Common.disasmRDRT("seb", rd, rt);`
         }
 
         op SEH(011111:00000:rt:rd:11000:100000)
         {
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = Processor.signExtend(processor.gpr[rt]);
-                }
+                processor.cpu.doSEH(rd, rt);
             `
 
             compile = `
@@ -965,15 +1024,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRT("seh", rd, rt);`
+            disasm = `return Common.disasmRDRT("seh", rd, rt);`
         }
 
         op BITREV(011111:00000:rt:rd:10100:100000)
         {
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = Integer.reverse(processor.gpr[rt]);
-                }
+                processor.cpu.doBITREV(rd, rt);
             `
 
             compile = `
@@ -994,15 +1051,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRT("bitrev", rd, rt);`
+            disasm = `return Common.disasmRDRT("bitrev", rd, rt);`
         }
 
         op WSBH(011111:00000:rt:rd:00010:100000)
         {
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = Integer.rotateRight(Integer.reverseBytes(processor.gpr[rt]), 16);
-                }
+                processor.cpu.doWSBH(rd, rt);
             `
 
             compile = `
@@ -1023,15 +1078,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRT("wsbh", rd, rt);`
+            disasm = `return Common.disasmRDRT("wsbh", rd, rt);`
         }
 
         op WSBW(011111:00000:rt:rd:00011:100000)
         {
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = Integer.reverseBytes(processor.gpr[rt]);
-                }
+                processor.cpu.doWSBW(rd, rt);
             `
 
             compile = `
@@ -1052,15 +1105,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRT("wsbw", rd, rt);`
+            disasm = `return Common.disasmRDRT("wsbw", rd, rt);`
         }
 
         op MOVZ(000000:rs:rt:rd:00000:001010)
         {
             interpret = `
-                if ((rd != 0) && (processor.gpr[rt] == 0)) {
-                    processor.gpr[rd] = processor.gpr[rs];
-                }
+                processor.cpu.doMOVZ(rd, rs, rt);
             `
 
             compile = `
@@ -1086,15 +1137,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRSRT("movz", rd, rs, rt);`
+            disasm = `return Common.disasmRDRSRT("movz", rd, rs, rt);`
         }
 
         op MOVN(000000:rs:rt:rd:00000:001011)
         {
             interpret = `
-                if ((rd != 0) && (processor.gpr[rt] != 0)) {
-                    processor.gpr[rd] = processor.gpr[rs];
-                }
+                processor.cpu.doMOVN(rd, rs, rt);
             `
 
             compile = `
@@ -1120,15 +1169,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRSRT("movn", rd, rs, rt);`
+            disasm = `return Common.disasmRDRSRT("movn", rd, rs, rt);`
         }
 
         op MAX(000000:rs:rt:rd:00000:101100)
         {
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = Processor.max(processor.gpr[rs], processor.gpr[rt]);
-                }
+                processor.cpu.doMAX(rd, rs, rt);
             `
 
             compile = `
@@ -1151,15 +1198,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRSRT("max", rd, rs, rt);`
+            disasm = `return Common.disasmRDRSRT("max", rd, rs, rt);`
         }
 
         op MIN(000000:rs:rt:rd:00000:101101)
         {
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = Processor.min(processor.gpr[rs], processor.gpr[rt]);
-                }
+                processor.cpu.doMIN(rd, rs, rt);
             `
 
             compile = `
@@ -1182,15 +1227,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRSRT("min", rd, rs, rt);`
+            disasm = `return Common.disasmRDRSRT("min", rd, rs, rt);`
         }
 
         op CLZ(000000:rs:00000:rd:00000:010110)
         {
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = Integer.numberOfLeadingZeros(processor.gpr[rs]);
-                }
+                processor.cpu.doCLZ(rd, rs);
             `
 
             compile = `
@@ -1210,15 +1253,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRS("clz", rd, rs);`
+            disasm = `return Common.disasmRDRS("clz", rd, rs);`
         }
 
         op CLO(000000:rs:00000:rd:00000:010111)
         {
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = Integer.numberOfLeadingZeros(~processor.gpr[rs]);
-                }
+                processor.cpu.doCLO(rd, rs);
             `
 
             compile = `
@@ -1238,15 +1279,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RDRS("clo", rd, rs);`
+            disasm = `return Common.disasmRDRS("clo", rd, rs);`
         }
 
         op EXT(011111:rs:rt:msb:lsb:000000)
         {
             interpret = `
-                if (rt != 0) {
-                    processor.gpr[rt] = Processor.extractBits(processor.gpr[rs], lsb, msb+1);
-                }
+                processor.cpu.doEXT(rt, rs, lsb, msb+1);
             `
 
             compile = `
@@ -1270,15 +1309,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_Ext(rt, rs, lsb, msb);`
+            disasm = `return Common.disasmEXT(rt, rs, lsb, msb);`
         }
 
         op INS(011111:rs:rt:msb:lsb:000100)
         {
             interpret = `
-                if (rt != 0) {
-                    processor.gpr[rt] = Processor.insertBits(processor.gpr[rt], processor.gpr[rs], lsb, msb);
-                }
+                processor.cpu.doINS(rt, rs, lsb, msb);
             `
 
             compile = `
@@ -1305,7 +1342,7 @@ group root
                 }
             `
 
-            disasm = `return Dis_Ins(rt, rs, lsb, msb);`
+            disasm = `return Common.disasmINS(rt, rs, lsb, msb);`
         }
     }
 
@@ -1314,7 +1351,7 @@ group root
         op MULT(000000:rs:rt:00000:00000:011000)
         {
             interpret = `
-                processor.hilo = ((long) processor.gpr[rs]) * ((long) processor.gpr[rt]);
+                processor.cpu.doMULT(rs, rt);
             `
 
             compile = `
@@ -1331,13 +1368,13 @@ group root
                 );
             `
 
-            disasm = `return Dis_RSRT("mult", rs, rt);`
+            disasm = `return Common.disasmRSRT("mult", rs, rt);`
         }
 
         op MULTU(000000:rs:rt:00000:00000:011001)
         {
             interpret = `
-                processor.hilo = (((long) processor.gpr[rs]) & 0xffffffff) * (((long) processor.gpr[rt]) & 0xffffffff);
+                processor.cpu.doMULTU(rs, rt);
             `
 
             compile = `
@@ -1354,13 +1391,13 @@ group root
                 );
             `
 
-            disasm = `return Dis_RSRT("multu", rs, rt);`
+            disasm = `return Common.disasmRSRT("multu", rs, rt);`
         }
 
         op MADD(000000:rs:rt:00000:00000:011100)
         {
             interpret = `
-                processor.hilo += ((long) processor.gpr[rs]) * ((long) processor.gpr[rt]);
+                processor.cpu.doMADD(rs, rt);
             `
 
             compile = `
@@ -1378,13 +1415,13 @@ group root
                 );
             `
 
-            disasm = `return Dis_RSRT("madd", rs, rt);`
+            disasm = `return Common.disasmRSRT("madd", rs, rt);`
         }
 
         op MADDU(000000:rs:rt:00000:00000:011101)
         {
             interpret = `
-                processor.hilo += (((long) processor.gpr[rs]) & 0xffffffff) * (((long) processor.gpr[rt]) & 0xffffffff);
+                processor.cpu.doMADDU(rs, rt);
             `
 
             compile = `
@@ -1402,13 +1439,13 @@ group root
                 );
             `
 
-            disasm = `return Dis_RSRT("maddu", rs, rt);`
+            disasm = `return Common.disasmRSRT("maddu", rs, rt);`
         }
 
         op MSUB(000000:rs:rt:00000:00000:101110)
         {
             interpret = `
-                processor.hilo -= ((long) processor.gpr[rs]) * ((long) processor.gpr[rt]);
+                processor.cpu.doMSUB(rs, rt);
             `
 
             compile = `
@@ -1426,13 +1463,13 @@ group root
                 );
             `
 
-            disasm = `return Dis_RSRT("msub", rs, rt);`
+            disasm = `return Common.disasmRSRT("msub", rs, rt);`
         }
 
         op MSUBU(000000:rs:rt:00000:00000:101111)
         {
             interpret = `
-                processor.hilo -= (((long) processor.gpr[rs]) & 0xffffffff) * (((long) processor.gpr[rt]) & 0xffffffff);
+                processor.cpu.doMSUBU(rs, rt);
             `
 
             compile = `
@@ -1450,13 +1487,13 @@ group root
                 );
             `
 
-            disasm = `return Dis_RSRT("msubu", rs, rt);`
+            disasm = `return Common.disasmRSRT("msubu", rs, rt);`
         }
 
         op DIV(000000:rs:rt:00000:00000:011010)
         {
             interpret = `
-                processor.hilo = Processor.signedDivMod(processor.gpr[rs], processor.gpr[rt]);
+                processor.cpu.doDIV(rs, rt);
             `
 
             compile = `
@@ -1473,13 +1510,13 @@ group root
                 );
             `
 
-            disasm = `return Dis_RSRT("div", rs, rt);`
+            disasm = `return Common.disasmRSRT("div", rs, rt);`
         }
 
         op DIVU(000000:rs:rt:00000:00000:011011)
         {
             interpret = `
-                processor.hilo = Processor.unsignedDivMod((((long) processor.gpr[rs]) & 0xffffffff), (((long) processor.gpr[rt]) & 0xffffffff));
+                processor.cpu.doDIVU(rs, rt);
             `
 
             compile = `
@@ -1496,15 +1533,13 @@ group root
                 );
             `
 
-            disasm = `return Dis_RSRT("divu", rs, rt);`
+            disasm = `return Common.disasmRSRT("divu", rs, rt);`
         }
 
         op MFHI(000000:00000:00000:rd:00000:010000)
         {
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = processor.hi();
-                }
+                processor.cpu.doMFHI(rd);
             `
 
             compile = `
@@ -1520,15 +1555,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RD("mfhi", rd);`
+            disasm = `return Common.disasmRD("mfhi", rd);`
         }
 
         op MFLO(000000:00000:00000:rd:00000:010010)
         {
             interpret = `
-                if (rd != 0) {
-                    processor.gpr[rd] = processor.lo();
-                }
+                processor.cpu.doMFLO(rd);
             `
 
             compile = `
@@ -1544,13 +1577,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RD("mflo", rd);`
+            disasm = `return Common.disasmRD("mflo", rd);`
         }
 
         op MTHI(000000:rs:00000:00000:00000:010001)
         {
             interpret = `
-                processor.hilo = (processor.hilo & 0xffffffff) | (((long) processor.gpr[rs]) << 32);
+                processor.cpu.doMTHI(rs);
             `
 
             compile = `
@@ -1566,13 +1599,13 @@ group root
                     );
             `
 
-            disasm = `return Dis_RS("mthi", rs);`
+            disasm = `return Common.disasmRS("mthi", rs);`
         }
 
         op MTLO(000000:rs:00000:00000:00000:010011)
         {
             interpret = `
-                processor.hilo = ((processor.hilo >>> 32) << 32) | (((long) processor.gpr[rs]) & 0xffffffff);
+                processor.cpu.doMTLO(rs);
             `
 
             compile = `
@@ -1588,7 +1621,7 @@ group root
                     );
             `
 
-            disasm = `return Dis_RS("mtlo", rs);`
+            disasm = `return Common.disasmRS("mtlo", rs);`
         }
     }
 
@@ -1632,7 +1665,7 @@ group root
                 processor.current_bb = null;
             `
 
-            disasm = `return Dis_RSRTOFFSET("beq", rs, rt, imm16, address);`
+            disasm = `return Common.disasmRSRTOFFSET("beq", rs, rt, imm16, address);`
         }
 
         op BEQL(010100:rs:rt:imm16)
@@ -1678,7 +1711,7 @@ group root
                 processor.current_bb = null;
             `
 
-            disasm = `return Dis_RSRTOFFSET("beql", rs, rt, imm16, address);`
+            disasm = `return Common.disasmRSRTOFFSET("beql", rs, rt, imm16, address);`
         }
 
         op BGEZ(000001:rs:00001:imm16)
@@ -1689,7 +1722,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_RSOFFSET("bgez", rs, imm16, address);`
+            disasm = `return Common.disasmRSOFFSET("bgez", rs, imm16, address);`
         }
 
         op BGEZAL(000001:rs:10001:imm16)
@@ -1700,7 +1733,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_RSOFFSET("bgezal", rs, imm16, address);`
+            disasm = `return Common.disasmRSOFFSET("bgezal", rs, imm16, address);`
         }
 
         op BGEZALL(000001:rs:10011:imm16)
@@ -1711,7 +1744,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_RSOFFSET("bgezall", rs, imm16, address);`
+            disasm = `return Common.disasmRSOFFSET("bgezall", rs, imm16, address);`
         }
 
         op BGEZL(000001:rs:00011:imm16)
@@ -1722,7 +1755,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_RSOFFSET("bgezl", rs, imm16, address);`
+            disasm = `return Common.disasmRSOFFSET("bgezl", rs, imm16, address);`
         }
 
         op BGTZ(000111:rs:00000:imm16)
@@ -1733,7 +1766,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_RSOFFSET("bgtz", rs, imm16, address);`
+            disasm = `return Common.disasmRSOFFSET("bgtz", rs, imm16, address);`
         }
 
         op BGTZL(010111:rs:00000:imm16)
@@ -1744,7 +1777,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_RSOFFSET("bgtzl", rs, imm16, address);`
+            disasm = `return Common.disasmRSOFFSET("bgtzl", rs, imm16, address);`
         }
 
         op BLEZ(000110:rs:00000:imm16)
@@ -1755,7 +1788,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_RSOFFSET("blez", rs, imm16, address);`
+            disasm = `return Common.disasmRSOFFSET("blez", rs, imm16, address);`
         }
 
         op BLEZL(010110:rs:00000:imm16)
@@ -1766,7 +1799,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_RSOFFSET("blezl", rs, imm16, address);`
+            disasm = `return Common.disasmRSOFFSET("blezl", rs, imm16, address);`
         }
 
         op BLTZ(000001:rs:00000:imm16)
@@ -1777,7 +1810,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_RSOFFSET("bltz", rs, imm16, address);`
+            disasm = `return Common.disasmRSOFFSET("bltz", rs, imm16, address);`
         }
 
         op BLTZAL(000001:rs:10000:imm16)
@@ -1788,7 +1821,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_RSOFFSET("bltzal", rs, imm16, address);`
+            disasm = `return Common.disasmRSOFFSET("bltzal", rs, imm16, address);`
         }
 
         op BLTZALL(000001:rs:10010:imm16)
@@ -1799,7 +1832,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_RSOFFSET("bltzall", rs, imm16, address);`
+            disasm = `return Common.disasmRSOFFSET("bltzall", rs, imm16, address);`
         }
 
         op BLTZL(000001:rs:00010:imm16)
@@ -1810,7 +1843,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_RSOFFSET("bltzl", rs, imm16, address);`
+            disasm = `return Common.disasmRSOFFSET("bltzl", rs, imm16, address);`
         }
 
         op BNE(000101:rs:rt:imm16)
@@ -1851,7 +1884,7 @@ group root
                 processor.current_bb = null;
             `
 
-            disasm = `return Dis_RSRTOFFSET("bne", rs, rt, imm16, address);`
+            disasm = `return Common.disasmRSRTOFFSET("bne", rs, rt, imm16, address);`
         }
 
         op BNEL(010101:rs:rt:imm16)
@@ -1862,7 +1895,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_RSRTOFFSET("bnel", rs, rt, imm16, address);`
+            disasm = `return Common.disasmRSRTOFFSET("bnel", rs, rt, imm16, address);`
         }
 
         op J(000010:imm26)
@@ -1873,27 +1906,32 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_JUMP("j", imm26, address);`
+            disasm = `return Common.disasmJUMP("j", imm26, address);`
         }
 
         op JAL(000011:imm26)
         {
             interpret = `
+                CpuState cpu = processor.cpu;
+                cpu.gpr[31] = processor.pc + 4;
+                processor.npc = CpuState.jumpTarget(processor.pc, imm26);
+                processor.stepDelayslot();
             `
 
             compile = `
             `
 
-            disasm = `return Dis_JUMP("jal", imm26, address);`
+            disasm = `return Common.disasmJUMP("jal", imm26, address);`
         }
 
         op JALR(000000:rs:00000:rd:00000:001001)
         {
             interpret = `
+                CpuState cpu = processor.cpu;
                 if (rd != 0) {
-                    processor.gpr[rd] = processor.pc + 4;
+                    cpu.gpr[rd] = processor.pc + 4;
                 }
-                processor.npc = processor.gpr[rs];
+                processor.npc = cpu.gpr[rs];
                 processor.stepDelayslot();
             `
 
@@ -1913,13 +1951,14 @@ group root
                 processor.current_bb = null;
             `
 
-            disasm = `return Dis_RDRS("jalr", rd, rs);`
+            disasm = `return Common.disasmRDRS("jalr", rd, rs);`
         }
 
         op JR(000000:rs:00000:00000:00000:001000)
         {
             interpret = `
-                processor.npc = processor.gpr[rs];
+                CpuState cpu = processor.cpu;
+                processor.npc = cpu.gpr[rs];
                 processor.stepDelayslot();
             `
 
@@ -1936,7 +1975,7 @@ group root
                 processor.current_bb = null;
             `
 
-            disasm = `return Dis_RS("jr", rs);`
+            disasm = `return Common.disasmRS("jr", rs);`
         }
 
         op BC1F(010001:01000:00000:imm16)
@@ -1958,7 +1997,7 @@ group root
                 processor.current_bb = null;
             `
 
-            disasm = `return Dis_OFFSET("bc1f", imm16, address);`
+            disasm = `return Common.disasmOFFSET("bc1f", imm16, address);`
         }
 
         op BC1T(010001:01000:00001:imm16)
@@ -1980,7 +2019,7 @@ group root
                 processor.current_bb = null;
             `
 
-            disasm = `return Dis_OFFSET("bc1t", imm16, address);`
+            disasm = `return Common.disasmOFFSET("bc1t", imm16, address);`
         }
 
         op BC1FL(010001:01000:00010:imm16)
@@ -2014,7 +2053,7 @@ group root
                 processor.current_bb = null;
             `
 
-            disasm = `return Dis_OFFSET("bc1fl", imm16, address);`
+            disasm = `return Common.disasmOFFSET("bc1fl", imm16, address);`
         }
 
         op BC1TL(010001:01000:00011:imm16)
@@ -2048,7 +2087,7 @@ group root
                 processor.current_bb = null;
             `
 
-            disasm = `return Dis_OFFSET("bc1tl", imm16, address);`
+            disasm = `return Common.disasmOFFSET("bc1tl", imm16, address);`
         }
 
         op BVF(010010:01:000:imm3:00:imm16)
@@ -2106,7 +2145,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_RTIMMRS("lb", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("lb", rt, rs, imm16);`
         }
 
         op LBU(100100:rs:rt:imm16)
@@ -2117,7 +2156,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_RTIMMRS("lbu", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("lbu", rt, rs, imm16);`
         }
 
         op LH(100001:rs:rt:imm16)
@@ -2128,7 +2167,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_RTIMMRS("lh", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("lh", rt, rs, imm16);`
         }
 
         op LHU(100101:rs:rt:imm16)
@@ -2139,7 +2178,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_RTIMMRS("lhu", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("lhu", rt, rs, imm16);`
         }
 
         op LW(100011:rs:rt:imm16)
@@ -2150,7 +2189,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_RTIMMRS("lw", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("lw", rt, rs, imm16);`
         }
 
         op LWL(100010:rs:rt:imm16)
@@ -2161,7 +2200,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_RTIMMRS("lwl", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("lwl", rt, rs, imm16);`
         }
 
         op LWR(100110:rs:rt:imm16)
@@ -2172,7 +2211,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_RTIMMRS("lwr", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("lwr", rt, rs, imm16);`
         }
 
         op SB(101000:rs:rt:imm16)
@@ -2183,7 +2222,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_RTIMMRS("sb", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("sb", rt, rs, imm16);`
         }
 
         op SH(101001:rs:rt:imm16)
@@ -2194,7 +2233,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_RTIMMRS("sh", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("sh", rt, rs, imm16);`
         }
 
         op SW(101011:rs:rt:imm16)
@@ -2205,7 +2244,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_RTIMMRS("sw", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("sw", rt, rs, imm16);`
         }
 
         op SWL(101010:rs:rt:imm16)
@@ -2216,7 +2255,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_RTIMMRS("swl", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("swl", rt, rs, imm16);`
         }
 
         op SWR(101110:rs:rt:imm16)
@@ -2227,7 +2266,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_RTIMMRS("swr", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("swr", rt, rs, imm16);`
         }
 
         op LL(110000:rs:rt:imm16)
@@ -2238,7 +2277,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_RTIMMRS("ll", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("ll", rt, rs, imm16);`
         }
 
         op LWC1(110001:rs:ft:imm16)
@@ -2249,7 +2288,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_FTIMMRS("lwc1", ft, rs, imm16);`
+            disasm = `return Common.disasmFTIMMRS("lwc1", ft, rs, imm16);`
         }
 
         op LVS(110010:rs:vt5:imm14:vt2)
@@ -2260,7 +2299,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_VTIMMRS("lv", 1, (vt5|(vt2<<5)), rs, (imm14 << 2));`
+            disasm = `return Common.disasmVTIMMRS("lv", 1, (vt5|(vt2<<5)), rs, (imm14 << 2));`
         }
 
         op LVLQ(110101:rs:vt5:imm14:0:vt1)
@@ -2271,7 +2310,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_VTIMMRS("lvl", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
+            disasm = `return Common.disasmVTIMMRS("lvl", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
         }
 
         op LVRQ(110101:rs:vt5:imm14:1:vt1)
@@ -2282,7 +2321,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_VTIMMRS("lvr", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
+            disasm = `return Common.disasmVTIMMRS("lvr", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
         }
 
         op LVQ(110110:rs:vt5:imm14:0:vt1)
@@ -2293,7 +2332,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_VTIMMRS("lv", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
+            disasm = `return Common.disasmVTIMMRS("lv", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
         }
 
         op SC(111000:rs:rt:imm16)
@@ -2304,7 +2343,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_RTIMMRS("sc", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("sc", rt, rs, imm16);`
         }
 
         op SWC1(111001:rs:ft:imm16)
@@ -2315,7 +2354,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_FTIMMRS("swc1", ft, rs, imm16);`
+            disasm = `return Common.disasmFTIMMRS("swc1", ft, rs, imm16);`
         }
 
         op SVS(111010:rs:vt5:imm14:vt2)
@@ -2326,7 +2365,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_VTIMMRS("sv", 1, (vt5|(vt2<<5)), rs, (imm14 << 2));`
+            disasm = `return Common.disasmVTIMMRS("sv", 1, (vt5|(vt2<<5)), rs, (imm14 << 2));`
         }
 
         op SVLQ(111101:rs:vt5:imm14:0:vt1)
@@ -2337,7 +2376,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_VTIMMRS("svl", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
+            disasm = `return Common.disasmVTIMMRS("svl", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
         }
 
         op SVRQ(111101:rs:vt5:imm14:1:vt1)
@@ -2348,7 +2387,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_VTIMMRS("svr", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
+            disasm = `return Common.disasmVTIMMRS("svr", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
         }
 
         op SVQ(111110:rs:vt5:imm14:0:vt1)
@@ -2359,7 +2398,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_VTIMMRS("lv", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
+            disasm = `return Common.disasmVTIMMRS("lv", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
         }
 
         op SWB(111110:rs:vt5:imm14:1:vt1)
@@ -2370,7 +2409,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_VTIMMRS("swb", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
+            disasm = `return Common.disasmVTIMMRS("swb", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
         }
     }
 
@@ -2381,8 +2420,8 @@ group root
         op ADD_S(010001:10000:ft:fs:fd:000000)
         {
             interpret = `
-                FpuState fpu = processor.fpu;
-                fpu.fpr[fd] = fpu.fpr[fs] + fpu.fpr[ft];
+                CpuState cpu = processor.cpu;
+                cpu.fpr[fd] = cpu.fpr[fs] + cpu.fpr[ft];
             `
 
             compile = `
@@ -2403,14 +2442,14 @@ group root
                 }
             `
 
-            disasm = `return Dis_FDFSFT("add.s", fd, fs, ft);`
+            disasm = `return Common.disasmFDFSFT("add.s", fd, fs, ft);`
         }
 
         op SUB_S(010001:10000:ft:fs:fd:000001)
         {
             interpret = `
-                FpuState fpu = processor.fpu;
-                fpu.fpr[fd] = fpu.fpr[fs] + (0.0f - fpu.fpr[ft]);
+                CpuState cpu = processor.cpu;
+                cpu.fpr[fd] = cpu.fpr[fs] + (0.0f - cpu.fpr[ft]);
             `
 
             compile = `
@@ -2431,14 +2470,14 @@ group root
                 }
             `
 
-            disasm = `return Dis_FDFSFT("sub.s", fd, fs, ft);`
+            disasm = `return Common.disasmFDFSFT("sub.s", fd, fs, ft);`
         }
 
         op MUL_S(010001:10000:ft:fs:fd:000010)
         {
             interpret = `
-                FpuState fpu = processor.fpu;
-                fpu.fpr[fd] = fpu.fpr[fs] * fpu.fpr[ft];
+                CpuState cpu = processor.cpu;
+                cpu.fpr[fd] = cpu.fpr[fs] * cpu.fpr[ft];
             `
 
             compile = `
@@ -2459,14 +2498,14 @@ group root
                 }
             `
 
-            disasm = `return Dis_FDFSFT("mul.s", fd, fs, ft);`
+            disasm = `return Common.disasmFDFSFT("mul.s", fd, fs, ft);`
         }
 
         op DIV_S(010001:10000:ft:fs:fd:000011)
         {
             interpret = `
-                FpuState fpu = processor.fpu;
-                fpu.fpr[fd] = fpu.fpr[fs] / fpu.fpr[ft];
+                CpuState cpu = processor.cpu;
+                cpu.fpr[fd] = cpu.fpr[fs] / cpu.fpr[ft];
             `
 
             compile = `
@@ -2487,14 +2526,14 @@ group root
                 }
             `
 
-            disasm = `return Dis_FDFSFT("div.s", fd, fs, ft);`
+            disasm = `return Common.disasmFDFSFT("div.s", fd, fs, ft);`
         }
 
         op SQRT_S(010001:10000:00000:fs:fd:000100)
         {
             interpret = `
-                FpuState fpu = processor.fpu;
-                fpu.fpr[fd] = (float) Math.sqrt(fpu.fpr[fs]);
+                CpuState cpu = processor.cpu;
+                cpu.fpr[fd] = (float) Math.sqrt(cpu.fpr[fs]);
             `
 
             compile = `
@@ -2512,14 +2551,14 @@ group root
                 }
             `
 
-            disasm = `return Dis_FDFS("sqrt.s", fd, fs);`
+            disasm = `return Common.disasmFDFS("sqrt.s", fd, fs);`
         }
 
         op ABS_S(010001:10000:00000:fs:fd:000101)
         {
             interpret = `
-                FpuState fpu = processor.fpu;
-                fpu.fpr[fd] = Math.abs(fpu.fpr[fs]);
+                CpuState cpu = processor.cpu;
+                cpu.fpr[fd] = Math.abs(cpu.fpr[fs]);
             `
 
             compile = `
@@ -2537,14 +2576,14 @@ group root
                 }
             `
 
-            disasm = `return Dis_FDFS("abs.s", fd, fs);`
+            disasm = `return Common.disasmFDFS("abs.s", fd, fs);`
         }
 
         op MOV_S(010001:10000:00000:fs:fd:000110)
         {
             interpret = `
-                FpuState fpu = processor.fpu;
-                fpu.fpr[fd] = fpu.fpr[fs];
+                CpuState cpu = processor.cpu;
+                cpu.fpr[fd] = cpu.fpr[fs];
             `
 
             compile = `
@@ -2562,14 +2601,14 @@ group root
                 }
             `
 
-            disasm = `return Dis_FDFS("mov.s", fd, fs);`
+            disasm = `return Common.disasmFDFS("mov.s", fd, fs);`
         }
 
         op NEG_S(010001:10000:00000:fs:fd:000111)
         {
             interpret = `
-                FpuState fpu = processor.fpu;
-                fpu.fpr[fd] = 0.0f - fpu.fpr[fs];
+                CpuState cpu = processor.cpu;
+                cpu.fpr[fd] = 0.0f - cpu.fpr[fs];
             `
 
             compile = `
@@ -2587,14 +2626,14 @@ group root
                 }
             `
 
-            disasm = `return Dis_FDFS("neg.s", fd, fs);`
+            disasm = `return Common.disasmFDFS("neg.s", fd, fs);`
         }
 
         op ROUND_W_S(010001:10000:00000:fs:fd:001100)
         {
             interpret = `
-                FpuState fpu = processor.fpu;
-                fpu.fpr[fd] = Float.intBitsToFloat(Math.round(fpu.fpr[fs]));
+                CpuState cpu = processor.cpu;
+                cpu.fpr[fd] = Float.intBitsToFloat(Math.round(cpu.fpr[fs]));
             `
 
             compile = `
@@ -2612,14 +2651,14 @@ group root
                 }
             `
 
-            disasm = `return Dis_FDFS("round.w.s", fd, fs);`
+            disasm = `return Common.disasmFDFS("round.w.s", fd, fs);`
         }
 
         op TRUNC_W_S(010001:10000:00000:fs:fd:001101)
         {
             interpret = `
-                FpuState fpu = processor.fpu;
-                fpu.fpr[fd] = Float.intBitsToFloat((int) (fpu.fpr[fs]));
+                CpuState cpu = processor.cpu;
+                cpu.fpr[fd] = Float.intBitsToFloat((int) (cpu.fpr[fs]));
             `
 
             compile = `
@@ -2637,14 +2676,14 @@ group root
                 }
             `
 
-            disasm = `return Dis_FDFS("trunc.w.s", fd, fs);`
+            disasm = `return Common.disasmFDFS("trunc.w.s", fd, fs);`
         }
 
         op CEIL_W_S(010001:10000:00000:fs:fd:001110)
         {
             interpret = `
-                FpuState fpu = processor.fpu;
-                fpu.fpr[fd] = Float.intBitsToFloat((int) Math.ceil(fpu.fpr[fs]));
+                CpuState cpu = processor.cpu;
+                cpu.fpr[fd] = Float.intBitsToFloat((int) Math.ceil(cpu.fpr[fs]));
             `
 
             compile = `
@@ -2662,14 +2701,14 @@ group root
                 }
             `
 
-            disasm = `return Dis_FDFS("ceil.w.s", fd, fs);`
+            disasm = `return Common.disasmFDFS("ceil.w.s", fd, fs);`
         }
 
         op FLOOR_W_S(010001:10000:00000:fs:fd:001111)
         {
             interpret = `
-                FpuState fpu = processor.fpu;
-                fpu.fpr[fd] = Float.intBitsToFloat((int) Math.floor(fpu.fpr[fs]));
+                CpuState cpu = processor.cpu;
+                cpu.fpr[fd] = Float.intBitsToFloat((int) Math.floor(cpu.fpr[fs]));
             `
 
             compile = `
@@ -2687,14 +2726,14 @@ group root
                 }
             `
 
-            disasm = `return Dis_FDFS("floor.w.s", fd, fs);`
+            disasm = `return Common.disasmFDFS("floor.w.s", fd, fs);`
         }
 
         op CVT_S_W(010001:10100:00000:fs:fd:100000)
         {
             interpret = `
-                FpuState fpu = processor.fpu;
-                fpu.fpr[fd] = (float) Float.floatToRawIntBits(fpu.fpr[fs]);
+                CpuState cpu = processor.cpu;
+                cpu.fpr[fd] = (float) Float.floatToRawIntBits(cpu.fpr[fs]);
             `
 
             compile = `
@@ -2712,25 +2751,25 @@ group root
                 }
             `
 
-            disasm = `return Dis_FDFS("cvt.s.w", fd, fs);`
+            disasm = `return Common.disasmFDFS("cvt.s.w", fd, fs);`
         }
 
         op CVT_W_S(010001:10000:00000:fs:fd:100100)
         {
             interpret = `
-                FpuState fpu = processor.fpu;
-                switch (fpu.fcr31.rm) {
+                CpuState cpu = processor.cpu;
+                switch (cpu.fcr31.rm) {
                     case 1:
-                        fpu.fpr[fd] = Float.intBitsToFloat((int) (fpu.fpr[fs]));
+                        cpu.fpr[fd] = Float.intBitsToFloat((int) (cpu.fpr[fs]));
                         break;
                     case 2:
-                        fpu.fpr[fd] = Float.intBitsToFloat((int) Math.ceil(fpu.fpr[fs]));
+                        cpu.fpr[fd] = Float.intBitsToFloat((int) Math.ceil(cpu.fpr[fs]));
                         break;
                     case 3:
-                        fpu.fpr[fd] = Float.intBitsToFloat((int) Math.floor(fpu.fpr[fs]));
+                        cpu.fpr[fd] = Float.intBitsToFloat((int) Math.floor(cpu.fpr[fs]));
                         break;
                     default:
-                        fpu.fpr[fd] = Float.intBitsToFloat((int) Math.rint(fpu.fpr[fs]));
+                        cpu.fpr[fd] = Float.intBitsToFloat((int) Math.rint(cpu.fpr[fs]));
                         break;
                 }
             `
@@ -2768,15 +2807,15 @@ group root
                 );
             `
 
-            disasm = `return Dis_FDFS("cvt.w.s", fd, fs);`
+            disasm = `return Common.disasmFDFS("cvt.w.s", fd, fs);`
         }
 
         op C_COND_S(010001:10000:ft:fs:00000:11:fcond)
         {
             interpret = `
-                FpuState fpu = processor.fpu;
-                float x = fpu.fpr[fs];
-                float y = fpu.fpr[ft];
+                CpuState cpu = processor.cpu;
+                float x = cpu.fpr[fs];
+                float y = cpu.fpr[ft];
                 boolean unordered = ((fcond & 1) != 0) && (Float.isNaN(x) || Float.isNaN(y));
 
                 if (unordered) {
@@ -2784,12 +2823,12 @@ group root
                     //if ((fcond & 8) != 0) {
                     //}
 
-                    fpu.fcr31.c = true;
+                    cpu.fcr31.c = true;
                 } else {
                     boolean equal = ((fcond & 2) != 0) && (x == y);
                     boolean less = ((fcond & 4) != 0) && (x < y);
 
-                    fpu.fcr31.c = less || equal;
+                    cpu.fcr31.c = less || equal;
                 }
             `
 
@@ -2814,16 +2853,15 @@ group root
                 );
             `
 
-            disasm = `return Dis_Cconds(fcond, fs, ft);`
+            disasm = `return Common.disasmCcondS(fcond, fs, ft);`
         }
 
         op MFC1(010001:00000:rt:fs:00000:000000)
         {
             interpret = `
                 CpuState cpu = processor.cpu;
-                FpuState fpu = processor.fpu;
                 if (rt != 0) {
-                    cpu.gpr[rt] = Float.floatToRawIntBits(fpu.fpr[fs]);
+                    cpu.gpr[rt] = Float.floatToRawIntBits(cpu.fpr[fs]);
                 }
             `
 
@@ -2844,14 +2882,13 @@ group root
                 }
             `
 
-            disasm = `return Dis_RTFS("mfc1", rt, fs);`
+            disasm = `return Common.disasmRTFS("mfc1", rt, fs);`
         }
 
         op CFC1(010001:00010:rt:c1cr:00000:000000)
         {
             interpret = `
                 CpuState cpu = processor.cpu;
-                FpuState fpu = processor.fpu;
                 if (rt != 0) {
                     switch (c1cr) {
                     case 0:                        
@@ -2859,7 +2896,7 @@ group root
                         break;
 
                     case 31:
-                        cpu.gpr[rt] = (fpu.fcr31.fs ? (1 << 24) : 0) | (fpu.fcr31.c ? (1 << 23) : 0) | (fpu.fcr31.rm & 3);
+                        cpu.gpr[rt] = (cpu.fcr31.fs ? (1 << 24) : 0) | (cpu.fcr31.c ? (1 << 23) : 0) | (cpu.fcr31.rm & 3);
                         break;
                     }
                 }
@@ -2888,15 +2925,14 @@ group root
             `
 
 
-            disasm = `return Dis_RTFC("cfc1", rt, c1cr);`
+            disasm = `return Common.disasmRTFC("cfc1", rt, c1cr);`
         }
 
         op MTC1(010001:00100:rt:fs:00000:000000)
         {
             interpret = `
                 CpuState cpu = processor.cpu;
-                FpuState fpu = processor.fpu;
-                fpu.fpr[fs] = Float.intBitsToFloat(cpu.gpr[rt]);
+                cpu.fpr[fs] = Float.intBitsToFloat(cpu.gpr[rt]);
             `
 
             compile = `
@@ -2914,20 +2950,19 @@ group root
                 }
             `
 
-            disasm = `return Dis_RTFS("mtc1", rt, fs);`
+            disasm = `return Common.disasmRTFS("mtc1", rt, fs);`
         }
 
         op CTC1(010001:00110:rt:c1cr:00000:000000)
         {
             interpret = `
                 CpuState cpu = processor.cpu;
-                FpuState fpu = processor.fpu;
                 if (c1cr == 31) {
                     int bits = cpu.gpr[rt] & 0x01800003;
-                    fpu.fcr31.rm = bits & 3;
+                    cpu.fcr31.rm = bits & 3;
                     bits >>= 23;
-                    fpu.fcr31.fs = (bits > 1);
-                    fpu.fcr31.c = (bits >> 1) == 1;
+                    cpu.fcr31.fs = (bits > 1);
+                    cpu.fcr31.c = (bits >> 1) == 1;
                 }
             `
 
@@ -2946,7 +2981,7 @@ group root
                 }
             `
 
-            disasm = `return Dis_RTFC("ctc1", rt, c1cr);`
+            disasm = `return Common.disasmRTFC("ctc1", rt, c1cr);`
         }
     }
 
@@ -3002,77 +3037,77 @@ group root
         op VADD(011000:000:vt:two:vs:one:vd)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
-                float[] x = vfpu.loadVs(vsize, vs);
-                float[] y = vfpu.loadVt(vsize, vt);
+                float[] x = cpu.loadVs(vsize, vs);
+                float[] y = cpu.loadVt(vsize, vt);
                 for (int i = 0; i < vsize; ++i) {
                     x[i] += y[i];
                 }
-                vfpu.saveVd(vsize, vd, x);
+                cpu.saveVd(vsize, vd, x);
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VADD";`
+            disasm = `return Common.disasmVDVSVT("vadd", 1+one+(two<<1), vd, vs, vt);`
         }
  
  
         op VSUB(011000:001:vt:two:vs:one:vd)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
-                float[] x = vfpu.loadVs(vsize, vs);
-                float[] y = vfpu.loadVt(vsize, vt);
+                float[] x = cpu.loadVs(vsize, vs);
+                float[] y = cpu.loadVt(vsize, vt);
                 for (int i = 0; i < vsize; ++i) {
                     x[i] += (0.0f - y[i]);
                 }
-                vfpu.saveVd(vsize, vd, x);
+                cpu.saveVd(vsize, vd, x);
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VSUB";`
+            disasm = `return Common.disasmVDVSVT("vsub", 1+one+(two<<1), vd, vs, vt);`
         }
  
         op VSBN(011000:010:vt:two:vs:one:vd)
         {
             interpret = `
                 if (one + two == 0) {
-                    VfpuState vfpu = processor.vfpu;
-                    float[] x = vfpu.loadVs(1, vs);
-                    float[] y = vfpu.loadVt(1, vt);
+                    CpuState cpu = processor.cpu;
+                    float[] x = cpu.loadVs(1, vs);
+                    float[] y = cpu.loadVt(1, vt);
                     x[0] = Math.scalb(x[0], Float.floatToRawIntBits(y[0]));
-                    vfpu.saveVd(1, vd, x);
+                    cpu.saveVd(1, vd, x);
                 }
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VSBN";`
+            disasm = `return Common.disasmVDVSVT("vsbn", 1+one+(two<<1), vd, vs, vt);`
         }
 
         op VDIV(011000:111:vt:two:vs:one:vd)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
-                float[] x = vfpu.loadVs(vsize, vs);
-                float[] y = vfpu.loadVt(vsize, vt);
+                float[] x = cpu.loadVs(vsize, vs);
+                float[] y = cpu.loadVt(vsize, vt);
                 for (int i = 0; i < vsize; ++i) {
                     x[i] /= y[i];
                 }
-                vfpu.saveVd(vsize, vd, x);
+                cpu.saveVd(vsize, vd, x);
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VDIV";`
+            disasm = `return Common.disasmVDVSVT("vdiv", 1+one+(two<<1), vd, vs, vt);`
         }
 
     }
@@ -3082,126 +3117,126 @@ group root
         op VMUL(011001:000:vt:two:vs:one:vd)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
-                float[] x = vfpu.loadVs(vsize, vs);
-                float[] y = vfpu.loadVt(vsize, vt);
+                float[] x = cpu.loadVs(vsize, vs);
+                float[] y = cpu.loadVt(vsize, vt);
                 for (int i = 0; i < vsize; ++i) {
                     x[i] *= y[i];
                 }
-                vfpu.saveVd(vsize, vd, x);
+                cpu.saveVd(vsize, vd, x);
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VMUL";`
+            disasm = `return Common.disasmVDVSVT("vmul", 1+one+(two<<1), vd, vs, vt);`
         }
 
         op VDOT(011001:001:vt:two:vs:one:vd)
         {
             interpret = `
                 if ((one | two) == 1) {
-                    VfpuState vfpu = processor.vfpu;
+                    CpuState cpu = processor.cpu;
                     int vsize = 1 + one + (two<<1);               
-                    float[] x = vfpu.loadVs(vsize, vs);
-                    float[] y = vfpu.loadVt(vsize, vt);
+                    float[] x = cpu.loadVs(vsize, vs);
+                    float[] y = cpu.loadVt(vsize, vt);
                     float[] z = new float[1];
                     for (int i = 0; i < vsize; ++i) {
                         z[0] += x[i] * y[i];
                     }
-                    vfpu.saveVd(1, vd, z);
+                    cpu.saveVd(1, vd, z);
                 }
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VDOT";`
+            disasm = `return Common.disasmVD1VSVT("vdot", 1+one+(two<<1), vd, vs, vt);`
         }
  
         op VSCL(011001:010:vt:two:vs:one:vd)
         {
             interpret = `
                 if ((one | two) == 1) {
-                    VfpuState vfpu = processor.vfpu;
+                    CpuState cpu = processor.cpu;
                     int vsize = 1 + one + (two<<1);               
-                    float[] x = vfpu.loadVs(vsize, vs);
-                    float[] y = vfpu.loadVt(1, vt);
+                    float[] x = cpu.loadVs(vsize, vs);
+                    float[] y = cpu.loadVt(1, vt);
                     for (int i = 0; i < vsize; ++i) {
                         x[i] *= y[0];
                     }
-                    vfpu.saveVd(vsize, vd, x);
+                    cpu.saveVd(vsize, vd, x);
                 }
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VSCL";`
+            disasm = `return Common.disasmVDVSVT1("vscl", 1+one+(two<<1), vd, vs, vt);`
         }
  
         op VHDP(011001:100:vt:two:vs:one:vd)
         {
             interpret = `
                 if ((one | two) == 1) {
-                    VfpuState vfpu = processor.vfpu;
+                    CpuState cpu = processor.cpu;
                     int vsize = 1 + one + (two<<1);               
-                    float[] x = vfpu.loadVs(vsize - 1, vs);
-                    float[] y = vfpu.loadVt(vsize, vt);
+                    float[] x = cpu.loadVs(vsize - 1, vs);
+                    float[] y = cpu.loadVt(vsize, vt);
                     float[] z = new float[1];
                     z[0] = y[vsize - 1];
                     for (int i = 0; i < vsize - 1; ++i) {
                         z[0] += x[i] * y[i];
                     }
-                    vfpu.saveVd(1, vd, z);
+                    cpu.saveVd(1, vd, z);
                 }
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VHDP";`
+            disasm = `return Common.disasmVD1VSVT("vhdp", 1+one+(two<<1), vd, vs, vt);`
         }
  
         op VDET(011001:101:vt:two:vs:one:vd)
         {
             interpret = `
                 if ((one == 1) && (two == 0)) {
-                    VfpuState vfpu = processor.vfpu;
-                    float[] x = vfpu.loadVs(2, vs);
-                    float[] y = vfpu.loadVt(2, vt);
+                    CpuState cpu = processor.cpu;
+                    float[] x = cpu.loadVs(2, vs);
+                    float[] y = cpu.loadVt(2, vt);
                     float[] z = new float[1];
                     z[0] = x[0] * y[1] - x[1] * y[0];
-                    vfpu.saveVd(1, vd, z);
+                    cpu.saveVd(1, vd, z);
                 }
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VDET";`
+            disasm = `return Common.disasmVD1VSVT("vdet", 1+one+(two<<1), vd, vs, vt);`
         }
  
         op VCRS(011001:110:vt:two:vs:one:vd)
         {
             interpret = `
                 if ((one == 0) && (two == 1)) {
-                    VfpuState vfpu = processor.vfpu;
-                    float[] x = vfpu.loadVs(3, vs);
-                    float[] y = vfpu.loadVt(3, vt);
+                    CpuState cpu = processor.cpu;
+                    float[] x = cpu.loadVs(3, vs);
+                    float[] y = cpu.loadVt(3, vt);
                     float[] z = new float[3];
                     z[0] = x[1] * y[2];
                     z[1] = x[2] * y[0];
                     z[2] = x[0] * y[1];
-                    vfpu.saveVd(3, vd, z);
+                    cpu.saveVd(3, vd, z);
                 }
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VCRS";`
+            disasm = `return Common.disasmVDVSVT("vcrs", 1+one+(two<<1), vd, vs, vt);`
         }
 
     }
@@ -3258,7 +3293,7 @@ group root
         op VCMP(011011:000:vt:two:vs:one:0000:imm3)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two << 1);
 
                 boolean ccOr = false;
@@ -3269,8 +3304,8 @@ group root
 
                     boolean cc = false;
 
-                    float[] x = vfpu.loadVs(vsize, vs);
-                    float[] y = vfpu.loadVt(vsize, vt);
+                    float[] x = cpu.loadVs(vsize, vs);
+                    float[] y = cpu.loadVt(vsize, vt);
 
                     for (int i = 0; i < vsize; ++i) {
                         switch (imm3 & 3) {
@@ -3291,13 +3326,13 @@ group root
                                 break;
                         }
 
-                        vfpu.vcr.cc[i] = cc;
+                        cpu.vcr.cc[i] = cc;
                         ccOr = ccOr || cc;
                         ccAnd = ccAnd && cc;
                     }
 
                 } else {
-                    float[] x = vfpu.loadVs(vsize, vs);
+                    float[] x = cpu.loadVs(vsize, vs);
 
                     for (int i = 0; i < vsize; ++i) {
                         boolean cc;
@@ -3310,13 +3345,13 @@ group root
                                 cc = !cc;
                             }
                         }
-                        vfpu.vcr.cc[i] = cc;
+                        cpu.vcr.cc[i] = cc;
                         ccOr = ccOr || cc;
                         ccAnd = ccAnd && cc;
                     }
                 }
-                vfpu.vcr.cc[4] = ccOr;
-                vfpu.vcr.cc[5] = ccAnd;
+                cpu.vcr.cc[4] = ccOr;
+                cpu.vcr.cc[5] = ccAnd;
             `
 
             compile = `
@@ -3328,96 +3363,96 @@ group root
         op VMIN(011011:010:vt:two:vs:one:vd)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
-                float[] x = vfpu.loadVs(vsize, vs);
-                float[] y = vfpu.loadVt(vsize, vt);
+                float[] x = cpu.loadVs(vsize, vs);
+                float[] y = cpu.loadVt(vsize, vt);
                 for (int i = 0; i < vsize; ++i) {
                     x[i] = Math.min(x[i], y[i]);
                 }
-                vfpu.saveVd(vsize, vd, x);
+                cpu.saveVd(vsize, vd, x);
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VMIN";`
+            disasm = `return Common.disasmVDVSVT("vmin", 1+one+(two<<1), vd, vs, vt);`
         }
  
         op VMAX(011011:011:vt:two:vs:one:vd)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
-                float[] x = vfpu.loadVs(vsize, vs);
-                float[] y = vfpu.loadVt(vsize, vt);
+                float[] x = cpu.loadVs(vsize, vs);
+                float[] y = cpu.loadVt(vsize, vt);
                 for (int i = 0; i < vsize; ++i) {
                     x[i] = Math.max(x[i], y[i]);
                 }
-                vfpu.saveVd(vsize, vd, x);
+                cpu.saveVd(vsize, vd, x);
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VMAX";`
+            disasm = `return Common.disasmVDVSVT("vmax", 1+one+(two<<1), vd, vs, vt);`
         }
  
         op VSCMP(011011:101:vt:two:vs:one:vd)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
-                float[] x = vfpu.loadVs(vsize, vs);
-                float[] y = vfpu.loadVt(vsize, vt);
+                float[] x = cpu.loadVs(vsize, vs);
+                float[] y = cpu.loadVt(vsize, vt);
                 for (int i = 0; i < vsize; ++i) {
                     x[i] = Math.signum(x[i] + (0.0f - y[i]));
                 }
-                vfpu.saveVd(vsize, vd, x);
+                cpu.saveVd(vsize, vd, x);
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VSCMP";`
+            disasm = `return Common.disasmVDVSVT("vscmp", 1+one+(two<<1), vd, vs, vt);`
         }
 
         op VSGE(011011:110:vt:two:vs:one:vd)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
-                float[] x = vfpu.loadVs(vsize, vs);
-                float[] y = vfpu.loadVt(vsize, vt);
+                float[] x = cpu.loadVs(vsize, vs);
+                float[] y = cpu.loadVt(vsize, vt);
                 for (int i = 0; i < vsize; ++i) {
                     x[i] = (x[i] >= y[i]) ? 1.0f : 0.0f;
                 }
-                vfpu.saveVd(vsize, vd, x);
+                cpu.saveVd(vsize, vd, x);
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VSGE";`
+            disasm = `return Common.disasmVDVSVT("vsge", 1+one+(two<<1), vd, vs, vt);`
         }
 
         op VSLT(011011:100:vt:two:vs:one:vd)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
-                float[] x = vfpu.loadVs(vsize, vs);
-                float[] y = vfpu.loadVt(vsize, vt);
+                float[] x = cpu.loadVs(vsize, vs);
+                float[] y = cpu.loadVt(vsize, vt);
                 for (int i = 0; i < vsize; ++i) {
                     x[i] = (x[i] < y[i]) ? 1.0f : 0.0f;
                 }
-                vfpu.saveVd(vsize, vd, x);
+                cpu.saveVd(vsize, vd, x);
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VSLT";`
+            disasm = `return Common.disasmVDVSVT("vslt", 1+one+(two<<1), vd, vs, vt);`
         }
     }
 
@@ -3426,60 +3461,60 @@ group root
         op VMOV(110100:00:000:0:0000:two:vs:one:vd)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
-                float[] x = vfpu.loadVs(vsize, vs);
-                vfpu.saveVd(vsize, vd, x);
+                float[] x = cpu.loadVs(vsize, vs);
+                cpu.saveVd(vsize, vd, x);
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VMOV";`
+            disasm = `return Common.disasmVDVS("vmov", 1+one+(two<<1), vd, vs);`
         }
 
  
         op VABS(110100:00:000:0:0001:two:vs:one:vd)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
-                float[] x = vfpu.loadVs(vsize, vs);
+                float[] x = cpu.loadVs(vsize, vs);
                 for (int i = 0; i < vsize; ++i) {
                     x[i] = Math.abs(x[i]);
                 }
-                vfpu.saveVd(vsize, vd, x);
+                cpu.saveVd(vsize, vd, x);
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VABS";`
+            disasm = `return Common.disasmVDVS("vabs", 1+one+(two<<1), vd, vs);`
         }
 
         op VNEG(110100:00:000:0:0010:two:vs:one:vd)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
-                float[] x = vfpu.loadVs(vsize, vs);
+                float[] x = cpu.loadVs(vsize, vs);
                 for (int i = 0; i < vsize; ++i) {
                     x[i] = 0.0f - x[i];
                 }
-                vfpu.saveVd(vsize, vd, x);
+                cpu.saveVd(vsize, vd, x);
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VNEG";`
+            disasm = `return Common.disasmVDVS("vneg", 1+one+(two<<1), vd, vs);`
         }
  
         op VIDT(110100:00:000:0:0011:two:0000000:one:vd)
         {
             interpret = `
                 if (one == 1) {
-                    VfpuState vfpu = processor.vfpu;
+                    CpuState cpu = processor.cpu;
                     int vsize = 1 + one + (two<<1);               
                     float[] x = new float[vsize];
                     int id = vd & 3;
@@ -3488,280 +3523,280 @@ group root
                             x[i] =  1.0f;
                         }
                     }
-                    vfpu.saveVd(vsize, vd, x);
+                    cpu.saveVd(vsize, vd, x);
                 }
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VIDT";`
+            disasm = `return Common.disasmVD("vidt", 1+one+(two<<1), vd);`
         }
   
         op VSAT0(110100:00:000:0:0100:two:vs:one:vd)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
-                float[] x = vfpu.loadVs(vsize, vs);
+                float[] x = cpu.loadVs(vsize, vs);
                 for (int i = 0; i < vsize; ++i) {
                     x[i] = Math.min(Math.max(0.0f, x[i]), 1.0f);
                 }
-                vfpu.saveVd(vsize, vd, x);
+                cpu.saveVd(vsize, vd, x);
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VSAT0";`
+            disasm = `return Common.disasmVDVS("vsat0", 1+one+(two<<1), vd, vs);`
         }
   
         op VSAT1(110100:00:000:0:0101:two:vs:one:vd)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
-                float[] x = vfpu.loadVs(vsize, vs);
+                float[] x = cpu.loadVs(vsize, vs);
                 for (int i = 0; i < vsize; ++i) {
                     x[i] = Math.min(Math.max(-1.0f, x[i]), 1.0f);
                 }
-                vfpu.saveVd(vsize, vd, x);
+                cpu.saveVd(vsize, vd, x);
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VSAT1";`
+            disasm = `return Common.disasmVDVS("vsat1", 1+one+(two<<1), vd, vs);`
         }
  
         op VZERO(110100:00:000:0:0110:two:0000000:one:vd)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
-                vfpu.saveVd(vsize, vd, new float[vsize]);
+                cpu.saveVd(vsize, vd, new float[vsize]);
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VZERO";`
+            disasm = `return Common.disasmVD("vzero", 1+one+(two<<1), vd);`
         }
  
         op VONE(110100:00:000:0:0111:two:0000000:one:vd)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);
                 float[] x = new float[vsize];
                 for (int i = 0; i < vsize; ++i) {
                     x[i] = 1.0f;
                 }
-                vfpu.saveVd(vsize, vd, new float[vsize]);
+                cpu.saveVd(vsize, vd, new float[vsize]);
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VONE";`
+            disasm = `return Common.disasmVD("vone", 1+one+(two<<1), vd);`
         }
  
         op VRCP(110100:00:000:1:0000:two:vs:one:vd)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
-                float[] x = vfpu.loadVs(vsize, vs);
+                float[] x = cpu.loadVs(vsize, vs);
                 for (int i = 0; i < vsize; ++i) {
                     x[i] = 1.0f / x[i];
                 }
-                vfpu.saveVd(vsize, vd, x);
+                cpu.saveVd(vsize, vd, x);
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VRCP";`
+            disasm = `return Common.disasmVDVS("vrcp", 1+one+(two<<1), vd, vs);`
         }
  
         op VRSQ(110100:00:000:1:0001:two:vs:one:vd)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
-                float[] x = vfpu.loadVs(vsize, vs);
+                float[] x = cpu.loadVs(vsize, vs);
                 for (int i = 0; i < vsize; ++i) {
                     x[i] = (float)(1.0 / Math.sqrt(x[i]));
                 }
-                vfpu.saveVd(vsize, vd, x);
+                cpu.saveVd(vsize, vd, x);
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VRSQ";`
+            disasm = `return Common.disasmVDVS("vrsq", 1+one+(two<<1), vd, vs);`
         }
  
         op VSIN(110100:00:000:1:0010:two:vs:one:vd)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
-                float[] x = vfpu.loadVs(vsize, vs);
+                float[] x = cpu.loadVs(vsize, vs);
                 for (int i = 0; i < vsize; ++i) {
                     x[i] = (float)Math.sin(2.0 * Math.PI * x[i]);
                 }
-                vfpu.saveVd(vsize, vd, x);
+                cpu.saveVd(vsize, vd, x);
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VSIN";`
+            disasm = `return Common.disasmVDVS("vsin", 1+one+(two<<1), vd, vs);`
         }
  
         op VCOS(110100:00:000:1:0011:two:vs:one:vd)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
-                float[] x = vfpu.loadVs(vsize, vs);
+                float[] x = cpu.loadVs(vsize, vs);
                 for (int i = 0; i < vsize; ++i) {
                     x[i] = (float)Math.cos(2.0 * Math.PI * x[i]);
                 }
-                vfpu.saveVd(vsize, vd, x);
+                cpu.saveVd(vsize, vd, x);
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VCOS";`
+            disasm = `return Common.disasmVDVS("vcos", 1+one+(two<<1), vd, vs);`
         }
  
         op VEXP2(110100:00:000:1:0100:two:vs:one:vd)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
-                float[] x = vfpu.loadVs(vsize, vs);
+                float[] x = cpu.loadVs(vsize, vs);
                 for (int i = 0; i < vsize; ++i) {
                     x[i] = (float)Math.pow(2.0, x[i]);
                 }
-                vfpu.saveVd(vsize, vd, x);
+                cpu.saveVd(vsize, vd, x);
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VEXP2";`
+            disasm = `return Common.disasmVDVS("vexp2", 1+one+(two<<1), vd, vs);`
         }
  
         op VLOG2(110100:00:000:1:0101:two:vs:one:vd)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
-                float[] x = vfpu.loadVs(vsize, vs);
+                float[] x = cpu.loadVs(vsize, vs);
                 for (int i = 0; i < vsize; ++i) {
                     x[i] = (float)(Math.log(x[i]) / Math.log(2.0));
                 }
-                vfpu.saveVd(vsize, vd, x);
+                cpu.saveVd(vsize, vd, x);
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VLOG2";`
+            disasm = `return Common.disasmVDVS("vlog2", 1+one+(two<<1), vd, vs);`
         }
  
         op VSQRT(110100:00:000:1:0110:two:vs:one:vd)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
-                float[] x = vfpu.loadVs(vsize, vs);
+                float[] x = cpu.loadVs(vsize, vs);
                 for (int i = 0; i < vsize; ++i) {
                     x[i] = (float)(Math.sqrt(x[i]));
                 }
-                vfpu.saveVd(vsize, vd, x);
+                cpu.saveVd(vsize, vd, x);
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VSQRT";`
+            disasm = `return Common.disasmVDVS("vsqrt", 1+one+(two<<1), vd, vs);`
         }
  
         op VASIN(110100:00:000:1:0111:two:vs:one:vd)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
-                float[] x = vfpu.loadVs(vsize, vs);
+                float[] x = cpu.loadVs(vsize, vs);
                 for (int i = 0; i < vsize; ++i) {
                     x[i] = (float)(Math.asin(x[i]) * 0.5 / Math.PI);
                 }
-                vfpu.saveVd(vsize, vd, x);
+                cpu.saveVd(vsize, vd, x);
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VASIN";`
+            disasm = `return Common.disasmVDVS("vasin", 1+one+(two<<1), vd, vs);`
         }
  
         op VNRCP(110100:00:000:1:1000:two:vs:one:vd)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
-                float[] x = vfpu.loadVs(vsize, vs);
+                float[] x = cpu.loadVs(vsize, vs);
                 for (int i = 0; i < vsize; ++i) {
                     x[i] = 0.0f - (1.0f / x[i]);
                 }
-                vfpu.saveVd(vsize, vd, x);
+                cpu.saveVd(vsize, vd, x);
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VNRCP";`
+            disasm = `return Common.disasmVDVS("vnrcp", 1+one+(two<<1), vd, vs);`
         }
  
         op VNSIN(110100:00:000:1:1010:two:vs:one:vd)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
-                float[] x = vfpu.loadVs(vsize, vs);
+                float[] x = cpu.loadVs(vsize, vs);
                 for (int i = 0; i < vsize; ++i) {
                     x[i] = 0.0f - (float)Math.sin(2.0 * Math.PI * x[i]);
                 }
-                vfpu.saveVd(vsize, vd, x);
+                cpu.saveVd(vsize, vd, x);
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VNSIN";`
+            disasm = `return Common.disasmVDVS("vnsin", 1+one+(two<<1), vd, vs);`
         }
  
         op VREXP2(110100:00:000:1:1100:two:vs:one:vd)
         {
             interpret = `
-                VfpuState vfpu = processor.vfpu;
+                CpuState cpu = processor.cpu;
                 int vsize = 1 + one + (two<<1);               
-                float[] x = vfpu.loadVs(vsize, vs);
+                float[] x = cpu.loadVs(vsize, vs);
                 for (int i = 0; i < vsize; ++i) {
                     x[i] = (float)(1.0 / Math.pow(2.0, x[i]));
                 }
-                vfpu.saveVd(vsize, vd, x);
+                cpu.saveVd(vsize, vd, x);
             `
 
             compile = `
             `
 
-            disasm = `return "Unimplemented VREXP2";`
+            disasm = `return Common.disasmVDVS("vrexp2", 1+one+(two<<1), vd, vs);`
         }
  
         op VRNDS(110100:00:001:00:000:two:vs:one:0000000)
@@ -3772,7 +3807,7 @@ group root
             compile = `
             `
 
-            disasm = `return "Unimplemented VRNDS";`
+            disasm = `return Common.disasmVS("vrnds", 1+one+(two<<1), vs);`
         }
  
         op VRNDI(110100:00:001:00:001:two:0000000:one:vd)
@@ -3783,7 +3818,7 @@ group root
             compile = `
             `
 
-            disasm = `return "Unimplemented VRNDI";`
+            disasm = `return Common.disasmVD("vrndi", 1+one+(two<<1), vd);`
         }
  
         op VRNDF1(110100:00:001:00:010:two:0000000:one:vd)
@@ -3794,7 +3829,7 @@ group root
             compile = `
             `
 
-            disasm = `return "Unimplemented VRNDF1";`
+            disasm = `return Common.disasmVD("vrndf1", 1+one+(two<<1), vd);`
         }
  
         op VRNDF2(110100:00:001:00:011:two:0000000:one:vd)
@@ -3805,7 +3840,7 @@ group root
             compile = `
             `
 
-            disasm = `return "Unimplemented VRNDF2";`
+            disasm = `return Common.disasmVD("vrndf2", 1+one+(two<<1), vd);`
         }
  
         op VF2H(110100:00:001:10:010:two:vs:one:vd)
@@ -3849,7 +3884,7 @@ group root
             compile = `
             `
 
-            disasm = `return "Unimplemented VLGB";`
+            disasm = `return Common.disasmVDVS("vlgb", 1+one+(two<<1), vd, vs);`
         }
  
         op VUC2I(110100:00:001:11:000:two:vs:one:vd)
@@ -3948,7 +3983,7 @@ group root
             compile = `
             `
 
-            disasm = `return "Unimplemented VSRT1";`
+            disasm = `return Common.disasmVDVS("vsrt1", 1+one+(two<<1), vd, vs);`
         }
  
         op VSRT2(110100:00:010:00001:two:vs:one:vd)
@@ -3959,7 +3994,7 @@ group root
             compile = `
             `
 
-            disasm = `return "Unimplemented VSRT2";`
+            disasm = `return Common.disasmVDVS("vsrt2", 1+one+(two<<1), vd, vs);`
         }
  
         op VBFY1(110100:00:010:00010:two:vs:one:vd)
@@ -3992,7 +4027,7 @@ group root
             compile = `
             `
 
-            disasm = `return "Unimplemented VOCP";`
+            disasm = `return Common.disasmVDVS("vocp", 1+one+(two<<1), vd, vs);`
         }
  
         op VSOCP(110100:00:010:00101:two:vs:one:vd)
@@ -4014,7 +4049,7 @@ group root
             compile = `
             `
 
-            disasm = `return "Unimplemented VFAD";`
+            disasm = `return Common.disasmVD1VS("vfad", 1+one+(two<<1), vd, vs);`
         }
  
         op VAVG(110100:00:010:00111:two:vs:one:vd)
@@ -4025,7 +4060,7 @@ group root
             compile = `
             `
 
-            disasm = `return "Unimplemented VAVG";`
+            disasm = `return Common.disasmVD1VS("vavg", 1+one+(two<<1), vd, vs);`
         }
  
         op VSRT3(110100:00:010:01000:two:vs:one:vd)
@@ -4036,7 +4071,7 @@ group root
             compile = `
             `
 
-            disasm = `return "Unimplemented VSRT3";`
+            disasm = `return Common.disasmVDVS("vsrt3", 1+one+(two<<1), vd, vs);`
         }
  
         op VSRT4(110100:00:010:01001:two:vs:one:vd)
@@ -4047,7 +4082,7 @@ group root
             compile = `
             `
 
-            disasm = `return "Unimplemented VSRT4";`
+            disasm = `return Common.disasmVDVS("vsrt4", 1+one+(two<<1), vd, vs);`
         }
  
         op VMFVC(110100:00:010:10000:imm8:0:vd)
@@ -4362,7 +4397,7 @@ group root
             compile = `
             `
 
-            disasm = `return Dis_VDVSVT("VQMUL", 4, vd, vs, vt);`
+            disasm = `return Common.disasmVDVSVT("VQMUL", 4, vd, vs, vt);`
         }
 
         op VMMOV(111100:111:00:00000:two:vs:one:vd)

@@ -8,7 +8,7 @@ package jpcsp.Allegrex;
  *
  * @author hli
  */
-public class VfpuState {
+public class VfpuState extends FpuState {
 
     public float[][][] vpr;
 
@@ -102,7 +102,9 @@ public class VfpuState {
     }
     public Vcr vcr;
 
+    @Override
     public void reset() {
+        super.reset();
         vpr = new float[8][4][4]; // [matrix][column][row]           
         vcr = new Vcr();
     }
@@ -111,7 +113,8 @@ public class VfpuState {
         reset();
     }
 
-    public VfpuState(VfpuState that) {
+    public void copy(VfpuState that) {
+        super.copy(that);
         vpr = new float[8][4][4]; // [matrix][column][row]
         for (int m = 0; m < 8; ++m) {
             for (int c = 0; m < 8; ++m) {
@@ -120,6 +123,11 @@ public class VfpuState {
                 }
             }
         }
+        vcr = new Vcr(that.vcr);
+    }
+
+    public VfpuState(VfpuState that) {
+        copy(that);
     }
     
     // VFPU stuff
