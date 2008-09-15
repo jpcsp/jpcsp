@@ -19,7 +19,12 @@ import java.awt.Cursor;
 import java.awt.Toolkit;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import javax.swing.table.DefaultTableModel;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import javax.swing.JFileChooser;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 
@@ -82,6 +87,7 @@ public class InstructionCounter extends javax.swing.JFrame implements PropertyCh
         jScrollPane2 = new javax.swing.JScrollPane();
         OpcodeTable = new javax.swing.JTable();
         stubtextcheck = new javax.swing.JCheckBox();
+        Save = new javax.swing.JButton();
 
         setTitle("Instruction Counter");
         setResizable(false);
@@ -366,6 +372,13 @@ public class InstructionCounter extends javax.swing.JFrame implements PropertyCh
 
         stubtextcheck.setText(".Stub.text");
 
+        Save.setText("Save to file");
+        Save.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                SaveActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -389,7 +402,8 @@ public class InstructionCounter extends javax.swing.JFrame implements PropertyCh
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                                 .addComponent(finicheck))))
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 337, Short.MAX_VALUE)
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 332, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jScrollPane2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 332, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(Save, javax.swing.GroupLayout.Alignment.TRAILING))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -411,7 +425,8 @@ public class InstructionCounter extends javax.swing.JFrame implements PropertyCh
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 59, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 402, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 8, Short.MAX_VALUE)
+                .addComponent(Save))
         );
 
         pack();
@@ -427,6 +442,53 @@ private void startbuttonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
         task.execute();
 
 }//GEN-LAST:event_startbuttonActionPerformed
+
+private void SaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SaveActionPerformed
+        File file;
+        final JFileChooser fc = new JFileChooser();
+        fc.setDialogTitle("Save Instructions to File");
+        fc.setCurrentDirectory(new java.io.File("."));
+        fc.setSelectedFile( new File("instructionoutput.txt") );
+        int returnvalue = fc.showSaveDialog(this);
+        if(returnvalue == JFileChooser.APPROVE_OPTION)
+        {
+             file = fc.getSelectedFile();     
+        }
+        else
+        {
+          return;   
+        }
+       BufferedWriter bufferedWriter = null;
+        try {
+
+            //Construct the BufferedWriter object
+            bufferedWriter = new BufferedWriter(new FileWriter(file));
+
+            //Start writing to the output stream
+           for(int i=0; i < OpcodeTable.getRowCount(); i++ )
+           {
+            
+            OpcodeTable.getValueAt(i,1);
+              bufferedWriter.write(OpcodeTable.getValueAt(i,0) + "  " + OpcodeTable.getValueAt(i,1) + "  " + OpcodeTable.getValueAt(i,2));
+              bufferedWriter.newLine();
+           }
+        } catch (FileNotFoundException ex) {
+            ex.printStackTrace();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        } finally {
+            //Close the BufferedWriter
+            try {
+                if (bufferedWriter != null) {
+                    bufferedWriter.flush();
+                    bufferedWriter.close();
+                }
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+
+}//GEN-LAST:event_SaveActionPerformed
    /**
      * Invoked when task's progress property changes.
      */
@@ -751,244 +813,14 @@ private void startbuttonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
         OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.WSBW.getCount(),231,2);
         OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.XOR.getCount(),232,2);
         OpcodeTable.setValueAt(jpcsp.Allegrex.Instructions.XORI.getCount(),233,2);
-        
     }
     public void resetcounts()
     {
-        jpcsp.Allegrex.Instructions.ABS_S.resetCount();        
-        jpcsp.Allegrex.Instructions.ADD.resetCount(); 
-        jpcsp.Allegrex.Instructions.ADDI.resetCount();
-        jpcsp.Allegrex.Instructions.ADDIU.resetCount();
-        jpcsp.Allegrex.Instructions.ADDU.resetCount();
-        jpcsp.Allegrex.Instructions.ADD_S.resetCount();
-        jpcsp.Allegrex.Instructions.AND.resetCount();
-        jpcsp.Allegrex.Instructions.ANDI.resetCount();      
-        jpcsp.Allegrex.Instructions.BC1F.resetCount();
-        jpcsp.Allegrex.Instructions.BC1FL.resetCount();
-        jpcsp.Allegrex.Instructions.BC1T.resetCount();
-        jpcsp.Allegrex.Instructions.BC1TL.resetCount();
-        jpcsp.Allegrex.Instructions.BEQ.resetCount();
-        jpcsp.Allegrex.Instructions.BEQL.resetCount();
-        jpcsp.Allegrex.Instructions.BGEZ.resetCount();
-        jpcsp.Allegrex.Instructions.BGEZAL.resetCount();
-        jpcsp.Allegrex.Instructions.BGEZALL.resetCount();
-        jpcsp.Allegrex.Instructions.BGEZL.resetCount();
-        jpcsp.Allegrex.Instructions.BGTZ.resetCount();
-        jpcsp.Allegrex.Instructions.BGTZL.resetCount();
-        jpcsp.Allegrex.Instructions.BITREV.resetCount();
-        jpcsp.Allegrex.Instructions.BLEZ.resetCount();
-        jpcsp.Allegrex.Instructions.BLEZL.resetCount();
-        jpcsp.Allegrex.Instructions.BLTZ.resetCount();
-        jpcsp.Allegrex.Instructions.BLTZAL.resetCount();
-        jpcsp.Allegrex.Instructions.BLTZALL.resetCount();
-        jpcsp.Allegrex.Instructions.BLTZL.resetCount();
-        jpcsp.Allegrex.Instructions.BNE.resetCount();
-        jpcsp.Allegrex.Instructions.BNEL.resetCount();
-        jpcsp.Allegrex.Instructions.BREAK.resetCount();
-        jpcsp.Allegrex.Instructions.BVF.resetCount();
-        jpcsp.Allegrex.Instructions.BVFL.resetCount();
-        jpcsp.Allegrex.Instructions.BVT.resetCount();
-        jpcsp.Allegrex.Instructions.BVTL.resetCount();
-        jpcsp.Allegrex.Instructions.CACHE.resetCount();
-        jpcsp.Allegrex.Instructions.CEIL_W_S.resetCount();
-        jpcsp.Allegrex.Instructions.CFC0.resetCount();
-        jpcsp.Allegrex.Instructions.CFC1.resetCount();
-        jpcsp.Allegrex.Instructions.CLO.resetCount();
-        jpcsp.Allegrex.Instructions.CLZ.resetCount();
-        jpcsp.Allegrex.Instructions.CTC0.resetCount();
-        jpcsp.Allegrex.Instructions.CTC1.resetCount();
-        jpcsp.Allegrex.Instructions.CVT_S_W.resetCount();
-        jpcsp.Allegrex.Instructions.CVT_W_S.resetCount();
-        jpcsp.Allegrex.Instructions.C_COND_S.resetCount();
-        jpcsp.Allegrex.Instructions.DIV.resetCount();
-        jpcsp.Allegrex.Instructions.DIVU.resetCount();
-        jpcsp.Allegrex.Instructions.DIV_S.resetCount();
-        jpcsp.Allegrex.Instructions.ERET.resetCount();
-        jpcsp.Allegrex.Instructions.EXT.resetCount();
-        jpcsp.Allegrex.Instructions.FLOOR_W_S.resetCount();
-        jpcsp.Allegrex.Instructions.INS.resetCount();
-        jpcsp.Allegrex.Instructions.J.resetCount();
-        jpcsp.Allegrex.Instructions.JAL.resetCount();
-        jpcsp.Allegrex.Instructions.JALR.resetCount();
-        jpcsp.Allegrex.Instructions.JR.resetCount();
-        jpcsp.Allegrex.Instructions.LB.resetCount();
-        jpcsp.Allegrex.Instructions.LBU.resetCount();
-        jpcsp.Allegrex.Instructions.LH.resetCount();
-        jpcsp.Allegrex.Instructions.LL.resetCount();
-        jpcsp.Allegrex.Instructions.LUI.resetCount();
-        jpcsp.Allegrex.Instructions.LVLQ.resetCount();
-        jpcsp.Allegrex.Instructions.LVQ.resetCount();
-        jpcsp.Allegrex.Instructions.LVS.resetCount();
-        jpcsp.Allegrex.Instructions.LW.resetCount();
-        jpcsp.Allegrex.Instructions.LWC1.resetCount();
-        jpcsp.Allegrex.Instructions.LWL.resetCount();
-        jpcsp.Allegrex.Instructions.LWR.resetCount();
-        jpcsp.Allegrex.Instructions.MADD.resetCount();
-        jpcsp.Allegrex.Instructions.MADDU.resetCount();
-        jpcsp.Allegrex.Instructions.MAX.resetCount();
-        jpcsp.Allegrex.Instructions.MFC0.resetCount();
-        jpcsp.Allegrex.Instructions.MFC1.resetCount();
-        jpcsp.Allegrex.Instructions.MFHI.resetCount();
-        jpcsp.Allegrex.Instructions.MFLO.resetCount();
-        jpcsp.Allegrex.Instructions.MFV.resetCount();
-        jpcsp.Allegrex.Instructions.MFVC.resetCount();
-        jpcsp.Allegrex.Instructions.MIN.resetCount();
-        jpcsp.Allegrex.Instructions.MOVN.resetCount();
-        jpcsp.Allegrex.Instructions.MOVZ.resetCount();
-        jpcsp.Allegrex.Instructions.MOV_S.resetCount();
-        jpcsp.Allegrex.Instructions.MSUB.resetCount();
-        jpcsp.Allegrex.Instructions.MSUBU.resetCount();
-        jpcsp.Allegrex.Instructions.MTC0.resetCount();
-        jpcsp.Allegrex.Instructions.MTC1.resetCount();
-        jpcsp.Allegrex.Instructions.MTHI.resetCount();
-        jpcsp.Allegrex.Instructions.MTLO.resetCount();
-        jpcsp.Allegrex.Instructions.MTV.resetCount();
-        jpcsp.Allegrex.Instructions.MTVC.resetCount();
-        jpcsp.Allegrex.Instructions.MULT.resetCount();
-        jpcsp.Allegrex.Instructions.MULTU.resetCount();
-        jpcsp.Allegrex.Instructions.MUL_S.resetCount();
-        jpcsp.Allegrex.Instructions.NEG_S.resetCount();
-        jpcsp.Allegrex.Instructions.NOP.resetCount();
-        jpcsp.Allegrex.Instructions.NOR.resetCount();
-        jpcsp.Allegrex.Instructions.OR.resetCount();
-        jpcsp.Allegrex.Instructions.ORI.resetCount();
-        jpcsp.Allegrex.Instructions.ROTR.resetCount();
-        jpcsp.Allegrex.Instructions.ROTRV.resetCount();
-        jpcsp.Allegrex.Instructions.ROUND_W_S.resetCount();
-        jpcsp.Allegrex.Instructions.SB.resetCount();
-        jpcsp.Allegrex.Instructions.SC.resetCount();
-        jpcsp.Allegrex.Instructions.SEB.resetCount();
-        jpcsp.Allegrex.Instructions.SEH.resetCount();
-        jpcsp.Allegrex.Instructions.SH.resetCount();
-        jpcsp.Allegrex.Instructions.SH.resetCount();
-        jpcsp.Allegrex.Instructions.SLL.resetCount();
-        jpcsp.Allegrex.Instructions.SLLV.resetCount();
-        jpcsp.Allegrex.Instructions.SLT.resetCount();
-        jpcsp.Allegrex.Instructions.SLTI.resetCount();
-        jpcsp.Allegrex.Instructions.SLTIU.resetCount();
-        jpcsp.Allegrex.Instructions.SLTU.resetCount();
-        jpcsp.Allegrex.Instructions.SQRT_S.resetCount();
-        jpcsp.Allegrex.Instructions.SRA.resetCount();
-        jpcsp.Allegrex.Instructions.SRAV.resetCount();
-        jpcsp.Allegrex.Instructions.SRL.resetCount();
-        jpcsp.Allegrex.Instructions.SRLV.resetCount();
-        jpcsp.Allegrex.Instructions.SUB.resetCount();
-        jpcsp.Allegrex.Instructions.SUBU.resetCount();
-        jpcsp.Allegrex.Instructions.SUB_S.resetCount();
-        jpcsp.Allegrex.Instructions.SVLQ.resetCount();
-        jpcsp.Allegrex.Instructions.SVQ.resetCount();
-        jpcsp.Allegrex.Instructions.SVRQ.resetCount();
-        jpcsp.Allegrex.Instructions.SVS.resetCount();
-        jpcsp.Allegrex.Instructions.SW.resetCount();
-        jpcsp.Allegrex.Instructions.SWB.resetCount();
-        jpcsp.Allegrex.Instructions.SWC1.resetCount();
-        jpcsp.Allegrex.Instructions.SWL.resetCount();
-        jpcsp.Allegrex.Instructions.SWR.resetCount();
-        jpcsp.Allegrex.Instructions.SYNC.resetCount();
-        jpcsp.Allegrex.Instructions.SYSCALL.resetCount();
-        jpcsp.Allegrex.Instructions.TRUNC_W_S.resetCount();
-        jpcsp.Allegrex.Instructions.VABS.resetCount();
-        jpcsp.Allegrex.Instructions.VADD.resetCount();
-        jpcsp.Allegrex.Instructions.VASIN.resetCount();
-        jpcsp.Allegrex.Instructions.VAVG.resetCount();
-        jpcsp.Allegrex.Instructions.VBFY1.resetCount();
-        jpcsp.Allegrex.Instructions.VBFY2.resetCount();
-        jpcsp.Allegrex.Instructions.VC2I.resetCount();
-        jpcsp.Allegrex.Instructions.VCMOVF.resetCount();
-        jpcsp.Allegrex.Instructions.VCMOVT.resetCount();
-        jpcsp.Allegrex.Instructions.VCMP.resetCount();
-        jpcsp.Allegrex.Instructions.VCOS.resetCount();
-        jpcsp.Allegrex.Instructions.VCRS.resetCount();
-        jpcsp.Allegrex.Instructions.VCST.resetCount();
-        jpcsp.Allegrex.Instructions.VDET.resetCount();
-        jpcsp.Allegrex.Instructions.VDIV.resetCount();
-        jpcsp.Allegrex.Instructions.VDOT.resetCount();
-        jpcsp.Allegrex.Instructions.VEXP2.resetCount();
-        jpcsp.Allegrex.Instructions.VF2H.resetCount();
-        jpcsp.Allegrex.Instructions.VF2ID.resetCount();
-        jpcsp.Allegrex.Instructions.VF2IN.resetCount();
-        jpcsp.Allegrex.Instructions.VF2IU.resetCount();
-        jpcsp.Allegrex.Instructions.VF2IZ.resetCount();
-        jpcsp.Allegrex.Instructions.VFAD.resetCount();
-        jpcsp.Allegrex.Instructions.VFIM.resetCount();
-        jpcsp.Allegrex.Instructions.VFLUSH.resetCount();
-        jpcsp.Allegrex.Instructions.VH2F.resetCount();
-        jpcsp.Allegrex.Instructions.VHDP.resetCount();
-        jpcsp.Allegrex.Instructions.VHTFM2.resetCount();
-        jpcsp.Allegrex.Instructions.VHTFM3.resetCount();
-        jpcsp.Allegrex.Instructions.VHTFM4.resetCount();
-        jpcsp.Allegrex.Instructions.VI2C.resetCount();
-        jpcsp.Allegrex.Instructions.VI2F.resetCount();
-        jpcsp.Allegrex.Instructions.VI2S.resetCount();
-        jpcsp.Allegrex.Instructions.VI2UC.resetCount();
-        jpcsp.Allegrex.Instructions.VI2US.resetCount();
-        jpcsp.Allegrex.Instructions.VIDT.resetCount();
-        jpcsp.Allegrex.Instructions.VIIM.resetCount();
-        jpcsp.Allegrex.Instructions.VLGB.resetCount();
-        jpcsp.Allegrex.Instructions.VLOG2.resetCount();
-        jpcsp.Allegrex.Instructions.VMAX.resetCount();
-        jpcsp.Allegrex.Instructions.VMFVC.resetCount();
-        jpcsp.Allegrex.Instructions.VMIDT.resetCount();
-        jpcsp.Allegrex.Instructions.VMIN.resetCount();
-        jpcsp.Allegrex.Instructions.VMMOV.resetCount();
-        jpcsp.Allegrex.Instructions.VMMUL.resetCount();
-        jpcsp.Allegrex.Instructions.VMONE.resetCount();
-        jpcsp.Allegrex.Instructions.VMOV.resetCount();
-        jpcsp.Allegrex.Instructions.VMSCL.resetCount();
-        jpcsp.Allegrex.Instructions.VMTVC.resetCount();
-        jpcsp.Allegrex.Instructions.VMUL.resetCount();
-        jpcsp.Allegrex.Instructions.VMZERO.resetCount();
-        jpcsp.Allegrex.Instructions.VNEG.resetCount();
-        jpcsp.Allegrex.Instructions.VNOP.resetCount();
-        jpcsp.Allegrex.Instructions.VNRCP.resetCount();
-        jpcsp.Allegrex.Instructions.VNSIN.resetCount();
-        jpcsp.Allegrex.Instructions.VOCP.resetCount();
-        jpcsp.Allegrex.Instructions.VONE.resetCount();
-        jpcsp.Allegrex.Instructions.VPFXD.resetCount();
-        jpcsp.Allegrex.Instructions.VPFXS.resetCount();
-        jpcsp.Allegrex.Instructions.VPFXT.resetCount();
-        jpcsp.Allegrex.Instructions.VQMUL.resetCount();
-        jpcsp.Allegrex.Instructions.VRCP.resetCount();
-        jpcsp.Allegrex.Instructions.VREXP2.resetCount();
-        jpcsp.Allegrex.Instructions.VRNDF1.resetCount();
-        jpcsp.Allegrex.Instructions.VRNDF2.resetCount();
-        jpcsp.Allegrex.Instructions.VRNDI.resetCount();
-        jpcsp.Allegrex.Instructions.VRNDS.resetCount();
-        jpcsp.Allegrex.Instructions.VROT.resetCount();
-        jpcsp.Allegrex.Instructions.VRSQ.resetCount();
-        jpcsp.Allegrex.Instructions.VS2I.resetCount();
-        jpcsp.Allegrex.Instructions.VSAT0.resetCount();
-        jpcsp.Allegrex.Instructions.VSAT1.resetCount();
-        jpcsp.Allegrex.Instructions.VSBN.resetCount();
-        jpcsp.Allegrex.Instructions.VSBZ.resetCount();
-        jpcsp.Allegrex.Instructions.VSCL.resetCount();
-        jpcsp.Allegrex.Instructions.VSCMP.resetCount();
-        jpcsp.Allegrex.Instructions.VSGE.resetCount();
-        jpcsp.Allegrex.Instructions.VSIN.resetCount();
-        jpcsp.Allegrex.Instructions.VSLT.resetCount();
-        jpcsp.Allegrex.Instructions.VSOCP.resetCount();
-        jpcsp.Allegrex.Instructions.VSQRT.resetCount();
-        jpcsp.Allegrex.Instructions.VSRT1.resetCount();
-        jpcsp.Allegrex.Instructions.VSRT2.resetCount();
-        jpcsp.Allegrex.Instructions.VSRT3.resetCount();
-        jpcsp.Allegrex.Instructions.VSRT4.resetCount();
-        jpcsp.Allegrex.Instructions.VSUB.resetCount();
-        jpcsp.Allegrex.Instructions.VSYNC.resetCount();
-        jpcsp.Allegrex.Instructions.VT4444.resetCount();
-        jpcsp.Allegrex.Instructions.VT5551.resetCount();
-        jpcsp.Allegrex.Instructions.VT5650.resetCount();
-        jpcsp.Allegrex.Instructions.VTFM2.resetCount();
-        jpcsp.Allegrex.Instructions.VTFM3.resetCount();
-        jpcsp.Allegrex.Instructions.VTFM4.resetCount();
-        jpcsp.Allegrex.Instructions.VUC2I.resetCount();
-        jpcsp.Allegrex.Instructions.VUS2I.resetCount();
-        jpcsp.Allegrex.Instructions.VWBN.resetCount();
-        jpcsp.Allegrex.Instructions.VWBN.resetCount();
-        jpcsp.Allegrex.Instructions.VZERO.resetCount();
-        jpcsp.Allegrex.Instructions.WSBH.resetCount();
-        jpcsp.Allegrex.Instructions.WSBW.resetCount();
-        jpcsp.Allegrex.Instructions.XOR.resetCount();
-        jpcsp.Allegrex.Instructions.XORI.resetCount();
+      for (jpcsp.Allegrex.Common.Instruction insn : jpcsp.Allegrex.Common.instructions()) {
+            if (insn != null) {
+                insn.resetCount();
+            }
+        }
     }
     String[][] instructionname = {
         { "ABS_S" , "FPU" } ,             
@@ -1230,6 +1062,7 @@ private void startbuttonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTable OpcodeTable;
+    private javax.swing.JButton Save;
     private javax.swing.JTextArea areastatus;
     private javax.swing.JCheckBox finicheck;
     private javax.swing.JCheckBox initcheck;

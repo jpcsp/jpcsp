@@ -46,6 +46,7 @@
                   </Group>
                   <Component id="jScrollPane1" alignment="0" pref="337" max="32767" attributes="0"/>
                   <Component id="jScrollPane2" alignment="1" min="-2" pref="332" max="-2" attributes="0"/>
+                  <Component id="Save" alignment="1" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
           </Group>
@@ -72,7 +73,8 @@
               <Component id="jScrollPane1" min="-2" pref="59" max="-2" attributes="0"/>
               <EmptySpace max="-2" attributes="0"/>
               <Component id="jScrollPane2" min="-2" pref="402" max="-2" attributes="0"/>
-              <EmptySpace max="32767" attributes="0"/>
+              <EmptySpace pref="8" max="32767" attributes="0"/>
+              <Component id="Save" min="-2" max="-2" attributes="0"/>
           </Group>
       </Group>
     </DimensionLayout>
@@ -153,6 +155,14 @@
       <Properties>
         <Property name="text" type="java.lang.String" value=".Stub.text"/>
       </Properties>
+    </Component>
+    <Component class="javax.swing.JButton" name="Save">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Save to file"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="SaveActionPerformed"/>
+      </Events>
     </Component>
   </SubComponents>
 </Form>
