@@ -58,7 +58,7 @@ public class VideoEngine {
 
     private boolean listIsOver;
     private DisplayList actualList; // The currently executing list
-
+    private int clearFlags;
     private static void log(String msg) {
         if (isDebugMode) {
             System.out.println("sceGe DEBUG > " + msg);
@@ -441,6 +441,42 @@ public class VideoEngine {
                     log("sceGuDisable(GU_BLEND)");
                 }    
                 break;
+            case ZTE:
+                if(normalArgument != 0)
+                {
+                    gl.glEnable(GL.GL_DEPTH_TEST);
+                    log("sceGuEnable(GU_DEPTH_TEST)");
+                }
+                else
+                {
+                    gl.glDisable(GL.GL_DEPTH_TEST);
+                    log("sceGuDisable(GU_DEPTH_TEST)");
+                }    
+                break;
+            case STE:
+                if(normalArgument != 0)
+                {
+                    gl.glEnable(GL.GL_STENCIL_TEST);
+                    log("sceGuEnable(GU_STENCIL_TEST)");
+                }
+                else
+                {
+                    gl.glDisable(GL.GL_STENCIL_TEST);
+                    log("sceGuDisable(GU_STENCIL_TEST)");
+                }    
+                break;
+            case LOE:
+                if(normalArgument != 0)
+                {
+                    gl.glEnable(GL.GL_COLOR_LOGIC_OP);
+                    log("sceGuEnable(GU_COLOR_LOGIC_OP)");
+                }
+                else
+                {
+                    gl.glDisable(GL.GL_COLOR_LOGIC_OP);
+                    log("sceGuDisable(GU_COLOR_LOGIC_OP)");
+                }    
+                break;
             case JUMP:
                 int npc = (normalArgument | actualList.base) & 0xFFFFFFFC;
                 //I guess it must be unsign as psp player emulator
@@ -457,7 +493,18 @@ public class VideoEngine {
                 actualList.pc = actualList.stack[--actualList.stackIndex];
                 log(helper.getCommandString(RET), actualList.pc);
                 break;
-
+            case CLEAR:
+                if ((normalArgument & 0x1)==0) {
+			gl.glClear(clearFlags);
+                        log("guclear");
+		} else {
+		     clearFlags = 0;
+		     if ((normalArgument & 0x100)!=0) clearFlags |= GL.GL_COLOR_BUFFER_BIT; // target
+		     if ((normalArgument & 0x200)!=0) clearFlags |= GL.GL_ACCUM_BUFFER_BIT | GL.GL_STENCIL_BUFFER_BIT; // stencil/alpha
+		     if ((normalArgument & 0x400)!=0) clearFlags |= GL.GL_DEPTH_BUFFER_BIT; // zbuffer
+		     log("setting clear flags");
+                }
+                break;
             case NOP:
                 log(helper.getCommandString(NOP));
                 break;
