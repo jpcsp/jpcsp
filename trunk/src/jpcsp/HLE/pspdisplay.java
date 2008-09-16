@@ -461,8 +461,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     
     public void sceDisplayWaitVblankStart() {
         // TODO: implement sceDisplayWaitVblankStart
-        ThreadMan.get_instance().ThreadMan_sceKernelDelayThread(0);
         Emulator.getProcessor().gpr[2] = 0;
+        ThreadMan.get_instance().ThreadMan_sceKernelDelayThread(0);
     }
     
     public void sceDisplayWaitVblankStartCB() {
@@ -472,8 +472,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     
     public void sceDisplayWaitVblank() {
         // TODO: implement sceDisplayWaitVblank
-        ThreadMan.get_instance().ThreadMan_sceKernelDelayThread(0);
         Emulator.getProcessor().gpr[2] = 0;
+        ThreadMan.get_instance().ThreadMan_sceKernelDelayThread(0);
     }
     
     public void sceDisplayWaitVblankCB() {
