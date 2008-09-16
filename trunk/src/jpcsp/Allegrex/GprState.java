@@ -28,6 +28,6 @@ public class GprState {
     }
 
     public GprState(GprState that) {
-        that.copy(that);
+        this.copy(that);
     }
 }
