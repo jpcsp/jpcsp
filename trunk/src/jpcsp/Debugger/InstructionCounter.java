@@ -266,6 +266,7 @@ private void SaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:ev
    /**
      * Invoked when task's progress property changes.
      */
+    @Override
     public void propertyChange(PropertyChangeEvent evt) {
         if ("progress" == evt.getPropertyName()) {
             int progress = (Integer) evt.getNewValue();
@@ -276,8 +277,8 @@ private void SaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:ev
     {
         resetcounts();
         if(initcheck.isSelected()) findinitsections();
-        if(textcheck.isSelected()) findfinisections();
-        if(finicheck.isSelected()) findtextsections();
+        if(textcheck.isSelected()) findtextsections();
+        if(finicheck.isSelected()) findfinisections();
         if(stubtextcheck.isSelected()) findstubtextsections();
      }
             
@@ -345,7 +346,13 @@ private void SaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:ev
     public void refreshCounter()
     {
         int i = 0;
+        java.util.TreeMap< String, Instruction > instructions = new java.util.TreeMap< String, Instruction >();
         for (Instruction insn : jpcsp.Allegrex.Common.instructions()) {
+            if (insn != null) {
+                instructions.put(insn.name(), insn);
+            }
+        }
+        for (Instruction insn : instructions.values()) {
             if (insn != null) {
                 OpcodeTable.setValueAt(insn.name(), i, 0);
                 OpcodeTable.setValueAt(insn.category(), i, 1);
