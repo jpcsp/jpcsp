@@ -30,7 +30,6 @@ public class HLEModuleManager {
     private static HLEModuleManager instance;
 
     private HashMap<Integer, HLEModuleFunction> syscallCodeToFunction;
-    private HashMap<Integer, Integer> nidToSyscallCode;
     private int syscallCodeAllocator;
 
     private HLEModule[] defaultModules = new HLEModule[] {
@@ -46,7 +45,6 @@ public class HLEModuleManager {
 
     public void Initialise() {
         syscallCodeToFunction = new HashMap<Integer, HLEModuleFunction>();
-        nidToSyscallCode = new HashMap<Integer, Integer>();
         
         // Official syscalls start at 0x2000,
         // so we'll put the HLE syscalls far away at 0x4000.
