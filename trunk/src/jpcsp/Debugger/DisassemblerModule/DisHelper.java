@@ -312,8 +312,8 @@ public class DisHelper {
 
     public static String Dis_Syscall(int code) {  /* probably okay */
         String s = new String();
-        for (syscalls.calls c : syscalls.calls.values()) {
-            if (c.getValue() == code) {
+        for (jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls c : jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls.values()) {
+            if (c.getSyscall() == code) {
                 s = "syscall " + Integer.toHexString(code) + "     " + c;
                 return s;
 

@@ -17,10 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp;
 
 import java.util.HashMap;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.BufferedReader;
-import static jpcsp.Syscallv15.*;
+
+
 
 public class NIDMapper {
     private static NIDMapper instance;
@@ -37,12 +35,15 @@ public class NIDMapper {
     public void Initialise() {
         moduleToNidTable = new HashMap<String, HashMap<Integer, Integer>>();
        nidToSyscall = new HashMap<Integer, Integer>();
-        for(int i=0; i<syscalls.length; i++)
+        /*for(int i=0; i<syscalls.length; i++)
         {
                int syscall = syscalls[i][0];
                long nid = syscalls[i][1];
                 nidToSyscall.put((int)nid,syscall);
-         }
+         }*/
+        for (jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls c : jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls.values()) {
+              nidToSyscall.put(c.getNID(), c.getSyscall());
+        }
     }
 
     /** returns -1 if the nid couldn't be mapped */

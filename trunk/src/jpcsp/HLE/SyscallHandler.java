@@ -16,7 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
-import jpcsp.Debugger.DisassemblerModule.*;
+
 import jpcsp.Emulator;
 import jpcsp.GeneralJpcspException;
 
@@ -701,8 +701,8 @@ public class SyscallHandler {
 		// sceUtilitySetNetParam(0x2210);
                 default:
                 {
-                  for (syscalls.calls c : syscalls.calls.values()) {
-                  if (c.getValue() == code) {
+                  for (jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls c : jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls.values()) {
+                  if (c.getSyscall() == code) {
                       System.out.println("Unsupported syscall " + Integer.toHexString(code) + " " + c);
                       return;
                      }
