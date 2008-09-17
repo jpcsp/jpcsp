@@ -18,8 +18,6 @@ package jpcsp;
 
 import java.util.HashMap;
 
-
-
 public class NIDMapper {
     private static NIDMapper instance;
     private HashMap<Integer, Integer> nidToSyscall;
@@ -55,6 +53,17 @@ public class NIDMapper {
         return code.intValue();
     }
 
+    /**
+     * This function is only for the HLE. It allows us to HLE modules, normally
+     * a module would be loaded into memory, so imports would jump to the
+     * function. What we are doing here is making the import a syscall, which
+     * we can trap and turn into a Java function call.
+     * @param code The syscall code. This must come from the unallocated set.
+     * @param nid The NID the syscall will map to. */
+    public void addSyscallNid(int code, int nid) {
+        nidToSyscall.put(nid, code);
+    }
+    
     /** @param modulename Example: sceRtc
      * @param address Address of export (example: start of function). */
     public void addModuleNid(String modulename, int nid, int address) {

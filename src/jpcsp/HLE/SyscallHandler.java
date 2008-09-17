@@ -19,6 +19,7 @@ package jpcsp.HLE;
 
 import jpcsp.Emulator;
 import jpcsp.GeneralJpcspException;
+import jpcsp.HLE.modules.HLEModuleManager;
 
 public class SyscallHandler {
 
@@ -378,16 +379,24 @@ public class SyscallHandler {
                 case 0x20f9:
                     pspge.get_instance().sceGeListUpdateStallAddr(gpr[4], gpr[5]);
                     break;
-                 //sceGeListSync(0x20fa),
-		// sceGeDrawSync(0x20fb),
+                /* ge sync
+                case 0x20fa:
+                    pspge.get_instance().sceGeListSync(gpr[4], gpr[5]);
+                    break;
+                case 0x20fb:
+                    pspge.get_instance().sceGeDrawSync(gpr[4]);
+                    break;
+                */
 		// sceGeBreak(0x20fc),
 		// sceGeContinue(0x20fd),
-               // case 0x20fe:
-               //     pspge.get_instance().sceGeSetCallback(gpr[4]);
-              //      break;
-              //  case 0x20ff:
-              //      pspge.get_instance().sceGeUnsetCallback(gpr[4]);
-              //      break;
+                /* ge callback
+                case 0x20fe:
+                    pspge.get_instance().sceGeSetCallback(gpr[4]);
+                    break;
+                case 0x20ff:
+                    pspge.get_instance().sceGeUnsetCallback(gpr[4]);
+                    break;
+                */
                 case 0x2100:
                     psprtc.get_instance().sceRtcGetTickResolution();
                     break;
@@ -456,8 +465,8 @@ public class SyscallHandler {
 		//case 0x2137: pspAudio.get_instance().sceAudio_E926D3FB(); break;
 		//case 0x2138: pspAudio.get_instance().sceAudio_A633048E(); break;
 		case 0x2139: pspAudio.get_instance().sceAudioGetChannelRestLen(gpr[4]); break;
-		                    
-		
+
+
                 case 0x213a:
                     pspdisplay.get_instance().sceDisplaySetMode(gpr[4], gpr[5], gpr[6]);
                     break;
@@ -701,13 +710,22 @@ public class SyscallHandler {
 		// sceUtilitySetNetParam(0x2210);
                 default:
                 {
-                  for (jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls c : jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls.values()) {
-                  if (c.getSyscall() == code) {
-                      System.out.println("Unsupported syscall " + Integer.toHexString(code) + " " + c);
-                      return;
-                     }
-                  }
-                  System.out.println("Unsupported syscall " + Integer.toHexString(code));
+                    // Try and handle as an HLE module export
+                    boolean handled = HLEModuleManager.get_instance().handleSyscall(code);
+                    if (!handled) {
+                        // Display debug info
+                        for (jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls c : jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls.values()) {
+                            if (c.getSyscall() == code) {
+                                System.out.println("Unsupported syscall " + Integer.toHexString(code) + " " + c);
+                                return;
+                            }
+                        }
+                        System.out.println("Unsupported syscall " + Integer.toHexString(code));
+
+                        // At least set a decent return value
+                        //Emulator.getProcessor().gpr[2] = 0;
+                        Emulator.getProcessor().gpr[2] = -1;
+                    }
                 }
                 break;
             }
