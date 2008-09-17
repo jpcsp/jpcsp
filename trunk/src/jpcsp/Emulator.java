@@ -453,6 +453,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
         cpu.gpr[31] = 0x08000004; //ra, should this be 0?
         // All other registers are uninitialised/random values
 
+        jpcsp.HLE.modules.HLEModuleManager.get_instance().Initialise();
         jpcsp.HLE.pspSysMem.get_instance().Initialise(romManager.getLoadAddressLow(), romManager.getLoadAddressHigh() - romManager.getLoadAddressLow());
         jpcsp.HLE.ThreadMan.get_instance().Initialise(cpu.pc, romManager.getPSPModuleInfo().getM_attr());
         jpcsp.HLE.psputils.get_instance().Initialise();
@@ -491,6 +492,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                 rec.run();
             } else {
                 cpu.step();
+                //jpcsp.HLE.pspge.get_instance().step();
                 jpcsp.HLE.ThreadMan.get_instance().step();
                 jpcsp.HLE.pspdisplay.get_instance().step();
                 controller.checkControllerState();
