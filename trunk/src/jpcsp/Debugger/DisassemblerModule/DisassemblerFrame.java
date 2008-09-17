@@ -78,7 +78,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         for (pc = DebuggerPC , cnt = 0; pc < (DebuggerPC + 0x00000094); pc += 0x00000004, cnt++) {
             if (Memory.get_instance().isAddressGood(pc)) {
                 int opcode = Memory.get_instance().read32(pc);
-                
+
                 Instruction insn = Decoder.instruction(opcode);
 
                 if(breakpoints.indexOf(pc)!=-1) {
@@ -592,9 +592,9 @@ private void DumpCodeToTextActionPerformed(java.awt.event.ActionEvent evt) {//GE
             {
                 if (Memory.get_instance().isAddressGood(i)) {
                     int opcode = Memory.get_instance().read32(i);
-                    
+
                     Instruction insn = Decoder.instruction(opcode);
-                    
+
                     bufferedWriter.write(String.format("%08x:[%08x]: %s", i, opcode, insn.disasm(i, opcode)));
                     bufferedWriter.newLine();
                 } else {
@@ -694,8 +694,8 @@ private void AddBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     String value =(String)disasmList.getSelectedValue();
     if (value != null) {
         try {
-            String address = value.substring(0, 8);
-            int addr = Integer.parseInt(address,16);
+            String address = value.substring(3, 11);
+            int addr = Integer.parseInt(address, 16);
             breakpoints.add(addr);
             RefreshDebugger();
         } catch(NumberFormatException e) {
@@ -708,13 +708,15 @@ private void AddBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 
 private void DeleteAllBreakpointsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DeleteAllBreakpointsActionPerformed
     DeleteAllBreakpoints();
+
+    // Move this call to DeleteAllBreakpoints()?
+    RefreshDebugger();
 }//GEN-LAST:event_DeleteAllBreakpointsActionPerformed
 
 public void DeleteAllBreakpoints() {
     if (!breakpoints.isEmpty())
         breakpoints.clear();
 }
-
 
 private void DeleteBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DeleteBreakpointActionPerformed
           String value =(String)disasmList.getSelectedValue();
@@ -723,7 +725,7 @@ private void DeleteBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//
             boolean breakpointexists = value.startsWith("<*>");
             if(breakpointexists)
             {
-              String address = value.substring(4, 12);
+              String address = value.substring(3, 11);
               int addr = Integer.parseInt(address,16);
               int b = breakpoints.indexOf(addr);
               breakpoints.remove(b);
