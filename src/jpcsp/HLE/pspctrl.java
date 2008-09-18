@@ -27,14 +27,14 @@ public class pspctrl {
     private static pspctrl instance;
 
     private int cycle;
-    private int mode; // PspCtrlMode { PSP_CTRL_MODE_DIGITAL = 0, PSP_CTRL_MODE_ANALOG  }
+    private int mode;
     private int uiPress = 0;
     private int uiRelease = 1;
 
     private byte Lx;
     private byte Ly;
     private int Buttons;
-    
+
     public final static int PSP_CTRL_SELECT = 0x000001;
     public final static int PSP_CTRL_START = 0x000008;
     public final static int PSP_CTRL_UP = 0x000010;
@@ -57,7 +57,11 @@ public class pspctrl {
     public final static int PSP_CTRL_REMOTE = 0x080000;
     public final static int PSP_CTRL_DISC = 0x1000000;
     public final static int PSP_CTRL_MS = 0x2000000;
-  
+
+    // PspCtrlMode
+    public final static int PSP_CTRL_MODE_DIGITAL = 0;
+    public final static int PSP_CTRL_MODE_ANALOG = 1;
+
     public static pspctrl get_instance() {
         if (instance == null) {
             instance = new pspctrl();
@@ -67,13 +71,13 @@ public class pspctrl {
 
     private pspctrl() {
     }
-    
+
     public void setButtons(byte Lx, byte Ly, int Buttons, boolean pressed)
     {
         this.Lx = Lx;
         this.Ly = Ly;
         this.Buttons = Buttons;
-        
+
         if (pressed) {
             this.uiRelease = 0;
             this.uiPress = 1;
@@ -82,7 +86,7 @@ public class pspctrl {
             this.uiPress = 0;
         }
     }
-    
+
     public boolean isModeDigital() {
         if (mode == 0)
             return true;
@@ -119,7 +123,7 @@ public class pspctrl {
         int i;
 
         for (i = 0; i < a1; i++) {
-            // TODO set timestamp, get buttons and analog state, probably from jpcsp.Controller class
+            // TODO set timestamp
             int TimeStamp = 0;
 
             mem.write32(a0, TimeStamp);
@@ -138,7 +142,7 @@ public class pspctrl {
         int i;
 
         for (i = 0; i < a1; i++) {
-            // TODO set timestamp, get buttons and analog state
+            // TODO set timestamp
             int TimeStamp = 0;
 
             mem.write32(a0, TimeStamp);
@@ -157,7 +161,7 @@ public class pspctrl {
         int i;
 
         for (i = 0; i < a1; i++) {
-            // TODO set timestamp, get buttons and analog state
+            // TODO set timestamp
             int TimeStamp = 0;
 
             mem.write32(a0, TimeStamp);
@@ -176,7 +180,7 @@ public class pspctrl {
         int i;
 
         for (i = 0; i < a1; i++) {
-            // TODO set timestamp, get buttons and analog state
+            // TODO set timestamp
             int TimeStamp = 0;
 
             mem.write32(a0, TimeStamp);
@@ -188,10 +192,10 @@ public class pspctrl {
 
         Emulator.getProcessor().gpr[2] = i;
     }
-    
+
     public void sceCtrlPeekLatch(int a0) {
         Memory mem = Memory.get_instance();
-        
+
         mem.write32(a0, 0);             //uiMake
         mem.write32(a0 +4, 0);          //uiBreak
         mem.write32(a0 +8, uiPress);
@@ -199,32 +203,13 @@ public class pspctrl {
         Emulator.getProcessor().gpr[2] = 0;
     }
 
-    private class SceCtrlData {
-        private int TimeStamp;
-        private int Buttons;
-        private byte Lx;
-        private byte Ly;
-        private byte[] Rsrv; // 6 bytes
+    public void sceCtrlReadLatch(int a0) {
+        Memory mem = Memory.get_instance();
 
-        private SceCtrlData(int TimeStamp, int Buttons, byte Lx, byte Ly) {
-            this.TimeStamp = TimeStamp;
-            this.Buttons = Buttons;
-            this.Lx = Lx;
-            this.Ly = Ly;
-            // no use allocating this
-            //Rsrv = new byte[6];
-        }
-
-        private void write(Memory mem, int address) {
-            mem.write32(address, TimeStamp);
-            mem.write32(address + 4, Buttons);
-            mem.write8(address + 8, Lx);
-            mem.write8(address + 9, Ly);
-            // leaving Rsrv uninitialised
-        }
-
-        public int sizeof() {
-            return 16;
-        }
+        mem.write32(a0, 0);             //uiMake
+        mem.write32(a0 +4, 0);          //uiBreak
+        mem.write32(a0 +8, uiPress);
+        mem.write32(a0 +12, uiRelease);
+        Emulator.getProcessor().gpr[2] = 0;
     }
 }

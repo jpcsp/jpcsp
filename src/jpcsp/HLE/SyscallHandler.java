@@ -517,9 +517,11 @@ public class SyscallHandler {
                 case 0x2153:
                     pspctrl.get_instance().sceCtrlReadBufferNegative(gpr[4], gpr[5]);
                     break;
-              // sceCtrlPeekLatch(0x2154),
-                case 0x2155:
+                case 0x2154:
                     pspctrl.get_instance().sceCtrlPeekLatch(gpr[4]);
+                    break;
+                case 0x2155:
+                    pspctrl.get_instance().sceCtrlReadLatch(gpr[4]);
                     break;
              //   sceCtrl_A7144800(0x2156),
 		// sceCtrl_687660FA(0x2157),
