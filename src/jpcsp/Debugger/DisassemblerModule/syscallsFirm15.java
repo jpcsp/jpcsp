@@ -770,8 +770,37 @@ public class syscallsFirm15 {
                  sceNetAdhocMatchingSetHelloOpt(0x22df,0xB58E61B7),
                  sceNetAdhocMatchingGetHelloOpt(0x22e0,0xB5D96C2A),
                  sceNetAdhocMatchingGetMembers(0x22e1,0xC58BCD9E),
-                 sceNetAdhocMatchingGetPoolMaxAlloc(0x22e2,0x40F8F435);
-                                        								         
+                 sceNetAdhocMatchingGetPoolMaxAlloc(0x22e2,0x40F8F435),
+                 /*sceSasCore doesn't exist in firmware as default 2.70 and highter has that but 
+                  * many games ask for that so we load anyway.. */
+                sceSasCore_A3589D81(0x22e3,0xA3589D81),
+                sceSasCore_50A14DFC(0x22e4,0x50A14DFC),
+                sceSasCore_68A46B95(0x22e5,0x68A46B95),
+                sceSasCore_440CA7D8(0x22e6,0x440CA7D8),
+                sceSasCore_AD84D37F(0x22e7,0xAD84D37F),
+                sceSasCore_99944089(0x22e8,0x99944089), 
+                sceSasCore_B7660A23(0x22e9,0xB7660A23),
+                sceSasCore_019B25EB(0x22ea,0x019B25EB),
+                sceSasCore_9EC3676A(0x22eb,0x9EC3676A),
+                sceSasCore_5F9529F6(0x22ec,0x5F9529F6),
+                sceSasCore_74AE582A(0x22ed,0x74AE582A), 
+                sceSasCore_CBCD4F79(0x22ee,0xCBCD4F79), 
+                sceSasCore_42778A9F(0x22ef,0x42778A9F),
+                sceSasCore_A0CF2FA4(0x22f1,0xA0CF2FA4), 
+                sceSasCore_76F01ACA(0x22f2,0x76F01ACA),
+                sceSasCore_F983B186(0x22f3,0xF983B186),
+                sceSasCore_D5A229C9(0x22f4,0xD5A229C9), 
+                sceSasCore_33D4AB37(0x22f5,0x33D4AB37),
+                sceSasCore_267A6DD2(0x22f6,0x267A6DD2), 
+                sceSasCore_2c8e6ab3(0x22f7,0x2c8e6ab3),
+                sceSasCore_787d04d5(0x22f8,0x787d04d5),
+                sceSasCore_a232cbe6(0x22f9,0xa232cbe6),
+                sceSasCore_d5ebbbcd(0x22fa,0xd5ebbbcd),
+                /*sceSasCore the following 4 appears to be on Firmware 3.00 and after but add it just in case */
+                 sceSasCore_bd11b7c2(0x22fb,0xbd11b7c2), 		  		 
+ 	         sceSasCore_d1e0a01e(0x22fc,0xd1e0a01e),		  		 
+ 	         sceSasCore_e175ef66(0x22fd,0xe175ef66),		 
+ 	         sceSasCore_e855bf76(0x22fe,0xe855bf76);
             //implement syscall
             private int syscall;
             private int NID;
