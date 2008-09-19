@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules;
 
+import jpcsp.HLE.pspSysMem;
 import jpcsp.Memory;
 import jpcsp.Processor;
 
@@ -28,20 +29,39 @@ public class StdioForUser implements HLEModule {
     @Override public final String getName() { return "StdioForUser"; };
 
     @Override
-    public void installModule(HLEModuleManager mm) {
-        mm.add(sceKernelStdin);
+    public void installModule(HLEModuleManager mm, int version) {
+        if (version >= pspSysMem.PSP_FIRMWARE_271)
+            mm.add(sceKernelStdin271);
+        else
+            mm.add(sceKernelStdin150);
+
         mm.add(sceKernelStdout);
         mm.add(sceKernelStderr);
     }
-    
+
     @Override
-    public void uninstallModule(HLEModuleManager mm) {
-        mm.remove(sceKernelStdin);
+    public void uninstallModule(HLEModuleManager mm, int version) {
+        if (version >= pspSysMem.PSP_FIRMWARE_271)
+            mm.remove(sceKernelStdin271);
+        else
+            mm.remove(sceKernelStdin150);
+
         mm.remove(sceKernelStdout);
         mm.remove(sceKernelStderr);
     }
 
-    public static final HLEModuleFunction sceKernelStdin =
+    public static final HLEModuleFunction sceKernelStdin150 =
+            new HLEModuleFunction("StdioForUser", "sceKernelStdin", 0x172D316E) {
+        @Override
+        public void execute(Processor cpu, Memory mem) {
+            cpu.gpr[2] = 3;
+        }
+    };
+
+    // The code is exactly the same as 150, but it's an example of how different
+    // firmware can be handled.
+    // Here we can change the functionality and the NID.
+    public static final HLEModuleFunction sceKernelStdin271 =
             new HLEModuleFunction("StdioForUser", "sceKernelStdin", 0x172D316E) {
         @Override
         public void execute(Processor cpu, Memory mem) {

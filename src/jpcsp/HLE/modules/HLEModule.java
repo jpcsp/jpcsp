@@ -23,6 +23,6 @@ package jpcsp.HLE.modules;
  */
 public interface HLEModule {
     public String getName();
-    public void installModule(HLEModuleManager mm);
-    public void uninstallModule(HLEModuleManager mm);
+    public void installModule(HLEModuleManager mm, int version);
+    public void uninstallModule(HLEModuleManager mm, int version);
 }

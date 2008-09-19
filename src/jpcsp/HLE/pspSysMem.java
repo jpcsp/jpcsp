@@ -30,6 +30,7 @@ import jpcsp.GeneralJpcspException;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import static jpcsp.util.Utilities.*;
+
 /**
  *
  * @author shadow
@@ -46,7 +47,19 @@ public class pspSysMem {
     public static final int PSP_SMEM_Addr = 2;
     public static final int PSP_SMEM_LowAligned = 3;
     public static final int PSP_SMEM_HighAligned = 4;
-    
+
+    // Firmware versions
+    public static final int PSP_FIRMWARE_100 = 0x01000300;
+    public static final int PSP_FIRMWARE_150 = 0x01050001;
+    public static final int PSP_FIRMWARE_151 = 0x01050100;
+    public static final int PSP_FIRMWARE_152 = 0x01050200;
+    public static final int PSP_FIRMWARE_200 = 0x02000010;
+    public static final int PSP_FIRMWARE_201 = 0x02000010; // Same as 2.00
+    public static final int PSP_FIRMWARE_250 = 0x02050010;
+    public static final int PSP_FIRMWARE_260 = 0x02060010;
+    public static final int PSP_FIRMWARE_270 = 0x02070010;
+    public static final int PSP_FIRMWARE_271 = 0x02070110;
+
     private pspSysMem() { }
 
     public static pspSysMem get_instance() {
@@ -133,7 +146,7 @@ public class pspSysMem {
         }
     }
 
-    public void free(SysMemInfo info)
+    private void free(SysMemInfo info)
     {
         // TODO
     }
@@ -224,8 +237,9 @@ public class pspSysMem {
     public void sceKernelDevkitVersion()
     {
         // Return 1.5 for now
-        System.out.println("sceKernelDevkitVersion 0x01050100");
-        Emulator.getProcessor().gpr[2] = 0x01050100;
+        int version = PSP_FIRMWARE_150;
+        System.out.println("sceKernelDevkitVersion 0x" + Integer.toHexString(version));
+        Emulator.getProcessor().gpr[2] = version;
     }
 
     class SysMemInfo {
