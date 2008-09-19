@@ -30,8 +30,8 @@ public class StdioForUser implements HLEModule {
 
     @Override
     public void installModule(HLEModuleManager mm, int version) {
-        // Here we can change the functionality and/or the NID based on the
-        // firmware version.
+        // Here we can change the NID.
+		// We also choose which implementation of the function to use here.
         if (version >= pspSysMem.PSP_FIRMWARE_271)
             mm.add(sceKernelStdin271, 0x172D316E);
         else
@@ -60,9 +60,7 @@ public class StdioForUser implements HLEModule {
         }
     };
 
-    // The code is exactly the same as 150, but it's an example of how different
-    // firmware can be handled.
-    // Here we can change the functionality and the NID.
+    // Here we can change the implementation of the function (but it's identical for this example)
     public static final HLEModuleFunction sceKernelStdin271 =
             new HLEModuleFunction("StdioForUser", "sceKernelStdin") {
         @Override
