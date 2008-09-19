@@ -28,12 +28,11 @@ public abstract class HLEModuleFunction {
     private int syscallCode;
     private final String moduleName;
     private final String functionName;
-    private final int nid;
+    private int nid;
 
-    public HLEModuleFunction(String moduleName, String functionName, int nid) {
+    public HLEModuleFunction(String moduleName, String functionName) {
         this.moduleName = moduleName;
         this.functionName = functionName;
-        this.nid = nid;
     }
 
     public final void setSyscallCode(int syscallCode) {
@@ -50,6 +49,10 @@ public abstract class HLEModuleFunction {
 
     public final String getFunctionName() {
         return functionName;
+    }
+
+    public final void setNid(int nid) {
+        this.nid = nid;
     }
 
     public final int getNid() {

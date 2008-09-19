@@ -63,7 +63,9 @@ public class HLEModuleManager {
         }
     }
 
-    public void add(HLEModuleFunction func) {
+    public void add(HLEModuleFunction func, int nid) {
+        func.setNid(nid);
+
         // See if a known syscall code exists for this NID
         int code = NIDMapper.get_instance().nidToSyscall(func.getNid());
         if (code == -1) {
