@@ -19,6 +19,7 @@ package jpcsp.HLE.modules;
 
 import java.util.HashMap;
 import jpcsp.Emulator;
+import jpcsp.HLE.pspSysMem;
 import jpcsp.Memory;
 import jpcsp.NIDMapper;
 
@@ -32,10 +33,11 @@ public class HLEModuleManager {
     private HashMap<Integer, HLEModuleFunction> syscallCodeToFunction;
     private int syscallCodeAllocator;
 
+    // TODO add more modules here
     private HLEModule[] defaultModules = new HLEModule[] {
         new StdioForUser()
     };
-    
+
     public static HLEModuleManager get_instance() {
         if (instance == null) {
             instance = new HLEModuleManager();
@@ -45,17 +47,19 @@ public class HLEModuleManager {
 
     public void Initialise() {
         syscallCodeToFunction = new HashMap<Integer, HLEModuleFunction>();
-        
+
         // Official syscalls start at 0x2000,
         // so we'll put the HLE syscalls far away at 0x4000.
         syscallCodeAllocator = 0x4000;
-        
-        installDefaultModules();
+
+        installDefaultModules(pspSysMem.PSP_FIRMWARE_150);
     }
-    
-    private void installDefaultModules() {
+
+    /** @param version The firmware version of the module to load.
+     * @see pspSysMem */
+    private void installDefaultModules(int version) {
         for (HLEModule module : defaultModules) {
-            module.installModule(this);
+            module.installModule(this, version);
         }
     }
 
