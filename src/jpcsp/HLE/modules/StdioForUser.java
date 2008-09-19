@@ -30,13 +30,15 @@ public class StdioForUser implements HLEModule {
 
     @Override
     public void installModule(HLEModuleManager mm, int version) {
+        // Here we can change the functionality and/or the NID based on the
+        // firmware version.
         if (version >= pspSysMem.PSP_FIRMWARE_271)
-            mm.add(sceKernelStdin271);
+            mm.add(sceKernelStdin271, 0x172D316E);
         else
-            mm.add(sceKernelStdin150);
+            mm.add(sceKernelStdin150, 0x172D316E);
 
-        mm.add(sceKernelStdout);
-        mm.add(sceKernelStderr);
+        mm.add(sceKernelStdout, 0xa6bab2e9);
+        mm.add(sceKernelStderr, 0xf78ba90a);
     }
 
     @Override
@@ -51,7 +53,7 @@ public class StdioForUser implements HLEModule {
     }
 
     public static final HLEModuleFunction sceKernelStdin150 =
-            new HLEModuleFunction("StdioForUser", "sceKernelStdin", 0x172D316E) {
+            new HLEModuleFunction("StdioForUser", "sceKernelStdin") {
         @Override
         public void execute(Processor cpu, Memory mem) {
             cpu.gpr[2] = 3;
@@ -62,7 +64,7 @@ public class StdioForUser implements HLEModule {
     // firmware can be handled.
     // Here we can change the functionality and the NID.
     public static final HLEModuleFunction sceKernelStdin271 =
-            new HLEModuleFunction("StdioForUser", "sceKernelStdin", 0x172D316E) {
+            new HLEModuleFunction("StdioForUser", "sceKernelStdin") {
         @Override
         public void execute(Processor cpu, Memory mem) {
             cpu.gpr[2] = 3;
@@ -70,7 +72,7 @@ public class StdioForUser implements HLEModule {
     };
 
     public static final HLEModuleFunction sceKernelStdout =
-            new HLEModuleFunction("StdioForUser", "sceKernelStdout", 0xa6bab2e9) {
+            new HLEModuleFunction("StdioForUser", "sceKernelStdout") {
         @Override
         public void execute(Processor cpu, Memory mem) {
             cpu.gpr[2] = 1;
@@ -78,7 +80,7 @@ public class StdioForUser implements HLEModule {
     };
 
     public static final HLEModuleFunction sceKernelStderr =
-            new HLEModuleFunction("StdioForUser", "sceKernelStderr", 0xf78ba90a) {
+            new HLEModuleFunction("StdioForUser", "sceKernelStderr") {
         @Override
         public void execute(Processor cpu, Memory mem) {
             cpu.gpr[2] = 2;
