@@ -270,7 +270,8 @@ public class pspAudio {
             ret = doAudioFlush(channel);
         }
 
-        Emulator.getProcessor().gpr[2] = ret; //just return the first channel
+        Emulator.getProcessor().gpr[2] = ret;
+        ThreadMan.get_instance().yieldCurrentThread();
     }
 
     //Output panned audio of the specified channel.
@@ -290,6 +291,7 @@ public class pspAudio {
         ret = doAudioOutput(channel,pvoid_buf);
         if(ret>=0) ret=doAudioFlush(channel);
         Emulator.getProcessor().gpr[2] = ret;
+        ThreadMan.get_instance().yieldCurrentThread();
     }
     
     //Get count of unplayed samples remaining.
@@ -366,77 +368,80 @@ public class pspAudio {
     //Reserve the audio output and set the output sample count.
     public void sceAudioOutput2Reserve (int samplecount)
     {
-    Emulator.getProcessor().gpr[2] = -1; //just return the first channel
+        Emulator.getProcessor().gpr[2] = -1;
     }
     //Release the audio output.
     public void sceAudioOutput2Release ()
     {
-    Emulator.getProcessor().gpr[2] = -1; //just return the first channel
+        Emulator.getProcessor().gpr[2] = -1;
     }
     //Change the output sample count, after it's already been reserved.
     public void sceAudioOutput2ChangeLength (int samplecount)
     {
-    Emulator.getProcessor().gpr[2] = -1; //just return the first channel
+        Emulator.getProcessor().gpr[2] = -1;
     }
     //Output audio (blocking).
     public void sceAudioOutput2OutputBlocking (int vol, int pvoid_buf)
     {
-    Emulator.getProcessor().gpr[2] = -1; //just return the first channel
+        Emulator.getProcessor().gpr[2] = -1;
+        ThreadMan.get_instance().yieldCurrentThread();
     }
     //Get count of unplayed samples remaining.
     public void sceAudioOutput2GetRestSample ()
     {
-    Emulator.getProcessor().gpr[2] = -1; //just return the first channel
+        Emulator.getProcessor().gpr[2] = -1;
     }
     //Reserve the audio output.
     public void sceAudioSRCChReserve (int samplecount, int freq, int channels)
     {
-    Emulator.getProcessor().gpr[2] = -1; //just return the first channel
+        Emulator.getProcessor().gpr[2] = -1;
     }
     //Release the audio output.
     public void sceAudioSRCChRelease ()
     {
-    Emulator.getProcessor().gpr[2] = -1; //just return the first channel
+        Emulator.getProcessor().gpr[2] = -1;
     }
     //Output audio.
     public void sceAudioSRCOutputBlocking (int vol, int pvoid_buf)
     {
-    Emulator.getProcessor().gpr[2] = -1; //just return the first channel
+        Emulator.getProcessor().gpr[2] = -1;
+        ThreadMan.get_instance().yieldCurrentThread();
     }
     //Init audio input.
     public void sceAudioInputInit (int unknown1, int gain, int unknown2)
     {
-    Emulator.getProcessor().gpr[2] = -1; //just return the first channel
+        Emulator.getProcessor().gpr[2] = -1;
     }
     //Init audio input (with extra arguments).
     public void sceAudioInputInitEx (int p_pspAudioInputParams_params)
     {
-    Emulator.getProcessor().gpr[2] = -1; //just return the first channel
+        Emulator.getProcessor().gpr[2] = -1;
     }
     //Perform audio input (blocking).
     public void sceAudioInputBlocking (int samplecount, int freq, int pvoid_buf)
     {
-    Emulator.getProcessor().gpr[2] = -1; //just return the first channel
+        Emulator.getProcessor().gpr[2] = -1;
+        ThreadMan.get_instance().yieldCurrentThread();
     }
     //Perform audio input.
     public void sceAudioInput (int samplecount, int freq, int pvoid_buf)
     {
-    Emulator.getProcessor().gpr[2] = -1; //just return the first channel
+        Emulator.getProcessor().gpr[2] = -1;
     }
     //Get the number of samples that were acquired.
     public void sceAudioGetInputLength ()
     {
-    Emulator.getProcessor().gpr[2] = -1; //just return the first channel
+        Emulator.getProcessor().gpr[2] = -1;
     }
     //Wait for non-blocking audio input to complete.
     public void sceAudioWaitInputEnd ()
     {
-    Emulator.getProcessor().gpr[2] = -1; //just return the first channel
+        Emulator.getProcessor().gpr[2] = -1;
     }
     //Poll for non-blocking audio input status.
     public void sceAudioPollInputEnd ()
     {
-    Emulator.getProcessor().gpr[2] = -1; //just return the first channel
+        Emulator.getProcessor().gpr[2] = -1;
     }
 
 }

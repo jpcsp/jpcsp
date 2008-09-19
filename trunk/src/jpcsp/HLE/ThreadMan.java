@@ -139,7 +139,7 @@ public class ThreadMan {
             if (current_thread == idle0 || current_thread == idle1) {
                 continuousIdleCycles++;
                 // TODO figure out a decent number of cycles to wait
-                if (continuousIdleCycles > 1000) {
+                if (continuousIdleCycles > 1000000) {
                     System.out.println("Watch dog timer - pausing emulator");
                     Emulator.PauseEmu();
                 }
@@ -183,8 +183,6 @@ public class ThreadMan {
                 }
             }
         }
-
-        // TODO watch dog timer?
     }
 
     private void contextSwitch(SceKernelThreadInfo newthread) {
@@ -254,7 +252,33 @@ public class ThreadMan {
         return found;
     }
 
+    public int getCurrentThreadID() {
+        return current_thread.uid;
+    }
 
+    public void yieldCurrentThread()
+    {
+       contextSwitch(nextThread());
+    }
+    
+    public void blockCurrentThread()
+    {
+       current_thread.status = PspThreadStatus.PSP_THREAD_SUSPEND;
+       contextSwitch(nextThread());
+    }
+
+    public void unblockThread(int uid)
+    {
+        try {
+            SceUIDMan.get_instance().checkUidPurpose(uid, "ThreadMan-thread", false);
+        } catch(GeneralJpcspException e) {
+            // bad uid
+        }
+        SceKernelThreadInfo thread = threadlist.get(uid);
+        thread.status = PspThreadStatus.PSP_THREAD_READY;
+    }
+
+    
     public void ThreadMan_sceKernelCreateThread(int name_addr, int entry_addr,
         int initPriority, int stackSize, int attr, int option_addr) {
         String name = readStringZ(Memory.get_instance().mainmemory,
@@ -569,7 +593,7 @@ public class ThreadMan {
             stack_addr = mallocStack(stackSize); // TODO MemoryMan.mallocFromEnd(stackSize);
             if ((attr & PSP_THREAD_ATTR_NO_FILLSTACK) != PSP_THREAD_ATTR_NO_FILLSTACK)
                 memset(stack_addr - stackSize + 1, (byte)0xFF, stackSize);
-            gpReg_addr = 0; // ?
+            gpReg_addr = Emulator.getProcessor().gpr[28]; // ?
             currentPriority = initPriority;
             waitType = 0; // ?
             waitId = 0; // ?
@@ -635,6 +659,7 @@ public class ThreadMan {
         }
 
         /** For use in the scheduler */
+        @Override
         public int compare(SceKernelThreadInfo o1, SceKernelThreadInfo o2) {
             return o1.currentPriority - o2.currentPriority;
         }

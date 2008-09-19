@@ -172,6 +172,7 @@ public class pspctrl {
         }
 
         Emulator.getProcessor().gpr[2] = i;
+        ThreadMan.get_instance().yieldCurrentThread();
     }
 
     public void sceCtrlReadBufferNegative(int a0, int a1)
@@ -191,6 +192,7 @@ public class pspctrl {
         }
 
         Emulator.getProcessor().gpr[2] = i;
+        ThreadMan.get_instance().yieldCurrentThread();
     }
 
     public void sceCtrlPeekLatch(int a0) {
@@ -211,5 +213,6 @@ public class pspctrl {
         mem.write32(a0 +8, uiPress);
         mem.write32(a0 +12, uiRelease);
         Emulator.getProcessor().gpr[2] = 0;
+        ThreadMan.get_instance().yieldCurrentThread();
     }
 }
