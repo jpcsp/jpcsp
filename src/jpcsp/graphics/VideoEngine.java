@@ -18,10 +18,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics;
 
-import java.util.Iterator;
-import javax.media.opengl.GL;
-import jpcsp.Emulator;
 import static jpcsp.graphics.GeCommands.*;
+
+import java.nio.Buffer;
+import java.nio.ShortBuffer;
+import java.util.Iterator;
+
+import javax.media.opengl.GL;
+
+import jpcsp.Emulator;
+import jpcsp.Memory;
 
 public class VideoEngine {
 
@@ -64,16 +70,29 @@ public class VideoEngine {
     private float[] view_matrix = new float[4 * 4];
     private float[] view_uploaded_matrix = new float[4 * 4];
     
-    private float[] light_pos_0 = new float[4];
-    private float[] light_pos_1 = new float[4];
-    private float[] light_pos_2 = new float[4];
-    private float[] light_pos_3 = new float[4];
+    private float[] tex_envmap_matrix = new float[4*4];
+    
+    private float[][] light_pos = new float[4][4];
     
     int[] light_type = new int[4];
     
     float[] mat_ambient = new float[4];
     float[] mat_diffuse = new float[4];
     float[] spc_diffuse = new float[4];
+    
+    int texture_storage, texture_num_mip_maps, texture_swizzle;
+    int texture_base_pointer0, texture_width0, texture_height0;
+    int tex_min_filter = GL.GL_NEAREST;
+    int tex_mag_filter = GL.GL_NEAREST;
+    
+    float tex_translate_x = 0.f, tex_translate_y = 0.f;
+    float tex_scale_x = 1.f, tex_scale_y = 1.f;
+    
+    // opengl needed information/buffers
+    int[] gl_texture_id = new int[1];
+    int[] tmp_texture_buffer32 = new int[1024*1024];
+    short[] tmp_texture_buffer16 = new short[1024*1024];
+    int tex_map_mode = TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV;
 
     private boolean listIsOver;
     private DisplayList actualList; // The currently executing list
@@ -88,7 +107,7 @@ public class VideoEngine {
         VideoEngine engine = getEngine();
         engine.setFullScreenShoot(fullScreen);
         engine.setHardwareAcc(hardwareAccelerate);
-        engine.gl = gl;
+        engine.gl = gl;    	
         return engine;
     }
 
@@ -103,7 +122,8 @@ public class VideoEngine {
     private VideoEngine() {
     	model_matrix[0] = model_matrix[5] = model_matrix[10] = model_matrix[15] = 1.f;
     	view_matrix[0] = view_matrix[5] = view_matrix[10] = view_matrix[15] = 1.f;
-    	light_pos_0[3] = light_pos_1[3] = light_pos_2[3] = light_pos_3[3] = 1.f;
+    	tex_envmap_matrix[0] = tex_envmap_matrix[5] = tex_envmap_matrix[10] = tex_envmap_matrix[15] = 1.f;
+    	light_pos[0][3] = light_pos[1][3] = light_pos[2][3] = light_pos[3][3] = 1.f;
     }
 
     // call from GL thread
@@ -195,7 +215,7 @@ public class VideoEngine {
                 log(helper.getCommandString(VTYPE) + " " + vinfo.toString());
                 break;
 
-            /*case TME:
+            case TME:
                 if (normalArgument != 0) {
                     gl.glEnable(GL.GL_TEXTURE_2D);
                     log("sceGuEnable(GU_TEXTURE_2D)");
@@ -203,7 +223,7 @@ public class VideoEngine {
                     gl.glDisable(GL.GL_TEXTURE_2D);
                     log("sceGuDisable(GU_TEXTURE_2D)");
                 }
-                break;*/
+                break;
                 
             case VMS:
                 view_upload_start = true;
@@ -275,13 +295,13 @@ public class VideoEngine {
                 
             // Position
             case LXP0:
-            	light_pos_0[0] = floatArgument;
+            	light_pos[0][0] = floatArgument;
             	break;
             case LYP0:
-            	light_pos_0[1] = floatArgument;
+            	light_pos[0][1] = floatArgument;
             	break;
             case LZP0:
-            	light_pos_0[2] = floatArgument;            	
+            	light_pos[0][2] = floatArgument;            	
             	break;
             
             // Color
@@ -343,13 +363,13 @@ public class VideoEngine {
             	
             // Position
             case LXP1:
-            	light_pos_1[0] = floatArgument;
+            	light_pos[1][0] = floatArgument;
             	break;
             case LYP1:
-            	light_pos_1[1] = floatArgument;
+            	light_pos[1][1] = floatArgument;
             	break;
             case LZP1:
-            	light_pos_1[2] = floatArgument;
+            	light_pos[1][2] = floatArgument;
             	break;
             	
             // Color	
@@ -411,13 +431,13 @@ public class VideoEngine {
             	
             // Position
             case LXP2:
-            	light_pos_2[0] = floatArgument;
+            	light_pos[2][0] = floatArgument;
             	break;
             case LYP2:
-            	light_pos_2[1] = floatArgument;
+            	light_pos[2][1] = floatArgument;
             	break;
             case LZP2:
-            	light_pos_2[2] = floatArgument;
+            	light_pos[2][2] = floatArgument;
             	break;
             
             // Color
@@ -479,13 +499,13 @@ public class VideoEngine {
             	
             // Position
             case LXP3:
-            	light_pos_3[0] = floatArgument;
+            	light_pos[3][0] = floatArgument;
             	break;
             case LYP3:
-            	light_pos_3[1] = floatArgument;
+            	light_pos[3][1] = floatArgument;
             	break;
             case LZP3:
-            	light_pos_3[2] = floatArgument;
+            	light_pos[3][2] = floatArgument;
             	break;
             
             // Color
@@ -550,36 +570,36 @@ public class VideoEngine {
             	light_type[0] = normalArgument;
             	
             	if (light_type[0] == LIGTH_DIRECTIONAL)
-            		light_pos_0[3] = 0.f;
+            		light_pos[0][3] = 0.f;
             	else
-            		light_pos_0[3] = 1.f;
+            		light_pos[0][3] = 1.f;
             	break;
         	}
             case LT1: {
             	light_type[1] = normalArgument;
             	
             	if (light_type[1] == LIGTH_DIRECTIONAL)
-            		light_pos_1[3] = 0.f;
+            		light_pos[1][3] = 0.f;
             	else
-            		light_pos_1[3] = 1.f;
+            		light_pos[1][3] = 1.f;
             	break;
         	}
             case LT2: {
             	light_type[2] = normalArgument;
             	
             	if (light_type[2] == LIGTH_DIRECTIONAL)
-            		light_pos_2[3] = 0.f;
+            		light_pos[2][3] = 0.f;
             	else
-            		light_pos_2[3] = 1.f;
+            		light_pos[2][3] = 1.f;
             	break;
         	}
             case LT3: {
             	light_type[3] = normalArgument;
             	
             	if (light_type[3] == LIGTH_DIRECTIONAL)
-            		light_pos_3[3] = 0.f;
+            		light_pos[3][3] = 0.f;
             	else
-            		light_pos_3[3] = 1.f;
+            		light_pos[3][3] = 1.f;
             	break;
         	}
             
@@ -696,7 +716,207 @@ public class VideoEngine {
                     }
                 }
                 break;
+                
+            /*
+             * 
+             */
+            case TBP0:         	
+            	texture_base_pointer0 = 0x08000000 | normalArgument;
+            	log ("sceGuTexImage(X,X,X,X,pointer)");            	
+            	break;
+            	
+            case TSIZE0:
+            	texture_height0 = 1 << ((normalArgument>>8) & 0xFF);
+            	texture_width0  = 1 << ((normalArgument   ) & 0xFF);
+            	log ("sceGuTexImage(X,width,height,X,0)"); 
+            	break;
+            	
+            case TMODE:
+            	texture_num_mip_maps = (normalArgument>>16) & 0xFF;
+            	texture_swizzle 	 = (normalArgument    ) & 0xFF;
+            	break;
+            	
+            case TPSM:
+            	texture_storage = normalArgument;
+            	break;
+            	
+            case TFLUSH:
+            {
+            	// HACK: avoid texture uploads of null pointers
+            	if (texture_base_pointer0 == 0x08000000)
+            		break;
+            	
+            	// Generate a texture id if we don't have one
+            	if (gl_texture_id[0] == 0)                	
+                	gl.glGenTextures(1, gl_texture_id, 0);
+            	
 
+            	// Extract texture information with the minor conversion possible
+            	// TODO: Get rid of information copying, and implementent all the available formats            	
+            	Memory 	mem = Emulator.getMemory();
+            	Buffer 	final_buffer = null;
+            	int 	texture_type = 0;
+            	            	
+            	switch (texture_storage) {
+            		case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444: {   
+            			texture_type = GL.GL_UNSIGNED_SHORT_4_4_4_4_REV;
+            			
+                    	for (int i = 0; i < texture_width0*texture_height0; i++) {
+                    		int pixel = mem.read16(texture_base_pointer0+i*2);                    		
+                    		tmp_texture_buffer16[i] = (short)pixel;
+                    	}
+                    	
+                    	final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);                    	
+            			break;
+            		}
+            		default: {
+            			System.out.println("Unhandled texture storage " + texture_storage);
+                        Emulator.PauseEmu();
+                        break;
+            		}
+            	}
+            	
+            	// Upload texture to openGL
+            	// TODO: Write a texture cache :)
+            	gl.glBindTexture  (GL.GL_TEXTURE_2D, gl_texture_id[0]);
+            	gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, tex_min_filter);
+            	gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_mag_filter);
+            	
+            	gl.glTexImage2D  (	GL.GL_TEXTURE_2D, 
+            						0, 
+            						GL.GL_RGBA, 
+            						texture_width0, texture_height0, 
+            						0, 
+            						GL.GL_RGBA, 
+            						texture_type,
+            						final_buffer);
+            	break;
+            }
+            
+            case TFLT: {
+            	log ("sceGuTexFilter(min, mag)");
+            	
+            	switch ((normalArgument>>8) & 0xFF)
+            	{            	
+	            	case TFLT_MAGNIFYING_FILTER_NEAREST: {
+	            		tex_mag_filter = GL.GL_NEAREST;
+	            		break;
+	            	}
+	            	case TFLT_MAGNIFYING_FILTER_LINEAR: {
+	            		tex_mag_filter = GL.GL_LINEAR;
+	            		break;
+	            	}
+	            	case TFLT_MAGNIFYING_FILTER_MIPMAP_NEAREST_NEAREST: {
+	            		tex_mag_filter = GL.GL_NEAREST_MIPMAP_NEAREST;
+	            		break;
+	            	}
+	            	case TFLT_MAGNIFYING_FILTER_MIPMAP_NEAREST_LINEAR: {
+	            		tex_mag_filter = GL.GL_NEAREST_MIPMAP_LINEAR;
+	            		break;
+	            	}
+	            	case TFLT_MAGNIFYING_FILTER_MIPMAP_LINEAR_NEAREST: {
+	            		tex_mag_filter = GL.GL_LINEAR_MIPMAP_NEAREST;
+	            		break;
+	            	}
+	            	case TFLT_MAGNIFYING_FILTER_MIPMAP_LINEAR_LINEAR: {
+	            		tex_mag_filter = GL.GL_LINEAR_MIPMAP_LINEAR;
+	            		break;
+	            	}
+	            	
+	            	default: {
+	            		log ("Unknown magnifiying filter " + ((normalArgument>>8) & 0xFF));	            
+	            		break;
+	            	}
+            	}
+            	
+            	switch (normalArgument & 0xFF)
+            	{            	
+	            	case TFLT_MAGNIFYING_FILTER_NEAREST: {
+	            		tex_min_filter = GL.GL_NEAREST;
+	            		break;
+	            	}
+	            	case TFLT_MAGNIFYING_FILTER_LINEAR: {
+	            		tex_min_filter = GL.GL_LINEAR;
+	            		break;
+	            	}
+	            	case TFLT_MAGNIFYING_FILTER_MIPMAP_NEAREST_NEAREST: {
+	            		tex_min_filter = GL.GL_NEAREST_MIPMAP_NEAREST;
+	            		break;
+	            	}
+	            	case TFLT_MAGNIFYING_FILTER_MIPMAP_NEAREST_LINEAR: {
+	            		tex_min_filter = GL.GL_NEAREST_MIPMAP_LINEAR;
+	            		break;
+	            	}
+	            	case TFLT_MAGNIFYING_FILTER_MIPMAP_LINEAR_NEAREST: {
+	            		tex_min_filter = GL.GL_LINEAR_MIPMAP_NEAREST;
+	            		break;
+	            	}
+	            	case TFLT_MAGNIFYING_FILTER_MIPMAP_LINEAR_LINEAR: {
+	            		tex_min_filter = GL.GL_LINEAR_MIPMAP_LINEAR;
+	            		break;
+	            	}
+	            	
+	            	default: {
+	            		log ("Unknown minimizing filter " + (normalArgument & 0xFF));	            
+	            		break;
+	            	}
+            	} 	
+            	
+            	break;
+            }
+            
+
+            
+            /*
+             * Texture transformations
+             */            
+            case UOFFSET: {
+            	tex_translate_x = floatArgument;
+            	log ("sceGuTexOffset(float u, X)");
+            	break;
+            }
+            
+            case VOFFSET: {
+            	tex_translate_y = floatArgument;
+            	log ("sceGuTexOffset(X, float v)");
+            	break;
+            }
+            
+            case USCALE: {
+            	tex_scale_x = floatArgument;
+            	log ("sceGuTexScale(float u, X)");
+            	break;
+            }
+            case VSCALE: {
+            	tex_scale_y = floatArgument;
+            	log ("sceGuTexScale(X, float v)");
+            	break;
+            }
+            
+            case TMAP: {
+            	log ("sceGuTexMapMode(mode, X, X)");            	
+            	tex_map_mode = normalArgument;
+            	break;
+            }
+            
+            case TEXTURE_ENV_MAP_MATRIX: {
+            	log ("sceGuTexMapMode(X, column1, column2)");
+            	
+            	if (normalArgument != 0) {
+            		int column0 =  normalArgument     & 0xFF,
+            			column1 = (normalArgument>>8) & 0xFF;
+            		
+            		for (int i = 0; i < 3; i++) {
+            			tex_envmap_matrix [i+0] = light_pos[column0][i];
+            			tex_envmap_matrix [i+4] = light_pos[column1][i];
+            		}
+            	}
+            	break;
+            }
+
+            /*
+             * 
+             */
             case XSCALE:
                 log("sceGuViewport width = " + (floatArgument * 2));
                 break;
@@ -788,6 +1008,39 @@ public class VideoEngine {
                 gl.glPushMatrix ();
                 gl.glLoadMatrixf(proj_uploaded_matrix, 0);
                 
+                /*
+                 * Apply texture transforms
+                 */
+                gl.glMatrixMode(GL.GL_TEXTURE);
+                gl.glPushMatrix ();
+                gl.glTranslatef (tex_translate_x, tex_translate_y, 0.f);
+                gl.glScalef		(tex_scale_x, tex_scale_y, 1.f);
+                
+                switch (tex_map_mode) {
+	                case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV:
+	                	break;
+	                	
+	                case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP: {
+	                	
+	                	// First, setup texture uv generation
+	                	gl.glTexGeni(GL.GL_S, GL.GL_TEXTURE_GEN_MODE, GL.GL_SPHERE_MAP);
+	                	gl.glEnable (GL.GL_TEXTURE_GEN_S);
+	                	
+	                	gl.glTexGeni(GL.GL_T, GL.GL_TEXTURE_GEN_MODE, GL.GL_SPHERE_MAP);
+	                	gl.glEnable (GL.GL_TEXTURE_GEN_T);                	
+	                	
+	                	// Setup also textura matrix
+	                	gl.glMultMatrixf (tex_envmap_matrix, 0);
+	                	break;
+	                }
+	                
+	                default:
+	                	log ("Unhandled textura matrix mode " + tex_map_mode);
+                }
+                
+                /*
+                 * Apply view matrix
+                 */
                 gl.glMatrixMode(GL.GL_MODELVIEW);
                 gl.glPushMatrix ();
                 gl.glLoadMatrixf(view_uploaded_matrix, 0);
@@ -795,10 +1048,10 @@ public class VideoEngine {
                 /*
                  *  Setup lights on when view transformation is set up
                  */
-                gl.glLightfv(GL.GL_LIGHT0, GL.GL_POSITION, light_pos_0, 0);
-                gl.glLightfv(GL.GL_LIGHT1, GL.GL_POSITION, light_pos_1, 0);
-                gl.glLightfv(GL.GL_LIGHT2, GL.GL_POSITION, light_pos_2, 0);
-                gl.glLightfv(GL.GL_LIGHT3, GL.GL_POSITION, light_pos_3, 0);
+                gl.glLightfv(GL.GL_LIGHT0, GL.GL_POSITION, light_pos[0], 0);
+                gl.glLightfv(GL.GL_LIGHT1, GL.GL_POSITION, light_pos[1], 0);
+                gl.glLightfv(GL.GL_LIGHT2, GL.GL_POSITION, light_pos[2], 0);
+                gl.glLightfv(GL.GL_LIGHT3, GL.GL_POSITION, light_pos[3], 0);
                 
                 // Apply model matrix
                 gl.glMultMatrixf(model_uploaded_matrix, 0);
@@ -860,8 +1113,18 @@ public class VideoEngine {
                         break;
                 }
                 
+                switch (tex_map_mode) {
+                	case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP: {
+		            	gl.glDisable (GL.GL_TEXTURE_GEN_S);
+		            	gl.glDisable (GL.GL_TEXTURE_GEN_T);
+		            	break;
+		            }
+		        }
+                
                 gl.glPopMatrix ();
-                gl.glMatrixMode(GL.GL_PROJECTION);
+                gl.glMatrixMode(GL.GL_TEXTURE);
+                gl.glPopMatrix ();
+                gl.glMatrixMode(GL.GL_PROJECTION);                
                 gl.glPopMatrix ();
                 gl.glMatrixMode(GL.GL_MODELVIEW);
                 
