@@ -630,11 +630,7 @@ private void DumpCodeToTextActionPerformed(java.awt.event.ActionEvent evt) {//GE
 //Following methods are for the JPopmenu in Jlist
 private void CopyAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CopyAddressActionPerformed
     String value = (String)disasmList.getSelectedValue();
-    String address;
-    if(value.startsWith("<*>"))
-      address = value.substring(4, 12);
-    else
-      address = value.substring(0, 8);
+    String address = value.substring(3, 11);
     StringSelection stringSelection = new StringSelection( address);
     Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
     clipboard.setContents(stringSelection, this);
