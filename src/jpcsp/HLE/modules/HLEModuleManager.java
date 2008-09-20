@@ -35,7 +35,8 @@ public class HLEModuleManager {
 
     // TODO add more modules here
     private HLEModule[] defaultModules = new HLEModule[] {
-        new StdioForUser()
+        new StdioForUser(),
+        new sceUmdUser()
     };
 
     public static HLEModuleManager get_instance() {
