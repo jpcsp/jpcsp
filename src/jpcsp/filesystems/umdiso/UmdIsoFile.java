@@ -76,15 +76,9 @@ public class UmdIsoFile extends SeekableInputStream {
     public long skip(long n) throws IOException
     {
         long oldOffset = currentOffset;
-        long newOffset = currentOffset + n;
         
         if(n<0)
             return n;
-        
-        if(newOffset>=maxOffset)
-        {
-            newOffset = maxOffset;
-        }
         
         seek(currentOffset+n);
         
