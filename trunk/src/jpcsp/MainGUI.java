@@ -86,7 +86,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         pspdisplay.get_instance().addKeyListener(this);
         this.addComponentListener(this);
         pack();
-        
+
         Insets insets = this.getInsets();
         Dimension minSize = new Dimension(
             480 + insets.left + insets.right,
@@ -395,6 +395,7 @@ public void loadFile(File file) {
 	    String findpath = file.getParent();
 	    //System.out.println(findpath);
 	    pspiofilemgr.get_instance().setfilepath(findpath);
+	    pspiofilemgr.get_instance().setIsoReader(null);
 	    this.setTitle(version + " - " + file.getName());
 	} catch (IOException e) {
 	    e.printStackTrace();
@@ -514,7 +515,7 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
    {
       if(umdbrowser==null)
       {
-      
+
       umdbrowser = new UmdBrowser(this, new File(Settings.get_instance().readStringOptions("emuoptions/umdpath") + "/"));
       Point mainwindow = this.getLocation();
       umdbrowser.setLocation(mainwindow.x+100, mainwindow.y+50);
@@ -524,16 +525,16 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
      {
       umdbrowser.refreshFiles();
       umdbrowser.setVisible(true);
-     } 
+     }
    }
    else
    {
     final JFileChooser fc = makeJFileChooser();
     fc.setDialogTitle("Open umd iso");
     int returnVal = fc.showOpenDialog(this);
-    
+
     if (userChooseSomething(returnVal)) {
-        File file = fc.getSelectedFile();      
+        File file = fc.getSelectedFile();
         loadUMD(file);
     } else {
         return; //user cancel the action
@@ -542,32 +543,35 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 }
 
 public void loadUMD(File file) {
-	try {
-	    UmdIsoReader iso = new UmdIsoReader(file.getPath());
-	    UmdIsoFile paramSfo = iso.getFile("PSP_GAME/param.sfo");
-	    
-	    System.out.println("---- Loading param.sfo from UMD ----");
-	    PSF params = new PSF(0);
-	    byte[] sfo = new byte[(int)paramSfo.length()];
-	    paramSfo.read(sfo);
-	    ByteBuffer buf = ByteBuffer.wrap(sfo);
-	    params.read(buf);
-	    System.out.println(params);
-	    System.out.println("------------------------------------");
-	    
-	    UmdIsoFile bootBin = iso.getFile("PSP_GAME/SYSDIR/boot.bin");
-	    byte[] bootfile = new byte[(int)bootBin.length()];
-	    bootBin.read(bootfile);
-	    ByteBuffer buf1 = ByteBuffer.wrap(bootfile);
-	    emulator.load(buf1);
-	  
-	} catch (IOException e) {
-	    e.printStackTrace();
-	    JpcspDialogManager.showError(this, "IO Error : " + e.getMessage());
-	} catch (Exception ex) {
-	    ex.printStackTrace();
-	    JpcspDialogManager.showError(this, "Critical Error : " + ex.getMessage());
-	}
+    try {
+        UmdIsoReader iso = new UmdIsoReader(file.getPath());
+        UmdIsoFile paramSfo = iso.getFile("PSP_GAME/param.sfo");
+
+        System.out.println("---- Loading param.sfo from UMD ----");
+        PSF params = new PSF(0);
+        byte[] sfo = new byte[(int)paramSfo.length()];
+        paramSfo.read(sfo);
+        ByteBuffer buf = ByteBuffer.wrap(sfo);
+        params.read(buf);
+        System.out.println(params);
+        System.out.println("------------------------------------");
+
+        UmdIsoFile bootBin = iso.getFile("PSP_GAME/SYSDIR/boot.bin");
+        byte[] bootfile = new byte[(int)bootBin.length()];
+        bootBin.read(bootfile);
+        ByteBuffer buf1 = ByteBuffer.wrap(bootfile);
+        emulator.load(buf1);
+
+        pspiofilemgr.get_instance().setfilepath("disc0/");
+        pspiofilemgr.get_instance().setIsoReader(iso);
+
+    } catch (IOException e) {
+        e.printStackTrace();
+        JpcspDialogManager.showError(this, "IO Error : " + e.getMessage());
+    } catch (Exception ex) {
+        ex.printStackTrace();
+        JpcspDialogManager.showError(this, "Critical Error : " + ex.getMessage());
+    }
 }
 
 private void ResetEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetEmuActionPerformed
