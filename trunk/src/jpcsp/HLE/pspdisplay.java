@@ -215,6 +215,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             gl.glViewport(0, 0, canvasWidth, canvasHeight);
         
         gl.glDisable(GL.GL_DEPTH_TEST);
+        gl.glDisable(GL.GL_LIGHTING);
         
         gl.glMatrixMode(GL.GL_PROJECTION);
         gl.glPushMatrix();
@@ -326,7 +327,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             gl.glCopyTexSubImage2D(
                 GL.GL_TEXTURE_2D, 0,
                 0, 0, 0, 0, width, height);
-        
+           
             temp.clear();
             pixels.clear();
             gl.glGetTexImage(

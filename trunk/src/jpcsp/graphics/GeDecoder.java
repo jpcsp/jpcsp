@@ -88,8 +88,8 @@ public class GeDecoder {
             case PSUB: break;
             case PPRIM: break;
             case PFACE: break;
-            case WMS: break;
-            case WORLD: break;
+            case MMS: break;
+            case MODEL: break;
             case VMS: break;
             case VIEW: break;
             case PMS: break;

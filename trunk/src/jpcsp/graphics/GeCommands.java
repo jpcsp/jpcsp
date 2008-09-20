@@ -124,8 +124,8 @@ public class GeCommands {
     public final static int PPRIM = 0x37;// 	PPRIM 	Patch Primitive
     public final static int PFACE = 0x38;// 	PFACE 	Patch Front Face
     public final static int UNKNOWCOMMAND_0x39 = 0x39;
-    public final static int WMS = 0x3A;// 	WMS 	World Matrix Select
-    public final static int WORLD = 0x3B;// 	WORLD 	World Matrix Upload
+    public final static int MMS = 0x3A;// 	MDL 	Model Matrix Select
+    public final static int MODEL = 0x3B;// MODEL 	Model Matrix Upload
     public final static int VMS = 0x3C;// 	VMS 	View Matrix Select
     public final static int VIEW = 0x3D;// 	VIEW 	View Matrix upload
     public final static int PMS = 0x3E;// 	PMS 	Projection matrix Select
@@ -633,8 +633,8 @@ public class GeCommands {
         commands[PMS]="pms";
         commands[VIEW]="view";
         commands[VMS]="vms";
-        commands[WORLD]="world";
-        commands[WMS]="wms";
+        commands[MODEL]="model";
+        commands[MMS]="mms";
         commands[UNKNOWCOMMAND_0x39]="unk 0x39";
         commands[PFACE]="pface";
         commands[PPRIM]="pprim";
