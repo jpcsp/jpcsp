@@ -23,6 +23,7 @@ package jpcsp.HLE;
 
 //import java.io.BufferedOutputStream;
 import jpcsp.filesystems.*;
+import jpcsp.filesystems.umdiso.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -39,8 +40,7 @@ import static jpcsp.util.Utilities.*;
  */
 public class pspiofilemgr {
     private static pspiofilemgr  instance;
-    private static HashMap<Integer, IoInfo> filelist;
-    private static HashMap<Integer, IoDirInfo> dirlist;
+    private final boolean debug = true; //enable/disable debug
 
     public final static int PSP_O_RDONLY  = 0x0001;
     public final static int PSP_O_WRONLY  = 0x0002;
@@ -57,7 +57,11 @@ public class pspiofilemgr {
     public final static int PSP_SEEK_CUR  = 1;
     public final static int PSP_SEEK_END  = 2;
 
-    private final boolean debug = true; //enable/disable debug
+    private HashMap<Integer, IoInfo> filelist;
+    private HashMap<Integer, IoDirInfo> dirlist;
+
+    private String filepath; // current working directory on PC
+    private UmdIsoReader iso;
 
     public static pspiofilemgr get_instance() {
         if (instance == null) {
@@ -91,33 +95,11 @@ public class pspiofilemgr {
 
         //if (debug) System.out.println("getDeviceFilePath filename = " + filename);
 
-        /* Old version
-        if (pspfilename.startsWith("ms0")) { //found on fileio demo
-            int findslash = pspfilename.indexOf("/");
-            filename = "ms0/" + pspfilename.substring(findslash+1);
-        } else if (pspfilename.startsWith("/")) { //relative to where EBOOT.PBP is
-            //that absolute way will work either it is from memstrick browser
-            // either if it is from openfile menu
-            filename = filepath + "/" + pspfilename.substring(1);
-        }
-        else if (!pspfilename.contains("/"))//maybe absolute path
-        {
-            if(pspfilename.contains("'"))
-            {
-              if (debug) System.out.println("getDeviceFilePath removing ' character");
-              filename = filepath +"/"+ pspfilename.replace("'", ""); // remove '  //found on nesterj emu
-            }
-            else
-            {
-              filename= filepath +"/"+  pspfilename;
-            }
-
-        } else {
-            System.out.println("pspiofilemgr - Unsupported device '" + pspfilename + "'");
-        }
-        */
-
         return filename;
+    }
+
+    private boolean isUmdPath(String deviceFilePath) {
+        return deviceFilePath.startsWith("disc0/");
     }
 
     public void sceIoOpen(int filename_addr, int flags, int permissions) {
@@ -167,26 +149,48 @@ public class pspiofilemgr {
         try {
             String pcfilename = getDeviceFilePath(filename);
             if (pcfilename != null) {
-                if (debug) System.out.println("pspiofilemgr - opening file " + pcfilename);
+                if (debug) System.out.println("sceIoOpen - opening file " + pcfilename);
+                //if (debug) System.out.println("sceIoOpen - isUmdPath " + isUmdPath(pcfilename));
 
-                // First check if the file already exists
-                File file = new File(pcfilename);
-                if (file.exists() &&
-                    (flags & PSP_O_CREAT) == PSP_O_CREAT &&
-                    (flags & PSP_O_EXCL) == PSP_O_EXCL) {
-                    // PSP_O_CREAT + PSP_O_EXCL + file already exists = error
-                    if (debug) System.out.println("sceIoOpen - file already exists (PSP_O_CREAT + PSP_O_EXCL)");
-                    Emulator.getProcessor().gpr[2] = -1;
-                } else {
-                    if (file.exists() &&
+                if (isUmdPath(pcfilename)) {
+                    // check flags
+                    if ((flags & PSP_O_WRONLY) == PSP_O_WRONLY ||
+                        (flags & PSP_O_CREAT) == PSP_O_CREAT ||
                         (flags & PSP_O_TRUNC) == PSP_O_TRUNC) {
-                        if (debug) System.out.println("sceIoOpen - file already exists, deleting UNIMPLEMENT (PSP_O_TRUNC)");
-                        //file.delete();
+                        // should we refuse (return -1) or just ignore?
+                        System.out.println("sceIoOpen - refusing to open umd media for write");
+                        Emulator.getProcessor().gpr[2] = -1;
+                    } else {
+                        // open file
+                        try {
+                            UmdIsoFile file = iso.getFile(pcfilename.substring(6));
+                            IoInfo info = new IoInfo(file, mode, flags, permissions);
+                            Emulator.getProcessor().gpr[2] = info.uid;
+                        } catch(IOException e) {
+                            System.out.println("sceIoOpen - error opening umd media: " + e.getMessage());
+                            Emulator.getProcessor().gpr[2] = -1;
+                        }
                     }
+                } else {
+                    // First check if the file already exists
+                    File file = new File(pcfilename);
+                    if (file.exists() &&
+                        (flags & PSP_O_CREAT) == PSP_O_CREAT &&
+                        (flags & PSP_O_EXCL) == PSP_O_EXCL) {
+                        // PSP_O_CREAT + PSP_O_EXCL + file already exists = error
+                        if (debug) System.out.println("sceIoOpen - file already exists (PSP_O_CREAT + PSP_O_EXCL)");
+                        Emulator.getProcessor().gpr[2] = -1;
+                    } else {
+                        if (file.exists() &&
+                            (flags & PSP_O_TRUNC) == PSP_O_TRUNC) {
+                            if (debug) System.out.println("sceIoOpen - file already exists, deleting UNIMPLEMENT (PSP_O_TRUNC)");
+                            //file.delete();
+                        }
 
-                    SeekableRandomFile raf = new SeekableRandomFile(pcfilename, mode);
-                    IoInfo info = new IoInfo(raf, mode, flags, permissions);
-                    Emulator.getProcessor().gpr[2] = info.uid;
+                        SeekableRandomFile raf = new SeekableRandomFile(pcfilename, mode);
+                        IoInfo info = new IoInfo(raf, mode, flags, permissions);
+                        Emulator.getProcessor().gpr[2] = info.uid;
+                    }
                 }
             } else {
                 Emulator.getProcessor().gpr[2] = -1;
@@ -210,7 +214,7 @@ public class pspiofilemgr {
                     System.out.println("sceIoClose - unknown uid " + Integer.toHexString(uid));
                 Emulator.getProcessor().gpr[2] = -1;
             } else {
-                info.f.close();
+                info.readOnlyFile.close();
                 SceUIDMan.get_instance().releaseUid(info.uid, "IOFileManager-File");
                 Emulator.getProcessor().gpr[2] = 0;
             }
@@ -247,10 +251,10 @@ public class pspiofilemgr {
                 } else if ((data_addr >= MemoryMap.START_RAM ) && (data_addr <= MemoryMap.END_RAM)) {
                     if ((info.flags & PSP_O_APPEND) == PSP_O_APPEND) {
                         System.out.println("sceIoWrite - untested append operation");
-                        info.f.seek(info.f.length());
+                        info.msFile.seek(info.msFile.length());
                     }
 
-                    info.f.write(
+                    info.msFile.write(
                         Memory.get_instance().mainmemory.array(),
                         Memory.get_instance().mainmemory.arrayOffset() + data_addr - MemoryMap.START_RAM,
                         size);
@@ -285,10 +289,16 @@ public class pspiofilemgr {
                     System.out.println("sceIoRead - unknown uid " + Integer.toHexString(uid));
                     Emulator.getProcessor().gpr[2] = -1;
                 } else if ((data_addr >= MemoryMap.START_RAM ) && (data_addr <= MemoryMap.END_RAM)) {
-                    Emulator.getProcessor().gpr[2] = info.f.read(
+                    // Using readFully for ms/umd compatibility, but now we must
+                    // manually make sure it doesn't read off the end of the file.
+                    if (info.readOnlyFile.getFilePointer() + size > info.readOnlyFile.length())
+                        size = (int)(info.readOnlyFile.length() - info.readOnlyFile.getFilePointer());
+
+                    info.readOnlyFile.readFully(
                         Memory.get_instance().mainmemory.array(),
                         Memory.get_instance().mainmemory.arrayOffset() + data_addr - MemoryMap.START_RAM,
                         size);
+                    Emulator.getProcessor().gpr[2] = size;
                 } else {
                     System.out.println("sceIoRead - data is outside of ram " + Integer.toHexString(data_addr));
                     Emulator.getProcessor().gpr[2] = -1;
@@ -303,36 +313,49 @@ public class pspiofilemgr {
         }
     }
 
+
     // TODO sceIoLseek with 64-bit offset parameter and return value
+    public void sceIoLseek(int uid, long offset, int whence) {
+        if (debug) System.out.println("sceIoLseek - uid " + Integer.toHexString(uid) + " offset " + offset + " whence " + whence);
+        if (debug) System.out.println("sceIoLseek - offset 0x" + Long.toHexString(offset));
+        seek(uid, offset, whence);
+    }
+
     public void sceIoLseek32(int uid, int offset, int whence) {
         if (debug) System.out.println("sceIoLseek32 - uid " + Integer.toHexString(uid) + " offset " + offset + " whence " + whence);
+        if (debug) System.out.println("sceIoLseek - offset 0x" + Long.toHexString(offset));
+        seek(uid, offset, whence);
+    }
+
+    private void seek(int uid, long offset, int whence) {
+        if (debug) System.out.println("seek - uid " + Integer.toHexString(uid) + " offset " + offset + " whence " + whence);
 
         if (uid == 1 || uid == 2 || uid == 3) { // stdio
-            System.out.println("sceIoLseek32 - can't seek on stdio uid " + Integer.toHexString(uid));
+            System.out.println("seek - can't seek on stdio uid " + Integer.toHexString(uid));
             Emulator.getProcessor().gpr[2] = -1;
         } else {
             try {
                 SceUIDMan.get_instance().checkUidPurpose(uid, "IOFileManager-File", true);
                 IoInfo info = filelist.get(uid);
                 if (info == null) {
-                    System.out.println("sceIoLseek32 - unknown uid " + Integer.toHexString(uid));
+                    System.out.println("seek - unknown uid " + Integer.toHexString(uid));
                     Emulator.getProcessor().gpr[2] = -1;
                 } else {
                     switch(whence) {
                         case PSP_SEEK_SET:
-                            info.f.seek(offset);
+                            info.readOnlyFile.seek(offset);
                             break;
                         case PSP_SEEK_CUR:
-                            info.f.seek(info.f.getFilePointer() + offset);
+                            info.readOnlyFile.seek(info.readOnlyFile.getFilePointer() + offset);
                             break;
                         case PSP_SEEK_END:
-                            info.f.seek(info.f.length() - offset);
+                            info.readOnlyFile.seek(info.readOnlyFile.length() - offset);
                             break;
                         default:
-                            System.out.println("sceIoLseek32 - unhandled whence " + whence);
+                            System.out.println("seek - unhandled whence " + whence);
                             break;
                     }
-                    Emulator.getProcessor().gpr[2] = (int)info.f.getFilePointer();
+                    Emulator.getProcessor().gpr[2] = (int)info.readOnlyFile.getFilePointer();
                 }
             } catch(GeneralJpcspException e) {
                 e.printStackTrace();
@@ -495,26 +518,57 @@ public class pspiofilemgr {
     }
 
     //the following sets the filepath from memstick manager.
-    private String filepath;
     public void setfilepath(String filepath)
     {
         System.out.println("pspiofilemgr - filepath " + filepath);
         this.filepath = filepath;
     }
 
+    public void setIsoReader(UmdIsoReader iso)
+    {
+        if (iso != null)
+        {
+            System.out.println("pspiofilemgr - umd mounted " + iso.getFilename());
+        }
+        else
+        {
+            System.out.println("pspiofilemgr - umd unmounted");
+        }
+
+        this.iso = iso;
+    }
+
     class IoInfo {
         // Internal settings
-        final SeekableRandomFile f;
-        final String mode;
+        public final boolean isUmdMedia;
+        public final SeekableRandomFile msFile; // on memory stick
+        public final UmdIsoFile umdFile; // on umd
+        public final SeekableDataInput readOnlyFile;
+        public final String mode;
 
         // PSP settings
-        final int flags;
-        final int permissions;
+        public final int flags;
+        public final int permissions;
 
-        final int uid;
+        public final int uid;
 
         public IoInfo(SeekableRandomFile f, String mode, int flags, int permissions) {
-            this.f = f;
+            this.isUmdMedia = false;
+            this.msFile = f;
+            this.umdFile = null;
+            this.readOnlyFile = f;
+            this.mode = mode;
+            this.flags = flags;
+            this.permissions = permissions;
+            uid = SceUIDMan.get_instance().getNewUid("IOFileManager-File");
+            filelist.put(uid, this);
+        }
+
+        public IoInfo(UmdIsoFile f, String mode, int flags, int permissions) {
+            this.isUmdMedia = true;
+            this.msFile = null;
+            this.umdFile = f;
+            this.readOnlyFile = f;
             this.mode = mode;
             this.flags = flags;
             this.permissions = permissions;
@@ -552,110 +606,5 @@ public class pspiofilemgr {
             return filename;
         }
     }
-
-/*
-    private class IOInfo{
-        private int uid;
-        File f;
-        public boolean fileappend=false;
-        public IOInfo(String name,int a1,int a2)
-        {
-
-            if(name.substring(0, 3).matches("ms0"))//found on fileio demo
-            {
-              int findslash = name.indexOf("/");
-              String filename = name.substring(findslash+1,name.length());
-              f = new File("ms0/" + filename);
-            }
-            else if(name.substring(0,1).matches("/"))
-            {
-               //that absolute way will work either it is from memstrick browser
-               // either if it is from openfile menu
-               int findslash = name.indexOf("/");
-                String filename = name.substring(findslash+1,name.length());
-                f = new File(filepath +"/"+ filename);
-            }
-            else
-            {
-             System.out.println("SceIoFilemgr - Unsupported device for open");
-             uid=-1;
-             return;
-            }
-            if((a1 & PSP_O_CREAT) ==0x0200 )
-            {
-               if(debug) System.out.println("sceIoOpen - create new file");
-               try{
-                 if(!f.createNewFile())//if already exists maybe that isn't important but do it anyway
-                 {
-                   f.delete();//delete it
-                   f.createNewFile(); //and recreate it
-                 }
-               }
-               catch(Exception e)
-               {
-                  e.printStackTrace();
-               }
-             }
-             if(((a1 & PSP_O_RDONLY) == 0x0001))
-             {
-                if(debug)System.out.println("sceIoOpen - readonly");
-                f.setReadable(true);
-             }
-             if(((a1 & PSP_O_WRONLY)  == 0x0002)){
-                if(debug) System.out.println("sceIoOpen - writeonly");
-                f.setWritable(true);
-             }
-             if(((a1 & PSP_O_TRUNC)  == 0x0400))
-             {
-                //Okay the is probably a very bad way to do this.. but works.. anyone with better idea?
-                if(debug) System.out.println("sceIoOpen - Truncates");
-                try
-                {
-                  FileOutputStream fop = new FileOutputStream(f);
-                  BufferedOutputStream bos = new BufferedOutputStream(fop);
-                  PrintStream b = new PrintStream(bos,true);
-                  b.close();
-                  bos.close();
-                  fop.close();
-                }
-                catch(IOException e)
-                {
-                  e.printStackTrace();
-                }
-
-             }
-             if(((a1 & PSP_O_RDWR)  == 0x0003))
-             {
-                if(debug) System.out.println("sceIoOpen - Read/Write");
-                f.setReadable(true);
-                f.setWritable(true);
-             }
-             if(((a1 & PSP_O_APPEND)  == 0x0100))
-             {
-                  if(debug) System.out.println("sceIoOpen - Append file");
-                  fileappend=true;
-             }
-             if(((a1 & PSP_O_NBLOCK)  == 0x0004))
-             {
-                  if(debug) System.out.println("sceIoOpen - nblock unsupported!!");
-             }
-             if(((a1 & PSP_O_DIROPEN)  == 0x0008))
-             {
-                  if(debug) System.out.println("sceIoOpen - diropen unsupported!!");
-             }
-             if(((a1 & PSP_O_EXCL)  == 0x0800))
-             {
-               if(debug) System.out.println("sceIoOpen - excl unsupported!!");
-             }
-             if(((a1 & PSP_O_NOWAIT)  == 0x8000))
-             {
-                  if(debug) System.out.println("sceIoOpen - nowait unsupported!!");
-             }
-            uid = SceUIDMan.get_instance().getNewUid("IOFileManager-File");
-            filelist.put(uid, this);
-        }
-
-    }
-    */
 
 }

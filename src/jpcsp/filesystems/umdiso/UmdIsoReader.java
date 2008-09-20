@@ -16,9 +16,9 @@ import org.bolet.jgz.*;
  * @author gigaherz
  */
 public class UmdIsoReader {
-    
+
     RandomAccessFile fileReader;
-    
+
     enum FileFormat {
         Uncompressed,
         CompressedCSO,
@@ -26,31 +26,31 @@ public class UmdIsoReader {
         //...
         Unknown
     }
-    
+
     FileFormat format;
-    
+
     int numSectors;         //
     long[] sectorOffsets;    // for CSO/DAX
-    
+
     int offsetShift; // for CSO
-    
+
     String fileName;
-    
+
     private int Ubyte(byte b)
     {
         return ((int)b)&255;
     }
-    
+
     private int BytesToInt(byte[] bytes, int offset) throws ArrayIndexOutOfBoundsException
     {
         return Ubyte(bytes[offset+0]) | (Ubyte(bytes[offset+1])<<8) | (Ubyte(bytes[offset+2])<<16) | (bytes[offset+3]<<24);
     }
-     
+
     public UmdIsoReader(String umdFilename) throws IOException, FileNotFoundException
     {
         fileName = umdFilename;
         fileReader = new RandomAccessFile(umdFilename,"r");
-      
+
         /*
             u32 'CISO'
             u32 0?
@@ -59,36 +59,36 @@ public class UmdIsoReader {
             u32 ? (1)
             u32[] sector offsets (as many as image size / sector size, I guess)
         */
-        
+
         format = FileFormat.Uncompressed;
         numSectors = (int)(fileReader.length() / 2048);
-        
+
         byte[] id = new byte[24];
 
         fileReader.seek(0);
         fileReader.read(id);
-        
+
         if((((char)id[0])=='C')&&
            (((char)id[1])=='I')&&
            (((char)id[2])=='S')&&
            (((char)id[3])=='O'))
         {
             format = FileFormat.CompressedCSO;
-            
+
             int lenInbytes = BytesToInt(id,8);
             int sectorSize = BytesToInt(id,16);
-            
+
             //int version = Ubyte(id[20]);
             offsetShift = Ubyte(id[21]);
-            
+
             numSectors = lenInbytes/sectorSize;
 
             sectorOffsets = new long[numSectors+1];
-            
+
             byte[] offsetData = new byte[(numSectors+1)*4];
-            
+
             fileReader.read(offsetData);
-            
+
             for(int i=0;i<=numSectors;i++)
             {
                 sectorOffsets[i] = ((long)BytesToInt(offsetData, i*4))&0xFFFFFFFFl;
@@ -101,15 +101,15 @@ public class UmdIsoReader {
                 }
             }
         }
-        
+
         // when we reach here, we assume it's either a .ISO or a .CSO
         // but we still need to make sure of that
-        
+
         id = new byte[6];
 
         UmdIsoFile f = new UmdIsoFile(this, 16, 2048);
         f.read(id);
-        
+
         if((((char)id[1])=='C')&&
            (((char)id[2])=='D')&&
            (((char)id[3])=='0')&&
@@ -122,11 +122,11 @@ public class UmdIsoReader {
             }
             return;
         }
-        
+
         format = FileFormat.Unknown;
         throw new IOException("Unsupported file format or corrupt file.");
     }
-    
+
     public byte[] readSector(int sectorNumber) throws IOException
     {
         if((sectorNumber<0)||(sectorNumber>=numSectors))
@@ -172,7 +172,7 @@ public class UmdIsoReader {
             fileReader.read(compressedData);
 
             byte[] data = new byte[2048];
-            
+
             try {
                 Inflater inf = new Inflater();
 
@@ -186,19 +186,19 @@ public class UmdIsoReader {
                 System.err.print("Exception while uncompressing sector from " + fileName);
                 e.printStackTrace();
             }
-            
+
             return data;
         }
 
         throw new IOException("Unsupported file format or corrupt file.");
     }
-    
+
     public UmdIsoFile getFile(String filePath) throws IOException, FileNotFoundException
     {
         Iso9660Directory dir = new Iso9660Handler(this);
 
         String[] path = filePath.split("[\\/]");
-        
+
         Iso9660File info = null;
         // walk through path
         for(int i=0;i<path.length;)
@@ -225,13 +225,18 @@ public class UmdIsoReader {
                 i++;
             }
         }
-        
+
         if(info==null) throw new FileNotFoundException("File '" + filePath + "' not found or not a file.");
-        
+
         int fileStart    = info.getLBA();
         long fileLength  = info.getSize();
-        
+
         return new UmdIsoFile(this, fileStart, fileLength);
     }
-    
+
+    public String getFilename()
+    {
+        return fileName;
+    }
+
 }
