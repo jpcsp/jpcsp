@@ -153,8 +153,13 @@ public class pspiofilemgr {
                 //if (debug) System.out.println("sceIoOpen - isUmdPath " + isUmdPath(pcfilename));
 
                 if (isUmdPath(pcfilename)) {
-                    // check flags
-                    if ((flags & PSP_O_WRONLY) == PSP_O_WRONLY ||
+                    // check umd is mounted
+                    if (iso == null) {
+                        System.out.println("sceIoOpen - no umd mounted");
+                        Emulator.getProcessor().gpr[2] = -1;
+
+                    // check flags are valid
+                    } else if ((flags & PSP_O_WRONLY) == PSP_O_WRONLY ||
                         (flags & PSP_O_CREAT) == PSP_O_CREAT ||
                         (flags & PSP_O_TRUNC) == PSP_O_TRUNC) {
                         // should we refuse (return -1) or just ignore?
@@ -540,10 +545,8 @@ public class pspiofilemgr {
 
     class IoInfo {
         // Internal settings
-        public final boolean isUmdMedia;
         public final SeekableRandomFile msFile; // on memory stick
-        public final UmdIsoFile umdFile; // on umd
-        public final SeekableDataInput readOnlyFile;
+        public final SeekableDataInput readOnlyFile; // on memory stick or umd
         public final String mode;
 
         // PSP settings
@@ -553,9 +556,7 @@ public class pspiofilemgr {
         public final int uid;
 
         public IoInfo(SeekableRandomFile f, String mode, int flags, int permissions) {
-            this.isUmdMedia = false;
             this.msFile = f;
-            this.umdFile = null;
             this.readOnlyFile = f;
             this.mode = mode;
             this.flags = flags;
@@ -564,10 +565,8 @@ public class pspiofilemgr {
             filelist.put(uid, this);
         }
 
-        public IoInfo(UmdIsoFile f, String mode, int flags, int permissions) {
-            this.isUmdMedia = true;
+        public IoInfo(SeekableDataInput f, String mode, int flags, int permissions) {
             this.msFile = null;
-            this.umdFile = f;
             this.readOnlyFile = f;
             this.mode = mode;
             this.flags = flags;
