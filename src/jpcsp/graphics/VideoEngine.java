@@ -49,12 +49,31 @@ public class VideoEngine {
     private int proj_upload_x;
     private int proj_upload_y;
     private float[] proj_matrix = new float[4 * 4];
+    private float[] proj_uploaded_matrix = new float[4 * 4];
 
 
-    private boolean world_upload_start;
-    private int world_upload_x;
-    private int world_upload_y;
-    private float[] world_matrix = new float[4 * 4];
+    private boolean model_upload_start;
+    private int 	model_upload_x;
+    private int 	model_upload_y;
+    private float[] model_matrix = new float[4 * 4];
+    private float[] model_uploaded_matrix = new float[4 * 4];
+    
+    private boolean view_upload_start;
+    private int view_upload_x;
+    private int view_upload_y;
+    private float[] view_matrix = new float[4 * 4];
+    private float[] view_uploaded_matrix = new float[4 * 4];
+    
+    private float[] light_pos_0 = new float[4];
+    private float[] light_pos_1 = new float[4];
+    private float[] light_pos_2 = new float[4];
+    private float[] light_pos_3 = new float[4];
+    
+    int[] light_type = new int[4];
+    
+    float[] mat_ambient = new float[4];
+    float[] mat_diffuse = new float[4];
+    float[] spc_diffuse = new float[4];
 
     private boolean listIsOver;
     private DisplayList actualList; // The currently executing list
@@ -82,6 +101,9 @@ public class VideoEngine {
     }
 
     private VideoEngine() {
+    	model_matrix[0] = model_matrix[5] = model_matrix[10] = model_matrix[15] = 1.f;
+    	view_matrix[0] = view_matrix[5] = view_matrix[10] = view_matrix[15] = 1.f;
+    	light_pos_0[3] = light_pos_1[3] = light_pos_2[3] = light_pos_3[3] = 1.f;
     }
 
     // call from GL thread
@@ -173,7 +195,7 @@ public class VideoEngine {
                 log(helper.getCommandString(VTYPE) + " " + vinfo.toString());
                 break;
 
-            case TME:
+            /*case TME:
                 if (normalArgument != 0) {
                     gl.glEnable(GL.GL_TEXTURE_2D);
                     log("sceGuEnable(GU_TEXTURE_2D)");
@@ -181,42 +203,471 @@ public class VideoEngine {
                     gl.glDisable(GL.GL_TEXTURE_2D);
                     log("sceGuDisable(GU_TEXTURE_2D)");
                 }
-                break;
+                break;*/
+                
+            case VMS:
+                view_upload_start = true;
+                log("sceGumMatrixMode GU_VIEW");
+                break;            	
 
-            case WMS:
-                // TODO figure out how to handle the separate MODEL and VIEW/WORLD matrix stacks
-                gl.glMatrixMode(GL.GL_MODELVIEW);
-                world_upload_start = true;
-                log("sceGumMatrixMode GU_MODEL");
-                break;
-
-            case WORLD:
-                if (world_upload_start) {
-                    world_upload_x = 0;
-                    world_upload_y = 0;
-                    world_upload_start = false;
+            case VIEW:
+                if (view_upload_start) {
+                    view_upload_x = 0;
+                    view_upload_y = 0;
+                    view_upload_start = false;
                 }
 
-                if (world_upload_y < 4) {
-                    if (world_upload_x < 3) {
-                        world_matrix[world_upload_x + world_upload_y * 4] = floatArgument;
+                if (view_upload_y < 4) {
+                    if (view_upload_x < 3) {
+                    	view_matrix[view_upload_x + view_upload_y * 4] = floatArgument;
 
-                        world_upload_x++;
-                        if (world_upload_x == 3) {
-                            world_matrix[world_upload_x + world_upload_y * 4] = (world_upload_y == 3) ? 1.0f : 0.0f;
-                            world_upload_x = 0;
-                            world_upload_y++;
-                            if (world_upload_y == 4) {
-                                log("glLoadMatrixf", world_matrix);
-                                gl.glLoadMatrixf(world_matrix, 0);
+                    	view_upload_x++;
+                        if (view_upload_x == 3) {
+                        	view_matrix[view_upload_x + view_upload_y * 4] = (view_upload_y == 3) ? 1.0f : 0.0f;
+                        	view_upload_x = 0;
+                        	view_upload_y++;
+                            if (view_upload_y == 4) {
+                                log("glLoadMatrixf", view_matrix);
+                                
+                                for (int i = 0; i < 4*4; i++)
+                                	view_uploaded_matrix[i] = view_matrix[i];
                             }
                         }
                     }
                 }
                 break;
 
+            case MMS:
+                model_upload_start = true;
+                log("sceGumMatrixMode GU_MODEL");
+                break;            	
+
+            case MODEL:
+                if (model_upload_start) {
+                    model_upload_x = 0;
+                    model_upload_y = 0;
+                    model_upload_start = false;
+                }
+
+                if (model_upload_y < 4) {
+                    if (model_upload_x < 3) {
+                        model_matrix[model_upload_x + model_upload_y * 4] = floatArgument;
+
+                        model_upload_x++;
+                        if (model_upload_x == 3) {
+                            model_matrix[model_upload_x + model_upload_y * 4] = (model_upload_y == 3) ? 1.0f : 0.0f;
+                            model_upload_x = 0;
+                            model_upload_y++;
+                            if (model_upload_y == 4) {
+                                log("glLoadMatrixf", model_matrix);
+                                
+                                for (int i = 0; i < 4*4; i++)
+                                	model_uploaded_matrix[i] = model_matrix[i];
+                            }
+                        }
+                    }
+                }
+                break;
+                
+            /*
+             *  Light 0 attributes
+             */
+                
+            // Position
+            case LXP0:
+            	light_pos_0[0] = floatArgument;
+            	break;
+            case LYP0:
+            	light_pos_0[1] = floatArgument;
+            	break;
+            case LZP0:
+            	light_pos_0[2] = floatArgument;            	
+            	break;
+            
+            // Color
+            case ALC0: {            	
+            	float [] color = new float[4];
+            	
+            	color[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	color[1] = ((normalArgument >>  8) & 255) / 255.f;
+            	color[2] = ((normalArgument      ) & 255) / 255.f;
+            	color[3] = 1.f;
+            	
+            	gl.glLightfv(GL.GL_LIGHT0, GL.GL_AMBIENT, color, 0);
+            	log("sceGuLightColor (GU_LIGHT0, GU_AMBIENT)");
+            	break;
+            }
+            	
+            case DLC0: {            	
+            	float [] color = new float[4];
+            	
+            	color[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	color[1] = ((normalArgument >>  8) & 255) / 255.f;
+            	color[2] = ((normalArgument      ) & 255) / 255.f;
+            	color[3] = 1.f;
+            	
+            	gl.glLightfv(GL.GL_LIGHT0, GL.GL_DIFFUSE, color, 0);
+            	log("sceGuLightColor (GU_LIGHT0, GU_DIFFUSE)");
+            	break;
+            }
+            	
+            case SLC0: {
+            	float [] color = new float[4];
+            	
+            	color[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	color[1] = ((normalArgument >>  8) & 255) / 255.f;
+            	color[2] = ((normalArgument      ) & 255) / 255.f;
+            	color[3] = 1.f;
+            	
+            	gl.glLightfv(GL.GL_LIGHT0, GL.GL_SPECULAR, color, 0);
+            	log("sceGuLightColor (GU_LIGHT0, GU_SPECULAR)");
+            	break;
+            }
+
+            // Attenuation
+            case LCA0:
+            	gl.glLightf(GL.GL_LIGHT0, GL.GL_CONSTANT_ATTENUATION, floatArgument);
+            	break;
+            	
+            case LLA0:
+            	gl.glLightf(GL.GL_LIGHT0, GL.GL_LINEAR_ATTENUATION, floatArgument);
+            	break;
+            	
+            case LQA0:
+            	gl.glLightf(GL.GL_LIGHT0, GL.GL_QUADRATIC_ATTENUATION, floatArgument);
+            	break;
+            	
+        	/*
+             *  Light 1 attributes
+             */
+            	
+            // Position
+            case LXP1:
+            	light_pos_1[0] = floatArgument;
+            	break;
+            case LYP1:
+            	light_pos_1[1] = floatArgument;
+            	break;
+            case LZP1:
+            	light_pos_1[2] = floatArgument;
+            	break;
+            	
+            // Color	
+            case ALC1: {            	
+            	float [] color = new float[4];
+            	
+            	color[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	color[1] = ((normalArgument >>  8) & 255) / 255.f;
+            	color[2] = ((normalArgument      ) & 255) / 255.f;
+            	color[3] = 1.f;
+            	
+            	gl.glLightfv(GL.GL_LIGHT1, GL.GL_AMBIENT, color, 0);
+            	log("sceGuLightColor (GU_LIGHT1, GU_AMBIENT)");
+            	break;
+            }
+            	
+            case DLC1: {
+            	float [] color = new float[4];
+            	
+            	color[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	color[1] = ((normalArgument >>  8) & 255) / 255.f;
+            	color[2] = ((normalArgument      ) & 255) / 255.f;
+            	color[3] = 1.f;
+            	
+            	gl.glLightfv(GL.GL_LIGHT1, GL.GL_DIFFUSE, color, 0);
+            	log("sceGuLightColor (GU_LIGHT1, GU_DIFFUSE)");
+            	break;
+            }
+            	
+            case SLC1: {
+            	float [] color = new float[4];
+            	
+            	color[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	color[1] = ((normalArgument >>  8) & 255) / 255.f;
+            	color[2] = ((normalArgument      ) & 255) / 255.f;
+            	color[3] = 1.f;
+            	
+            	gl.glLightfv(GL.GL_LIGHT1, GL.GL_SPECULAR, color, 0);
+            	log("sceGuLightColor (GU_LIGHT1, GU_SPECULAR)");
+            	break;
+            }
+            
+            // Attenuation
+            case LCA1:
+            	gl.glLightf(GL.GL_LIGHT1, GL.GL_CONSTANT_ATTENUATION, floatArgument);
+            	break;
+            	
+            case LLA1:
+            	gl.glLightf(GL.GL_LIGHT1, GL.GL_LINEAR_ATTENUATION, floatArgument);
+            	break;
+            	
+            case LQA1:
+            	gl.glLightf(GL.GL_LIGHT1, GL.GL_QUADRATIC_ATTENUATION, floatArgument);
+            	break;
+            	
+        	/*
+             *  Light 2 attributes
+             */
+            	
+            // Position
+            case LXP2:
+            	light_pos_2[0] = floatArgument;
+            	break;
+            case LYP2:
+            	light_pos_2[1] = floatArgument;
+            	break;
+            case LZP2:
+            	light_pos_2[2] = floatArgument;
+            	break;
+            
+            // Color
+            case ALC2: {            	
+            	float [] color = new float[4];
+            	
+            	color[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	color[1] = ((normalArgument >>  8) & 255) / 255.f;
+            	color[2] = ((normalArgument      ) & 255) / 255.f;
+            	color[3] = 1.f;
+            	
+            	gl.glLightfv(GL.GL_LIGHT2, GL.GL_AMBIENT, color, 0);
+            	log("sceGuLightColor (GU_LIGHT2, GU_AMBIENT)");
+            	break;
+            }
+            	
+            case DLC2: {            	
+            	float [] color = new float[4];
+            	
+            	color[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	color[1] = ((normalArgument >>  8) & 255) / 255.f;
+            	color[2] = ((normalArgument      ) & 255) / 255.f;
+            	color[3] = 1.f;
+            	
+            	gl.glLightfv(GL.GL_LIGHT2, GL.GL_DIFFUSE, color, 0);
+            	log("sceGuLightColor (GU_LIGHT2, GU_DIFFUSE)");
+            	break;
+            }
+            	
+            case SLC2: {
+            	float [] color = new float[4];
+            	
+            	color[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	color[1] = ((normalArgument >>  8) & 255) / 255.f;
+            	color[2] = ((normalArgument      ) & 255) / 255.f;
+            	color[3] = 1.f;
+            	
+            	gl.glLightfv(GL.GL_LIGHT2, GL.GL_SPECULAR, color, 0);
+            	log("sceGuLightColor (GU_LIGHT2, GU_SPECULAR)");
+            	break;
+            }
+            
+            // Attenuation
+            case LCA2:
+            	gl.glLightf(GL.GL_LIGHT2, GL.GL_CONSTANT_ATTENUATION, floatArgument);
+            	break;
+            	
+            case LLA2:
+            	gl.glLightf(GL.GL_LIGHT2, GL.GL_LINEAR_ATTENUATION, floatArgument);
+            	break;
+            	
+            case LQA2:
+            	gl.glLightf(GL.GL_LIGHT2, GL.GL_QUADRATIC_ATTENUATION, floatArgument);
+            	break;
+            	
+        	/*
+             *  Light 3 attributes
+             */
+            	
+            // Position
+            case LXP3:
+            	light_pos_3[0] = floatArgument;
+            	break;
+            case LYP3:
+            	light_pos_3[1] = floatArgument;
+            	break;
+            case LZP3:
+            	light_pos_3[2] = floatArgument;
+            	break;
+            
+            // Color
+            case ALC3: {            	
+            	float [] color = new float[4];
+            	
+            	color[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	color[1] = ((normalArgument >>  8) & 255) / 255.f;
+            	color[2] = ((normalArgument      ) & 255) / 255.f;
+            	color[3] = 1.f;
+            	
+            	gl.glLightfv(GL.GL_LIGHT3, GL.GL_AMBIENT, color, 0);
+            	log("sceGuLightColor (GU_LIGHT3, GU_AMBIENT)");
+            	break;
+            }
+            	
+            case DLC3: {            	
+            	float [] color = new float[4];
+            	
+            	color[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	color[1] = ((normalArgument >>  8) & 255) / 255.f;
+            	color[2] = ((normalArgument      ) & 255) / 255.f;
+            	color[3] = 1.f;
+            	
+            	gl.glLightfv(GL.GL_LIGHT3, GL.GL_DIFFUSE, color, 0);
+            	log("sceGuLightColor (GU_LIGHT3, GU_DIFFUSE)");
+            	break;
+            }
+            	
+            case SLC3: {
+            	float [] color = new float[4];
+            	
+            	color[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	color[1] = ((normalArgument >>  8) & 255) / 255.f;
+            	color[2] = ((normalArgument      ) & 255) / 255.f;
+            	color[3] = 1.f;
+            	
+            	gl.glLightfv(GL.GL_LIGHT3, GL.GL_SPECULAR, color, 0);
+            	log("sceGuLightColor (GU_LIGHT3, GU_SPECULAR)");
+            	break;
+            }
+            
+            // Attenuation
+            case LCA3:
+            	gl.glLightf(GL.GL_LIGHT3, GL.GL_CONSTANT_ATTENUATION, floatArgument);
+            	break;
+            	
+            case LLA3:
+            	gl.glLightf(GL.GL_LIGHT3, GL.GL_LINEAR_ATTENUATION, floatArgument);
+            	break;
+            	
+            case LQA3:
+            	gl.glLightf(GL.GL_LIGHT3, GL.GL_QUADRATIC_ATTENUATION, floatArgument);
+            	break;
+            	
+            
+            /*
+             * Light types
+             */
+            
+            case LT0: {
+            	light_type[0] = normalArgument;
+            	
+            	if (light_type[0] == LIGTH_DIRECTIONAL)
+            		light_pos_0[3] = 0.f;
+            	else
+            		light_pos_0[3] = 1.f;
+            	break;
+        	}
+            case LT1: {
+            	light_type[1] = normalArgument;
+            	
+            	if (light_type[1] == LIGTH_DIRECTIONAL)
+            		light_pos_1[3] = 0.f;
+            	else
+            		light_pos_1[3] = 1.f;
+            	break;
+        	}
+            case LT2: {
+            	light_type[2] = normalArgument;
+            	
+            	if (light_type[2] == LIGTH_DIRECTIONAL)
+            		light_pos_2[3] = 0.f;
+            	else
+            		light_pos_2[3] = 1.f;
+            	break;
+        	}
+            case LT3: {
+            	light_type[3] = normalArgument;
+            	
+            	if (light_type[3] == LIGTH_DIRECTIONAL)
+            		light_pos_3[3] = 0.f;
+            	else
+            		light_pos_3[3] = 1.f;
+            	break;
+        	}
+            
+            	
+            /*
+             * Individual lights enable/disable
+             */            
+            case LTE0:
+            	if (normalArgument != 0) {
+                    gl.glEnable(GL.GL_LIGHT0);
+                    log("sceGuEnable(GL_LIGHT0)");
+                } else {
+                    gl.glDisable(GL.GL_LIGHT0);
+                    log("sceGuDisable(GL_LIGHT0)");
+                }
+                break;
+                
+            case LTE1:
+            	if (normalArgument != 0) {
+                    gl.glEnable(GL.GL_LIGHT1);
+                    log("sceGuEnable(GL_LIGHT1)");
+                } else {
+                    gl.glDisable(GL.GL_LIGHT1);
+                    log("sceGuDisable(GL_LIGHT1)");
+                }
+                break;
+                
+            case LTE2:
+            	if (normalArgument != 0) {
+                    gl.glEnable(GL.GL_LIGHT2);
+                    log("sceGuEnable(GL_LIGHT2)");
+                } else {
+                    gl.glDisable(GL.GL_LIGHT2);
+                    log("sceGuDisable(GL_LIGHT2)");
+                }
+                break;
+                
+            case LTE3:
+            	if (normalArgument != 0) {
+                    gl.glEnable(GL.GL_LIGHT3);
+                    log("sceGuEnable(GL_LIGHT3)");
+                } else {
+                    gl.glDisable(GL.GL_LIGHT3);
+                    log("sceGuDisable(GL_LIGHT3)");
+                }
+                break;
+
+            	
+            /*
+             * Lighting enable/disable
+             */
+            case LTE:
+            	if (normalArgument != 0) {
+                    gl.glEnable(GL.GL_LIGHTING);
+                    log("sceGuEnable(GL_LIGHTING)");
+                } else {
+                    gl.glDisable(GL.GL_LIGHTING);
+                    log("sceGuDisable(GL_LIGHTING)");
+                }
+                break;
+                
+            /*
+             * Material setup
+             */
+            case AMA:            	
+            	mat_ambient[3] = ((normalArgument      ) & 255) / 255.f;
+            	gl.glMaterialfv(GL.GL_FRONT, GL.GL_AMBIENT, mat_ambient, 0);
+            	
+            	break;
+            case AMC:            	
+            	mat_ambient[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	mat_ambient[1] = ((normalArgument >>  8) & 255) / 255.f;
+            	mat_ambient[2] = ((normalArgument      ) & 255) / 255.f;
+            	gl.glMaterialfv(GL.GL_FRONT, GL.GL_AMBIENT, mat_ambient, 0);
+            	
+            	log("sceGuAmbient");
+            	break;
+            case DMC:            	
+            	mat_diffuse[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	mat_diffuse[1] = ((normalArgument >>  8) & 255) / 255.f;
+            	mat_diffuse[2] = ((normalArgument      ) & 255) / 255.f;
+            	mat_diffuse[3] = 1.f;            	
+            	gl.glMaterialfv(GL.GL_FRONT, GL.GL_DIFFUSE, mat_diffuse, 0);
+            	
+            	log("sceGuColor");
+            	break;
+
             case PMS:
-                gl.glMatrixMode(GL.GL_PROJECTION);
                 proj_upload_start = true;
                 log("sceGumMatrixMode GU_PROJECTION");
                 break;
@@ -238,7 +689,8 @@ public class VideoEngine {
                             proj_upload_y++;
                             if (proj_upload_y == 4) {
                                 log("glLoadMatrixf", proj_matrix);
-                                gl.glLoadMatrixf(proj_matrix, 0);
+                                for (int i = 0; i < 4*4; i++)
+                                	proj_uploaded_matrix[i] = proj_matrix[i];
                             }
                         }
                     }
@@ -328,6 +780,29 @@ public class VideoEngine {
                         log(helper.getCommandString(PRIM) + " sprites");
                         break;
                 }
+                
+                /*
+                 * Defer transformations until primitive rendering
+                 */
+                gl.glMatrixMode(GL.GL_PROJECTION);
+                gl.glPushMatrix ();
+                gl.glLoadMatrixf(proj_uploaded_matrix, 0);
+                
+                gl.glMatrixMode(GL.GL_MODELVIEW);
+                gl.glPushMatrix ();
+                gl.glLoadMatrixf(view_uploaded_matrix, 0);
+                
+                /*
+                 *  Setup lights on when view transformation is set up
+                 */
+                gl.glLightfv(GL.GL_LIGHT0, GL.GL_POSITION, light_pos_0, 0);
+                gl.glLightfv(GL.GL_LIGHT1, GL.GL_POSITION, light_pos_1, 0);
+                gl.glLightfv(GL.GL_LIGHT2, GL.GL_POSITION, light_pos_2, 0);
+                gl.glLightfv(GL.GL_LIGHT3, GL.GL_POSITION, light_pos_3, 0);
+                
+                // Apply model matrix
+                gl.glMultMatrixf(model_uploaded_matrix, 0);
+                
 
                 // GL
                 switch (type) {
@@ -384,6 +859,12 @@ public class VideoEngine {
                         gl.glPopAttrib();
                         break;
                 }
+                
+                gl.glPopMatrix ();
+                gl.glMatrixMode(GL.GL_PROJECTION);
+                gl.glPopMatrix ();
+                gl.glMatrixMode(GL.GL_MODELVIEW);
+                
                 break;
             }
 
