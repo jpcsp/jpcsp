@@ -49,6 +49,10 @@ public class pspge {
         DisplayList.Initialise();
         DisplayList.Unlock();
     }
+    
+    public void sceGeEdramGetSize() {
+        Emulator.getProcessor().gpr[2] = MemoryMap.SIZE_VRAM;
+    }
 
     public void sceGeEdramGetAddr() {
         Emulator.getProcessor().gpr[2] = MemoryMap.START_VRAM;

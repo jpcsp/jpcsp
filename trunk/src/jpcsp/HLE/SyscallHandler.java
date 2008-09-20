@@ -216,10 +216,14 @@ public class SyscallHandler {
                     pspiofilemgr.get_instance().sceIoWrite(gpr[4], gpr[5], gpr[6]);
                     break;
 		// sceIoWriteAsync(0x2094),
-		// sceIoLseek(0x2095),
 		// sceIoLseekAsync(0x2096),
+                    
+                case 0x2095:
+                	pspiofilemgr.get_instance().sceIoLseek32(gpr[4], gpr[6] | (gpr[7]<<32), gpr[8]);
+                    break;
+                    
                 case 0x2097:
-                    pspiofilemgr.get_instance().sceIoLseek32(gpr[4], gpr[5], gpr[6]);
+                    pspiofilemgr.get_instance().sceIoLseek32(gpr[4], gpr[6] | (gpr[7]<<32), gpr[8]);
                     break;
 		// sceIoLseek32Async(0x2098),
 		// sceIoIoctl(0x2099),
@@ -360,7 +364,9 @@ public class SyscallHandler {
                     break;
               // sceDmacMemcpy(0x20ed),
 		// sceDmacTryMemcpy(0x20ee),
-		// sceGeEdramGetSize(0x20ef),
+               case 0x20ef:
+            	   pspge.get_instance().sceGeEdramGetSize();
+                   break;
                case 0x20f0:
                     pspge.get_instance().sceGeEdramGetAddr();
                     break;
