@@ -22,7 +22,6 @@ import jpcsp.Memory;
 // Based on soywiz/pspemulator
 public class VertexInfo {
     // vtype
-    public int transform2D;
     public int skinningWeightCount;
     public int morphingVertexCount;
     public int texture;
@@ -73,7 +72,6 @@ public class VertexInfo {
         index               = (param >> 11) & 0x3;
         skinningWeightCount = ((param >> 14) & 0x7) + 1;
         morphingVertexCount = (param >> 18) & 0x3;
-        transform2D         = (param >> 23) & 0x1;
 
         vertexSize = 0;
         vertexSize += size_mapping[weight] * skinningWeightCount;
@@ -175,8 +173,6 @@ public class VertexInfo {
             sb.append(weight_info[weight] + "|");
         if (index_info[index] != null)
             sb.append(index_info[index] + "|");
-        if (transform_info[transform2D] != null)
-            sb.append(transform_info[transform2D]);
 
         sb.append(" size=" + vertexSize);
         return sb.toString();

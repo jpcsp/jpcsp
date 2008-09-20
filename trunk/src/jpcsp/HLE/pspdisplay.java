@@ -25,6 +25,7 @@ import java.nio.ByteOrder;
 import javax.media.opengl.GL;
 import javax.media.opengl.GLAutoDrawable;
 import javax.media.opengl.GLCanvas;
+import javax.media.opengl.GLCapabilities;
 import javax.media.opengl.GLEventListener;
 import jpcsp.Emulator;
 import jpcsp.Memory;
@@ -38,8 +39,14 @@ import jpcsp.graphics.VideoEngine;
 public final class pspdisplay extends GLCanvas implements GLEventListener {
     private static pspdisplay instance;
     public static pspdisplay get_instance() {
-        if (instance == null)
-            instance = new pspdisplay();
+        if (instance == null) {
+        	
+        	// We need to ask for stencil buffer
+        	GLCapabilities capabilities = new GLCapabilities();        	
+        	capabilities.setStencilBits(8);
+        	
+            instance = new pspdisplay(capabilities);
+        }
         return instance;
     }
     
@@ -93,7 +100,9 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     private long reportCount = 0;
     private double averageFPS = 0.0;
     
-    private pspdisplay() {
+    private pspdisplay (GLCapabilities capabilities) {
+    	super (capabilities);
+    	
         setSize(480, 272);
         addGLEventListener(this);
         texFb = -1;
@@ -308,7 +317,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             gl.glClear(GL.GL_COLOR_BUFFER_BIT);
             return;
         }
-        
+
         pixels.clear();
         gl.glTexSubImage2D(
             GL.GL_TEXTURE_2D, 0,
@@ -322,7 +331,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             
             gl.glViewport(0, 0, width, height);
             VideoEngine.getEngine(gl, true, true).update();
-        
+ 
             gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
             gl.glCopyTexSubImage2D(
                 GL.GL_TEXTURE_2D, 0,

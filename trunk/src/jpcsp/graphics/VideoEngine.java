@@ -21,6 +21,7 @@ package jpcsp.graphics;
 import static jpcsp.graphics.GeCommands.*;
 
 import java.nio.Buffer;
+import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.Iterator;
 
@@ -87,6 +88,10 @@ public class VideoEngine {
     
     float tex_translate_x = 0.f, tex_translate_y = 0.f;
     float tex_scale_x = 1.f, tex_scale_y = 1.f;
+    
+    private int tex_clut_addr, tex_clut_mode, tex_clut_mask, tex_clut_num_blocks;    
+
+    private int transform_mode;
     
     // opengl needed information/buffers
     int[] gl_texture_id = new int[1];
@@ -184,6 +189,65 @@ public class VideoEngine {
     private float floatArgument(int instruction) {
         return Float.intBitsToFloat(instruction << 8);
     }
+    
+    private int getStencilOp (int pspOP) {    	
+    	switch (pspOP) {            	
+	    	case SOP_KEEP_STENCIL_VALUE:
+	    		return GL.GL_KEEP;		        		
+	    		
+	        case SOP_ZERO_STENCIL_VALUE:
+	        	return GL.GL_ZERO;
+	        	
+	        case SOP_REPLACE_STENCIL_VALUE:
+	        	return GL.GL_REPLACE;
+	        	
+	        case SOP_INVERT_STENCIL_VALUE:
+	        	return GL.GL_INVERT;
+	        	
+	        case SOP_INCREMENT_STENCIL_VALUE:
+	        	return GL.GL_INCR;
+	        	
+	        case SOP_DECREMENT_STENCIL_VALUE:
+	        	return GL.GL_DECR;
+    	}
+    	
+    	log ("UNKNOWN stencil op "+ pspOP);
+    	return GL.GL_KEEP;
+    }
+    
+    private int getBlendOp (int pspOP) {    	
+    	switch (pspOP) {   
+		    case ALPHA_SOURCE_COLOR:
+		    	return GL.GL_SRC_COLOR;
+		    	
+		    case ALPHA_ONE_MINUS_SOURCE_COLOR:
+		    	return GL.GL_ONE_MINUS_SRC_COLOR;
+		    	
+		    case ALPHA_SOURCE_ALPHA:
+		    	return GL.GL_SRC_ALPHA;
+		    	
+		    case ALPHA_ONE_MINUS_SOURCE_ALPHA:
+	    		return GL.GL_ONE_MINUS_SRC_ALPHA;
+		    
+		    case ALPHA_DESTINATION_COLOR:
+		    	return GL.GL_DST_COLOR;
+		    	
+		    case ALPHA_ONE_MINUS_DESTINATION_COLOR:
+		    	return GL.GL_ONE_MINUS_DST_COLOR;
+		    	
+		    case ALPHA_DESTINATION_ALPHA:
+		    	return GL.GL_DST_ALPHA;
+		    
+		    case ALPHA_ONE_MINUS_DESTINATION_ALPHA:
+		    	return GL.GL_ONE_MINUS_DST_ALPHA;
+    	}
+    	
+
+    	log ("Unsupported alpha blend op used" + pspOP);
+    	return GL.GL_ONE;
+    }
+		    	
+		    	
 
     public void executeCommand(int instruction) {
         int normalArgument = intArgument(instruction);
@@ -212,6 +276,7 @@ public class VideoEngine {
                 break;
             case VTYPE:
                 vinfo.processType(normalArgument);
+                transform_mode = (normalArgument >> 23) & 0x1;
                 log(helper.getCommandString(VTYPE) + " " + vinfo.toString());
                 break;
 
@@ -740,6 +805,25 @@ public class VideoEngine {
             	texture_storage = normalArgument;
             	break;
             	
+            case CBP: {
+            	log ("sceGuClutLoad(X, cbp)");
+            	tex_clut_addr = normalArgument | 0x08000000;
+            	break;
+            }
+            
+            case CLOAD: {
+            	log ("sceGuClutLoad(num_blocks, X)");
+            	tex_clut_num_blocks = normalArgument;
+            	break;
+            }
+            
+            case CMODE: {
+            	log ("sceGuClutMode(cpsm, shift, mask, X)");
+            	tex_clut_mode =  normalArgument     & 0x03;
+            	tex_clut_mask = (normalArgument>>8) & 0xFF;
+            	break;
+            }
+            	
             case TFLUSH:
             {
             	// HACK: avoid texture uploads of null pointers
@@ -758,6 +842,33 @@ public class VideoEngine {
             	int 	texture_type = 0;
             	            	
             	switch (texture_storage) {
+            		case TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED: {
+            			
+            			// TODO: Refactor this to avoid code duplication
+            			switch (tex_clut_mode) {
+	            			case CMODE_FORMAT_32BIT_ABGR8888: {
+	            				texture_type = GL.GL_UNSIGNED_BYTE;
+	            			
+	            				for (int i = 0; i < texture_width0*texture_height0; i++) {
+	            					int clut = mem.read8(texture_base_pointer0+i);
+	            					tmp_texture_buffer32[i] = mem.read32(tex_clut_addr + clut);
+	            				}
+	            				
+	            				final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
+	            				
+	            				break;
+	            			}
+	            			
+	                		default: {
+	                			System.out.println("Unhandled clut texture mode " + tex_clut_mode);
+	                            Emulator.PauseEmu();
+	                            break;
+	                		}
+	            		}
+	            			
+            			break;
+            		}
+            			
             		case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444: {   
             			texture_type = GL.GL_UNSIGNED_SHORT_4_4_4_4_REV;
             			
@@ -1006,13 +1117,19 @@ public class VideoEngine {
                  */
                 gl.glMatrixMode(GL.GL_PROJECTION);
                 gl.glPushMatrix ();
-                gl.glLoadMatrixf(proj_uploaded_matrix, 0);
+                gl.glLoadIdentity();
+                
+                if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
+                	gl.glLoadMatrixf(proj_uploaded_matrix, 0);
+                else
+                	gl.glOrtho(0.0, 480, 0.0, 272, -1.0, 1.0);
                 
                 /*
                  * Apply texture transforms
                  */
                 gl.glMatrixMode(GL.GL_TEXTURE);
                 gl.glPushMatrix ();
+                gl.glLoadIdentity();
                 gl.glTranslatef (tex_translate_x, tex_translate_y, 0.f);
                 gl.glScalef		(tex_scale_x, tex_scale_y, 1.f);
                 
@@ -1043,7 +1160,10 @@ public class VideoEngine {
                  */
                 gl.glMatrixMode(GL.GL_MODELVIEW);
                 gl.glPushMatrix ();
-                gl.glLoadMatrixf(view_uploaded_matrix, 0);
+                gl.glLoadIdentity();
+                
+                if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
+                	gl.glLoadMatrixf(view_uploaded_matrix, 0);
                 
                 /*
                  *  Setup lights on when view transformation is set up
@@ -1054,7 +1174,8 @@ public class VideoEngine {
                 gl.glLightfv(GL.GL_LIGHT3, GL.GL_POSITION, light_pos[3], 0);
                 
                 // Apply model matrix
-                gl.glMultMatrixf(model_uploaded_matrix, 0);
+                if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
+                	gl.glMultMatrixf(model_uploaded_matrix, 0);
                 
 
                 // GL
@@ -1130,22 +1251,59 @@ public class VideoEngine {
                 
                 break;
             }
+            
+            case ALPHA: {
+            	
+            	int blend_mode = GL.GL_FUNC_ADD;
+            	int src = getBlendOp(normalArgument&0xF), dst = getBlendOp((normalArgument>>4)&0xF);
+            	
+            	switch ((normalArgument>>8)&0xF) {
+	            	case ALPHA_SOURCE_BLEND_OPERATION_ADD:
+	            		blend_mode = GL.GL_FUNC_ADD;
+	            		break;
+	            		
+	                case ALPHA_SOURCE_BLEND_OPERATION_SUBTRACT:
+	                	blend_mode = GL.GL_FUNC_SUBTRACT;
+	            		break;
+	            		
+	                case ALPHA_SOURCE_BLEND_OPERATION_REVERSE_SUBTRACT:
+	                	blend_mode = GL.GL_FUNC_REVERSE_SUBTRACT;
+	            		break;
+	            		
+	                case ALPHA_SOURCE_BLEND_OPERATION_MINIMUM_VALUE:
+	                	blend_mode = GL.GL_MIN;
+	            		break;
+	            		
+	                case ALPHA_SOURCE_BLEND_OPERATION_MAXIMUM_VALUE:
+	                	blend_mode = GL.GL_MAX;
+	            		break;
+	                	
+	                case ALPHA_SOURCE_BLEND_OPERATION_ABSOLUTE_VALUE:
+	                	log ("Unhandled blend mode ");
+	                	break;
+            	}
+            	
+            	gl.glBlendEquation(blend_mode);
+            	gl.glBlendFunc(src, dst);
+            	
+            	log ("sceGuBlendFunc(int op, int src, int dest, X, X)");
+            	break;
+            }
 
-            case SHADE:
-            {
+            case SHADE: {
                 int SETTED_MODEL = (normalArgument != 0) ? GL.GL_SMOOTH : GL.GL_FLAT;
                 gl.glShadeModel(SETTED_MODEL);
                 log(helper.getCommandString(SHADE) + " " + ((normalArgument != 0) ? "smooth" : "flat"));
                 break;
             }
 
-            case FFACE:
-            {
+            case FFACE: {
                 int frontFace = (normalArgument != 0) ? GL.GL_CW : GL.GL_CCW;
                 gl.glFrontFace(frontFace);
                 log(helper.getCommandString(FFACE) + " " + ((normalArgument != 0) ? "clockwise" : "counter-clockwise"));
                 break;
             }
+            
             case BCE:
                 if(normalArgument != 0)
                 {
@@ -1163,8 +1321,8 @@ public class VideoEngine {
                 {
                     gl.glEnable(GL.GL_FOG);
                     gl.glFogi(GL.GL_FOG_MODE, GL.GL_LINEAR);
-		    gl.glFogf(GL.GL_FOG_DENSITY, 0.1f);
-		    gl.glHint(GL.GL_FOG_HINT, GL.GL_DONT_CARE);
+				    gl.glFogf(GL.GL_FOG_DENSITY, 0.1f);
+				    gl.glHint(GL.GL_FOG_HINT, GL.GL_DONT_CARE);
                     log("sceGuEnable(GL_FOG)");
                 }
                 else
@@ -1174,37 +1332,31 @@ public class VideoEngine {
                 } 
                 break;
             case ABE:
-                if(normalArgument != 0)
-                {
+                if(normalArgument != 0) {
                     gl.glEnable(GL.GL_BLEND);
                     log("sceGuEnable(GU_BLEND)");
                 }
-                else
-                {
+                else {
                     gl.glDisable(GL.GL_BLEND);
                     log("sceGuDisable(GU_BLEND)");
                 }    
                 break;
             case ZTE:
-                if(normalArgument != 0)
-                {
+                if(normalArgument != 0) {
                     gl.glEnable(GL.GL_DEPTH_TEST);
                     log("sceGuEnable(GU_DEPTH_TEST)");
                 }
-                else
-                {
+                else {
                     gl.glDisable(GL.GL_DEPTH_TEST);
                     log("sceGuDisable(GU_DEPTH_TEST)");
                 }    
                 break;
             case STE:
-                if(normalArgument != 0)
-                {
+                if(normalArgument != 0) {
                     gl.glEnable(GL.GL_STENCIL_TEST);
                     log("sceGuEnable(GU_STENCIL_TEST)");
                 }
-                else
-                {
+                else {
                     gl.glDisable(GL.GL_STENCIL_TEST);
                     log("sceGuDisable(GU_STENCIL_TEST)");
                 }    
@@ -1237,16 +1389,81 @@ public class VideoEngine {
                 actualList.pc = actualList.stack[--actualList.stackIndex];
                 log(helper.getCommandString(RET), actualList.pc);
                 break;
+                
+            case ZMSK: {
+            	// NOTE: PSP depth mask as 1 is meant to avoid depth writes,
+            	//		on pc it's the opposite
+            	gl.glDepthMask(normalArgument == 1 ? false : true);
+            	
+            	log ("sceGuDepthMask(disableWrites)");
+            	break;
+            }
+            
+            case STST: {
+            	
+            	int func = GL.GL_ALWAYS;
+            	
+            	switch (normalArgument & 0xFF) {
+            		case STST_FUNCTION_NEVER_PASS_STENCIL_TEST:
+            			func = GL.GL_NEVER;
+            			break;
+            			
+                	case STST_FUNCTION_ALWAYS_PASS_STENCIL_TEST:
+                		func = GL.GL_ALWAYS;
+            			break;
+            			
+                	case STST_FUNCTION_PASS_TEST_IF_MATCHES:
+                		func = GL.GL_EQUAL;
+            			break;
+            			
+                	case STST_FUNCTION_PASS_TEST_IF_DIFFERS:
+                		func = GL.GL_NOTEQUAL;
+            			break;
+            			
+                	case STST_FUNCTION_PASS_TEST_IF_LESS:
+                		func = GL.GL_LESS;
+            			break;
+            			
+                	case STST_FUNCTION_PASS_TEST_IF_LESS_OR_EQUAL:
+                		func = GL.GL_LEQUAL;
+            			break;
+            			
+                	case STST_FUNCTION_PASS_TEST_IF_GREATER:
+                		func = GL.GL_GREATER;
+            			break;
+            			
+                	case STST_FUNCTION_PASS_TEST_IF_GREATER_OR_EQUAL:
+                		func = GL.GL_GEQUAL;
+            			break;
+            	}
+            	
+            	gl.glStencilFunc (func, ((normalArgument>>8) & 0xff), (normalArgument>>16) & 0xff);
+            	
+            	log ("sceGuStencilFunc(func, ref, mask)");
+            	break;
+            }
+            
+            case SOP: {
+            	
+            	int fail  = getStencilOp  (normalArgument & 0xFF);
+            	int zfail = getStencilOp ((normalArgument>> 8) & 0xFF);
+            	int zpass = getStencilOp ((normalArgument>>16) & 0xFF);
+            	
+            	gl.glStencilOp(fail, zfail, zpass);
+                 
+            	break;
+            }
+            	
             case CLEAR:
                 if ((normalArgument & 0x1)==0) {
-			gl.glClear(clearFlags);
-                        log("guclear");
-		} else {
-		     clearFlags = 0;
-		     if ((normalArgument & 0x100)!=0) clearFlags |= GL.GL_COLOR_BUFFER_BIT; // target
-		     if ((normalArgument & 0x200)!=0) clearFlags |= GL.GL_ACCUM_BUFFER_BIT | GL.GL_STENCIL_BUFFER_BIT; // stencil/alpha
-		     if ((normalArgument & 0x400)!=0) clearFlags |= GL.GL_DEPTH_BUFFER_BIT; // zbuffer
-		     log("setting clear flags");
+                	gl.glClear(clearFlags);
+		            log("guclear");
+				} else {
+				     clearFlags = 0;
+				     if ((normalArgument & 0x100)!=0) clearFlags |= GL.GL_COLOR_BUFFER_BIT; // target
+				     if ((normalArgument & 0x200)!=0) clearFlags |= GL.GL_STENCIL_BUFFER_BIT; // stencil/alpha
+				     if ((normalArgument & 0x400)!=0) clearFlags |= GL.GL_DEPTH_BUFFER_BIT; // zbuffer
+				     log("setting clear flags");
                 }
                 break;
             case NOP:
