@@ -385,26 +385,26 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
 }//GEN-LAST:event_OpenFileActionPerformed
 
 public void loadFile(File file) {
-	//This is where a real application would open the file.
-	try {
-	   //emulator.load(file.getPath());
-	   // Create a read-only memory-mapped file
-	    FileChannel roChannel = new RandomAccessFile(file, "r").getChannel();
-	    ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
-	    emulator.load(readbuffer);
-	    String findpath = file.getParent();
-	    //System.out.println(findpath);
-	    pspiofilemgr.get_instance().setfilepath(findpath);
-	    pspiofilemgr.get_instance().setIsoReader(null);
-	    this.setTitle(version + " - " + file.getName());
-	} catch (IOException e) {
-	    e.printStackTrace();
-	    JpcspDialogManager.showError(this, "IO Error : " + e.getMessage());
-	} catch (Exception ex) {
-	    ex.printStackTrace();
-	    JpcspDialogManager.showError(this, "Critical Error : " + ex.getMessage());
-	}
-}
+    //This is where a real application would open the file.
+    try {
+       //emulator.load(file.getPath());
+       // Create a read-only memory-mapped file
+        FileChannel roChannel = new RandomAccessFile(file, "r").getChannel();
+        ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
+        emulator.load(readbuffer);
+        String findpath = file.getParent();
+        //System.out.println(findpath);
+        pspiofilemgr.get_instance().setfilepath(findpath);
+        pspiofilemgr.get_instance().setIsoReader(null);
+        this.setTitle(version + " - " + file.getName());
+    } catch (IOException e) {
+        e.printStackTrace();
+        JpcspDialogManager.showError(this, "IO Error : " + e.getMessage());
+    } catch (Exception ex) {
+        ex.printStackTrace();
+        JpcspDialogManager.showError(this, "Critical Error : " + ex.getMessage());
+    }
+    }
 
 private void PauseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PauseButtonActionPerformed
     TogglePauseEmu();
