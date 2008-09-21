@@ -21,19 +21,17 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE;
 
-//import java.io.BufferedOutputStream;
 import jpcsp.filesystems.*;
 import jpcsp.filesystems.umdiso.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-//import java.io.PrintStream;
 import java.util.HashMap;
 import jpcsp.Emulator;
-import jpcsp.GeneralJpcspException;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import static jpcsp.util.Utilities.*;
+
 /**
  *
  * @author George
@@ -212,7 +210,6 @@ public class pspiofilemgr {
 
         try {
             SceUIDMan.get_instance().checkUidPurpose(uid, "IOFileManager-File", true);
-
             IoInfo info = filelist.remove(uid);
             if (info == null) {
                 if (uid != 1 && uid != 2) // stdin and stderr
@@ -223,9 +220,6 @@ public class pspiofilemgr {
                 SceUIDMan.get_instance().releaseUid(info.uid, "IOFileManager-File");
                 Emulator.getProcessor().gpr[2] = 0;
             }
-        } catch(GeneralJpcspException e) {
-            e.printStackTrace();
-            Emulator.getProcessor().gpr[2] = -1;
         } catch(IOException e) {
             e.printStackTrace();
             Emulator.getProcessor().gpr[2] = -1;
@@ -269,9 +263,6 @@ public class pspiofilemgr {
                     System.out.println("sceIoWrite - data is outside of ram " + Integer.toHexString(data_addr));
                     Emulator.getProcessor().gpr[2] = -1;
                 }
-            } catch(GeneralJpcspException e) {
-                e.printStackTrace();
-                Emulator.getProcessor().gpr[2] = -1;
             } catch(IOException e) {
                 e.printStackTrace();
                 Emulator.getProcessor().gpr[2] = -1;
@@ -308,9 +299,6 @@ public class pspiofilemgr {
                     System.out.println("sceIoRead - data is outside of ram " + Integer.toHexString(data_addr));
                     Emulator.getProcessor().gpr[2] = -1;
                 }
-            } catch(GeneralJpcspException e) {
-                e.printStackTrace();
-                Emulator.getProcessor().gpr[2] = -1;
             } catch(IOException e) {
                 e.printStackTrace();
                 Emulator.getProcessor().gpr[2] = -1;
@@ -368,9 +356,6 @@ public class pspiofilemgr {
                     }
                     Emulator.getProcessor().gpr[2] = (int)info.readOnlyFile.getFilePointer();
                 }
-            } catch(GeneralJpcspException e) {
-                e.printStackTrace();
-                Emulator.getProcessor().gpr[2] = -1;
             } catch(IOException e) {
                 e.printStackTrace();
                 Emulator.getProcessor().gpr[2] = -1;
@@ -428,56 +413,45 @@ public class pspiofilemgr {
     public void sceIoDread(int uid, int dirent_addr) {
         if (debug) System.out.println("sceIoDread - uid = " + Integer.toHexString(uid) + " dirent = " + Integer.toHexString(dirent_addr));
 
-        try {
-            SceUIDMan.get_instance().checkUidPurpose(uid, "IOFileManager-Directory", true);
-            IoDirInfo info = dirlist.get(uid);
-            if (info == null) {
-                System.out.println("sceIoDread - unknown uid " + Integer.toHexString(uid));
-                Emulator.getProcessor().gpr[2] = -1;
-            } else if (info.hasNext()) {
-                //String filename = info.path + "/" + info.next(); // TODO is the separator needed?
-                String filename = info.next(); // TODO is the separator needed?
-                System.out.println("sceIoDread - filename = " + filename);
-
-                //String pcfilename = getDeviceFilePath(filename);
-                //String pcfilename = getDeviceFilePath(info.path + "/" + filename);
-                //SceIoStat stat = stat(pcfilename);
-                SceIoStat stat = stat(info.path + filename);
-                if (stat != null) {
-                    SceIoDirent dirent = new SceIoDirent(stat, filename);
-                    dirent.write(Memory.getInstance(), dirent_addr);
-                    Emulator.getProcessor().gpr[2] = 1; // TODO "> 0", so number of files remaining?
-                } else {
-                    System.out.println("sceIoDread - stat failed");
-                    Emulator.getProcessor().gpr[2] = -1;
-                }
-            } else {
-                System.out.println("sceIoDread - no more files");
-                Emulator.getProcessor().gpr[2] = 0;
-            }
-        } catch(GeneralJpcspException e) {
-            e.printStackTrace();
+        SceUIDMan.get_instance().checkUidPurpose(uid, "IOFileManager-Directory", true);
+        IoDirInfo info = dirlist.get(uid);
+        if (info == null) {
+            System.out.println("sceIoDread - unknown uid " + Integer.toHexString(uid));
             Emulator.getProcessor().gpr[2] = -1;
+        } else if (info.hasNext()) {
+            //String filename = info.path + "/" + info.next(); // TODO is the separator needed?
+            String filename = info.next(); // TODO is the separator needed?
+            System.out.println("sceIoDread - filename = " + filename);
+
+            //String pcfilename = getDeviceFilePath(filename);
+            //String pcfilename = getDeviceFilePath(info.path + "/" + filename);
+            //SceIoStat stat = stat(pcfilename);
+            SceIoStat stat = stat(info.path + filename);
+            if (stat != null) {
+                SceIoDirent dirent = new SceIoDirent(stat, filename);
+                dirent.write(Memory.getInstance(), dirent_addr);
+                Emulator.getProcessor().gpr[2] = 1; // TODO "> 0", so number of files remaining?
+            } else {
+                System.out.println("sceIoDread - stat failed");
+                Emulator.getProcessor().gpr[2] = -1;
+            }
+        } else {
+            System.out.println("sceIoDread - no more files");
+            Emulator.getProcessor().gpr[2] = 0;
         }
     }
 
     public void sceIoDclose(int uid) {
         if (debug) System.out.println("sceIoDclose - uid = " + Integer.toHexString(uid));
 
-        try {
-            SceUIDMan.get_instance().checkUidPurpose(uid, "IOFileManager-Directory", true);
-
-            IoDirInfo info = dirlist.remove(uid);
-            if (info == null) {
-                System.out.println("sceIoDclose - unknown uid " + Integer.toHexString(uid));
-                Emulator.getProcessor().gpr[2] = -1;
-            } else {
-                SceUIDMan.get_instance().releaseUid(info.uid, "IOFileManager-Directory");
-                Emulator.getProcessor().gpr[2] = 0;
-            }
-        } catch(GeneralJpcspException e) {
-            e.printStackTrace();
+        SceUIDMan.get_instance().checkUidPurpose(uid, "IOFileManager-Directory", true);
+        IoDirInfo info = dirlist.remove(uid);
+        if (info == null) {
+            System.out.println("sceIoDclose - unknown uid " + Integer.toHexString(uid));
             Emulator.getProcessor().gpr[2] = -1;
+        } else {
+            SceUIDMan.get_instance().releaseUid(info.uid, "IOFileManager-Directory");
+            Emulator.getProcessor().gpr[2] = 0;
         }
     }
 
