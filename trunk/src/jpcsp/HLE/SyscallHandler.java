@@ -174,8 +174,12 @@ public class SyscallHandler {
                  //sceKernelTerminateDeleteThread(0x2074),
 		// sceKernelSuspendDispatchThread(0x2075),
 		 //sceKernelResumeDispatchThread(0x2076),
-		// sceKernelChangeCurrentThreadAttr(0x2077),
-		// sceKernelChangeThreadPriority(0x2078),
+                case 0x2077:
+                    ThreadMan.get_instance().ThreadMan_sceKernelChangeCurrentThreadAttr(gpr[4], gpr[5]);
+                    break;
+                case 0x2078:
+                    ThreadMan.get_instance().ThreadMan_sceKernelChangeThreadPriority(gpr[4], gpr[5]);
+                    break;
 		// sceKernelRotateThreadReadyQueue(0x2079),
 		// sceKernelReleaseWaitThread(0x207a),
                 case 0x207b:
