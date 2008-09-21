@@ -18,13 +18,26 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import jpcsp.Emulator;
 import jpcsp.HLE.pspSysMem;
 import jpcsp.Memory;
 import jpcsp.NIDMapper;
 
 /**
- *
+ * For backwards compatibility with the current jpcsp code, the old
+ * SyscallHandler can still be used. When an unhandled syscall is found
+ * HLEModuleManager.get_instance().handleSyscall(code) should be called.
+ * This function will then return true if the syscall is handled, in which case
+ * no error message should be printed by SyscallHandler.java.
+ * 
+ * Modules that require stepping should implement HLEThread and call
+ * mm.addThread inside installModule with a matching mm.removeThread in
+ * uninstall module.
+ * Example: ThreadMan, pspctrl, pspAudio, pspdisplay
+ * 
  * @author fiveofhearts
  */
 public class HLEModuleManager {
@@ -33,8 +46,11 @@ public class HLEModuleManager {
     private HashMap<Integer, HLEModuleFunction> syscallCodeToFunction;
     private int syscallCodeAllocator;
 
+    private List<HLEThread> hleThreadList;
+
     // TODO add more modules here
     private HLEModule[] defaultModules = new HLEModule[] {
+        new Sample(),
         new StdioForUser(),
         new sceUmdUser()
     };
@@ -53,6 +69,8 @@ public class HLEModuleManager {
         // so we'll put the HLE syscalls far away at 0x4000.
         syscallCodeAllocator = 0x4000;
 
+        hleThreadList = new LinkedList<HLEThread>();
+
         installDefaultModules(pspSysMem.PSP_FIRMWARE_150);
     }
 
@@ -64,7 +82,19 @@ public class HLEModuleManager {
         }
     }
 
+    /** Instead use addFunction. */
+    @Deprecated
     public void add(HLEModuleFunction func, int nid) {
+        addFunction(func, nid);
+    }
+
+    /** Instead use removeFunction. */
+    @Deprecated
+    public void remove(HLEModuleFunction func) {
+        removeFunction(func);
+    }
+
+    public void addFunction(HLEModuleFunction func, int nid) {
         func.setNid(nid);
 
         // See if a known syscall code exists for this NID
@@ -88,7 +118,7 @@ public class HLEModuleManager {
         syscallCodeToFunction.put(code, func);
     }
 
-    public void remove(HLEModuleFunction func) {
+    public void removeFunction(HLEModuleFunction func) {
         /*
         System.out.println("HLEModuleManager - unregistering "
                 + func.getModuleName() + "_"
@@ -97,6 +127,21 @@ public class HLEModuleManager {
         */
         int syscallCode = func.getSyscallCode();
         syscallCodeToFunction.remove(syscallCode);
+    }
+
+    public void addThread(HLEThread thread) {
+        hleThreadList.add(thread);
+    }
+
+    public void removeThread(HLEThread thread) {
+        hleThreadList.remove(thread);
+    }
+
+    public void step() {
+        for (Iterator<HLEThread> it = hleThreadList.iterator(); it.hasNext();) {
+            HLEThread thread = it.next();
+            thread.step();
+        }
     }
 
     /**
