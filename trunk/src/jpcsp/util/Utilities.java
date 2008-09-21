@@ -46,7 +46,7 @@ public class Utilities {
     public static String integerToBin(int value) {
         return Long.toBinaryString(0x0000000100000000L|(((long)value)&0x00000000FFFFFFFFL)).substring(1);
     }
-    
+
     public static String integerToHex(int value) {
         return Integer.toHexString(0x100 | value).substring(1).toUpperCase();
     }
@@ -76,7 +76,7 @@ public class Utilities {
     public static void readBytesToBuffer(
         SeekableDataInput f, ByteBuffer buf,
         int offset, int size) throws IOException
-    {  
+    {
         f.readFully(buf.array(), offset + buf.arrayOffset(), size);
     }
     public static void copyByteBuffertoByteBuffer(ByteBuffer src, ByteBuffer dst , int offset , int size)throws IOException
@@ -89,7 +89,7 @@ public class Utilities {
     public static String readStringZ(SeekableDataInput f) throws IOException {
         StringBuffer sb = new StringBuffer();
         int b;
-        for (;;) {
+        for (; f.getFilePointer() < f.length();) {
             b = f.readUnsignedByte();
             if (b == 0) {
                 break;
@@ -102,7 +102,7 @@ public class Utilities {
     public static String readStringZ(byte[] mem, int offset) {
         StringBuffer sb = new StringBuffer();
         int b;
-        for (;;) {
+        for (; offset < mem.length;) {
             b = mem[offset++];
             if (b == 0) {
                 break;
@@ -115,7 +115,7 @@ public class Utilities {
     public static String readStringZ(ByteBuffer buf, int offset) {
         StringBuffer sb = new StringBuffer();
         byte b;
-        for (;;) {
+        for (; offset < buf.limit();) {
             b = buf.get(offset++);
             if (b == 0)
                 break;
@@ -126,7 +126,7 @@ public class Utilities {
     public static String readStringZ(ByteBuffer buf) throws IOException {
         StringBuffer sb = new StringBuffer();
         byte b;
-        for (;;) {
+        for (; buf.position() < buf.limit();) {
               b = (byte)readUByte(buf);
             if (b == 0)
                 break;
@@ -137,7 +137,7 @@ public class Utilities {
     public static String readStringNZ(ByteBuffer buf, int offset, int n) {
         StringBuffer sb = new StringBuffer();
         byte b;
-        for (; n > 0; n--) {
+        for (; n > 0 && buf.position() < buf.limit(); n--) {
             b = buf.get(offset++);
             if (b == 0)
                 break;
@@ -145,25 +145,25 @@ public class Utilities {
         }
         return sb.toString();
     }
-   public static short getUnsignedByte (ByteBuffer bb) throws IOException 
+   public static short getUnsignedByte (ByteBuffer bb) throws IOException
    {
       return ((short)(bb.get() & 0xff));
    }
-   public static short readUByte(ByteBuffer buf) throws IOException 
+   public static short readUByte(ByteBuffer buf) throws IOException
    {
-     return getUnsignedByte(buf);   
+     return getUnsignedByte(buf);
    }
-   public static int readUHalf(ByteBuffer buf) throws IOException 
+   public static int readUHalf(ByteBuffer buf) throws IOException
    {
        return getUnsignedByte(buf) | (getUnsignedByte(buf) << 8);
    }
-    public static long readUWord(ByteBuffer buf) throws IOException 
+    public static long readUWord(ByteBuffer buf) throws IOException
     {
         long l = (getUnsignedByte(buf) | (getUnsignedByte(buf) << 8 ) | (getUnsignedByte(buf) << 16 ) | (getUnsignedByte(buf) << 24));
-        return (l & 0xFFFFFFFFL);  
+        return (l & 0xFFFFFFFFL);
 
     }
-    public static int readWord(ByteBuffer buf) throws IOException 
+    public static int readWord(ByteBuffer buf) throws IOException
     {
         return (getUnsignedByte(buf) | (getUnsignedByte(buf) << 8 ) | (getUnsignedByte(buf) << 16 ) | (getUnsignedByte(buf) << 24));
     }
