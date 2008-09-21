@@ -64,35 +64,35 @@ public class VideoEngine {
     private int 	model_upload_y;
     private float[] model_matrix = new float[4 * 4];
     private float[] model_uploaded_matrix = new float[4 * 4];
-    
+
     private boolean view_upload_start;
     private int view_upload_x;
     private int view_upload_y;
     private float[] view_matrix = new float[4 * 4];
     private float[] view_uploaded_matrix = new float[4 * 4];
-    
+
     private float[] tex_envmap_matrix = new float[4*4];
-    
+
     private float[][] light_pos = new float[4][4];
-    
+
     int[] light_type = new int[4];
-    
+
     float[] mat_ambient = new float[4];
     float[] mat_diffuse = new float[4];
     float[] spc_diffuse = new float[4];
-    
+
     int texture_storage, texture_num_mip_maps, texture_swizzle;
     int texture_base_pointer0, texture_width0, texture_height0;
     int tex_min_filter = GL.GL_NEAREST;
     int tex_mag_filter = GL.GL_NEAREST;
-    
+
     float tex_translate_x = 0.f, tex_translate_y = 0.f;
     float tex_scale_x = 1.f, tex_scale_y = 1.f;
-    
-    private int tex_clut_addr, tex_clut_mode, tex_clut_mask, tex_clut_num_blocks;    
+
+    private int tex_clut_addr, tex_clut_mode, tex_clut_mask, tex_clut_num_blocks;
 
     private int transform_mode;
-    
+
     // opengl needed information/buffers
     int[] gl_texture_id = new int[1];
     int[] tmp_texture_buffer32 = new int[1024*1024];
@@ -112,7 +112,7 @@ public class VideoEngine {
         VideoEngine engine = getEngine();
         engine.setFullScreenShoot(fullScreen);
         engine.setHardwareAcc(hardwareAccelerate);
-        engine.gl = gl;    	
+        engine.gl = gl;
         return engine;
     }
 
@@ -189,65 +189,65 @@ public class VideoEngine {
     private float floatArgument(int instruction) {
         return Float.intBitsToFloat(instruction << 8);
     }
-    
-    private int getStencilOp (int pspOP) {    	
-    	switch (pspOP) {            	
+
+    private int getStencilOp (int pspOP) {
+    	switch (pspOP) {
 	    	case SOP_KEEP_STENCIL_VALUE:
-	    		return GL.GL_KEEP;		        		
-	    		
+	    		return GL.GL_KEEP;
+
 	        case SOP_ZERO_STENCIL_VALUE:
 	        	return GL.GL_ZERO;
-	        	
+
 	        case SOP_REPLACE_STENCIL_VALUE:
 	        	return GL.GL_REPLACE;
-	        	
+
 	        case SOP_INVERT_STENCIL_VALUE:
 	        	return GL.GL_INVERT;
-	        	
+
 	        case SOP_INCREMENT_STENCIL_VALUE:
 	        	return GL.GL_INCR;
-	        	
+
 	        case SOP_DECREMENT_STENCIL_VALUE:
 	        	return GL.GL_DECR;
     	}
-    	
+
     	log ("UNKNOWN stencil op "+ pspOP);
     	return GL.GL_KEEP;
     }
-    
-    private int getBlendOp (int pspOP) {    	
-    	switch (pspOP) {   
+
+    private int getBlendOp (int pspOP) {
+    	switch (pspOP) {
 		    case ALPHA_SOURCE_COLOR:
 		    	return GL.GL_SRC_COLOR;
-		    	
+
 		    case ALPHA_ONE_MINUS_SOURCE_COLOR:
 		    	return GL.GL_ONE_MINUS_SRC_COLOR;
-		    	
+
 		    case ALPHA_SOURCE_ALPHA:
 		    	return GL.GL_SRC_ALPHA;
-		    	
+
 		    case ALPHA_ONE_MINUS_SOURCE_ALPHA:
 	    		return GL.GL_ONE_MINUS_SRC_ALPHA;
-		    
+
 		    case ALPHA_DESTINATION_COLOR:
 		    	return GL.GL_DST_COLOR;
-		    	
+
 		    case ALPHA_ONE_MINUS_DESTINATION_COLOR:
 		    	return GL.GL_ONE_MINUS_DST_COLOR;
-		    	
+
 		    case ALPHA_DESTINATION_ALPHA:
 		    	return GL.GL_DST_ALPHA;
-		    
+
 		    case ALPHA_ONE_MINUS_DESTINATION_ALPHA:
 		    	return GL.GL_ONE_MINUS_DST_ALPHA;
     	}
-    	
+
 
     	log ("Unsupported alpha blend op used" + pspOP);
     	return GL.GL_ONE;
     }
-		    	
-		    	
+
+
 
     public void executeCommand(int instruction) {
         int normalArgument = intArgument(instruction);
@@ -289,11 +289,11 @@ public class VideoEngine {
                     log("sceGuDisable(GU_TEXTURE_2D)");
                 }
                 break;
-                
+
             case VMS:
                 view_upload_start = true;
                 log("sceGumMatrixMode GU_VIEW");
-                break;            	
+                break;
 
             case VIEW:
                 if (view_upload_start) {
@@ -313,7 +313,7 @@ public class VideoEngine {
                         	view_upload_y++;
                             if (view_upload_y == 4) {
                                 log("glLoadMatrixf", view_matrix);
-                                
+
                                 for (int i = 0; i < 4*4; i++)
                                 	view_uploaded_matrix[i] = view_matrix[i];
                             }
@@ -325,7 +325,7 @@ public class VideoEngine {
             case MMS:
                 model_upload_start = true;
                 log("sceGumMatrixMode GU_MODEL");
-                break;            	
+                break;
 
             case MODEL:
                 if (model_upload_start) {
@@ -345,7 +345,7 @@ public class VideoEngine {
                             model_upload_y++;
                             if (model_upload_y == 4) {
                                 log("glLoadMatrixf", model_matrix);
-                                
+
                                 for (int i = 0; i < 4*4; i++)
                                 	model_uploaded_matrix[i] = model_matrix[i];
                             }
@@ -353,11 +353,11 @@ public class VideoEngine {
                     }
                 }
                 break;
-                
+
             /*
              *  Light 0 attributes
              */
-                
+
             // Position
             case LXP0:
             	light_pos[0][0] = floatArgument;
@@ -366,44 +366,44 @@ public class VideoEngine {
             	light_pos[0][1] = floatArgument;
             	break;
             case LZP0:
-            	light_pos[0][2] = floatArgument;            	
+            	light_pos[0][2] = floatArgument;
             	break;
-            
+
             // Color
-            case ALC0: {            	
+            case ALC0: {
             	float [] color = new float[4];
-            	
+
             	color[0] = ((normalArgument >> 16) & 255) / 255.f;
             	color[1] = ((normalArgument >>  8) & 255) / 255.f;
             	color[2] = ((normalArgument      ) & 255) / 255.f;
             	color[3] = 1.f;
-            	
+
             	gl.glLightfv(GL.GL_LIGHT0, GL.GL_AMBIENT, color, 0);
             	log("sceGuLightColor (GU_LIGHT0, GU_AMBIENT)");
             	break;
             }
-            	
-            case DLC0: {            	
+
+            case DLC0: {
             	float [] color = new float[4];
-            	
+
             	color[0] = ((normalArgument >> 16) & 255) / 255.f;
             	color[1] = ((normalArgument >>  8) & 255) / 255.f;
             	color[2] = ((normalArgument      ) & 255) / 255.f;
             	color[3] = 1.f;
-            	
+
             	gl.glLightfv(GL.GL_LIGHT0, GL.GL_DIFFUSE, color, 0);
             	log("sceGuLightColor (GU_LIGHT0, GU_DIFFUSE)");
             	break;
             }
-            	
+
             case SLC0: {
             	float [] color = new float[4];
-            	
+
             	color[0] = ((normalArgument >> 16) & 255) / 255.f;
             	color[1] = ((normalArgument >>  8) & 255) / 255.f;
             	color[2] = ((normalArgument      ) & 255) / 255.f;
             	color[3] = 1.f;
-            	
+
             	gl.glLightfv(GL.GL_LIGHT0, GL.GL_SPECULAR, color, 0);
             	log("sceGuLightColor (GU_LIGHT0, GU_SPECULAR)");
             	break;
@@ -413,19 +413,19 @@ public class VideoEngine {
             case LCA0:
             	gl.glLightf(GL.GL_LIGHT0, GL.GL_CONSTANT_ATTENUATION, floatArgument);
             	break;
-            	
+
             case LLA0:
             	gl.glLightf(GL.GL_LIGHT0, GL.GL_LINEAR_ATTENUATION, floatArgument);
             	break;
-            	
+
             case LQA0:
             	gl.glLightf(GL.GL_LIGHT0, GL.GL_QUADRATIC_ATTENUATION, floatArgument);
             	break;
-            	
+
         	/*
              *  Light 1 attributes
              */
-            	
+
             // Position
             case LXP1:
             	light_pos[1][0] = floatArgument;
@@ -436,64 +436,64 @@ public class VideoEngine {
             case LZP1:
             	light_pos[1][2] = floatArgument;
             	break;
-            	
-            // Color	
-            case ALC1: {            	
+
+            // Color
+            case ALC1: {
             	float [] color = new float[4];
-            	
+
             	color[0] = ((normalArgument >> 16) & 255) / 255.f;
             	color[1] = ((normalArgument >>  8) & 255) / 255.f;
             	color[2] = ((normalArgument      ) & 255) / 255.f;
             	color[3] = 1.f;
-            	
+
             	gl.glLightfv(GL.GL_LIGHT1, GL.GL_AMBIENT, color, 0);
             	log("sceGuLightColor (GU_LIGHT1, GU_AMBIENT)");
             	break;
             }
-            	
+
             case DLC1: {
             	float [] color = new float[4];
-            	
+
             	color[0] = ((normalArgument >> 16) & 255) / 255.f;
             	color[1] = ((normalArgument >>  8) & 255) / 255.f;
             	color[2] = ((normalArgument      ) & 255) / 255.f;
             	color[3] = 1.f;
-            	
+
             	gl.glLightfv(GL.GL_LIGHT1, GL.GL_DIFFUSE, color, 0);
             	log("sceGuLightColor (GU_LIGHT1, GU_DIFFUSE)");
             	break;
             }
-            	
+
             case SLC1: {
             	float [] color = new float[4];
-            	
+
             	color[0] = ((normalArgument >> 16) & 255) / 255.f;
             	color[1] = ((normalArgument >>  8) & 255) / 255.f;
             	color[2] = ((normalArgument      ) & 255) / 255.f;
             	color[3] = 1.f;
-            	
+
             	gl.glLightfv(GL.GL_LIGHT1, GL.GL_SPECULAR, color, 0);
             	log("sceGuLightColor (GU_LIGHT1, GU_SPECULAR)");
             	break;
             }
-            
+
             // Attenuation
             case LCA1:
             	gl.glLightf(GL.GL_LIGHT1, GL.GL_CONSTANT_ATTENUATION, floatArgument);
             	break;
-            	
+
             case LLA1:
             	gl.glLightf(GL.GL_LIGHT1, GL.GL_LINEAR_ATTENUATION, floatArgument);
             	break;
-            	
+
             case LQA1:
             	gl.glLightf(GL.GL_LIGHT1, GL.GL_QUADRATIC_ATTENUATION, floatArgument);
             	break;
-            	
+
         	/*
              *  Light 2 attributes
              */
-            	
+
             // Position
             case LXP2:
             	light_pos[2][0] = floatArgument;
@@ -504,64 +504,64 @@ public class VideoEngine {
             case LZP2:
             	light_pos[2][2] = floatArgument;
             	break;
-            
+
             // Color
-            case ALC2: {            	
+            case ALC2: {
             	float [] color = new float[4];
-            	
+
             	color[0] = ((normalArgument >> 16) & 255) / 255.f;
             	color[1] = ((normalArgument >>  8) & 255) / 255.f;
             	color[2] = ((normalArgument      ) & 255) / 255.f;
             	color[3] = 1.f;
-            	
+
             	gl.glLightfv(GL.GL_LIGHT2, GL.GL_AMBIENT, color, 0);
             	log("sceGuLightColor (GU_LIGHT2, GU_AMBIENT)");
             	break;
             }
-            	
-            case DLC2: {            	
+
+            case DLC2: {
             	float [] color = new float[4];
-            	
+
             	color[0] = ((normalArgument >> 16) & 255) / 255.f;
             	color[1] = ((normalArgument >>  8) & 255) / 255.f;
             	color[2] = ((normalArgument      ) & 255) / 255.f;
             	color[3] = 1.f;
-            	
+
             	gl.glLightfv(GL.GL_LIGHT2, GL.GL_DIFFUSE, color, 0);
             	log("sceGuLightColor (GU_LIGHT2, GU_DIFFUSE)");
             	break;
             }
-            	
+
             case SLC2: {
             	float [] color = new float[4];
-            	
+
             	color[0] = ((normalArgument >> 16) & 255) / 255.f;
             	color[1] = ((normalArgument >>  8) & 255) / 255.f;
             	color[2] = ((normalArgument      ) & 255) / 255.f;
             	color[3] = 1.f;
-            	
+
             	gl.glLightfv(GL.GL_LIGHT2, GL.GL_SPECULAR, color, 0);
             	log("sceGuLightColor (GU_LIGHT2, GU_SPECULAR)");
             	break;
             }
-            
+
             // Attenuation
             case LCA2:
             	gl.glLightf(GL.GL_LIGHT2, GL.GL_CONSTANT_ATTENUATION, floatArgument);
             	break;
-            	
+
             case LLA2:
             	gl.glLightf(GL.GL_LIGHT2, GL.GL_LINEAR_ATTENUATION, floatArgument);
             	break;
-            	
+
             case LQA2:
             	gl.glLightf(GL.GL_LIGHT2, GL.GL_QUADRATIC_ATTENUATION, floatArgument);
             	break;
-            	
+
         	/*
              *  Light 3 attributes
              */
-            	
+
             // Position
             case LXP3:
             	light_pos[3][0] = floatArgument;
@@ -572,68 +572,68 @@ public class VideoEngine {
             case LZP3:
             	light_pos[3][2] = floatArgument;
             	break;
-            
+
             // Color
-            case ALC3: {            	
+            case ALC3: {
             	float [] color = new float[4];
-            	
+
             	color[0] = ((normalArgument >> 16) & 255) / 255.f;
             	color[1] = ((normalArgument >>  8) & 255) / 255.f;
             	color[2] = ((normalArgument      ) & 255) / 255.f;
             	color[3] = 1.f;
-            	
+
             	gl.glLightfv(GL.GL_LIGHT3, GL.GL_AMBIENT, color, 0);
             	log("sceGuLightColor (GU_LIGHT3, GU_AMBIENT)");
             	break;
             }
-            	
-            case DLC3: {            	
+
+            case DLC3: {
             	float [] color = new float[4];
-            	
+
             	color[0] = ((normalArgument >> 16) & 255) / 255.f;
             	color[1] = ((normalArgument >>  8) & 255) / 255.f;
             	color[2] = ((normalArgument      ) & 255) / 255.f;
             	color[3] = 1.f;
-            	
+
             	gl.glLightfv(GL.GL_LIGHT3, GL.GL_DIFFUSE, color, 0);
             	log("sceGuLightColor (GU_LIGHT3, GU_DIFFUSE)");
             	break;
             }
-            	
+
             case SLC3: {
             	float [] color = new float[4];
-            	
+
             	color[0] = ((normalArgument >> 16) & 255) / 255.f;
             	color[1] = ((normalArgument >>  8) & 255) / 255.f;
             	color[2] = ((normalArgument      ) & 255) / 255.f;
             	color[3] = 1.f;
-            	
+
             	gl.glLightfv(GL.GL_LIGHT3, GL.GL_SPECULAR, color, 0);
             	log("sceGuLightColor (GU_LIGHT3, GU_SPECULAR)");
             	break;
             }
-            
+
             // Attenuation
             case LCA3:
             	gl.glLightf(GL.GL_LIGHT3, GL.GL_CONSTANT_ATTENUATION, floatArgument);
             	break;
-            	
+
             case LLA3:
             	gl.glLightf(GL.GL_LIGHT3, GL.GL_LINEAR_ATTENUATION, floatArgument);
             	break;
-            	
+
             case LQA3:
             	gl.glLightf(GL.GL_LIGHT3, GL.GL_QUADRATIC_ATTENUATION, floatArgument);
             	break;
-            	
-            
+
+
             /*
              * Light types
              */
-            
+
             case LT0: {
             	light_type[0] = normalArgument;
-            	
+
             	if (light_type[0] == LIGTH_DIRECTIONAL)
             		light_pos[0][3] = 0.f;
             	else
@@ -642,7 +642,7 @@ public class VideoEngine {
         	}
             case LT1: {
             	light_type[1] = normalArgument;
-            	
+
             	if (light_type[1] == LIGTH_DIRECTIONAL)
             		light_pos[1][3] = 0.f;
             	else
@@ -651,7 +651,7 @@ public class VideoEngine {
         	}
             case LT2: {
             	light_type[2] = normalArgument;
-            	
+
             	if (light_type[2] == LIGTH_DIRECTIONAL)
             		light_pos[2][3] = 0.f;
             	else
@@ -660,18 +660,18 @@ public class VideoEngine {
         	}
             case LT3: {
             	light_type[3] = normalArgument;
-            	
+
             	if (light_type[3] == LIGTH_DIRECTIONAL)
             		light_pos[3][3] = 0.f;
             	else
             		light_pos[3][3] = 1.f;
             	break;
         	}
-            
-            	
+
+
             /*
              * Individual lights enable/disable
-             */            
+             */
             case LTE0:
             	if (normalArgument != 0) {
                     gl.glEnable(GL.GL_LIGHT0);
@@ -681,7 +681,7 @@ public class VideoEngine {
                     log("sceGuDisable(GL_LIGHT0)");
                 }
                 break;
-                
+
             case LTE1:
             	if (normalArgument != 0) {
                     gl.glEnable(GL.GL_LIGHT1);
@@ -691,7 +691,7 @@ public class VideoEngine {
                     log("sceGuDisable(GL_LIGHT1)");
                 }
                 break;
-                
+
             case LTE2:
             	if (normalArgument != 0) {
                     gl.glEnable(GL.GL_LIGHT2);
@@ -701,7 +701,7 @@ public class VideoEngine {
                     log("sceGuDisable(GL_LIGHT2)");
                 }
                 break;
-                
+
             case LTE3:
             	if (normalArgument != 0) {
                     gl.glEnable(GL.GL_LIGHT3);
@@ -712,7 +712,7 @@ public class VideoEngine {
                 }
                 break;
 
-            	
+
             /*
              * Lighting enable/disable
              */
@@ -725,30 +725,30 @@ public class VideoEngine {
                     log("sceGuDisable(GL_LIGHTING)");
                 }
                 break;
-                
+
             /*
              * Material setup
              */
-            case AMA:            	
+            case AMA:
             	mat_ambient[3] = ((normalArgument      ) & 255) / 255.f;
             	gl.glMaterialfv(GL.GL_FRONT, GL.GL_AMBIENT, mat_ambient, 0);
-            	
+
             	break;
-            case AMC:            	
+            case AMC:
             	mat_ambient[0] = ((normalArgument >> 16) & 255) / 255.f;
             	mat_ambient[1] = ((normalArgument >>  8) & 255) / 255.f;
             	mat_ambient[2] = ((normalArgument      ) & 255) / 255.f;
             	gl.glMaterialfv(GL.GL_FRONT, GL.GL_AMBIENT, mat_ambient, 0);
-            	
+
             	log("sceGuAmbient");
             	break;
-            case DMC:            	
+            case DMC:
             	mat_diffuse[0] = ((normalArgument >> 16) & 255) / 255.f;
             	mat_diffuse[1] = ((normalArgument >>  8) & 255) / 255.f;
             	mat_diffuse[2] = ((normalArgument      ) & 255) / 255.f;
-            	mat_diffuse[3] = 1.f;            	
+            	mat_diffuse[3] = 1.f;
             	gl.glMaterialfv(GL.GL_FRONT, GL.GL_DIFFUSE, mat_diffuse, 0);
-            	
+
             	log("sceGuColor");
             	break;
 
@@ -781,134 +781,171 @@ public class VideoEngine {
                     }
                 }
                 break;
-                
+
             /*
-             * 
+             *
              */
-            case TBP0:         	
+            case TBP0:
             	texture_base_pointer0 = 0x08000000 | normalArgument;
-            	log ("sceGuTexImage(X,X,X,X,pointer)");            	
+            	log ("sceGuTexImage(X,X,X,X,pointer)");
             	break;
-            	
+
             case TSIZE0:
             	texture_height0 = 1 << ((normalArgument>>8) & 0xFF);
             	texture_width0  = 1 << ((normalArgument   ) & 0xFF);
-            	log ("sceGuTexImage(X,width,height,X,0)"); 
+            	log ("sceGuTexImage(X,width,height,X,0)");
             	break;
-            	
+
             case TMODE:
             	texture_num_mip_maps = (normalArgument>>16) & 0xFF;
             	texture_swizzle 	 = (normalArgument    ) & 0xFF;
             	break;
-            	
+
             case TPSM:
             	texture_storage = normalArgument;
             	break;
-            	
+
             case CBP: {
             	log ("sceGuClutLoad(X, cbp)");
             	tex_clut_addr = normalArgument | 0x08000000;
             	break;
             }
-            
+
             case CLOAD: {
             	log ("sceGuClutLoad(num_blocks, X)");
             	tex_clut_num_blocks = normalArgument;
             	break;
             }
-            
+
             case CMODE: {
             	log ("sceGuClutMode(cpsm, shift, mask, X)");
             	tex_clut_mode =  normalArgument     & 0x03;
             	tex_clut_mask = (normalArgument>>8) & 0xFF;
             	break;
             }
-            	
+
             case TFLUSH:
             {
             	// HACK: avoid texture uploads of null pointers
             	if (texture_base_pointer0 == 0x08000000)
             		break;
-            	
+
             	// Generate a texture id if we don't have one
-            	if (gl_texture_id[0] == 0)                	
+            	if (gl_texture_id[0] == 0)
                 	gl.glGenTextures(1, gl_texture_id, 0);
-            	
+
 
             	// Extract texture information with the minor conversion possible
-            	// TODO: Get rid of information copying, and implementent all the available formats            	
+            	// TODO: Get rid of information copying, and implementent all the available formats
             	Memory 	mem = Emulator.getMemory();
             	Buffer 	final_buffer = null;
             	int 	texture_type = 0;
-            	            	
+
             	switch (texture_storage) {
             		case TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED: {
-            			
+
             			// TODO: Refactor this to avoid code duplication
             			switch (tex_clut_mode) {
 	            			case CMODE_FORMAT_32BIT_ABGR8888: {
 	            				texture_type = GL.GL_UNSIGNED_BYTE;
-	            			
+
 	            				for (int i = 0; i < texture_width0*texture_height0; i++) {
 	            					int clut = mem.read8(texture_base_pointer0+i);
 	            					tmp_texture_buffer32[i] = mem.read32(tex_clut_addr + clut);
 	            				}
-	            				
+
 	            				final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
-	            				
+
 	            				break;
 	            			}
-	            			
+
 	                		default: {
 	                			System.out.println("Unhandled clut texture mode " + tex_clut_mode);
 	                            Emulator.PauseEmu();
 	                            break;
 	                		}
 	            		}
-	            			
+
             			break;
             		}
-            			
-            		case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444: {   
-            			texture_type = GL.GL_UNSIGNED_SHORT_4_4_4_4_REV;
-            			
+
+            		case TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650: {
+            			texture_type = GL.GL_UNSIGNED_SHORT_5_6_5_REV;
+
                     	for (int i = 0; i < texture_width0*texture_height0; i++) {
-                    		int pixel = mem.read16(texture_base_pointer0+i*2);                    		
+                    		int pixel = mem.read16(texture_base_pointer0+i*2);
                     		tmp_texture_buffer16[i] = (short)pixel;
                     	}
-                    	
-                    	final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);                    	
+
+                    	final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
             			break;
             		}
+
+            		case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551: {
+            			texture_type = GL.GL_UNSIGNED_SHORT_1_5_5_5_REV;
+
+                    	for (int i = 0; i < texture_width0*texture_height0; i++) {
+                    		int pixel = mem.read16(texture_base_pointer0+i*2);
+                    		tmp_texture_buffer16[i] = (short)pixel;
+                    	}
+
+                    	final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
+            			break;
+            		}
+
+            		case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444: {
+            			texture_type = GL.GL_UNSIGNED_SHORT_4_4_4_4_REV;
+
+                    	for (int i = 0; i < texture_width0*texture_height0; i++) {
+                    		int pixel = mem.read16(texture_base_pointer0+i*2);
+                    		tmp_texture_buffer16[i] = (short)pixel;
+                    	}
+
+                    	final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
+            			break;
+            		}
+
+            		case TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888: {
+            			texture_type = GL.GL_UNSIGNED_INT_8_8_8_8_REV;
+
+                    	for (int i = 0; i < texture_width0*texture_height0; i++) {
+                    		int pixel = mem.read16(texture_base_pointer0+i*4);
+                    		tmp_texture_buffer32[i] = pixel;
+                    	}
+
+                    	final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
+            			break;
+            		}
+
             		default: {
             			System.out.println("Unhandled texture storage " + texture_storage);
                         Emulator.PauseEmu();
                         break;
             		}
             	}
-            	
+
             	// Upload texture to openGL
             	// TODO: Write a texture cache :)
             	gl.glBindTexture  (GL.GL_TEXTURE_2D, gl_texture_id[0]);
             	gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, tex_min_filter);
             	gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_mag_filter);
-            	
-            	gl.glTexImage2D  (	GL.GL_TEXTURE_2D, 
-            						0, 
-            						GL.GL_RGBA, 
-            						texture_width0, texture_height0, 
-            						0, 
-            						GL.GL_RGBA, 
+
+            	gl.glTexImage2D  (	GL.GL_TEXTURE_2D,
+            						0,
+            						GL.GL_RGBA,
+            						texture_width0, texture_height0,
+            						0,
+            						GL.GL_RGBA,
             						texture_type,
             						final_buffer);
             	break;
             }
-            
+
             case TFLT: {
             	log ("sceGuTexFilter(min, mag)");
-            	
+
             	switch ((normalArgument>>8) & 0xFF)
-            	{            	
+            	{
 	            	case TFLT_MAGNIFYING_FILTER_NEAREST: {
 	            		tex_mag_filter = GL.GL_NEAREST;
 	            		break;
@@ -933,15 +970,15 @@ public class VideoEngine {
 	            		tex_mag_filter = GL.GL_LINEAR_MIPMAP_LINEAR;
 	            		break;
 	            	}
-	            	
+
 	            	default: {
-	            		log ("Unknown magnifiying filter " + ((normalArgument>>8) & 0xFF));	            
+	            		log ("Unknown magnifiying filter " + ((normalArgument>>8) & 0xFF));
 	            		break;
 	            	}
             	}
-            	
+
             	switch (normalArgument & 0xFF)
-            	{            	
+            	{
 	            	case TFLT_MAGNIFYING_FILTER_NEAREST: {
 	            		tex_min_filter = GL.GL_NEAREST;
 	            		break;
@@ -966,33 +1003,33 @@ public class VideoEngine {
 	            		tex_min_filter = GL.GL_LINEAR_MIPMAP_LINEAR;
 	            		break;
 	            	}
-	            	
+
 	            	default: {
-	            		log ("Unknown minimizing filter " + (normalArgument & 0xFF));	            
+	            		log ("Unknown minimizing filter " + (normalArgument & 0xFF));
 	            		break;
 	            	}
-            	} 	
-            	
+            	}
+
             	break;
             }
-            
 
-            
+
+
             /*
              * Texture transformations
-             */            
+             */
             case UOFFSET: {
             	tex_translate_x = floatArgument;
             	log ("sceGuTexOffset(float u, X)");
             	break;
             }
-            
+
             case VOFFSET: {
             	tex_translate_y = floatArgument;
             	log ("sceGuTexOffset(X, float v)");
             	break;
             }
-            
+
             case USCALE: {
             	tex_scale_x = floatArgument;
             	log ("sceGuTexScale(float u, X)");
@@ -1003,20 +1040,20 @@ public class VideoEngine {
             	log ("sceGuTexScale(X, float v)");
             	break;
             }
-            
+
             case TMAP: {
-            	log ("sceGuTexMapMode(mode, X, X)");            	
+            	log ("sceGuTexMapMode(mode, X, X)");
             	tex_map_mode = normalArgument;
             	break;
             }
-            
+
             case TEXTURE_ENV_MAP_MATRIX: {
             	log ("sceGuTexMapMode(X, column1, column2)");
-            	
+
             	if (normalArgument != 0) {
             		int column0 =  normalArgument     & 0xFF,
             			column1 = (normalArgument>>8) & 0xFF;
-            		
+
             		for (int i = 0; i < 3; i++) {
             			tex_envmap_matrix [i+0] = light_pos[column0][i];
             			tex_envmap_matrix [i+4] = light_pos[column1][i];
@@ -1026,7 +1063,7 @@ public class VideoEngine {
             }
 
             /*
-             * 
+             *
              */
             case XSCALE:
                 log("sceGuViewport width = " + (floatArgument * 2));
@@ -1111,19 +1148,19 @@ public class VideoEngine {
                         log(helper.getCommandString(PRIM) + " sprites");
                         break;
                 }
-                
+
                 /*
                  * Defer transformations until primitive rendering
                  */
                 gl.glMatrixMode(GL.GL_PROJECTION);
                 gl.glPushMatrix ();
                 gl.glLoadIdentity();
-                
+
                 if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
                 	gl.glLoadMatrixf(proj_uploaded_matrix, 0);
                 else
                 	gl.glOrtho(0.0, 480, 0.0, 272, -1.0, 1.0);
-                
+
                 /*
                  * Apply texture transforms
                  */
@@ -1132,39 +1169,39 @@ public class VideoEngine {
                 gl.glLoadIdentity();
                 gl.glTranslatef (tex_translate_x, tex_translate_y, 0.f);
                 gl.glScalef		(tex_scale_x, tex_scale_y, 1.f);
-                
+
                 switch (tex_map_mode) {
 	                case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV:
 	                	break;
-	                	
+
 	                case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP: {
-	                	
+
 	                	// First, setup texture uv generation
 	                	gl.glTexGeni(GL.GL_S, GL.GL_TEXTURE_GEN_MODE, GL.GL_SPHERE_MAP);
 	                	gl.glEnable (GL.GL_TEXTURE_GEN_S);
-	                	
+
 	                	gl.glTexGeni(GL.GL_T, GL.GL_TEXTURE_GEN_MODE, GL.GL_SPHERE_MAP);
-	                	gl.glEnable (GL.GL_TEXTURE_GEN_T);                	
-	                	
+	                	gl.glEnable (GL.GL_TEXTURE_GEN_T);
+
 	                	// Setup also textura matrix
 	                	gl.glMultMatrixf (tex_envmap_matrix, 0);
 	                	break;
 	                }
-	                
+
 	                default:
 	                	log ("Unhandled textura matrix mode " + tex_map_mode);
                 }
-                
+
                 /*
                  * Apply view matrix
                  */
                 gl.glMatrixMode(GL.GL_MODELVIEW);
                 gl.glPushMatrix ();
                 gl.glLoadIdentity();
-                
+
                 if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
                 	gl.glLoadMatrixf(view_uploaded_matrix, 0);
-                
+
                 /*
                  *  Setup lights on when view transformation is set up
                  */
@@ -1172,11 +1209,11 @@ public class VideoEngine {
                 gl.glLightfv(GL.GL_LIGHT1, GL.GL_POSITION, light_pos[1], 0);
                 gl.glLightfv(GL.GL_LIGHT2, GL.GL_POSITION, light_pos[2], 0);
                 gl.glLightfv(GL.GL_LIGHT3, GL.GL_POSITION, light_pos[3], 0);
-                
+
                 // Apply model matrix
                 if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
                 	gl.glMultMatrixf(model_uploaded_matrix, 0);
-                
+
 
                 // GL
                 switch (type) {
@@ -1233,7 +1270,7 @@ public class VideoEngine {
                         gl.glPopAttrib();
                         break;
                 }
-                
+
                 switch (tex_map_mode) {
                 	case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP: {
 		            	gl.glDisable (GL.GL_TEXTURE_GEN_S);
@@ -1241,51 +1278,51 @@ public class VideoEngine {
 		            	break;
 		            }
 		        }
-                
+
                 gl.glPopMatrix ();
                 gl.glMatrixMode(GL.GL_TEXTURE);
                 gl.glPopMatrix ();
-                gl.glMatrixMode(GL.GL_PROJECTION);                
+                gl.glMatrixMode(GL.GL_PROJECTION);
                 gl.glPopMatrix ();
                 gl.glMatrixMode(GL.GL_MODELVIEW);
-                
+
                 break;
             }
-            
+
             case ALPHA: {
-            	
+
             	int blend_mode = GL.GL_FUNC_ADD;
             	int src = getBlendOp(normalArgument&0xF), dst = getBlendOp((normalArgument>>4)&0xF);
-            	
+
             	switch ((normalArgument>>8)&0xF) {
 	            	case ALPHA_SOURCE_BLEND_OPERATION_ADD:
 	            		blend_mode = GL.GL_FUNC_ADD;
 	            		break;
-	            		
+
 	                case ALPHA_SOURCE_BLEND_OPERATION_SUBTRACT:
 	                	blend_mode = GL.GL_FUNC_SUBTRACT;
 	            		break;
-	            		
+
 	                case ALPHA_SOURCE_BLEND_OPERATION_REVERSE_SUBTRACT:
 	                	blend_mode = GL.GL_FUNC_REVERSE_SUBTRACT;
 	            		break;
-	            		
+
 	                case ALPHA_SOURCE_BLEND_OPERATION_MINIMUM_VALUE:
 	                	blend_mode = GL.GL_MIN;
 	            		break;
-	            		
+
 	                case ALPHA_SOURCE_BLEND_OPERATION_MAXIMUM_VALUE:
 	                	blend_mode = GL.GL_MAX;
 	            		break;
-	                	
+
 	                case ALPHA_SOURCE_BLEND_OPERATION_ABSOLUTE_VALUE:
 	                	log ("Unhandled blend mode ");
 	                	break;
             	}
-            	
+
             	gl.glBlendEquation(blend_mode);
             	gl.glBlendFunc(src, dst);
-            	
+
             	log ("sceGuBlendFunc(int op, int src, int dest, X, X)");
             	break;
             }
@@ -1303,7 +1340,7 @@ public class VideoEngine {
                 log(helper.getCommandString(FFACE) + " " + ((normalArgument != 0) ? "clockwise" : "counter-clockwise"));
                 break;
             }
-            
+
             case BCE:
                 if(normalArgument != 0)
                 {
@@ -1314,7 +1351,7 @@ public class VideoEngine {
                 {
                     gl.glDisable(GL.GL_CULL_FACE);
                     log("sceGuDisable(GU_CULL_FACE)");
-                }    
+                }
                 break;
             case FGE:
                 if(normalArgument != 0)
@@ -1329,7 +1366,7 @@ public class VideoEngine {
                 {
                     gl.glDisable(GL.GL_FOG);
                     log("sceGuDisable(GL_FOG)");
-                } 
+                }
                 break;
             case ABE:
                 if(normalArgument != 0) {
@@ -1339,7 +1376,7 @@ public class VideoEngine {
                 else {
                     gl.glDisable(GL.GL_BLEND);
                     log("sceGuDisable(GU_BLEND)");
-                }    
+                }
                 break;
             case ZTE:
                 if(normalArgument != 0) {
@@ -1349,7 +1386,7 @@ public class VideoEngine {
                 else {
                     gl.glDisable(GL.GL_DEPTH_TEST);
                     log("sceGuDisable(GU_DEPTH_TEST)");
-                }    
+                }
                 break;
             case STE:
                 if(normalArgument != 0) {
@@ -1359,7 +1396,7 @@ public class VideoEngine {
                 else {
                     gl.glDisable(GL.GL_STENCIL_TEST);
                     log("sceGuDisable(GU_STENCIL_TEST)");
-                }    
+                }
                 break;
             case LOE:
                 if(normalArgument != 0)
@@ -1371,7 +1408,7 @@ public class VideoEngine {
                 {
                     gl.glDisable(GL.GL_COLOR_LOGIC_OP);
                     log("sceGuDisable(GU_COLOR_LOGIC_OP)");
-                }    
+                }
                 break;
             case JUMP:
                 int npc = (normalArgument | actualList.base) & 0xFFFFFFFC;
@@ -1389,71 +1426,71 @@ public class VideoEngine {
                 actualList.pc = actualList.stack[--actualList.stackIndex];
                 log(helper.getCommandString(RET), actualList.pc);
                 break;
-                
+
             case ZMSK: {
             	// NOTE: PSP depth mask as 1 is meant to avoid depth writes,
             	//		on pc it's the opposite
             	gl.glDepthMask(normalArgument == 1 ? false : true);
-            	
+
             	log ("sceGuDepthMask(disableWrites)");
             	break;
             }
-            
+
             case STST: {
-            	
+
             	int func = GL.GL_ALWAYS;
-            	
+
             	switch (normalArgument & 0xFF) {
             		case STST_FUNCTION_NEVER_PASS_STENCIL_TEST:
             			func = GL.GL_NEVER;
             			break;
-            			
+
                 	case STST_FUNCTION_ALWAYS_PASS_STENCIL_TEST:
                 		func = GL.GL_ALWAYS;
             			break;
-            			
+
                 	case STST_FUNCTION_PASS_TEST_IF_MATCHES:
                 		func = GL.GL_EQUAL;
             			break;
-            			
+
                 	case STST_FUNCTION_PASS_TEST_IF_DIFFERS:
                 		func = GL.GL_NOTEQUAL;
             			break;
-            			
+
                 	case STST_FUNCTION_PASS_TEST_IF_LESS:
                 		func = GL.GL_LESS;
             			break;
-            			
+
                 	case STST_FUNCTION_PASS_TEST_IF_LESS_OR_EQUAL:
                 		func = GL.GL_LEQUAL;
             			break;
-            			
+
                 	case STST_FUNCTION_PASS_TEST_IF_GREATER:
                 		func = GL.GL_GREATER;
             			break;
-            			
+
                 	case STST_FUNCTION_PASS_TEST_IF_GREATER_OR_EQUAL:
                 		func = GL.GL_GEQUAL;
             			break;
             	}
-            	
+
             	gl.glStencilFunc (func, ((normalArgument>>8) & 0xff), (normalArgument>>16) & 0xff);
-            	
+
             	log ("sceGuStencilFunc(func, ref, mask)");
             	break;
             }
-            
+
             case SOP: {
-            	
+
             	int fail  = getStencilOp  (normalArgument & 0xFF);
             	int zfail = getStencilOp ((normalArgument>> 8) & 0xFF);
             	int zpass = getStencilOp ((normalArgument>>16) & 0xFF);
-            	
+
             	gl.glStencilOp(fail, zfail, zpass);
-                 
+
             	break;
             }
-            	
+
             case CLEAR:
                 if ((normalArgument & 0x1)==0) {
                 	gl.glClear(clearFlags);
