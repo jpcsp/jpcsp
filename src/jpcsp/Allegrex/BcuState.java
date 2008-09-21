@@ -8,8 +8,10 @@ package jpcsp.Allegrex;
 import jpcsp.Allegrex.*;
 
 /**
- *
+ * Branch Control Unit, handles branching and jumping operations
+ * 
  * @author hli
+ * 
  */
 public class BcuState extends LsuState {
     public int pc;

@@ -5,6 +5,7 @@
 package jpcsp.Allegrex;
 
 /**
+ * Central Point Unit, handles all operations
  *
  * @author hli
  */

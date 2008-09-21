@@ -24,8 +24,49 @@ import java.util.Map;
 
 public class Processor implements AllegrexInstructions {
 
+// "New-Style" Processor
     public CpuState cpu;
 
+    public static final jpcsp.Memory memory = jpcsp.Memory.getInstance();
+    
+    /* to uncomment when we need to use the "New-Style" Processor
+    Processor() {
+        reset();
+    }
+
+    public void reset() {
+        cpu.reset();
+    }
+    */
+
+    public void interpret() {
+
+        int opcode = cpu.fetchOpcode();
+        
+        Common.Instruction insn = Decoder.instruction(opcode);
+        
+        insn.interpret(this, opcode);
+    }
+
+    public void interpretDelayslot() {
+
+        int opcode = cpu.nextOpcode();
+        
+        Common.Instruction insn = Decoder.instruction(opcode);
+        
+        insn.interpret(this, opcode);
+        
+        cpu.nextPc();
+    }
+
+    /* to uncomment when we need to use the "New-Style" Processor
+    public void step() {
+        interpret();
+    }
+    */
+    
+// what follows is "Old-style" Processor (to be removed one day)
+    
     public static final int fcr0_imp = 0; /* FPU design number */
 
     public static final int fcr0_rev = 0; /* FPU revision bumber */
@@ -73,6 +114,7 @@ public class Processor implements AllegrexInstructions {
     public RegisterTracking tracked_hilo;
 
     Processor() {
+        cpu = new CpuState();
         Memory.getInstance(); //intialize memory
         reset();
         testOpcodes();
@@ -80,6 +122,8 @@ public class Processor implements AllegrexInstructions {
     }
 
     public void reset() {
+        cpu.reset();
+        
         // intialize psp register
         pc = npc = 0x00000000;
         hilo = 0;

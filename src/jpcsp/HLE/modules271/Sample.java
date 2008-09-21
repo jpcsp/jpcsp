@@ -46,7 +46,7 @@ public class Sample extends jpcsp.HLE.modules150.Sample {
 
         // Here we have changed the NID from 1.50 version
         // The NID may not change between firmware versions, but here we can do it.
-        mm.add(pspSampleFooFunction, 0x02710271);
+        mm.addFunction(pspSampleFooFunction, 0x02710271);
     }
 
     @Override
@@ -57,14 +57,19 @@ public class Sample extends jpcsp.HLE.modules150.Sample {
             return;
         }
 
-        mm.remove(pspSampleFooFunction);
+        mm.removeFunction(pspSampleFooFunction);
     }
 
     public final HLEModuleFunction pspSampleFooFunction = new HLEModuleFunction("Sample", "pspSampleFoo") {
 
         @Override
-        public void execute(Processor cpu, Memory mem) {
+        public final void execute(Processor processor) {
             pspSampleFoo();
         }
+        
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.modules271.Sample.pspSampleFooFunction.execute(processor);";
+        }        
     };
 }

@@ -47,7 +47,9 @@ public class Sample implements HLEModule {
     // Example: sceKernelCreateThread adds a ThreadInfo object to a List,
     // then sceKernelStartThread gets that object out of the list and modifies it.
     // Example: sceKernelStdin, this just returns a value and doesn't do any processing.
-    public void pspSampleFoo(Processor cpu, Memory mem) {
+    public void pspSampleFoo(Processor processor) {
+        // CpuState cpu = processor.cpu; // New-Style Processor
+        Processor cpu = processor; // Old-Style Processor
         int param = cpu.gpr[4];
 
         System.out.println("pspSampleFoo 150 context = " + someContext);
@@ -79,23 +81,28 @@ public class Sample implements HLEModule {
     public void installModule(HLEModuleManager mm, int version) {
 
         // The NID may not change between firmware versions, but here we can do it.
-        mm.add(pspSampleFooFunction, 0x15151515);
+        mm.addFunction(pspSampleFooFunction, 0x15151515);
     }
 
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) {
 
-        mm.remove(pspSampleFooFunction);
+        mm.removeFunction(pspSampleFooFunction);
     }
 
     public final HLEModuleFunction pspSampleFooFunction = new HLEModuleFunction("Sample", "pspSampleFoo") {
 
         @Override
-        public void execute(Processor cpu, Memory mem) {
+        public void execute(Processor processor) {
             // We need to decide on the call style
             // I prefer the first version (fiveofhearts)
-            pspSampleFoo(cpu, mem);
-            //cpu.gpr[2] = pspSampleFoo(cpu.gpr[4]);
+            pspSampleFoo(processor);
+            //processor.gpr[2] = pspSampleFoo(processor.gpr[4]);
         }
-    };
+
+        @Override
+        public String compiledString() {
+            return "jpcsp.HLE.modules150.Sample.pspSampleFooFunction.execute(processor);";
+        }
+};
 }

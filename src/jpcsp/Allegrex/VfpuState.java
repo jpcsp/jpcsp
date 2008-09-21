@@ -5,6 +5,7 @@
 package jpcsp.Allegrex;
 
 /**
+ * Vectorial Floating Point Unit, handles scalar, vector and matrix operations.
  *
  * @author hli
  */
@@ -81,9 +82,9 @@ public class VfpuState extends FpuState {
         public boolean[] /* 131 */ cc;
 
         public void reset() {
-            pfxs.reset();
-            pfxt.reset();
-            pfxd.reset();
+            pfxs = new PfxSrc();
+            pfxt = new PfxSrc();
+            pfxd = new PfxDst();
             cc = new boolean[6];
         }
 

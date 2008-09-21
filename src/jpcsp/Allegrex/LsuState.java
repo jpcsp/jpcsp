@@ -6,6 +6,7 @@
 package jpcsp.Allegrex;
 
 /**
+ * Load Store Unit, handles memory operations.
  *
  * @author hli
  */
