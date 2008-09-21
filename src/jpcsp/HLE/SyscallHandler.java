@@ -217,11 +217,11 @@ public class SyscallHandler {
                     break;
 		// sceIoWriteAsync(0x2094),
 		// sceIoLseekAsync(0x2096),
-                    
+
                 case 0x2095:
-                	pspiofilemgr.get_instance().sceIoLseek32(gpr[4], gpr[6] | (gpr[7]<<32), gpr[8]);
+                    pspiofilemgr.get_instance().sceIoLseek(gpr[4], gpr[6] | (gpr[7]<<32), gpr[8]);
                     break;
-                    
+
                 case 0x2097:
                     pspiofilemgr.get_instance().sceIoLseek32(gpr[4], gpr[6] | (gpr[7]<<32), gpr[8]);
                     break;
