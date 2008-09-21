@@ -5,6 +5,7 @@
 package jpcsp.Allegrex;
 
 /**
+ * Floating Point Unit, handles floating point operations, including BCU and LSU
  *
  * @author hli
  */

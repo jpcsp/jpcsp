@@ -59,5 +59,7 @@ public abstract class HLEModuleFunction {
         return nid;
     }
 
-    public abstract void execute(Processor cpu, Memory mem);
+    public abstract void execute(Processor cpu);
+    
+    public abstract String compiledString();
 }

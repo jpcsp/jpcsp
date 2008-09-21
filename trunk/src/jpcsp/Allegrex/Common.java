@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.Allegrex;
 
 import jpcsp.util.Utilities;
+import jpcsp.Processor;
 
 
 /**
@@ -29,9 +30,9 @@ public class Common {
 
         private int m_count = 0;
 
-        public abstract void interpret(Processor processor, int insn);
+        public abstract void interpret(jpcsp.Processor processor, int insn);
 
-        public abstract void compile(Processor processor, int insn);
+        public abstract void compile(jpcsp.Processor processor, int insn);
 
         public abstract String disasm(int address, int insn);
 

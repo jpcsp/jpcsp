@@ -20,6 +20,8 @@ import jpcsp.HLE.SyscallHandler;
 
 import jpcsp.Allegrex.Common.*;
 
+import jpcsp.Processor;
+
 import static jpcsp.Debugger.DisassemblerModule.DisHelper.*;
 
 /**

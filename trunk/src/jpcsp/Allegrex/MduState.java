@@ -6,6 +6,7 @@
 package jpcsp.Allegrex;
 
 /**
+ * Multiply Divide Unit, handles accumulators.
  *
  * @author hli
  */

@@ -6,6 +6,7 @@
 package jpcsp.Allegrex;
 
 /**
+ * General Purpose Registers, handles integer operations like ALU, shifter, etc.
  *
  * @author hli
  */
