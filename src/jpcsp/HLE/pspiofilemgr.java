@@ -321,19 +321,26 @@ public class pspiofilemgr {
 
     // TODO sceIoLseek with 64-bit offset parameter and return value
     public void sceIoLseek(int uid, long offset, int whence) {
-        if (debug) System.out.println("sceIoLseek - uid " + Integer.toHexString(uid) + " offset " + offset + " whence " + whence);
-        if (debug) System.out.println("sceIoLseek - offset 0x" + Long.toHexString(offset));
+        if (debug) System.out.println("sceIoLseek - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Long.toHexString(offset) + ") whence " + getWhenceName(whence));
         seek(uid, offset, whence);
     }
 
     public void sceIoLseek32(int uid, int offset, int whence) {
-        if (debug) System.out.println("sceIoLseek32 - uid " + Integer.toHexString(uid) + " offset " + offset + " whence " + whence);
-        if (debug) System.out.println("sceIoLseek - offset 0x" + Long.toHexString(offset));
+        if (debug) System.out.println("sceIoLseek32 - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
         seek(uid, offset, whence);
     }
 
+    private String getWhenceName(int whence) {
+        switch(whence) {
+            case PSP_SEEK_SET: return "PSP_SEEK_SET";
+            case PSP_SEEK_CUR: return "PSP_SEEK_CUR";
+            case PSP_SEEK_END: return "PSP_SEEK_END";
+            default: return "UNHANDLED " + whence;
+        }
+    }
+
     private void seek(int uid, long offset, int whence) {
-        if (debug) System.out.println("seek - uid " + Integer.toHexString(uid) + " offset " + offset + " whence " + whence);
+        //if (debug) System.out.println("seek - uid " + Integer.toHexString(uid) + " offset " + offset + " whence " + whence);
 
         if (uid == 1 || uid == 2 || uid == 3) { // stdio
             System.out.println("seek - can't seek on stdio uid " + Integer.toHexString(uid));
