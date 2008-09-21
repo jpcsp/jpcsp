@@ -318,8 +318,7 @@ public class pspiofilemgr {
         }
     }
 
-
-    // TODO sceIoLseek with 64-bit offset parameter and return value
+    // TODO sceIoLseek with 64-bit return value
     public void sceIoLseek(int uid, long offset, int whence) {
         if (debug) System.out.println("sceIoLseek - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Long.toHexString(offset) + ") whence " + getWhenceName(whence));
         seek(uid, offset, whence);

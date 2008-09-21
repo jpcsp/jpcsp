@@ -314,15 +314,23 @@ public class FileManager {
 
             // Resolve section name (if possible)
             if (shstrtab != null) {
-                f.position((int)(elfoffset + shstrtab.getSh_offset() + shdr.getSh_name()));
-                String SectionName = "";//Utilities.readStringZ(f);
-               try{
-                    SectionName = Utilities.readStringZ(f);
+                int position = (int)(elfoffset + shstrtab.getSh_offset() + shdr.getSh_name());
+                if (position < f.limit()) {
+                    f.position(position);
+                } else {
+                    System.out.println("Section " + (SectionCounter + 1) + "/" + sectionheaders.size()
+                        + " beyond end of file " + position + " >= " + f.limit());
+                    break;
+                }
 
+                String SectionName = "";//Utilities.readStringZ(f);
+                try {
+                    SectionName = Utilities.readStringZ(f);
                 }
                 catch(IOException e){
-                    System.out.println("ERROR:SectionNames can't be found.NIDs can't be load");
+                    System.out.println("ERROR:SectionNames can't be found. NIDs can't be load");
                 }
+
                 if (SectionName.length() > 0) {
 
                     shdr.setSh_namez(SectionName);
@@ -334,7 +342,9 @@ public class FileManager {
                         moduleinfo.read(f);
                         //System.out.println(Long.toHexString(moduleinfo.m_gp));
 
-                        System.out.println("Found ModuleInfo name:'" + moduleinfo.getM_namez() + "' version:" + Utilities.formatString("short", Integer.toHexString(moduleinfo.getM_version() & 0xFFFF).toUpperCase()));
+                        System.out.println("Found ModuleInfo name:'" + moduleinfo.getM_namez()
+                            + "' version:" + String.format("%04x", moduleinfo.getM_version())
+                            + " attr:" + String.format("%08x", moduleinfo.getM_attr()));
 
                         if ((moduleinfo.getM_attr() & 0x1000) != 0) {
                             System.out.println("Kernel mode module detected");
@@ -342,6 +352,9 @@ public class FileManager {
                         if ((moduleinfo.getM_attr() & 0x0800) != 0) {
                             System.out.println("VSH mode module detected");
                         }
+                    } else if (SectionName.matches(".rodata.sceResident")) {
+                        // We may need this later, for now just print whether this file has this section or not
+                        System.out.println("Found Resident section");
                     }
                 }
             }
