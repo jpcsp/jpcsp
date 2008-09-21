@@ -517,7 +517,10 @@ public class ThreadMan {
                 + " newAttr:0x" + Integer.toHexString(attr)
                 + " oldAttr:0x" + Integer.toHexString(current_thread.attr));
         
-        // TODO should probably check this and add in certain bits like usermode
+        // Don't allow switching into kernel mode!
+        if ((current_thread.attr & PSP_THREAD_ATTR_USER) == PSP_THREAD_ATTR_USER)
+            attr |= PSP_THREAD_ATTR_USER;
+        
         current_thread.attr = attr;
         
         Emulator.getProcessor().gpr[2] = 0;
