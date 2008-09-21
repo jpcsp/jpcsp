@@ -44,7 +44,7 @@ public class Memory {
     public ByteBuffer videoram;
     public ByteBuffer mainmemory;
 
-    public static Memory get_instance() {
+    public static Memory getInstance() {
         if (instance == null)
             instance = new Memory();
         return instance;

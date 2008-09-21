@@ -101,7 +101,7 @@ public class pspctrl {
 
     public void sceCtrlGetSamplingCycle(int a0)
     {
-        Memory.get_instance().write32(a0, cycle);
+        Memory.getInstance().write32(a0, cycle);
         Emulator.getProcessor().gpr[2] = 0;
     }
 
@@ -113,13 +113,13 @@ public class pspctrl {
 
     public void sceCtrlGetSamplingMode(int a0)
     {
-        Memory.get_instance().write32(a0, mode);
+        Memory.getInstance().write32(a0, mode);
         Emulator.getProcessor().gpr[2] = 0;
     }
 
     public void sceCtrlPeekBufferPositive(int a0, int a1)
     {
-        Memory mem = Memory.get_instance();
+        Memory mem = Memory.getInstance();
         int i;
 
         for (i = 0; i < a1; i++) {
@@ -138,7 +138,7 @@ public class pspctrl {
 
     public void sceCtrlPeekBufferNegative(int a0, int a1)
     {
-        Memory mem = Memory.get_instance();
+        Memory mem = Memory.getInstance();
         int i;
 
         for (i = 0; i < a1; i++) {
@@ -157,7 +157,7 @@ public class pspctrl {
 
     public void sceCtrlReadBufferPositive(int a0, int a1)
     {
-        Memory mem = Memory.get_instance();
+        Memory mem = Memory.getInstance();
         int i;
 
         for (i = 0; i < a1; i++) {
@@ -177,7 +177,7 @@ public class pspctrl {
 
     public void sceCtrlReadBufferNegative(int a0, int a1)
     {
-        Memory mem = Memory.get_instance();
+        Memory mem = Memory.getInstance();
         int i;
 
         for (i = 0; i < a1; i++) {
@@ -196,7 +196,7 @@ public class pspctrl {
     }
 
     public void sceCtrlPeekLatch(int a0) {
-        Memory mem = Memory.get_instance();
+        Memory mem = Memory.getInstance();
 
         mem.write32(a0, 0);             //uiMake
         mem.write32(a0 +4, 0);          //uiBreak
@@ -206,7 +206,7 @@ public class pspctrl {
     }
 
     public void sceCtrlReadLatch(int a0) {
-        Memory mem = Memory.get_instance();
+        Memory mem = Memory.getInstance();
 
         mem.write32(a0, 0);             //uiMake
         mem.write32(a0 +4, 0);          //uiBreak

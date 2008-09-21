@@ -105,140 +105,140 @@ public class DmacManForKernel implements HLEModule {
 
         @Override
         public void execute(Processor cpu, Memory mem) {
-            System.out.println("Unimplement function sceKernelDmaExit [0x1C46158A]");
+            System.out.println("Unimplemented function sceKernelDmaExit [0x1C46158A]");
         }
     };
     public static final HLEModuleFunction sceKernelDmaChExclude = new HLEModuleFunction("DmacManForKernel", "sceKernelDmaChExclude") {
 
         @Override
         public void execute(Processor cpu, Memory mem) {
-            System.out.println("Unimplement function sceKernelDmaChExclude [0xD8BC3120]");
+            System.out.println("Unimplemented function sceKernelDmaChExclude [0xD8BC3120]");
         }
     };
     public static final HLEModuleFunction sceKernelDmaChReserve = new HLEModuleFunction("DmacManForKernel", "sceKernelDmaChReserve") {
 
         @Override
         public void execute(Processor cpu, Memory mem) {
-            System.out.println("Unimplement function sceKernelDmaChReserve [0x2E3BC333]");
+            System.out.println("Unimplemented function sceKernelDmaChReserve [0x2E3BC333]");
         }
     };
     public static final HLEModuleFunction sceKernelDmaSoftRequest = new HLEModuleFunction("DmacManForKernel", "sceKernelDmaSoftRequest") {
 
         @Override
         public void execute(Processor cpu, Memory mem) {
-            System.out.println("Unimplement function sceKernelDmaSoftRequest [0x7B9634E1]");
+            System.out.println("Unimplemented function sceKernelDmaSoftRequest [0x7B9634E1]");
         }
     };
     public static final HLEModuleFunction sceKernelDmaOpAlloc = new HLEModuleFunction("DmacManForKernel", "sceKernelDmaOpAlloc") {
 
         @Override
         public void execute(Processor cpu, Memory mem) {
-            System.out.println("Unimplement function sceKernelDmaOpAlloc [0x59615199]");
+            System.out.println("Unimplemented function sceKernelDmaOpAlloc [0x59615199]");
         }
     };
     public static final HLEModuleFunction sceKernelDmaOpFree = new HLEModuleFunction("DmacManForKernel", "sceKernelDmaOpFree") {
 
         @Override
         public void execute(Processor cpu, Memory mem) {
-            System.out.println("Unimplement function sceKernelDmaOpFree [0x745E19EF]");
+            System.out.println("Unimplemented function sceKernelDmaOpFree [0x745E19EF]");
         }
     };
     public static final HLEModuleFunction sceKernelDmaOpAssign = new HLEModuleFunction("DmacManForKernel", "sceKernelDmaOpAssign") {
 
         @Override
         public void execute(Processor cpu, Memory mem) {
-            System.out.println("Unimplement function sceKernelDmaOpAssign [0xF64BAB99]");
+            System.out.println("Unimplemented function sceKernelDmaOpAssign [0xF64BAB99]");
         }
     };
     public static final HLEModuleFunction sceKernelDmaOpEnQueue = new HLEModuleFunction("DmacManForKernel", "sceKernelDmaOpEnQueue") {
 
         @Override
         public void execute(Processor cpu, Memory mem) {
-            System.out.println("Unimplement function sceKernelDmaOpEnQueue [0x3BDEA96C]");
+            System.out.println("Unimplemented function sceKernelDmaOpEnQueue [0x3BDEA96C]");
         }
     };
     public static final HLEModuleFunction sceKernelDmaOpDeQueue = new HLEModuleFunction("DmacManForKernel", "sceKernelDmaOpDeQueue") {
 
         @Override
         public void execute(Processor cpu, Memory mem) {
-            System.out.println("Unimplement function sceKernelDmaOpDeQueue [0x92700CCD]");
+            System.out.println("Unimplemented function sceKernelDmaOpDeQueue [0x92700CCD]");
         }
     };
     public static final HLEModuleFunction sceKernelDmaOpAllCancel = new HLEModuleFunction("DmacManForKernel", "sceKernelDmaOpAllCancel") {
 
         @Override
         public void execute(Processor cpu, Memory mem) {
-            System.out.println("Unimplement function sceKernelDmaOpAllCancel [0xA84B084B]");
+            System.out.println("Unimplemented function sceKernelDmaOpAllCancel [0xA84B084B]");
         }
     };
     public static final HLEModuleFunction sceKernelDmaOpSetCallback = new HLEModuleFunction("DmacManForKernel", "sceKernelDmaOpSetCallback") {
 
         @Override
         public void execute(Processor cpu, Memory mem) {
-            System.out.println("Unimplement function sceKernelDmaOpSetCallback [0xD0358BE9]");
+            System.out.println("Unimplemented function sceKernelDmaOpSetCallback [0xD0358BE9]");
         }
     };
     public static final HLEModuleFunction sceKernelDmaOpSetupMemcpy = new HLEModuleFunction("DmacManForKernel", "sceKernelDmaOpSetupMemcpy") {
 
         @Override
         public void execute(Processor cpu, Memory mem) {
-            System.out.println("Unimplement function sceKernelDmaOpSetupMemcpy [0x3FAD5844]");
+            System.out.println("Unimplemented function sceKernelDmaOpSetupMemcpy [0x3FAD5844]");
         }
     };
     public static final HLEModuleFunction sceKernelDmaOpSetupNormal = new HLEModuleFunction("DmacManForKernel", "sceKernelDmaOpSetupNormal") {
 
         @Override
         public void execute(Processor cpu, Memory mem) {
-            System.out.println("Unimplement function sceKernelDmaOpSetupNormal [0xCE467D9B]");
+            System.out.println("Unimplemented function sceKernelDmaOpSetupNormal [0xCE467D9B]");
         }
     };
     public static final HLEModuleFunction sceKernelDmaOpSetupLink = new HLEModuleFunction("DmacManForKernel", "sceKernelDmaOpSetupLink") {
 
         @Override
         public void execute(Processor cpu, Memory mem) {
-            System.out.println("Unimplement function sceKernelDmaOpSetupLink [0x7D21A2EF]");
+            System.out.println("Unimplemented function sceKernelDmaOpSetupLink [0x7D21A2EF]");
         }
     };
     public static final HLEModuleFunction sceKernelDmaOpSync = new HLEModuleFunction("DmacManForKernel", "sceKernelDmaOpSync") {
 
         @Override
         public void execute(Processor cpu, Memory mem) {
-            System.out.println("Unimplement function sceKernelDmaOpSync [0xDB286D65]");
+            System.out.println("Unimplemented function sceKernelDmaOpSync [0xDB286D65]");
         }
     };
     public static final HLEModuleFunction sceKernelDmaOpQuit = new HLEModuleFunction("DmacManForKernel", "sceKernelDmaOpQuit") {
 
         @Override
         public void execute(Processor cpu, Memory mem) {
-            System.out.println("Unimplement function sceKernelDmaOpQuit [0x5AF32783]");
+            System.out.println("Unimplemented function sceKernelDmaOpQuit [0x5AF32783]");
         }
     };
     public static final HLEModuleFunction DmacManForKernel_E18A93A5 = new HLEModuleFunction("DmacManForKernel", "DmacManForKernel_E18A93A5") {
 
         @Override
         public void execute(Processor cpu, Memory mem) {
-            System.out.println("Unimplement function DmacManForKernel_E18A93A5 [0xE18A93A5]");
+            System.out.println("Unimplemented function DmacManForKernel_E18A93A5 [0xE18A93A5]");
         }
     };
     public static final HLEModuleFunction sceKernelDmaOpAssignMultiple = new HLEModuleFunction("DmacManForKernel", "sceKernelDmaOpAssignMultiple") {
 
         @Override
         public void execute(Processor cpu, Memory mem) {
-            System.out.println("Unimplement function sceKernelDmaOpAssignMultiple [0x904110FC]");
+            System.out.println("Unimplemented function sceKernelDmaOpAssignMultiple [0x904110FC]");
         }
     };
     public static final HLEModuleFunction sceKernelDmaOnDebugMode = new HLEModuleFunction("DmacManForKernel", "sceKernelDmaOnDebugMode") {
 
         @Override
         public void execute(Processor cpu, Memory mem) {
-            System.out.println("Unimplement function sceKernelDmaOnDebugMode [0xD3F62265]");
+            System.out.println("Unimplemented function sceKernelDmaOnDebugMode [0xD3F62265]");
         }
     };
     public static final HLEModuleFunction sceKernelDmaOpFreeLink = new HLEModuleFunction("DmacManForKernel", "sceKernelDmaOpFreeLink") {
 
         @Override
         public void execute(Processor cpu, Memory mem) {
-            System.out.println("Unimplement function sceKernelDmaOpFreeLink [0xA893DA2C]");
+            System.out.println("Unimplemented function sceKernelDmaOpFreeLink [0xA893DA2C]");
         }
     };
 };

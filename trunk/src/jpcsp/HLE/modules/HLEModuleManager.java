@@ -106,7 +106,7 @@ public class HLEModuleManager {
     public boolean handleSyscall(int code) {
         HLEModuleFunction func = syscallCodeToFunction.get(code);
         if (func != null) {
-            func.execute(Emulator.getProcessor(), Memory.get_instance());
+            func.execute(Emulator.getProcessor(), Memory.getInstance());
             return true;
         } else {
             return false;

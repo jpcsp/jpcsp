@@ -286,7 +286,7 @@ private void SaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:ev
     {
        for(int i =0; i< emu.initsection[1]; i+=4)
        {
-          int memread32 = Memory.get_instance().read32(emu.initsection[0]+i);      
+          int memread32 = Memory.getInstance().read32(emu.initsection[0]+i);      
           jpcsp.Allegrex.Decoder.instruction(memread32).increaseCount();
        }   
     }
@@ -294,7 +294,7 @@ private void SaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:ev
     {
        for(int i =0; i< emu.finisection[1]; i+=4)
        {
-          int memread32 = Memory.get_instance().read32(emu.finisection[0]+i);
+          int memread32 = Memory.getInstance().read32(emu.finisection[0]+i);
           jpcsp.Allegrex.Decoder.instruction(memread32).increaseCount();
        }   
     }
@@ -302,7 +302,7 @@ private void SaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:ev
     {
        for(int i =0; i< emu.textsection[1]; i+=4)
        {
-          int memread32 = Memory.get_instance().read32(emu.textsection[0]+i);
+          int memread32 = Memory.getInstance().read32(emu.textsection[0]+i);
           jpcsp.Allegrex.Decoder.instruction(memread32).increaseCount();
        }   
     }
@@ -310,7 +310,7 @@ private void SaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:ev
     {
         for(int i =0; i< emu.Stubtextsection[1]; i+=4)
        {
-          int memread32 = Memory.get_instance().read32(emu.Stubtextsection[0]+i);
+          int memread32 = Memory.getInstance().read32(emu.Stubtextsection[0]+i);
           jpcsp.Allegrex.Decoder.instruction(memread32).increaseCount();
        }   
         

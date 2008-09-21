@@ -334,7 +334,7 @@ public class DisHelper {
         if (opname.equals("jal") && jump != 0)
         {
             DisasmOpcodes disOp = new DisasmOpcodes();
-            String secondTarget = disOp.disasm(jpcsp.Memory.get_instance().read32(jump+4), jump+4);
+            String secondTarget = disOp.disasm(jpcsp.Memory.getInstance().read32(jump+4), jump+4);
             if (secondTarget.startsWith("syscall") && !secondTarget.contains("[unknown]"))
                 return opname + " 0x" + Integer.toHexString(jump) + " " + secondTarget.substring(13);
         }

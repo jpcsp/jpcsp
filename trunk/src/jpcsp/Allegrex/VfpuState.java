@@ -446,5 +446,19 @@ public class VfpuState extends FpuState {
                 break;
         }
     }
+
+    public void doLVS(int vt, int rs, int simm14) {
+        int r = (vt >> 5) & 3;
+        int m = (vt >> 2) & 7;
+        int c = (vt >> 0) & 3;
+        vpr[m][c][r] = Float.intBitsToFloat(memory.read32(gpr[rs] + (simm14 << 2)));
+    }
+
+    public void doSVS(int vt, int rs, int simm14) {
+        int r = (vt >> 5) & 3;
+        int m = (vt >> 2) & 7;
+        int c = (vt >> 0) & 3;
+        memory.write32(gpr[rs] + (simm14 << 2), Float.floatToRawIntBits(vpr[m][r][c]));
+    }
     
 }

@@ -235,6 +235,7 @@ group root
             category=`MIPS I`
 
             interpret = `
+                SyscallHandler.syscall(imm20);
             `
 
             compile = `
@@ -249,11 +250,9 @@ group root
 
             category=`MIPS III`
 
-            interpret = `
-            `
+            interpret = ``
 
-            compile = `
-            `
+            compile = ``
 
             disasm = `return "eret";`
         }
@@ -1914,8 +1913,8 @@ group root
             category=`MIPS I`
 
             interpret = `
-                processor.npc = (processor.gpr[rs] == processor.gpr[rt]) ? Processor.branchTarget(processor.pc, Processor.signExtend(imm16)) : (processor.pc + 4);
-                processor.stepDelayslot();
+                if (processor.cpu.doBEQ(rs, rt, imm16))
+                    processor.interpretDelayslot();
             `
 
             compile = `
@@ -1959,11 +1958,8 @@ group root
             category=`MIPS II`
 
             interpret = `
-                boolean c = (processor.gpr[rs] == processor.gpr[rt]);
-                processor.npc = c ? Processor.branchTarget(processor.pc, Processor.signExtend(imm16)) : (processor.pc + 4);
-                if (c) {
-                    processor.stepDelayslot();
-                }
+                if (processor.cpu.doBEQL(rs, rt, imm16))
+                    processor.interpretDelayslot();
             `
 
             compile = `
@@ -2009,6 +2005,8 @@ group root
             category=`MIPS I`
 
             interpret = `
+                if (processor.cpu.doBGEZ(rs, imm16))
+                    processor.interpretDelayslot();
             `
 
             compile = `
@@ -2024,6 +2022,8 @@ group root
             category=`MIPS I`
 
             interpret = `
+                if (processor.cpu.doBGEZAL(rs, imm16))
+                    processor.interpretDelayslot();
             `
 
             compile = `
@@ -2039,6 +2039,8 @@ group root
             category=`MIPS II`
 
             interpret = `
+                if (processor.cpu.doBGEZALL(rs, imm16))
+                    processor.interpretDelayslot();
             `
 
             compile = `
@@ -2054,6 +2056,8 @@ group root
             category=`MIPS II`
 
             interpret = `
+                if (processor.cpu.doBGEZL(rs, imm16))
+                    processor.interpretDelayslot();
             `
 
             compile = `
@@ -2069,6 +2073,8 @@ group root
             category=`MIPS I`
 
             interpret = `
+                if (processor.cpu.doBGTZ(rs, imm16))
+                    processor.interpretDelayslot();
             `
 
             compile = `
@@ -2084,6 +2090,8 @@ group root
             category=`MIPS II`
 
             interpret = `
+                if (processor.cpu.doBGTZL(rs, imm16))
+                    processor.interpretDelayslot();
             `
 
             compile = `
@@ -2099,6 +2107,8 @@ group root
             category=`MIPS I`
 
             interpret = `
+                if (processor.cpu.doBLEZ(rs, imm16))
+                    processor.interpretDelayslot();
             `
 
             compile = `
@@ -2114,6 +2124,8 @@ group root
             category=`MIPS II`
 
             interpret = `
+                if (processor.cpu.doBLEZL(rs, imm16))
+                    processor.interpretDelayslot();
             `
 
             compile = `
@@ -2129,6 +2141,8 @@ group root
             category=`MIPS I`
 
             interpret = `
+                if (processor.cpu.doBLTZ(rs, imm16))
+                    processor.interpretDelayslot();
             `
 
             compile = `
@@ -2144,6 +2158,8 @@ group root
             category=`MIPS I`
 
             interpret = `
+                if (processor.cpu.doBLTZAL(rs, imm16))
+                    processor.interpretDelayslot();
             `
 
             compile = `
@@ -2159,6 +2175,8 @@ group root
             category=`MIPS II`
 
             interpret = `
+                if (processor.cpu.doBLTZALL(rs, imm16))
+                    processor.interpretDelayslot();
             `
 
             compile = `
@@ -2174,6 +2192,8 @@ group root
             category=`MIPS I`
 
             interpret = `
+                if (processor.cpu.doBLTZL(rs, imm16))
+                    processor.interpretDelayslot();
             `
 
             compile = `
@@ -2189,8 +2209,8 @@ group root
             category=`MIPS I`
 
             interpret = `
-                processor.npc = (processor.gpr[rs] != processor.gpr[rt]) ? Processor.branchTarget(processor.pc, Processor.signExtend(imm16)) : (processor.pc + 4);
-                processor.stepDelayslot();
+                if (processor.cpu.doBNE(rs, rt, imm16))
+                    processor.interpretDelayslot();
             `
 
             compile = `
@@ -2234,6 +2254,8 @@ group root
             category=`MIPS II`
 
             interpret = `
+                if (processor.cpu.doBNEL(rs, rt, imm16))
+                    processor.interpretDelayslot();
             `
 
             compile = `
@@ -2249,6 +2271,8 @@ group root
             category=`MIPS I`
 
             interpret = `
+                if (processor.cpu.doJ(imm26))
+                    processor.interpretDelayslot();
             `
 
             compile = `
@@ -2264,10 +2288,8 @@ group root
             category=`MIPS I`
 
             interpret = `
-                CpuState cpu = processor.cpu;
-                cpu.gpr[31] = processor.pc + 4;
-                processor.npc = CpuState.jumpTarget(processor.pc, imm26);
-                processor.stepDelayslot();
+                if (processor.cpu.doJAL(imm26))
+                    processor.interpretDelayslot();
             `
 
             compile = `
@@ -2283,12 +2305,8 @@ group root
             category=`MIPS I`
 
             interpret = `
-                CpuState cpu = processor.cpu;
-                if (rd != 0) {
-                    cpu.gpr[rd] = processor.pc + 4;
-                }
-                processor.npc = cpu.gpr[rs];
-                processor.stepDelayslot();
+                if (processor.cpu.doJALR(rd, rs))
+                    processor.interpretDelayslot();
             `
 
             compile = `
@@ -2317,9 +2335,8 @@ group root
             category=`MIPS I`
 
             interpret = `
-                CpuState cpu = processor.cpu;
-                processor.npc = cpu.gpr[rs];
-                processor.stepDelayslot();
+                if (processor.cpu.doJR(rs))
+                    processor.interpretDelayslot();
             `
 
             compile = `
@@ -2345,8 +2362,8 @@ group root
             category=`MIPS I/FPU`
 
             interpret = `
-                processor.npc = !processor.fcr31_c ? Processor.branchTarget(processor.pc, Processor.signExtend(imm16)) : (processor.pc + 4);
-                processor.stepDelayslot();
+                if (processor.cpu.doBC1F(imm16))
+                    processor.interpretDelayslot();
             `
 
             compile = `
@@ -2371,8 +2388,8 @@ group root
             category=`MIPS I/FPU`
 
             interpret = `
-                processor.npc = processor.fcr31_c ? Processor.branchTarget(processor.pc, Processor.signExtend(imm16)) : (processor.pc + 4);
-                processor.stepDelayslot();
+                if (processor.cpu.doBC1T(imm16))
+                    processor.interpretDelayslot();
             `
 
             compile = `
@@ -2397,12 +2414,8 @@ group root
             category=`MIPS II/FPU`
 
             interpret = `
-                if (!processor.fcr31_c) {
-                    processor.npc = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
-                    processor.stepDelayslot();
-                } else {
-                    processor.pc += 4;
-                }
+                if (processor.cpu.doBC1FL(imm16))
+                    processor.interpretDelayslot();
             `
 
             compile = `
@@ -2435,12 +2448,8 @@ group root
             category=`MIPS II/FPU`
 
             interpret = `
-                if (processor.fcr31_c) {
-                    processor.npc = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
-                    processor.stepDelayslot();
-                } else {
-                    processor.pc += 4;
-                }
+                if (processor.cpu.doBC1TL(imm16))
+                    processor.interpretDelayslot();
             `
 
             compile = `
@@ -2536,6 +2545,7 @@ group root
             category=`MIPS I`
 
             interpret = `
+                processor.cpu.doLB(rt, rs, imm16);
             `
 
             compile = `
@@ -2551,6 +2561,7 @@ group root
             category=`MIPS I`
 
             interpret = `
+                processor.cpu.doLBU(rt, rs, imm16);
             `
 
             compile = `
@@ -2566,6 +2577,7 @@ group root
             category=`MIPS I`
 
             interpret = `
+                processor.cpu.doLH(rt, rs, imm16);
             `
 
             compile = `
@@ -2581,6 +2593,7 @@ group root
             category=`MIPS I`
 
             interpret = `
+                processor.cpu.doLHU(rt, rs, imm16);
             `
 
             compile = `
@@ -2596,6 +2609,7 @@ group root
             category=`MIPS I`
 
             interpret = `
+                processor.cpu.doLW(rt, rs, imm16);
             `
 
             compile = `
@@ -2611,6 +2625,7 @@ group root
             category=`MIPS I`
 
             interpret = `
+                processor.cpu.doLWL(rt, rs, imm16);
             `
 
             compile = `
@@ -2626,6 +2641,7 @@ group root
             category=`MIPS I`
 
             interpret = `
+                processor.cpu.doLWR(rt, rs, imm16);
             `
 
             compile = `
@@ -2641,6 +2657,7 @@ group root
             category=`MIPS I`
 
             interpret = `
+                processor.cpu.doSB(rt, rs, imm16);
             `
 
             compile = `
@@ -2656,6 +2673,7 @@ group root
             category=`MIPS I`
 
             interpret = `
+                processor.cpu.doSH(rt, rs, imm16);
             `
 
             compile = `
@@ -2671,6 +2689,7 @@ group root
             category=`MIPS I`
 
             interpret = `
+                processor.cpu.doSW(rt, rs, imm16);
             `
 
             compile = `
@@ -2686,6 +2705,7 @@ group root
             category=`MIPS I`
 
             interpret = `
+                processor.cpu.doSWL(rt, rs, imm16);
             `
 
             compile = `
@@ -2701,6 +2721,7 @@ group root
             category=`MIPS I`
 
             interpret = `
+                processor.cpu.doSWR(rt, rs, imm16);
             `
 
             compile = `
@@ -2716,6 +2737,7 @@ group root
             category=`ALLEGREX`
 
             interpret = `
+                processor.cpu.doLL(rt, rs, imm16);
             `
 
             compile = `
@@ -2731,6 +2753,7 @@ group root
             category=`MIPS I/FPU`
 
             interpret = `
+                processor.cpu.doLWC1(ft, rs, imm16);
             `
 
             compile = `
@@ -2806,6 +2829,7 @@ group root
             category=`ALLEGREX`
 
             interpret = `
+                processor.cpu.doSC(rt, rs, imm16);
             `
 
             compile = `
@@ -2821,6 +2845,7 @@ group root
             category=`MIPS I/FPU`
 
             interpret = `
+                processor.cpu.doSWC1(ft, rs, imm16);
             `
 
             compile = `
@@ -2916,8 +2941,7 @@ group root
             category=`FPU`
 
             interpret = `
-                CpuState cpu = processor.cpu;
-                cpu.fpr[fd] = cpu.fpr[fs] + cpu.fpr[ft];
+                processor.cpu.doADDS(fd, fs, ft);
             `
 
             compile = `
@@ -2948,8 +2972,7 @@ group root
             category=`FPU`
 
             interpret = `
-                CpuState cpu = processor.cpu;
-                cpu.fpr[fd] = cpu.fpr[fs] + (0.0f - cpu.fpr[ft]);
+                processor.cpu.doSUBS(fd, fs, ft);
             `
 
             compile = `
@@ -2980,8 +3003,7 @@ group root
             category=`FPU`
 
             interpret = `
-                CpuState cpu = processor.cpu;
-                cpu.fpr[fd] = cpu.fpr[fs] * cpu.fpr[ft];
+                processor.cpu.doMULS(fd, fs, ft);
             `
 
             compile = `
@@ -3012,8 +3034,7 @@ group root
             category=`FPU`
 
             interpret = `
-                CpuState cpu = processor.cpu;
-                cpu.fpr[fd] = cpu.fpr[fs] / cpu.fpr[ft];
+                processor.cpu.doDIVS(fd, fs, ft);
             `
 
             compile = `
@@ -3044,8 +3065,7 @@ group root
             category=`FPU`
 
             interpret = `
-                CpuState cpu = processor.cpu;
-                cpu.fpr[fd] = (float) Math.sqrt(cpu.fpr[fs]);
+                processor.cpu.doSQRTS(fd, fs);
             `
 
             compile = `
@@ -3073,8 +3093,7 @@ group root
             category=`FPU`
 
             interpret = `
-                CpuState cpu = processor.cpu;
-                cpu.fpr[fd] = Math.abs(cpu.fpr[fs]);
+                processor.cpu.doABSS(fd, fs);
             `
 
             compile = `
@@ -3102,8 +3121,7 @@ group root
             category=`FPU`
 
             interpret = `
-                CpuState cpu = processor.cpu;
-                cpu.fpr[fd] = cpu.fpr[fs];
+                processor.cpu.doMOVS(fd, fs);
             `
 
             compile = `
@@ -3131,8 +3149,7 @@ group root
             category=`FPU`
 
             interpret = `
-                CpuState cpu = processor.cpu;
-                cpu.fpr[fd] = 0.0f - cpu.fpr[fs];
+                processor.cpu.doNEGS(fd, fs);
             `
 
             compile = `
@@ -3160,8 +3177,7 @@ group root
             category=`FPU`
 
             interpret = `
-                CpuState cpu = processor.cpu;
-                cpu.fpr[fd] = Float.intBitsToFloat(Math.round(cpu.fpr[fs]));
+                processor.cpu.doROUNDWS(fd, fs);
             `
 
             compile = `
@@ -3189,8 +3205,7 @@ group root
             category=`FPU`
 
             interpret = `
-                CpuState cpu = processor.cpu;
-                cpu.fpr[fd] = Float.intBitsToFloat((int) (cpu.fpr[fs]));
+                processor.cpu.doTRUNCWS(fd, fs);
             `
 
             compile = `
@@ -3218,8 +3233,7 @@ group root
             category=`FPU`
 
             interpret = `
-                CpuState cpu = processor.cpu;
-                cpu.fpr[fd] = Float.intBitsToFloat((int) Math.ceil(cpu.fpr[fs]));
+                processor.cpu.doCEILWS(fd, fs);
             `
 
             compile = `
@@ -3247,8 +3261,7 @@ group root
             category=`FPU`
 
             interpret = `
-                CpuState cpu = processor.cpu;
-                cpu.fpr[fd] = Float.intBitsToFloat((int) Math.floor(cpu.fpr[fs]));
+                processor.cpu.doFLOORWS(fd, fs);
             `
 
             compile = `
@@ -3276,8 +3289,7 @@ group root
             category=`FPU`
 
             interpret = `
-                CpuState cpu = processor.cpu;
-                cpu.fpr[fd] = (float) Float.floatToRawIntBits(cpu.fpr[fs]);
+                processor.cpu.doCVTSW(fd, fs);
             `
 
             compile = `
@@ -3305,21 +3317,7 @@ group root
             category=`FPU`
 
             interpret = `
-                CpuState cpu = processor.cpu;
-                switch (cpu.fcr31.rm) {
-                    case 1:
-                        cpu.fpr[fd] = Float.intBitsToFloat((int) (cpu.fpr[fs]));
-                        break;
-                    case 2:
-                        cpu.fpr[fd] = Float.intBitsToFloat((int) Math.ceil(cpu.fpr[fs]));
-                        break;
-                    case 3:
-                        cpu.fpr[fd] = Float.intBitsToFloat((int) Math.floor(cpu.fpr[fs]));
-                        break;
-                    default:
-                        cpu.fpr[fd] = Float.intBitsToFloat((int) Math.rint(cpu.fpr[fs]));
-                        break;
-                }
+                processor.cpu.doCVTWS(fd, fs);
             `
 
             compile = `
@@ -3365,23 +3363,7 @@ group root
             category=`FPU`
 
             interpret = `
-                CpuState cpu = processor.cpu;
-                float x = cpu.fpr[fs];
-                float y = cpu.fpr[ft];
-                boolean unordered = ((fcond & 1) != 0) && (Float.isNaN(x) || Float.isNaN(y));
-
-                if (unordered) {
-                    // we ignore float exception as it is useless for games
-                    //if ((fcond & 8) != 0) {
-                    //}
-
-                    cpu.fcr31.c = true;
-                } else {
-                    boolean equal = ((fcond & 2) != 0) && (x == y);
-                    boolean less = ((fcond & 4) != 0) && (x < y);
-
-                    cpu.fcr31.c = less || equal;
-                }
+                processor.cpu.doCCONDS(fs, ft, fcond);
             `
 
             compile = `
@@ -3408,37 +3390,34 @@ group root
             disasm = `return Common.disasmCcondS(fcond, fs, ft);`
         }
 
-        op MFC1(010001:00000:rt:fs:00000:000000)
+        op MFC1(010001:00000:rt:c1dr:00000:000000)
         {
             name=`MFC1`
 
             category=`MIPS I/FPU`
 
             interpret = `
-                CpuState cpu = processor.cpu;
-                if (rt != 0) {
-                    cpu.gpr[rt] = Float.floatToRawIntBits(cpu.fpr[fs]);
-                }
+                processor.cpu.doMFC1(rt, c1dr);
             `
 
             compile = `
                 if (rt != 0) {
-                    if (processor.tracked_fpr[fs].fixed) {
-                        processor.fix_gpr(rt, Float.floatToRawIntBits(processor.fpr[fs]));
+                    if (processor.tracked_fpr[c1dr].fixed) {
+                        processor.fix_gpr(rt, Float.floatToRawIntBits(processor.fpr[c1dr]));
                     } else {
-                        processor.load_fpr(fs, false);
+                        processor.load_fpr(c1dr, false);
                         processor.alter_gpr(rt);
                         processor.current_bb.emit(
                             processor.get_gpr(rt) +
                             " = Float.floatToRawIntBits(" +
-                            processor.get_fpr(fs) +
+                            processor.get_fpr(c1dr) +
                             ");"
                         );
                     }
                 }
             `
 
-            disasm = `return Common.disasmRTFS("mfc1", rt, fs);`
+            disasm = `return Common.disasmRTFS("mfc1", rt, c1dr);`
         }
 
         op CFC1(010001:00010:rt:c1cr:00000:000000)
@@ -3448,18 +3427,7 @@ group root
             category=`MIPS I/FPU`
 
             interpret = `
-                CpuState cpu = processor.cpu;
-                if (rt != 0) {
-                    switch (c1cr) {
-                    case 0:                        
-                        cpu.gpr[rt] = (FpuState.Fcr0.imp << 8) | (FpuState.Fcr0.rev);
-                        break;
-
-                    case 31:
-                        cpu.gpr[rt] = (cpu.fcr31.fs ? (1 << 24) : 0) | (cpu.fcr31.c ? (1 << 23) : 0) | (cpu.fcr31.rm & 3);
-                        break;
-                    }
-                }
+                processor.cpu.doCFC1(rt, c1cr);
             `
 
             compile = `
@@ -3488,25 +3456,24 @@ group root
             disasm = `return Common.disasmRTFC("cfc1", rt, c1cr);`
         }
 
-        op MTC1(010001:00100:rt:fs:00000:000000)
+        op MTC1(010001:00100:rt:c1dr:00000:000000)
         {
             name=`MTC1`
 
             category=`MIPS I/FPU`
 
             interpret = `
-                CpuState cpu = processor.cpu;
-                cpu.fpr[fs] = Float.intBitsToFloat(cpu.gpr[rt]);
+                processor.cpu.doMTC1(rt, c1dr);
             `
 
             compile = `
                 if (processor.tracked_gpr[rt].fixed) {
-                    processor.fix_fpr(fs, Float.intBitsToFloat(processor.gpr[rt]));
+                    processor.fix_fpr(c1dr, Float.intBitsToFloat(processor.gpr[rt]));
                 } else {
                     processor.load_gpr(rt, false);
-                    processor.alter_fpr(fs);
+                    processor.alter_fpr(c1dr);
                     processor.current_bb.emit(
-                        processor.get_fpr(fs) +
+                        processor.get_fpr(c1dr) +
                         " = Float.intBitsToFloat(" +
                         processor.get_gpr(rt) +
                         ");"
@@ -3514,7 +3481,7 @@ group root
                 }
             `
 
-            disasm = `return Common.disasmRTFS("mtc1", rt, fs);`
+            disasm = `return Common.disasmRTFS("mtc1", rt, c1dr);`
         }
 
         op CTC1(010001:00110:rt:c1cr:00000:000000)
@@ -3524,14 +3491,7 @@ group root
             category=`MIPS I/FPU`
 
             interpret = `
-                CpuState cpu = processor.cpu;
-                if (c1cr == 31) {
-                    int bits = cpu.gpr[rt] & 0x01800003;
-                    cpu.fcr31.rm = bits & 3;
-                    bits >>= 23;
-                    cpu.fcr31.fs = (bits > 1);
-                    cpu.fcr31.c = (bits >> 1) == 1;
-                }
+                processor.cpu.doCFC1(rt, c1cr);
             `
 
             compile = `
