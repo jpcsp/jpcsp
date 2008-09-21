@@ -25,7 +25,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE;
 
 import java.util.HashMap;
-import jpcsp.GeneralJpcspException;
 
 public class SceUIDMan {
     private static SceUIDMan instance;
@@ -52,36 +51,48 @@ public class SceUIDMan {
     }
 
     /** classes should call checkUidPurpose before using a SceUID */
-    public void checkUidPurpose(int uid, Object purpose) throws GeneralJpcspException {
-        checkUidPurpose(uid, purpose, false);
+    /* unused ?
+    public boolean checkUidPurpose(int uid, Object purpose) {
+        return checkUidPurpose(uid, purpose, false);
     }
+    */
 
-    /** classes should call checkUidPurpose before using a SceUID */
-    public void checkUidPurpose(int uid, Object purpose, boolean allowUnknown) throws GeneralJpcspException {
+    /** classes should call checkUidPurpose before using a SceUID
+     * @return true is the uid is ok. */
+    public boolean checkUidPurpose(int uid, Object purpose, boolean allowUnknown) {
         SceUID found = uids.get(uid);
 
         if (found == null) {
             if (!allowUnknown) {
-                throw new GeneralJpcspException("Attempt to use unknown SceUID (purpose='" + purpose.toString() + "')");
+                System.out.println("Attempt to use unknown SceUID (purpose='" + purpose.toString() + "')");
+                return false;
             }
         } else if (!purpose.equals(found.getPurpose())) {
-            throw new GeneralJpcspException("Attempt to use SceUID for different purpose (purpose='" + purpose.toString() + "',original='" + found.getPurpose().toString() + "')");
+            System.out.println("Attempt to use SceUID for different purpose (purpose='" + purpose.toString() + "',original='" + found.getPurpose().toString() + "')");
+            return false;
         }
+        
+        return true;
     }
 
-    /** classes should call releaseUid when they are finished with a SceUID */
-    public void releaseUid(int uid, Object purpose) throws GeneralJpcspException {
+    /** classes should call releaseUid when they are finished with a SceUID
+     * @return true on success. */
+    public boolean releaseUid(int uid, Object purpose) {
         SceUID found = uids.get(uid);
 
         if (found == null) {
-            throw new GeneralJpcspException("Attempt to release unknown SceUID (purpose='" + purpose.toString() + "')");
+            System.out.println("Attempt to release unknown SceUID (purpose='" + purpose.toString() + "')");
+            return false;
         }
 
         if (purpose.equals(found.getPurpose())) {
             uids.remove(found);
         } else {
-            throw new GeneralJpcspException("Attempt to release SceUID for different purpose (purpose='" + purpose.toString() + "',original='" + found.getPurpose().toString() + "')");
+            System.out.println("Attempt to release SceUID for different purpose (purpose='" + purpose.toString() + "',original='" + found.getPurpose().toString() + "')");
+            return false;
         }
+        
+        return true;
     }
 
     private class SceUID {

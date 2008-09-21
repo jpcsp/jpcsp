@@ -134,7 +134,7 @@ public class ThreadMan {
     }
 
     /** to be called from the main emulation loop */
-    public void step() /*throws GeneralJpcspException*/ {
+    public void step() {
         if (current_thread != null) {
             current_thread.runClocks++;
 
@@ -284,13 +284,10 @@ public class ThreadMan {
 
     public void unblockThread(int uid)
     {
-        try {
-            SceUIDMan.get_instance().checkUidPurpose(uid, "ThreadMan-thread", false);
-        } catch(GeneralJpcspException e) {
-            // bad uid
+        if (SceUIDMan.get_instance().checkUidPurpose(uid, "ThreadMan-thread", false)) {
+            SceKernelThreadInfo thread = threadlist.get(uid);
+            thread.status = PspThreadStatus.PSP_THREAD_READY;
         }
-        SceKernelThreadInfo thread = threadlist.get(uid);
-        thread.status = PspThreadStatus.PSP_THREAD_READY;
     }
 
 
@@ -328,7 +325,7 @@ public class ThreadMan {
     }
 
     /** terminate thread a0 */
-    public void ThreadMan_sceKernelTerminateThread(int a0) throws GeneralJpcspException {
+    public void ThreadMan_sceKernelTerminateThread(int a0) {
         SceUIDMan.get_instance().checkUidPurpose(a0, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadlist.get(a0);
         if (thread == null) {
@@ -343,7 +340,7 @@ public class ThreadMan {
     }
 
     /** delete thread a0 */
-    public void ThreadMan_sceKernelDeleteThread(int a0) throws GeneralJpcspException {
+    public void ThreadMan_sceKernelDeleteThread(int a0) {
         SceUIDMan.get_instance().checkUidPurpose(a0, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadlist.get(a0);
         if (thread == null) {
@@ -358,7 +355,7 @@ public class ThreadMan {
         }
     }
 
-    public void ThreadMan_sceKernelStartThread(int uid, int len, int data_addr) throws GeneralJpcspException {
+    public void ThreadMan_sceKernelStartThread(int uid, int len, int data_addr) {
         SceUIDMan.get_instance().checkUidPurpose(uid, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadlist.get(uid);
         if (thread == null) {
@@ -395,7 +392,7 @@ public class ThreadMan {
     }
 
     /** exit the current thread, then delete it */
-    public void ThreadMan_sceKernelExitDeleteThread(int exitStatus) throws GeneralJpcspException {
+    public void ThreadMan_sceKernelExitDeleteThread(int exitStatus) {
         SceKernelThreadInfo thread = current_thread; // save a reference for post context switch operations
         System.out.println("sceKernelExitDeleteThread SceUID=" + Integer.toHexString(current_thread.uid)
             + " name:'" + current_thread.name + "' exitStatus:" + exitStatus);
@@ -444,7 +441,7 @@ public class ThreadMan {
         contextSwitch(nextThread());
     }
 
-    public void ThreadMan_sceKernelCreateCallback(int a0, int a1, int a2) throws GeneralJpcspException {
+    public void ThreadMan_sceKernelCreateCallback(int a0, int a1, int a2) {
         String name = readStringZ(Memory.getInstance().mainmemory, (a0 & 0x3fffffff) - MemoryMap.START_RAM);
         SceKernelCallbackInfo callback = new SceKernelCallbackInfo(name, current_thread.uid, a1, a2);
 
@@ -500,6 +497,32 @@ public class ThreadMan {
         Emulator.getProcessor().gpr[2] = 0;
     }
 
+    public void ThreadMan_sceKernelChangeThreadPriority(int uid, int priority) {
+        SceUIDMan.get_instance().checkUidPurpose(uid, "ThreadMan-thread", true);
+        SceKernelThreadInfo thread = threadlist.get(uid);
+        if (thread == null) {
+            Emulator.getProcessor().gpr[2] = 0x80020198; //notfoundthread
+        } else {
+            System.out.println("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(thread.uid)
+                    + " newPriority:0x" + Integer.toHexString(priority) + " oldPriority:0x" + Integer.toHexString(thread.currentPriority));
+
+            thread.currentPriority = priority;
+
+            Emulator.getProcessor().gpr[2] = 0;
+        }
+    }
+
+    public void ThreadMan_sceKernelChangeCurrentThreadAttr(int unknown, int attr) {
+        System.out.println("ThreadMan_sceKernelChangeCurrentThreadAttr"
+                + " newAttr:0x" + Integer.toHexString(attr)
+                + " oldAttr:0x" + Integer.toHexString(current_thread.attr));
+        
+        // TODO should probably check this and add in certain bits like usermode
+        current_thread.attr = attr;
+        
+        Emulator.getProcessor().gpr[2] = 0;
+    }
+    
     private class SceKernelCallbackInfo {
         private String name;
         private int threadId;
