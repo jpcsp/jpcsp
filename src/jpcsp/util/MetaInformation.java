@@ -24,5 +24,5 @@ public class MetaInformation {
     public static String OFFICIAL_SITE = "http://jpcsp.org/";
     public static String OFFICIAL_FORUM = "http://jpcsp.org/forum/";
     public static String OFFICIAL_REPOSITORY = "http://code.google.com/p/jpcsp/"; 
-    public static String TEAM = "shadow, mad, dreampeppers99, wrayal, fiveofhearts,hlide,Nutzje,aisesal,shashClp,spip2, mozvip, Florent.Castelli";
+    public static String TEAM = "shadow, mad, dreampeppers99, wrayal, fiveofhearts,hlide,Nutzje,aisesal,shashClp,spip2, mozvip, Florent.Castelli,gigaherz";
 }
