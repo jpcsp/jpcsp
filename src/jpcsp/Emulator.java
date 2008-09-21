@@ -46,11 +46,14 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
     private static MainGUI gui;
     private static DisassemblerFrame debugger;
     private static MemoryViewer memview;
+    private String pspfilename;
 
+    // For instruction counter
     public static int[] textsection = new int[2];
     public static int[] initsection = new int[2];
     public static int[] finisection = new int[2];
     public static int[] Stubtextsection=new int[2];
+
     public Emulator(MainGUI gui) {
         this.gui = gui;
         cpu = new Processor();
@@ -63,8 +66,12 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
         controller = new Controller();
         mainThread = new Thread(this);
     }
-    public void load(SeekableDataInput f)throws IOException
+
+    /* unused ?
+    public void load(SeekableDataInput f) throws IOException
     {
+        this.pspfilename = "";
+
         initNewPsp();
         romManager = new FileManager(f);
         initElf32();
@@ -74,7 +81,11 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
             debugger.resetDebugger();
         }
     }
-    public void load(ByteBuffer f) throws IOException {
+    */
+
+    public void load(String pspfilename, ByteBuffer f) throws IOException {
+        this.pspfilename = pspfilename;
+
         //  here load fileName, iso or etc...
         processLoading(f);
         if (!mediaImplemented) {
@@ -441,21 +452,21 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
     private void initCpuBy(Elf32 elf) {
         //set the default values for registers not sure if they are correct and UNTESTED!!
         //some settings from soywiz/pspemulator
-        cpu.pc = (int) romManager.getBaseoffset() + (int) elf.getHeader().getE_entry(); //set the pc register.
+        cpu.pc = (int)(romManager.getBaseoffset() + elf.getHeader().getE_entry()); //set the pc register.
         cpu.npc = cpu.pc + 4;
-        cpu.gpr[4] = 0; //a0
-        cpu.gpr[5] = (int) romManager.getBaseoffset() + (int) elf.getHeader().getE_entry(); // argumentsPointer a1 reg
+        // Get's set in ThreadMan cpu.gpr[4] = 0; //a0
+        // Get's set in ThreadMan cpu.gpr[5] = (int) romManager.getBaseoffset() + (int) elf.getHeader().getE_entry(); // argumentsPointer a1 reg
         cpu.gpr[6] = 0; //a2
         cpu.gpr[26] = 0x09F00000; //k0
         cpu.gpr[27] = 0; //k1 should probably be 0
-        cpu.gpr[28] = (int) romManager.getBaseoffset() + (int) romManager.getPSPModuleInfo().getM_gp(); //gp reg    gp register should get the GlobalPointer!!!
-        cpu.gpr[29] = 0x09F00000; //sp
-        cpu.gpr[31] = 0x08000004; //ra, should this be 0?
+        cpu.gpr[28] = (int)(romManager.getBaseoffset() + romManager.getPSPModuleInfo().getM_gp()); //gp reg    gp register should get the GlobalPointer!!!
+        // Get's set in ThreadMan cpu.gpr[29] = 0x09F00000; //sp
+        // Get's set in ThreadMan cpu.gpr[31] = 0x08000004; //ra, should this be 0?
         // All other registers are uninitialised/random values
 
         jpcsp.HLE.modules.HLEModuleManager.get_instance().Initialise();
         jpcsp.HLE.pspSysMem.get_instance().Initialise(romManager.getLoadAddressLow(), romManager.getLoadAddressHigh() - romManager.getLoadAddressLow());
-        jpcsp.HLE.ThreadMan.get_instance().Initialise(cpu.pc, romManager.getPSPModuleInfo().getM_attr());
+        jpcsp.HLE.ThreadMan.get_instance().Initialise(cpu.pc, romManager.getPSPModuleInfo().getM_attr(), pspfilename);
         jpcsp.HLE.psputils.get_instance().Initialise();
         jpcsp.HLE.pspge.get_instance().Initialise();
         jpcsp.HLE.pspdisplay.get_instance().Initialise();
