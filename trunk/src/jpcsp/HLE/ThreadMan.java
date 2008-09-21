@@ -63,7 +63,7 @@ public class ThreadMan {
     /** call this when resetting the emulator
      * @param entry_addr entry from ELF header
      * @param attr from sceModuleInfo ELF section header */
-    public void Initialise(int entry_addr, int attr) {
+    public void Initialise(int entry_addr, int attr, String pspfilename) {
         //System.out.println("ThreadMan: Initialise");
 
         threadlist = new HashMap<Integer, SceKernelThreadInfo>();
@@ -73,6 +73,7 @@ public class ThreadMan {
 
         install_idle_threads();
 
+        // Create a thread the program will run inside
         current_thread = new SceKernelThreadInfo("root", entry_addr, 0x20, 0x40000, attr);
 
         // Set user mode bit if kernel mode bit is not present
@@ -80,7 +81,18 @@ public class ThreadMan {
             current_thread.attr |= PSP_THREAD_ATTR_USER;
         }
 
-        // Switch in this thread
+        // Setup args by copying them onto the stack
+        //System.out.println("pspfilename - '" + pspfilename + "'");
+        int len = pspfilename.length();
+        Memory mem = Memory.getInstance();
+        for (int i = 0; i < len; i++)
+            mem.write8((current_thread.stack_addr - len + 1) + i, (byte)pspfilename.charAt(i));
+        current_thread.gpr[29] -= len; // Adjust sp for size of args
+        current_thread.gpr[4] = len; // a0 = len
+        current_thread.gpr[5] = current_thread.gpr[29] + 1; // a1 = pointer to arg data in stack
+        current_thread.status = PspThreadStatus.PSP_THREAD_READY;
+
+        // Switch in the thread
         current_thread.status = PspThreadStatus.PSP_THREAD_RUNNING;
         current_thread.restoreContext();
     }
@@ -103,6 +115,9 @@ public class ThreadMan {
             ((jpcsp.AllegrexOpcodes.SPECIAL & 0x3f) << 26)
             | (jpcsp.AllegrexOpcodes.SYSCALL & 0x3f)
             | ((0x201c & 0x000fffff) << 6);
+
+        // TODO
+        //pspSysMem.get_instance().malloc(1, pspSysMem.PSP_SMEM_Addr, 16, MemoryMap.START_RAM);
 
         Memory.getInstance().write32(MemoryMap.START_RAM + 0, instruction_addiu);
         Memory.getInstance().write32(MemoryMap.START_RAM + 4, instruction_lui);
@@ -260,7 +275,7 @@ public class ThreadMan {
     {
        contextSwitch(nextThread());
     }
-    
+
     public void blockCurrentThread()
     {
        current_thread.status = PspThreadStatus.PSP_THREAD_SUSPEND;
@@ -278,7 +293,7 @@ public class ThreadMan {
         thread.status = PspThreadStatus.PSP_THREAD_READY;
     }
 
-    
+
     public void ThreadMan_sceKernelCreateThread(int name_addr, int entry_addr,
         int initPriority, int stackSize, int attr, int option_addr) {
         String name = readStringZ(Memory.getInstance().mainmemory,
@@ -343,9 +358,9 @@ public class ThreadMan {
         }
     }
 
-    public void ThreadMan_sceKernelStartThread(int a0, int a1, int a2) throws GeneralJpcspException {
-        SceUIDMan.get_instance().checkUidPurpose(a0, "ThreadMan-thread", true);
-        SceKernelThreadInfo thread = threadlist.get(a0);
+    public void ThreadMan_sceKernelStartThread(int uid, int len, int data_addr) throws GeneralJpcspException {
+        SceUIDMan.get_instance().checkUidPurpose(uid, "ThreadMan-thread", true);
+        SceKernelThreadInfo thread = threadlist.get(uid);
         if (thread == null) {
             Emulator.getProcessor().gpr[2] = 0x80020198; //notfoundthread
         } else {
@@ -355,12 +370,12 @@ public class ThreadMan {
             // starting the thread immediately, only marking it as ready,
             // the data needs to be saved somewhere safe.
             Memory mem = Memory.getInstance();
-            for (int i = 0; i < a1; i++)
-                mem.write8(thread.stack_addr - a1 + i, (byte)mem.read8(a2 + i));
+            for (int i = 0; i < len; i++)
+                mem.write8((thread.stack_addr - len + 1) + i, (byte)mem.read8(data_addr + i));
 
-            thread.gpr[29] -= a1; // Adjust sp for size of user data
-            thread.gpr[4] = a1; // a0 = a1
-            thread.gpr[5] = thread.gpr[29]; // a1 = pointer to copy of data at a2
+            thread.gpr[29] -= len; // Adjust sp for size of user data
+            thread.gpr[4] = len; // a0 = len
+            thread.gpr[5] = thread.gpr[29] + 1; // a1 = pointer to copy of data at data_addr
             thread.status = PspThreadStatus.PSP_THREAD_READY;
 
             Emulator.getProcessor().gpr[2] = 0;
@@ -375,7 +390,7 @@ public class ThreadMan {
         current_thread.status = PspThreadStatus.PSP_THREAD_STOPPED;
         current_thread.exitStatus = exitStatus;
         Emulator.getProcessor().gpr[2] = 0;
-        
+
         contextSwitch(nextThread());
     }
 
@@ -392,7 +407,7 @@ public class ThreadMan {
 
         // Mark thread for deletion
         thread.do_delete = true;
-        
+
         contextSwitch(nextThread());
     }
 
@@ -403,7 +418,7 @@ public class ThreadMan {
         current_thread.status = PspThreadStatus.PSP_THREAD_SUSPEND;
         current_thread.do_callbacks = true;
         Emulator.getProcessor().gpr[2] = 0;
-        
+
         contextSwitch(nextThread());
     }
 
@@ -414,7 +429,7 @@ public class ThreadMan {
         current_thread.status = PspThreadStatus.PSP_THREAD_SUSPEND;
         current_thread.do_callbacks = false;
         Emulator.getProcessor().gpr[2] = 0;
-        
+
         contextSwitch(nextThread());
     }
 
@@ -425,7 +440,7 @@ public class ThreadMan {
         current_thread.delaysteps = a0; // test version
         current_thread.do_callbacks = false;
         Emulator.getProcessor().gpr[2] = 0;
-        
+
         contextSwitch(nextThread());
     }
 
@@ -535,7 +550,7 @@ public class ThreadMan {
     private static final int PSP_THREAD_ATTR_CLEAR_STACK = 0x00200000; // Clear the stack when the thread is deleted.
 
     private int mallocStack(int size) {
-        /* 
+        /*
         int p = 0x09f00000 - stackAllocated;
         stackAllocated += size;
         return p;
@@ -590,10 +605,10 @@ public class ThreadMan {
             this.attr = attr;
 
             status = PspThreadStatus.PSP_THREAD_SUSPEND;
-            stack_addr = mallocStack(stackSize); // TODO MemoryMan.mallocFromEnd(stackSize);
+            stack_addr = mallocStack(stackSize);
             if ((attr & PSP_THREAD_ATTR_NO_FILLSTACK) != PSP_THREAD_ATTR_NO_FILLSTACK)
                 memset(stack_addr - stackSize + 1, (byte)0xFF, stackSize);
-            gpReg_addr = Emulator.getProcessor().gpr[28]; // ?
+            gpReg_addr = Emulator.getProcessor().gpr[28]; // inherit gpReg
             currentPriority = initPriority;
             waitType = 0; // ?
             waitId = 0; // ?
@@ -612,15 +627,15 @@ public class ThreadMan {
             fpr = new float[32];
             vpr = new float[128];
 
+            // Inherit context
             saveContext();
             // Thread specific registers
             pcreg = entry_addr;
             npcreg = entry_addr; // + 4;
             gpr[29] = stack_addr; //sp
+            //gpr[26] = gpr[29]; // k0 mirrors sp?
 
-            // TODO hook "jr ra" where ra = 0,
-            // then set current_thread.exitStatus = v0 and current_thread.status = PSP_THREAD_STOPPED,
-            // finally contextSwitch(nextThread())
+            // We'll hook "jr ra" where ra = 0 as the thread exiting
             gpr[31] = 0; // ra
 
             delaysteps = 0;

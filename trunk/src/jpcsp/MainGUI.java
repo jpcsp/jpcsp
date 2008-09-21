@@ -384,6 +384,16 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     }
 }//GEN-LAST:event_OpenFileActionPerformed
 
+private String pspifyFilename(String pcfilename) {
+    // Files on memstick
+    if (pcfilename.startsWith("ms0"))
+        return "ms0:" + pcfilename.substring(3); //.replaceAll("\\\\", "/");
+
+    // Files anywhere on user's hard drive, may not work
+    // use host0:/ ?
+    return pcfilename;
+}
+
 public void loadFile(File file) {
     //This is where a real application would open the file.
     try {
@@ -391,7 +401,7 @@ public void loadFile(File file) {
        // Create a read-only memory-mapped file
         FileChannel roChannel = new RandomAccessFile(file, "r").getChannel();
         ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
-        emulator.load(readbuffer);
+        emulator.load(pspifyFilename(file.getPath()), readbuffer);
         String findpath = file.getParent();
         //System.out.println(findpath);
         pspiofilemgr.get_instance().setfilepath(findpath);
@@ -560,9 +570,9 @@ public void loadUMD(File file) {
         byte[] bootfile = new byte[(int)bootBin.length()];
         bootBin.read(bootfile);
         ByteBuffer buf1 = ByteBuffer.wrap(bootfile);
-        emulator.load(buf1);
+        emulator.load("disc0:/PSP_GAME/SYSDIR/BOOT.BIN", buf1);
 
-        pspiofilemgr.get_instance().setfilepath("disc0/");
+        pspiofilemgr.get_instance().setfilepath("disc0/"); // or disc0/PSP_GAME/SYSDIR ?
         pspiofilemgr.get_instance().setIsoReader(iso);
 
     } catch (IOException e) {
