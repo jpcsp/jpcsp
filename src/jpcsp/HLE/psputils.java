@@ -56,7 +56,7 @@ public class psputils {
         long millis = Calendar.getInstance().getTimeInMillis();
         int seconds = (int)(millis / 1000);
         if (time_t_addr != 0)
-            Memory.get_instance().write32(time_t_addr, seconds);
+            Memory.getInstance().write32(time_t_addr, seconds);
         Emulator.getProcessor().gpr[2] = seconds;
     }
 
@@ -97,7 +97,7 @@ public class psputils {
         Mt19937List.put(ctx_addr, new SceKernelUtilsMt19937Context(seed));
 
         // We'll overwrite all the context memory, 628 bytes
-        Memory mem = Memory.get_instance();
+        Memory mem = Memory.getInstance();
         for (int i = 0; i < 628; i += 4) {
             mem.write32(ctx_addr + i, 0xcdcdcdcd);
         }

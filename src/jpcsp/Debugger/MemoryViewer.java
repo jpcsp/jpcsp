@@ -53,8 +53,8 @@ public class MemoryViewer extends javax.swing.JFrame {
     private byte safeRead8(int address)
     {
         byte value = 0;
-        if (Memory.get_instance().isAddressGood(address))
-            value = (byte)Memory.get_instance().read8(address);
+        if (Memory.getInstance().isAddressGood(address))
+            value = (byte)Memory.getInstance().read8(address);
         return value;
     }
 

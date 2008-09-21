@@ -273,7 +273,7 @@ public class FileManager {
                         /***************************************
                          * Load a block on main memory ....
                          ***************************************/
-                        Utilities.copyByteBuffertoByteBuffer(f, Memory.get_instance().mainmemory, offsettoread, (int) shdr.getSh_size());
+                        Utilities.copyByteBuffertoByteBuffer(f, Memory.getInstance().mainmemory, offsettoread, (int) shdr.getSh_size());
 
                         if ((int)(baseoffset + shdr.getSh_addr()) < loadAddressLow)
                             loadAddressLow = (int)(baseoffset + shdr.getSh_addr());
@@ -284,7 +284,7 @@ public class FileManager {
                         //System.out.println("NO BITS");
                         // zero out this memory
                         offsettoread = (int)(getBaseoffset() + shdr.getSh_addr() - MemoryMap.START_RAM);
-                        ByteBuffer mainmemory = Memory.get_instance().mainmemory;
+                        ByteBuffer mainmemory = Memory.getInstance().mainmemory;
                         for (int j = 0; j < (int)shdr.getSh_size(); j++)
                             mainmemory.put(offsettoread + j, (byte)0);
 

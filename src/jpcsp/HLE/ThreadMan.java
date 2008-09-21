@@ -104,10 +104,10 @@ public class ThreadMan {
             | (jpcsp.AllegrexOpcodes.SYSCALL & 0x3f)
             | ((0x201c & 0x000fffff) << 6);
 
-        Memory.get_instance().write32(MemoryMap.START_RAM + 0, instruction_addiu);
-        Memory.get_instance().write32(MemoryMap.START_RAM + 4, instruction_lui);
-        Memory.get_instance().write32(MemoryMap.START_RAM + 8, instruction_jr);
-        Memory.get_instance().write32(MemoryMap.START_RAM + 12, instruction_syscall);
+        Memory.getInstance().write32(MemoryMap.START_RAM + 0, instruction_addiu);
+        Memory.getInstance().write32(MemoryMap.START_RAM + 4, instruction_lui);
+        Memory.getInstance().write32(MemoryMap.START_RAM + 8, instruction_jr);
+        Memory.getInstance().write32(MemoryMap.START_RAM + 12, instruction_syscall);
 
         idle0 = new SceKernelThreadInfo("idle0", MemoryMap.START_RAM, 0x7f, 0x0, 0x0);
         idle0.status = PspThreadStatus.PSP_THREAD_READY;
@@ -281,7 +281,7 @@ public class ThreadMan {
     
     public void ThreadMan_sceKernelCreateThread(int name_addr, int entry_addr,
         int initPriority, int stackSize, int attr, int option_addr) {
-        String name = readStringZ(Memory.get_instance().mainmemory,
+        String name = readStringZ(Memory.getInstance().mainmemory,
             (name_addr & 0x3fffffff) - MemoryMap.START_RAM);
 
         // TODO use option_addr/SceKernelThreadOptParam?
@@ -354,7 +354,7 @@ public class ThreadMan {
             // Copy user data to the new thread's stack, since we are not
             // starting the thread immediately, only marking it as ready,
             // the data needs to be saved somewhere safe.
-            Memory mem = Memory.get_instance();
+            Memory mem = Memory.getInstance();
             for (int i = 0; i < a1; i++)
                 mem.write8(thread.stack_addr - a1 + i, (byte)mem.read8(a2 + i));
 
@@ -430,7 +430,7 @@ public class ThreadMan {
     }
 
     public void ThreadMan_sceKernelCreateCallback(int a0, int a1, int a2) throws GeneralJpcspException {
-        String name = readStringZ(Memory.get_instance().mainmemory, (a0 & 0x3fffffff) - MemoryMap.START_RAM);
+        String name = readStringZ(Memory.getInstance().mainmemory, (a0 & 0x3fffffff) - MemoryMap.START_RAM);
         SceKernelCallbackInfo callback = new SceKernelCallbackInfo(name, current_thread.uid, a1, a2);
 
         System.out.println("sceKernelCreateCallback SceUID=" + Integer.toHexString(callback.uid)
@@ -455,7 +455,7 @@ public class ThreadMan {
         //System.out.println("sceKernelReferThreadStatus SceKernelThreadInfo=" + Integer.toHexString(a1));
 
         int i, len;
-        Memory mem = Memory.get_instance();
+        Memory mem = Memory.getInstance();
         mem.write32(a1, 106); //struct size
 
         //thread name max 32bytes
@@ -544,7 +544,7 @@ public class ThreadMan {
     }
 
     private void memset(int address, byte c, int length) {
-        Memory mem = Memory.get_instance();
+        Memory mem = Memory.getInstance();
         for (int i = 0; i < length; i++) {
             mem.write8(address + i, c);
         }

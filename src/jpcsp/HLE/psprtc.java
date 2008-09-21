@@ -44,13 +44,13 @@ public class psprtc {
     }
 
     public void sceRtcGetCurrentTick(int a0) {
-        Memory.get_instance().write64(a0, System.currentTimeMillis());
+        Memory.getInstance().write64(a0, System.currentTimeMillis());
         Emulator.getProcessor().gpr[2] = 0;
     }
 
     public void sceRtcGetCurrentClockLocalTime(int a0) {
         ScePspDateTime pspTime = new ScePspDateTime();
-        Memory mem = Memory.get_instance();
+        Memory mem = Memory.getInstance();
 
         pspTime.write(mem, a0);
 

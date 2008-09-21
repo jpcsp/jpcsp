@@ -76,8 +76,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         listmodel.clear();
 
         for (pc = DebuggerPC , cnt = 0; pc < (DebuggerPC + 0x00000094); pc += 0x00000004, cnt++) {
-            if (Memory.get_instance().isAddressGood(pc)) {
-                int opcode = Memory.get_instance().read32(pc);
+            if (Memory.getInstance().isAddressGood(pc)) {
+                int opcode = Memory.getInstance().read32(pc);
 
                 Instruction insn = Decoder.instruction(opcode);
 
@@ -590,8 +590,8 @@ private void DumpCodeToTextActionPerformed(java.awt.event.ActionEvent evt) {//GE
             int End = Integer.parseInt(opt.getInput()[1],16);
             for(int i =Start; i<=End; i+=4)
             {
-                if (Memory.get_instance().isAddressGood(i)) {
-                    int opcode = Memory.get_instance().read32(i);
+                if (Memory.getInstance().isAddressGood(i)) {
+                    int opcode = Memory.getInstance().read32(i);
 
                     Instruction insn = Decoder.instruction(opcode);
 

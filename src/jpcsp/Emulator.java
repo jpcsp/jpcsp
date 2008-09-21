@@ -156,7 +156,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                         int ADDR_BASE = (int) ((rel.getR_info() >> 16) & 0xFF);
                         //System.out.println("type=" + R_TYPE + ",base=" + OFS_BASE + ",addr=" + ADDR_BASE + "");
 
-                        int data = Memory.get_instance().read32((int) romManager.getBaseoffset() + (int) rel.getR_offset());
+                        int data = Memory.getInstance().read32((int) romManager.getBaseoffset() + (int) rel.getR_offset());
                         long result = 0; // Used to hold the result of relocation, OR this back into data
 
                         // these are the addends?
@@ -216,11 +216,11 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                                     data |= result & 0x0000FFFF; // truncate
 
                                     // Process deferred R_MIPS_HI16
-                                    int data2 = Memory.get_instance().read32(HI_addr);
+                                    int data2 = Memory.getInstance().read32(HI_addr);
                                     data2 &= ~0x0000FFFF;
                                     data2 |= (result >> 16) & 0x0000FFFF; // truncate
 
-                                    Memory.get_instance().write32(HI_addr, data2);
+                                    Memory.getInstance().write32(HI_addr, data2);
                                 } else if (_gp_disp) {
                                     result = AHL + GP - P + 4;
 
@@ -232,7 +232,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                                     data |= result & 0x0000FFFF;
 
                                     // Process deferred R_MIPS_HI16
-                                    int data2 = Memory.get_instance().read32(HI_addr);
+                                    int data2 = Memory.getInstance().read32(HI_addr);
 
                                     result = AHL + GP - P;
 
@@ -242,7 +242,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                                     }
                                     data2 &= ~0x0000FFFF;
                                     data2 |= (result >> 16) & 0x0000FFFF;
-                                    Memory.get_instance().write32(HI_addr, data2);
+                                    Memory.getInstance().write32(HI_addr, data2);
                                 }
                                 break;
 
@@ -320,7 +320,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                         }
 
                         //System.out.println("Relocation type " + R_TYPE + " at " + String.format("%08x", (int)baseoffset + (int)rel.r_offset));
-                        Memory.get_instance().write32((int) romManager.getBaseoffset() + (int) rel.getR_offset(), data);
+                        Memory.getInstance().write32((int) romManager.getBaseoffset() + (int) rel.getR_offset(), data);
                     }
                 }
             }
@@ -330,7 +330,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
         // Imports
         for (Elf32SectionHeader shdr : elf.getListSectionHeader()) {
             if (shdr.getSh_namez().equals(".lib.stub")) {
-                Memory mem = Memory.get_instance();
+                Memory mem = Memory.getInstance();
                 int stubHeadersAddress = (int)(romManager.getBaseoffset() + shdr.getSh_addr());
                 int stubHeadersCount = (int)(shdr.getSh_size() / Elf32StubHeader.sizeof());
 
@@ -469,7 +469,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
 
     private void initNewPsp() {
         getProcessor().reset();
-        Memory.get_instance().NullMemory();
+        Memory.getInstance().NullMemory();
         NIDMapper.get_instance().Initialise();
 
         if (memview != null)
@@ -549,7 +549,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
     }
 
     public static Memory getMemory() {
-        return Memory.get_instance();
+        return Memory.getInstance();
     }
 
     public static Controller getController() {

@@ -179,7 +179,7 @@ public class pspSysMem {
     {
         pname &= 0x3fffffff;
         addr &= 0x3fffffff;
-        String name = readStringZ(Memory.get_instance().mainmemory, pname - MemoryMap.START_RAM);
+        String name = readStringZ(Memory.getInstance().mainmemory, pname - MemoryMap.START_RAM);
 
         // print debug info
         String typeStr;

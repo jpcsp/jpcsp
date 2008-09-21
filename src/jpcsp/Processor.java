@@ -73,7 +73,7 @@ public class Processor implements AllegrexInstructions {
     public RegisterTracking tracked_hilo;
 
     Processor() {
-        Memory.get_instance(); //intialize memory
+        Memory.getInstance(); //intialize memory
         reset();
         testOpcodes();
         reset();
@@ -392,7 +392,7 @@ public class Processor implements AllegrexInstructions {
 
         npc = pc + 4;
 
-        int insn = (Memory.get_instance()).read32(pc);
+        int insn = (Memory.getInstance()).read32(pc);
 
         if (false) {
             Common.Instruction i = Decoder.instruction(insn);
@@ -410,7 +410,7 @@ public class Processor implements AllegrexInstructions {
     }
 
     public void stepDelayslot() {
-        int insn = (Memory.get_instance()).read32(pc);
+        int insn = (Memory.getInstance()).read32(pc);
 
         if (false) {
             Common.Instruction i = Decoder.instruction(insn);
@@ -1119,7 +1119,7 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doLB(int rt, int rs, int simm16) {
-        int word = ((Memory.get_instance()).read8(gpr[rs] + simm16) << 24) >> 24;
+        int word = ((Memory.getInstance()).read8(gpr[rs] + simm16) << 24) >> 24;
         if (rt != 0) {
             gpr[rt] = word;
         }
@@ -1127,7 +1127,7 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doLBU(int rt, int rs, int simm16) {
-        int word = (Memory.get_instance()).read8(gpr[rs] + simm16) & 0xff;
+        int word = (Memory.getInstance()).read8(gpr[rs] + simm16) & 0xff;
         if (rt != 0) {
             gpr[rt] = word;
         }
@@ -1135,7 +1135,7 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doLH(int rt, int rs, int simm16) {
-        int word = ((Memory.get_instance()).read16(gpr[rs] + simm16) << 16) >> 16;
+        int word = ((Memory.getInstance()).read16(gpr[rs] + simm16) << 16) >> 16;
         if (rt != 0) {
             gpr[rt] = word;
         }
@@ -1143,7 +1143,7 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doLHU(int rt, int rs, int simm16) {
-        int word = (Memory.get_instance()).read16(gpr[rs] + simm16) & 0xffff;
+        int word = (Memory.getInstance()).read16(gpr[rs] + simm16) & 0xffff;
         if (rt != 0) {
             gpr[rt] = word;
         }
@@ -1155,7 +1155,7 @@ public class Processor implements AllegrexInstructions {
         int offset = address & 0x3;
         int reg = gpr[rt];
 
-        int word = (Memory.get_instance()).read32(address & 0xfffffffc);
+        int word = (Memory.getInstance()).read32(address & 0xfffffffc);
 
         switch (offset) {
             case 0:
@@ -1181,7 +1181,7 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doLW(int rt, int rs, int simm16) {
-        int word = (Memory.get_instance()).read32(gpr[rs] + simm16);
+        int word = (Memory.getInstance()).read32(gpr[rs] + simm16);
         if (rt != 0) {
             gpr[rt] = word;
         }
@@ -1193,7 +1193,7 @@ public class Processor implements AllegrexInstructions {
         int offset = address & 0x3;
         int reg = gpr[rt];
 
-        int word = (Memory.get_instance()).read32(address & 0xfffffffc);
+        int word = (Memory.getInstance()).read32(address & 0xfffffffc);
 
         switch (offset) {
             case 0:
@@ -1219,12 +1219,12 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doSB(int rt, int rs, int simm16) {
-        (Memory.get_instance()).write8(gpr[rs] + simm16, (byte) (gpr[rt] & 0xFF));
+        (Memory.getInstance()).write8(gpr[rs] + simm16, (byte) (gpr[rt] & 0xFF));
     }
 
     @Override
     public void doSH(int rt, int rs, int simm16) {
-        (Memory.get_instance()).write16(gpr[rs] + simm16, (short) (gpr[rt] & 0xFFFF));
+        (Memory.getInstance()).write16(gpr[rs] + simm16, (short) (gpr[rt] & 0xFFFF));
     }
 
     @Override
@@ -1232,7 +1232,7 @@ public class Processor implements AllegrexInstructions {
         int address = gpr[rs] + simm16;
         int offset = address & 0x3;
         int reg = gpr[rt];
-        int data = (Memory.get_instance()).read32(address & 0xfffffffc);
+        int data = (Memory.getInstance()).read32(address & 0xfffffffc);
 
         switch (offset) {
             case 0:
@@ -1252,12 +1252,12 @@ public class Processor implements AllegrexInstructions {
                 break;
         }
 
-        (Memory.get_instance()).write32(address & 0xfffffffc, data);
+        (Memory.getInstance()).write32(address & 0xfffffffc, data);
     }
 
     @Override
     public void doSW(int rt, int rs, int simm16) {
-        (Memory.get_instance()).write32(gpr[rs] + simm16, gpr[rt]);
+        (Memory.getInstance()).write32(gpr[rs] + simm16, gpr[rt]);
     }
 
     @Override
@@ -1265,7 +1265,7 @@ public class Processor implements AllegrexInstructions {
         int address = gpr[rs] + simm16;
         int offset = address & 0x3;
         int reg = gpr[rt];
-        int data = (Memory.get_instance()).read32(address & 0xfffffffc);
+        int data = (Memory.getInstance()).read32(address & 0xfffffffc);
 
         switch (offset) {
             case 0:
@@ -1285,7 +1285,7 @@ public class Processor implements AllegrexInstructions {
                 break;
         }
 
-        (Memory.get_instance()).write32(address & 0xfffffffc, data);
+        (Memory.getInstance()).write32(address & 0xfffffffc, data);
     }
 
     @Override
@@ -1296,7 +1296,7 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doLL(int rt, int rs, int simm16) {
-        int word = (Memory.get_instance()).read32(gpr[rs] + simm16);
+        int word = (Memory.getInstance()).read32(gpr[rs] + simm16);
         if (rt != 0) {
             gpr[rt] = word;
         }
@@ -1305,7 +1305,7 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doLWC1(int ft, int rs, int simm16) {
-        fpr[ft] = Float.intBitsToFloat((Memory.get_instance()).read32(gpr[rs] + simm16));
+        fpr[ft] = Float.intBitsToFloat((Memory.getInstance()).read32(gpr[rs] + simm16));
         cycles = Math.max(cycles, fpr_cycles[ft]);
         fpr_cycles[ft] = cycles + 1;
     }
@@ -1315,14 +1315,14 @@ public class Processor implements AllegrexInstructions {
         int r = (vt >> 5) & 3;
         int m = (vt >> 2) & 7;
         int c = (vt >> 0) & 3;
-        vpr[m][c][r] = Float.intBitsToFloat((Memory.get_instance()).read32(gpr[rs] + (simm14 << 2)));
+        vpr[m][c][r] = Float.intBitsToFloat((Memory.getInstance()).read32(gpr[rs] + (simm14 << 2)));
         cycles = Math.max(cycles, vpr_cycles[m][r][c]);
         vpr_cycles[m][r][c] = cycles + 3;
     }
 
     @Override
     public void doSC(int rt, int rs, int simm16) {
-        (Memory.get_instance()).write32(gpr[rs] + simm16, gpr[rt]);
+        (Memory.getInstance()).write32(gpr[rs] + simm16, gpr[rt]);
         if (rt != 0) {
             gpr[rt] = 1; // = ll_bit;
         }
@@ -1330,7 +1330,7 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doSWC1(int ft, int rs, int simm16) {
-        (Memory.get_instance()).write32(gpr[rs] + simm16, Float.floatToRawIntBits(fpr[ft]));
+        (Memory.getInstance()).write32(gpr[rs] + simm16, Float.floatToRawIntBits(fpr[ft]));
         cycles = Math.max(cycles, fpr_cycles[ft]);
     }
 
@@ -1339,7 +1339,7 @@ public class Processor implements AllegrexInstructions {
         int r = (vt >> 5) & 3;
         int m = (vt >> 2) & 7;
         int c = (vt >> 0) & 3;
-        (Memory.get_instance()).write32(gpr[rs] + (simm14 << 2), Float.floatToRawIntBits(vpr[m][r][c]));
+        (Memory.getInstance()).write32(gpr[rs] + (simm14 << 2), Float.floatToRawIntBits(vpr[m][r][c]));
         cycles = Math.max(cycles, vpr_cycles[m][r][c]);
     }
 
