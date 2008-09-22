@@ -38,37 +38,21 @@ public class sceGe_user implements HLEModule {
         if (version >= 150) {
 
             mm.addFunction(sceGeEdramGetSizeFunction, 0x1F6752AD);
-
             mm.addFunction(sceGeEdramGetAddrFunction, 0xE47E40E4);
-
             mm.addFunction(sceGeEdramSetAddrTranslationFunction, 0xB77905EA);
-
             mm.addFunction(sceGeGetCmdFunction, 0xDC93CFEF);
-
             mm.addFunction(sceGeGetMtxFunction, 0x57C8945B);
-
             mm.addFunction(sceGeSaveContextFunction, 0x438A385A);
-
             mm.addFunction(sceGeRestoreContextFunction, 0x0BF608FB);
-
             mm.addFunction(sceGeListEnQueueFunction, 0xAB49E76A);
-
             mm.addFunction(sceGeListEnQueueHeadFunction, 0x1C0D95A6);
-
             mm.addFunction(sceGeListDeQueueFunction, 0x5FB86AB0);
-
             mm.addFunction(sceGeListUpdateStallAddrFunction, 0xE0D68148);
-
             mm.addFunction(sceGeListSyncFunction, 0x03444EB4);
-
             mm.addFunction(sceGeDrawSyncFunction, 0xB287BD61);
-
             mm.addFunction(sceGeBreakFunction, 0xB448EC0D);
-
             mm.addFunction(sceGeContinueFunction, 0x4C06E472);
-
             mm.addFunction(sceGeSetCallbackFunction, 0xA4FC06A4);
-
             mm.addFunction(sceGeUnsetCallbackFunction, 0x05DB22CE);
 
         }
@@ -79,37 +63,21 @@ public class sceGe_user implements HLEModule {
         if (version >= 150) {
 
             mm.removeFunction(sceGeEdramGetSizeFunction);
-
             mm.removeFunction(sceGeEdramGetAddrFunction);
-
             mm.removeFunction(sceGeEdramSetAddrTranslationFunction);
-
             mm.removeFunction(sceGeGetCmdFunction);
-
             mm.removeFunction(sceGeGetMtxFunction);
-
             mm.removeFunction(sceGeSaveContextFunction);
-
             mm.removeFunction(sceGeRestoreContextFunction);
-
             mm.removeFunction(sceGeListEnQueueFunction);
-
             mm.removeFunction(sceGeListEnQueueHeadFunction);
-
             mm.removeFunction(sceGeListDeQueueFunction);
-
             mm.removeFunction(sceGeListUpdateStallAddrFunction);
-
             mm.removeFunction(sceGeListSyncFunction);
-
             mm.removeFunction(sceGeDrawSyncFunction);
-
             mm.removeFunction(sceGeBreakFunction);
-
             mm.removeFunction(sceGeContinueFunction);
-
             mm.removeFunction(sceGeSetCallbackFunction);
-
             mm.removeFunction(sceGeUnsetCallbackFunction);
 
         }
@@ -119,204 +87,289 @@ public class sceGe_user implements HLEModule {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceGeEdramGetSize [0x1F6752AD]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceGeEdramGetAddr(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceGeEdramGetAddr [0xE47E40E4]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceGeEdramSetAddrTranslation(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceGeEdramSetAddrTranslation [0xB77905EA]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceGeGetCmd(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceGeGetCmd [0xDC93CFEF]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceGeGetMtx(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceGeGetMtx [0x57C8945B]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceGeSaveContext(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceGeSaveContext [0x438A385A]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceGeRestoreContext(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceGeRestoreContext [0x0BF608FB]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceGeListEnQueue(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceGeListEnQueue [0xAB49E76A]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceGeListEnQueueHead(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceGeListEnQueueHead [0x1C0D95A6]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceGeListDeQueue(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceGeListDeQueue [0x5FB86AB0]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceGeListUpdateStallAddr(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceGeListUpdateStallAddr [0xE0D68148]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceGeListSync(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceGeListSync [0x03444EB4]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceGeDrawSync(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceGeDrawSync [0xB287BD61]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceGeBreak(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceGeBreak [0xB448EC0D]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceGeContinue(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceGeContinue [0x4C06E472]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceGeSetCallback(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceGeSetCallback [0xA4FC06A4]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceGeUnsetCallback(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceGeUnsetCallback [0x05DB22CE]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
     public final HLEModuleFunction sceGeEdramGetSizeFunction = new HLEModuleFunction("sceGe_user", "sceGeEdramGetSize") {
 
@@ -327,7 +380,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_user.sceGeEdramGetSizeFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeEdramGetSize(processor);";
         }
     };
     public final HLEModuleFunction sceGeEdramGetAddrFunction = new HLEModuleFunction("sceGe_user", "sceGeEdramGetAddr") {
@@ -339,7 +392,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_user.sceGeEdramGetAddrFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeEdramGetAddr(processor);";
         }
     };
     public final HLEModuleFunction sceGeEdramSetAddrTranslationFunction = new HLEModuleFunction("sceGe_user", "sceGeEdramSetAddrTranslation") {
@@ -351,7 +404,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_user.sceGeEdramSetAddrTranslationFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeEdramSetAddrTranslation(processor);";
         }
     };
     public final HLEModuleFunction sceGeGetCmdFunction = new HLEModuleFunction("sceGe_user", "sceGeGetCmd") {
@@ -363,7 +416,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_user.sceGeGetCmdFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeGetCmd(processor);";
         }
     };
     public final HLEModuleFunction sceGeGetMtxFunction = new HLEModuleFunction("sceGe_user", "sceGeGetMtx") {
@@ -375,7 +428,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_user.sceGeGetMtxFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeGetMtx(processor);";
         }
     };
     public final HLEModuleFunction sceGeSaveContextFunction = new HLEModuleFunction("sceGe_user", "sceGeSaveContext") {
@@ -387,7 +440,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_user.sceGeSaveContextFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeSaveContext(processor);";
         }
     };
     public final HLEModuleFunction sceGeRestoreContextFunction = new HLEModuleFunction("sceGe_user", "sceGeRestoreContext") {
@@ -399,7 +452,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_user.sceGeRestoreContextFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeRestoreContext(processor);";
         }
     };
     public final HLEModuleFunction sceGeListEnQueueFunction = new HLEModuleFunction("sceGe_user", "sceGeListEnQueue") {
@@ -411,7 +464,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_user.sceGeListEnQueueFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeListEnQueue(processor);";
         }
     };
     public final HLEModuleFunction sceGeListEnQueueHeadFunction = new HLEModuleFunction("sceGe_user", "sceGeListEnQueueHead") {
@@ -423,7 +476,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_user.sceGeListEnQueueHeadFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeListEnQueueHead(processor);";
         }
     };
     public final HLEModuleFunction sceGeListDeQueueFunction = new HLEModuleFunction("sceGe_user", "sceGeListDeQueue") {
@@ -435,7 +488,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_user.sceGeListDeQueueFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeListDeQueue(processor);";
         }
     };
     public final HLEModuleFunction sceGeListUpdateStallAddrFunction = new HLEModuleFunction("sceGe_user", "sceGeListUpdateStallAddr") {
@@ -447,7 +500,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_user.sceGeListUpdateStallAddrFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeListUpdateStallAddr(processor);";
         }
     };
     public final HLEModuleFunction sceGeListSyncFunction = new HLEModuleFunction("sceGe_user", "sceGeListSync") {
@@ -459,7 +512,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_user.sceGeListSyncFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeListSync(processor);";
         }
     };
     public final HLEModuleFunction sceGeDrawSyncFunction = new HLEModuleFunction("sceGe_user", "sceGeDrawSync") {
@@ -471,7 +524,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_user.sceGeDrawSyncFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeDrawSync(processor);";
         }
     };
     public final HLEModuleFunction sceGeBreakFunction = new HLEModuleFunction("sceGe_user", "sceGeBreak") {
@@ -483,7 +536,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_user.sceGeBreakFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeBreak(processor);";
         }
     };
     public final HLEModuleFunction sceGeContinueFunction = new HLEModuleFunction("sceGe_user", "sceGeContinue") {
@@ -495,7 +548,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_user.sceGeContinueFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeContinue(processor);";
         }
     };
     public final HLEModuleFunction sceGeSetCallbackFunction = new HLEModuleFunction("sceGe_user", "sceGeSetCallback") {
@@ -507,7 +560,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_user.sceGeSetCallbackFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeSetCallback(processor);";
         }
     };
     public final HLEModuleFunction sceGeUnsetCallbackFunction = new HLEModuleFunction("sceGe_user", "sceGeUnsetCallback") {
@@ -519,7 +572,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_user.sceGeUnsetCallbackFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeUnsetCallback(processor);";
         }
     };
 };

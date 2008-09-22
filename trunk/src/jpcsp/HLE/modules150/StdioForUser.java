@@ -35,25 +35,16 @@ public class StdioForUser implements HLEModule {
 
     @Override
     public void installModule(HLEModuleManager mm, int version) {
-
         if (version >= 150) {
 
             mm.addFunction(sceKernelStdioReadFunction, 0x3054D478);
-
             mm.addFunction(sceKernelStdioLseekFunction, 0x0CBB0571);
-
             mm.addFunction(sceKernelStdioSendCharFunction, 0xA46785C9);
-
             mm.addFunction(sceKernelStdioWriteFunction, 0xA3B931DB);
-
             mm.addFunction(sceKernelStdioCloseFunction, 0x9D061C19);
-
             mm.addFunction(sceKernelStdioOpenFunction, 0x924ABA61);
-
             mm.addFunction(sceKernelStdinFunction, 0x172D316E);
-
             mm.addFunction(sceKernelStdoutFunction, 0xA6BAB2E9);
-
             mm.addFunction(sceKernelStderrFunction, 0xF78BA90A);
 
         }
@@ -64,21 +55,13 @@ public class StdioForUser implements HLEModule {
         if (version >= 150) {
 
             mm.removeFunction(sceKernelStdioReadFunction);
-
             mm.removeFunction(sceKernelStdioLseekFunction);
-
             mm.removeFunction(sceKernelStdioSendCharFunction);
-
             mm.removeFunction(sceKernelStdioWriteFunction);
-
             mm.removeFunction(sceKernelStdioCloseFunction);
-
             mm.removeFunction(sceKernelStdioOpenFunction);
-
             mm.removeFunction(sceKernelStdinFunction);
-
             mm.removeFunction(sceKernelStdoutFunction);
-
             mm.removeFunction(sceKernelStderrFunction);
 
         }
@@ -88,72 +71,102 @@ public class StdioForUser implements HLEModule {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelStdioRead [0x3054D478]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelStdioLseek(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelStdioLseek [0x0CBB0571]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelStdioSendChar(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelStdioSendChar [0xA46785C9]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelStdioWrite(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelStdioWrite [0xA3B931DB]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelStdioClose(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelStdioClose [0x9D061C19]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelStdioOpen(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelStdioOpen [0x924ABA61]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelStdin(Processor processor) {
@@ -173,7 +186,6 @@ public class StdioForUser implements HLEModule {
         Processor cpu = processor; // Old-Style Processor
         cpu.gpr[2] = 2;
     }
-
     public final HLEModuleFunction sceKernelStdioReadFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdioRead") {
 
         @Override
@@ -183,7 +195,7 @@ public class StdioForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.StdioForUser.sceKernelStdioReadFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.StdioForUserModule.sceKernelStdioRead(processor);";
         }
     };
     public final HLEModuleFunction sceKernelStdioLseekFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdioLseek") {
@@ -195,7 +207,7 @@ public class StdioForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.StdioForUser.sceKernelStdioLseekFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.StdioForUserModule.sceKernelStdioLseek(processor);";
         }
     };
     public final HLEModuleFunction sceKernelStdioSendCharFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdioSendChar") {
@@ -207,7 +219,7 @@ public class StdioForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.StdioForUser.sceKernelStdioSendCharFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.StdioForUserModule.sceKernelStdioSendChar(processor);";
         }
     };
     public final HLEModuleFunction sceKernelStdioWriteFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdioWrite") {
@@ -219,7 +231,7 @@ public class StdioForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.StdioForUser.sceKernelStdioWriteFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.StdioForUserModule.sceKernelStdioWrite(processor);";
         }
     };
     public final HLEModuleFunction sceKernelStdioCloseFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdioClose") {
@@ -231,7 +243,7 @@ public class StdioForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.StdioForUser.sceKernelStdioCloseFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.StdioForUserModule.sceKernelStdioClose(processor);";
         }
     };
     public final HLEModuleFunction sceKernelStdioOpenFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdioOpen") {
@@ -243,7 +255,7 @@ public class StdioForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.StdioForUser.sceKernelStdioOpenFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.StdioForUserModule.sceKernelStdioOpen(processor);";
         }
     };
     public final HLEModuleFunction sceKernelStdinFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdin") {
@@ -255,7 +267,7 @@ public class StdioForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.StdioForUser.sceKernelStdinFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.StdioForUserModule.sceKernelStdin(processor);";
         }
     };
     public final HLEModuleFunction sceKernelStdoutFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdout") {
@@ -267,7 +279,7 @@ public class StdioForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.StdioForUser.sceKernelStdoutFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.StdioForUserModule.sceKernelStdout(processor);";
         }
     };
     public final HLEModuleFunction sceKernelStderrFunction = new HLEModuleFunction("StdioForUser", "sceKernelStderr") {
@@ -279,7 +291,7 @@ public class StdioForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.StdioForUser.sceKernelStderrFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.StdioForUserModule.sceKernelStderr(processor);";
         }
     };
 };
