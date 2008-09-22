@@ -38,255 +38,130 @@ public class ThreadManForUser implements HLEModule {
         if (version >= 150) {
 
             mm.addFunction(_sceKernelReturnFromCallbackFunction, 0x6E9EA350);
-
             mm.addFunction(sceKernelRegisterThreadEventHandlerFunction, 0x0C106E53);
-
             mm.addFunction(sceKernelReleaseThreadEventHandlerFunction, 0x72F3C145);
-
             mm.addFunction(sceKernelReferThreadEventHandlerStatusFunction, 0x369EEB6B);
-
             mm.addFunction(sceKernelCreateCallbackFunction, 0xE81CAF8F);
-
             mm.addFunction(sceKernelDeleteCallbackFunction, 0xEDBA5844);
-
             mm.addFunction(sceKernelNotifyCallbackFunction, 0xC11BA8C4);
-
             mm.addFunction(sceKernelCancelCallbackFunction, 0xBA4051D6);
-
             mm.addFunction(sceKernelGetCallbackCountFunction, 0x2A3D44FF);
-
             mm.addFunction(sceKernelCheckCallbackFunction, 0x349D6D6C);
-
             mm.addFunction(sceKernelReferCallbackStatusFunction, 0x730ED8BC);
-
             mm.addFunction(sceKernelSleepThreadFunction, 0x9ACE131E);
-
             mm.addFunction(sceKernelSleepThreadCBFunction, 0x82826F70);
-
             mm.addFunction(sceKernelWakeupThreadFunction, 0xD59EAD2F);
-
             mm.addFunction(sceKernelCancelWakeupThreadFunction, 0xFCCFAD26);
-
             mm.addFunction(sceKernelSuspendThreadFunction, 0x9944F31F);
-
             mm.addFunction(sceKernelResumeThreadFunction, 0x75156E8F);
-
             mm.addFunction(sceKernelWaitThreadEndFunction, 0x278C0DF5);
-
             mm.addFunction(sceKernelWaitThreadEndCBFunction, 0x840E8133);
-
             mm.addFunction(sceKernelDelayThreadFunction, 0xCEADEB47);
-
             mm.addFunction(sceKernelDelayThreadCBFunction, 0x68DA9E36);
-
             mm.addFunction(sceKernelDelaySysClockThreadFunction, 0xBD123D9E);
-
             mm.addFunction(sceKernelDelaySysClockThreadCBFunction, 0x1181E963);
-
             mm.addFunction(sceKernelCreateSemaFunction, 0xD6DA4BA1);
-
             mm.addFunction(sceKernelDeleteSemaFunction, 0x28B6489C);
-
             mm.addFunction(sceKernelSignalSemaFunction, 0x3F53E640);
-
             mm.addFunction(sceKernelWaitSemaFunction, 0x4E3A1105);
-
             mm.addFunction(sceKernelWaitSemaCBFunction, 0x6D212BAC);
-
             mm.addFunction(sceKernelPollSemaFunction, 0x58B1F937);
-
             mm.addFunction(sceKernelCancelSemaFunction, 0x8FFDF9A2);
-
             mm.addFunction(sceKernelReferSemaStatusFunction, 0xBC6FEBC5);
-
             mm.addFunction(sceKernelCreateEventFlagFunction, 0x55C20A00);
-
             mm.addFunction(sceKernelDeleteEventFlagFunction, 0xEF9E4C70);
-
             mm.addFunction(sceKernelSetEventFlagFunction, 0x1FB15A32);
-
             mm.addFunction(sceKernelClearEventFlagFunction, 0x812346E4);
-
             mm.addFunction(sceKernelWaitEventFlagFunction, 0x402FCF22);
-
             mm.addFunction(sceKernelWaitEventFlagCBFunction, 0x328C546A);
-
             mm.addFunction(sceKernelPollEventFlagFunction, 0x30FD48F0);
-
             mm.addFunction(sceKernelCancelEventFlagFunction, 0xCD203292);
-
             mm.addFunction(sceKernelReferEventFlagStatusFunction, 0xA66B0120);
-
             mm.addFunction(sceKernelCreateMbxFunction, 0x8125221D);
-
             mm.addFunction(sceKernelDeleteMbxFunction, 0x86255ADA);
-
             mm.addFunction(sceKernelSendMbxFunction, 0xE9B3061E);
-
             mm.addFunction(sceKernelReceiveMbxFunction, 0x18260574);
-
             mm.addFunction(sceKernelReceiveMbxCBFunction, 0xF3986382);
-
             mm.addFunction(sceKernelPollMbxFunction, 0x0D81716A);
-
             mm.addFunction(sceKernelCancelReceiveMbxFunction, 0x87D4DD36);
-
             mm.addFunction(sceKernelReferMbxStatusFunction, 0xA8E8C846);
-
             mm.addFunction(sceKernelCreateMsgPipeFunction, 0x7C0DC2A0);
-
             mm.addFunction(sceKernelDeleteMsgPipeFunction, 0xF0B7DA1C);
-
             mm.addFunction(sceKernelSendMsgPipeFunction, 0x876DBFAD);
-
             mm.addFunction(sceKernelSendMsgPipeCBFunction, 0x7C41F2C2);
-
             mm.addFunction(sceKernelTrySendMsgPipeFunction, 0x884C9F90);
-
             mm.addFunction(sceKernelReceiveMsgPipeFunction, 0x74829B76);
-
             mm.addFunction(sceKernelReceiveMsgPipeCBFunction, 0xFBFA697D);
-
             mm.addFunction(sceKernelTryReceiveMsgPipeFunction, 0xDF52098F);
-
             mm.addFunction(sceKernelCancelMsgPipeFunction, 0x349B864D);
-
             mm.addFunction(sceKernelReferMsgPipeStatusFunction, 0x33BE4024);
-
             mm.addFunction(sceKernelCreateVplFunction, 0x56C039B5);
-
             mm.addFunction(sceKernelDeleteVplFunction, 0x89B3D48C);
-
             mm.addFunction(sceKernelAllocateVplFunction, 0xBED27435);
-
             mm.addFunction(sceKernelAllocateVplCBFunction, 0xEC0A693F);
-
             mm.addFunction(sceKernelTryAllocateVplFunction, 0xAF36D708);
-
             mm.addFunction(sceKernelFreeVplFunction, 0xB736E9FF);
-
             mm.addFunction(sceKernelCancelVplFunction, 0x1D371B8A);
-
             mm.addFunction(sceKernelReferVplStatusFunction, 0x39810265);
-
             mm.addFunction(sceKernelCreateFplFunction, 0xC07BB470);
-
             mm.addFunction(sceKernelDeleteFplFunction, 0xED1410E0);
-
             mm.addFunction(sceKernelAllocateFplFunction, 0xD979E9BF);
-
             mm.addFunction(sceKernelAllocateFplCBFunction, 0xE7282CB6);
-
             mm.addFunction(sceKernelTryAllocateFplFunction, 0x623AE665);
-
             mm.addFunction(sceKernelFreeFplFunction, 0xF6414A71);
-
             mm.addFunction(sceKernelCancelFplFunction, 0xA8AA591F);
-
             mm.addFunction(sceKernelReferFplStatusFunction, 0xD8199E4C);
-
             mm.addFunction(_sceKernelReturnFromTimerHandlerFunction, 0x0E927AED);
-
             mm.addFunction(sceKernelUSec2SysClockFunction, 0x110DEC9A);
-
             mm.addFunction(sceKernelUSec2SysClockWideFunction, 0xC8CD158C);
-
             mm.addFunction(sceKernelSysClock2USecFunction, 0xBA6B92E2);
-
             mm.addFunction(sceKernelSysClock2USecWideFunction, 0xE1619D7C);
-
             mm.addFunction(sceKernelGetSystemTimeFunction, 0xDB738F35);
-
             mm.addFunction(sceKernelGetSystemTimeWideFunction, 0x82BC5777);
-
             mm.addFunction(sceKernelGetSystemTimeLowFunction, 0x369ED59D);
-
             mm.addFunction(sceKernelSetAlarmFunction, 0x6652B8CA);
-
             mm.addFunction(sceKernelSetSysClockAlarmFunction, 0xB2C25152);
-
             mm.addFunction(sceKernelCancelAlarmFunction, 0x7E65B999);
-
             mm.addFunction(sceKernelReferAlarmStatusFunction, 0xDAA3F564);
-
             mm.addFunction(sceKernelCreateVTimerFunction, 0x20FFF560);
-
             mm.addFunction(sceKernelDeleteVTimerFunction, 0x328F9E52);
-
             mm.addFunction(sceKernelGetVTimerBaseFunction, 0xB3A59970);
-
             mm.addFunction(sceKernelGetVTimerBaseWideFunction, 0xB7C18B77);
-
             mm.addFunction(sceKernelGetVTimerTimeFunction, 0x034A921F);
-
             mm.addFunction(sceKernelGetVTimerTimeWideFunction, 0xC0B3FFD2);
-
             mm.addFunction(sceKernelSetVTimerTimeFunction, 0x542AD630);
-
             mm.addFunction(sceKernelSetVTimerTimeWideFunction, 0xFB6425C3);
-
             mm.addFunction(sceKernelStartVTimerFunction, 0xC68D9437);
-
             mm.addFunction(sceKernelStopVTimerFunction, 0xD0AEEE87);
-
             mm.addFunction(sceKernelSetVTimerHandlerFunction, 0xD8B299AE);
-
             mm.addFunction(sceKernelSetVTimerHandlerWideFunction, 0x53B00E9A);
-
             mm.addFunction(sceKernelCancelVTimerHandlerFunction, 0xD2D615EF);
-
             mm.addFunction(sceKernelReferVTimerStatusFunction, 0x5F32BEAA);
-
             mm.addFunction(sceKernelCreateThreadFunction, 0x446D8DE6);
-
             mm.addFunction(sceKernelDeleteThreadFunction, 0x9FA03CD3);
-
             mm.addFunction(sceKernelStartThreadFunction, 0xF475845D);
-
             mm.addFunction(_sceKernelExitThreadFunction, 0x532A522E);
-
             mm.addFunction(sceKernelExitThreadFunction, 0xAA73C935);
-
             mm.addFunction(sceKernelExitDeleteThreadFunction, 0x809CE29B);
-
             mm.addFunction(sceKernelTerminateThreadFunction, 0x616403BA);
-
             mm.addFunction(sceKernelTerminateDeleteThreadFunction, 0x383F7BCC);
-
             mm.addFunction(sceKernelSuspendDispatchThreadFunction, 0x3AD58B8C);
-
             mm.addFunction(sceKernelResumeDispatchThreadFunction, 0x27E22EC2);
-
             mm.addFunction(sceKernelChangeCurrentThreadAttrFunction, 0xEA748E31);
-
             mm.addFunction(sceKernelChangeThreadPriorityFunction, 0x71BC9871);
-
             mm.addFunction(sceKernelRotateThreadReadyQueueFunction, 0x912354A7);
-
             mm.addFunction(sceKernelReleaseWaitThreadFunction, 0x2C34E053);
-
             mm.addFunction(sceKernelGetThreadIdFunction, 0x293B45B8);
-
             mm.addFunction(sceKernelGetThreadCurrentPriorityFunction, 0x94AA61EE);
-
             mm.addFunction(sceKernelGetThreadExitStatusFunction, 0x3B183E26);
-
             mm.addFunction(sceKernelCheckThreadStackFunction, 0xD13BDE95);
-
             mm.addFunction(sceKernelGetThreadStackFreeSizeFunction, 0x52089CA1);
-
             mm.addFunction(sceKernelReferThreadStatusFunction, 0x17C1684E);
-
             mm.addFunction(sceKernelReferThreadRunStatusFunction, 0xFFC36A14);
-
             mm.addFunction(sceKernelReferSystemStatusFunction, 0x627E6F3A);
-
             mm.addFunction(sceKernelGetThreadmanIdListFunction, 0x94416130);
-
             mm.addFunction(sceKernelGetThreadmanIdTypeFunction, 0x57CF62DD);
-
             mm.addFunction(sceKernelReferThreadProfilerFunction, 0x64D4540E);
-
             mm.addFunction(sceKernelReferGlobalProfilerFunction, 0x8218B4DD);
 
         }
@@ -297,255 +172,130 @@ public class ThreadManForUser implements HLEModule {
         if (version >= 150) {
 
             mm.removeFunction(_sceKernelReturnFromCallbackFunction);
-
             mm.removeFunction(sceKernelRegisterThreadEventHandlerFunction);
-
             mm.removeFunction(sceKernelReleaseThreadEventHandlerFunction);
-
             mm.removeFunction(sceKernelReferThreadEventHandlerStatusFunction);
-
             mm.removeFunction(sceKernelCreateCallbackFunction);
-
             mm.removeFunction(sceKernelDeleteCallbackFunction);
-
             mm.removeFunction(sceKernelNotifyCallbackFunction);
-
             mm.removeFunction(sceKernelCancelCallbackFunction);
-
             mm.removeFunction(sceKernelGetCallbackCountFunction);
-
             mm.removeFunction(sceKernelCheckCallbackFunction);
-
             mm.removeFunction(sceKernelReferCallbackStatusFunction);
-
             mm.removeFunction(sceKernelSleepThreadFunction);
-
             mm.removeFunction(sceKernelSleepThreadCBFunction);
-
             mm.removeFunction(sceKernelWakeupThreadFunction);
-
             mm.removeFunction(sceKernelCancelWakeupThreadFunction);
-
             mm.removeFunction(sceKernelSuspendThreadFunction);
-
             mm.removeFunction(sceKernelResumeThreadFunction);
-
             mm.removeFunction(sceKernelWaitThreadEndFunction);
-
             mm.removeFunction(sceKernelWaitThreadEndCBFunction);
-
             mm.removeFunction(sceKernelDelayThreadFunction);
-
             mm.removeFunction(sceKernelDelayThreadCBFunction);
-
             mm.removeFunction(sceKernelDelaySysClockThreadFunction);
-
             mm.removeFunction(sceKernelDelaySysClockThreadCBFunction);
-
             mm.removeFunction(sceKernelCreateSemaFunction);
-
             mm.removeFunction(sceKernelDeleteSemaFunction);
-
             mm.removeFunction(sceKernelSignalSemaFunction);
-
             mm.removeFunction(sceKernelWaitSemaFunction);
-
             mm.removeFunction(sceKernelWaitSemaCBFunction);
-
             mm.removeFunction(sceKernelPollSemaFunction);
-
             mm.removeFunction(sceKernelCancelSemaFunction);
-
             mm.removeFunction(sceKernelReferSemaStatusFunction);
-
             mm.removeFunction(sceKernelCreateEventFlagFunction);
-
             mm.removeFunction(sceKernelDeleteEventFlagFunction);
-
             mm.removeFunction(sceKernelSetEventFlagFunction);
-
             mm.removeFunction(sceKernelClearEventFlagFunction);
-
             mm.removeFunction(sceKernelWaitEventFlagFunction);
-
             mm.removeFunction(sceKernelWaitEventFlagCBFunction);
-
             mm.removeFunction(sceKernelPollEventFlagFunction);
-
             mm.removeFunction(sceKernelCancelEventFlagFunction);
-
             mm.removeFunction(sceKernelReferEventFlagStatusFunction);
-
             mm.removeFunction(sceKernelCreateMbxFunction);
-
             mm.removeFunction(sceKernelDeleteMbxFunction);
-
             mm.removeFunction(sceKernelSendMbxFunction);
-
             mm.removeFunction(sceKernelReceiveMbxFunction);
-
             mm.removeFunction(sceKernelReceiveMbxCBFunction);
-
             mm.removeFunction(sceKernelPollMbxFunction);
-
             mm.removeFunction(sceKernelCancelReceiveMbxFunction);
-
             mm.removeFunction(sceKernelReferMbxStatusFunction);
-
             mm.removeFunction(sceKernelCreateMsgPipeFunction);
-
             mm.removeFunction(sceKernelDeleteMsgPipeFunction);
-
             mm.removeFunction(sceKernelSendMsgPipeFunction);
-
             mm.removeFunction(sceKernelSendMsgPipeCBFunction);
-
             mm.removeFunction(sceKernelTrySendMsgPipeFunction);
-
             mm.removeFunction(sceKernelReceiveMsgPipeFunction);
-
             mm.removeFunction(sceKernelReceiveMsgPipeCBFunction);
-
             mm.removeFunction(sceKernelTryReceiveMsgPipeFunction);
-
             mm.removeFunction(sceKernelCancelMsgPipeFunction);
-
             mm.removeFunction(sceKernelReferMsgPipeStatusFunction);
-
             mm.removeFunction(sceKernelCreateVplFunction);
-
             mm.removeFunction(sceKernelDeleteVplFunction);
-
             mm.removeFunction(sceKernelAllocateVplFunction);
-
             mm.removeFunction(sceKernelAllocateVplCBFunction);
-
             mm.removeFunction(sceKernelTryAllocateVplFunction);
-
             mm.removeFunction(sceKernelFreeVplFunction);
-
             mm.removeFunction(sceKernelCancelVplFunction);
-
             mm.removeFunction(sceKernelReferVplStatusFunction);
-
             mm.removeFunction(sceKernelCreateFplFunction);
-
             mm.removeFunction(sceKernelDeleteFplFunction);
-
             mm.removeFunction(sceKernelAllocateFplFunction);
-
             mm.removeFunction(sceKernelAllocateFplCBFunction);
-
             mm.removeFunction(sceKernelTryAllocateFplFunction);
-
             mm.removeFunction(sceKernelFreeFplFunction);
-
             mm.removeFunction(sceKernelCancelFplFunction);
-
             mm.removeFunction(sceKernelReferFplStatusFunction);
-
             mm.removeFunction(_sceKernelReturnFromTimerHandlerFunction);
-
             mm.removeFunction(sceKernelUSec2SysClockFunction);
-
             mm.removeFunction(sceKernelUSec2SysClockWideFunction);
-
             mm.removeFunction(sceKernelSysClock2USecFunction);
-
             mm.removeFunction(sceKernelSysClock2USecWideFunction);
-
             mm.removeFunction(sceKernelGetSystemTimeFunction);
-
             mm.removeFunction(sceKernelGetSystemTimeWideFunction);
-
             mm.removeFunction(sceKernelGetSystemTimeLowFunction);
-
             mm.removeFunction(sceKernelSetAlarmFunction);
-
             mm.removeFunction(sceKernelSetSysClockAlarmFunction);
-
             mm.removeFunction(sceKernelCancelAlarmFunction);
-
             mm.removeFunction(sceKernelReferAlarmStatusFunction);
-
             mm.removeFunction(sceKernelCreateVTimerFunction);
-
             mm.removeFunction(sceKernelDeleteVTimerFunction);
-
             mm.removeFunction(sceKernelGetVTimerBaseFunction);
-
             mm.removeFunction(sceKernelGetVTimerBaseWideFunction);
-
             mm.removeFunction(sceKernelGetVTimerTimeFunction);
-
             mm.removeFunction(sceKernelGetVTimerTimeWideFunction);
-
             mm.removeFunction(sceKernelSetVTimerTimeFunction);
-
             mm.removeFunction(sceKernelSetVTimerTimeWideFunction);
-
             mm.removeFunction(sceKernelStartVTimerFunction);
-
             mm.removeFunction(sceKernelStopVTimerFunction);
-
             mm.removeFunction(sceKernelSetVTimerHandlerFunction);
-
             mm.removeFunction(sceKernelSetVTimerHandlerWideFunction);
-
             mm.removeFunction(sceKernelCancelVTimerHandlerFunction);
-
             mm.removeFunction(sceKernelReferVTimerStatusFunction);
-
             mm.removeFunction(sceKernelCreateThreadFunction);
-
             mm.removeFunction(sceKernelDeleteThreadFunction);
-
             mm.removeFunction(sceKernelStartThreadFunction);
-
             mm.removeFunction(_sceKernelExitThreadFunction);
-
             mm.removeFunction(sceKernelExitThreadFunction);
-
             mm.removeFunction(sceKernelExitDeleteThreadFunction);
-
             mm.removeFunction(sceKernelTerminateThreadFunction);
-
             mm.removeFunction(sceKernelTerminateDeleteThreadFunction);
-
             mm.removeFunction(sceKernelSuspendDispatchThreadFunction);
-
             mm.removeFunction(sceKernelResumeDispatchThreadFunction);
-
             mm.removeFunction(sceKernelChangeCurrentThreadAttrFunction);
-
             mm.removeFunction(sceKernelChangeThreadPriorityFunction);
-
             mm.removeFunction(sceKernelRotateThreadReadyQueueFunction);
-
             mm.removeFunction(sceKernelReleaseWaitThreadFunction);
-
             mm.removeFunction(sceKernelGetThreadIdFunction);
-
             mm.removeFunction(sceKernelGetThreadCurrentPriorityFunction);
-
             mm.removeFunction(sceKernelGetThreadExitStatusFunction);
-
             mm.removeFunction(sceKernelCheckThreadStackFunction);
-
             mm.removeFunction(sceKernelGetThreadStackFreeSizeFunction);
-
             mm.removeFunction(sceKernelReferThreadStatusFunction);
-
             mm.removeFunction(sceKernelReferThreadRunStatusFunction);
-
             mm.removeFunction(sceKernelReferSystemStatusFunction);
-
             mm.removeFunction(sceKernelGetThreadmanIdListFunction);
-
             mm.removeFunction(sceKernelGetThreadmanIdTypeFunction);
-
             mm.removeFunction(sceKernelReferThreadProfilerFunction);
-
             mm.removeFunction(sceKernelReferGlobalProfilerFunction);
 
         }
@@ -555,1512 +305,2142 @@ public class ThreadManForUser implements HLEModule {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function _sceKernelReturnFromCallback [0x6E9EA350]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelRegisterThreadEventHandler(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelRegisterThreadEventHandler [0x0C106E53]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelReleaseThreadEventHandler(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelReleaseThreadEventHandler [0x72F3C145]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelReferThreadEventHandlerStatus(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelReferThreadEventHandlerStatus [0x369EEB6B]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelCreateCallback(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelCreateCallback [0xE81CAF8F]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelDeleteCallback(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelDeleteCallback [0xEDBA5844]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelNotifyCallback(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelNotifyCallback [0xC11BA8C4]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelCancelCallback(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelCancelCallback [0xBA4051D6]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelGetCallbackCount(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelGetCallbackCount [0x2A3D44FF]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelCheckCallback(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelCheckCallback [0x349D6D6C]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelReferCallbackStatus(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelReferCallbackStatus [0x730ED8BC]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelSleepThread(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelSleepThread [0x9ACE131E]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelSleepThreadCB(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelSleepThreadCB [0x82826F70]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelWakeupThread(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelWakeupThread [0xD59EAD2F]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelCancelWakeupThread(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelCancelWakeupThread [0xFCCFAD26]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelSuspendThread(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelSuspendThread [0x9944F31F]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelResumeThread(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelResumeThread [0x75156E8F]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelWaitThreadEnd(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelWaitThreadEnd [0x278C0DF5]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelWaitThreadEndCB(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelWaitThreadEndCB [0x840E8133]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelDelayThread(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelDelayThread [0xCEADEB47]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelDelayThreadCB(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelDelayThreadCB [0x68DA9E36]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelDelaySysClockThread(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelDelaySysClockThread [0xBD123D9E]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelDelaySysClockThreadCB(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelDelaySysClockThreadCB [0x1181E963]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelCreateSema(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelCreateSema [0xD6DA4BA1]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelDeleteSema(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelDeleteSema [0x28B6489C]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelSignalSema(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelSignalSema [0x3F53E640]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelWaitSema(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelWaitSema [0x4E3A1105]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelWaitSemaCB(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelWaitSemaCB [0x6D212BAC]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelPollSema(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelPollSema [0x58B1F937]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelCancelSema(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelCancelSema [0x8FFDF9A2]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelReferSemaStatus(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelReferSemaStatus [0xBC6FEBC5]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelCreateEventFlag(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelCreateEventFlag [0x55C20A00]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelDeleteEventFlag(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelDeleteEventFlag [0xEF9E4C70]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelSetEventFlag(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelSetEventFlag [0x1FB15A32]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelClearEventFlag(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelClearEventFlag [0x812346E4]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelWaitEventFlag(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelWaitEventFlag [0x402FCF22]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelWaitEventFlagCB(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelWaitEventFlagCB [0x328C546A]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelPollEventFlag(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelPollEventFlag [0x30FD48F0]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelCancelEventFlag(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelCancelEventFlag [0xCD203292]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelReferEventFlagStatus(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelReferEventFlagStatus [0xA66B0120]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelCreateMbx(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelCreateMbx [0x8125221D]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelDeleteMbx(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelDeleteMbx [0x86255ADA]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelSendMbx(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelSendMbx [0xE9B3061E]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelReceiveMbx(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelReceiveMbx [0x18260574]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelReceiveMbxCB(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelReceiveMbxCB [0xF3986382]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelPollMbx(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelPollMbx [0x0D81716A]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelCancelReceiveMbx(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelCancelReceiveMbx [0x87D4DD36]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelReferMbxStatus(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelReferMbxStatus [0xA8E8C846]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelCreateMsgPipe(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelCreateMsgPipe [0x7C0DC2A0]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelDeleteMsgPipe(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelDeleteMsgPipe [0xF0B7DA1C]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelSendMsgPipe(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelSendMsgPipe [0x876DBFAD]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelSendMsgPipeCB(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelSendMsgPipeCB [0x7C41F2C2]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelTrySendMsgPipe(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelTrySendMsgPipe [0x884C9F90]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelReceiveMsgPipe(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelReceiveMsgPipe [0x74829B76]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelReceiveMsgPipeCB(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelReceiveMsgPipeCB [0xFBFA697D]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelTryReceiveMsgPipe(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelTryReceiveMsgPipe [0xDF52098F]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelCancelMsgPipe(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelCancelMsgPipe [0x349B864D]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelReferMsgPipeStatus(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelReferMsgPipeStatus [0x33BE4024]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelCreateVpl(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelCreateVpl [0x56C039B5]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelDeleteVpl(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelDeleteVpl [0x89B3D48C]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelAllocateVpl(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelAllocateVpl [0xBED27435]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelAllocateVplCB(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelAllocateVplCB [0xEC0A693F]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelTryAllocateVpl(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelTryAllocateVpl [0xAF36D708]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelFreeVpl(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelFreeVpl [0xB736E9FF]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelCancelVpl(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelCancelVpl [0x1D371B8A]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelReferVplStatus(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelReferVplStatus [0x39810265]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelCreateFpl(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelCreateFpl [0xC07BB470]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelDeleteFpl(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelDeleteFpl [0xED1410E0]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelAllocateFpl(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelAllocateFpl [0xD979E9BF]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelAllocateFplCB(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelAllocateFplCB [0xE7282CB6]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelTryAllocateFpl(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelTryAllocateFpl [0x623AE665]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelFreeFpl(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelFreeFpl [0xF6414A71]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelCancelFpl(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelCancelFpl [0xA8AA591F]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelReferFplStatus(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelReferFplStatus [0xD8199E4C]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void _sceKernelReturnFromTimerHandler(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function _sceKernelReturnFromTimerHandler [0x0E927AED]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelUSec2SysClock(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelUSec2SysClock [0x110DEC9A]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelUSec2SysClockWide(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelUSec2SysClockWide [0xC8CD158C]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelSysClock2USec(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelSysClock2USec [0xBA6B92E2]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelSysClock2USecWide(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelSysClock2USecWide [0xE1619D7C]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelGetSystemTime(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelGetSystemTime [0xDB738F35]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelGetSystemTimeWide(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelGetSystemTimeWide [0x82BC5777]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelGetSystemTimeLow(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelGetSystemTimeLow [0x369ED59D]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelSetAlarm(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelSetAlarm [0x6652B8CA]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelSetSysClockAlarm(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelSetSysClockAlarm [0xB2C25152]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelCancelAlarm(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelCancelAlarm [0x7E65B999]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelReferAlarmStatus(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelReferAlarmStatus [0xDAA3F564]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelCreateVTimer(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelCreateVTimer [0x20FFF560]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelDeleteVTimer(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelDeleteVTimer [0x328F9E52]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelGetVTimerBase(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelGetVTimerBase [0xB3A59970]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelGetVTimerBaseWide(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelGetVTimerBaseWide [0xB7C18B77]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelGetVTimerTime(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelGetVTimerTime [0x034A921F]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelGetVTimerTimeWide(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelGetVTimerTimeWide [0xC0B3FFD2]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelSetVTimerTime(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelSetVTimerTime [0x542AD630]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelSetVTimerTimeWide(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelSetVTimerTimeWide [0xFB6425C3]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelStartVTimer(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelStartVTimer [0xC68D9437]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelStopVTimer(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelStopVTimer [0xD0AEEE87]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelSetVTimerHandler(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelSetVTimerHandler [0xD8B299AE]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelSetVTimerHandlerWide(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelSetVTimerHandlerWide [0x53B00E9A]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelCancelVTimerHandler(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelCancelVTimerHandler [0xD2D615EF]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelReferVTimerStatus(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelReferVTimerStatus [0x5F32BEAA]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelCreateThread(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelCreateThread [0x446D8DE6]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelDeleteThread(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelDeleteThread [0x9FA03CD3]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelStartThread(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelStartThread [0xF475845D]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void _sceKernelExitThread(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function _sceKernelExitThread [0x532A522E]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelExitThread(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelExitThread [0xAA73C935]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelExitDeleteThread(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelExitDeleteThread [0x809CE29B]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelTerminateThread(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelTerminateThread [0x616403BA]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelTerminateDeleteThread(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelTerminateDeleteThread [0x383F7BCC]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelSuspendDispatchThread(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelSuspendDispatchThread [0x3AD58B8C]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelResumeDispatchThread(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelResumeDispatchThread [0x27E22EC2]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelChangeCurrentThreadAttr(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelChangeCurrentThreadAttr [0xEA748E31]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelChangeThreadPriority(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelChangeThreadPriority [0x71BC9871]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelRotateThreadReadyQueue(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelRotateThreadReadyQueue [0x912354A7]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelReleaseWaitThread(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelReleaseWaitThread [0x2C34E053]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelGetThreadId(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelGetThreadId [0x293B45B8]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelGetThreadCurrentPriority(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelGetThreadCurrentPriority [0x94AA61EE]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelGetThreadExitStatus(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelGetThreadExitStatus [0x3B183E26]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelCheckThreadStack(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelCheckThreadStack [0xD13BDE95]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelGetThreadStackFreeSize(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelGetThreadStackFreeSize [0x52089CA1]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelReferThreadStatus(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelReferThreadStatus [0x17C1684E]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelReferThreadRunStatus(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelReferThreadRunStatus [0xFFC36A14]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelReferSystemStatus(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelReferSystemStatus [0x627E6F3A]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelGetThreadmanIdList(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelGetThreadmanIdList [0x94416130]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelGetThreadmanIdType(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelGetThreadmanIdType [0x57CF62DD]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelReferThreadProfiler(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelReferThreadProfiler [0x64D4540E]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceKernelReferGlobalProfiler(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceKernelReferGlobalProfiler [0x8218B4DD]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
     public final HLEModuleFunction _sceKernelReturnFromCallbackFunction = new HLEModuleFunction("ThreadManForUser", "_sceKernelReturnFromCallback") {
 
@@ -2071,7 +2451,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser._sceKernelReturnFromCallbackFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule._sceKernelReturnFromCallback(processor);";
         }
     };
     public final HLEModuleFunction sceKernelRegisterThreadEventHandlerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelRegisterThreadEventHandler") {
@@ -2083,7 +2463,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelRegisterThreadEventHandlerFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelRegisterThreadEventHandler(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReleaseThreadEventHandlerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReleaseThreadEventHandler") {
@@ -2095,7 +2475,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelReleaseThreadEventHandlerFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReleaseThreadEventHandler(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferThreadEventHandlerStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferThreadEventHandlerStatus") {
@@ -2107,7 +2487,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelReferThreadEventHandlerStatusFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferThreadEventHandlerStatus(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCreateCallbackFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateCallback") {
@@ -2119,7 +2499,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelCreateCallbackFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCreateCallback(processor);";
         }
     };
     public final HLEModuleFunction sceKernelDeleteCallbackFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteCallback") {
@@ -2131,7 +2511,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelDeleteCallbackFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelDeleteCallback(processor);";
         }
     };
     public final HLEModuleFunction sceKernelNotifyCallbackFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelNotifyCallback") {
@@ -2143,7 +2523,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelNotifyCallbackFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelNotifyCallback(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCancelCallbackFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelCallback") {
@@ -2155,7 +2535,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelCancelCallbackFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCancelCallback(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetCallbackCountFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetCallbackCount") {
@@ -2167,7 +2547,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelGetCallbackCountFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetCallbackCount(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCheckCallbackFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCheckCallback") {
@@ -2179,7 +2559,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelCheckCallbackFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCheckCallback(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferCallbackStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferCallbackStatus") {
@@ -2191,7 +2571,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelReferCallbackStatusFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferCallbackStatus(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSleepThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSleepThread") {
@@ -2203,7 +2583,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelSleepThreadFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSleepThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSleepThreadCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSleepThreadCB") {
@@ -2215,7 +2595,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelSleepThreadCBFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSleepThreadCB(processor);";
         }
     };
     public final HLEModuleFunction sceKernelWakeupThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelWakeupThread") {
@@ -2227,7 +2607,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelWakeupThreadFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelWakeupThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCancelWakeupThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelWakeupThread") {
@@ -2239,7 +2619,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelCancelWakeupThreadFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCancelWakeupThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSuspendThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSuspendThread") {
@@ -2251,7 +2631,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelSuspendThreadFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSuspendThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelResumeThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelResumeThread") {
@@ -2263,7 +2643,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelResumeThreadFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelResumeThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelWaitThreadEndFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelWaitThreadEnd") {
@@ -2275,7 +2655,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelWaitThreadEndFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelWaitThreadEnd(processor);";
         }
     };
     public final HLEModuleFunction sceKernelWaitThreadEndCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelWaitThreadEndCB") {
@@ -2287,7 +2667,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelWaitThreadEndCBFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelWaitThreadEndCB(processor);";
         }
     };
     public final HLEModuleFunction sceKernelDelayThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDelayThread") {
@@ -2299,7 +2679,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelDelayThreadFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelDelayThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelDelayThreadCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDelayThreadCB") {
@@ -2311,7 +2691,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelDelayThreadCBFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelDelayThreadCB(processor);";
         }
     };
     public final HLEModuleFunction sceKernelDelaySysClockThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDelaySysClockThread") {
@@ -2323,7 +2703,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelDelaySysClockThreadFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelDelaySysClockThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelDelaySysClockThreadCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDelaySysClockThreadCB") {
@@ -2335,7 +2715,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelDelaySysClockThreadCBFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelDelaySysClockThreadCB(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCreateSemaFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateSema") {
@@ -2347,7 +2727,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelCreateSemaFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCreateSema(processor);";
         }
     };
     public final HLEModuleFunction sceKernelDeleteSemaFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteSema") {
@@ -2359,7 +2739,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelDeleteSemaFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelDeleteSema(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSignalSemaFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSignalSema") {
@@ -2371,7 +2751,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelSignalSemaFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSignalSema(processor);";
         }
     };
     public final HLEModuleFunction sceKernelWaitSemaFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelWaitSema") {
@@ -2383,7 +2763,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelWaitSemaFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelWaitSema(processor);";
         }
     };
     public final HLEModuleFunction sceKernelWaitSemaCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelWaitSemaCB") {
@@ -2395,7 +2775,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelWaitSemaCBFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelWaitSemaCB(processor);";
         }
     };
     public final HLEModuleFunction sceKernelPollSemaFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelPollSema") {
@@ -2407,7 +2787,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelPollSemaFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelPollSema(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCancelSemaFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelSema") {
@@ -2419,7 +2799,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelCancelSemaFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCancelSema(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferSemaStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferSemaStatus") {
@@ -2431,7 +2811,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelReferSemaStatusFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferSemaStatus(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCreateEventFlagFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateEventFlag") {
@@ -2443,7 +2823,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelCreateEventFlagFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCreateEventFlag(processor);";
         }
     };
     public final HLEModuleFunction sceKernelDeleteEventFlagFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteEventFlag") {
@@ -2455,7 +2835,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelDeleteEventFlagFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelDeleteEventFlag(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSetEventFlagFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetEventFlag") {
@@ -2467,7 +2847,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelSetEventFlagFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSetEventFlag(processor);";
         }
     };
     public final HLEModuleFunction sceKernelClearEventFlagFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelClearEventFlag") {
@@ -2479,7 +2859,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelClearEventFlagFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelClearEventFlag(processor);";
         }
     };
     public final HLEModuleFunction sceKernelWaitEventFlagFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelWaitEventFlag") {
@@ -2491,7 +2871,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelWaitEventFlagFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelWaitEventFlag(processor);";
         }
     };
     public final HLEModuleFunction sceKernelWaitEventFlagCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelWaitEventFlagCB") {
@@ -2503,7 +2883,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelWaitEventFlagCBFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelWaitEventFlagCB(processor);";
         }
     };
     public final HLEModuleFunction sceKernelPollEventFlagFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelPollEventFlag") {
@@ -2515,7 +2895,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelPollEventFlagFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelPollEventFlag(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCancelEventFlagFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelEventFlag") {
@@ -2527,7 +2907,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelCancelEventFlagFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCancelEventFlag(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferEventFlagStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferEventFlagStatus") {
@@ -2539,7 +2919,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelReferEventFlagStatusFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferEventFlagStatus(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCreateMbxFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateMbx") {
@@ -2551,7 +2931,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelCreateMbxFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCreateMbx(processor);";
         }
     };
     public final HLEModuleFunction sceKernelDeleteMbxFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteMbx") {
@@ -2563,7 +2943,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelDeleteMbxFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelDeleteMbx(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSendMbxFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSendMbx") {
@@ -2575,7 +2955,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelSendMbxFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSendMbx(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReceiveMbxFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReceiveMbx") {
@@ -2587,7 +2967,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelReceiveMbxFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReceiveMbx(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReceiveMbxCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReceiveMbxCB") {
@@ -2599,7 +2979,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelReceiveMbxCBFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReceiveMbxCB(processor);";
         }
     };
     public final HLEModuleFunction sceKernelPollMbxFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelPollMbx") {
@@ -2611,7 +2991,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelPollMbxFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelPollMbx(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCancelReceiveMbxFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelReceiveMbx") {
@@ -2623,7 +3003,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelCancelReceiveMbxFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCancelReceiveMbx(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferMbxStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferMbxStatus") {
@@ -2635,7 +3015,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelReferMbxStatusFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferMbxStatus(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCreateMsgPipeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateMsgPipe") {
@@ -2647,7 +3027,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelCreateMsgPipeFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCreateMsgPipe(processor);";
         }
     };
     public final HLEModuleFunction sceKernelDeleteMsgPipeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteMsgPipe") {
@@ -2659,7 +3039,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelDeleteMsgPipeFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelDeleteMsgPipe(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSendMsgPipeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSendMsgPipe") {
@@ -2671,7 +3051,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelSendMsgPipeFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSendMsgPipe(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSendMsgPipeCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSendMsgPipeCB") {
@@ -2683,7 +3063,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelSendMsgPipeCBFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSendMsgPipeCB(processor);";
         }
     };
     public final HLEModuleFunction sceKernelTrySendMsgPipeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelTrySendMsgPipe") {
@@ -2695,7 +3075,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelTrySendMsgPipeFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelTrySendMsgPipe(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReceiveMsgPipeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReceiveMsgPipe") {
@@ -2707,7 +3087,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelReceiveMsgPipeFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReceiveMsgPipe(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReceiveMsgPipeCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReceiveMsgPipeCB") {
@@ -2719,7 +3099,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelReceiveMsgPipeCBFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReceiveMsgPipeCB(processor);";
         }
     };
     public final HLEModuleFunction sceKernelTryReceiveMsgPipeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelTryReceiveMsgPipe") {
@@ -2731,7 +3111,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelTryReceiveMsgPipeFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelTryReceiveMsgPipe(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCancelMsgPipeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelMsgPipe") {
@@ -2743,7 +3123,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelCancelMsgPipeFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCancelMsgPipe(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferMsgPipeStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferMsgPipeStatus") {
@@ -2755,7 +3135,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelReferMsgPipeStatusFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferMsgPipeStatus(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCreateVplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateVpl") {
@@ -2767,7 +3147,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelCreateVplFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCreateVpl(processor);";
         }
     };
     public final HLEModuleFunction sceKernelDeleteVplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteVpl") {
@@ -2779,7 +3159,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelDeleteVplFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelDeleteVpl(processor);";
         }
     };
     public final HLEModuleFunction sceKernelAllocateVplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelAllocateVpl") {
@@ -2791,7 +3171,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelAllocateVplFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelAllocateVpl(processor);";
         }
     };
     public final HLEModuleFunction sceKernelAllocateVplCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelAllocateVplCB") {
@@ -2803,7 +3183,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelAllocateVplCBFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelAllocateVplCB(processor);";
         }
     };
     public final HLEModuleFunction sceKernelTryAllocateVplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelTryAllocateVpl") {
@@ -2815,7 +3195,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelTryAllocateVplFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelTryAllocateVpl(processor);";
         }
     };
     public final HLEModuleFunction sceKernelFreeVplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelFreeVpl") {
@@ -2827,7 +3207,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelFreeVplFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelFreeVpl(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCancelVplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelVpl") {
@@ -2839,7 +3219,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelCancelVplFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCancelVpl(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferVplStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferVplStatus") {
@@ -2851,7 +3231,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelReferVplStatusFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferVplStatus(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCreateFplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateFpl") {
@@ -2863,7 +3243,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelCreateFplFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCreateFpl(processor);";
         }
     };
     public final HLEModuleFunction sceKernelDeleteFplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteFpl") {
@@ -2875,7 +3255,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelDeleteFplFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelDeleteFpl(processor);";
         }
     };
     public final HLEModuleFunction sceKernelAllocateFplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelAllocateFpl") {
@@ -2887,7 +3267,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelAllocateFplFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelAllocateFpl(processor);";
         }
     };
     public final HLEModuleFunction sceKernelAllocateFplCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelAllocateFplCB") {
@@ -2899,7 +3279,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelAllocateFplCBFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelAllocateFplCB(processor);";
         }
     };
     public final HLEModuleFunction sceKernelTryAllocateFplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelTryAllocateFpl") {
@@ -2911,7 +3291,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelTryAllocateFplFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelTryAllocateFpl(processor);";
         }
     };
     public final HLEModuleFunction sceKernelFreeFplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelFreeFpl") {
@@ -2923,7 +3303,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelFreeFplFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelFreeFpl(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCancelFplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelFpl") {
@@ -2935,7 +3315,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelCancelFplFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCancelFpl(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferFplStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferFplStatus") {
@@ -2947,7 +3327,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelReferFplStatusFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferFplStatus(processor);";
         }
     };
     public final HLEModuleFunction _sceKernelReturnFromTimerHandlerFunction = new HLEModuleFunction("ThreadManForUser", "_sceKernelReturnFromTimerHandler") {
@@ -2959,7 +3339,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser._sceKernelReturnFromTimerHandlerFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule._sceKernelReturnFromTimerHandler(processor);";
         }
     };
     public final HLEModuleFunction sceKernelUSec2SysClockFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelUSec2SysClock") {
@@ -2971,7 +3351,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelUSec2SysClockFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelUSec2SysClock(processor);";
         }
     };
     public final HLEModuleFunction sceKernelUSec2SysClockWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelUSec2SysClockWide") {
@@ -2983,7 +3363,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelUSec2SysClockWideFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelUSec2SysClockWide(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSysClock2USecFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSysClock2USec") {
@@ -2995,7 +3375,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelSysClock2USecFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSysClock2USec(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSysClock2USecWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSysClock2USecWide") {
@@ -3007,7 +3387,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelSysClock2USecWideFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSysClock2USecWide(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetSystemTimeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetSystemTime") {
@@ -3019,7 +3399,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelGetSystemTimeFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetSystemTime(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetSystemTimeWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetSystemTimeWide") {
@@ -3031,7 +3411,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelGetSystemTimeWideFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetSystemTimeWide(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetSystemTimeLowFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetSystemTimeLow") {
@@ -3043,7 +3423,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelGetSystemTimeLowFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetSystemTimeLow(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSetAlarmFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetAlarm") {
@@ -3055,7 +3435,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelSetAlarmFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSetAlarm(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSetSysClockAlarmFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetSysClockAlarm") {
@@ -3067,7 +3447,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelSetSysClockAlarmFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSetSysClockAlarm(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCancelAlarmFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelAlarm") {
@@ -3079,7 +3459,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelCancelAlarmFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCancelAlarm(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferAlarmStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferAlarmStatus") {
@@ -3091,7 +3471,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelReferAlarmStatusFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferAlarmStatus(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCreateVTimerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateVTimer") {
@@ -3103,7 +3483,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelCreateVTimerFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCreateVTimer(processor);";
         }
     };
     public final HLEModuleFunction sceKernelDeleteVTimerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteVTimer") {
@@ -3115,7 +3495,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelDeleteVTimerFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelDeleteVTimer(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetVTimerBaseFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetVTimerBase") {
@@ -3127,7 +3507,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelGetVTimerBaseFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetVTimerBase(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetVTimerBaseWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetVTimerBaseWide") {
@@ -3139,7 +3519,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelGetVTimerBaseWideFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetVTimerBaseWide(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetVTimerTimeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetVTimerTime") {
@@ -3151,7 +3531,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelGetVTimerTimeFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetVTimerTime(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetVTimerTimeWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetVTimerTimeWide") {
@@ -3163,7 +3543,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelGetVTimerTimeWideFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetVTimerTimeWide(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSetVTimerTimeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetVTimerTime") {
@@ -3175,7 +3555,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelSetVTimerTimeFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSetVTimerTime(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSetVTimerTimeWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetVTimerTimeWide") {
@@ -3187,7 +3567,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelSetVTimerTimeWideFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSetVTimerTimeWide(processor);";
         }
     };
     public final HLEModuleFunction sceKernelStartVTimerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelStartVTimer") {
@@ -3199,7 +3579,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelStartVTimerFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelStartVTimer(processor);";
         }
     };
     public final HLEModuleFunction sceKernelStopVTimerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelStopVTimer") {
@@ -3211,7 +3591,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelStopVTimerFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelStopVTimer(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSetVTimerHandlerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetVTimerHandler") {
@@ -3223,7 +3603,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelSetVTimerHandlerFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSetVTimerHandler(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSetVTimerHandlerWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetVTimerHandlerWide") {
@@ -3235,7 +3615,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelSetVTimerHandlerWideFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSetVTimerHandlerWide(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCancelVTimerHandlerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelVTimerHandler") {
@@ -3247,7 +3627,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelCancelVTimerHandlerFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCancelVTimerHandler(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferVTimerStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferVTimerStatus") {
@@ -3259,7 +3639,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelReferVTimerStatusFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferVTimerStatus(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCreateThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateThread") {
@@ -3271,7 +3651,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelCreateThreadFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCreateThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelDeleteThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteThread") {
@@ -3283,7 +3663,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelDeleteThreadFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelDeleteThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelStartThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelStartThread") {
@@ -3295,7 +3675,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelStartThreadFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelStartThread(processor);";
         }
     };
     public final HLEModuleFunction _sceKernelExitThreadFunction = new HLEModuleFunction("ThreadManForUser", "_sceKernelExitThread") {
@@ -3307,7 +3687,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser._sceKernelExitThreadFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule._sceKernelExitThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelExitThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelExitThread") {
@@ -3319,7 +3699,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelExitThreadFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelExitThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelExitDeleteThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelExitDeleteThread") {
@@ -3331,7 +3711,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelExitDeleteThreadFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelExitDeleteThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelTerminateThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelTerminateThread") {
@@ -3343,7 +3723,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelTerminateThreadFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelTerminateThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelTerminateDeleteThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelTerminateDeleteThread") {
@@ -3355,7 +3735,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelTerminateDeleteThreadFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelTerminateDeleteThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSuspendDispatchThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSuspendDispatchThread") {
@@ -3367,7 +3747,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelSuspendDispatchThreadFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSuspendDispatchThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelResumeDispatchThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelResumeDispatchThread") {
@@ -3379,7 +3759,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelResumeDispatchThreadFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelResumeDispatchThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelChangeCurrentThreadAttrFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelChangeCurrentThreadAttr") {
@@ -3391,7 +3771,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelChangeCurrentThreadAttrFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelChangeCurrentThreadAttr(processor);";
         }
     };
     public final HLEModuleFunction sceKernelChangeThreadPriorityFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelChangeThreadPriority") {
@@ -3403,7 +3783,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelChangeThreadPriorityFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelChangeThreadPriority(processor);";
         }
     };
     public final HLEModuleFunction sceKernelRotateThreadReadyQueueFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelRotateThreadReadyQueue") {
@@ -3415,7 +3795,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelRotateThreadReadyQueueFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelRotateThreadReadyQueue(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReleaseWaitThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReleaseWaitThread") {
@@ -3427,7 +3807,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelReleaseWaitThreadFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReleaseWaitThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetThreadIdFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetThreadId") {
@@ -3439,7 +3819,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelGetThreadIdFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetThreadId(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetThreadCurrentPriorityFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetThreadCurrentPriority") {
@@ -3451,7 +3831,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelGetThreadCurrentPriorityFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetThreadCurrentPriority(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetThreadExitStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetThreadExitStatus") {
@@ -3463,7 +3843,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelGetThreadExitStatusFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetThreadExitStatus(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCheckThreadStackFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCheckThreadStack") {
@@ -3475,7 +3855,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelCheckThreadStackFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCheckThreadStack(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetThreadStackFreeSizeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetThreadStackFreeSize") {
@@ -3487,7 +3867,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelGetThreadStackFreeSizeFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetThreadStackFreeSize(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferThreadStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferThreadStatus") {
@@ -3499,7 +3879,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelReferThreadStatusFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferThreadStatus(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferThreadRunStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferThreadRunStatus") {
@@ -3511,7 +3891,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelReferThreadRunStatusFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferThreadRunStatus(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferSystemStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferSystemStatus") {
@@ -3523,7 +3903,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelReferSystemStatusFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferSystemStatus(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetThreadmanIdListFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetThreadmanIdList") {
@@ -3535,7 +3915,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelGetThreadmanIdListFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetThreadmanIdList(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetThreadmanIdTypeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetThreadmanIdType") {
@@ -3547,7 +3927,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelGetThreadmanIdTypeFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetThreadmanIdType(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferThreadProfilerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferThreadProfiler") {
@@ -3559,7 +3939,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelReferThreadProfilerFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferThreadProfiler(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferGlobalProfilerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferGlobalProfiler") {
@@ -3571,7 +3951,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUser.sceKernelReferGlobalProfilerFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferGlobalProfiler(processor);";
         }
     };
 };

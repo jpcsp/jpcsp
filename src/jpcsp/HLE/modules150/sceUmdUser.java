@@ -46,27 +46,16 @@ public class sceUmdUser implements HLEModule {
         if (version >= 150) {
 
             mm.addFunction(sceUmdCheckMediumFunction, 0x46EBB729);
-
             mm.addFunction(sceUmdActivateFunction, 0xC6183D47);
-
             mm.addFunction(sceUmdDeactivateFunction, 0xE83742BA);
-
             mm.addFunction(sceUmdWaitDriveStatFunction, 0x8EF08FCE);
-
             mm.addFunction(sceUmdWaitDriveStatWithTimerFunction, 0x56202973);
-
             mm.addFunction(sceUmdWaitDriveStatCBFunction, 0x4A9E5E29);
-
             mm.addFunction(sceUmdCancelWaitDriveStatFunction, 0x6AF9B50A);
-
             mm.addFunction(sceUmdGetDriveStatFunction, 0x6B4A146C);
-
             mm.addFunction(sceUmdGetErrorStatFunction, 0x20628E6F);
-
             mm.addFunction(sceUmdGetDiscInfoFunction, 0x340B7686);
-
             mm.addFunction(sceUmdRegisterUMDCallBackFunction, 0xAEE7404D);
-
             mm.addFunction(sceUmdUnRegisterUMDCallBackFunction, 0xBD2BDE07);
 
         }
@@ -79,27 +68,16 @@ public class sceUmdUser implements HLEModule {
         if (version >= 150) {
 
             mm.removeFunction(sceUmdCheckMediumFunction);
-
             mm.removeFunction(sceUmdActivateFunction);
-
             mm.removeFunction(sceUmdDeactivateFunction);
-
             mm.removeFunction(sceUmdWaitDriveStatFunction);
-
             mm.removeFunction(sceUmdWaitDriveStatWithTimerFunction);
-
             mm.removeFunction(sceUmdWaitDriveStatCBFunction);
-
             mm.removeFunction(sceUmdCancelWaitDriveStatFunction);
-
             mm.removeFunction(sceUmdGetDriveStatFunction);
-
             mm.removeFunction(sceUmdGetErrorStatFunction);
-
             mm.removeFunction(sceUmdGetDiscInfoFunction);
-
             mm.removeFunction(sceUmdRegisterUMDCallBackFunction);
-
             mm.removeFunction(sceUmdUnRegisterUMDCallBackFunction);
 
         }
@@ -140,7 +118,7 @@ public class sceUmdUser implements HLEModule {
         Memory mem = Processor.memory;
         int unit = cpu.gpr[4]; // should be always 1
         String drive = readStringZ(mem.mainmemory, (cpu.gpr[5] & 0x3fffffff) - MemoryMap.START_RAM);
-        System.out.println("sceUmdActivate unit = " + unit + " drive = " + drive);
+        System.out.println("sceUmdActivate unit =" + unit + " drive = " + drive);
         cpu.gpr[2] = 0; //return >0 mean success
     }
 
@@ -148,12 +126,17 @@ public class sceUmdUser implements HLEModule {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceUmdDeactivate [0xE83742BA]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     /** wait until drive stat reaches a0 */
@@ -171,12 +154,17 @@ public class sceUmdUser implements HLEModule {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceUmdWaitDriveStatWithTimer [0x56202973]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     /** wait until drive stat reaches a0 */
@@ -200,12 +188,17 @@ public class sceUmdUser implements HLEModule {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceUmdCancelWaitDriveStat [0x6AF9B50A]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceUmdGetDriveStat(Processor processor) {
@@ -228,24 +221,34 @@ public class sceUmdUser implements HLEModule {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceUmdGetErrorStat [0x20628E6F]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceUmdGetDiscInfo(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
         System.out.println("Unimplemented NID function sceUmdGetDiscInfo [0x340B7686]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     // TODO not fully implemented yet
@@ -295,7 +298,7 @@ public class sceUmdUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceUmdUser.sceUmdCheckMediumFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceUmdUserModule.sceUmdCheckMedium(processor);";
         }
     };
     public final HLEModuleFunction sceUmdActivateFunction = new HLEModuleFunction("sceUmdUser", "sceUmdActivate") {
@@ -307,7 +310,7 @@ public class sceUmdUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceUmdUser.sceUmdActivateFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceUmdUserModule.sceUmdActivate(processor);";
         }
     };
     public final HLEModuleFunction sceUmdDeactivateFunction = new HLEModuleFunction("sceUmdUser", "sceUmdDeactivate") {
@@ -319,7 +322,7 @@ public class sceUmdUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceUmdUser.sceUmdDeactivateFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceUmdUserModule.sceUmdDeactivate(processor);";
         }
     };
     public final HLEModuleFunction sceUmdWaitDriveStatFunction = new HLEModuleFunction("sceUmdUser", "sceUmdWaitDriveStat") {
@@ -331,7 +334,7 @@ public class sceUmdUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceUmdUser.sceUmdWaitDriveStatFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceUmdUserModule.sceUmdWaitDriveStat(processor);";
         }
     };
     public final HLEModuleFunction sceUmdWaitDriveStatWithTimerFunction = new HLEModuleFunction("sceUmdUser", "sceUmdWaitDriveStatWithTimer") {
@@ -343,7 +346,7 @@ public class sceUmdUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceUmdUser.sceUmdWaitDriveStatWithTimerFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceUmdUserModule.sceUmdWaitDriveStatWithTimer(processor);";
         }
     };
     public final HLEModuleFunction sceUmdWaitDriveStatCBFunction = new HLEModuleFunction("sceUmdUser", "sceUmdWaitDriveStatCB") {
@@ -355,7 +358,7 @@ public class sceUmdUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceUmdUser.sceUmdWaitDriveStatCBFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceUmdUserModule.sceUmdWaitDriveStatCB(processor);";
         }
     };
     public final HLEModuleFunction sceUmdCancelWaitDriveStatFunction = new HLEModuleFunction("sceUmdUser", "sceUmdCancelWaitDriveStat") {
@@ -367,7 +370,7 @@ public class sceUmdUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceUmdUser.sceUmdCancelWaitDriveStatFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceUmdUserModule.sceUmdCancelWaitDriveStat(processor);";
         }
     };
     public final HLEModuleFunction sceUmdGetDriveStatFunction = new HLEModuleFunction("sceUmdUser", "sceUmdGetDriveStat") {
@@ -379,7 +382,7 @@ public class sceUmdUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceUmdUser.sceUmdGetDriveStatFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceUmdUserModule.sceUmdGetDriveStat(processor);";
         }
     };
     public final HLEModuleFunction sceUmdGetErrorStatFunction = new HLEModuleFunction("sceUmdUser", "sceUmdGetErrorStat") {
@@ -391,7 +394,7 @@ public class sceUmdUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceUmdUser.sceUmdGetErrorStatFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceUmdUserModule.sceUmdGetErrorStat(processor);";
         }
     };
     public final HLEModuleFunction sceUmdGetDiscInfoFunction = new HLEModuleFunction("sceUmdUser", "sceUmdGetDiscInfo") {
@@ -403,7 +406,7 @@ public class sceUmdUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceUmdUser.sceUmdGetDiscInfoFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceUmdUserModule.sceUmdGetDiscInfo(processor);";
         }
     };
     public final HLEModuleFunction sceUmdRegisterUMDCallBackFunction = new HLEModuleFunction("sceUmdUser", "sceUmdRegisterUMDCallBack") {
@@ -415,7 +418,7 @@ public class sceUmdUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceUmdUser.sceUmdRegisterUMDCallBackFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceUmdUserModule.sceUmdRegisterUMDCallBack(processor);";
         }
     };
     public final HLEModuleFunction sceUmdUnRegisterUMDCallBackFunction = new HLEModuleFunction("sceUmdUser", "sceUmdUnRegisterUMDCallBack") {
@@ -427,7 +430,7 @@ public class sceUmdUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceUmdUser.sceUmdUnRegisterUMDCallBackFunction.execute(processor);";
+            return "jpcsp.HLE.modules150.sceUmdUserModule.sceUmdUnRegisterUMDCallBack(processor);";
         }
     };
 };

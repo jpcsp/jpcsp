@@ -26,7 +26,6 @@ import jpcsp.Processor;
 public class Sample implements HLEModule {
 
     // Regular code
-
     protected int someContext;
 
     // This could be some common code used by more than one exported function,
@@ -42,7 +41,6 @@ public class Sample implements HLEModule {
     public void someModuleHelperFunction() {
         System.out.println("def");
     }
-    
     // This is an export function, it can optionally use context saved between calls.
     // Example: sceKernelCreateThread adds a ThreadInfo object to a List,
     // then sceKernelStartThread gets that object out of the list and modifies it.
@@ -54,7 +52,7 @@ public class Sample implements HLEModule {
 
         System.out.println("pspSampleFoo 150 context = " + someContext);
         someContext++;
-        
+
         cpu.gpr[2] = 0;
     }
 
@@ -65,10 +63,9 @@ public class Sample implements HLEModule {
     public int pspSampleFoo(int param) {
         System.out.println("pspSampleFoo 150 context = " + someContext);
         someContext++;
-        
+
         return 0;
     }
-    
     // Dynamic module loading/firmware handling junk
 
     // Only root class can have this, or we get rid of "final" keyword
@@ -89,20 +86,19 @@ public class Sample implements HLEModule {
 
         mm.removeFunction(pspSampleFooFunction);
     }
-
     public final HLEModuleFunction pspSampleFooFunction = new HLEModuleFunction("Sample", "pspSampleFoo") {
 
         @Override
-        public void execute(Processor processor) {
+        public final void execute(Processor processor) {
             // We need to decide on the call style
             // I prefer the first version (fiveofhearts)
             pspSampleFoo(processor);
-            //processor.gpr[2] = pspSampleFoo(processor.gpr[4]);
+        //processor.gpr[2] = pspSampleFoo(processor.gpr[4]);
         }
 
         @Override
-        public String compiledString() {
-            return "jpcsp.HLE.modules150.Sample.pspSampleFooFunction.execute(processor);";
+        public final String compiledString() {
+            return "jpcsp.HLE.modules150.Samplemodule.pspSampleFoo(processor);";
         }
-};
+    };
 }
