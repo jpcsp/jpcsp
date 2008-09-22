@@ -88,7 +88,7 @@ public class <xsl:value-of select="NAME"/><xsl:choose><xsl:when test="$old_versi
 		}
 		\@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules<xsl:value-of select="$version"/>.<xsl:value-of select="../../NAME"/>Module.<xsl:value-of select="NAME"/>(processor);";
+			return "jpcsp.HLE.Modules.<xsl:value-of select="../../NAME"/>Module.<xsl:value-of select="NAME"/>(processor);";
 		}
 	};
     </xsl:for-each>
