@@ -480,7 +480,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
 
     private void initNewPsp() {
         getProcessor().reset();
-        Memory.getInstance().NullMemory();
+        Memory.getInstance().Initialise();
         NIDMapper.get_instance().Initialise();
 
         if (memview != null)
