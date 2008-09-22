@@ -730,8 +730,8 @@ public class SyscallHandler {
                     boolean handled = HLEModuleManager.get_instance().handleSyscall(code);
                     if (!handled) {
                         // At least set a decent return value
-                        Emulator.getProcessor().gpr[2] = 1; // fake out sema
-                        //Emulator.getProcessor().gpr[2] = 0xb515ca11;
+                        //Emulator.getProcessor().gpr[2] = 0;
+                        Emulator.getProcessor().gpr[2] = 0xb515ca11;
 
                         // Display debug info
                         for (jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls c : jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls.values()) {
