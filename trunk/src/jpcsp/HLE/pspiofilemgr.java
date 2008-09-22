@@ -511,6 +511,7 @@ public class pspiofilemgr {
 
     public void setIsoReader(UmdIsoReader iso)
     {
+        /* debug
         if (iso != null)
         {
             System.out.println("pspiofilemgr - umd mounted " + iso.getFilename());
@@ -519,7 +520,7 @@ public class pspiofilemgr {
         {
             System.out.println("pspiofilemgr - umd unmounted");
         }
-
+        */
         this.iso = iso;
     }
 
