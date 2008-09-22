@@ -21,6 +21,7 @@ import jpcsp.HLE.SyscallHandler;
 import jpcsp.Allegrex.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.nio.ByteBuffer;
 
 public class Processor implements AllegrexInstructions {
 
@@ -39,6 +40,14 @@ public class Processor implements AllegrexInstructions {
     }
     */
 
+    public void load(ByteBuffer buffer) {
+        
+    }
+
+    public void save(ByteBuffer buffer) {
+        
+    }
+    
     public void interpret() {
 
         int opcode = cpu.fetchOpcode();
