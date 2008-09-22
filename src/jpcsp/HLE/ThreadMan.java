@@ -440,6 +440,17 @@ public class ThreadMan {
         contextSwitch(nextThread());
     }
 
+    /** sleep the current thread for a certain number of microseconds */
+    public void ThreadMan_sceKernelDelayThreadCB(int millis) {
+        current_thread.status = PspThreadStatus.PSP_THREAD_WAITING;
+        //current_thread.delaysteps = millis * 200000000 / 1000000; // TODO delaysteps = millis * steprate
+        current_thread.delaysteps = millis; // test version
+        current_thread.do_callbacks = true;
+        Emulator.getProcessor().gpr[2] = 0;
+
+        contextSwitch(nextThread());
+    }
+    
     public void ThreadMan_sceKernelCreateCallback(int a0, int a1, int a2) {
         String name = readStringZ(Memory.getInstance().mainmemory, (a0 & 0x3fffffff) - MemoryMap.START_RAM);
         SceKernelCallbackInfo callback = new SceKernelCallbackInfo(name, current_thread.uid, a1, a2);
