@@ -50,8 +50,9 @@ public class Memory {
         return instance;
     }
 
-    public void NullMemory() {
-        instance = null;
+    public void Initialise() {
+        for (int i = 0; i < all.length; i++)
+            all[i] = 0;
     }
 
     private Memory() {
