@@ -79,10 +79,18 @@ public class SyscallHandler {
                     break;
 		 //sceKernelDelaySysClockThread(0x201e),
 		// sceKernelDelaySysClockThreadCB(0x201f),
-		// sceKernelCreateSema(0x2020),
+		
+                case 0x2020:
+                    ThreadMan.get_instance().ThreadMan_sceKernelCreateSema(gpr[4],gpr[5],gpr[6],gpr[7],gpr[8]);
+                    break;
 		// sceKernelDeleteSema(0x2021),
 		 //sceKernelSignalSema(0x2022),
-		 //sceKernelWaitSema(0x2023),
+                case 0x2022:
+                    ThreadMan.get_instance().ThreadMan_sceKernelSignalSema(gpr[4],gpr[5]);
+                    break;
+                case 0x2023:
+                    ThreadMan.get_instance().ThreadMan_sceKernelWaitSema(gpr[4],gpr[5], gpr[6], gpr[7]);
+                    break;
 		 //sceKernelWaitSemaCB(0x2024),
 		// sceKernelPollSema(0x2025),
 		 //sceKernelCancelSema(0x2026),
