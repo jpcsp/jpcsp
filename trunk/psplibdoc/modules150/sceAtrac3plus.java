@@ -34,55 +34,31 @@ public class sceAtrac3plus implements HLEModule {
 	@Override
 	public void installModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
-			
+		
 			mm.addFunction(sceAtracStartEntryFunction, 0xD1F59FDB);
-			
 			mm.addFunction(sceAtracEndEntryFunction, 0xD5C28CC0);
-			
 			mm.addFunction(sceAtracGetAtracIDFunction, 0x780F88D1);
-			
 			mm.addFunction(sceAtracReleaseAtracIDFunction, 0x61EB33F5);
-			
 			mm.addFunction(sceAtracSetDataFunction, 0x0E2A73AB);
-			
 			mm.addFunction(sceAtracSetHalfwayBufferFunction, 0x3F6E26B5);
-			
 			mm.addFunction(sceAtracSetDataAndGetIDFunction, 0x7A20E7AF);
-			
 			mm.addFunction(sceAtracSetHalfwayBufferAndGetIDFunction, 0x0FAE370E);
-			
 			mm.addFunction(sceAtracDecodeDataFunction, 0x6A8C3CD5);
-			
 			mm.addFunction(sceAtracGetRemainFrameFunction, 0x9AE849A7);
-			
 			mm.addFunction(sceAtracGetStreamDataInfoFunction, 0x5D268707);
-			
 			mm.addFunction(sceAtracAddStreamDataFunction, 0x7DB31251);
-			
 			mm.addFunction(sceAtracGetSecondBufferInfoFunction, 0x83E85EA0);
-			
 			mm.addFunction(sceAtracSetSecondBufferFunction, 0x83BF7AFD);
-			
 			mm.addFunction(sceAtracGetNextDecodePositionFunction, 0xE23E3A35);
-			
 			mm.addFunction(sceAtracGetSoundSampleFunction, 0xA2BBA8BE);
-			
 			mm.addFunction(sceAtracGetChannelFunction, 0x31668BAA);
-			
 			mm.addFunction(sceAtracGetMaxSampleFunction, 0xD6A5F2F7);
-			
 			mm.addFunction(sceAtracGetNextSampleFunction, 0x36FAABFB);
-			
 			mm.addFunction(sceAtracGetBitrateFunction, 0xA554A158);
-			
 			mm.addFunction(sceAtracGetLoopStatusFunction, 0xFAA4F89B);
-			
 			mm.addFunction(sceAtracSetLoopNumFunction, 0x868120B5);
-			
 			mm.addFunction(sceAtracGetBufferInfoForResetingFunction, 0xCA3CA3D2);
-			
 			mm.addFunction(sceAtracResetPlayPositionFunction, 0x644E5607);
-			
 			mm.addFunction(sceAtracGetInternalErrorInfoFunction, 0xE88F759B);
 			
 		}
@@ -91,55 +67,31 @@ public class sceAtrac3plus implements HLEModule {
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
-			
+		
 			mm.removeFunction(sceAtracStartEntryFunction);
-			
 			mm.removeFunction(sceAtracEndEntryFunction);
-			
 			mm.removeFunction(sceAtracGetAtracIDFunction);
-			
 			mm.removeFunction(sceAtracReleaseAtracIDFunction);
-			
 			mm.removeFunction(sceAtracSetDataFunction);
-			
 			mm.removeFunction(sceAtracSetHalfwayBufferFunction);
-			
 			mm.removeFunction(sceAtracSetDataAndGetIDFunction);
-			
 			mm.removeFunction(sceAtracSetHalfwayBufferAndGetIDFunction);
-			
 			mm.removeFunction(sceAtracDecodeDataFunction);
-			
 			mm.removeFunction(sceAtracGetRemainFrameFunction);
-			
 			mm.removeFunction(sceAtracGetStreamDataInfoFunction);
-			
 			mm.removeFunction(sceAtracAddStreamDataFunction);
-			
 			mm.removeFunction(sceAtracGetSecondBufferInfoFunction);
-			
 			mm.removeFunction(sceAtracSetSecondBufferFunction);
-			
 			mm.removeFunction(sceAtracGetNextDecodePositionFunction);
-			
 			mm.removeFunction(sceAtracGetSoundSampleFunction);
-			
 			mm.removeFunction(sceAtracGetChannelFunction);
-			
 			mm.removeFunction(sceAtracGetMaxSampleFunction);
-			
 			mm.removeFunction(sceAtracGetNextSampleFunction);
-			
 			mm.removeFunction(sceAtracGetBitrateFunction);
-			
 			mm.removeFunction(sceAtracGetLoopStatusFunction);
-			
 			mm.removeFunction(sceAtracSetLoopNumFunction);
-			
 			mm.removeFunction(sceAtracGetBufferInfoForResetingFunction);
-			
 			mm.removeFunction(sceAtracResetPlayPositionFunction);
-			
 			mm.removeFunction(sceAtracGetInternalErrorInfoFunction);
 			
 		}
@@ -149,301 +101,426 @@ public class sceAtrac3plus implements HLEModule {
 	public void sceAtracStartEntry(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceAtracStartEntry [0xD1F59FDB]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceAtracEndEntry(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceAtracEndEntry [0xD5C28CC0]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceAtracGetAtracID(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceAtracGetAtracID [0x780F88D1]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceAtracReleaseAtracID(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceAtracReleaseAtracID [0x61EB33F5]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceAtracSetData(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceAtracSetData [0x0E2A73AB]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceAtracSetHalfwayBuffer(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceAtracSetHalfwayBuffer [0x3F6E26B5]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceAtracSetDataAndGetID(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceAtracSetDataAndGetID [0x7A20E7AF]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceAtracSetHalfwayBufferAndGetID(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceAtracSetHalfwayBufferAndGetID [0x0FAE370E]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceAtracDecodeData(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceAtracDecodeData [0x6A8C3CD5]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceAtracGetRemainFrame(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceAtracGetRemainFrame [0x9AE849A7]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceAtracGetStreamDataInfo(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceAtracGetStreamDataInfo [0x5D268707]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceAtracAddStreamData(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceAtracAddStreamData [0x7DB31251]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceAtracGetSecondBufferInfo(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceAtracGetSecondBufferInfo [0x83E85EA0]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceAtracSetSecondBuffer(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceAtracSetSecondBuffer [0x83BF7AFD]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceAtracGetNextDecodePosition(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceAtracGetNextDecodePosition [0xE23E3A35]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceAtracGetSoundSample(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceAtracGetSoundSample [0xA2BBA8BE]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceAtracGetChannel(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceAtracGetChannel [0x31668BAA]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceAtracGetMaxSample(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceAtracGetMaxSample [0xD6A5F2F7]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceAtracGetNextSample(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceAtracGetNextSample [0x36FAABFB]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceAtracGetBitrate(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceAtracGetBitrate [0xA554A158]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceAtracGetLoopStatus(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceAtracGetLoopStatus [0xFAA4F89B]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceAtracSetLoopNum(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceAtracSetLoopNum [0x868120B5]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceAtracGetBufferInfoForReseting(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceAtracGetBufferInfoForReseting [0xCA3CA3D2]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceAtracResetPlayPosition(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceAtracResetPlayPosition [0x644E5607]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceAtracGetInternalErrorInfo(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceAtracGetInternalErrorInfo [0xE88F759B]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public final HLEModuleFunction sceAtracStartEntryFunction = new HLEModuleFunction("sceAtrac3plus", "sceAtracStartEntry") {
@@ -453,7 +530,7 @@ public class sceAtrac3plus implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceAtrac3plus.sceAtracStartEntryFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracStartEntry(processor);";
 		}
 	};
     
@@ -464,7 +541,7 @@ public class sceAtrac3plus implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceAtrac3plus.sceAtracEndEntryFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracEndEntry(processor);";
 		}
 	};
     
@@ -475,7 +552,7 @@ public class sceAtrac3plus implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceAtrac3plus.sceAtracGetAtracIDFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetAtracID(processor);";
 		}
 	};
     
@@ -486,7 +563,7 @@ public class sceAtrac3plus implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceAtrac3plus.sceAtracReleaseAtracIDFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracReleaseAtracID(processor);";
 		}
 	};
     
@@ -497,7 +574,7 @@ public class sceAtrac3plus implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceAtrac3plus.sceAtracSetDataFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracSetData(processor);";
 		}
 	};
     
@@ -508,7 +585,7 @@ public class sceAtrac3plus implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceAtrac3plus.sceAtracSetHalfwayBufferFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracSetHalfwayBuffer(processor);";
 		}
 	};
     
@@ -519,7 +596,7 @@ public class sceAtrac3plus implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceAtrac3plus.sceAtracSetDataAndGetIDFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracSetDataAndGetID(processor);";
 		}
 	};
     
@@ -530,7 +607,7 @@ public class sceAtrac3plus implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceAtrac3plus.sceAtracSetHalfwayBufferAndGetIDFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracSetHalfwayBufferAndGetID(processor);";
 		}
 	};
     
@@ -541,7 +618,7 @@ public class sceAtrac3plus implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceAtrac3plus.sceAtracDecodeDataFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracDecodeData(processor);";
 		}
 	};
     
@@ -552,7 +629,7 @@ public class sceAtrac3plus implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceAtrac3plus.sceAtracGetRemainFrameFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetRemainFrame(processor);";
 		}
 	};
     
@@ -563,7 +640,7 @@ public class sceAtrac3plus implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceAtrac3plus.sceAtracGetStreamDataInfoFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetStreamDataInfo(processor);";
 		}
 	};
     
@@ -574,7 +651,7 @@ public class sceAtrac3plus implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceAtrac3plus.sceAtracAddStreamDataFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracAddStreamData(processor);";
 		}
 	};
     
@@ -585,7 +662,7 @@ public class sceAtrac3plus implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceAtrac3plus.sceAtracGetSecondBufferInfoFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetSecondBufferInfo(processor);";
 		}
 	};
     
@@ -596,7 +673,7 @@ public class sceAtrac3plus implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceAtrac3plus.sceAtracSetSecondBufferFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracSetSecondBuffer(processor);";
 		}
 	};
     
@@ -607,7 +684,7 @@ public class sceAtrac3plus implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceAtrac3plus.sceAtracGetNextDecodePositionFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetNextDecodePosition(processor);";
 		}
 	};
     
@@ -618,7 +695,7 @@ public class sceAtrac3plus implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceAtrac3plus.sceAtracGetSoundSampleFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetSoundSample(processor);";
 		}
 	};
     
@@ -629,7 +706,7 @@ public class sceAtrac3plus implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceAtrac3plus.sceAtracGetChannelFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetChannel(processor);";
 		}
 	};
     
@@ -640,7 +717,7 @@ public class sceAtrac3plus implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceAtrac3plus.sceAtracGetMaxSampleFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetMaxSample(processor);";
 		}
 	};
     
@@ -651,7 +728,7 @@ public class sceAtrac3plus implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceAtrac3plus.sceAtracGetNextSampleFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetNextSample(processor);";
 		}
 	};
     
@@ -662,7 +739,7 @@ public class sceAtrac3plus implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceAtrac3plus.sceAtracGetBitrateFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetBitrate(processor);";
 		}
 	};
     
@@ -673,7 +750,7 @@ public class sceAtrac3plus implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceAtrac3plus.sceAtracGetLoopStatusFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetLoopStatus(processor);";
 		}
 	};
     
@@ -684,7 +761,7 @@ public class sceAtrac3plus implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceAtrac3plus.sceAtracSetLoopNumFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracSetLoopNum(processor);";
 		}
 	};
     
@@ -695,7 +772,7 @@ public class sceAtrac3plus implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceAtrac3plus.sceAtracGetBufferInfoForResetingFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetBufferInfoForReseting(processor);";
 		}
 	};
     
@@ -706,7 +783,7 @@ public class sceAtrac3plus implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceAtrac3plus.sceAtracResetPlayPositionFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracResetPlayPosition(processor);";
 		}
 	};
     
@@ -717,7 +794,7 @@ public class sceAtrac3plus implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceAtrac3plus.sceAtracGetInternalErrorInfoFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceAtrac3plusModule.sceAtracGetInternalErrorInfo(processor);";
 		}
 	};
     

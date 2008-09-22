@@ -34,73 +34,40 @@ public class sceUtility implements HLEModule {
 	@Override
 	public void installModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
-			
+		
 			mm.addFunction(sceUtilityGameSharingInitStartFunction, 0xC492F751);
-			
 			mm.addFunction(sceUtilityGameSharingShutdownStartFunction, 0xEFC6F80F);
-			
 			mm.addFunction(sceUtilityGameSharingUpdateFunction, 0x7853182D);
-			
 			mm.addFunction(sceUtilityGameSharingGetStatusFunction, 0x946963F3);
-			
 			mm.addFunction(sceNetplayDialogInitStartFunction, 0x3AD50AE7);
-			
 			mm.addFunction(sceNetplayDialogShutdownStartFunction, 0xBC6B6296);
-			
 			mm.addFunction(sceNetplayDialogUpdateFunction, 0x417BED54);
-			
 			mm.addFunction(sceNetplayDialogGetStatusFunction, 0xB6CEE597);
-			
 			mm.addFunction(sceUtilityNetconfInitStartFunction, 0x4DB1E739);
-			
 			mm.addFunction(sceUtilityNetconfShutdownStartFunction, 0xF88155F6);
-			
 			mm.addFunction(sceUtilityNetconfUpdateFunction, 0x91E70E35);
-			
 			mm.addFunction(sceUtilityNetconfGetStatusFunction, 0x6332AA39);
-			
 			mm.addFunction(sceUtilitySavedataInitStartFunction, 0x50C4CD57);
-			
 			mm.addFunction(sceUtilitySavedataShutdownStartFunction, 0x9790B33C);
-			
 			mm.addFunction(sceUtilitySavedataUpdateFunction, 0xD4B95FFB);
-			
 			mm.addFunction(sceUtilitySavedataGetStatusFunction, 0x8874DBE0);
-			
 			mm.addFunction(sceUtility_2995D020Function, 0x2995D020);
-			
 			mm.addFunction(sceUtility_B62A4061Function, 0xB62A4061);
-			
 			mm.addFunction(sceUtility_ED0FAD38Function, 0xED0FAD38);
-			
 			mm.addFunction(sceUtility_88BC7406Function, 0x88BC7406);
-			
 			mm.addFunction(sceUtilityMsgDialogInitStartFunction, 0x2AD8E239);
-			
 			mm.addFunction(sceUtilityMsgDialogShutdownStartFunction, 0x67AF3428);
-			
 			mm.addFunction(sceUtilityMsgDialogUpdateFunction, 0x95FC253B);
-			
 			mm.addFunction(sceUtilityMsgDialogGetStatusFunction, 0x9A1C91D7);
-			
 			mm.addFunction(sceUtilityOskInitStartFunction, 0xF6269B82);
-			
 			mm.addFunction(sceUtilityOskShutdownStartFunction, 0x3DFAEBA9);
-			
 			mm.addFunction(sceUtilityOskUpdateFunction, 0x4B85C861);
-			
 			mm.addFunction(sceUtilityOskGetStatusFunction, 0xF3F76017);
-			
 			mm.addFunction(sceUtilitySetSystemParamIntFunction, 0x45C18506);
-			
 			mm.addFunction(sceUtilitySetSystemParamStringFunction, 0x41E30674);
-			
 			mm.addFunction(sceUtilityGetSystemParamIntFunction, 0xA5DA2406);
-			
 			mm.addFunction(sceUtilityGetSystemParamStringFunction, 0x34B78343);
-			
 			mm.addFunction(sceUtilityCheckNetParamFunction, 0x5EEE6548);
-			
 			mm.addFunction(sceUtilityGetNetParamFunction, 0x434D4B3A);
 			
 		}
@@ -109,73 +76,40 @@ public class sceUtility implements HLEModule {
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
-			
+		
 			mm.removeFunction(sceUtilityGameSharingInitStartFunction);
-			
 			mm.removeFunction(sceUtilityGameSharingShutdownStartFunction);
-			
 			mm.removeFunction(sceUtilityGameSharingUpdateFunction);
-			
 			mm.removeFunction(sceUtilityGameSharingGetStatusFunction);
-			
 			mm.removeFunction(sceNetplayDialogInitStartFunction);
-			
 			mm.removeFunction(sceNetplayDialogShutdownStartFunction);
-			
 			mm.removeFunction(sceNetplayDialogUpdateFunction);
-			
 			mm.removeFunction(sceNetplayDialogGetStatusFunction);
-			
 			mm.removeFunction(sceUtilityNetconfInitStartFunction);
-			
 			mm.removeFunction(sceUtilityNetconfShutdownStartFunction);
-			
 			mm.removeFunction(sceUtilityNetconfUpdateFunction);
-			
 			mm.removeFunction(sceUtilityNetconfGetStatusFunction);
-			
 			mm.removeFunction(sceUtilitySavedataInitStartFunction);
-			
 			mm.removeFunction(sceUtilitySavedataShutdownStartFunction);
-			
 			mm.removeFunction(sceUtilitySavedataUpdateFunction);
-			
 			mm.removeFunction(sceUtilitySavedataGetStatusFunction);
-			
 			mm.removeFunction(sceUtility_2995D020Function);
-			
 			mm.removeFunction(sceUtility_B62A4061Function);
-			
 			mm.removeFunction(sceUtility_ED0FAD38Function);
-			
 			mm.removeFunction(sceUtility_88BC7406Function);
-			
 			mm.removeFunction(sceUtilityMsgDialogInitStartFunction);
-			
 			mm.removeFunction(sceUtilityMsgDialogShutdownStartFunction);
-			
 			mm.removeFunction(sceUtilityMsgDialogUpdateFunction);
-			
 			mm.removeFunction(sceUtilityMsgDialogGetStatusFunction);
-			
 			mm.removeFunction(sceUtilityOskInitStartFunction);
-			
 			mm.removeFunction(sceUtilityOskShutdownStartFunction);
-			
 			mm.removeFunction(sceUtilityOskUpdateFunction);
-			
 			mm.removeFunction(sceUtilityOskGetStatusFunction);
-			
 			mm.removeFunction(sceUtilitySetSystemParamIntFunction);
-			
 			mm.removeFunction(sceUtilitySetSystemParamStringFunction);
-			
 			mm.removeFunction(sceUtilityGetSystemParamIntFunction);
-			
 			mm.removeFunction(sceUtilityGetSystemParamStringFunction);
-			
 			mm.removeFunction(sceUtilityCheckNetParamFunction);
-			
 			mm.removeFunction(sceUtilityGetNetParamFunction);
 			
 		}
@@ -185,409 +119,579 @@ public class sceUtility implements HLEModule {
 	public void sceUtilityGameSharingInitStart(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtilityGameSharingInitStart [0xC492F751]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtilityGameSharingShutdownStart(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtilityGameSharingShutdownStart [0xEFC6F80F]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtilityGameSharingUpdate(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtilityGameSharingUpdate [0x7853182D]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtilityGameSharingGetStatus(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtilityGameSharingGetStatus [0x946963F3]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceNetplayDialogInitStart(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceNetplayDialogInitStart [0x3AD50AE7]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceNetplayDialogShutdownStart(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceNetplayDialogShutdownStart [0xBC6B6296]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceNetplayDialogUpdate(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceNetplayDialogUpdate [0x417BED54]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceNetplayDialogGetStatus(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceNetplayDialogGetStatus [0xB6CEE597]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtilityNetconfInitStart(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtilityNetconfInitStart [0x4DB1E739]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtilityNetconfShutdownStart(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtilityNetconfShutdownStart [0xF88155F6]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtilityNetconfUpdate(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtilityNetconfUpdate [0x91E70E35]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtilityNetconfGetStatus(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtilityNetconfGetStatus [0x6332AA39]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtilitySavedataInitStart(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtilitySavedataInitStart [0x50C4CD57]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtilitySavedataShutdownStart(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtilitySavedataShutdownStart [0x9790B33C]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtilitySavedataUpdate(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtilitySavedataUpdate [0xD4B95FFB]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtilitySavedataGetStatus(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtilitySavedataGetStatus [0x8874DBE0]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtility_2995D020(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtility_2995D020 [0x2995D020]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtility_B62A4061(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtility_B62A4061 [0xB62A4061]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtility_ED0FAD38(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtility_ED0FAD38 [0xED0FAD38]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtility_88BC7406(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtility_88BC7406 [0x88BC7406]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtilityMsgDialogInitStart(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtilityMsgDialogInitStart [0x2AD8E239]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtilityMsgDialogShutdownStart(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtilityMsgDialogShutdownStart [0x67AF3428]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtilityMsgDialogUpdate(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtilityMsgDialogUpdate [0x95FC253B]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtilityMsgDialogGetStatus(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtilityMsgDialogGetStatus [0x9A1C91D7]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtilityOskInitStart(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtilityOskInitStart [0xF6269B82]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtilityOskShutdownStart(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtilityOskShutdownStart [0x3DFAEBA9]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtilityOskUpdate(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtilityOskUpdate [0x4B85C861]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtilityOskGetStatus(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtilityOskGetStatus [0xF3F76017]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtilitySetSystemParamInt(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtilitySetSystemParamInt [0x45C18506]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtilitySetSystemParamString(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtilitySetSystemParamString [0x41E30674]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtilityGetSystemParamInt(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtilityGetSystemParamInt [0xA5DA2406]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtilityGetSystemParamString(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtilityGetSystemParamString [0x34B78343]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtilityCheckNetParam(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtilityCheckNetParam [0x5EEE6548]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUtilityGetNetParam(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUtilityGetNetParam [0x434D4B3A]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public final HLEModuleFunction sceUtilityGameSharingInitStartFunction = new HLEModuleFunction("sceUtility", "sceUtilityGameSharingInitStart") {
@@ -597,7 +701,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtilityGameSharingInitStartFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityGameSharingInitStart(processor);";
 		}
 	};
     
@@ -608,7 +712,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtilityGameSharingShutdownStartFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityGameSharingShutdownStart(processor);";
 		}
 	};
     
@@ -619,7 +723,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtilityGameSharingUpdateFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityGameSharingUpdate(processor);";
 		}
 	};
     
@@ -630,7 +734,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtilityGameSharingGetStatusFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityGameSharingGetStatus(processor);";
 		}
 	};
     
@@ -641,7 +745,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceNetplayDialogInitStartFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceNetplayDialogInitStart(processor);";
 		}
 	};
     
@@ -652,7 +756,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceNetplayDialogShutdownStartFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceNetplayDialogShutdownStart(processor);";
 		}
 	};
     
@@ -663,7 +767,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceNetplayDialogUpdateFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceNetplayDialogUpdate(processor);";
 		}
 	};
     
@@ -674,7 +778,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceNetplayDialogGetStatusFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceNetplayDialogGetStatus(processor);";
 		}
 	};
     
@@ -685,7 +789,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtilityNetconfInitStartFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityNetconfInitStart(processor);";
 		}
 	};
     
@@ -696,7 +800,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtilityNetconfShutdownStartFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityNetconfShutdownStart(processor);";
 		}
 	};
     
@@ -707,7 +811,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtilityNetconfUpdateFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityNetconfUpdate(processor);";
 		}
 	};
     
@@ -718,7 +822,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtilityNetconfGetStatusFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityNetconfGetStatus(processor);";
 		}
 	};
     
@@ -729,7 +833,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtilitySavedataInitStartFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilitySavedataInitStart(processor);";
 		}
 	};
     
@@ -740,7 +844,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtilitySavedataShutdownStartFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilitySavedataShutdownStart(processor);";
 		}
 	};
     
@@ -751,7 +855,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtilitySavedataUpdateFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilitySavedataUpdate(processor);";
 		}
 	};
     
@@ -762,7 +866,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtilitySavedataGetStatusFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilitySavedataGetStatus(processor);";
 		}
 	};
     
@@ -773,7 +877,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtility_2995D020Function.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtility_2995D020(processor);";
 		}
 	};
     
@@ -784,7 +888,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtility_B62A4061Function.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtility_B62A4061(processor);";
 		}
 	};
     
@@ -795,7 +899,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtility_ED0FAD38Function.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtility_ED0FAD38(processor);";
 		}
 	};
     
@@ -806,7 +910,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtility_88BC7406Function.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtility_88BC7406(processor);";
 		}
 	};
     
@@ -817,7 +921,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtilityMsgDialogInitStartFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityMsgDialogInitStart(processor);";
 		}
 	};
     
@@ -828,7 +932,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtilityMsgDialogShutdownStartFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityMsgDialogShutdownStart(processor);";
 		}
 	};
     
@@ -839,7 +943,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtilityMsgDialogUpdateFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityMsgDialogUpdate(processor);";
 		}
 	};
     
@@ -850,7 +954,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtilityMsgDialogGetStatusFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityMsgDialogGetStatus(processor);";
 		}
 	};
     
@@ -861,7 +965,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtilityOskInitStartFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityOskInitStart(processor);";
 		}
 	};
     
@@ -872,7 +976,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtilityOskShutdownStartFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityOskShutdownStart(processor);";
 		}
 	};
     
@@ -883,7 +987,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtilityOskUpdateFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityOskUpdate(processor);";
 		}
 	};
     
@@ -894,7 +998,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtilityOskGetStatusFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityOskGetStatus(processor);";
 		}
 	};
     
@@ -905,7 +1009,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtilitySetSystemParamIntFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilitySetSystemParamInt(processor);";
 		}
 	};
     
@@ -916,7 +1020,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtilitySetSystemParamStringFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilitySetSystemParamString(processor);";
 		}
 	};
     
@@ -927,7 +1031,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtilityGetSystemParamIntFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityGetSystemParamInt(processor);";
 		}
 	};
     
@@ -938,7 +1042,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtilityGetSystemParamStringFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityGetSystemParamString(processor);";
 		}
 	};
     
@@ -949,7 +1053,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtilityCheckNetParamFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityCheckNetParam(processor);";
 		}
 	};
     
@@ -960,7 +1064,7 @@ public class sceUtility implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUtility.sceUtilityGetNetParamFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUtilityModule.sceUtilityGetNetParam(processor);";
 		}
 	};
     

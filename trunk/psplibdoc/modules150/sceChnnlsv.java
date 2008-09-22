@@ -34,17 +34,12 @@ public class sceChnnlsv implements HLEModule {
 	@Override
 	public void installModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
-			
+		
 			mm.addFunction(sceSdSetIndexFunction, 0xE7833020);
-			
 			mm.addFunction(sceSdRemoveValueFunction, 0xF21A1FCA);
-			
 			mm.addFunction(sceSdGetLastIndexFunction, 0xC4C494F8);
-			
 			mm.addFunction(sceSdCreateListFunction, 0xABFDFC8B);
-			
 			mm.addFunction(sceSdSetMemberFunction, 0x850A7FA1);
-			
 			mm.addFunction(sceChnnlsv_21BE78B4Function, 0x21BE78B4);
 			
 		}
@@ -53,17 +48,12 @@ public class sceChnnlsv implements HLEModule {
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
-			
+		
 			mm.removeFunction(sceSdSetIndexFunction);
-			
 			mm.removeFunction(sceSdRemoveValueFunction);
-			
 			mm.removeFunction(sceSdGetLastIndexFunction);
-			
 			mm.removeFunction(sceSdCreateListFunction);
-			
 			mm.removeFunction(sceSdSetMemberFunction);
-			
 			mm.removeFunction(sceChnnlsv_21BE78B4Function);
 			
 		}
@@ -73,73 +63,103 @@ public class sceChnnlsv implements HLEModule {
 	public void sceSdSetIndex(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceSdSetIndex [0xE7833020]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceSdRemoveValue(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceSdRemoveValue [0xF21A1FCA]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceSdGetLastIndex(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceSdGetLastIndex [0xC4C494F8]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceSdCreateList(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceSdCreateList [0xABFDFC8B]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceSdSetMember(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceSdSetMember [0x850A7FA1]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceChnnlsv_21BE78B4(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceChnnlsv_21BE78B4 [0x21BE78B4]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public final HLEModuleFunction sceSdSetIndexFunction = new HLEModuleFunction("sceChnnlsv", "sceSdSetIndex") {
@@ -149,7 +169,7 @@ public class sceChnnlsv implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceChnnlsv.sceSdSetIndexFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceChnnlsvModule.sceSdSetIndex(processor);";
 		}
 	};
     
@@ -160,7 +180,7 @@ public class sceChnnlsv implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceChnnlsv.sceSdRemoveValueFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceChnnlsvModule.sceSdRemoveValue(processor);";
 		}
 	};
     
@@ -171,7 +191,7 @@ public class sceChnnlsv implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceChnnlsv.sceSdGetLastIndexFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceChnnlsvModule.sceSdGetLastIndex(processor);";
 		}
 	};
     
@@ -182,7 +202,7 @@ public class sceChnnlsv implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceChnnlsv.sceSdCreateListFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceChnnlsvModule.sceSdCreateList(processor);";
 		}
 	};
     
@@ -193,7 +213,7 @@ public class sceChnnlsv implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceChnnlsv.sceSdSetMemberFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceChnnlsvModule.sceSdSetMember(processor);";
 		}
 	};
     
@@ -204,7 +224,7 @@ public class sceChnnlsv implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceChnnlsv.sceChnnlsv_21BE78B4Function.execute(processor);";
+			return "jpcsp.HLE.Modules.sceChnnlsvModule.sceChnnlsv_21BE78B4(processor);";
 		}
 	};
     

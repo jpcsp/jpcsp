@@ -34,11 +34,9 @@ public class sceNetApctl_internal_user implements HLEModule {
 	@Override
 	public void installModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
-			
+		
 			mm.addFunction(sceNetApctlScanUserFunction, 0xE9B2E5E6);
-			
 			mm.addFunction(sceNetApctlGetBSSDescIDListUserFunction, 0x6BDDCB8C);
-			
 			mm.addFunction(sceNetApctlGetBSSDescEntryUserFunction, 0x04776994);
 			
 		}
@@ -47,11 +45,9 @@ public class sceNetApctl_internal_user implements HLEModule {
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
-			
+		
 			mm.removeFunction(sceNetApctlScanUserFunction);
-			
 			mm.removeFunction(sceNetApctlGetBSSDescIDListUserFunction);
-			
 			mm.removeFunction(sceNetApctlGetBSSDescEntryUserFunction);
 			
 		}
@@ -61,37 +57,52 @@ public class sceNetApctl_internal_user implements HLEModule {
 	public void sceNetApctlScanUser(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceNetApctlScanUser [0xE9B2E5E6]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceNetApctlGetBSSDescIDListUser(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceNetApctlGetBSSDescIDListUser [0x6BDDCB8C]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceNetApctlGetBSSDescEntryUser(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceNetApctlGetBSSDescEntryUser [0x04776994]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public final HLEModuleFunction sceNetApctlScanUserFunction = new HLEModuleFunction("sceNetApctl_internal_user", "sceNetApctlScanUser") {
@@ -101,7 +112,7 @@ public class sceNetApctl_internal_user implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceNetApctl_internal_user.sceNetApctlScanUserFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceNetApctl_internal_userModule.sceNetApctlScanUser(processor);";
 		}
 	};
     
@@ -112,7 +123,7 @@ public class sceNetApctl_internal_user implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceNetApctl_internal_user.sceNetApctlGetBSSDescIDListUserFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceNetApctl_internal_userModule.sceNetApctlGetBSSDescIDListUser(processor);";
 		}
 	};
     
@@ -123,7 +134,7 @@ public class sceNetApctl_internal_user implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceNetApctl_internal_user.sceNetApctlGetBSSDescEntryUserFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceNetApctl_internal_userModule.sceNetApctlGetBSSDescEntryUser(processor);";
 		}
 	};
     

@@ -34,17 +34,12 @@ public class sceUsbstorBoot implements HLEModule {
 	@Override
 	public void installModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
-			
+		
 			mm.addFunction(sceUsbstorBootSetCapacityFunction, 0xE58818A8);
-			
 			mm.addFunction(sceUsbstorBootSetLoadAddrFunction, 0x594BBF95);
-			
 			mm.addFunction(sceUsbstorBootGetDataSizeFunction, 0x6D865ECD);
-			
 			mm.addFunction(sceUsbstorBootSetStatusFunction, 0xA1119F0D);
-			
 			mm.addFunction(sceUsbstorBootRegisterNotifyFunction, 0x1F080078);
-			
 			mm.addFunction(sceUsbstorBootUnregisterNotifyFunction, 0xA55C9E16);
 			
 		}
@@ -53,17 +48,12 @@ public class sceUsbstorBoot implements HLEModule {
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
-			
+		
 			mm.removeFunction(sceUsbstorBootSetCapacityFunction);
-			
 			mm.removeFunction(sceUsbstorBootSetLoadAddrFunction);
-			
 			mm.removeFunction(sceUsbstorBootGetDataSizeFunction);
-			
 			mm.removeFunction(sceUsbstorBootSetStatusFunction);
-			
 			mm.removeFunction(sceUsbstorBootRegisterNotifyFunction);
-			
 			mm.removeFunction(sceUsbstorBootUnregisterNotifyFunction);
 			
 		}
@@ -73,73 +63,103 @@ public class sceUsbstorBoot implements HLEModule {
 	public void sceUsbstorBootSetCapacity(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUsbstorBootSetCapacity [0xE58818A8]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUsbstorBootSetLoadAddr(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUsbstorBootSetLoadAddr [0x594BBF95]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUsbstorBootGetDataSize(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUsbstorBootGetDataSize [0x6D865ECD]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUsbstorBootSetStatus(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUsbstorBootSetStatus [0xA1119F0D]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUsbstorBootRegisterNotify(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUsbstorBootRegisterNotify [0x1F080078]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public void sceUsbstorBootUnregisterNotify(Processor processor) {
 		// CpuState cpu = processor.cpu; // New-Style Processor
 		Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;		
+		Memory mem = Processor.memory;
+		
 		/* put your own code here instead */
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
+
+		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
 		System.out.println("Unimplemented NID function sceUsbstorBootUnregisterNotify [0xA55C9E16]");
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-		// cpu.fpr[0] = result;
+
+		cpu.gpr[2] = 0xDEADC0DE;
+
+		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
     
 	public final HLEModuleFunction sceUsbstorBootSetCapacityFunction = new HLEModuleFunction("sceUsbstorBoot", "sceUsbstorBootSetCapacity") {
@@ -149,7 +169,7 @@ public class sceUsbstorBoot implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUsbstorBoot.sceUsbstorBootSetCapacityFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUsbstorBootModule.sceUsbstorBootSetCapacity(processor);";
 		}
 	};
     
@@ -160,7 +180,7 @@ public class sceUsbstorBoot implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUsbstorBoot.sceUsbstorBootSetLoadAddrFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUsbstorBootModule.sceUsbstorBootSetLoadAddr(processor);";
 		}
 	};
     
@@ -171,7 +191,7 @@ public class sceUsbstorBoot implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUsbstorBoot.sceUsbstorBootGetDataSizeFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUsbstorBootModule.sceUsbstorBootGetDataSize(processor);";
 		}
 	};
     
@@ -182,7 +202,7 @@ public class sceUsbstorBoot implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUsbstorBoot.sceUsbstorBootSetStatusFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUsbstorBootModule.sceUsbstorBootSetStatus(processor);";
 		}
 	};
     
@@ -193,7 +213,7 @@ public class sceUsbstorBoot implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUsbstorBoot.sceUsbstorBootRegisterNotifyFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUsbstorBootModule.sceUsbstorBootRegisterNotify(processor);";
 		}
 	};
     
@@ -204,7 +224,7 @@ public class sceUsbstorBoot implements HLEModule {
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.modules150.sceUsbstorBoot.sceUsbstorBootUnregisterNotifyFunction.execute(processor);";
+			return "jpcsp.HLE.Modules.sceUsbstorBootModule.sceUsbstorBootUnregisterNotify(processor);";
 		}
 	};
     
