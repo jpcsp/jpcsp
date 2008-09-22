@@ -17,6 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import java.util.LinkedList;
+import java.util.List;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
@@ -27,6 +29,8 @@ import jpcsp.Processor;
 import static jpcsp.util.Utilities.*;
 
 import jpcsp.Allegrex.CpuState; // New-Style Processor
+import jpcsp.HLE.SceUIDMan;
+import jpcsp.filesystems.umdiso.UmdIsoReader;
 
 public class sceUmdUser implements HLEModule {
 
@@ -37,6 +41,8 @@ public class sceUmdUser implements HLEModule {
 
     @Override
     public void installModule(HLEModuleManager mm, int version) {
+        System.out.println("UMD - installModule");
+        
         if (version >= 150) {
 
             mm.addFunction(sceUmdCheckMediumFunction, 0x46EBB729);
@@ -64,6 +70,8 @@ public class sceUmdUser implements HLEModule {
             mm.addFunction(sceUmdUnRegisterUMDCallBackFunction, 0xBD2BDE07);
 
         }
+
+        UMDCallBackList = new LinkedList<Integer>();
     }
 
     @Override
@@ -97,16 +105,33 @@ public class sceUmdUser implements HLEModule {
         }
     }
 
+    // HLE helper state
+
+    protected final int PSP_UMD_NOT_PRESENT = 0x01;
+    protected final int PSP_UMD_PRESENT = 0x02;
+    protected final int PSP_UMD_CHANGED = 0x04;
+    protected final int PSP_UMD_INITING = 0x08;
+    protected final int PSP_UMD_INITED = 0x10;
+    protected final int PSP_UMD_READY = 0x20;
+
+    protected UmdIsoReader iso;
+    protected List<Integer> UMDCallBackList;
+
+    // HLE helper functions
+
+    public void setIsoReader(UmdIsoReader iso)
+    {
+        System.out.println("UMD - setIsoReader " + iso);
+        this.iso = iso;
+    }
+
+    // Export functions
+
     public void sceUmdCheckMedium(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-        /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
-        System.out.println("Unimplemented NID function sceUmdCheckMedium [0x46EBB729]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+        System.out.println("sceUmdCheckMedium (umd mounted = " + (iso != null) + ")");
+        cpu.gpr[2] = (iso != null) ? 1 : 0;
     }
 
     public void sceUmdActivate(Processor processor) {
@@ -114,9 +139,9 @@ public class sceUmdUser implements HLEModule {
         Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
         int unit = cpu.gpr[4]; // should be always 1
-        String drive = readStringZ(Processor.memory.mainmemory, (cpu.gpr[5] & 0x3fffffff) - MemoryMap.START_RAM);
-        System.out.println("sceUmdActivate unit =" + unit + " drive = " + drive);
-        cpu.gpr[2] =0; //return >0 mean success
+        String drive = readStringZ(mem.mainmemory, (cpu.gpr[5] & 0x3fffffff) - MemoryMap.START_RAM);
+        System.out.println("sceUmdActivate unit = " + unit + " drive = " + drive);
+        cpu.gpr[2] = 0; //return >0 mean success
     }
 
     public void sceUmdDeactivate(Processor processor) {
@@ -131,15 +156,17 @@ public class sceUmdUser implements HLEModule {
     // cpu.fpr[0] = result;
     }
 
+    /** wait until drive stat reaches a0 */
     public void sceUmdWaitDriveStat(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         int stat = cpu.gpr[4];
         System.out.println("sceUmdWaitDriveStat = 0x" + Integer.toHexString(stat));
         //TODO maybe delay current thread to reach the desireable status?
-        cpu.gpr[2]=0;
+        cpu.gpr[2] = 0;
     }
 
+    /** wait until drive stat reaches a0 */
     public void sceUmdWaitDriveStatWithTimer(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
@@ -152,16 +179,21 @@ public class sceUmdUser implements HLEModule {
     // cpu.fpr[0] = result;
     }
 
+    /** wait until drive stat reaches a0 */
     public void sceUmdWaitDriveStatCB(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-        /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
-        System.out.println("Unimplemented NID function sceUmdWaitDriveStatCB [0x4A9E5E29]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        int stat = cpu.gpr[4];
+        int timeout = cpu.gpr[5];
+        System.out.println("sceUmdWaitDriveStatCB stat = 0x" + Integer.toHexString(stat) + " timeout = " + timeout);
+        cpu.gpr[0] = 0;
+
+        // TODO are we supposed to block until drive stat changes,
+        // and then call any registerd umd cb's?
+        // Or are we supposed to "block" until psp finishes checking the
+        // drive status? which would just emulate as a yield.
+        jpcsp.HLE.ThreadMan.get_instance().yieldCurrentThread();
     }
 
     public void sceUmdCancelWaitDriveStat(Processor processor) {
@@ -179,13 +211,17 @@ public class sceUmdUser implements HLEModule {
     public void sceUmdGetDriveStat(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-        /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
-        System.out.println("Unimplemented NID function sceUmdGetDriveStat [0x6B4A146C]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        int stat;
+        if (iso != null) {
+            stat = PSP_UMD_PRESENT | PSP_UMD_READY;
+        } else {
+            stat = PSP_UMD_NOT_PRESENT;
+        }
+
+        System.out.println("sceUmdGetDriveStat return:0x" + Integer.toHexString(stat));
+
+        cpu.gpr[2] = stat;
     }
 
     public void sceUmdGetErrorStat(Processor processor) {
@@ -212,29 +248,44 @@ public class sceUmdUser implements HLEModule {
     // cpu.fpr[0] = result;
     }
 
+    // TODO not fully implemented yet
     public void sceUmdRegisterUMDCallBack(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-        /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
-        System.out.println("Unimplemented NID function sceUmdRegisterUMDCallBack [0xAEE7404D]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        int uid = cpu.gpr[4];
+        System.out.println("UNIMPLEMENTED:sceUmdRegisterUMDCallBack SceUID=" + Integer.toHexString(uid));
+
+        if (SceUIDMan.get_instance().checkUidPurpose(uid, "ThreadMan-callback", false)) {
+            UMDCallBackList.add(uid);
+            cpu.gpr[2] = 0;
+        } else {
+            System.out.println("sceUmdRegisterUMDCallBack not a callback uid");
+            cpu.gpr[2] = -1;
+        }
     }
 
     public void sceUmdUnRegisterUMDCallBack(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-        /* put your own code here instead */
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  int a2 = cpu.gpr[6];  int a3 = cpu.gpr[7];  int t0 = cpu.gpr[8];  int t1 = cpu.gpr[9];  int t2 = cpu.gpr[10];  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  float f14 = cpu.fpr[14];  float f15 = cpu.fpr[15];  float f16 = cpu.fpr[16];  float f17 = cpu.fpr[17];  float f18 = cpu.fpr[18]; float f19 = cpu.fpr[19];
-        System.out.println("Unimplemented NID function sceUmdUnRegisterUMDCallBack [0xBD2BDE07]");
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32);
-    // cpu.fpr[0] = result;
+
+        int uid = cpu.gpr[4];
+        System.out.println("sceUmdUnRegisterUMDCallBack SceUID=" + Integer.toHexString(uid));
+
+        if (!SceUIDMan.get_instance().checkUidPurpose(uid, "ThreadMan-callback", false)) {
+            System.out.println("sceUmdUnRegisterUMDCallBack not a callback uid");
+            cpu.gpr[2] = -1;
+        } else {
+            Integer copy = UMDCallBackList.remove(uid);
+            if (copy == null) {
+                System.out.println("sceUmdUnRegisterUMDCallBack not a UMD callback uid");
+                cpu.gpr[2] = -1;
+            } else {
+                cpu.gpr[2] = 0;
+            }
+        }
     }
+
     public final HLEModuleFunction sceUmdCheckMediumFunction = new HLEModuleFunction("sceUmdUser", "sceUmdCheckMedium") {
 
         @Override

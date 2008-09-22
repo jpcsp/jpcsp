@@ -22,8 +22,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import jpcsp.Emulator;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.pspSysMem;
-import jpcsp.Memory;
 import jpcsp.NIDMapper;
 
 /**
@@ -51,8 +51,8 @@ public class HLEModuleManager {
     // TODO add more modules here
     private HLEModule[] defaultModules = new HLEModule[] {
         new Sample(),
-        new StdioForUser(),
-        new sceUmdUser()
+        Modules.stdioForUserModule,
+        Modules.sceUmdUserModule
     };
 
     public static HLEModuleManager get_instance() {

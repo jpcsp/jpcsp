@@ -406,6 +406,7 @@ public void loadFile(File file) {
         //System.out.println(findpath);
         pspiofilemgr.get_instance().setfilepath(findpath);
         pspiofilemgr.get_instance().setIsoReader(null);
+        jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(null);
         this.setTitle(version + " - " + file.getName());
     } catch (IOException e) {
         e.printStackTrace();
@@ -574,6 +575,7 @@ public void loadUMD(File file) {
 
         pspiofilemgr.get_instance().setfilepath("disc0/"); // or disc0/PSP_GAME/SYSDIR ?
         pspiofilemgr.get_instance().setIsoReader(iso);
+        jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(iso);
 
     } catch (IOException e) {
         e.printStackTrace();

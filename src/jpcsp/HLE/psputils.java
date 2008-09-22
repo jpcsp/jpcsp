@@ -22,11 +22,9 @@ package jpcsp.HLE;
 
 import java.util.Calendar;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Random;
 import jpcsp.Emulator;
 import jpcsp.Memory;
-import jpcsp.Processor;
 
 
 public class psputils {
