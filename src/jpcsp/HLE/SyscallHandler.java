@@ -63,7 +63,9 @@ public class SyscallHandler {
                 case 0x2015:
                     ThreadMan.get_instance().ThreadMan_sceKernelSleepThreadCB();
                     break;
-                //case 0x2016: //sceKernelWakeupThread
+                case 0x2016:
+                    ThreadMan.get_instance().ThreadMan_sceKernelWakeupThread(gpr[4]);
+                    break;
 		//case 0x2017: ///sceKernelCancelWakeupThread
 		//case 0x2018: //sceKernelSuspendThread
 		//case 0x2019: //sceKernelResumeThread

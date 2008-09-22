@@ -33,7 +33,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import jpcsp.Emulator;
-import jpcsp.GeneralJpcspException;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Processor;
@@ -513,19 +512,38 @@ public class ThreadMan {
     }
 
     public void ThreadMan_sceKernelChangeCurrentThreadAttr(int unknown, int attr) {
-        System.out.println("ThreadMan_sceKernelChangeCurrentThreadAttr"
+        System.out.println("sceKernelChangeCurrentThreadAttr"
+                + " unknown:" + unknown
                 + " newAttr:0x" + Integer.toHexString(attr)
                 + " oldAttr:0x" + Integer.toHexString(current_thread.attr));
-        
+
         // Don't allow switching into kernel mode!
-        if ((current_thread.attr & PSP_THREAD_ATTR_USER) == PSP_THREAD_ATTR_USER)
+        if ((current_thread.attr & PSP_THREAD_ATTR_USER) == PSP_THREAD_ATTR_USER &&
+            (attr & PSP_THREAD_ATTR_USER) != PSP_THREAD_ATTR_USER) {
+            System.out.println("sceKernelChangeCurrentThreadAttr forcing user mode");
             attr |= PSP_THREAD_ATTR_USER;
-        
+        }
+
         current_thread.attr = attr;
-        
+
         Emulator.getProcessor().gpr[2] = 0;
     }
-    
+
+    public void ThreadMan_sceKernelWakeupThread(int uid) {
+        System.out.println("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid));
+        SceUIDMan.get_instance().checkUidPurpose(uid, "ThreadMan-thread", true);
+        SceKernelThreadInfo thread = threadlist.get(uid);
+        if (thread == null) {
+            Emulator.getProcessor().gpr[2] = 0x80020198; //notfoundthread
+        } else if (thread.status != PspThreadStatus.PSP_THREAD_SUSPEND) {
+            System.out.println("sceKernelWakeupThread thread not suspended (status=" + thread.status + ")");
+            Emulator.getProcessor().gpr[2] = -1;
+        } else {
+            thread.status = PspThreadStatus.PSP_THREAD_READY;
+            Emulator.getProcessor().gpr[2] = 0;
+        }
+    }
+
     private class SceKernelCallbackInfo {
         private String name;
         private int threadId;
