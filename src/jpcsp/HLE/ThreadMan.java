@@ -44,7 +44,7 @@ public class ThreadMan {
     private static ThreadMan instance;
     private static HashMap<Integer, SceKernelThreadInfo> threadlist;
     private static HashMap<Integer, SceKernelSemaphoreInfo> semalist;
-    private static ArrayList<Integer> waitingThreads;
+    private  ArrayList<Integer> waitingThreads;
     private SceKernelThreadInfo current_thread;
     private SceKernelThreadInfo idle0, idle1;
     private int continuousIdleCycles; // watch dog timer
@@ -755,7 +755,6 @@ public class ThreadMan {
     public void ThreadMan_sceKernelWaitSema(int semaid , int signal , int timeoutptr , int timeout)
     {
           System.out.println("sceKernelWaitSema id= " + semaid + " signal= " + signal + " timeout = " + timeout);
-           try {
             SceUIDMan.get_instance().checkUidPurpose(semaid, "ThreadMan-sema", true);
             SceKernelSemaphoreInfo sema = semalist.get(semaid);
             if (sema == null) {
@@ -764,24 +763,40 @@ public class ThreadMan {
             } else {
                 if(sema.currentCount >= signal)
                 {
-                  sema.currentCount-=signal;   
+                  sema.currentCount-=signal;  
+                  Emulator.getProcessor().gpr[2] = 0;
                 }
                 else
                 {
                     waitingThreads.add(getCurrentThreadID());
+                    System.out.println(getCurrentThreadID());
+                    Emulator.getProcessor().gpr[2] = 0;
                     blockCurrentThread();
                 }
-                Emulator.getProcessor().gpr[2] = 0;
+                
             }
-        } catch(Exception e) {
-            e.printStackTrace();
-            Emulator.getProcessor().gpr[2] = -1;
-        }   
+ 
         
     }
     public void ThreadMan_sceKernelSignalSema(int semaid , int signal)
     {
         System.out.println("sceKernelSignalSema id =" + semaid + " signal =" + signal);
+            SceUIDMan.get_instance().checkUidPurpose(semaid, "ThreadMan-sema", true);
+            SceKernelSemaphoreInfo sema = semalist.get(semaid);
+            if (sema == null) {
+                    System.out.println("sceKernelSignalSema - unknown uid " + Integer.toHexString(semaid));
+                Emulator.getProcessor().gpr[2] = -1;
+            } else {
+                int oldcurrentCount = sema.currentCount;
+                sema.currentCount+=signal;
+                Iterator<Integer> waitThreads = waitingThreads.iterator();
+                while(waitThreads.hasNext())
+                {
+                  System.out.println("UNNNNNNNNNNNNNNNN Wait threads = " + waitThreads.next());   
+                }
+            }
+            Emulator.getProcessor().gpr[2] = 0;
+   
     }
     private class SceKernelSemaphoreInfo
     {
