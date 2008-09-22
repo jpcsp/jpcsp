@@ -74,7 +74,9 @@ public class SyscallHandler {
                 case 0x201c:
                     ThreadMan.get_instance().ThreadMan_sceKernelDelayThread(gpr[4]);
                     break;
-                 //sceKernelDelayThreadCB(0x201d),
+                case 0x201d:
+                    ThreadMan.get_instance().ThreadMan_sceKernelDelayThreadCB(gpr[4]);
+                    break;
 		 //sceKernelDelaySysClockThread(0x201e),
 		// sceKernelDelaySysClockThreadCB(0x201f),
 		// sceKernelCreateSema(0x2020),
@@ -727,6 +729,10 @@ public class SyscallHandler {
                     // Try and handle as an HLE module export
                     boolean handled = HLEModuleManager.get_instance().handleSyscall(code);
                     if (!handled) {
+                        // At least set a decent return value
+                        Emulator.getProcessor().gpr[2] = 1; // fake out sema
+                        //Emulator.getProcessor().gpr[2] = 0xb515ca11;
+
                         // Display debug info
                         for (jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls c : jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls.values()) {
                             if (c.getSyscall() == code) {
@@ -735,10 +741,6 @@ public class SyscallHandler {
                             }
                         }
                         System.out.println("Unsupported syscall " + Integer.toHexString(code));
-
-                        // At least set a decent return value
-                        //Emulator.getProcessor().gpr[2] = 0;
-                        Emulator.getProcessor().gpr[2] = -1;
                     }
                 }
                 break;
