@@ -51,7 +51,7 @@ public class HLEModuleManager {
     // TODO add more modules here
     private HLEModule[] defaultModules = new HLEModule[] {
         new Sample(),
-        Modules.stdioForUserModule,
+        Modules.StdioForUserModule,
         Modules.sceUmdUserModule
     };
 
