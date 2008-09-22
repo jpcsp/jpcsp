@@ -25,6 +25,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -42,6 +43,8 @@ import static jpcsp.util.Utilities.*;
 public class ThreadMan {
     private static ThreadMan instance;
     private static HashMap<Integer, SceKernelThreadInfo> threadlist;
+    private static HashMap<Integer, SceKernelSemaphoreInfo> semalist;
+    private static ArrayList<Integer> waitingThreads;
     private SceKernelThreadInfo current_thread;
     private SceKernelThreadInfo idle0, idle1;
     private int continuousIdleCycles; // watch dog timer
@@ -66,7 +69,8 @@ public class ThreadMan {
         //System.out.println("ThreadMan: Initialise");
 
         threadlist = new HashMap<Integer, SceKernelThreadInfo>();
-
+        semalist = new HashMap<Integer, SceKernelSemaphoreInfo>();
+        waitingThreads= new ArrayList<Integer>();
         // Clear stack allocation info MOVED TO PSPSYSMEM
         //stackAllocated = 0;
 
@@ -733,5 +737,70 @@ public class ThreadMan {
         public int compare(SceKernelThreadInfo o1, SceKernelThreadInfo o2) {
             return o1.currentPriority - o2.currentPriority;
         }
+    }
+    public void ThreadMan_sceKernelCreateSema(int name_addr, int attr, int initVal, int maxVal, int option) 
+    { 
+        String name = readStringZ(Memory.getInstance().mainmemory,
+            (name_addr & 0x3fffffff) - MemoryMap.START_RAM);
+        
+        System.out.println("sceKernelCreateSema name=" + name + " attr= " + attr + " initVal= " + initVal + " maxVal= "+ maxVal + " option= " + option);
+        int initCount = initVal;
+        int currentCount = initVal;
+        int maxCount = maxVal;
+        if(option !=0) System.out.println("sceKernelCreateSema: UNSUPPORTED Option Value");
+        SceKernelSemaphoreInfo sema = new SceKernelSemaphoreInfo(name,attr,initCount,currentCount,maxCount);
+        
+        Emulator.getProcessor().gpr[2] = sema.uid;
+    }
+    public void ThreadMan_sceKernelWaitSema(int semaid , int signal , int timeoutptr , int timeout)
+    {
+          System.out.println("sceKernelWaitSema id= " + semaid + " signal= " + signal + " timeout = " + timeout);
+           try {
+            SceUIDMan.get_instance().checkUidPurpose(semaid, "ThreadMan-sema", true);
+            SceKernelSemaphoreInfo sema = semalist.get(semaid);
+            if (sema == null) {
+                    System.out.println("sceKernelWaitSema - unknown uid " + Integer.toHexString(semaid));
+                Emulator.getProcessor().gpr[2] = -1;
+            } else {
+                if(sema.currentCount >= signal)
+                {
+                  sema.currentCount-=signal;   
+                }
+                else
+                {
+                    waitingThreads.add(getCurrentThreadID());
+                    blockCurrentThread();
+                }
+                Emulator.getProcessor().gpr[2] = 0;
+            }
+        } catch(Exception e) {
+            e.printStackTrace();
+            Emulator.getProcessor().gpr[2] = -1;
+        }   
+        
+    }
+    public void ThreadMan_sceKernelSignalSema(int semaid , int signal)
+    {
+        System.out.println("sceKernelSignalSema id =" + semaid + " signal =" + signal);
+    }
+    private class SceKernelSemaphoreInfo
+    {
+         private String name;
+         private int attr;
+         private int initCount;
+         private int currentCount;
+         private int maxCount;
+         
+         private int uid;
+         public SceKernelSemaphoreInfo(String name, int attr, int initCount, int currentCount, int maxCount)
+         {
+             this.name=name;
+             this.attr=attr;
+             this.initCount=initCount;
+             this.currentCount=currentCount;
+             this.maxCount=maxCount;
+             uid = SceUIDMan.get_instance().getNewUid("ThreadMan-sema");
+             semalist.put(uid, this);
+         }        
     }
 }
