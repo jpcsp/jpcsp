@@ -98,7 +98,7 @@ public class Sample implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.Samplemodule.pspSampleFoo(processor);";
+            return "jpcsp.HLE.Modules.SampleModule.pspSampleFoo(processor);";
         }
     };
 }

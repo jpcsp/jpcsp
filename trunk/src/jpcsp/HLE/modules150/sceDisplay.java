@@ -399,7 +399,7 @@ public class sceDisplay implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceDisplayModule.sceDisplaySetMode(processor);";
+            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplaySetMode(processor);";
         }
     };
     public final HLEModuleFunction sceDisplayGetModeFunction = new HLEModuleFunction("sceDisplay", "sceDisplayGetMode") {
@@ -411,7 +411,7 @@ public class sceDisplay implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceDisplayModule.sceDisplayGetMode(processor);";
+            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayGetMode(processor);";
         }
     };
     public final HLEModuleFunction sceDisplayGetFramePerSecFunction = new HLEModuleFunction("sceDisplay", "sceDisplayGetFramePerSec") {
@@ -423,7 +423,7 @@ public class sceDisplay implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceDisplayModule.sceDisplayGetFramePerSec(processor);";
+            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayGetFramePerSec(processor);";
         }
     };
     public final HLEModuleFunction sceDisplaySetHoldModeFunction = new HLEModuleFunction("sceDisplay", "sceDisplaySetHoldMode") {
@@ -435,7 +435,7 @@ public class sceDisplay implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceDisplayModule.sceDisplaySetHoldMode(processor);";
+            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplaySetHoldMode(processor);";
         }
     };
     public final HLEModuleFunction sceDisplaySetResumeModeFunction = new HLEModuleFunction("sceDisplay", "sceDisplaySetResumeMode") {
@@ -447,7 +447,7 @@ public class sceDisplay implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceDisplayModule.sceDisplaySetResumeMode(processor);";
+            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplaySetResumeMode(processor);";
         }
     };
     public final HLEModuleFunction sceDisplaySetFrameBufFunction = new HLEModuleFunction("sceDisplay", "sceDisplaySetFrameBuf") {
@@ -459,7 +459,7 @@ public class sceDisplay implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceDisplayModule.sceDisplaySetFrameBuf(processor);";
+            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplaySetFrameBuf(processor);";
         }
     };
     public final HLEModuleFunction sceDisplayGetFrameBufFunction = new HLEModuleFunction("sceDisplay", "sceDisplayGetFrameBuf") {
@@ -471,7 +471,7 @@ public class sceDisplay implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceDisplayModule.sceDisplayGetFrameBuf(processor);";
+            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayGetFrameBuf(processor);";
         }
     };
     public final HLEModuleFunction sceDisplayIsForegroundFunction = new HLEModuleFunction("sceDisplay", "sceDisplayIsForeground") {
@@ -483,7 +483,7 @@ public class sceDisplay implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceDisplayModule.sceDisplayIsForeground(processor);";
+            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayIsForeground(processor);";
         }
     };
     public final HLEModuleFunction sceDisplayGetBrightnessFunction = new HLEModuleFunction("sceDisplay", "sceDisplayGetBrightness") {
@@ -495,7 +495,7 @@ public class sceDisplay implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceDisplayModule.sceDisplayGetBrightness(processor);";
+            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayGetBrightness(processor);";
         }
     };
     public final HLEModuleFunction sceDisplayGetVcountFunction = new HLEModuleFunction("sceDisplay", "sceDisplayGetVcount") {
@@ -507,7 +507,7 @@ public class sceDisplay implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceDisplayModule.sceDisplayGetVcount(processor);";
+            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayGetVcount(processor);";
         }
     };
     public final HLEModuleFunction sceDisplayIsVblankFunction = new HLEModuleFunction("sceDisplay", "sceDisplayIsVblank") {
@@ -519,7 +519,7 @@ public class sceDisplay implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceDisplayModule.sceDisplayIsVblank(processor);";
+            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayIsVblank(processor);";
         }
     };
     public final HLEModuleFunction sceDisplayWaitVblankFunction = new HLEModuleFunction("sceDisplay", "sceDisplayWaitVblank") {
@@ -531,7 +531,7 @@ public class sceDisplay implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceDisplayModule.sceDisplayWaitVblank(processor);";
+            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayWaitVblank(processor);";
         }
     };
     public final HLEModuleFunction sceDisplayWaitVblankCBFunction = new HLEModuleFunction("sceDisplay", "sceDisplayWaitVblankCB") {
@@ -543,7 +543,7 @@ public class sceDisplay implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceDisplayModule.sceDisplayWaitVblankCB(processor);";
+            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayWaitVblankCB(processor);";
         }
     };
     public final HLEModuleFunction sceDisplayWaitVblankStartFunction = new HLEModuleFunction("sceDisplay", "sceDisplayWaitVblankStart") {
@@ -555,7 +555,7 @@ public class sceDisplay implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceDisplayModule.sceDisplayWaitVblankStart(processor);";
+            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayWaitVblankStart(processor);";
         }
     };
     public final HLEModuleFunction sceDisplayWaitVblankStartCBFunction = new HLEModuleFunction("sceDisplay", "sceDisplayWaitVblankStartCB") {
@@ -567,7 +567,7 @@ public class sceDisplay implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceDisplayModule.sceDisplayWaitVblankStartCB(processor);";
+            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayWaitVblankStartCB(processor);";
         }
     };
     public final HLEModuleFunction sceDisplayGetCurrentHcountFunction = new HLEModuleFunction("sceDisplay", "sceDisplayGetCurrentHcount") {
@@ -579,7 +579,7 @@ public class sceDisplay implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceDisplayModule.sceDisplayGetCurrentHcount(processor);";
+            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayGetCurrentHcount(processor);";
         }
     };
     public final HLEModuleFunction sceDisplayGetAccumulatedHcountFunction = new HLEModuleFunction("sceDisplay", "sceDisplayGetAccumulatedHcount") {
@@ -591,7 +591,7 @@ public class sceDisplay implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceDisplayModule.sceDisplayGetAccumulatedHcount(processor);";
+            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayGetAccumulatedHcount(processor);";
         }
     };
     public final HLEModuleFunction sceDisplayAdjustAccumulatedHcountFunction = new HLEModuleFunction("sceDisplay", "sceDisplayAdjustAccumulatedHcount") {
@@ -603,7 +603,7 @@ public class sceDisplay implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceDisplayModule.sceDisplayAdjustAccumulatedHcount(processor);";
+            return "jpcsp.HLE.Modules.sceDisplayModule.sceDisplayAdjustAccumulatedHcount(processor);";
         }
     };
 };

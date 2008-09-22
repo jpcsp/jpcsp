@@ -195,7 +195,7 @@ public class StdioForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.StdioForUserModule.sceKernelStdioRead(processor);";
+            return "jpcsp.HLE.Modules.StdioForUserModule.sceKernelStdioRead(processor);";
         }
     };
     public final HLEModuleFunction sceKernelStdioLseekFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdioLseek") {
@@ -207,7 +207,7 @@ public class StdioForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.StdioForUserModule.sceKernelStdioLseek(processor);";
+            return "jpcsp.HLE.Modules.StdioForUserModule.sceKernelStdioLseek(processor);";
         }
     };
     public final HLEModuleFunction sceKernelStdioSendCharFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdioSendChar") {
@@ -219,7 +219,7 @@ public class StdioForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.StdioForUserModule.sceKernelStdioSendChar(processor);";
+            return "jpcsp.HLE.Modules.StdioForUserModule.sceKernelStdioSendChar(processor);";
         }
     };
     public final HLEModuleFunction sceKernelStdioWriteFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdioWrite") {
@@ -231,7 +231,7 @@ public class StdioForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.StdioForUserModule.sceKernelStdioWrite(processor);";
+            return "jpcsp.HLE.Modules.StdioForUserModule.sceKernelStdioWrite(processor);";
         }
     };
     public final HLEModuleFunction sceKernelStdioCloseFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdioClose") {
@@ -243,7 +243,7 @@ public class StdioForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.StdioForUserModule.sceKernelStdioClose(processor);";
+            return "jpcsp.HLE.Modules.StdioForUserModule.sceKernelStdioClose(processor);";
         }
     };
     public final HLEModuleFunction sceKernelStdioOpenFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdioOpen") {
@@ -255,7 +255,7 @@ public class StdioForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.StdioForUserModule.sceKernelStdioOpen(processor);";
+            return "jpcsp.HLE.Modules.StdioForUserModule.sceKernelStdioOpen(processor);";
         }
     };
     public final HLEModuleFunction sceKernelStdinFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdin") {
@@ -267,7 +267,7 @@ public class StdioForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.StdioForUserModule.sceKernelStdin(processor);";
+            return "jpcsp.HLE.Modules.StdioForUserModule.sceKernelStdin(processor);";
         }
     };
     public final HLEModuleFunction sceKernelStdoutFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdout") {
@@ -279,7 +279,7 @@ public class StdioForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.StdioForUserModule.sceKernelStdout(processor);";
+            return "jpcsp.HLE.Modules.StdioForUserModule.sceKernelStdout(processor);";
         }
     };
     public final HLEModuleFunction sceKernelStderrFunction = new HLEModuleFunction("StdioForUser", "sceKernelStderr") {
@@ -291,7 +291,7 @@ public class StdioForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.StdioForUserModule.sceKernelStderr(processor);";
+            return "jpcsp.HLE.Modules.StdioForUserModule.sceKernelStderr(processor);";
         }
     };
 };
