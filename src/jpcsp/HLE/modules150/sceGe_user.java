@@ -380,7 +380,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeEdramGetSize(processor);";
+            return "jpcsp.HLE.Modules.sceGe_userModule.sceGeEdramGetSize(processor);";
         }
     };
     public final HLEModuleFunction sceGeEdramGetAddrFunction = new HLEModuleFunction("sceGe_user", "sceGeEdramGetAddr") {
@@ -392,7 +392,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeEdramGetAddr(processor);";
+            return "jpcsp.HLE.Modules.sceGe_userModule.sceGeEdramGetAddr(processor);";
         }
     };
     public final HLEModuleFunction sceGeEdramSetAddrTranslationFunction = new HLEModuleFunction("sceGe_user", "sceGeEdramSetAddrTranslation") {
@@ -404,7 +404,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeEdramSetAddrTranslation(processor);";
+            return "jpcsp.HLE.Modules.sceGe_userModule.sceGeEdramSetAddrTranslation(processor);";
         }
     };
     public final HLEModuleFunction sceGeGetCmdFunction = new HLEModuleFunction("sceGe_user", "sceGeGetCmd") {
@@ -416,7 +416,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeGetCmd(processor);";
+            return "jpcsp.HLE.Modules.sceGe_userModule.sceGeGetCmd(processor);";
         }
     };
     public final HLEModuleFunction sceGeGetMtxFunction = new HLEModuleFunction("sceGe_user", "sceGeGetMtx") {
@@ -428,7 +428,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeGetMtx(processor);";
+            return "jpcsp.HLE.Modules.sceGe_userModule.sceGeGetMtx(processor);";
         }
     };
     public final HLEModuleFunction sceGeSaveContextFunction = new HLEModuleFunction("sceGe_user", "sceGeSaveContext") {
@@ -440,7 +440,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeSaveContext(processor);";
+            return "jpcsp.HLE.Modules.sceGe_userModule.sceGeSaveContext(processor);";
         }
     };
     public final HLEModuleFunction sceGeRestoreContextFunction = new HLEModuleFunction("sceGe_user", "sceGeRestoreContext") {
@@ -452,7 +452,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeRestoreContext(processor);";
+            return "jpcsp.HLE.Modules.sceGe_userModule.sceGeRestoreContext(processor);";
         }
     };
     public final HLEModuleFunction sceGeListEnQueueFunction = new HLEModuleFunction("sceGe_user", "sceGeListEnQueue") {
@@ -464,7 +464,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeListEnQueue(processor);";
+            return "jpcsp.HLE.Modules.sceGe_userModule.sceGeListEnQueue(processor);";
         }
     };
     public final HLEModuleFunction sceGeListEnQueueHeadFunction = new HLEModuleFunction("sceGe_user", "sceGeListEnQueueHead") {
@@ -476,7 +476,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeListEnQueueHead(processor);";
+            return "jpcsp.HLE.Modules.sceGe_userModule.sceGeListEnQueueHead(processor);";
         }
     };
     public final HLEModuleFunction sceGeListDeQueueFunction = new HLEModuleFunction("sceGe_user", "sceGeListDeQueue") {
@@ -488,7 +488,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeListDeQueue(processor);";
+            return "jpcsp.HLE.Modules.sceGe_userModule.sceGeListDeQueue(processor);";
         }
     };
     public final HLEModuleFunction sceGeListUpdateStallAddrFunction = new HLEModuleFunction("sceGe_user", "sceGeListUpdateStallAddr") {
@@ -500,7 +500,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeListUpdateStallAddr(processor);";
+            return "jpcsp.HLE.Modules.sceGe_userModule.sceGeListUpdateStallAddr(processor);";
         }
     };
     public final HLEModuleFunction sceGeListSyncFunction = new HLEModuleFunction("sceGe_user", "sceGeListSync") {
@@ -512,7 +512,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeListSync(processor);";
+            return "jpcsp.HLE.Modules.sceGe_userModule.sceGeListSync(processor);";
         }
     };
     public final HLEModuleFunction sceGeDrawSyncFunction = new HLEModuleFunction("sceGe_user", "sceGeDrawSync") {
@@ -524,7 +524,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeDrawSync(processor);";
+            return "jpcsp.HLE.Modules.sceGe_userModule.sceGeDrawSync(processor);";
         }
     };
     public final HLEModuleFunction sceGeBreakFunction = new HLEModuleFunction("sceGe_user", "sceGeBreak") {
@@ -536,7 +536,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeBreak(processor);";
+            return "jpcsp.HLE.Modules.sceGe_userModule.sceGeBreak(processor);";
         }
     };
     public final HLEModuleFunction sceGeContinueFunction = new HLEModuleFunction("sceGe_user", "sceGeContinue") {
@@ -548,7 +548,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeContinue(processor);";
+            return "jpcsp.HLE.Modules.sceGe_userModule.sceGeContinue(processor);";
         }
     };
     public final HLEModuleFunction sceGeSetCallbackFunction = new HLEModuleFunction("sceGe_user", "sceGeSetCallback") {
@@ -560,7 +560,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeSetCallback(processor);";
+            return "jpcsp.HLE.Modules.sceGe_userModule.sceGeSetCallback(processor);";
         }
     };
     public final HLEModuleFunction sceGeUnsetCallbackFunction = new HLEModuleFunction("sceGe_user", "sceGeUnsetCallback") {
@@ -572,7 +572,7 @@ public class sceGe_user implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceGe_userModule.sceGeUnsetCallback(processor);";
+            return "jpcsp.HLE.Modules.sceGe_userModule.sceGeUnsetCallback(processor);";
         }
     };
 };

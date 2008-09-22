@@ -298,7 +298,7 @@ public class sceUmdUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceUmdUserModule.sceUmdCheckMedium(processor);";
+            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdCheckMedium(processor);";
         }
     };
     public final HLEModuleFunction sceUmdActivateFunction = new HLEModuleFunction("sceUmdUser", "sceUmdActivate") {
@@ -310,7 +310,7 @@ public class sceUmdUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceUmdUserModule.sceUmdActivate(processor);";
+            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdActivate(processor);";
         }
     };
     public final HLEModuleFunction sceUmdDeactivateFunction = new HLEModuleFunction("sceUmdUser", "sceUmdDeactivate") {
@@ -322,7 +322,7 @@ public class sceUmdUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceUmdUserModule.sceUmdDeactivate(processor);";
+            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdDeactivate(processor);";
         }
     };
     public final HLEModuleFunction sceUmdWaitDriveStatFunction = new HLEModuleFunction("sceUmdUser", "sceUmdWaitDriveStat") {
@@ -334,7 +334,7 @@ public class sceUmdUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceUmdUserModule.sceUmdWaitDriveStat(processor);";
+            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdWaitDriveStat(processor);";
         }
     };
     public final HLEModuleFunction sceUmdWaitDriveStatWithTimerFunction = new HLEModuleFunction("sceUmdUser", "sceUmdWaitDriveStatWithTimer") {
@@ -346,7 +346,7 @@ public class sceUmdUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceUmdUserModule.sceUmdWaitDriveStatWithTimer(processor);";
+            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdWaitDriveStatWithTimer(processor);";
         }
     };
     public final HLEModuleFunction sceUmdWaitDriveStatCBFunction = new HLEModuleFunction("sceUmdUser", "sceUmdWaitDriveStatCB") {
@@ -358,7 +358,7 @@ public class sceUmdUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceUmdUserModule.sceUmdWaitDriveStatCB(processor);";
+            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdWaitDriveStatCB(processor);";
         }
     };
     public final HLEModuleFunction sceUmdCancelWaitDriveStatFunction = new HLEModuleFunction("sceUmdUser", "sceUmdCancelWaitDriveStat") {
@@ -370,7 +370,7 @@ public class sceUmdUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceUmdUserModule.sceUmdCancelWaitDriveStat(processor);";
+            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdCancelWaitDriveStat(processor);";
         }
     };
     public final HLEModuleFunction sceUmdGetDriveStatFunction = new HLEModuleFunction("sceUmdUser", "sceUmdGetDriveStat") {
@@ -382,7 +382,7 @@ public class sceUmdUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceUmdUserModule.sceUmdGetDriveStat(processor);";
+            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdGetDriveStat(processor);";
         }
     };
     public final HLEModuleFunction sceUmdGetErrorStatFunction = new HLEModuleFunction("sceUmdUser", "sceUmdGetErrorStat") {
@@ -394,7 +394,7 @@ public class sceUmdUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceUmdUserModule.sceUmdGetErrorStat(processor);";
+            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdGetErrorStat(processor);";
         }
     };
     public final HLEModuleFunction sceUmdGetDiscInfoFunction = new HLEModuleFunction("sceUmdUser", "sceUmdGetDiscInfo") {
@@ -406,7 +406,7 @@ public class sceUmdUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceUmdUserModule.sceUmdGetDiscInfo(processor);";
+            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdGetDiscInfo(processor);";
         }
     };
     public final HLEModuleFunction sceUmdRegisterUMDCallBackFunction = new HLEModuleFunction("sceUmdUser", "sceUmdRegisterUMDCallBack") {
@@ -418,7 +418,7 @@ public class sceUmdUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceUmdUserModule.sceUmdRegisterUMDCallBack(processor);";
+            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdRegisterUMDCallBack(processor);";
         }
     };
     public final HLEModuleFunction sceUmdUnRegisterUMDCallBackFunction = new HLEModuleFunction("sceUmdUser", "sceUmdUnRegisterUMDCallBack") {
@@ -430,7 +430,7 @@ public class sceUmdUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.sceUmdUserModule.sceUmdUnRegisterUMDCallBack(processor);";
+            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdUnRegisterUMDCallBack(processor);";
         }
     };
 };

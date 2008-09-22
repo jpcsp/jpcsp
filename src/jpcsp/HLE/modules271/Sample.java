@@ -69,7 +69,7 @@ public class Sample extends jpcsp.HLE.modules150.Sample {
         
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules271.Sample.pspSampleFooFunction.execute(processor);";
+            return "jpcsp.HLE.Modules.SampleModule.pspSampleFoo(processor);";
         }        
     };
 }

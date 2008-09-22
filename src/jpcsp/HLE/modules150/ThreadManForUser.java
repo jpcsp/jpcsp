@@ -2451,7 +2451,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule._sceKernelReturnFromCallback(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule._sceKernelReturnFromCallback(processor);";
         }
     };
     public final HLEModuleFunction sceKernelRegisterThreadEventHandlerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelRegisterThreadEventHandler") {
@@ -2463,7 +2463,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelRegisterThreadEventHandler(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelRegisterThreadEventHandler(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReleaseThreadEventHandlerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReleaseThreadEventHandler") {
@@ -2475,7 +2475,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReleaseThreadEventHandler(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReleaseThreadEventHandler(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferThreadEventHandlerStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferThreadEventHandlerStatus") {
@@ -2487,7 +2487,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferThreadEventHandlerStatus(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferThreadEventHandlerStatus(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCreateCallbackFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateCallback") {
@@ -2499,7 +2499,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCreateCallback(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCreateCallback(processor);";
         }
     };
     public final HLEModuleFunction sceKernelDeleteCallbackFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteCallback") {
@@ -2511,7 +2511,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelDeleteCallback(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDeleteCallback(processor);";
         }
     };
     public final HLEModuleFunction sceKernelNotifyCallbackFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelNotifyCallback") {
@@ -2523,7 +2523,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelNotifyCallback(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelNotifyCallback(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCancelCallbackFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelCallback") {
@@ -2535,7 +2535,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCancelCallback(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCancelCallback(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetCallbackCountFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetCallbackCount") {
@@ -2547,7 +2547,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetCallbackCount(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetCallbackCount(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCheckCallbackFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCheckCallback") {
@@ -2559,7 +2559,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCheckCallback(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCheckCallback(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferCallbackStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferCallbackStatus") {
@@ -2571,7 +2571,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferCallbackStatus(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferCallbackStatus(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSleepThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSleepThread") {
@@ -2583,7 +2583,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSleepThread(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSleepThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSleepThreadCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSleepThreadCB") {
@@ -2595,7 +2595,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSleepThreadCB(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSleepThreadCB(processor);";
         }
     };
     public final HLEModuleFunction sceKernelWakeupThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelWakeupThread") {
@@ -2607,7 +2607,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelWakeupThread(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelWakeupThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCancelWakeupThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelWakeupThread") {
@@ -2619,7 +2619,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCancelWakeupThread(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCancelWakeupThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSuspendThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSuspendThread") {
@@ -2631,7 +2631,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSuspendThread(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSuspendThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelResumeThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelResumeThread") {
@@ -2643,7 +2643,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelResumeThread(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelResumeThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelWaitThreadEndFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelWaitThreadEnd") {
@@ -2655,7 +2655,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelWaitThreadEnd(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelWaitThreadEnd(processor);";
         }
     };
     public final HLEModuleFunction sceKernelWaitThreadEndCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelWaitThreadEndCB") {
@@ -2667,7 +2667,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelWaitThreadEndCB(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelWaitThreadEndCB(processor);";
         }
     };
     public final HLEModuleFunction sceKernelDelayThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDelayThread") {
@@ -2679,7 +2679,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelDelayThread(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDelayThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelDelayThreadCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDelayThreadCB") {
@@ -2691,7 +2691,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelDelayThreadCB(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDelayThreadCB(processor);";
         }
     };
     public final HLEModuleFunction sceKernelDelaySysClockThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDelaySysClockThread") {
@@ -2703,7 +2703,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelDelaySysClockThread(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDelaySysClockThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelDelaySysClockThreadCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDelaySysClockThreadCB") {
@@ -2715,7 +2715,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelDelaySysClockThreadCB(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDelaySysClockThreadCB(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCreateSemaFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateSema") {
@@ -2727,7 +2727,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCreateSema(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCreateSema(processor);";
         }
     };
     public final HLEModuleFunction sceKernelDeleteSemaFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteSema") {
@@ -2739,7 +2739,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelDeleteSema(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDeleteSema(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSignalSemaFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSignalSema") {
@@ -2751,7 +2751,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSignalSema(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSignalSema(processor);";
         }
     };
     public final HLEModuleFunction sceKernelWaitSemaFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelWaitSema") {
@@ -2763,7 +2763,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelWaitSema(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelWaitSema(processor);";
         }
     };
     public final HLEModuleFunction sceKernelWaitSemaCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelWaitSemaCB") {
@@ -2775,7 +2775,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelWaitSemaCB(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelWaitSemaCB(processor);";
         }
     };
     public final HLEModuleFunction sceKernelPollSemaFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelPollSema") {
@@ -2787,7 +2787,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelPollSema(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelPollSema(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCancelSemaFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelSema") {
@@ -2799,7 +2799,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCancelSema(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCancelSema(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferSemaStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferSemaStatus") {
@@ -2811,7 +2811,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferSemaStatus(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferSemaStatus(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCreateEventFlagFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateEventFlag") {
@@ -2823,7 +2823,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCreateEventFlag(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCreateEventFlag(processor);";
         }
     };
     public final HLEModuleFunction sceKernelDeleteEventFlagFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteEventFlag") {
@@ -2835,7 +2835,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelDeleteEventFlag(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDeleteEventFlag(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSetEventFlagFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetEventFlag") {
@@ -2847,7 +2847,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSetEventFlag(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetEventFlag(processor);";
         }
     };
     public final HLEModuleFunction sceKernelClearEventFlagFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelClearEventFlag") {
@@ -2859,7 +2859,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelClearEventFlag(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelClearEventFlag(processor);";
         }
     };
     public final HLEModuleFunction sceKernelWaitEventFlagFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelWaitEventFlag") {
@@ -2871,7 +2871,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelWaitEventFlag(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelWaitEventFlag(processor);";
         }
     };
     public final HLEModuleFunction sceKernelWaitEventFlagCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelWaitEventFlagCB") {
@@ -2883,7 +2883,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelWaitEventFlagCB(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelWaitEventFlagCB(processor);";
         }
     };
     public final HLEModuleFunction sceKernelPollEventFlagFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelPollEventFlag") {
@@ -2895,7 +2895,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelPollEventFlag(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelPollEventFlag(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCancelEventFlagFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelEventFlag") {
@@ -2907,7 +2907,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCancelEventFlag(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCancelEventFlag(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferEventFlagStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferEventFlagStatus") {
@@ -2919,7 +2919,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferEventFlagStatus(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferEventFlagStatus(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCreateMbxFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateMbx") {
@@ -2931,7 +2931,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCreateMbx(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCreateMbx(processor);";
         }
     };
     public final HLEModuleFunction sceKernelDeleteMbxFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteMbx") {
@@ -2943,7 +2943,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelDeleteMbx(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDeleteMbx(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSendMbxFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSendMbx") {
@@ -2955,7 +2955,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSendMbx(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSendMbx(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReceiveMbxFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReceiveMbx") {
@@ -2967,7 +2967,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReceiveMbx(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReceiveMbx(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReceiveMbxCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReceiveMbxCB") {
@@ -2979,7 +2979,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReceiveMbxCB(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReceiveMbxCB(processor);";
         }
     };
     public final HLEModuleFunction sceKernelPollMbxFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelPollMbx") {
@@ -2991,7 +2991,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelPollMbx(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelPollMbx(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCancelReceiveMbxFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelReceiveMbx") {
@@ -3003,7 +3003,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCancelReceiveMbx(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCancelReceiveMbx(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferMbxStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferMbxStatus") {
@@ -3015,7 +3015,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferMbxStatus(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferMbxStatus(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCreateMsgPipeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateMsgPipe") {
@@ -3027,7 +3027,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCreateMsgPipe(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCreateMsgPipe(processor);";
         }
     };
     public final HLEModuleFunction sceKernelDeleteMsgPipeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteMsgPipe") {
@@ -3039,7 +3039,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelDeleteMsgPipe(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDeleteMsgPipe(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSendMsgPipeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSendMsgPipe") {
@@ -3051,7 +3051,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSendMsgPipe(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSendMsgPipe(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSendMsgPipeCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSendMsgPipeCB") {
@@ -3063,7 +3063,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSendMsgPipeCB(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSendMsgPipeCB(processor);";
         }
     };
     public final HLEModuleFunction sceKernelTrySendMsgPipeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelTrySendMsgPipe") {
@@ -3075,7 +3075,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelTrySendMsgPipe(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelTrySendMsgPipe(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReceiveMsgPipeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReceiveMsgPipe") {
@@ -3087,7 +3087,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReceiveMsgPipe(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReceiveMsgPipe(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReceiveMsgPipeCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReceiveMsgPipeCB") {
@@ -3099,7 +3099,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReceiveMsgPipeCB(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReceiveMsgPipeCB(processor);";
         }
     };
     public final HLEModuleFunction sceKernelTryReceiveMsgPipeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelTryReceiveMsgPipe") {
@@ -3111,7 +3111,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelTryReceiveMsgPipe(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelTryReceiveMsgPipe(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCancelMsgPipeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelMsgPipe") {
@@ -3123,7 +3123,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCancelMsgPipe(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCancelMsgPipe(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferMsgPipeStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferMsgPipeStatus") {
@@ -3135,7 +3135,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferMsgPipeStatus(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferMsgPipeStatus(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCreateVplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateVpl") {
@@ -3147,7 +3147,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCreateVpl(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCreateVpl(processor);";
         }
     };
     public final HLEModuleFunction sceKernelDeleteVplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteVpl") {
@@ -3159,7 +3159,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelDeleteVpl(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDeleteVpl(processor);";
         }
     };
     public final HLEModuleFunction sceKernelAllocateVplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelAllocateVpl") {
@@ -3171,7 +3171,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelAllocateVpl(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelAllocateVpl(processor);";
         }
     };
     public final HLEModuleFunction sceKernelAllocateVplCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelAllocateVplCB") {
@@ -3183,7 +3183,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelAllocateVplCB(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelAllocateVplCB(processor);";
         }
     };
     public final HLEModuleFunction sceKernelTryAllocateVplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelTryAllocateVpl") {
@@ -3195,7 +3195,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelTryAllocateVpl(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelTryAllocateVpl(processor);";
         }
     };
     public final HLEModuleFunction sceKernelFreeVplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelFreeVpl") {
@@ -3207,7 +3207,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelFreeVpl(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelFreeVpl(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCancelVplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelVpl") {
@@ -3219,7 +3219,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCancelVpl(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCancelVpl(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferVplStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferVplStatus") {
@@ -3231,7 +3231,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferVplStatus(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferVplStatus(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCreateFplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateFpl") {
@@ -3243,7 +3243,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCreateFpl(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCreateFpl(processor);";
         }
     };
     public final HLEModuleFunction sceKernelDeleteFplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteFpl") {
@@ -3255,7 +3255,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelDeleteFpl(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDeleteFpl(processor);";
         }
     };
     public final HLEModuleFunction sceKernelAllocateFplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelAllocateFpl") {
@@ -3267,7 +3267,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelAllocateFpl(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelAllocateFpl(processor);";
         }
     };
     public final HLEModuleFunction sceKernelAllocateFplCBFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelAllocateFplCB") {
@@ -3279,7 +3279,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelAllocateFplCB(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelAllocateFplCB(processor);";
         }
     };
     public final HLEModuleFunction sceKernelTryAllocateFplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelTryAllocateFpl") {
@@ -3291,7 +3291,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelTryAllocateFpl(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelTryAllocateFpl(processor);";
         }
     };
     public final HLEModuleFunction sceKernelFreeFplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelFreeFpl") {
@@ -3303,7 +3303,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelFreeFpl(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelFreeFpl(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCancelFplFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelFpl") {
@@ -3315,7 +3315,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCancelFpl(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCancelFpl(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferFplStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferFplStatus") {
@@ -3327,7 +3327,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferFplStatus(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferFplStatus(processor);";
         }
     };
     public final HLEModuleFunction _sceKernelReturnFromTimerHandlerFunction = new HLEModuleFunction("ThreadManForUser", "_sceKernelReturnFromTimerHandler") {
@@ -3339,7 +3339,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule._sceKernelReturnFromTimerHandler(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule._sceKernelReturnFromTimerHandler(processor);";
         }
     };
     public final HLEModuleFunction sceKernelUSec2SysClockFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelUSec2SysClock") {
@@ -3351,7 +3351,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelUSec2SysClock(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelUSec2SysClock(processor);";
         }
     };
     public final HLEModuleFunction sceKernelUSec2SysClockWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelUSec2SysClockWide") {
@@ -3363,7 +3363,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelUSec2SysClockWide(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelUSec2SysClockWide(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSysClock2USecFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSysClock2USec") {
@@ -3375,7 +3375,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSysClock2USec(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSysClock2USec(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSysClock2USecWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSysClock2USecWide") {
@@ -3387,7 +3387,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSysClock2USecWide(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSysClock2USecWide(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetSystemTimeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetSystemTime") {
@@ -3399,7 +3399,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetSystemTime(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetSystemTime(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetSystemTimeWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetSystemTimeWide") {
@@ -3411,7 +3411,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetSystemTimeWide(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetSystemTimeWide(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetSystemTimeLowFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetSystemTimeLow") {
@@ -3423,7 +3423,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetSystemTimeLow(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetSystemTimeLow(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSetAlarmFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetAlarm") {
@@ -3435,7 +3435,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSetAlarm(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetAlarm(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSetSysClockAlarmFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetSysClockAlarm") {
@@ -3447,7 +3447,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSetSysClockAlarm(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetSysClockAlarm(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCancelAlarmFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelAlarm") {
@@ -3459,7 +3459,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCancelAlarm(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCancelAlarm(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferAlarmStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferAlarmStatus") {
@@ -3471,7 +3471,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferAlarmStatus(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferAlarmStatus(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCreateVTimerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateVTimer") {
@@ -3483,7 +3483,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCreateVTimer(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCreateVTimer(processor);";
         }
     };
     public final HLEModuleFunction sceKernelDeleteVTimerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteVTimer") {
@@ -3495,7 +3495,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelDeleteVTimer(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDeleteVTimer(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetVTimerBaseFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetVTimerBase") {
@@ -3507,7 +3507,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetVTimerBase(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetVTimerBase(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetVTimerBaseWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetVTimerBaseWide") {
@@ -3519,7 +3519,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetVTimerBaseWide(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetVTimerBaseWide(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetVTimerTimeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetVTimerTime") {
@@ -3531,7 +3531,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetVTimerTime(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetVTimerTime(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetVTimerTimeWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetVTimerTimeWide") {
@@ -3543,7 +3543,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetVTimerTimeWide(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetVTimerTimeWide(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSetVTimerTimeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetVTimerTime") {
@@ -3555,7 +3555,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSetVTimerTime(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetVTimerTime(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSetVTimerTimeWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetVTimerTimeWide") {
@@ -3567,7 +3567,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSetVTimerTimeWide(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetVTimerTimeWide(processor);";
         }
     };
     public final HLEModuleFunction sceKernelStartVTimerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelStartVTimer") {
@@ -3579,7 +3579,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelStartVTimer(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelStartVTimer(processor);";
         }
     };
     public final HLEModuleFunction sceKernelStopVTimerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelStopVTimer") {
@@ -3591,7 +3591,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelStopVTimer(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelStopVTimer(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSetVTimerHandlerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetVTimerHandler") {
@@ -3603,7 +3603,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSetVTimerHandler(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetVTimerHandler(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSetVTimerHandlerWideFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSetVTimerHandlerWide") {
@@ -3615,7 +3615,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSetVTimerHandlerWide(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSetVTimerHandlerWide(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCancelVTimerHandlerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCancelVTimerHandler") {
@@ -3627,7 +3627,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCancelVTimerHandler(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCancelVTimerHandler(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferVTimerStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferVTimerStatus") {
@@ -3639,7 +3639,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferVTimerStatus(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferVTimerStatus(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCreateThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCreateThread") {
@@ -3651,7 +3651,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCreateThread(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCreateThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelDeleteThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelDeleteThread") {
@@ -3663,7 +3663,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelDeleteThread(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelDeleteThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelStartThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelStartThread") {
@@ -3675,7 +3675,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelStartThread(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelStartThread(processor);";
         }
     };
     public final HLEModuleFunction _sceKernelExitThreadFunction = new HLEModuleFunction("ThreadManForUser", "_sceKernelExitThread") {
@@ -3687,7 +3687,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule._sceKernelExitThread(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule._sceKernelExitThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelExitThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelExitThread") {
@@ -3699,7 +3699,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelExitThread(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelExitThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelExitDeleteThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelExitDeleteThread") {
@@ -3711,7 +3711,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelExitDeleteThread(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelExitDeleteThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelTerminateThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelTerminateThread") {
@@ -3723,7 +3723,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelTerminateThread(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelTerminateThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelTerminateDeleteThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelTerminateDeleteThread") {
@@ -3735,7 +3735,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelTerminateDeleteThread(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelTerminateDeleteThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelSuspendDispatchThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelSuspendDispatchThread") {
@@ -3747,7 +3747,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelSuspendDispatchThread(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelSuspendDispatchThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelResumeDispatchThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelResumeDispatchThread") {
@@ -3759,7 +3759,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelResumeDispatchThread(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelResumeDispatchThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelChangeCurrentThreadAttrFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelChangeCurrentThreadAttr") {
@@ -3771,7 +3771,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelChangeCurrentThreadAttr(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelChangeCurrentThreadAttr(processor);";
         }
     };
     public final HLEModuleFunction sceKernelChangeThreadPriorityFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelChangeThreadPriority") {
@@ -3783,7 +3783,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelChangeThreadPriority(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelChangeThreadPriority(processor);";
         }
     };
     public final HLEModuleFunction sceKernelRotateThreadReadyQueueFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelRotateThreadReadyQueue") {
@@ -3795,7 +3795,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelRotateThreadReadyQueue(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelRotateThreadReadyQueue(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReleaseWaitThreadFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReleaseWaitThread") {
@@ -3807,7 +3807,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReleaseWaitThread(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReleaseWaitThread(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetThreadIdFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetThreadId") {
@@ -3819,7 +3819,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetThreadId(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetThreadId(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetThreadCurrentPriorityFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetThreadCurrentPriority") {
@@ -3831,7 +3831,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetThreadCurrentPriority(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetThreadCurrentPriority(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetThreadExitStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetThreadExitStatus") {
@@ -3843,7 +3843,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetThreadExitStatus(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetThreadExitStatus(processor);";
         }
     };
     public final HLEModuleFunction sceKernelCheckThreadStackFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelCheckThreadStack") {
@@ -3855,7 +3855,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelCheckThreadStack(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelCheckThreadStack(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetThreadStackFreeSizeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetThreadStackFreeSize") {
@@ -3867,7 +3867,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetThreadStackFreeSize(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetThreadStackFreeSize(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferThreadStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferThreadStatus") {
@@ -3879,7 +3879,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferThreadStatus(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferThreadStatus(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferThreadRunStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferThreadRunStatus") {
@@ -3891,7 +3891,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferThreadRunStatus(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferThreadRunStatus(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferSystemStatusFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferSystemStatus") {
@@ -3903,7 +3903,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferSystemStatus(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferSystemStatus(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetThreadmanIdListFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetThreadmanIdList") {
@@ -3915,7 +3915,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetThreadmanIdList(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetThreadmanIdList(processor);";
         }
     };
     public final HLEModuleFunction sceKernelGetThreadmanIdTypeFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelGetThreadmanIdType") {
@@ -3927,7 +3927,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelGetThreadmanIdType(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelGetThreadmanIdType(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferThreadProfilerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferThreadProfiler") {
@@ -3939,7 +3939,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferThreadProfiler(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferThreadProfiler(processor);";
         }
     };
     public final HLEModuleFunction sceKernelReferGlobalProfilerFunction = new HLEModuleFunction("ThreadManForUser", "sceKernelReferGlobalProfiler") {
@@ -3951,7 +3951,7 @@ public class ThreadManForUser implements HLEModule {
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.modules150.ThreadManForUserModule.sceKernelReferGlobalProfiler(processor);";
+            return "jpcsp.HLE.Modules.ThreadManForUserModule.sceKernelReferGlobalProfiler(processor);";
         }
     };
 };
