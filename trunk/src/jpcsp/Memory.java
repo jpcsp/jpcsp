@@ -236,4 +236,12 @@ public class Memory {
             Emulator.PauseEmu();
         }
     }
+    
+    public void load(ByteBuffer buffer) {
+        
+    }
+
+    public void save(ByteBuffer buffer) {
+        
+    }    
 }

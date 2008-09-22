@@ -6,6 +6,7 @@
 package jpcsp.HLE;
 
 import jpcsp.HLE.modules.*;
+import java.nio.ByteBuffer;
 
 /**
  *
@@ -21,4 +22,12 @@ public class Modules {
     public static sceGe_user sceGE_userModule = new sceGe_user();
     public static sceUmdUser sceUmdUserModule = new sceUmdUser();
     
+    public void step() {
+    }
+
+    public void load(ByteBuffer buffer) {
+    }
+
+    public void save(ByteBuffer buffer) {
+    }    
 };
