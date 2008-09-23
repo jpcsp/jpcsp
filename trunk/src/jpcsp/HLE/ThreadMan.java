@@ -692,7 +692,7 @@ public class ThreadMan {
             pcreg = entry_addr;
             npcreg = entry_addr; // + 4;
             gpr[29] = stack_addr; //sp
-            //gpr[26] = gpr[29]; // k0 mirrors sp?
+            gpr[26] = gpr[29]; // k0 mirrors sp?
 
             // We'll hook "jr ra" where ra = 0 as the thread exiting
             gpr[31] = 0; // ra

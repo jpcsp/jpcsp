@@ -454,14 +454,14 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
         //some settings from soywiz/pspemulator
         cpu.pc = (int)(romManager.getBaseoffset() + elf.getHeader().getE_entry()); //set the pc register.
         cpu.npc = cpu.pc + 4;
-        // Get's set in ThreadMan cpu.gpr[4] = 0; //a0
-        // Get's set in ThreadMan cpu.gpr[5] = (int) romManager.getBaseoffset() + (int) elf.getHeader().getE_entry(); // argumentsPointer a1 reg
-        cpu.gpr[6] = 0; //a2
-        cpu.gpr[26] = 0x09F00000; //k0
+        // Gets set in ThreadMan cpu.gpr[4] = 0; //a0
+        // Gets set in ThreadMan cpu.gpr[5] = (int) romManager.getBaseoffset() + (int) elf.getHeader().getE_entry(); // argumentsPointer a1 reg
+        //cpu.gpr[6] = 0; //a2
+        // Gets set in ThreadMan cpu.gpr[26] = 0x09F00000; //k0
         cpu.gpr[27] = 0; //k1 should probably be 0
         cpu.gpr[28] = (int)(romManager.getBaseoffset() + romManager.getPSPModuleInfo().getM_gp()); //gp reg    gp register should get the GlobalPointer!!!
-        // Get's set in ThreadMan cpu.gpr[29] = 0x09F00000; //sp
-        // Get's set in ThreadMan cpu.gpr[31] = 0x08000004; //ra, should this be 0?
+        // Gets set in ThreadMan cpu.gpr[29] = 0x09F00000; //sp
+        // Gets set in ThreadMan cpu.gpr[31] = 0x08000004; //ra, should this be 0?
         // All other registers are uninitialised/random values
 
         jpcsp.HLE.modules.HLEModuleManager.get_instance().Initialise();
@@ -503,9 +503,9 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                 rec.run();
             } else {
                 cpu.step();
-                //jpcsp.HLE.pspge.get_instance().step();
+                jpcsp.HLE.pspge.get_instance().step();
                 jpcsp.HLE.ThreadMan.get_instance().step();
-                //jpcsp.HLE.pspdisplay.get_instance().step();                
+                jpcsp.HLE.pspdisplay.get_instance().step();
                 jpcsp.HLE.modules.HLEModuleManager.get_instance().step();
                 controller.checkControllerState();
 

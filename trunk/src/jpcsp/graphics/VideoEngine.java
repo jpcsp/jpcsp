@@ -42,7 +42,7 @@ public class VideoEngine {
     private int width;
     private int height;
     private boolean ha;
-    private static final boolean isDebugMode = true;
+    public static final boolean isDebugMode = true;
     private static GeCommands helper;
     private VertexInfo vinfo = new VertexInfo();
     private static final char SPACE = ' ';
@@ -131,9 +131,17 @@ public class VideoEngine {
     	light_pos[0][3] = light_pos[1][3] = light_pos[2][3] = light_pos[3][3] = 1.f;
     }
 
-    // call from GL thread
-    public void update() {
+    /** call from GL thread
+     * @return true if an update was made
+     */
+    public boolean update() {
         //System.err.println("update start");
+
+        // Don't draw anything until we get sync signal
+        if (!jpcsp.HLE.pspge.get_instance().waitingForSync)
+            return false;
+
+        boolean updated = false;
         DisplayList.Lock();
         Iterator<DisplayList> it = DisplayList.iterator();
         while(it.hasNext() && !Emulator.pause) {
@@ -142,12 +150,19 @@ public class VideoEngine {
                 //System.err.println("executeList");
                 executeList(list);
 
-                if (list.status == DisplayList.DONE)
+                if (list.status == DisplayList.DONE) {
                     it.remove();
+                    updated = true;
+                }
             }
         }
         DisplayList.Unlock();
+
+        if (updated)
+            jpcsp.HLE.pspge.get_instance().syncDone = true;
+
         //System.err.println("update done");
+        return updated;
     }
 
     // call from GL thread
