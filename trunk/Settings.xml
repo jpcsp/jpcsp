@@ -3,8 +3,8 @@
 
     <windowspos>
         <mainwindow>
-            <x>322</x>
-            <y>230</y>
+            <x>8</x>
+            <y>1</y>
         </mainwindow>
        <disassembler>
          <x>50</x>
@@ -23,8 +23,8 @@
          <y>5</y>
        </registers>
       <logwindow>
-        <x>329</x>
-        <y>585</y>
+        <x>8</x>
+        <y>348</y>
       </logwindow>
     </windowspos>
         
@@ -37,7 +37,7 @@
     
     <saveWindowPos>1</saveWindowPos>
     <openLogwindow>1</openLogwindow>
-    <snapLogwindow>0</snapLogwindow>
+    <snapLogwindow>1</snapLogwindow>
   </guisettings>
   
   <emuoptions>

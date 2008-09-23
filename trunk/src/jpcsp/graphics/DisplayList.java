@@ -16,10 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics;
 
-import java.util.Iterator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.concurrent.Semaphore;
-
+import static jpcsp.graphics.GeCommands.*;
 import jpcsp.Emulator;
 
 // Use the locks for reading/writing member variables and calling member methods
@@ -95,6 +95,21 @@ public class DisplayList {
             displayListLock.acquire();
         } catch (InterruptedException e) {
         }
+    }
+    
+    //  HACK: This shouldn't exist, but I need to be sure a list
+    // is complete before processing it
+    public boolean HasFinish () {
+    	boolean hasFinish = false;
+    	int currPC = start;
+    	
+    	while (!hasFinish && currPC != stallAddress) {
+            int instruction = Emulator.getMemory().read32(currPC)>>24;
+            currPC += 4;
+            hasFinish = (instruction == END || instruction == FINISH); 
+        }    	
+    	
+    	return hasFinish;    	
     }
 
     public static void Unlock() {

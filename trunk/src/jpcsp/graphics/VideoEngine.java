@@ -138,7 +138,7 @@ public class VideoEngine {
         Iterator<DisplayList> it = DisplayList.iterator();
         while(it.hasNext() && !Emulator.pause) {
             DisplayList list = it.next();
-            if (list.status == DisplayList.QUEUED) {
+            if (list.status == DisplayList.QUEUED && list.HasFinish()) {
                 //System.err.println("executeList");
                 executeList(list);
 
