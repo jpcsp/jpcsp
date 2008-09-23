@@ -505,7 +505,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                 cpu.step();
                 //jpcsp.HLE.pspge.get_instance().step();
                 jpcsp.HLE.ThreadMan.get_instance().step();
-                jpcsp.HLE.pspdisplay.get_instance().step();
+                //jpcsp.HLE.pspdisplay.get_instance().step();                
                 jpcsp.HLE.modules.HLEModuleManager.get_instance().step();
                 controller.checkControllerState();
 

@@ -317,7 +317,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             gl.glClear(GL.GL_COLOR_BUFFER_BIT);
             return;
         }
-
+        
+        // TODO: Use texture rectangles, as NPOT give problems with ATI drivers
         pixels.clear();
         gl.glTexSubImage2D(
             GL.GL_TEXTURE_2D, 0,
@@ -327,24 +328,11 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         if (disableGE) {
             drawFrameBuffer(gl, false, true);
         } else {
-            drawFrameBuffer(gl, true, true);
+        	drawFrameBuffer(gl, true, true);
             
             gl.glViewport(0, 0, width, height);
             VideoEngine.getEngine(gl, true, true).update();
- 
-            gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
-            gl.glCopyTexSubImage2D(
-                GL.GL_TEXTURE_2D, 0,
-                0, 0, 0, 0, width, height);
-           
-            temp.clear();
-            pixels.clear();
-            gl.glGetTexImage(
-                GL.GL_TEXTURE_2D, 0, GL.GL_RGBA,
-                getPixelFormatGL(pixelformat), temp);
-            temp.put(pixels);
-            drawFrameBuffer(gl, false, false);
-        }
+         }
         
         reportFPSStats();
     }
@@ -438,7 +426,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             texS = (float)width / (float)bufferwidth;
             texT = (float)height / (float)makePow2(height);
             
-            refreshRequired = true;
+            //refreshRequired = true;
             display();
             
             Emulator.getProcessor().gpr[2] = 0;
