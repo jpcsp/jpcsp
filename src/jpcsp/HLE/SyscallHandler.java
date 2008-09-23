@@ -405,10 +405,10 @@ public class SyscallHandler {
                 case 0x20fa:
                     pspge.get_instance().sceGeListSync(gpr[4], gpr[5]);
                     break;
+                */
                 case 0x20fb:
                     pspge.get_instance().sceGeDrawSync(gpr[4]);
                     break;
-                */
 		// sceGeBreak(0x20fc),
 		// sceGeContinue(0x20fd),
                 /* ge callback
@@ -738,8 +738,8 @@ public class SyscallHandler {
                     boolean handled = HLEModuleManager.get_instance().handleSyscall(code);
                     if (!handled) {
                         // At least set a decent return value
-                        //Emulator.getProcessor().gpr[2] = 0;
-                        Emulator.getProcessor().gpr[2] = 0xb515ca11;
+                        Emulator.getProcessor().gpr[2] = 0;
+                        //Emulator.getProcessor().gpr[2] = 0xb515ca11;
 
                         // Display debug info
                         for (jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls c : jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls.values()) {

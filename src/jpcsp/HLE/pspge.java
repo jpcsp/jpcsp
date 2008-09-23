@@ -34,6 +34,10 @@ public class pspge {
     private int cbid = -1;
     */
 
+    private int syncThreadId;
+    public volatile boolean waitingForSync;
+    public volatile boolean syncDone;
+
     public static pspge get_instance() {
         if (instance == null) {
             instance = new pspge();
@@ -48,6 +52,24 @@ public class pspge {
         DisplayList.Lock();
         DisplayList.Initialise();
         DisplayList.Unlock();
+        
+        syncThreadId = -1;
+        waitingForSync = false;
+        syncDone = false;
+    }
+    
+    public void step() {
+        if (waitingForSync) {
+            if (syncDone) {
+                log("syncDone");
+                ThreadMan.get_instance().unblockThread(syncThreadId);
+                waitingForSync = false;
+                syncDone = false;
+            } else {
+                // I don't like this...
+                pspdisplay.get_instance().setDirty(true);
+            }
+        }
     }
     
     public void sceGeEdramGetSize() {
@@ -104,8 +126,8 @@ public class pspge {
             stallAddress &= 0x3fffffff;
 
             log("sceGeListUpdateStallAddr qid=" + qid
-                + " new stall addr " + String.format("%08x", stallAddress)
-                + " " + ((stallAddress - displayList.stallAddress) / 4) + " new commands");
+                + " addr:" + String.format("%08x", stallAddress)
+                + " approx " + ((stallAddress - displayList.stallAddress) / 4) + " new commands");
 
             displayList.stallAddress = stallAddress;
             if (displayList.pc != displayList.stallAddress) {
@@ -119,6 +141,17 @@ public class pspge {
             Emulator.getProcessor().gpr[2] = -1;
         }
         DisplayList.Unlock();
+    }
+
+    // TODO handle sync type
+    public void sceGeDrawSync(int syncType) {
+        log("sceGeDrawSync syncType=" + syncType);
+        Emulator.getProcessor().gpr[2] = 0;
+        if (!pspdisplay.get_instance().disableGE) {
+            waitingForSync = true;
+            syncThreadId = ThreadMan.get_instance().getCurrentThreadID();
+            ThreadMan.get_instance().blockCurrentThread();
+        }
     }
 
     /* Not sure if this is correct
@@ -148,7 +181,9 @@ public class pspge {
     */
 
     private void log(String msg){
-        System.out.println("sceGe DEBUG > " + msg);
+        if (VideoEngine.isDebugMode) {
+            System.out.println("sceGe DEBUG > " + msg);
+        }
     }
 
 

@@ -41,9 +41,12 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     public static pspdisplay get_instance() {
         if (instance == null) {
 
-        	// We need to ask for stencil buffer
-        	GLCapabilities capabilities = new GLCapabilities();
-        	capabilities.setStencilBits(8);
+            // We need to ask for stencil buffer
+            GLCapabilities capabilities = new GLCapabilities();
+            capabilities.setStencilBits(8);
+
+            // Along with swapBuffers() seems to have no effect
+            //capabilities.setDoubleBuffered(true);
 
             instance = new pspdisplay(capabilities);
         }
@@ -313,6 +316,52 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         gl.glPopAttrib();
     }
 
+    private void copyScreenToPixels(GL gl, ByteBuffer pixels) {
+        // Set texFb as the current texture
+        gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
+
+        // Copy screen to the current texture
+        gl.glCopyTexSubImage2D(
+            GL.GL_TEXTURE_2D, 0,
+            0, 0, 0, 0, width, height);
+
+        // Copy the current texture into memory
+        temp.clear();
+        gl.glGetTexImage(
+            GL.GL_TEXTURE_2D, 0, GL.GL_RGBA,
+            getPixelFormatGL(pixelformatFb), temp);
+
+        // Now we have the screen copied into temp
+        // print the color of a pixel for testing
+//        {
+//            int x = 480 / 2;
+//            int xstride = 512;
+//            int y = 6;
+//            int address = (x + y * xstride) * getPixelFormatBytes(pixelformatFb);
+//            System.out.println(String.format("%08x", temp.getInt(address)));
+//        }
+
+        // Post effects here, for testing purpose :)
+        // Just on top half of the screen, to make sure we aren't upside down
+//        for (int y = 0; y < 272 / 2; y++) {
+//            for (int x = 0; x < 480; x++) {
+//                int address = (x + y * 512) * getPixelFormatBytes(pixelformatFb);
+//                int color = temp.getInt(address);
+//                color++;
+//                temp.putInt(address, color);
+//            }
+//        }
+
+        // Copy temp into pixels, temp is probably square and pixels is less,
+        // a smaller rectangle, otherwise we could copy straight into pixels.
+        temp.clear();
+        int limit = temp.limit();
+        temp.limit(pixels.limit());
+        pixels.clear();
+        pixels.put(temp);
+        temp.limit(limit);
+    }
+
     // GLEventListener methods
 
     @Override
@@ -333,6 +382,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             }
             gl.glGenTextures(1, textures, 0);
             texFb = textures[0];
+            //System.out.println("texFb = " + texFb);
 
             gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
             gl.glTexImage2D(
@@ -364,21 +414,51 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             return;
         }
 
-        // TODO: Use texture rectangles, as NPOT give problems with ATI drivers
-        pixelsFb.clear();
-        gl.glTexSubImage2D(
-            GL.GL_TEXTURE_2D, 0,
-            0, 0, bufferwidthFb, height,
-            GL.GL_RGBA, getPixelFormatGL(pixelformatFb), pixelsFb);
-
         if (disableGE) {
+            // TODO: Use texture rectangles, as NPOT give problems with ATI drivers
+            pixelsFb.clear();
+            gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
+            gl.glTexSubImage2D(
+                GL.GL_TEXTURE_2D, 0,
+                0, 0, bufferwidthFb, height,
+                GL.GL_RGBA, getPixelFormatGL(pixelformatFb), pixelsFb);
+
+            // Debug step, copy screen back into pixelsFb
+            drawFrameBuffer(gl, false, false);
+            copyScreenToPixels(gl, pixelsFb);
+
             drawFrameBuffer(gl, false, true);
         } else {
-        	drawFrameBuffer(gl, true, true);
-
+            // Render GE
             gl.glViewport(0, 0, width, height);
-            VideoEngine.getEngine(gl, true, true).update();
-         }
+            if (VideoEngine.getEngine(gl, true, true).update()) {
+                // Update VRAM only if GE actually drew something
+                // Set texFb as the current texture
+                gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
+
+                // Copy screen to the current texture
+                gl.glCopyTexSubImage2D(
+                    GL.GL_TEXTURE_2D, 0,
+                    0, 0, 0, 0, width, height);
+
+                // Re-render GE/current texture upside down
+                drawFrameBuffer(gl, false, true);
+
+                // Save GE/current texture to vram
+                copyScreenToPixels(gl, pixelsGe);
+            }
+
+            // Render FB
+            pixelsFb.clear();
+            gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
+            gl.glTexSubImage2D(
+                GL.GL_TEXTURE_2D, 0,
+                0, 0, bufferwidthFb, height,
+                GL.GL_RGBA, getPixelFormatGL(pixelformatFb), pixelsFb);
+            drawFrameBuffer(gl, false, true);
+
+            //swapBuffers();
+        }
 
         reportFPSStats();
     }
@@ -472,8 +552,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             texS = (float)width / (float)bufferwidth;
             texT = (float)height / (float)makePow2(height);
 
-            //refreshRequired = true;
-            display();
+            refreshRequired = true;
+            //display();
 
             Emulator.getProcessor().gpr[2] = 0;
         }
