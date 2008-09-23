@@ -41,8 +41,6 @@ public class sceUmdUser implements HLEModule {
 
     @Override
     public void installModule(HLEModuleManager mm, int version) {
-        System.out.println("UMD - installModule");
-        
         if (version >= 150) {
 
             mm.addFunction(sceUmdCheckMediumFunction, 0x46EBB729);
@@ -99,7 +97,6 @@ public class sceUmdUser implements HLEModule {
 
     public void setIsoReader(UmdIsoReader iso)
     {
-        System.out.println("UMD - setIsoReader " + iso);
         this.iso = iso;
     }
 
@@ -145,8 +142,15 @@ public class sceUmdUser implements HLEModule {
         Processor cpu = processor; // Old-Style Processor
         int stat = cpu.gpr[4];
         System.out.println("sceUmdWaitDriveStat = 0x" + Integer.toHexString(stat));
-        //TODO maybe delay current thread to reach the desireable status?
         cpu.gpr[2] = 0;
+        
+        if (iso != null || stat == PSP_UMD_NOT_PRESENT) {
+            jpcsp.HLE.ThreadMan.get_instance().yieldCurrentThread();
+        } else {
+            // UMD not mounted and never will be since we don't emulate
+            // inserting/removing a disc so block forever.
+            jpcsp.HLE.ThreadMan.get_instance().blockCurrentThread();
+        }
     }
 
     /** wait until drive stat reaches a0 */
@@ -175,13 +179,20 @@ public class sceUmdUser implements HLEModule {
         int stat = cpu.gpr[4];
         int timeout = cpu.gpr[5];
         System.out.println("sceUmdWaitDriveStatCB stat = 0x" + Integer.toHexString(stat) + " timeout = " + timeout);
-        cpu.gpr[0] = 0;
+        cpu.gpr[2] = 0;
 
-        // TODO are we supposed to block until drive stat changes,
-        // and then call any registerd umd cb's?
-        // Or are we supposed to "block" until psp finishes checking the
-        // drive status? which would just emulate as a yield.
-        jpcsp.HLE.ThreadMan.get_instance().yieldCurrentThread();
+        if (iso != null || stat == PSP_UMD_NOT_PRESENT) {
+            // TODO are we supposed to block until drive stat changes,
+            // and then call any registerd umd cb's?
+            // Or are we supposed to "block" until psp finishes checking the
+            // drive status? which would just emulate as a yield.
+            jpcsp.HLE.ThreadMan.get_instance().yieldCurrentThread();
+        } else {
+            // UMD not mounted and never will be since we don't emulate
+            // inserting/removing a disc so block forever.
+            jpcsp.HLE.ThreadMan.get_instance().blockCurrentThread();
+        }
+        
     }
 
     public void sceUmdCancelWaitDriveStat(Processor processor) {
