@@ -1100,6 +1100,7 @@ public class VideoEngine {
                 fbp |= (normalArgument << 8) & 0xff000000;
                 fbw = (normalArgument) & 0xffff;
                 log("fbp=" + Integer.toHexString(fbp) + ", fbw=" + fbw);
+                jpcsp.HLE.pspdisplay.get_instance().hleDisplaySetGeBuf(fbp, fbw, psm);
                 break;
 
             case ZBP:
