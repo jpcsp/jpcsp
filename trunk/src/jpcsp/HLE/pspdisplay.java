@@ -442,7 +442,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                     0, 0, 0, 0, width, height);
 
                 // Re-render GE/current texture upside down
-                drawFrameBuffer(gl, false, true);
+                drawFrameBuffer(gl, true, true);
 
                 // Save GE/current texture to vram
                 copyScreenToPixels(gl, pixelsGe);
