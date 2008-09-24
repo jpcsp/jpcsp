@@ -44,6 +44,7 @@ public class ThreadMan {
     private static ThreadMan instance;
     private static HashMap<Integer, SceKernelThreadInfo> threadlist;
     private static HashMap<Integer, SceKernelSemaphoreInfo> semalist;
+    private static HashMap<Integer, SceKernelEventFlagInfo> eventlist;
     private  ArrayList<Integer> waitingThreads;
     private SceKernelThreadInfo current_thread;
     private SceKernelThreadInfo idle0, idle1;
@@ -70,6 +71,7 @@ public class ThreadMan {
 
         threadlist = new HashMap<Integer, SceKernelThreadInfo>();
         semalist = new HashMap<Integer, SceKernelSemaphoreInfo>();
+        eventlist = new HashMap<Integer, SceKernelEventFlagInfo>();
         waitingThreads= new ArrayList<Integer>();
         // Clear stack allocation info MOVED TO PSPSYSMEM
         //stackAllocated = 0;
@@ -817,5 +819,39 @@ public class ThreadMan {
              uid = SceUIDMan.get_instance().getNewUid("ThreadMan-sema");
              semalist.put(uid, this);
          }        
+    }
+    
+    public void ThreadMan_sceKernelCreateEventFlag(int name_addr, int attr, int initPattern, int option) 
+    { 
+        String name = readStringZ(Memory.getInstance().mainmemory,
+            (name_addr & 0x3fffffff) - MemoryMap.START_RAM);
+        
+        System.out.println("sceKernelCreateEventFlag name=" + name + " attr= " + attr + " initPattern= " + initPattern+ " option= " + option);
+        
+        if(option !=0) System.out.println("sceKernelCreateSema: UNSUPPORTED Option Value");
+        SceKernelEventFlagInfo event = new SceKernelEventFlagInfo(name,attr,initPattern,initPattern);//initPattern and currentPattern should be the same at init
+        
+        Emulator.getProcessor().gpr[2] = event.uid;
+    }
+    private class SceKernelEventFlagInfo
+    {
+      private String name;
+      private int attr;
+      private int initPattern;
+      private int currentPattern;
+      private int numWaitThreads;//NOT sure if that should be here or merged with the semaphore waitthreads..
+        
+      private int uid;
+      
+      public SceKernelEventFlagInfo(String name,int attr,int initPattern,int currentPattern)
+      {
+        this.name=name;
+        this.attr=attr;
+        this.initPattern=initPattern;
+        this.currentPattern=currentPattern;
+        uid = SceUIDMan.get_instance().getNewUid("ThreadMan-eventflag");
+        eventlist.put(uid, this);
+          
+      }
     }
 }
