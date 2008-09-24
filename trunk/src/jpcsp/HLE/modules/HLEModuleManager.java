@@ -32,12 +32,12 @@ import jpcsp.NIDMapper;
  * HLEModuleManager.get_instance().handleSyscall(code) should be called.
  * This function will then return true if the syscall is handled, in which case
  * no error message should be printed by SyscallHandler.java.
- * 
+ *
  * Modules that require stepping should implement HLEThread and call
  * mm.addThread inside installModule with a matching mm.removeThread in
  * uninstall module.
  * Example: ThreadMan, pspctrl, pspAudio, pspdisplay
- * 
+ *
  * @author fiveofhearts
  */
 public class HLEModuleManager {
@@ -52,7 +52,8 @@ public class HLEModuleManager {
     private HLEModule[] defaultModules = new HLEModule[] {
         new Sample(),
         Modules.StdioForUserModule,
-        Modules.sceUmdUserModule
+        Modules.sceUmdUserModule,
+        Modules.sceUtilityModule
     };
 
     public static HLEModuleManager get_instance() {

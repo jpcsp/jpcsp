@@ -38,7 +38,7 @@ public class LoadExec {
     public void sceKernelRegisterExitCallback(int a0)
     {
         // TODO
-        System.out.println("sceKernelRegisterExitCallback unimplemented");
+        System.out.println("UNIMPLEMENTED:sceKernelRegisterExitCallback");
 
         // Fake successful return
         Emulator.getProcessor().gpr[2] = 0;
