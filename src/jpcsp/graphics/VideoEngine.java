@@ -24,6 +24,9 @@ import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.Iterator;
 import javax.media.opengl.GL;
+
+import org.apache.log4j.Logger;
+
 import jpcsp.Emulator;
 import jpcsp.Memory;
 
@@ -31,6 +34,7 @@ public class VideoEngine {
 
     private static VideoEngine instance;
     private GL gl;
+    public static Logger logger;
     public static final boolean isDebugMode = true;
     private static GeCommands helper;
     private VertexInfo vinfo = new VertexInfo();
@@ -92,9 +96,10 @@ public class VideoEngine {
     private DisplayList actualList; // The currently executing list
     private int clearFlags;
     private static void log(String msg) {
-        if (isDebugMode) {
+    	logger.debug(msg);
+        /*if (isDebugMode) {
             System.out.println("sceGe DEBUG > " + msg);
-        }
+        }*/
     }
 
     public static VideoEngine getEngine(GL gl, boolean fullScreen, boolean hardwareAccelerate) {
@@ -109,6 +114,7 @@ public class VideoEngine {
         if (instance == null) {
             instance = new VideoEngine();
             helper = new GeCommands();
+            logger = Logger.getLogger("ge");
         }
         return instance;
     }
