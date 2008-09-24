@@ -181,9 +181,10 @@ public class pspge {
     */
 
     private void log(String msg){
-        if (VideoEngine.isDebugMode) {
+    	VideoEngine.logger.debug(msg);
+        /*if (VideoEngine.isDebugMode) {
             System.out.println("sceGe DEBUG > " + msg);
-        }
+        }*/
     }
 
 

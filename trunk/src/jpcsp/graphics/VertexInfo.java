@@ -144,8 +144,8 @@ public class VertexInfo {
         }
 
         switch(position) {
-            case 1: System.out.println("unimplemented vertex type"); addr += 1; break;
-            case 2: System.out.println("unimplemented vertex type"); addr += 2; break;
+            case 1: VideoEngine.logger.debug("unimplemented vertex type 1"); addr += 1; break;
+            case 2: VideoEngine.logger.debug("unimplemented vertex type 2"); addr += 2; break;
             case 3: { // GU_VERTEX_32BITF
                 v.px = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
                 v.py = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
