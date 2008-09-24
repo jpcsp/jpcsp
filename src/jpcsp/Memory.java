@@ -51,8 +51,7 @@ public class Memory {
     }
 
     public void Initialise() {
-        for (int i = 0; i < all.length; i++)
-            all[i] = 0;
+        all = new byte[SIZE_ALLMEM];
     }
 
     private Memory() {
