@@ -28,6 +28,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -36,6 +37,11 @@ import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.ToolTipManager;
 import javax.swing.UIManager;
+
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.xml.DOMConfigurator;
+
 import jpcsp.Debugger.ConsoleWindow;
 import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
 import jpcsp.Debugger.ElfHeaderInfo;
@@ -48,6 +54,8 @@ import jpcsp.util.JpcspDialogManager;
 import jpcsp.util.MetaInformation;
 import jpcsp.filesystems.umdiso.*;
 import jpcsp.format.PSF;
+import jpcsp.log.LogWindow;
+import jpcsp.log.LoggingOutputStream;
 
 /**
  *
@@ -55,7 +63,7 @@ import jpcsp.format.PSF;
  */
 public class MainGUI extends javax.swing.JFrame implements KeyListener, ComponentListener {
     final String version = MetaInformation.FULL_NAME;
-    ConsoleWindow consolewin;
+    LogWindow consolewin;
     DisassemblerFrame disasm;
     ElfHeaderInfo elfheader;
     MemoryViewer memoryview;
@@ -69,6 +77,10 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
     /** Creates new form MainGUI */
     public MainGUI() {
+    	DOMConfigurator.configure("LogSettings.xml");
+		System.setOut(new PrintStream(new LoggingOutputStream(Logger.getLogger("misc"), Level.INFO)));		
+        consolewin = new LogWindow();
+        
         emulator = new Emulator(this);
 
         /*next two lines are for overlay menus over joglcanvas*/
@@ -93,8 +105,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             272 + insets.top + insets.bottom);
         this.setMinimumSize(minSize);
 
-        //logging console window stuff
-        consolewin = new ConsoleWindow();
+        //logging console window stuff        
         snapConsole = Settings.get_instance().readBoolOptions("guisettings/snapLogwindow");
         if (snapConsole) {
             mainwindowPos = getLocation();
