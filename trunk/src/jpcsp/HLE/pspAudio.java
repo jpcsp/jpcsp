@@ -34,8 +34,8 @@ public class pspAudio {
         public boolean reserved;
         public int allocatedSamples;
         public int format;
-        public int lvol;
-        public int rvol;
+        public int leftVolume;
+        public int rightVolume;
         public SourceDataLine outputDataLine;
         
         public pspChannelInfo()
@@ -43,8 +43,8 @@ public class pspAudio {
             reserved=false;
             allocatedSamples = 0;
             format = 0;
-            lvol = 0x8000;
-            rvol = 0x8000;
+            leftVolume = 0x8000;
+            rightVolume = 0x8000;
             outputDataLine = null;
         }
     }
@@ -165,7 +165,7 @@ public class pspAudio {
             {
                 try {
                     pspchannels[channel].outputDataLine = AudioSystem.getSourceDataLine(new AudioFormat(sampleRate, 16, 2, true, false));
-                    sceAudioChangeChannelVolume(channel,pspchannels[channel].lvol,pspchannels[channel].rvol);
+                    sceAudioChangeChannelVolume(channel,pspchannels[channel].leftVolume,pspchannels[channel].rightVolume);
                 }
                 catch(LineUnavailableException e)
                 {
@@ -200,8 +200,8 @@ public class pspAudio {
                         short lval = (short)Emulator.getMemory().read16(pvoid_buf+i);
                         short rval = lval;
 
-                        lval = (short)((((int)lval)*pspchannels[channel].lvol)>>16);
-                        rval = (short)((((int)rval)*pspchannels[channel].rvol)>>16);
+                        lval = (short)((((int)lval)*pspchannels[channel].leftVolume)>>16);
+                        rval = (short)((((int)rval)*pspchannels[channel].rightVolume)>>16);
 
                         data[i*4+0] = (byte)(lval);
                         data[i*4+1] = (byte)(lval>>8);
@@ -217,8 +217,8 @@ public class pspAudio {
                         short lval = (short)Emulator.getMemory().read16(pvoid_buf+i*2);
                         short rval = (short)Emulator.getMemory().read16(pvoid_buf+i*2+1);
 
-                        lval = (short)((((int)lval)*pspchannels[channel].lvol)>>16);
-                        rval = (short)((((int)rval)*pspchannels[channel].rvol)>>16);
+                        lval = (short)((((int)lval)*pspchannels[channel].leftVolume)>>16);
+                        rval = (short)((((int)rval)*pspchannels[channel].rightVolume)>>16);
 
                         data[i*4+0] = (byte)(lval);
                         data[i*4+1] = (byte)(lval>>8);
@@ -354,8 +354,8 @@ public class pspAudio {
             }
             else*/
             {
-                pspchannels[channel].lvol = leftvol;
-                pspchannels[channel].rvol = rightvol;
+                pspchannels[channel].leftVolume = leftvol;
+                pspchannels[channel].rightVolume = rightvol;
                 ret = 0;
             }
         }

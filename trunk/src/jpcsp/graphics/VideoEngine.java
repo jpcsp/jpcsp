@@ -19,14 +19,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.graphics;
 
 import static jpcsp.graphics.GeCommands.*;
-
 import java.nio.Buffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.Iterator;
-
 import javax.media.opengl.GL;
-
 import jpcsp.Emulator;
 import jpcsp.Memory;
 
@@ -34,14 +31,6 @@ public class VideoEngine {
 
     private static VideoEngine instance;
     private GL gl;
-
-    private boolean fullscreen;
-    private int mode;
-    private int linesize;
-    private int pixelsize;
-    private int width;
-    private int height;
-    private boolean ha;
     public static final boolean isDebugMode = true;
     private static GeCommands helper;
     private VertexInfo vinfo = new VertexInfo();
@@ -147,7 +136,6 @@ public class VideoEngine {
         while(it.hasNext() && !Emulator.pause) {
             DisplayList list = it.next();
             if (list.status == DisplayList.QUEUED && list.HasFinish()) {
-                //System.err.println("executeList");
                 executeList(list);
 
                 if (list.status == DisplayList.DONE) {
@@ -172,9 +160,7 @@ public class VideoEngine {
 
         log("executeList id " + list.id);
 
-        while (!listIsOver &&
-            actualList.pc != actualList.stallAddress &&
-            !Emulator.pause) {
+        while (!listIsOver && actualList.pc != actualList.stallAddress && !Emulator.pause) {
             int ins = Emulator.getMemory().read32(actualList.pc);
             actualList.pc += 4;
             executeCommand(ins);
@@ -192,16 +178,15 @@ public class VideoEngine {
         }
     }
 
-    //I guess here we use ubyte
-    private int command(int instruction) {
+    private static int command(int instruction) {
         return (instruction >>> 24);
     }
 
-    private int intArgument(int instruction) {
+    private static int intArgument(int instruction) {
         return (instruction & 0x00FFFFFF);
     }
 
-    private float floatArgument(int instruction) {
+    private static float floatArgument(int instruction) {
         return Float.intBitsToFloat(instruction << 8);
     }
 

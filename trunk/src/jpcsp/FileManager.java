@@ -42,7 +42,6 @@ public class FileManager {
     private Elf32 elf;
     private PSP psp;
     private ByteBuffer actualFile;
-    private String filePath;
     public final static int FORMAT_ELF = 0;
     public final static int FORMAT_PBP = 10;
     public final static int FORMAT_UMD = 20;
@@ -55,7 +54,6 @@ public class FileManager {
     private List<DeferredStub> deferredImports;
     private SeekableDataInput iso;
     public FileManager(ByteBuffer f) throws FileNotFoundException, IOException {
-        //this.filePath = filePath;
         loadAndDefine(f);
     }
     public FileManager(SeekableDataInput iso)
@@ -96,7 +94,6 @@ public class FileManager {
     }
 
     private void loadAndDefine(ByteBuffer f) throws FileNotFoundException, IOException {
-        //SeekableRandomFile f = new SeekableRandomFile(filePath, "r");
         setActualFile(f);
         try {
             elfoffset = 0;
@@ -177,7 +174,7 @@ public class FileManager {
         if (getPBP().isValid()) {
 
             if (Settings.get_instance().readBoolOptions("emuoptions/pbpunpack")) {
-                getPBP().unpackPBP(getActualFile());
+                PBP.unpackPBP(getActualFile());
             }
             elfoffset = getPBP().getOffsetPspData();
             getActualFile().position((int)elfoffset); //seek the new offset

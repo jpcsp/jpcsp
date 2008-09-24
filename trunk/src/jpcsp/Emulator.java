@@ -29,9 +29,6 @@ import jpcsp.format.Elf32SectionHeader;
 import jpcsp.format.Elf32SectionHeader.ShType;
 import jpcsp.format.Elf32StubHeader;
 import static jpcsp.util.Utilities.*;
-import jpcsp.filesystems.*;
-
-//import jpcsp.util.Utilities;
 
 public class Emulator implements Runnable {
 public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
@@ -55,7 +52,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
     public static int[] Stubtextsection=new int[2];
 
     public Emulator(MainGUI gui) {
-        this.gui = gui;
+        Emulator.gui = gui;
         cpu = new Processor();
 
         if (Settings.get_instance().readBoolOptions("emuoptions/recompiler"))

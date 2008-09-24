@@ -30,10 +30,6 @@ public class DisplayList {
     public static final int DRAWING_DONE = 2;
     public static final int STALL_REACHED = 3;
     public static final int CANCEL_DONE = 4;
-    //sceGuSendList [int mode
-    public static final int GU_TAIL = 0;
-    public static final int GU_HEAD = 1;
-    
     protected static Semaphore displayListLock = new Semaphore(1, true);
 
     private static HashMap<Integer, DisplayList> displayLists;
