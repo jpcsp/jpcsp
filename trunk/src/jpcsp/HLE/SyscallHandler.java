@@ -95,7 +95,10 @@ public class SyscallHandler {
 		// sceKernelPollSema(0x2025),
 		 //sceKernelCancelSema(0x2026),
 		 //sceKernelReferSemaStatus(0x2027),
-		 //sceKernelCreateEventFlag(0x2028),
+		 
+                case 0x2028:
+                    ThreadMan.get_instance().ThreadMan_sceKernelCreateEventFlag(gpr[4],gpr[5], gpr[6], gpr[7]);
+                    break;
 		// sceKernelDeleteEventFlag(0x2029),
 		// sceKernelSetEventFlag(0x202a),
 		// sceKernelClearEventFlag(0x202b),

@@ -800,7 +800,18 @@ public class syscallsFirm15 {
                  sceSasCore_bd11b7c2(0x22fb,0xbd11b7c2),
  	         sceSasCore_d1e0a01e(0x22fc,0xd1e0a01e),
  	         sceSasCore_e175ef66(0x22fd,0xe175ef66),
- 	         sceSasCore_e855bf76(0x22fe,0xe855bf76);
+ 	         sceSasCore_e855bf76(0x22fe,0xe855bf76),
+                 
+                 
+                 /* FAKE MAPPING!! for Final Fantasy checks*/
+                 Unknown_8f2df740(0x300,0x8f2df740),
+                 Unknown_7591c7db(0x301,0x7591c7db),
+                 Unknown_f77d77cb(0x302,0xf77d77cb), 
+                 Unknown_eca32a99(0x303,0xeca32a99), 
+                 Unknown_2a2b3de0(0x304,0x2a2b3de0), 
+                 Unknown_4928bd96(0x305,0x4928bd96), 
+                 Unknown_e49bfe92(0x306,0xe49bfe92); 
+
             //implement syscall
             private int syscall;
             private int NID;
