@@ -308,6 +308,7 @@ public class ThreadMan {
             // This should be consistent/no error checking required because waitthreadendlist can only be changed privately
             SceKernelThreadInfo waitingThread = threadlist.get(uid);
             waitingThread.status = PspThreadStatus.PSP_THREAD_READY;
+            waitingThread.do_waitThreadEnd = false;
         }
     }
 
