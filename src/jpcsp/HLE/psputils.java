@@ -21,6 +21,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE;
 
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Random;
 import jpcsp.Emulator;
@@ -51,10 +52,11 @@ public class psputils {
 
     /** Get the time in seconds since the epoc (1st Jan 1970).  */
     public void sceKernelLibcTime(int time_t_addr) {
-        long millis = Calendar.getInstance().getTimeInMillis();
-        int seconds = (int)(millis / 1000);
-        if (time_t_addr != 0)
-            Memory.getInstance().write32(time_t_addr, seconds);
+        Memory mem = Memory.getInstance();
+        int seconds = (int)(Calendar.getInstance().getTimeInMillis() / 1000);
+        if (mem.isAddressGood(time_t_addr)) {
+            mem.write32(time_t_addr, seconds);
+        }
         Emulator.getProcessor().gpr[2] = seconds;
     }
 
@@ -65,8 +67,39 @@ public class psputils {
     protected int currentClocks = 0;
     public void sceKernelLibcClock() {
         //int clocks = (int)System.nanoTime() - initialclocks; // seconds * 1 million
-    	currentClocks += 100;	// FIXME: quick hack to fix NesterJ
+        currentClocks += 100; // FIXME: quick hack to fix NesterJ
         Emulator.getProcessor().gpr[2] = currentClocks;
+    }
+
+    /* from man pages:
+    struct timeval {
+        time_t tv_sec; // seconds since Jan. 1, 1970
+        suseconds_t tv_usec; // and microseconds
+    };
+
+    struct timezone {
+        int tz_minuteswest; // of Greenwich
+        int tz_dsttime; // type of dst correction to apply
+    };
+    */
+    public void sceKernelLibcGettimeofday(int tp, int tzp) {
+        Memory mem = Memory.getInstance();
+
+        if (mem.isAddressGood(tp)) {
+            int tv_sec = (int)(Calendar.getInstance().getTimeInMillis() / 1000);
+            int tv_usec = (int)((System.nanoTime() / 1000) % 1000000);
+            mem.write32(tp, tv_sec);
+            mem.write32(tp + 4, tv_usec);
+        }
+
+        if (mem.isAddressGood(tzp)) {
+            int tz_minuteswest = 0; // TODO
+            int tz_dsttime = 0; // TODO
+            mem.write32(tzp, tz_minuteswest);
+            mem.write32(tzp + 4, tz_dsttime);
+        }
+
+        Emulator.getProcessor().gpr[2] = 0;
     }
 
     public void sceKernelDcacheWritebackAll() {

@@ -319,7 +319,9 @@ public class SyscallHandler {
                 case 0x20c4:
                     psputils.get_instance().sceKernelLibcTime(gpr[4]);
                     break;
-		// sceKernelLibcGettimeofday(0x20c5),
+                case 0x20c5:
+                    psputils.get_instance().sceKernelLibcGettimeofday(gpr[4], gpr[5]);
+                    break;
                 case 0x20c6:
                     psputils.get_instance().sceKernelDcacheWritebackAll();
                     break;
