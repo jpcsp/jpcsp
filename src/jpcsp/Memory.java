@@ -51,7 +51,8 @@ public class Memory {
     }
 
     public void Initialise() {
-        all = new byte[SIZE_ALLMEM];
+        for (int i = 0; i < all.length; i++)
+            all[i] = 0;
     }
 
     private Memory() {
@@ -182,7 +183,7 @@ public class Memory {
             Emulator.PauseEmu();
         }
     }
-    
+
     public void write8(int page, int address, byte data) {
         try {
             buf.put(page + (address & PAGE_MASK), data);
@@ -191,7 +192,7 @@ public class Memory {
             System.out.println("write8 - " + e.getMessage());
             Emulator.PauseEmu();
         }
-    }    
+    }
 
     public void write16(int address, short data) {
         try {
@@ -235,12 +236,12 @@ public class Memory {
             Emulator.PauseEmu();
         }
     }
-    
+
     public void load(ByteBuffer buffer) {
-        
+
     }
 
     public void save(ByteBuffer buffer) {
-        
-    }    
+
+    }
 }
