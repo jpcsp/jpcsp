@@ -27,19 +27,23 @@
         <y>585</y>
       </logwindow>
     </windowspos>
-        
+
     <windowsize>
       <mainwindow>
         <x>872</x>
         <y>746</y>
       </mainwindow>
+      <logwindow>
+        <x>780</x>
+        <y>305</y>
+      </logwindow>
     </windowsize>
-    
+
     <saveWindowPos>1</saveWindowPos>
     <openLogwindow>1</openLogwindow>
     <snapLogwindow>0</snapLogwindow>
   </guisettings>
-  
+
   <emuoptions>
       <pbpunpack>1</pbpunpack>
       <recompiler>0</recompiler>
