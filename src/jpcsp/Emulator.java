@@ -61,7 +61,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
             rec = null;
 
         controller = new Controller();
-        mainThread = new Thread(this);
+        mainThread = new Thread(this, "Emu");
     }
 
     /* unused ?

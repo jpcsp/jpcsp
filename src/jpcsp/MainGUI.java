@@ -77,10 +77,10 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
     /** Creates new form MainGUI */
     public MainGUI() {
-    	DOMConfigurator.configure("LogSettings.xml");
-		System.setOut(new PrintStream(new LoggingOutputStream(Logger.getLogger("misc"), Level.INFO)));		
+        DOMConfigurator.configure("LogSettings.xml");
+        System.setOut(new PrintStream(new LoggingOutputStream(Logger.getLogger("misc"), Level.INFO)));
         consolewin = new LogWindow();
-        
+
         emulator = new Emulator(this);
 
         /*next two lines are for overlay menus over joglcanvas*/
@@ -105,7 +105,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             272 + insets.top + insets.bottom);
         this.setMinimumSize(minSize);
 
-        //logging console window stuff        
+        //logging console window stuff
         snapConsole = Settings.get_instance().readBoolOptions("guisettings/snapLogwindow");
         if (snapConsole) {
             mainwindowPos = getLocation();
@@ -690,6 +690,7 @@ public void setMainTitle(String message)
         java.awt.EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
+                Thread.currentThread().setName("GUI");
                 MainGUI maingui = new MainGUI();
                 maingui.setVisible(true);
                 if (Settings.get_instance().readBoolOptions("guisettings/openLogwindow"))
