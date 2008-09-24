@@ -28,7 +28,7 @@ import org.apache.log4j.xml.DOMConfigurator;
 public class LogWindow extends JFrame {
 
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = 9105338140096798954L;
 	private JTextPane textPane;
@@ -36,20 +36,24 @@ public class LogWindow extends JFrame {
 	public LogWindow() {
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 		setTitle("Logger");
-		
+
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowDeactivated(WindowEvent e) {
 				if (Settings.get_instance().readBoolOptions("guisettings/saveWindowPos"))
 			        Settings.get_instance().writeWindowPos("logwindow", getLocation());
 			}});
-				
+
 		textPane = new JTextPane();
 		JScrollPane scrollPane = new JScrollPane(textPane);
 
 		TextPaneAppender textPaneAppender = (TextPaneAppender)Logger.getRootLogger().getAppender("JpcspAppender");
+		if (textPaneAppender == null) {
+			System.err.println("There is a problem with LogSettings.xml");
+			System.exit(1);
+		}
 		textPaneAppender.setTextPane(textPane);
-		
+
 		JButton clearButton = new JButton("Clear");
 		clearButton.addActionListener(new ActionListener() {
 			@Override
@@ -102,11 +106,11 @@ public class LogWindow extends JFrame {
 				}
 			}
 		});
-		
+
 		GroupLayout layout = new GroupLayout(getRootPane());
 		layout.setAutoCreateGaps(true);
 		//layout.setAutoCreateContainerGaps(true);
-		
+
 		layout.setHorizontalGroup(layout.createParallelGroup(GroupLayout.Alignment.TRAILING)
 				.addComponent(scrollPane)
 				.addGroup(layout.createSequentialGroup()
@@ -122,7 +126,7 @@ public class LogWindow extends JFrame {
 		setSize(500, 300);
 		getRootPane().setLayout(layout);
 	}
-	
+
 	/**
 	 * @param args
 	 */
@@ -134,9 +138,9 @@ public class LogWindow extends JFrame {
 		}
 		System.setProperty("log4j.properties", "LogSettings.xml");
 		DOMConfigurator.configure("LogSettings.xml");
-		
+
 		System.setOut(new PrintStream(new LoggingOutputStream(Logger.getLogger("sysout"), Level.INFO)));
-		new LogWindow().setVisible(true); 
+		new LogWindow().setVisible(true);
 	}
 
 	public void clearScreenMessages() {
