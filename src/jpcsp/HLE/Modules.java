@@ -21,7 +21,8 @@ public class Modules {
     public static sceDisplay sceDisplayModule = new sceDisplay();
     public static sceGe_user sceGE_userModule = new sceGe_user();
     public static sceUmdUser sceUmdUserModule = new sceUmdUser();
-    
+    public static sceUtility sceUtilityModule = new sceUtility();
+
     public void step() {
     }
 
@@ -29,5 +30,5 @@ public class Modules {
     }
 
     public void save(ByteBuffer buffer) {
-    }    
+    }
 };

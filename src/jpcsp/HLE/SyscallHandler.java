@@ -69,7 +69,9 @@ public class SyscallHandler {
 		//case 0x2017: ///sceKernelCancelWakeupThread
 		//case 0x2018: //sceKernelSuspendThread
 		//case 0x2019: //sceKernelResumeThread
-		//case 0x201a: //sceKernelWaitThreadEnd
+                case 0x201a:
+                    ThreadMan.get_instance().ThreadMan_sceKernelWaitThreadEnd(gpr[4], gpr[5]);
+                    break;
 		//case 0x201b: //sceKernelWaitThreadEndCB
                 case 0x201c:
                     ThreadMan.get_instance().ThreadMan_sceKernelDelayThread(gpr[4]);
@@ -79,7 +81,7 @@ public class SyscallHandler {
                     break;
 		 //sceKernelDelaySysClockThread(0x201e),
 		// sceKernelDelaySysClockThreadCB(0x201f),
-		
+
                 case 0x2020:
                     ThreadMan.get_instance().ThreadMan_sceKernelCreateSema(gpr[4],gpr[5],gpr[6],gpr[7],gpr[8]);
                     break;
@@ -95,7 +97,7 @@ public class SyscallHandler {
 		// sceKernelPollSema(0x2025),
 		 //sceKernelCancelSema(0x2026),
 		 //sceKernelReferSemaStatus(0x2027),
-		 
+
                 case 0x2028:
                     ThreadMan.get_instance().ThreadMan_sceKernelCreateEventFlag(gpr[4],gpr[5], gpr[6], gpr[7]);
                     break;

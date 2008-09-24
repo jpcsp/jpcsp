@@ -45,6 +45,7 @@ public class ThreadMan {
     private static HashMap<Integer, SceKernelThreadInfo> threadlist;
     private static HashMap<Integer, SceKernelSemaphoreInfo> semalist;
     private static HashMap<Integer, SceKernelEventFlagInfo> eventlist;
+    private static HashMap<Integer, Integer> waitthreadendlist; // <thread to wait on, thread to wakeup>
     private  ArrayList<Integer> waitingThreads;
     private SceKernelThreadInfo current_thread;
     private SceKernelThreadInfo idle0, idle1;
@@ -72,6 +73,7 @@ public class ThreadMan {
         threadlist = new HashMap<Integer, SceKernelThreadInfo>();
         semalist = new HashMap<Integer, SceKernelSemaphoreInfo>();
         eventlist = new HashMap<Integer, SceKernelEventFlagInfo>();
+        waitthreadendlist = new HashMap<Integer, Integer>();
         waitingThreads= new ArrayList<Integer>();
         // Clear stack allocation info MOVED TO PSPSYSMEM
         //stackAllocated = 0;
@@ -152,6 +154,7 @@ public class ThreadMan {
                     + " name:'" + current_thread.name + "' return:" + Emulator.getProcessor().gpr[2]);
                 current_thread.exitStatus = Emulator.getProcessor().gpr[2]; // v0
                 current_thread.status = PspThreadStatus.PSP_THREAD_STOPPED;
+                onThreadStopped(current_thread);
                 contextSwitch(nextThread());
             }
 
@@ -177,10 +180,18 @@ public class ThreadMan {
 
             // Decrement delaysteps on sleeping threads
             if (thread.status == PspThreadStatus.PSP_THREAD_WAITING) {
-                if (thread.delaysteps > 0)
+                if (thread.delaysteps > 0) {
                     thread.delaysteps--;
-                if (thread.delaysteps == 0)
+                }
+                if (thread.delaysteps == 0) {
                     thread.status = PspThreadStatus.PSP_THREAD_READY;
+
+                    // If this thread was doing sceKernelWaitThreadEnd then remove the wakeup callback
+                    if (thread.do_waitThreadEnd) {
+                        thread.do_waitThreadEnd = false;
+                        waitthreadendlist.remove(thread.waitThreadEndUid);
+                    }
+                }
             }
 
             // Cleanup stopped threads marked for deletion
@@ -193,13 +204,8 @@ public class ThreadMan {
                     // Changed to thread safe iterator.remove
                     //threadlist.remove(thread.uid);
                     it.remove();
-                 try{
+
                     SceUIDMan.get_instance().releaseUid(thread.uid, "ThreadMan-thread");
-                 }
-                 catch(Exception e)
-                 {
-                   e.printStackTrace();
-                 }
                 }
             }
         }
@@ -295,6 +301,16 @@ public class ThreadMan {
         }
     }
 
+    private void onThreadStopped(SceKernelThreadInfo stoppedThread) {
+        // Wakeup threads that are in sceKernelWaitThreadEnd
+        Integer uid = waitthreadendlist.remove(stoppedThread.uid);
+        if (uid != null) {
+            // This should be consistent/no error checking required because waitthreadendlist can only be changed privately
+            SceKernelThreadInfo waitingThread = threadlist.get(uid);
+            waitingThread.status = PspThreadStatus.PSP_THREAD_READY;
+        }
+    }
+
 
     public void ThreadMan_sceKernelCreateThread(int name_addr, int entry_addr,
         int initPriority, int stackSize, int attr, int option_addr) {
@@ -341,6 +357,7 @@ public class ThreadMan {
             thread.status = PspThreadStatus.PSP_THREAD_STOPPED; // PSP_THREAD_STOPPED or PSP_THREAD_KILLED ?
 
             Emulator.getProcessor().gpr[2] = 0;
+            onThreadStopped(thread);
         }
     }
 
@@ -392,6 +409,7 @@ public class ThreadMan {
         current_thread.status = PspThreadStatus.PSP_THREAD_STOPPED;
         current_thread.exitStatus = exitStatus;
         Emulator.getProcessor().gpr[2] = 0;
+        onThreadStopped(current_thread);
 
         contextSwitch(nextThread());
     }
@@ -406,6 +424,7 @@ public class ThreadMan {
         current_thread.status = PspThreadStatus.PSP_THREAD_STOPPED;
         current_thread.exitStatus = exitStatus;
         Emulator.getProcessor().gpr[2] = 0;
+        onThreadStopped(current_thread); // TODO maybe not here in Exit and Delete thread function
 
         // Mark thread for deletion
         thread.do_delete = true;
@@ -456,7 +475,7 @@ public class ThreadMan {
 
         contextSwitch(nextThread());
     }
-    
+
     public void ThreadMan_sceKernelCreateCallback(int a0, int a1, int a2) {
         String name = readStringZ(Memory.getInstance().mainmemory, (a0 & 0x3fffffff) - MemoryMap.START_RAM);
         SceKernelCallbackInfo callback = new SceKernelCallbackInfo(name, current_thread.uid, a1, a2);
@@ -517,6 +536,7 @@ public class ThreadMan {
         SceUIDMan.get_instance().checkUidPurpose(uid, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadlist.get(uid);
         if (thread == null) {
+            System.out.println("sceKernelChangeThreadPriority unknown thread");
             Emulator.getProcessor().gpr[2] = 0x80020198; //notfoundthread
         } else {
             System.out.println("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(thread.uid)
@@ -551,6 +571,7 @@ public class ThreadMan {
         SceUIDMan.get_instance().checkUidPurpose(uid, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadlist.get(uid);
         if (thread == null) {
+            System.out.println("sceKernelWakeupThread unknown thread");
             Emulator.getProcessor().gpr[2] = 0x80020198; //notfoundthread
         } else if (thread.status != PspThreadStatus.PSP_THREAD_SUSPEND) {
             System.out.println("sceKernelWakeupThread thread not suspended (status=" + thread.status + ")");
@@ -558,6 +579,37 @@ public class ThreadMan {
         } else {
             thread.status = PspThreadStatus.PSP_THREAD_READY;
             Emulator.getProcessor().gpr[2] = 0;
+        }
+    }
+
+    public void ThreadMan_sceKernelWaitThreadEnd(int uid, int micros) {
+        System.out.println("sceKernelWaitThreadEnd SceUID=" + Integer.toHexString(uid) + " timeout=" + micros);
+        SceUIDMan.get_instance().checkUidPurpose(uid, "ThreadMan-thread", true);
+        SceKernelThreadInfo thread = threadlist.get(uid);
+        if (thread == null) {
+            System.out.println("sceKernelWaitThreadEnd unknown thread");
+            Emulator.getProcessor().gpr[2] = 0x80020198; //notfoundthread
+        } else if (waitthreadendlist.get(uid) != null) {
+            // TODO out current implementation only allows 1 thread to wait on another thread to end
+            System.out.println("UNIMPLEMENTED:sceKernelWaitThreadEnd another thread already waiting for the target thread to end");
+            Emulator.getProcessor().gpr[2] = -1;
+        } else {
+            waitthreadendlist.put(uid, current_thread.uid);
+
+            if (micros > 0) {
+                current_thread.status = PspThreadStatus.PSP_THREAD_WAITING;
+                //current_thread.delaysteps = micros * 200000000 / 1000000; // TODO delaysteps = a0 * steprate
+                current_thread.delaysteps = micros; // test version
+            } else {
+                current_thread.status = PspThreadStatus.PSP_THREAD_SUSPEND;
+            }
+
+            current_thread.do_callbacks = false;
+            current_thread.do_waitThreadEnd = true;
+            current_thread.waitThreadEndUid = uid;
+            Emulator.getProcessor().gpr[2] = 0;
+
+            contextSwitch(nextThread());
         }
     }
 
@@ -658,6 +710,9 @@ public class ThreadMan {
         private boolean do_delete;
         private boolean do_callbacks; // in this implementation, only valid for PSP_THREAD_WAITING and PSP_THREAD_SUSPEND
 
+        private boolean do_waitThreadEnd;
+        private int waitThreadEndUid;
+
         public SceKernelThreadInfo(String name, int entry_addr, int initPriority, int stackSize, int attr) {
             this.name = name;
             this.entry_addr = entry_addr;
@@ -702,6 +757,7 @@ public class ThreadMan {
             delaysteps = 0;
             do_delete = false;
             do_callbacks = false;
+            do_waitThreadEnd = false;
         }
 
         public void saveContext() {
@@ -740,18 +796,18 @@ public class ThreadMan {
             return o1.currentPriority - o2.currentPriority;
         }
     }
-    public void ThreadMan_sceKernelCreateSema(int name_addr, int attr, int initVal, int maxVal, int option) 
-    { 
+    public void ThreadMan_sceKernelCreateSema(int name_addr, int attr, int initVal, int maxVal, int option)
+    {
         String name = readStringZ(Memory.getInstance().mainmemory,
             (name_addr & 0x3fffffff) - MemoryMap.START_RAM);
-        
+
         System.out.println("sceKernelCreateSema name=" + name + " attr= " + attr + " initVal= " + initVal + " maxVal= "+ maxVal + " option= " + option);
         int initCount = initVal;
         int currentCount = initVal;
         int maxCount = maxVal;
         if(option !=0) System.out.println("sceKernelCreateSema: UNSUPPORTED Option Value");
         SceKernelSemaphoreInfo sema = new SceKernelSemaphoreInfo(name,attr,initCount,currentCount,maxCount);
-        
+
         Emulator.getProcessor().gpr[2] = sema.uid;
     }
     public void ThreadMan_sceKernelWaitSema(int semaid , int signal , int timeoutptr , int timeout)
@@ -765,7 +821,7 @@ public class ThreadMan {
             } else {
                 if(sema.currentCount >= signal)
                 {
-                  sema.currentCount-=signal;  
+                  sema.currentCount-=signal;
                   Emulator.getProcessor().gpr[2] = 0;
                 }
                 else
@@ -775,10 +831,10 @@ public class ThreadMan {
                     Emulator.getProcessor().gpr[2] = 0;
                     blockCurrentThread();
                 }
-                
+
             }
- 
-        
+
+
     }
     public void ThreadMan_sceKernelSignalSema(int semaid , int signal)
     {
@@ -794,11 +850,11 @@ public class ThreadMan {
                 Iterator<Integer> waitThreads = waitingThreads.iterator();
                 while(waitThreads.hasNext())
                 {
-                  System.out.println("UNNNNNNNNNNNNNNNN Wait threads = " + waitThreads.next());   
+                  System.out.println("UNNNNNNNNNNNNNNNN Wait threads = " + waitThreads.next());
                 }
             }
             Emulator.getProcessor().gpr[2] = 0;
-   
+
     }
     private class SceKernelSemaphoreInfo
     {
@@ -807,7 +863,7 @@ public class ThreadMan {
          private int initCount;
          private int currentCount;
          private int maxCount;
-         
+
          private int uid;
          public SceKernelSemaphoreInfo(String name, int attr, int initCount, int currentCount, int maxCount)
          {
@@ -818,19 +874,19 @@ public class ThreadMan {
              this.maxCount=maxCount;
              uid = SceUIDMan.get_instance().getNewUid("ThreadMan-sema");
              semalist.put(uid, this);
-         }        
+         }
     }
-    
-    public void ThreadMan_sceKernelCreateEventFlag(int name_addr, int attr, int initPattern, int option) 
-    { 
+
+    public void ThreadMan_sceKernelCreateEventFlag(int name_addr, int attr, int initPattern, int option)
+    {
         String name = readStringZ(Memory.getInstance().mainmemory,
             (name_addr & 0x3fffffff) - MemoryMap.START_RAM);
-        
+
         System.out.println("sceKernelCreateEventFlag name=" + name + " attr= " + attr + " initPattern= " + initPattern+ " option= " + option);
-        
+
         if(option !=0) System.out.println("sceKernelCreateSema: UNSUPPORTED Option Value");
         SceKernelEventFlagInfo event = new SceKernelEventFlagInfo(name,attr,initPattern,initPattern);//initPattern and currentPattern should be the same at init
-        
+
         Emulator.getProcessor().gpr[2] = event.uid;
     }
     private class SceKernelEventFlagInfo
@@ -840,9 +896,9 @@ public class ThreadMan {
       private int initPattern;
       private int currentPattern;
       private int numWaitThreads;//NOT sure if that should be here or merged with the semaphore waitthreads..
-        
+
       private int uid;
-      
+
       public SceKernelEventFlagInfo(String name,int attr,int initPattern,int currentPattern)
       {
         this.name=name;
@@ -851,7 +907,7 @@ public class ThreadMan {
         this.currentPattern=currentPattern;
         uid = SceUIDMan.get_instance().getNewUid("ThreadMan-eventflag");
         eventlist.put(uid, this);
-          
+
       }
     }
 }
