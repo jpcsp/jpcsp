@@ -340,11 +340,9 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     }// </editor-fold>//GEN-END:initComponents
 
 private void ToggleConsoleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ToggleConsoleActionPerformed
-    if (!consolewin.isVisible()) {
+    if (!consolewin.isVisible() && snapConsole) {
         mainwindowPos = this.getLocation();
-
-        if (snapConsole)
-            consolewin.setLocation(mainwindowPos.x, mainwindowPos.y + getHeight());
+        consolewin.setLocation(mainwindowPos.x, mainwindowPos.y + getHeight());
     }
     consolewin.setVisible(!consolewin.isVisible());
 }//GEN-LAST:event_ToggleConsoleActionPerformed
@@ -626,7 +624,6 @@ private void InstructionCounterActionPerformed(java.awt.event.ActionEvent evt) {
 private void exitEmu() {
     if (Settings.get_instance().readBoolOptions("guisettings/saveWindowPos"))
         Settings.get_instance().writeWindowPos("mainwindow", getLocation());
-    Settings.get_instance().writeBoolOptions("guisettings/snapLogwindow", snapConsole);
 
     System.exit(0);
 }
