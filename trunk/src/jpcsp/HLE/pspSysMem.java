@@ -73,7 +73,7 @@ public class pspSysMem {
     {
         blockList = new HashMap<Integer, SysMemInfo>();
 
-        System.out.println("pspSysMem reserving " + programSize + " bytes at "
+        Modules.log.debug("pspSysMem reserving " + programSize + " bytes at "
                 + String.format("%08x", programStartAddr) + " for app");
 
         heapBottom = programStartAddr + programSize;
@@ -92,31 +92,88 @@ public class pspSysMem {
             allocatedAddress = heapBottom;
             allocatedAddress = (allocatedAddress + 63) & ~63;
             heapBottom = allocatedAddress + size;
+
+            if (heapBottom > heapTop)
+            {
+                Modules.log.warn("malloc overflowed (heapBottom=0x" + Integer.toHexString(heapBottom)
+                    + ",heapTop=0x" + Integer.toHexString(heapTop) + ")");
+            }
         }
         else if (type == PSP_SMEM_Addr)
         {
-            allocatedAddress = heapBottom;
-            if (allocatedAddress < addr)
-                allocatedAddress = addr;
-            allocatedAddress = (allocatedAddress + 63) & ~63;
-            heapBottom = allocatedAddress + size;
+            int highDiff = heapTop - addr;
+            int lowDiff = heapBottom - addr;
+            if (highDiff < 0) highDiff = -highDiff;
+            if (lowDiff < 0) lowDiff = -lowDiff;
+
+            if (lowDiff <= highDiff)
+            {
+                // Alloc near bottom
+                allocatedAddress = heapBottom;
+                if (allocatedAddress < addr)
+                    allocatedAddress = addr;
+                allocatedAddress = (allocatedAddress + 63) & ~63;
+                heapBottom = allocatedAddress + size;
+
+                if (heapBottom > heapTop)
+                {
+                    Modules.log.warn("malloc overflowed (heapBottom=0x" + Integer.toHexString(heapBottom)
+                        + ",heapTop=0x" + Integer.toHexString(heapTop) + ")");
+                }
+            }
+            else
+            {
+                // Alloc near top
+                allocatedAddress = heapTop - size;
+                if (allocatedAddress > addr)
+                    allocatedAddress = addr;
+                allocatedAddress = (allocatedAddress + 63) & ~63;
+                heapTop = allocatedAddress;
+
+                if (heapTop < heapBottom)
+                {
+                    Modules.log.warn("malloc underflowed (heapBottom=0x" + Integer.toHexString(heapBottom)
+                        + ",heapTop=0x" + Integer.toHexString(heapTop) + ")");
+                }
+            }
         }
         else if (type == PSP_SMEM_High)
         {
             allocatedAddress = (heapTop - (size + 63)) & ~63;
             heapTop = allocatedAddress;
+
+            if (heapTop < heapBottom)
+            {
+                Modules.log.warn("malloc underflowed (heapBottom=0x" + Integer.toHexString(heapBottom)
+                    + ",heapTop=0x" + Integer.toHexString(heapTop) + ")");
+            }
         }
         else if (type == PSP_SMEM_LowAligned)
         {
             allocatedAddress = heapBottom;
             allocatedAddress = (allocatedAddress + addr - 1) & ~(addr - 1);
             heapBottom = allocatedAddress + size;
+
+            if (heapBottom > heapTop)
+            {
+                Modules.log.warn("malloc overflowed (heapBottom=0x" + Integer.toHexString(heapBottom)
+                    + ",heapTop=0x" + Integer.toHexString(heapTop) + ")");
+            }
         }
         else if (type == PSP_SMEM_HighAligned)
         {
             allocatedAddress = (heapTop - (size + addr - 1)) & ~(addr - 1);
             heapTop = allocatedAddress;
+
+            if (heapTop < heapBottom)
+            {
+                Modules.log.warn("malloc underflowed (heapBottom=0x" + Integer.toHexString(heapBottom)
+                    + ",heapTop=0x" + Integer.toHexString(heapTop) + ")");
+            }
         }
+
+        Modules.log.debug("malloc (heapBottom=0x" + Integer.toHexString(heapBottom)
+            + ",heapTop=0x" + Integer.toHexString(heapTop) + ")");
 
         return allocatedAddress;
     }
@@ -142,7 +199,7 @@ public class pspSysMem {
 
         if (!found)
         {
-            System.out.println("ERROR failed to map addr to SysMemInfo, possibly bad/missing cleanup or double free in HLE");
+            Modules.log.error("failed to map addr to SysMemInfo, possibly bad/missing cleanup or double free in HLE");
         }
     }
 
@@ -153,16 +210,16 @@ public class pspSysMem {
 
     public void sceKernelMaxFreeMemSize()
     {
-        int maxFree = heapTop - heapBottom;
-        System.out.println("sceKernelMaxFreeMemSize " + maxFree
+        int maxFree = heapTop - heapBottom - 64; // don't forget our alignment padding!
+        Modules.log.debug("sceKernelMaxFreeMemSize " + maxFree
                 + " (hex=" + Integer.toHexString(maxFree) + ")");
         Emulator.getProcessor().gpr[2] = maxFree;
     }
 
     public void sceKernelTotalFreeMemSize()
     {
-        int totalFree = heapTop - heapBottom;
-        System.out.println("sceKernelTotalFreeMemSize " + totalFree
+        int totalFree = heapTop - heapBottom - 64; // don't forget our alignment padding!
+        Modules.log.debug("sceKernelTotalFreeMemSize " + totalFree
                 + " (hex=" + Integer.toHexString(totalFree) + ")");
         Emulator.getProcessor().gpr[2] = totalFree;
     }
@@ -191,7 +248,7 @@ public class pspSysMem {
             case PSP_SMEM_HighAligned: typeStr = "PSP_SMEM_HighAligned"; break;
             default: typeStr = "UNHANDLED " + type; break;
         }
-        System.out.println("sceKernelAllocPartitionMemory(partitionid=" + partitionid
+        Modules.log.debug("sceKernelAllocPartitionMemory(partitionid=" + partitionid
                 + ",name='" + name + "',type=" + typeStr + ",size=" + size
                 + ",addr=0x" + Integer.toHexString(addr) + ")");
 
@@ -212,11 +269,11 @@ public class pspSysMem {
         SceUIDMan.get_instance().checkUidPurpose(uid, "SysMem", true);
         SysMemInfo info = blockList.remove(uid);
         if (info == null) {
-            System.out.println("sceKernelFreePartitionMemory unknown SceUID=" + Integer.toHexString(uid));
+            Modules.log.warn("sceKernelFreePartitionMemory unknown SceUID=" + Integer.toHexString(uid));
             Emulator.getProcessor().gpr[2] = -1;
         } else {
             free(info);
-            System.out.println("UNIMPLEMENT:sceKernelFreePartitionMemory SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "'");
+            Modules.log.warn("UNIMPLEMENT:sceKernelFreePartitionMemory SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "'");
             Emulator.getProcessor().gpr[2] = 0;
         }
     }
@@ -226,10 +283,10 @@ public class pspSysMem {
         SceUIDMan.get_instance().checkUidPurpose(uid, "SysMem", true);
         SysMemInfo info = blockList.get(uid);
         if (info == null) {
-            System.out.println("sceKernelGetBlockHeadAddr unknown SceUID=" + Integer.toHexString(uid));
+            Modules.log.warn("sceKernelGetBlockHeadAddr unknown SceUID=" + Integer.toHexString(uid));
             Emulator.getProcessor().gpr[2] = -1;
         } else {
-            System.out.println("sceKernelGetBlockHeadAddr SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "' headAddr:" + Integer.toHexString(info.addr));
+            Modules.log.debug("sceKernelGetBlockHeadAddr SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "' headAddr:" + Integer.toHexString(info.addr));
             Emulator.getProcessor().gpr[2] = info.addr;
         }
     }
@@ -238,7 +295,7 @@ public class pspSysMem {
     {
         // Return 1.5 for now
         int version = PSP_FIRMWARE_150;
-        System.out.println("sceKernelDevkitVersion 0x" + Integer.toHexString(version));
+        Modules.log.debug("sceKernelDevkitVersion 0x" + Integer.toHexString(version));
         Emulator.getProcessor().gpr[2] = version;
     }
 
