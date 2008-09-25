@@ -18,6 +18,9 @@ package jpcsp;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+
+import org.apache.log4j.Logger;
+
 import jpcsp.HLE.pspdisplay;
 import static jpcsp.MemoryMap.*;
 
@@ -35,6 +38,7 @@ public class Memory {
                                                  SIZE_VRAM + SIZE_RAM;
 
     private static Memory instance = null;
+    public static Logger log = Logger.getLogger("memory");
 
     private byte[]     all; // all psp memory is held in here
     private static int[]      map; // hold map of memory
@@ -135,7 +139,7 @@ public class Memory {
             int page = indexFromAddr(address);
             return (int)buf.get(page + (address & PAGE_MASK)) & 0xFF;
         } catch (Exception e) {
-            System.out.println("read8 - " + e.getMessage());
+            Memory.log.error("read8 - " + e.getMessage());
             Emulator.PauseEmu();
             return 0;
         }
@@ -146,7 +150,7 @@ public class Memory {
             int page = indexFromAddr(address);
             return (int)buf.getShort(page + (address & PAGE_MASK)) & 0xFFFF;
         } catch (Exception e) {
-            System.out.println("read16 - " + e.getMessage());
+        	Memory.log.error("read16 - " + e.getMessage());
             Emulator.PauseEmu();
             return 0;
         }
@@ -157,7 +161,7 @@ public class Memory {
             int page = indexFromAddr(address);
             return buf.getInt(page + (address & PAGE_MASK));
         } catch (Exception e) {
-            System.out.println("read32 - " + e.getMessage());
+        	Memory.log.error("read32 - " + e.getMessage());
             Emulator.PauseEmu();
             return 0;
         }
@@ -167,7 +171,7 @@ public class Memory {
         try {
             return buf.getInt(page + (address & PAGE_MASK));
         } catch (Exception e) {
-            System.out.println("read32 - " + e.getMessage());
+        	Memory.log.error("read32 - " + e.getMessage());
             Emulator.PauseEmu();
             return 0;
         }
@@ -179,7 +183,7 @@ public class Memory {
             buf.put(page + (address & PAGE_MASK), data);
             pspdisplay.get_instance().write8(address, data);
         } catch (Exception e) {
-            System.out.println("write8 - " + e.getMessage());
+        	Memory.log.error("write8 - " + e.getMessage());
             Emulator.PauseEmu();
         }
     }
@@ -189,7 +193,7 @@ public class Memory {
             buf.put(page + (address & PAGE_MASK), data);
             pspdisplay.get_instance().write8(address, data);
         } catch (Exception e) {
-            System.out.println("write8 - " + e.getMessage());
+        	Memory.log.error("write8 - " + e.getMessage());
             Emulator.PauseEmu();
         }
     }
@@ -200,7 +204,7 @@ public class Memory {
             buf.putShort(page + (address & PAGE_MASK), data);
             pspdisplay.get_instance().write16(address, data);
         } catch (Exception e) {
-            System.out.println("write16 - " + e.getMessage());
+        	Memory.log.error("write16 - " + e.getMessage());
             Emulator.PauseEmu();
         }
     }
@@ -211,7 +215,7 @@ public class Memory {
             buf.putInt(page + (address & PAGE_MASK), data);
             pspdisplay.get_instance().write32(address, data);
         } catch (Exception e) {
-            System.out.println("write32 - " + e.getMessage());
+        	Memory.log.error("write32 - " + e.getMessage());
             Emulator.PauseEmu();
         }
     }
@@ -221,7 +225,7 @@ public class Memory {
             buf.putInt(page + (address & PAGE_MASK), data);
             pspdisplay.get_instance().write32(address, data);
         } catch (Exception e) {
-            System.out.println("write32 - " + e.getMessage());
+        	Memory.log.error("write32 - " + e.getMessage());
             Emulator.PauseEmu();
         }
     }
@@ -232,7 +236,7 @@ public class Memory {
             buf.putLong(page + (address & PAGE_MASK), data);
             //pspdisplay.get_instance().write64(address, data);
         } catch (Exception e) {
-            System.out.println("write64 - " + e.getMessage());
+        	Memory.log.error("write64 - " + e.getMessage());
             Emulator.PauseEmu();
         }
     }

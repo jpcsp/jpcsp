@@ -34,7 +34,7 @@ public class VideoEngine {
 
     private static VideoEngine instance;
     private GL gl;
-    public static Logger logger;
+    public static Logger log = Logger.getLogger("ge");
     public static final boolean isDebugMode = true;
     private static GeCommands helper;
     private VertexInfo vinfo = new VertexInfo();
@@ -96,7 +96,7 @@ public class VideoEngine {
     private DisplayList actualList; // The currently executing list
     private int clearFlags;
     private static void log(String msg) {
-    	logger.debug(msg);
+    	log.debug(msg);
         /*if (isDebugMode) {
             System.out.println("sceGe DEBUG > " + msg);
         }*/
@@ -114,7 +114,6 @@ public class VideoEngine {
         if (instance == null) {
             instance = new VideoEngine();
             helper = new GeCommands();
-            logger = Logger.getLogger("ge");
         }
         return instance;
     }
@@ -866,7 +865,7 @@ public class VideoEngine {
 	            			}
 
 	                		default: {
-	                			System.out.println("Unhandled clut texture mode " + tex_clut_mode);
+	                			VideoEngine.log.error("Unhandled clut texture mode " + tex_clut_mode);
 	                            Emulator.PauseEmu();
 	                            break;
 	                		}

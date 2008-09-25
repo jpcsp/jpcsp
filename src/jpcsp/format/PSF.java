@@ -23,6 +23,8 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
+import jpcsp.Emulator;
+
 import static jpcsp.util.Utilities.*;
 /**
  *
@@ -63,7 +65,7 @@ public class PSF {
          fileidentify= readUWord(f);
          if(psfident != fileidentify)
          {
-           System.out.println("not current psf file!");
+           Emulator.log.error("not current psf file!");
            return;
          }
          psfversion = readUWord(f);
@@ -128,7 +130,7 @@ public class PSF {
             }
             else
             {
-                System.out.println(Key + " UNIMPLEMENT DATATYPE " + datatype[i]);
+                Emulator.log.warn(Key + " UNIMPLEMENT DATATYPE " + datatype[i]);
             }
          } 
      }

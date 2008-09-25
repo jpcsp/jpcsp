@@ -71,7 +71,7 @@ public class AllegrexBasicBlock {
 
         processor.reset_register_tracking();
         
-        System.out.println("Freezing basic block : " + Integer.toHexString(entry));
+        Processor.log.debug("Freezing basic block : " + Integer.toHexString(entry));
 
         StringBuffer javaMethod = new StringBuffer("public static void execute");
         javaMethod.append("(jpcsp.Processor processor, Integer entry) {\n");
@@ -79,7 +79,7 @@ public class AllegrexBasicBlock {
         javaMethod.append("while(processor.pc == entry.intValue()) {\n");
         javaMethod.append(buffer).append("}; };");
 
-        System.out.println(javaMethod.toString());
+        Processor.log.debug(javaMethod.toString());
 
         CtClass dynaCtClass = pool.makeClass("BasicBlock" + Integer.toHexString(entry));
         try {

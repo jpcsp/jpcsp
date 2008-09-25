@@ -113,8 +113,8 @@ public class VertexInfo {
         }
 
         switch(color) {
-            case 1: case 2: case 3: System.out.println("unimplemented color type"); addr += 1; break;
-            case 4: case 5: case 6: System.out.println("unimplemented color type"); addr += 2; break;
+            case 1: case 2: case 3: VideoEngine.log.debug("unimplemented color type"); addr += 1; break;
+            case 4: case 5: case 6: VideoEngine.log.debug("unimplemented color type"); addr += 2; break;
             case 7: { // GU_COLOR_8888
                 int packed = mem.read32(addr); addr += 4;
                 v.r = (float)((packed      ) & 0xff) / 255;
@@ -144,8 +144,8 @@ public class VertexInfo {
         }
 
         switch(position) {
-            case 1: VideoEngine.logger.debug("unimplemented vertex type 1"); addr += 1; break;
-            case 2: VideoEngine.logger.debug("unimplemented vertex type 2"); addr += 2; break;
+            case 1: VideoEngine.log.debug("unimplemented vertex type 1"); addr += 1; break;
+            case 2: VideoEngine.log.debug("unimplemented vertex type 2"); addr += 2; break;
             case 3: { // GU_VERTEX_32BITF
                 v.px = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
                 v.py = Float.intBitsToFloat(mem.read32(addr)); addr += 4;

@@ -23,12 +23,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.nio.ByteBuffer;
 
+import org.apache.log4j.Logger;
+
 public class Processor implements AllegrexInstructions {
 
 // "New-Style" Processor
     public CpuState cpu;
 
     public static final jpcsp.Memory memory = jpcsp.Memory.getInstance();
+    public static Logger log = Logger.getLogger("cpu");
     
     /* to uncomment when we need to use the "New-Style" Processor
     Processor() {
@@ -485,7 +488,7 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doUNK(String reason) {
-        System.out.println("Interpreter : " + reason);
+    	Processor.log.error("Interpreter : " + reason);
     }
 
     @Override
@@ -1440,7 +1443,7 @@ public class Processor implements AllegrexInstructions {
         // cop0.debug_epc = pc - 4;
         // cop0.cause.exc |= BREAK_EXC;
         // npc = cop0.exception_handler;
-        System.out.println("Unsupported break instruction");
+    	Processor.log.warn("Unsupported break instruction");
     }
 
     @Override
