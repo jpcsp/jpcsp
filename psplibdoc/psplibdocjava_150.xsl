@@ -30,6 +30,7 @@ along with Jpcsp.  If not, see &lt;http://www.gnu.org/licenses/&gt;.
 
 package jpcsp.HLE.modules<xsl:value-of select="$version"/>;
 
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
@@ -72,11 +73,11 @@ public class <xsl:value-of select="NAME"/><xsl:choose><xsl:when test="$old_versi
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function <xsl:value-of select="NAME"/> [<xsl:value-of select="NID"/>]");
+		Modules.log.debug("Unimplemented NID function <xsl:value-of select="NAME"/> [<xsl:value-of select="NID"/>]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		// cpu.gpr[2] = (int)(result &amp; 0xffffffff);  cpu.gpr[3] = (int)(result &sup;&sup;&sup; 32); cpu.fpr[0] = result;
+		// cpu.gpr[2] = (int)(result &amp; 0xffffffff);  cpu.gpr[3] = (int)(result &gt;&gt;&gt; 32); cpu.fpr[0] = result;
 	}
     </xsl:for-each>
     
