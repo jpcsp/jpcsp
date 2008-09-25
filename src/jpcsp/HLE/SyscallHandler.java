@@ -749,13 +749,16 @@ public class SyscallHandler {
                         //Emulator.getProcessor().gpr[2] = 0xb515ca11;
 
                         // Display debug info
+                        String params = String.format("%08x %08x %08x", Emulator.getProcessor().gpr[4],
+                            Emulator.getProcessor().gpr[5], Emulator.getProcessor().gpr[6]);
+
                         for (jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls c : jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls.values()) {
                             if (c.getSyscall() == code) {
-                                System.out.println("Unsupported syscall " + Integer.toHexString(code) + " " + c);
+                                Modules.log.warn("Unsupported syscall " + Integer.toHexString(code) + " " + c + " " + params);
                                 return;
                             }
                         }
-                        System.out.println("Unsupported syscall " + Integer.toHexString(code));
+                        Modules.log.warn("Unsupported syscall " + Integer.toHexString(code) + " " + params);
                     }
                 }
                 break;
