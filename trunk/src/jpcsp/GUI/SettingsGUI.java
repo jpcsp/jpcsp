@@ -150,9 +150,9 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         int pressedKey = arg0.getKeyCode();
         keyCode k = currentKeys.get(pressedKey);
         
-        // pressedKey allready mapped?
+        // pressedKey already mapped?
         if (k != null) {
-            System.out.println("Key allready used");
+            Emulator.log.warn("Key already used");
             this.sender.setText(KeyEvent.getKeyText(revertKeys.get(this.targetKey)));
             return;
         }

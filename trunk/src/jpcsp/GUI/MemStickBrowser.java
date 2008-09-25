@@ -107,7 +107,7 @@ public class MemStickBrowser extends JDialog {
 
 		public MemStickTableModel(File path) {
 			if(!path.isDirectory()) {
-				System.out.println(path + " isn't a directory");
+				Emulator.log.error(path + " isn't a directory");
 				return;
 			}
 			programs = path.listFiles(new FileFilter() {

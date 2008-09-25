@@ -20,8 +20,12 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.LinkedList;
+
+import org.apache.log4j.Logger;
+
 import jpcsp.Debugger.MemoryViewer;
 import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
+import jpcsp.HLE.Modules;
 import jpcsp.format.DeferredStub;
 import jpcsp.format.Elf32;
 import jpcsp.format.Elf32Relocate;
@@ -44,6 +48,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
     private static DisassemblerFrame debugger;
     private static MemoryViewer memview;
     private String pspfilename;
+    public static Logger log = Logger.getLogger("misc");
 
     // For instruction counter
     public static int[] textsection = new int[2];
@@ -144,7 +149,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                     romManager.getActualFile().position((int)(romManager.getElfoffset() + shdr.getSh_offset()));
 
                     int RelCount = (int) shdr.getSh_size() / Elf32Relocate.sizeof();
-                    System.out.println(shdr.getSh_namez() + ": relocating " + RelCount + " entries");
+                    Memory.log.debug(shdr.getSh_namez() + ": relocating " + RelCount + " entries");
 
                     int AHL = 0; // (AHI << 16) | (ALO & 0xFFFF)
 
@@ -323,7 +328,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                             */
 
                             default:
-                                System.out.println("Unhandled relocation type " + R_TYPE + " at " + String.format("%08x", (int) romManager.getBaseoffset() + (int) rel.getR_offset()));
+                            	Memory.log.debug("Unhandled relocation type " + R_TYPE + " at " + String.format("%08x", (int) romManager.getBaseoffset() + (int) rel.getR_offset()));
                                 break;
                         }
 
@@ -372,7 +377,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
 
                             mem.write32(importAddress, instruction);
 
-                            System.out.println("Mapped NID " + Integer.toHexString(nid) + " to export");
+                            Modules.log.debug("Mapped NID " + Integer.toHexString(nid) + " to export");
                         }
 
                         // Attempt to fixup stub to known syscalls
@@ -395,7 +400,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                             {
                                 // Save nid for deferred fixup
                                 deferred.add(new DeferredStub(stubHeader.getModuleNamez(), importAddress, nid));
-                                System.out.println("Failed to map NID " + Integer.toHexString(nid) + " (load time)");
+                                Modules.log.warn("Failed to map NID " + Integer.toHexString(nid) + " (load time)");
                                 numberoffailedNIDS++;
                             }
                         }
@@ -442,8 +447,8 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
             }
             System.out.println(jpcsp.Allegrex.Instructions.ADDIU.getCount());*/
         }
-        System.out.println(numberofmappedNIDS + " NIDS mapped");
-        if(numberoffailedNIDS>0) System.out.println("Total Failed to map NIDS = " + numberoffailedNIDS);
+        Modules.log.info(numberofmappedNIDS + " NIDS mapped");
+        if(numberoffailedNIDS>0) Modules.log.warn("Total Failed to map NIDS = " + numberoffailedNIDS);
     }
 
     private void initCpuBy(Elf32 elf) {

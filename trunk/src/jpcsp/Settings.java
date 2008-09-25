@@ -107,14 +107,14 @@ public class Settings {
 				doc = builder.parse(new File(SETTINGS_FILE_NAME));
 				
 			} catch (Exception e) {
-				System.out.println("Error while loading existing settings. Restoring default settings.");
+				Emulator.log.warn("Error while loading existing settings. Restoring default settings.");
 				e.printStackTrace();
 				try {
 					doc = builder.parse(getClass().getResourceAsStream(DEFAULT_SETTINGS_FILE_NAME));
-					System.out.println("Default settings loaded successfully");
+					Emulator.log.info("Default settings loaded successfully");
 				} catch (Exception e1) {
 					e1.printStackTrace();
-					System.out.println("Unable to load default settings");
+					Emulator.log.error("Unable to load default settings");
 				}
 			}
 

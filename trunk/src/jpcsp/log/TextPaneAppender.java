@@ -35,6 +35,8 @@ import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 
+import jpcsp.Emulator;
+
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.Layout;
 import org.apache.log4j.Level;
@@ -79,8 +81,7 @@ public class TextPaneAppender extends AppenderSkeleton {
 			URL url = ClassLoader.getSystemResource(path);
 			img = (Image) (Toolkit.getDefaultToolkit()).getImage(url);
 		} catch (Exception e) {
-			System.out.println("Exception occured: " + e.getMessage() + " - "
-					+ e);
+			Emulator.log.error("Exception occured: " + e.getMessage(), e);
 		}
 		return (img);
 	}
@@ -115,10 +116,12 @@ public class TextPaneAppender extends AppenderSkeleton {
 			attributes.put(levels[i], att);
 			StyleConstants.setFontSize(att, 12);
 		}
+		StyleConstants.setForeground(attributes.get(Level.FATAL), Color.red);
 		StyleConstants.setForeground(attributes.get(Level.ERROR), Color.red);
 		StyleConstants.setForeground(attributes.get(Level.WARN), Color.orange);
-		StyleConstants.setForeground(attributes.get(Level.INFO), Color.gray);
-		StyleConstants.setForeground(attributes.get(Level.DEBUG), Color.black);
+		StyleConstants.setForeground(attributes.get(Level.INFO), Color.black);
+		StyleConstants.setForeground(attributes.get(Level.DEBUG), Color.gray);
+		StyleConstants.setForeground(attributes.get(Level.TRACE), Color.gray);
 	}
 
 	private void createIcons() {

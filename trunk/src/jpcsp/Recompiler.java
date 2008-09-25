@@ -35,7 +35,7 @@ public class Recompiler implements AllegrexInstructions {
     
     @Override
     public void doUNK(String reason) {
-        System.out.println("Recompiler - " + reason);
+    	Processor.log.error("Recompiler - " + reason);
     }
     
     @Override

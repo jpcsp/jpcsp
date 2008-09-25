@@ -567,14 +567,13 @@ public void loadUMD(File file) {
         UmdIsoReader iso = new UmdIsoReader(file.getPath());
         UmdIsoFile paramSfo = iso.getFile("PSP_GAME/param.sfo");
 
-        System.out.println("---- Loading param.sfo from UMD ----");
+        Emulator.log.debug("Loading param.sfo from UMD");
         PSF params = new PSF(0);
         byte[] sfo = new byte[(int)paramSfo.length()];
         paramSfo.read(sfo);
         ByteBuffer buf = ByteBuffer.wrap(sfo);
         params.read(buf);
-        System.out.println(params);
-        System.out.println("------------------------------------");
+        Emulator.log.info("UMD param.sfo :\n" + params);
 
         UmdIsoFile bootBin = iso.getFile("PSP_GAME/SYSDIR/boot.bin");
         byte[] bootfile = new byte[(int)bootBin.length()];

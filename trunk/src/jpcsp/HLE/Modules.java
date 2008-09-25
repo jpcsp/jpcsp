@@ -8,6 +8,8 @@ package jpcsp.HLE;
 import jpcsp.HLE.modules.*;
 import java.nio.ByteBuffer;
 
+import org.apache.log4j.Logger;
+
 /**
  *
  * @author hli
@@ -22,6 +24,7 @@ public class Modules {
     public static sceGe_user sceGE_userModule = new sceGe_user();
     public static sceUmdUser sceUmdUserModule = new sceUmdUser();
     public static sceUtility sceUtilityModule = new sceUtility();
+    public static Logger log = Logger.getLogger("hle");
 
     public void step() {
     }

@@ -5,6 +5,8 @@
 
 package jpcsp.Allegrex;
 
+import jpcsp.Emulator;
+
 /**
  * General Purpose Registers, handles integer operations like ALU, shifter, etc.
  *
@@ -33,7 +35,7 @@ public class GprState {
     }
     
     public void doUNK(String reason) {
-        System.out.println("Interpreter : " + reason);
+        Emulator.log.error("Interpreter : " + reason);
     }   
     
     public static final int max(int x, int y) {
