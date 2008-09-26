@@ -573,9 +573,9 @@ private void DumpCodeToTextActionPerformed(java.awt.event.ActionEvent evt) {//GE
     OptionPaneMultiple opt = new OptionPaneMultiple(this, Integer.toHexString(DebuggerPC), Integer.toHexString(DebuggerPC + 0x00000094));
     if(opt.completed()){
         //Here the input can be used to actually dump code
-        System.out.println("Start address: "+opt.getInput()[0]);
-        System.out.println("End address: "+opt.getInput()[1]);
-        System.out.println("File name: "+opt.getInput()[2]);
+    	Emulator.log.debug("Start address: "+opt.getInput()[0]);
+    	Emulator.log.debug("End address: "+opt.getInput()[1]);
+    	Emulator.log.debug("File name: "+opt.getInput()[2]);
 
         BufferedWriter bufferedWriter = null;
         try {
@@ -692,7 +692,8 @@ private void AddBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//GEN
         try {
             String address = value.substring(3, 11);
             int addr = Integer.parseInt(address, 16);
-            breakpoints.add(addr);
+            if(!breakpoints.contains(addr))
+            	breakpoints.add(addr);
             RefreshDebugger();
         } catch(NumberFormatException e) {
             // Ignore it, probably already a breakpoint there
