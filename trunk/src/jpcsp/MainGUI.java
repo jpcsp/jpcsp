@@ -72,6 +72,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     Emulator emulator;
     UmdBrowser umdbrowser;
     InstructionCounter instructioncounter;
+    File loadedFile;
+    boolean umdLoaded;
     private Point mainwindowPos; // stores the last known window position
     private boolean snapConsole = true;
 
@@ -378,8 +380,6 @@ private void RunButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
 
 private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenFileActionPerformed
         PauseEmu();
-        if(consolewin!=null)
-          consolewin.clearScreenMessages();
 
     final JFileChooser fc = makeJFileChooser();
     int returnVal = fc.showOpenDialog(this);
@@ -406,6 +406,12 @@ private String pspifyFilename(String pcfilename) {
 public void loadFile(File file) {
     //This is where a real application would open the file.
     try {
+    	if(consolewin!=null)
+            consolewin.clearScreenMessages();
+    	
+    	umdLoaded = false;
+    	loadedFile = file;
+    	
        //emulator.load(file.getPath());
        // Create a read-only memory-mapped file
         FileChannel roChannel = new RandomAccessFile(file, "r").getChannel();
@@ -529,8 +535,7 @@ private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:even
 
 private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openUmdActionPerformed
         PauseEmu();//GEN-LAST:event_openUmdActionPerformed
-       if(consolewin!=null)
-          consolewin.clearScreenMessages();
+       
    if (Settings.get_instance().readBoolOptions("emuoptions/umdbrowser"))
    {
       if(umdbrowser==null)
@@ -564,6 +569,12 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
 public void loadUMD(File file) {
     try {
+    	if(consolewin!=null)
+            consolewin.clearScreenMessages();
+    	
+    	umdLoaded = true;
+    	loadedFile = file;
+    	
         UmdIsoReader iso = new UmdIsoReader(file.getPath());
         UmdIsoFile paramSfo = iso.getFile("PSP_GAME/param.sfo");
 
@@ -595,12 +606,20 @@ public void loadUMD(File file) {
 }
 
 private void ResetEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetEmuActionPerformed
-// TODO add your handling code here:
+	resetEmu();
 }//GEN-LAST:event_ResetEmuActionPerformed
 
 private void ResetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetButtonActionPerformed
-// TODO add your handling code here:
+	resetEmu();
 }//GEN-LAST:event_ResetButtonActionPerformed
+
+private void resetEmu() {
+	if(loadedFile != null)
+		if(umdLoaded)
+			loadUMD(loadedFile);
+		else
+			loadFile(loadedFile);
+}
 
 private void InstructionCounterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_InstructionCounterActionPerformed
     if(instructioncounter==null)
