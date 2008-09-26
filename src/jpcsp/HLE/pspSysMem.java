@@ -139,8 +139,9 @@ public class pspSysMem {
         }
         else if (type == PSP_SMEM_High)
         {
-            allocatedAddress = (heapTop - (size + 63)) & ~63;
-            heapTop = allocatedAddress;
+            allocatedAddress = heapTop - size + 1;
+            allocatedAddress = allocatedAddress & ~63;
+            heapTop = allocatedAddress - 1;
 
             if (heapTop < heapBottom)
             {
@@ -162,8 +163,9 @@ public class pspSysMem {
         }
         else if (type == PSP_SMEM_HighAligned)
         {
-            allocatedAddress = (heapTop - (size + addr - 1)) & ~(addr - 1);
-            heapTop = allocatedAddress;
+            allocatedAddress = heapTop - size + 1;
+            allocatedAddress = allocatedAddress & ~(addr - 1);
+            heapTop = allocatedAddress - 1;
 
             if (heapTop < heapBottom)
             {
@@ -172,8 +174,12 @@ public class pspSysMem {
             }
         }
 
-        Modules.log.debug("malloc (heapBottom=0x" + Integer.toHexString(heapBottom)
-            + ",heapTop=0x" + Integer.toHexString(heapTop) + ")");
+        if (allocatedAddress != 0)
+        {
+            Modules.log.debug("malloc(size=0x" + Integer.toHexString(size)
+                + ") (heapBottom=0x" + Integer.toHexString(heapBottom)
+                + ",heapTop=0x" + Integer.toHexString(heapTop) + ")");
+        }
 
         return allocatedAddress;
     }
@@ -199,7 +205,7 @@ public class pspSysMem {
 
         if (!found)
         {
-            Modules.log.error("failed to map addr to SysMemInfo, possibly bad/missing cleanup or double free in HLE");
+            Modules.log.error("failed to map addr:0x" + Integer.toHexString(addr) + " to SysMemInfo, possibly bad/missing cleanup or double free in HLE");
         }
     }
 
