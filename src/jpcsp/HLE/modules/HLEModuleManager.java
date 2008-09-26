@@ -53,7 +53,8 @@ public class HLEModuleManager {
         new Sample(),
         Modules.StdioForUserModule,
         Modules.sceUmdUserModule,
-        Modules.sceUtilityModule
+        Modules.scePowerModule,
+        Modules.sceUtilityModule,
     };
 
     public static HLEModuleManager get_instance() {

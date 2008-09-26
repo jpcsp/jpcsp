@@ -22,6 +22,7 @@ import java.util.List;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.Modules;
 
 import jpcsp.MemoryMap;
 import jpcsp.Memory;
@@ -105,7 +106,7 @@ public class sceUmdUser implements HLEModule {
     public void sceUmdCheckMedium(Processor processor) {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
-        System.out.println("sceUmdCheckMedium (umd mounted = " + (iso != null) + ")");
+        Modules.log.debug("sceUmdCheckMedium (umd mounted = " + (iso != null) + ")");
         cpu.gpr[2] = (iso != null) ? 1 : 0;
     }
 
@@ -115,7 +116,7 @@ public class sceUmdUser implements HLEModule {
         Memory mem = Processor.memory;
         int unit = cpu.gpr[4]; // should be always 1
         String drive = readStringZ(mem.mainmemory, (cpu.gpr[5] & 0x3fffffff) - MemoryMap.START_RAM);
-        System.out.println("sceUmdActivate unit = " + unit + " drive = " + drive);
+        Modules.log.debug("sceUmdActivate unit = " + unit + " drive = " + drive);
         cpu.gpr[2] = 0; //return >0 mean success
     }
 
@@ -141,9 +142,9 @@ public class sceUmdUser implements HLEModule {
         // CpuState cpu = processor.cpu; // New-Style Processor
         Processor cpu = processor; // Old-Style Processor
         int stat = cpu.gpr[4];
-        System.out.println("sceUmdWaitDriveStat = 0x" + Integer.toHexString(stat));
+        Modules.log.debug("sceUmdWaitDriveStat = 0x" + Integer.toHexString(stat));
         cpu.gpr[2] = 0;
-        
+
         if (iso != null || stat == PSP_UMD_NOT_PRESENT) {
             jpcsp.HLE.ThreadMan.get_instance().yieldCurrentThread();
         } else {
@@ -178,7 +179,7 @@ public class sceUmdUser implements HLEModule {
 
         int stat = cpu.gpr[4];
         int timeout = cpu.gpr[5];
-        System.out.println("sceUmdWaitDriveStatCB stat = 0x" + Integer.toHexString(stat) + " timeout = " + timeout);
+        Modules.log.debug("sceUmdWaitDriveStatCB stat = 0x" + Integer.toHexString(stat) + " timeout = " + timeout);
         cpu.gpr[2] = 0;
 
         if (iso != null || stat == PSP_UMD_NOT_PRESENT) {
@@ -192,7 +193,7 @@ public class sceUmdUser implements HLEModule {
             // inserting/removing a disc so block forever.
             jpcsp.HLE.ThreadMan.get_instance().blockCurrentThread();
         }
-        
+
     }
 
     public void sceUmdCancelWaitDriveStat(Processor processor) {
@@ -223,7 +224,7 @@ public class sceUmdUser implements HLEModule {
             stat = PSP_UMD_NOT_PRESENT;
         }
 
-        System.out.println("sceUmdGetDriveStat return:0x" + Integer.toHexString(stat));
+        Modules.log.debug("sceUmdGetDriveStat return:0x" + Integer.toHexString(stat));
 
         cpu.gpr[2] = stat;
     }
@@ -268,13 +269,13 @@ public class sceUmdUser implements HLEModule {
         Processor cpu = processor; // Old-Style Processor
 
         int uid = cpu.gpr[4];
-        System.out.println("UNIMPLEMENTED:sceUmdRegisterUMDCallBack SceUID=" + Integer.toHexString(uid));
+        Modules.log.warn("UNIMPLEMENTED:sceUmdRegisterUMDCallBack SceUID=" + Integer.toHexString(uid));
 
         if (SceUIDMan.get_instance().checkUidPurpose(uid, "ThreadMan-callback", false)) {
             UMDCallBackList.add(uid);
             cpu.gpr[2] = 0;
         } else {
-            System.out.println("sceUmdRegisterUMDCallBack not a callback uid");
+            Modules.log.warn("sceUmdRegisterUMDCallBack not a callback uid");
             cpu.gpr[2] = -1;
         }
     }
@@ -284,15 +285,15 @@ public class sceUmdUser implements HLEModule {
         Processor cpu = processor; // Old-Style Processor
 
         int uid = cpu.gpr[4];
-        System.out.println("sceUmdUnRegisterUMDCallBack SceUID=" + Integer.toHexString(uid));
+        Modules.log.debug("sceUmdUnRegisterUMDCallBack SceUID=" + Integer.toHexString(uid));
 
         if (!SceUIDMan.get_instance().checkUidPurpose(uid, "ThreadMan-callback", false)) {
-            System.out.println("sceUmdUnRegisterUMDCallBack not a callback uid");
+            Modules.log.warn("sceUmdUnRegisterUMDCallBack not a callback uid");
             cpu.gpr[2] = -1;
         } else {
             Integer copy = UMDCallBackList.remove(uid);
             if (copy == null) {
-                System.out.println("sceUmdUnRegisterUMDCallBack not a UMD callback uid");
+                Modules.log.warn("sceUmdUnRegisterUMDCallBack not a UMD callback uid");
                 cpu.gpr[2] = -1;
             } else {
                 cpu.gpr[2] = 0;

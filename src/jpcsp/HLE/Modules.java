@@ -22,8 +22,10 @@ public class Modules {
     public static sceCtrl sceCtrlModule = new sceCtrl();
     public static sceDisplay sceDisplayModule = new sceDisplay();
     public static sceGe_user sceGE_userModule = new sceGe_user();
+    public static scePower scePowerModule = new scePower();
     public static sceUmdUser sceUmdUserModule = new sceUmdUser();
     public static sceUtility sceUtilityModule = new sceUtility();
+
     public static Logger log = Logger.getLogger("hle");
 
     public void step() {

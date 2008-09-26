@@ -35,10 +35,10 @@ public class LoadExec {
     private LoadExec() {
     }
 
-    public void sceKernelRegisterExitCallback(int a0)
+    public void sceKernelRegisterExitCallback(int uid)
     {
         // TODO
-        System.out.println("UNIMPLEMENTED:sceKernelRegisterExitCallback");
+        Modules.log.warn("UNIMPLEMENTED:sceKernelRegisterExitCallback SceUID=" + Integer.toHexString(uid));
 
         // Fake successful return
         Emulator.getProcessor().gpr[2] = 0;
@@ -46,7 +46,7 @@ public class LoadExec {
 
     public void sceKernelExitGame()
     {
-        System.out.println("Program exit detected (sceKernelExitGame)");
+        Modules.log.info("Program exit detected (sceKernelExitGame)");
         Emulator.PauseEmu();
     }
 
