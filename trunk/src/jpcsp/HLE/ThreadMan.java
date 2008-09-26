@@ -92,12 +92,15 @@ public class ThreadMan {
         // Setup args by copying them onto the stack
         //Modules.log.debug("pspfilename - '" + pspfilename + "'");
         int len = pspfilename.length();
+        int alignlen = (len + 3) & ~3; // 4 byte align
         Memory mem = Memory.getInstance();
         for (int i = 0; i < len; i++)
-            mem.write8((current_thread.stack_addr - len + 1) + i, (byte)pspfilename.charAt(i));
-        current_thread.gpr[29] -= len; // Adjust sp for size of args
+            mem.write8((current_thread.stack_addr - alignlen) + i, (byte)pspfilename.charAt(i));
+        for (int i = len; i < alignlen; i++)
+            mem.write8((current_thread.stack_addr - alignlen) + i, (byte)0);
+        current_thread.gpr[29] -= alignlen; // Adjust sp for size of args
         current_thread.gpr[4] = len; // a0 = len
-        current_thread.gpr[5] = current_thread.gpr[29] + 1; // a1 = pointer to arg data in stack
+        current_thread.gpr[5] = current_thread.gpr[29]; // a1 = pointer to arg data in stack
         current_thread.status = PspThreadStatus.PSP_THREAD_READY;
 
         // Switch in the thread
@@ -199,7 +202,9 @@ public class ThreadMan {
             if (thread.status == PspThreadStatus.PSP_THREAD_STOPPED) {
                 if (thread.do_delete) {
                     // cleanup thread - free the stack
-                    pspSysMem.get_instance().free(thread.stack_addr);
+                    if (thread.stack_addr != 0) {
+                        pspSysMem.get_instance().free(thread.stack_addr);
+                    }
                     // TODO remove from any internal lists? such as sema waiting lists
 
                     // Changed to thread safe iterator.remove
@@ -391,13 +396,16 @@ public class ThreadMan {
             // Copy user data to the new thread's stack, since we are not
             // starting the thread immediately, only marking it as ready,
             // the data needs to be saved somewhere safe.
+            int alignlen = (len + 3) & ~3; // 4 byte align
             Memory mem = Memory.getInstance();
             for (int i = 0; i < len; i++)
-                mem.write8((thread.stack_addr - len + 1) + i, (byte)mem.read8(data_addr + i));
-
-            thread.gpr[29] -= len; // Adjust sp for size of user data
+                mem.write8((thread.stack_addr - alignlen) + i, (byte)mem.read8(data_addr + i));
+            for (int i = len; i < alignlen; i++)
+                mem.write8((thread.stack_addr - alignlen) + i, (byte)0);
+            thread.gpr[29] -= alignlen; // Adjust sp for size of user data
+            // TODO test on real psp if len is not 32-bit aligned will the psp align it?
             thread.gpr[4] = len; // a0 = len
-            thread.gpr[5] = thread.gpr[29] + 1; // a1 = pointer to copy of data at data_addr
+            thread.gpr[5] = thread.gpr[29]; // a1 = pointer to copy of data at data_addr
             thread.status = PspThreadStatus.PSP_THREAD_READY;
 
             Emulator.getProcessor().gpr[2] = 0;
@@ -669,10 +677,18 @@ public class ThreadMan {
     private static final int PSP_THREAD_ATTR_CLEAR_STACK = 0x00200000; // Clear the stack when the thread is deleted.
 
     private int mallocStack(int size) {
-        //int p = 0x09f00000 + stackAllocated;
-        //stackAllocated += size;
-        //return p;
-        return pspSysMem.get_instance().malloc(2, pspSysMem.PSP_SMEM_HighAligned, size, 0x1000);
+        if (size > 0) {
+            //int p = 0x09f00000 - stackAllocated;
+            //stackAllocated += size;
+            //return p;
+
+            int p = pspSysMem.get_instance().malloc(2, pspSysMem.PSP_SMEM_HighAligned, size, 0x1000);
+            p += size;
+
+            return p;
+        } else {
+            return 0;
+        }
     }
 
     private void memset(int address, byte c, int length) {
@@ -719,7 +735,9 @@ public class ThreadMan {
 
         public SceKernelThreadInfo(String name, int entry_addr, int initPriority, int stackSize, int attr) {
             // Stack size is rounded to the next nearest 4k
-            stackSize = (stackSize + 0xFFF) & ~0xFFF;
+            if (stackSize != 0) {
+                stackSize = (stackSize + 0xFFF) & ~0xFFF;
+            }
 
             this.name = name;
             this.entry_addr = entry_addr;
@@ -730,7 +748,7 @@ public class ThreadMan {
             status = PspThreadStatus.PSP_THREAD_SUSPEND;
             stack_addr = mallocStack(stackSize);
             if ((attr & PSP_THREAD_ATTR_NO_FILLSTACK) != PSP_THREAD_ATTR_NO_FILLSTACK)
-                memset(stack_addr - stackSize + 1, (byte)0xFF, stackSize);
+                memset(stack_addr - stackSize, (byte)0xFF, stackSize);
             gpReg_addr = Emulator.getProcessor().gpr[28]; // inherit gpReg
             currentPriority = initPriority;
             waitType = 0; // ?
