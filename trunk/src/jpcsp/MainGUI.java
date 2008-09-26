@@ -353,19 +353,22 @@ private void EnterDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     if (Settings.get_instance().readBoolOptions("emuoptions/recompiler"))
         return;
     if(disasm==null)
-     {
-      PauseEmu();
-      disasm = new DisassemblerFrame(emulator);
-      int pos[] = Settings.get_instance().readWindowPos("disassembler");
-      disasm.setLocation(pos[0], pos[1]);
-      disasm.setVisible(true);
-      emulator.setDebugger(disasm);
-     }
-     else
-     {
-         disasm.setVisible(true);
-         disasm.RefreshDebugger();
-     }
+    {
+        PauseEmu();
+        disasm = new DisassemblerFrame(emulator);
+        int pos[] = Settings.get_instance().readWindowPos("disassembler");
+        disasm.setLocation(pos[0], pos[1]);
+        disasm.setVisible(true);
+        emulator.setDebugger(disasm);
+        disasm.setMemoryViewer(memoryview);
+    }
+    else
+    {
+        disasm.setVisible(true);
+        disasm.RefreshDebugger();
+        if (disasm != null)
+            disasm.setMemoryViewer(memoryview);
+    }
 }//GEN-LAST:event_EnterDebuggerActionPerformed
 
 private void RunButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RunButtonActionPerformed
@@ -406,17 +409,18 @@ private String pspifyFilename(String pcfilename) {
 public void loadFile(File file) {
     //This is where a real application would open the file.
     try {
-    	if(consolewin!=null)
+        if(consolewin!=null)
             consolewin.clearScreenMessages();
-    	
-    	umdLoaded = false;
-    	loadedFile = file;
-    	
+
+        umdLoaded = false;
+        loadedFile = file;
+
        //emulator.load(file.getPath());
        // Create a read-only memory-mapped file
         FileChannel roChannel = new RandomAccessFile(file, "r").getChannel();
         ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
         emulator.load(pspifyFilename(file.getPath()), readbuffer);
+        roChannel.close(); // doesn't seem to work properly :(
         String findpath = file.getParent();
         //System.out.println(findpath);
         pspiofilemgr.get_instance().setfilepath(findpath);
@@ -455,19 +459,22 @@ private void ElfHeaderViewerActionPerformed(java.awt.event.ActionEvent evt) {//G
 private void EnterMemoryViewerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterMemoryViewerActionPerformed
     PauseEmu();
     if(memoryview==null)
-     {
-
-      memoryview = new MemoryViewer();
-      int pos[] = Settings.get_instance().readWindowPos("memoryview");
-      memoryview.setLocation(pos[0], pos[1]);
-      memoryview.setVisible(true);
-      emulator.setMemoryViewer(memoryview);
-     }
-     else
-     {
-       memoryview.RefreshMemory();
-       memoryview.setVisible(true);
-     }
+    {
+        memoryview = new MemoryViewer();
+        int pos[] = Settings.get_instance().readWindowPos("memoryview");
+        memoryview.setLocation(pos[0], pos[1]);
+        memoryview.setVisible(true);
+        emulator.setMemoryViewer(memoryview);
+        if (disasm != null)
+            disasm.setMemoryViewer(memoryview);
+    }
+    else
+    {
+        memoryview.RefreshMemory();
+        memoryview.setVisible(true);
+        if (disasm != null)
+            disasm.setMemoryViewer(memoryview);
+    }
 }//GEN-LAST:event_EnterMemoryViewerActionPerformed
 
 private void AboutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AboutActionPerformed
@@ -535,7 +542,7 @@ private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:even
 
 private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openUmdActionPerformed
         PauseEmu();//GEN-LAST:event_openUmdActionPerformed
-       
+
    if (Settings.get_instance().readBoolOptions("emuoptions/umdbrowser"))
    {
       if(umdbrowser==null)
@@ -569,12 +576,12 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
 public void loadUMD(File file) {
     try {
-    	if(consolewin!=null)
+        if(consolewin!=null)
             consolewin.clearScreenMessages();
-    	
-    	umdLoaded = true;
-    	loadedFile = file;
-    	
+
+        umdLoaded = true;
+        loadedFile = file;
+
         UmdIsoReader iso = new UmdIsoReader(file.getPath());
         UmdIsoFile paramSfo = iso.getFile("PSP_GAME/param.sfo");
 
@@ -606,19 +613,21 @@ public void loadUMD(File file) {
 }
 
 private void ResetEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetEmuActionPerformed
-	resetEmu();
+    resetEmu();
 }//GEN-LAST:event_ResetEmuActionPerformed
 
 private void ResetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetButtonActionPerformed
-	resetEmu();
+    resetEmu();
 }//GEN-LAST:event_ResetButtonActionPerformed
 
 private void resetEmu() {
-	if(loadedFile != null)
-		if(umdLoaded)
-			loadUMD(loadedFile);
-		else
-			loadFile(loadedFile);
+    if(loadedFile != null) {
+        PauseEmu();
+        if(umdLoaded)
+            loadUMD(loadedFile);
+        else
+            loadFile(loadedFile);
+    }
 }
 
 private void InstructionCounterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_InstructionCounterActionPerformed

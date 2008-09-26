@@ -33,6 +33,7 @@ import javax.swing.SwingUtilities;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Settings;
+import jpcsp.Debugger.MemoryViewer;
 import jpcsp.util.JpcspDialogManager;
 import jpcsp.util.OptionPaneMultiple;
 import jpcsp.Allegrex.Instructions.*;
@@ -50,6 +51,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
     private int opcode_address; // store the address of the opcode used for offsetdecode
     private DisasmOpcodes disOp = new DisasmOpcodes();
     private ArrayList<Integer> breakpoints = new ArrayList<Integer>();
+    private MemoryViewer memview;
+
     /** Creates new form DisassemblerFrame */
     public DisassemblerFrame(Emulator emu) {
         this.emu=emu;
@@ -58,6 +61,10 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         DebuggerPC = 0;
         RefreshDebugger();
+    }
+
+    public void setMemoryViewer(MemoryViewer memview) {
+        this.memview = memview;
     }
 
     /** Delete breakpoints and reset to PC */
@@ -743,6 +750,8 @@ private void StepIntoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
 
     DebuggerPC = 0;
     RefreshDebugger();
+    if (memview != null)
+        memview.RefreshMemory();
 }//GEN-LAST:event_StepIntoActionPerformed
 
 private void RunDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RunDebuggerActionPerformed
