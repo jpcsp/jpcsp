@@ -20,14 +20,14 @@ public class State extends jpcsp.HLE.Modules {
 
     @Override
     public void step() {
-        processor.step();
+        //processor.step();
 
         super.step();
     }
 
     @Override
     public void load(ByteBuffer buffer) {
-        processor.load(buffer);
+        //processor.load(buffer);
         memory.load(buffer);
 
         super.load(buffer);
@@ -35,7 +35,7 @@ public class State extends jpcsp.HLE.Modules {
 
     @Override
     public void save(ByteBuffer buffer) {
-        processor.save(buffer);
+        //processor.save(buffer);
         memory.save(buffer);
 
         super.save(buffer);
