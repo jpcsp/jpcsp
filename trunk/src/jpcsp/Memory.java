@@ -123,7 +123,7 @@ public class Memory {
                 "Invalid memory address : " +
                 Integer.toHexString(address) +
                 " PC=" +
-                Integer.toHexString(Emulator.getProcessor().pc));
+                Integer.toHexString(Emulator.getProcessor().cpu.pc));
         }
         return index;
     }
@@ -167,6 +167,19 @@ public class Memory {
         }
     }
 
+    /*
+    public float[] read128f(int address) {
+        try {
+            int page = indexFromAddr(address);
+            return buf.getInt(page + (address & PAGE_MASK));
+        } catch (Exception e) {
+        	Memory.log.error("read32 - " + e.getMessage());
+            Emulator.PauseEmu();
+            return 0;
+        }
+    }
+    */
+    
     public int read32(int page, int address) {
         try {
             return buf.getInt(page + (address & PAGE_MASK));
@@ -176,7 +189,7 @@ public class Memory {
             return 0;
         }
     }
-
+    
     public void write8(int address, byte data) {
         try {
             int page = indexFromAddr(address);

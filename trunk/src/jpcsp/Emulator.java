@@ -23,6 +23,7 @@ import java.util.LinkedList;
 
 import org.apache.log4j.Logger;
 
+import jpcsp.Allegrex.CpuState;
 import jpcsp.Debugger.MemoryViewer;
 import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
 import jpcsp.HLE.Modules;
@@ -36,8 +37,8 @@ import static jpcsp.util.Utilities.*;
 
 public class Emulator implements Runnable {
 public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
-    private static Processor cpu;
-    private static Recompiler rec;
+    private static Processor processor;
+    private static Recompiler recompiler;
     private static Controller controller;
     private FileManager romManager;
     private boolean mediaImplemented = false;
@@ -58,12 +59,12 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
 
     public Emulator(MainGUI gui) {
         Emulator.gui = gui;
-        cpu = new Processor();
+        processor = new Processor();
 
         if (Settings.get_instance().readBoolOptions("emuoptions/recompiler"))
-            rec = new Recompiler();
+            recompiler = new Recompiler();
         else
-            rec = null;
+            recompiler = null;
 
         controller = new Controller();
         mainThread = new Thread(this, "Emu");
@@ -176,7 +177,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                         // SysV ABI MIPS quote: "Because MIPS uses only Elf32_Rel re-location entries, the relocated field holds the addend."
                         int half16 = data & 0x0000FFFF; // 31/07/08 unused (fiveofhearts)
 
-                        int word32 = data & 0xFFFFFFFF;
+                        int word32 = data & 0xFFFFFFFF; // <=> data;
                         int targ26 = data & 0x03FFFFFF;
                         int hi16 = data & 0x0000FFFF;
                         int lo16 = data & 0x0000FFFF;
@@ -286,9 +287,8 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
 
                                 A = word32;
                                 result = S + A;
-                                data &= ~0xFFFFFFFF;
-                                data |= (int) (result & 0xFFFFFFFF); // truncate
-
+                                data = (int)(((long)data & 0xFFFFFFFF00000000L) | (result & 0xFFFFFFFFL));
+                                
                                 break;
 
                             /* sample before relocation: 0x00015020: 0x8F828008 '....' - lw         $v0, -32760($gp)
@@ -454,6 +454,8 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
     private void initCpuBy(Elf32 elf) {
         //set the default values for registers not sure if they are correct and UNTESTED!!
         //some settings from soywiz/pspemulator
+        CpuState cpu = processor.cpu;
+        
         cpu.pc = (int)(romManager.getBaseoffset() + elf.getHeader().getE_entry()); //set the pc register.
         cpu.npc = cpu.pc + 4;
         // Gets set in ThreadMan cpu.gpr[4] = 0; //a0
@@ -501,10 +503,10 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
             } catch (InterruptedException e){
             }
 
-            if (rec != null) {
-                rec.run();
+            if (recompiler != null) {
+                recompiler.run();
             } else {
-                cpu.step();
+                processor.step();
                 jpcsp.HLE.pspge.get_instance().step();
                 jpcsp.HLE.ThreadMan.get_instance().step();
                 jpcsp.HLE.pspdisplay.get_instance().step();
@@ -559,7 +561,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
          gui.setMainTitle(fps);
     }
     public static Processor getProcessor() {
-        return cpu;
+        return processor;
     }
 
     public static Memory getMemory() {

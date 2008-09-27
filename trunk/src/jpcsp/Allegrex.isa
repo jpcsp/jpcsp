@@ -56,7 +56,7 @@ group root
 
             compile = ``
 
-            disasm = `return Common.disasmCODEIMMRS("cache", 0x04, signExtend(imm16), rs);`
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x04, (int)(short)imm16, rs);`
         }
 
         op ICACHE_INDEX_UNLOCK(101111:rs:00110:imm16)
@@ -69,7 +69,7 @@ group root
 
             compile = ``
 
-            disasm = `return Common.disasmCODEIMMRS("cache", 0x06, signExtend(imm16), rs);`
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x06, (int)(short)imm16, rs);`
         }
 
         op ICACHE_HIT_INVALIDATE(101111:rs:01000:imm16)
@@ -82,7 +82,7 @@ group root
 
             compile = ``
 
-            disasm = `return Common.disasmCODEIMMRS("cache", 0x08, signExtend(imm16), rs);`
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x08, (int)(short)imm16, rs);`
         }
 
         op ICACHE_FILL(101111:rs:01010:imm16)
@@ -95,7 +95,7 @@ group root
 
             compile = ``
 
-            disasm = `return Common.disasmCODEIMMRS("cache", 0x0A, signExtend(imm16), rs);`
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x0A, (int)(short)imm16, rs);`
         }
 
         op ICACHE_FILL_WITH_LOCK(101111:rs:01011:imm16)
@@ -108,7 +108,7 @@ group root
 
             compile = ``
 
-            disasm = `return Common.disasmCODEIMMRS("cache", 0x0B, signExtend(imm16), rs);`
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x0B, (int)(short)imm16, rs);`
         }
 
         op DCACHE_INDEX_WRITEBACK_INVALIDATE(101111:rs:10100:imm16)
@@ -121,7 +121,7 @@ group root
 
             compile = ``
 
-            disasm = `return Common.disasmCODEIMMRS("cache", 0x14, signExtend(imm16), rs);`
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x14, (int)(short)imm16, rs);`
         }
 
         op DCACHE_INDEX_UNLOCK(101111:rs:10110:imm16)
@@ -134,7 +134,7 @@ group root
 
             compile = ``
 
-            disasm = `return Common.disasmCODEIMMRS("cache", 0x16, signExtend(imm16), rs);`
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x16, (int)(short)imm16, rs);`
         }
 
         op DCACHE_CREATE_DIRTY_EXCLUSIVE(101111:rs:11000:imm16)
@@ -147,7 +147,7 @@ group root
 
             compile = ``
 
-            disasm = `return Common.disasmCODEIMMRS("cache", 0x18, signExtend(imm16), rs);`
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x18, (int)(short)imm16, rs);`
         }
 
         op DCACHE_HIT_INVALIDATE(101111:rs:11001:imm16)
@@ -160,7 +160,7 @@ group root
 
             compile = ``
 
-            disasm = `return Common.disasmCODEIMMRS("cache", 0x19, signExtend(imm16), rs);`
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x19, (int)(short)imm16, rs);`
         }
 
         op DCACHE_HIT_WRITEBACK(101111:rs:11010:imm16)
@@ -173,7 +173,7 @@ group root
 
             compile = ``
 
-            disasm = `return Common.disasmCODEIMMRS("cache", 0x1A, signExtend(imm16), rs);`
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x1A, (int)(short)imm16, rs);`
         }
 
         op DCACHE_HIT_WRITEBACK_INVALIDATE(101111:rs:11011:imm16)
@@ -186,7 +186,7 @@ group root
 
             compile = ``
 
-            disasm = `return Common.disasmCODEIMMRS("cache", 0x1B, signExtend(imm16), rs);`
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x1B, (int)(short)imm16, rs);`
         }
 
         op DCACHE_CREATE_DIRTY_EXCLUSIVE_WITH_LOCK(101111:rs:11100:imm16)
@@ -199,7 +199,7 @@ group root
 
             compile = ``
 
-            disasm = `return Common.disasmCODEIMMRS("cache", 0x1C, signExtend(imm16), rs);`
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x1C, (int)(short)imm16, rs);`
         }
 
         op DCACHE_FILL(101111:rs:11110:imm16)
@@ -212,7 +212,7 @@ group root
 
             compile = ``
 
-            disasm = `return Common.disasmCODEIMMRS("cache", 0x1E, signExtend(imm16), rs);`
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x1E, (int)(short)imm16, rs);`
         }
 
         op DCACHE_FILL_WITH_LOCK(101111:rs:11111:imm16)
@@ -225,7 +225,7 @@ group root
 
             compile = ``
 
-            disasm = `return Common.disasmCODEIMMRS("cache", 0x1F, signExtend(imm16), rs);`
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x1F, (int)(short)imm16, rs);`
         }
 
         op SYSCALL(000000:imm20:001100)
@@ -285,6 +285,51 @@ group root
             `
 
             disasm = `return "sync";`
+        }
+
+        op HALT(011100:00000:00000:00000:00000:000000)
+        {
+            name=`HALT`
+
+            category=`ALLEGREX`
+
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "halt";`
+        }
+
+        op MFIC(011100:rt:00000:00000:00000:100100)
+        {
+            name=`MFIC`
+
+            category=`ALLEGREX`
+
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRT("mfic", rt);`
+        }
+
+        op MTIC(011100:rt:00000:00000:00000:100110)
+        {
+            name=`MTIC`
+
+            category=`ALLEGREX`
+
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRT("mtic", rt);`
         }
     }
 
@@ -367,7 +412,7 @@ group root
 
             interpret = `
                 // just ignore overflow exception as it is useless
-                processor.cpu.doADDIU(rt, rs, imm16);
+                processor.cpu.doADDIU(rt, rs, (int)(short)imm16);
             `
 
             compile = `
@@ -375,7 +420,7 @@ group root
                     return;
                 }
                 if (processor.tracked_gpr[rs].fixed) {
-                    processor.fix_gpr(rt, processor.gpr[rs] + Processor.signExtend(imm16));
+                    processor.fix_gpr(rt, processor.gpr[rs] + (int)(short)imm16);
                 } else {
                     processor.load_gpr(rs, false);
                     processor.alter_gpr(rt);
@@ -384,13 +429,13 @@ group root
                         " = (" +
                         processor.get_gpr(rs) +
                         " + (" +
-                        Processor.signExtend(imm16) +
+                        (int)(short)imm16 +
                         "));"
                     );
                 }
             `
 
-            disasm = `return Common.disasmRTRSIMM("addi", rt, rs, signExtend(imm16));`
+            disasm = `return Common.disasmRTRSIMM("addi", rt, rs, (int)(short)imm16);`
         }
 
         op ADDIU(001001:rs:rt:imm16)
@@ -400,7 +445,7 @@ group root
             category=`MIPS I`
 
             interpret = `
-                processor.cpu.doADDIU(rt, rs, imm16);
+                processor.cpu.doADDIU(rt, rs, (int)(short)imm16);
             `
 
             compile = `
@@ -408,7 +453,7 @@ group root
                     return;
                 }
                 if (processor.tracked_gpr[rs].fixed) {
-                    processor.fix_gpr(rt, processor.gpr[rs] + Processor.signExtend(imm16));
+                    processor.fix_gpr(rt, processor.gpr[rs] + (int)(short)imm16);
                 } else {
                     processor.load_gpr(rs, false);
                     processor.alter_gpr(rt);
@@ -417,13 +462,13 @@ group root
                         " = (" +
                         processor.get_gpr(rs) +
                         " + (" +
-                        Processor.signExtend(imm16) +
+                        (int)(short)imm16 +
                         "));"
                     );
                 }
             `
 
-            disasm = `return Common.disasmRTRSIMM("addiu", rt, rs, signExtend(imm16));`
+            disasm = `return Common.disasmRTRSIMM("addiu", rt, rs, (int)(short)imm16);`
         }
 
         op AND(000000:rs:rt:rd:00000:100100)
@@ -475,7 +520,7 @@ group root
                     return;
                 }
                 if (processor.tracked_gpr[rs].fixed) {
-                    processor.fix_gpr(rt, processor.gpr[rs] & Processor.zeroExtend(imm16));
+                    processor.fix_gpr(rt, processor.gpr[rs] & imm16);
                 } else {
                     processor.load_gpr(rs, false);
                     processor.alter_gpr(rt);
@@ -490,7 +535,7 @@ group root
                 }
             `
 
-            disasm = `return Common.disasmRTRSIMM("andi", rt, rs, zeroExtend(imm16));`
+            disasm = `return Common.disasmRTRSIMM("andi", rt, rs, imm16);`
         }
 
         op NOR(000000:rs:rt:rd:00000:100111)
@@ -576,7 +621,7 @@ group root
                     return;
                 }
                 if (processor.tracked_gpr[rs].fixed) {
-                    processor.fix_gpr(rt, processor.gpr[rs] | Processor.zeroExtend(imm16));
+                    processor.fix_gpr(rt, processor.gpr[rs] | imm16);
                 } else {
                     processor.load_gpr(rs, false);
                     processor.alter_gpr(rt);
@@ -591,7 +636,7 @@ group root
                 }
             `
 
-            disasm = `return Common.disasmRTRSIMM("ori", rt, rs, zeroExtend(imm16));`
+            disasm = `return Common.disasmRTRSIMM("ori", rt, rs, imm16);`
         }
 
         op XOR(000000:rs:rt:rd:00000:100110)
@@ -643,7 +688,7 @@ group root
                     return;
                 }
                 if (processor.tracked_gpr[rs].fixed) {
-                    processor.fix_gpr(rt, processor.gpr[rs] ^ Processor.zeroExtend(imm16));
+                    processor.fix_gpr(rt, processor.gpr[rs] ^ imm16);
                 } else {
                     processor.load_gpr(rs, false);
                     processor.alter_gpr(rt);
@@ -658,7 +703,7 @@ group root
                 }
             `
 
-            disasm = `return Common.disasmRTRSIMM("xori", rt, rs, zeroExtend(imm16));`
+            disasm = `return Common.disasmRTRSIMM("xori", rt, rs, imm16);`
         }
 
         op SLL(000000:00000:rt:rd:sa:000000)
@@ -970,7 +1015,7 @@ group root
             category=`MIPS I`
 
             interpret = `
-                processor.cpu.doSLTI(rt, rs, imm16);
+                processor.cpu.doSLTI(rt, rs, (int)(short)imm16);
             `
 
             compile = `
@@ -978,7 +1023,7 @@ group root
                     return;
                 }
                 if (processor.tracked_gpr[rs].fixed) {
-                    processor.fix_gpr(rt, Processor.signedCompare(processor.gpr[rs], Processor.signExtend(imm16)));
+                    processor.fix_gpr(rt, Processor.signedCompare(processor.gpr[rs], (int)(short)imm16));
                 } else {
                     processor.load_gpr(rs, false);
                     processor.alter_gpr(rt);
@@ -987,13 +1032,13 @@ group root
                         " = Processor.signedCompare(" +
                         processor.get_gpr(rs) +
                         ", " +
-                        Processor.signExtend(imm16) +
+                        (int)(short)imm16 +
                         ");"
                     );
                 }
             `
 
-            disasm = `return Common.disasmRTRSIMM("slti", rt, rs, signExtend(imm16));`
+            disasm = `return Common.disasmRTRSIMM("slti", rt, rs, (int)(short)imm16);`
         }
 
         op SLTU(000000:rs:rt:rd:00000:101011)
@@ -1037,7 +1082,7 @@ group root
             category=`MIPS I`
 
             interpret = `
-                processor.cpu.doSLTIU(rt, rs, imm16);
+                processor.cpu.doSLTIU(rt, rs, (int)(short)imm16);
             `
 
             compile = `
@@ -1045,7 +1090,7 @@ group root
                     return;
                 }
                 if (processor.tracked_gpr[rs].fixed) {
-                    processor.fix_gpr(rt, Processor.unsignedCompare(processor.gpr[rs], Processor.signExtend(imm16)));
+                    processor.fix_gpr(rt, Processor.unsignedCompare(processor.gpr[rs], (int)(short)imm16));
                 } else {
                     processor.load_gpr(rs, false);
                     processor.alter_gpr(rt);
@@ -1054,13 +1099,13 @@ group root
                         " = Processor.unsignedCompare(" +
                         processor.get_gpr(rs) +
                         ", " +
-                        Processor.signExtend(imm16) +
+                        (int)(short)imm16 +
                         ");"
                     );
                 }
             `
 
-            disasm = `return Common.disasmRTRSIMM("sltiu", rt, rs, signExtend(imm16));`
+            disasm = `return Common.disasmRTRSIMM("sltiu", rt, rs, (int)(short)imm16);`
         }
 
         op SUB(000000:rs:rt:rd:00000:100010)
@@ -1149,7 +1194,7 @@ group root
                 processor.fix_gpr(rt, (imm16 << 16));
             `
 
-            disasm = `return Common.disasmRTIMM("lui", rt, zeroExtend(imm16));`
+            disasm = `return Common.disasmRTIMM("lui", rt, imm16);`
         }
 
         op SEB(011111:00000:rt:rd:10000:100001)
@@ -1913,13 +1958,13 @@ group root
             category=`MIPS I`
 
             interpret = `
-                if (processor.cpu.doBEQ(rs, rt, imm16))
+                if (processor.cpu.doBEQ(rs, rt, (int)(short)imm16))
                     processor.interpretDelayslot();
             `
 
             compile = `
                 boolean c = (processor.gpr[rs] == processor.gpr[rt]);
-                int target = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
+                int target = Processor.branchTarget(processor.pc, (int)(short)imm16);
                 boolean loop = (target == processor.current_bb.getEntry());
                 if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
                     if (c) {
@@ -1948,7 +1993,7 @@ group root
                 processor.current_bb = null;
             `
 
-            disasm = `return Common.disasmRSRTOFFSET("beq", rs, rt, imm16, address);`
+            disasm = `return Common.disasmRSRTOFFSET("beq", rs, rt, (int)(short)imm16, address);`
         }
 
         op BEQL(010100:rs:rt:imm16)
@@ -1958,13 +2003,13 @@ group root
             category=`MIPS II`
 
             interpret = `
-                if (processor.cpu.doBEQL(rs, rt, imm16))
+                if (processor.cpu.doBEQL(rs, rt, (int)(short)imm16))
                     processor.interpretDelayslot();
             `
 
             compile = `
                 boolean c = (processor.gpr[rs] == processor.gpr[rt]);
-                int target = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
+                int target = Processor.branchTarget(processor.pc, (int)(short)imm16);
                 boolean loop = (target == processor.current_bb.getEntry());
                 if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
                     if (c) {
@@ -1995,7 +2040,7 @@ group root
                 processor.current_bb = null;
             `
 
-            disasm = `return Common.disasmRSRTOFFSET("beql", rs, rt, imm16, address);`
+            disasm = `return Common.disasmRSRTOFFSET("beql", rs, rt, (int)(short)imm16, address);`
         }
 
         op BGEZ(000001:rs:00001:imm16)
@@ -2005,14 +2050,14 @@ group root
             category=`MIPS I`
 
             interpret = `
-                if (processor.cpu.doBGEZ(rs, imm16))
+                if (processor.cpu.doBGEZ(rs, (int)(short)imm16))
                     processor.interpretDelayslot();
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmRSOFFSET("bgez", rs, imm16, address);`
+            disasm = `return Common.disasmRSOFFSET("bgez", rs, (int)(short)imm16, address);`
         }
 
         op BGEZAL(000001:rs:10001:imm16)
@@ -2022,14 +2067,14 @@ group root
             category=`MIPS I`
 
             interpret = `
-                if (processor.cpu.doBGEZAL(rs, imm16))
+                if (processor.cpu.doBGEZAL(rs, (int)(short)imm16))
                     processor.interpretDelayslot();
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmRSOFFSET("bgezal", rs, imm16, address);`
+            disasm = `return Common.disasmRSOFFSET("bgezal", rs, (int)(short)imm16, address);`
         }
 
         op BGEZALL(000001:rs:10011:imm16)
@@ -2039,14 +2084,14 @@ group root
             category=`MIPS II`
 
             interpret = `
-                if (processor.cpu.doBGEZALL(rs, imm16))
+                if (processor.cpu.doBGEZALL(rs, (int)(short)imm16))
                     processor.interpretDelayslot();
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmRSOFFSET("bgezall", rs, imm16, address);`
+            disasm = `return Common.disasmRSOFFSET("bgezall", rs, (int)(short)imm16, address);`
         }
 
         op BGEZL(000001:rs:00011:imm16)
@@ -2056,14 +2101,14 @@ group root
             category=`MIPS II`
 
             interpret = `
-                if (processor.cpu.doBGEZL(rs, imm16))
+                if (processor.cpu.doBGEZL(rs, (int)(short)imm16))
                     processor.interpretDelayslot();
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmRSOFFSET("bgezl", rs, imm16, address);`
+            disasm = `return Common.disasmRSOFFSET("bgezl", rs, (int)(short)imm16, address);`
         }
 
         op BGTZ(000111:rs:00000:imm16)
@@ -2073,14 +2118,14 @@ group root
             category=`MIPS I`
 
             interpret = `
-                if (processor.cpu.doBGTZ(rs, imm16))
+                if (processor.cpu.doBGTZ(rs, (int)(short)imm16))
                     processor.interpretDelayslot();
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmRSOFFSET("bgtz", rs, imm16, address);`
+            disasm = `return Common.disasmRSOFFSET("bgtz", rs, (int)(short)imm16, address);`
         }
 
         op BGTZL(010111:rs:00000:imm16)
@@ -2090,14 +2135,14 @@ group root
             category=`MIPS II`
 
             interpret = `
-                if (processor.cpu.doBGTZL(rs, imm16))
+                if (processor.cpu.doBGTZL(rs, (int)(short)imm16))
                     processor.interpretDelayslot();
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmRSOFFSET("bgtzl", rs, imm16, address);`
+            disasm = `return Common.disasmRSOFFSET("bgtzl", rs, (int)(short)imm16, address);`
         }
 
         op BLEZ(000110:rs:00000:imm16)
@@ -2107,14 +2152,14 @@ group root
             category=`MIPS I`
 
             interpret = `
-                if (processor.cpu.doBLEZ(rs, imm16))
+                if (processor.cpu.doBLEZ(rs, (int)(short)imm16))
                     processor.interpretDelayslot();
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmRSOFFSET("blez", rs, imm16, address);`
+            disasm = `return Common.disasmRSOFFSET("blez", rs, (int)(short)imm16, address);`
         }
 
         op BLEZL(010110:rs:00000:imm16)
@@ -2124,14 +2169,14 @@ group root
             category=`MIPS II`
 
             interpret = `
-                if (processor.cpu.doBLEZL(rs, imm16))
+                if (processor.cpu.doBLEZL(rs, (int)(short)imm16))
                     processor.interpretDelayslot();
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmRSOFFSET("blezl", rs, imm16, address);`
+            disasm = `return Common.disasmRSOFFSET("blezl", rs, (int)(short)imm16, address);`
         }
 
         op BLTZ(000001:rs:00000:imm16)
@@ -2141,14 +2186,14 @@ group root
             category=`MIPS I`
 
             interpret = `
-                if (processor.cpu.doBLTZ(rs, imm16))
+                if (processor.cpu.doBLTZ(rs, (int)(short)imm16))
                     processor.interpretDelayslot();
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmRSOFFSET("bltz", rs, imm16, address);`
+            disasm = `return Common.disasmRSOFFSET("bltz", rs, (int)(short)imm16, address);`
         }
 
         op BLTZAL(000001:rs:10000:imm16)
@@ -2158,14 +2203,14 @@ group root
             category=`MIPS I`
 
             interpret = `
-                if (processor.cpu.doBLTZAL(rs, imm16))
+                if (processor.cpu.doBLTZAL(rs, (int)(short)imm16))
                     processor.interpretDelayslot();
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmRSOFFSET("bltzal", rs, imm16, address);`
+            disasm = `return Common.disasmRSOFFSET("bltzal", rs, (int)(short)imm16, address);`
         }
 
         op BLTZALL(000001:rs:10010:imm16)
@@ -2175,14 +2220,14 @@ group root
             category=`MIPS II`
 
             interpret = `
-                if (processor.cpu.doBLTZALL(rs, imm16))
+                if (processor.cpu.doBLTZALL(rs, (int)(short)imm16))
                     processor.interpretDelayslot();
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmRSOFFSET("bltzall", rs, imm16, address);`
+            disasm = `return Common.disasmRSOFFSET("bltzall", rs, (int)(short)imm16, address);`
         }
 
         op BLTZL(000001:rs:00010:imm16)
@@ -2192,14 +2237,14 @@ group root
             category=`MIPS I`
 
             interpret = `
-                if (processor.cpu.doBLTZL(rs, imm16))
+                if (processor.cpu.doBLTZL(rs, (int)(short)imm16))
                     processor.interpretDelayslot();
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmRSOFFSET("bltzl", rs, imm16, address);`
+            disasm = `return Common.disasmRSOFFSET("bltzl", rs, (int)(short)imm16, address);`
         }
 
         op BNE(000101:rs:rt:imm16)
@@ -2209,13 +2254,13 @@ group root
             category=`MIPS I`
 
             interpret = `
-                if (processor.cpu.doBNE(rs, rt, imm16))
+                if (processor.cpu.doBNE(rs, rt, (int)(short)imm16))
                     processor.interpretDelayslot();
             `
 
             compile = `
                 boolean c = (processor.gpr[rs] != processor.gpr[rt]);
-                int target = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
+                int target = Processor.branchTarget(processor.pc, (int)(short)imm16);
                 boolean loop = (target == processor.current_bb.getEntry());
                 if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
                     if (c) {
@@ -2244,7 +2289,7 @@ group root
                 processor.current_bb = null;
             `
 
-            disasm = `return Common.disasmRSRTOFFSET("bne", rs, rt, imm16, address);`
+            disasm = `return Common.disasmRSRTOFFSET("bne", rs, rt, (int)(short)imm16, address);`
         }
 
         op BNEL(010101:rs:rt:imm16)
@@ -2254,14 +2299,14 @@ group root
             category=`MIPS II`
 
             interpret = `
-                if (processor.cpu.doBNEL(rs, rt, imm16))
+                if (processor.cpu.doBNEL(rs, rt, (int)(short)imm16))
                     processor.interpretDelayslot();
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmRSRTOFFSET("bnel", rs, rt, imm16, address);`
+            disasm = `return Common.disasmRSRTOFFSET("bnel", rs, rt, (int)(short)imm16, address);`
         }
 
         op J(000010:imm26)
@@ -2362,12 +2407,12 @@ group root
             category=`MIPS I/FPU`
 
             interpret = `
-                if (processor.cpu.doBC1F(imm16))
+                if (processor.cpu.doBC1F((int)(short)imm16))
                     processor.interpretDelayslot();
             `
 
             compile = `
-                int target = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
+                int target = Processor.branchTarget(processor.pc, (int)(short)imm16);
                 boolean loop = (target == processor.current_bb.getEntry());
                 processor.current_bb.emit("processor.pc = (!processor.fcr31_c) ? 0x" + Integer.toHexString(target) + " : processor.pc + 4;");
                 processor.npc = !processor.fcr31_c ? target : (processor.pc + 4);
@@ -2378,7 +2423,7 @@ group root
                 processor.current_bb = null;
             `
 
-            disasm = `return Common.disasmOFFSET("bc1f", imm16, address);`
+            disasm = `return Common.disasmOFFSET("bc1f", (int)(short)imm16, address);`
         }
 
         op BC1T(010001:01000:00001:imm16)
@@ -2388,12 +2433,12 @@ group root
             category=`MIPS I/FPU`
 
             interpret = `
-                if (processor.cpu.doBC1T(imm16))
+                if (processor.cpu.doBC1T((int)(short)imm16))
                     processor.interpretDelayslot();
             `
 
             compile = `
-                int target = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
+                int target = Processor.branchTarget(processor.pc, (int)(short)imm16);
                 boolean loop = (target == processor.current_bb.getEntry());
                 processor.current_bb.emit("processor.pc = processor.fcr31_c ? 0x" + Integer.toHexString(target) + " : (processor.pc + 4);");
                 processor.npc = processor.fcr31_c ? target : (processor.pc + 4);
@@ -2404,7 +2449,7 @@ group root
                 processor.current_bb = null;
             `
 
-            disasm = `return Common.disasmOFFSET("bc1t", imm16, address);`
+            disasm = `return Common.disasmOFFSET("bc1t", (int)(short)imm16, address);`
         }
 
         op BC1FL(010001:01000:00010:imm16)
@@ -2414,12 +2459,12 @@ group root
             category=`MIPS II/FPU`
 
             interpret = `
-                if (processor.cpu.doBC1FL(imm16))
+                if (processor.cpu.doBC1FL((int)(short)imm16))
                     processor.interpretDelayslot();
             `
 
             compile = `
-                int target = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
+                int target = Processor.branchTarget(processor.pc, (int)(short)imm16);
                 boolean loop = (target == processor.current_bb.getEntry());
                 processor.current_bb.emit(
                     "if (!processor.fcr31_c) {\n" +
@@ -2438,7 +2483,7 @@ group root
                 processor.current_bb = null;
             `
 
-            disasm = `return Common.disasmOFFSET("bc1fl", imm16, address);`
+            disasm = `return Common.disasmOFFSET("bc1fl", (int)(short)imm16, address);`
         }
 
         op BC1TL(010001:01000:00011:imm16)
@@ -2448,12 +2493,12 @@ group root
             category=`MIPS II/FPU`
 
             interpret = `
-                if (processor.cpu.doBC1TL(imm16))
+                if (processor.cpu.doBC1TL((int)(short)imm16))
                     processor.interpretDelayslot();
             `
 
             compile = `
-                int target = Processor.branchTarget(processor.pc, Processor.signExtend(imm16));
+                int target = Processor.branchTarget(processor.pc, (int)(short)imm16);
                 boolean loop = (target == processor.current_bb.getEntry());
                 processor.current_bb.emit(
                     "if (processor.fcr31_c) {\n" +
@@ -2472,7 +2517,7 @@ group root
                 processor.current_bb = null;
             `
 
-            disasm = `return Common.disasmOFFSET("bc1tl", imm16, address);`
+            disasm = `return Common.disasmOFFSET("bc1tl", (int)(short)imm16, address);`
         }
 
         op BVF(010010:01:000:imm3:00:imm16)
@@ -2545,13 +2590,13 @@ group root
             category=`MIPS I`
 
             interpret = `
-                processor.cpu.doLB(rt, rs, imm16);
+                processor.cpu.doLB(rt, rs, (int)(short)imm16);
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmRTIMMRS("lb", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("lb", rt, rs, (int)(short)imm16);`
         }
 
         op LBU(100100:rs:rt:imm16)
@@ -2561,13 +2606,13 @@ group root
             category=`MIPS I`
 
             interpret = `
-                processor.cpu.doLBU(rt, rs, imm16);
+                processor.cpu.doLBU(rt, rs, (int)(short)imm16);
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmRTIMMRS("lbu", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("lbu", rt, rs, (int)(short)imm16);`
         }
 
         op LH(100001:rs:rt:imm16)
@@ -2577,13 +2622,13 @@ group root
             category=`MIPS I`
 
             interpret = `
-                processor.cpu.doLH(rt, rs, imm16);
+                processor.cpu.doLH(rt, rs, (int)(short)imm16);
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmRTIMMRS("lh", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("lh", rt, rs, (int)(short)imm16);`
         }
 
         op LHU(100101:rs:rt:imm16)
@@ -2593,13 +2638,13 @@ group root
             category=`MIPS I`
 
             interpret = `
-                processor.cpu.doLHU(rt, rs, imm16);
+                processor.cpu.doLHU(rt, rs, (int)(short)imm16);
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmRTIMMRS("lhu", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("lhu", rt, rs, (int)(short)imm16);`
         }
 
         op LW(100011:rs:rt:imm16)
@@ -2609,13 +2654,13 @@ group root
             category=`MIPS I`
 
             interpret = `
-                processor.cpu.doLW(rt, rs, imm16);
+                processor.cpu.doLW(rt, rs, (int)(short)imm16);
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmRTIMMRS("lw", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("lw", rt, rs, (int)(short)imm16);`
         }
 
         op LWL(100010:rs:rt:imm16)
@@ -2625,13 +2670,13 @@ group root
             category=`MIPS I`
 
             interpret = `
-                processor.cpu.doLWL(rt, rs, imm16);
+                processor.cpu.doLWL(rt, rs, (int)(short)imm16);
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmRTIMMRS("lwl", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("lwl", rt, rs, (int)(short)imm16);`
         }
 
         op LWR(100110:rs:rt:imm16)
@@ -2641,13 +2686,13 @@ group root
             category=`MIPS I`
 
             interpret = `
-                processor.cpu.doLWR(rt, rs, imm16);
+                processor.cpu.doLWR(rt, rs, (int)(short)imm16);
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmRTIMMRS("lwr", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("lwr", rt, rs, (int)(short)imm16);`
         }
 
         op SB(101000:rs:rt:imm16)
@@ -2657,13 +2702,13 @@ group root
             category=`MIPS I`
 
             interpret = `
-                processor.cpu.doSB(rt, rs, imm16);
+                processor.cpu.doSB(rt, rs, (int)(short)imm16);
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmRTIMMRS("sb", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("sb", rt, rs, (int)(short)imm16);`
         }
 
         op SH(101001:rs:rt:imm16)
@@ -2673,13 +2718,13 @@ group root
             category=`MIPS I`
 
             interpret = `
-                processor.cpu.doSH(rt, rs, imm16);
+                processor.cpu.doSH(rt, rs, (int)(short)imm16);
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmRTIMMRS("sh", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("sh", rt, rs, (int)(short)imm16);`
         }
 
         op SW(101011:rs:rt:imm16)
@@ -2689,13 +2734,13 @@ group root
             category=`MIPS I`
 
             interpret = `
-                processor.cpu.doSW(rt, rs, imm16);
+                processor.cpu.doSW(rt, rs, (int)(short)imm16);
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmRTIMMRS("sw", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("sw", rt, rs, (int)(short)imm16);`
         }
 
         op SWL(101010:rs:rt:imm16)
@@ -2705,13 +2750,13 @@ group root
             category=`MIPS I`
 
             interpret = `
-                processor.cpu.doSWL(rt, rs, imm16);
+                processor.cpu.doSWL(rt, rs, (int)(short)imm16);
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmRTIMMRS("swl", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("swl", rt, rs, (int)(short)imm16);`
         }
 
         op SWR(101110:rs:rt:imm16)
@@ -2721,13 +2766,13 @@ group root
             category=`MIPS I`
 
             interpret = `
-                processor.cpu.doSWR(rt, rs, imm16);
+                processor.cpu.doSWR(rt, rs, (int)(short)imm16);
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmRTIMMRS("swr", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("swr", rt, rs, (int)(short)imm16);`
         }
 
         op LL(110000:rs:rt:imm16)
@@ -2737,13 +2782,13 @@ group root
             category=`ALLEGREX`
 
             interpret = `
-                processor.cpu.doLL(rt, rs, imm16);
+                processor.cpu.doLL(rt, rs, (int)(short)imm16);
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmRTIMMRS("ll", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("ll", rt, rs, (int)(short)imm16);`
         }
 
         op LWC1(110001:rs:ft:imm16)
@@ -2753,13 +2798,13 @@ group root
             category=`MIPS I/FPU`
 
             interpret = `
-                processor.cpu.doLWC1(ft, rs, imm16);
+                processor.cpu.doLWC1(ft, rs, (int)(short)imm16);
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmFTIMMRS("lwc1", ft, rs, imm16);`
+            disasm = `return Common.disasmFTIMMRS("lwc1", ft, rs, (int)(short)imm16);`
         }
 
         op LVS(110010:rs:vt5:imm14:vt2)
@@ -2774,7 +2819,7 @@ group root
             compile = `
             `
 
-            disasm = `return Common.disasmVTIMMRS("lv", 1, (vt5|(vt2<<5)), rs, (imm14 << 2));`
+            disasm = `return Common.disasmVTIMMRS("lv", 1, (vt5|(vt2<<5)), rs, (int)(short)(imm14 << 2));`
         }
 
         op LVLQ(110101:rs:vt5:imm14:0:vt1)
@@ -2789,7 +2834,7 @@ group root
             compile = `
             `
 
-            disasm = `return Common.disasmVTIMMRS("lvl", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
+            disasm = `return Common.disasmVTIMMRS("lvl", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));`
         }
 
         op LVRQ(110101:rs:vt5:imm14:1:vt1)
@@ -2804,7 +2849,7 @@ group root
             compile = `
             `
 
-            disasm = `return Common.disasmVTIMMRS("lvr", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
+            disasm = `return Common.disasmVTIMMRS("lvr", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));`
         }
 
         op LVQ(110110:rs:vt5:imm14:0:vt1)
@@ -2819,7 +2864,7 @@ group root
             compile = `
             `
 
-            disasm = `return Common.disasmVTIMMRS("lv", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
+            disasm = `return Common.disasmVTIMMRS("lv", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));`
         }
 
         op SC(111000:rs:rt:imm16)
@@ -2829,13 +2874,13 @@ group root
             category=`ALLEGREX`
 
             interpret = `
-                processor.cpu.doSC(rt, rs, imm16);
+                processor.cpu.doSC(rt, rs, (int)(short)imm16);
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmRTIMMRS("sc", rt, rs, imm16);`
+            disasm = `return Common.disasmRTIMMRS("sc", rt, rs, (int)(short)imm16);`
         }
 
         op SWC1(111001:rs:ft:imm16)
@@ -2845,13 +2890,13 @@ group root
             category=`MIPS I/FPU`
 
             interpret = `
-                processor.cpu.doSWC1(ft, rs, imm16);
+                processor.cpu.doSWC1(ft, rs, (int)(short)imm16);
             `
 
             compile = `
             `
 
-            disasm = `return Common.disasmFTIMMRS("swc1", ft, rs, imm16);`
+            disasm = `return Common.disasmFTIMMRS("swc1", ft, rs, (int)(short)imm16);`
         }
 
         op SVS(111010:rs:vt5:imm14:vt2)
@@ -2866,7 +2911,7 @@ group root
             compile = `
             `
 
-            disasm = `return Common.disasmVTIMMRS("sv", 1, (vt5|(vt2<<5)), rs, (imm14 << 2));`
+            disasm = `return Common.disasmVTIMMRS("sv", 1, (vt5|(vt2<<5)), rs, (int)(short)(imm14 << 2));`
         }
 
         op SVLQ(111101:rs:vt5:imm14:0:vt1)
@@ -2881,7 +2926,7 @@ group root
             compile = `
             `
 
-            disasm = `return Common.disasmVTIMMRS("svl", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
+            disasm = `return Common.disasmVTIMMRS("svl", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));`
         }
 
         op SVRQ(111101:rs:vt5:imm14:1:vt1)
@@ -2896,7 +2941,7 @@ group root
             compile = `
             `
 
-            disasm = `return Common.disasmVTIMMRS("svr", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
+            disasm = `return Common.disasmVTIMMRS("svr", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));`
         }
 
         op SVQ(111110:rs:vt5:imm14:0:vt1)
@@ -2911,7 +2956,7 @@ group root
             compile = `
             `
 
-            disasm = `return Common.disasmVTIMMRS("lv", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
+            disasm = `return Common.disasmVTIMMRS("lv", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));`
         }
 
         op SWB(111110:rs:vt5:imm14:1:vt1)
@@ -2926,7 +2971,7 @@ group root
             compile = `
             `
 
-            disasm = `return Common.disasmVTIMMRS("swb", 4, (vt5|(vt1<<5)), rs, (imm14 << 2));`
+            disasm = `return Common.disasmVTIMMRS("swb", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));`
         }
     }
 

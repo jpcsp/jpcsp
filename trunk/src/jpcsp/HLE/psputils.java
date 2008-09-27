@@ -57,7 +57,7 @@ public class psputils {
         if (mem.isAddressGood(time_t_addr)) {
             mem.write32(time_t_addr, seconds);
         }
-        Emulator.getProcessor().gpr[2] = seconds;
+        Emulator.getProcessor().cpu.gpr[2] = seconds;
     }
 
     /** returns the number of clocks since the "process" started.
@@ -68,7 +68,7 @@ public class psputils {
     public void sceKernelLibcClock() {
         //int clocks = (int)System.nanoTime() - initialclocks; // seconds * 1 million
         currentClocks += 100; // FIXME: quick hack to fix NesterJ
-        Emulator.getProcessor().gpr[2] = currentClocks;
+        Emulator.getProcessor().cpu.gpr[2] = currentClocks;
     }
 
     /* from man pages:
@@ -99,7 +99,7 @@ public class psputils {
             mem.write32(tzp + 4, tz_dsttime);
         }
 
-        Emulator.getProcessor().gpr[2] = 0;
+        Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
     public void sceKernelDcacheWritebackAll() {
@@ -133,17 +133,17 @@ public class psputils {
             mem.write32(ctx_addr + i, 0xcdcdcdcd);
         }
 
-        Emulator.getProcessor().gpr[2] = 0;
+        Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
     public void sceKernelUtilsMt19937UInt(int ctx_addr) {
         SceKernelUtilsMt19937Context ctx = Mt19937List.get(ctx_addr);
         if (ctx != null) {
-            Emulator.getProcessor().gpr[2] = ctx.r.nextInt();
+            Emulator.getProcessor().cpu.gpr[2] = ctx.r.nextInt();
         } else {
             // TODO what happens if the ctx is bad?
             System.out.println("sceKernelUtilsMt19937UInt uninitialised context " + Integer.toHexString(ctx_addr));
-            Emulator.getProcessor().gpr[2] = 0;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
         }
     }
 

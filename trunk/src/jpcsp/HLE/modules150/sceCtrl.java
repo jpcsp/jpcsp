@@ -82,8 +82,8 @@ public class sceCtrl implements HLEModule {
     }
 
     public void sceCtrlSetSamplingCycle(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -99,8 +99,8 @@ public class sceCtrl implements HLEModule {
     }
 
     public void sceCtrlGetSamplingCycle(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -116,8 +116,8 @@ public class sceCtrl implements HLEModule {
     }
 
     public void sceCtrlSetSamplingMode(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -133,8 +133,8 @@ public class sceCtrl implements HLEModule {
     }
 
     public void sceCtrlGetSamplingMode(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -150,8 +150,8 @@ public class sceCtrl implements HLEModule {
     }
 
     public void sceCtrlPeekBufferPositive(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -167,8 +167,8 @@ public class sceCtrl implements HLEModule {
     }
 
     public void sceCtrlPeekBufferNegative(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -184,8 +184,8 @@ public class sceCtrl implements HLEModule {
     }
 
     public void sceCtrlReadBufferPositive(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -201,8 +201,8 @@ public class sceCtrl implements HLEModule {
     }
 
     public void sceCtrlReadBufferNegative(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -218,8 +218,8 @@ public class sceCtrl implements HLEModule {
     }
 
     public void sceCtrlPeekLatch(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -235,8 +235,8 @@ public class sceCtrl implements HLEModule {
     }
 
     public void sceCtrlReadLatch(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -252,8 +252,8 @@ public class sceCtrl implements HLEModule {
     }
 
     public void sceCtrlSetIdleCancelThreshold(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -269,8 +269,8 @@ public class sceCtrl implements HLEModule {
     }
 
     public void sceCtrlGetIdleCancelThreshold(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -286,8 +286,8 @@ public class sceCtrl implements HLEModule {
     }
 
     public void sceCtrl_348D99D4(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -303,8 +303,8 @@ public class sceCtrl implements HLEModule {
     }
 
     public void sceCtrl_AF5960F3(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -320,8 +320,8 @@ public class sceCtrl implements HLEModule {
     }
 
     public void sceCtrlClearRapidFire(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -337,8 +337,8 @@ public class sceCtrl implements HLEModule {
     }
 
     public void sceCtrlSetRapidFire(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */

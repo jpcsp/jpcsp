@@ -20,12 +20,13 @@ package jpcsp.HLE;
 import jpcsp.Emulator;
 import jpcsp.GeneralJpcspException;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.Allegrex.CpuState;
 
 public class SyscallHandler {
 
     // Change this to return the number of cycles used?
     public static void syscall(int code) {
-        int gpr[] = Emulator.getProcessor().gpr;
+        int gpr[] = Emulator.getProcessor().cpu.gpr;
 
         // Some syscalls implementation throw GeneralJpcspException,
         // and Processor isn't setup to catch exceptions so we'll do it
@@ -744,13 +745,14 @@ public class SyscallHandler {
                     // Try and handle as an HLE module export
                     boolean handled = HLEModuleManager.get_instance().handleSyscall(code);
                     if (!handled) {
+                        CpuState cpu = Emulator.getProcessor().cpu;
                         // At least set a decent return value
-                        Emulator.getProcessor().gpr[2] = 0;
+                        cpu.gpr[2] = 0;
                         //Emulator.getProcessor().gpr[2] = 0xb515ca11;
 
                         // Display debug info
-                        String params = String.format("%08x %08x %08x", Emulator.getProcessor().gpr[4],
-                            Emulator.getProcessor().gpr[5], Emulator.getProcessor().gpr[6]);
+                        String params = String.format("%08x %08x %08x", cpu.gpr[4],
+                            cpu.gpr[5], cpu.gpr[6]);
 
                         for (jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls c : jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls.values()) {
                             if (c.getSyscall() == code) {

@@ -86,8 +86,8 @@ public class sceDisplay implements HLEModule {
     }
 
     public void sceDisplaySetMode(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -103,8 +103,8 @@ public class sceDisplay implements HLEModule {
     }
 
     public void sceDisplayGetMode(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -120,8 +120,8 @@ public class sceDisplay implements HLEModule {
     }
 
     public void sceDisplayGetFramePerSec(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -137,8 +137,8 @@ public class sceDisplay implements HLEModule {
     }
 
     public void sceDisplaySetHoldMode(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -154,8 +154,8 @@ public class sceDisplay implements HLEModule {
     }
 
     public void sceDisplaySetResumeMode(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -171,8 +171,8 @@ public class sceDisplay implements HLEModule {
     }
 
     public void sceDisplaySetFrameBuf(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -188,8 +188,8 @@ public class sceDisplay implements HLEModule {
     }
 
     public void sceDisplayGetFrameBuf(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -205,8 +205,8 @@ public class sceDisplay implements HLEModule {
     }
 
     public void sceDisplayIsForeground(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -222,8 +222,8 @@ public class sceDisplay implements HLEModule {
     }
 
     public void sceDisplayGetBrightness(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -239,8 +239,8 @@ public class sceDisplay implements HLEModule {
     }
 
     public void sceDisplayGetVcount(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -256,8 +256,8 @@ public class sceDisplay implements HLEModule {
     }
 
     public void sceDisplayIsVblank(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -273,8 +273,8 @@ public class sceDisplay implements HLEModule {
     }
 
     public void sceDisplayWaitVblank(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -290,8 +290,8 @@ public class sceDisplay implements HLEModule {
     }
 
     public void sceDisplayWaitVblankCB(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -307,8 +307,8 @@ public class sceDisplay implements HLEModule {
     }
 
     public void sceDisplayWaitVblankStart(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -324,8 +324,8 @@ public class sceDisplay implements HLEModule {
     }
 
     public void sceDisplayWaitVblankStartCB(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -341,8 +341,8 @@ public class sceDisplay implements HLEModule {
     }
 
     public void sceDisplayGetCurrentHcount(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -358,8 +358,8 @@ public class sceDisplay implements HLEModule {
     }
 
     public void sceDisplayGetAccumulatedHcount(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -375,8 +375,8 @@ public class sceDisplay implements HLEModule {
     }
 
     public void sceDisplayAdjustAccumulatedHcount(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */

@@ -16,6 +16,7 @@ public class LsuState extends MduState {
     
     @Override
     public void reset() {
+        super.reset();
     }
 
     public LsuState() {
@@ -31,35 +32,35 @@ public class LsuState extends MduState {
     }
     
     public void doLB(int rt, int rs, int simm16) {
-        int word = (memory.read8(gpr[rs] + simm16) << 24) >> 24;
+        int word = (memory.read8(gpr[rs] + (int)(short)simm16) << 24) >> 24;
         if (rt != 0) {
             gpr[rt] = word;
         }
     }
 
     public void doLBU(int rt, int rs, int simm16) {
-        int word = memory.read8(gpr[rs] + simm16) & 0xff;
+        int word = memory.read8(gpr[rs] + (int)(short)simm16) & 0xff;
         if (rt != 0) {
             gpr[rt] = word;
         }
     }
 
     public void doLH(int rt, int rs, int simm16) {
-        int word = (memory.read16(gpr[rs] + simm16) << 16) >> 16;
+        int word = (memory.read16(gpr[rs] + (int)(short)simm16) << 16) >> 16;
         if (rt != 0) {
             gpr[rt] = word;
         }
     }
 
     public void doLHU(int rt, int rs, int simm16) {
-        int word = memory.read16(gpr[rs] + simm16) & 0xffff;
+        int word = memory.read16(gpr[rs] + (int)(short)simm16) & 0xffff;
         if (rt != 0) {
             gpr[rt] = word;
         }
     }
 
     public void doLWL(int rt, int rs, int simm16) {
-        int address = gpr[rs] + simm16;
+        int address = gpr[rs] + (int)(short)simm16;
         int offset = address & 0x3;
         int reg = gpr[rt];
 
@@ -88,14 +89,14 @@ public class LsuState extends MduState {
     }
 
     public void doLW(int rt, int rs, int simm16) {
-        int word = memory.read32(gpr[rs] + simm16);
+        int word = memory.read32(gpr[rs] + (int)(short)simm16);
         if (rt != 0) {
             gpr[rt] = word;
         }
     }
 
     public void doLWR(int rt, int rs, int simm16) {
-        int address = gpr[rs] + simm16;
+        int address = gpr[rs] + (int)(short)simm16;
         int offset = address & 0x3;
         int reg = gpr[rt];
 
@@ -124,15 +125,15 @@ public class LsuState extends MduState {
     }
 
     public void doSB(int rt, int rs, int simm16) {
-        memory.write8(gpr[rs] + simm16, (byte) (gpr[rt] & 0xFF));
+        memory.write8(gpr[rs] + (int)(short)simm16, (byte) (gpr[rt] & 0xFF));
     }
 
     public void doSH(int rt, int rs, int simm16) {
-        memory.write16(gpr[rs] + simm16, (short) (gpr[rt] & 0xFFFF));
+        memory.write16(gpr[rs] + (int)(short)simm16, (short) (gpr[rt] & 0xFFFF));
     }
 
     public void doSWL(int rt, int rs, int simm16) {
-        int address = gpr[rs] + simm16;
+        int address = gpr[rs] + (int)(short)simm16;
         int offset = address & 0x3;
         int reg = gpr[rt];
         int data = memory.read32(address & 0xfffffffc);
@@ -159,11 +160,11 @@ public class LsuState extends MduState {
     }
 
     public void doSW(int rt, int rs, int simm16) {
-        memory.write32(gpr[rs] + simm16, gpr[rt]);
+        memory.write32(gpr[rs] + (int)(short)simm16, gpr[rt]);
     }
 
     public void doSWR(int rt, int rs, int simm16) {
-        int address = gpr[rs] + simm16;
+        int address = gpr[rs] + (int)(short)simm16;
         int offset = address & 0x3;
         int reg = gpr[rt];
         int data = memory.read32(address & 0xfffffffc);
@@ -190,7 +191,7 @@ public class LsuState extends MduState {
     }
 
     public void doLL(int rt, int rs, int simm16) {
-        int word = memory.read32(gpr[rs] + simm16);
+        int word = memory.read32(gpr[rs] + (int)(short)simm16);
         if (rt != 0) {
             gpr[rt] = word;
         }
@@ -198,7 +199,7 @@ public class LsuState extends MduState {
     }
 
     public void doSC(int rt, int rs, int simm16) {
-        memory.write32(gpr[rs] + simm16, gpr[rt]);
+        memory.write32(gpr[rs] + (int)(short)simm16, gpr[rt]);
         if (rt != 0) {
             gpr[rt] = 1; // = ll_bit;
         }

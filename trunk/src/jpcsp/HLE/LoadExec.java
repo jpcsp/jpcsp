@@ -41,7 +41,7 @@ public class LoadExec {
         Modules.log.warn("UNIMPLEMENTED:sceKernelRegisterExitCallback SceUID=" + Integer.toHexString(uid));
 
         // Fake successful return
-        Emulator.getProcessor().gpr[2] = 0;
+        Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
     public void sceKernelExitGame()

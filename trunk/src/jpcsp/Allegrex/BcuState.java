@@ -19,6 +19,7 @@ public class BcuState extends LsuState {
 
     @Override
     public void reset() {
+        super.reset();
         pc = 0;
         npc = 0;
     }

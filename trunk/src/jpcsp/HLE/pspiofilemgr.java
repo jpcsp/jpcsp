@@ -128,7 +128,7 @@ public class pspiofilemgr {
             mode = "rw";
         } else {
             System.out.println("sceIoOpen - unhandled flags " + Integer.toHexString(flags));
-            Emulator.getProcessor().gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = -1;
             return;
         }
 
@@ -154,7 +154,7 @@ public class pspiofilemgr {
                     // check umd is mounted
                     if (iso == null) {
                         System.out.println("sceIoOpen - no umd mounted");
-                        Emulator.getProcessor().gpr[2] = -1;
+                        Emulator.getProcessor().cpu.gpr[2] = -1;
 
                     // check flags are valid
                     } else if ((flags & PSP_O_WRONLY) == PSP_O_WRONLY ||
@@ -162,16 +162,16 @@ public class pspiofilemgr {
                         (flags & PSP_O_TRUNC) == PSP_O_TRUNC) {
                         // should we refuse (return -1) or just ignore?
                         System.out.println("sceIoOpen - refusing to open umd media for write");
-                        Emulator.getProcessor().gpr[2] = -1;
+                        Emulator.getProcessor().cpu.gpr[2] = -1;
                     } else {
                         // open file
                         try {
                             UmdIsoFile file = iso.getFile(pcfilename.substring(6));
                             IoInfo info = new IoInfo(file, mode, flags, permissions);
-                            Emulator.getProcessor().gpr[2] = info.uid;
+                            Emulator.getProcessor().cpu.gpr[2] = info.uid;
                         } catch(IOException e) {
                             System.out.println("sceIoOpen - error opening umd media: " + e.getMessage());
-                            Emulator.getProcessor().gpr[2] = -1;
+                            Emulator.getProcessor().cpu.gpr[2] = -1;
                         }
                     }
                 } else {
@@ -182,7 +182,7 @@ public class pspiofilemgr {
                         (flags & PSP_O_EXCL) == PSP_O_EXCL) {
                         // PSP_O_CREAT + PSP_O_EXCL + file already exists = error
                         if (debug) System.out.println("sceIoOpen - file already exists (PSP_O_CREAT + PSP_O_EXCL)");
-                        Emulator.getProcessor().gpr[2] = -1;
+                        Emulator.getProcessor().cpu.gpr[2] = -1;
                     } else {
                         if (file.exists() &&
                             (flags & PSP_O_TRUNC) == PSP_O_TRUNC) {
@@ -192,16 +192,16 @@ public class pspiofilemgr {
 
                         SeekableRandomFile raf = new SeekableRandomFile(pcfilename, mode);
                         IoInfo info = new IoInfo(raf, mode, flags, permissions);
-                        Emulator.getProcessor().gpr[2] = info.uid;
+                        Emulator.getProcessor().cpu.gpr[2] = info.uid;
                     }
                 }
             } else {
-                Emulator.getProcessor().gpr[2] = -1;
+                Emulator.getProcessor().cpu.gpr[2] = -1;
             }
         } catch(FileNotFoundException e) {
             // To be expected under mode="r" and file doesn't exist
             if (debug) System.out.println("pspiofilemgr - file not found (ok to ignore this message, debug purpose only)");
-            Emulator.getProcessor().gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = -1;
         }
     }
 
@@ -214,15 +214,15 @@ public class pspiofilemgr {
             if (info == null) {
                 if (uid != 1 && uid != 2) // stdin and stderr
                     System.out.println("sceIoClose - unknown uid " + Integer.toHexString(uid));
-                Emulator.getProcessor().gpr[2] = -1;
+                Emulator.getProcessor().cpu.gpr[2] = -1;
             } else {
                 info.readOnlyFile.close();
                 SceUIDMan.get_instance().releaseUid(info.uid, "IOFileManager-File");
-                Emulator.getProcessor().gpr[2] = 0;
+                Emulator.getProcessor().cpu.gpr[2] = 0;
             }
         } catch(IOException e) {
             e.printStackTrace();
-            Emulator.getProcessor().gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = -1;
         }
     }
 
@@ -233,11 +233,11 @@ public class pspiofilemgr {
         if (uid == 1) { // stdout
             String stdout = readStringNZ(Memory.getInstance().mainmemory, data_addr - MemoryMap.START_RAM, size);
             System.out.print(stdout);
-            Emulator.getProcessor().gpr[2] = size;
+            Emulator.getProcessor().cpu.gpr[2] = size;
         } else if (uid == 2) { // stderr
             String stderr = readStringNZ(Memory.getInstance().mainmemory, data_addr - MemoryMap.START_RAM, size);
             System.out.print(stderr);
-            Emulator.getProcessor().gpr[2] = size;
+            Emulator.getProcessor().cpu.gpr[2] = size;
         } else {
             if (debug) System.out.println("sceIoWrite - uid " + Integer.toHexString(uid) + " data " + Integer.toHexString(data_addr) + " size " + size);
 
@@ -246,7 +246,7 @@ public class pspiofilemgr {
                 IoInfo info = filelist.get(uid);
                 if (info == null) {
                     System.out.println("sceIoWrite - unknown uid " + Integer.toHexString(uid));
-                    Emulator.getProcessor().gpr[2] = -1;
+                    Emulator.getProcessor().cpu.gpr[2] = -1;
                 } else if ((data_addr >= MemoryMap.START_RAM ) && (data_addr <= MemoryMap.END_RAM)) {
                     if ((info.flags & PSP_O_APPEND) == PSP_O_APPEND) {
                         System.out.println("sceIoWrite - untested append operation");
@@ -258,14 +258,14 @@ public class pspiofilemgr {
                         Memory.getInstance().mainmemory.arrayOffset() + data_addr - MemoryMap.START_RAM,
                         size);
 
-                    Emulator.getProcessor().gpr[2] = size;
+                    Emulator.getProcessor().cpu.gpr[2] = size;
                 } else {
                     System.out.println("sceIoWrite - data is outside of ram " + Integer.toHexString(data_addr));
-                    Emulator.getProcessor().gpr[2] = -1;
+                    Emulator.getProcessor().cpu.gpr[2] = -1;
                 }
             } catch(IOException e) {
                 e.printStackTrace();
-                Emulator.getProcessor().gpr[2] = -1;
+                Emulator.getProcessor().cpu.gpr[2] = -1;
             }
         }
     }
@@ -276,14 +276,14 @@ public class pspiofilemgr {
 
         if (uid == 3) { // stdin
             // TODO
-            Emulator.getProcessor().gpr[2] = 0;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
         } else {
             try {
                 SceUIDMan.get_instance().checkUidPurpose(uid, "IOFileManager-File", true);
                 IoInfo info = filelist.get(uid);
                 if (info == null) {
                     System.out.println("sceIoRead - unknown uid " + Integer.toHexString(uid));
-                    Emulator.getProcessor().gpr[2] = -1;
+                    Emulator.getProcessor().cpu.gpr[2] = -1;
                 } else if ((data_addr >= MemoryMap.START_RAM ) && (data_addr <= MemoryMap.END_RAM)) {
                     // Using readFully for ms/umd compatibility, but now we must
                     // manually make sure it doesn't read off the end of the file.
@@ -294,14 +294,14 @@ public class pspiofilemgr {
                         Memory.getInstance().mainmemory.array(),
                         Memory.getInstance().mainmemory.arrayOffset() + data_addr - MemoryMap.START_RAM,
                         size);
-                    Emulator.getProcessor().gpr[2] = size;
+                    Emulator.getProcessor().cpu.gpr[2] = size;
                 } else {
                     System.out.println("sceIoRead - data is outside of ram " + Integer.toHexString(data_addr));
-                    Emulator.getProcessor().gpr[2] = -1;
+                    Emulator.getProcessor().cpu.gpr[2] = -1;
                 }
             } catch(IOException e) {
                 e.printStackTrace();
-                Emulator.getProcessor().gpr[2] = -1;
+                Emulator.getProcessor().cpu.gpr[2] = -1;
             }
         }
     }
@@ -331,14 +331,14 @@ public class pspiofilemgr {
 
         if (uid == 1 || uid == 2 || uid == 3) { // stdio
             System.out.println("seek - can't seek on stdio uid " + Integer.toHexString(uid));
-            Emulator.getProcessor().gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = -1;
         } else {
             try {
                 SceUIDMan.get_instance().checkUidPurpose(uid, "IOFileManager-File", true);
                 IoInfo info = filelist.get(uid);
                 if (info == null) {
                     System.out.println("seek - unknown uid " + Integer.toHexString(uid));
-                    Emulator.getProcessor().gpr[2] = -1;
+                    Emulator.getProcessor().cpu.gpr[2] = -1;
                 } else {
                     switch(whence) {
                         case PSP_SEEK_SET:
@@ -354,11 +354,11 @@ public class pspiofilemgr {
                             System.out.println("seek - unhandled whence " + whence);
                             break;
                     }
-                    Emulator.getProcessor().gpr[2] = (int)info.readOnlyFile.getFilePointer();
+                    Emulator.getProcessor().cpu.gpr[2] = (int)info.readOnlyFile.getFilePointer();
                 }
             } catch(IOException e) {
                 e.printStackTrace();
-                Emulator.getProcessor().gpr[2] = -1;
+                Emulator.getProcessor().cpu.gpr[2] = -1;
             }
         }
     }
@@ -371,9 +371,9 @@ public class pspiofilemgr {
         if (pcfilename != null) {
             File f = new File(pcfilename);
             f.mkdir();
-            Emulator.getProcessor().gpr[2] = 0;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
         } else {
-            Emulator.getProcessor().gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = -1;
         }
     }
 
@@ -385,9 +385,9 @@ public class pspiofilemgr {
         String pcfilename = getDeviceFilePath(path);
         if (pcfilename != null) {
             filepath = pcfilename;
-            Emulator.getProcessor().gpr[2] = 0;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
         } else {
-            Emulator.getProcessor().gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = -1;
         }
     }
 
@@ -400,13 +400,13 @@ public class pspiofilemgr {
             File f = new File(pcfilename);
             if (f.isDirectory()) {
                 IoDirInfo info = new IoDirInfo(pcfilename, f);
-                Emulator.getProcessor().gpr[2] = info.uid;
+                Emulator.getProcessor().cpu.gpr[2] = info.uid;
             } else {
                 if (debug) System.out.println("sceIoDopen not a directory!");
-                Emulator.getProcessor().gpr[2] = -1;
+                Emulator.getProcessor().cpu.gpr[2] = -1;
             }
         } else {
-            Emulator.getProcessor().gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = -1;
         }
     }
 
@@ -417,7 +417,7 @@ public class pspiofilemgr {
         IoDirInfo info = dirlist.get(uid);
         if (info == null) {
             System.out.println("sceIoDread - unknown uid " + Integer.toHexString(uid));
-            Emulator.getProcessor().gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = -1;
         } else if (info.hasNext()) {
             //String filename = info.path + "/" + info.next(); // TODO is the separator needed?
             String filename = info.next(); // TODO is the separator needed?
@@ -430,14 +430,14 @@ public class pspiofilemgr {
             if (stat != null) {
                 SceIoDirent dirent = new SceIoDirent(stat, filename);
                 dirent.write(Memory.getInstance(), dirent_addr);
-                Emulator.getProcessor().gpr[2] = 1; // TODO "> 0", so number of files remaining?
+                Emulator.getProcessor().cpu.gpr[2] = 1; // TODO "> 0", so number of files remaining?
             } else {
                 System.out.println("sceIoDread - stat failed");
-                Emulator.getProcessor().gpr[2] = -1;
+                Emulator.getProcessor().cpu.gpr[2] = -1;
             }
         } else {
             System.out.println("sceIoDread - no more files");
-            Emulator.getProcessor().gpr[2] = 0;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
         }
     }
 
@@ -448,10 +448,10 @@ public class pspiofilemgr {
         IoDirInfo info = dirlist.remove(uid);
         if (info == null) {
             System.out.println("sceIoDclose - unknown uid " + Integer.toHexString(uid));
-            Emulator.getProcessor().gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = -1;
         } else {
             SceUIDMan.get_instance().releaseUid(info.uid, "IOFileManager-Directory");
-            Emulator.getProcessor().gpr[2] = 0;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
         }
     }
 
@@ -496,9 +496,9 @@ public class pspiofilemgr {
         SceIoStat stat = stat(pcfilename);
         if (stat != null) {
             stat.write(Memory.getInstance(), stat_addr);
-            Emulator.getProcessor().gpr[2] = 0;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
         } else {
-            Emulator.getProcessor().gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = -1;
         }
     }
 

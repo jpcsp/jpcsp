@@ -491,7 +491,7 @@ public class Common {
     public static String disasmVD1VSVT(String opname, int vsize, int vd, int vs, int vt) {
         return String.format("%1$-10s %2$s, %3$s, %4$s", opname + vsuffix[vsize - 1], vprNames[0][vd], vprNames[vsize - 1][vs], vprNames[0][vt]);
     }
-    protected static Instruction[] m_instances = new Instruction[247];
+    protected static Instruction[] m_instances = new Instruction[250];
 
     public static final Instruction[] instructions() {
         return m_instances;

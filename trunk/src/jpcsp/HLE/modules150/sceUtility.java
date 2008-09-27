@@ -129,8 +129,8 @@ public class sceUtility implements HLEModule {
     public static final int PSP_NETPARAM_ERROR_BAD_PARAM = 0x80110604;
 
 	public void sceUtilityGameSharingInitStart(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -146,8 +146,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtilityGameSharingShutdownStart(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -163,8 +163,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtilityGameSharingUpdate(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -180,8 +180,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtilityGameSharingGetStatus(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -197,8 +197,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceNetplayDialogInitStart(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -214,8 +214,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceNetplayDialogShutdownStart(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -231,8 +231,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceNetplayDialogUpdate(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -248,8 +248,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceNetplayDialogGetStatus(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -265,8 +265,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtilityNetconfInitStart(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -282,8 +282,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtilityNetconfShutdownStart(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -299,8 +299,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtilityNetconfUpdate(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -316,8 +316,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtilityNetconfGetStatus(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -333,8 +333,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtilitySavedataInitStart(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -350,8 +350,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtilitySavedataShutdownStart(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -367,8 +367,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtilitySavedataUpdate(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -384,8 +384,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtilitySavedataGetStatus(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -401,8 +401,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtility_2995D020(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -418,8 +418,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtility_B62A4061(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -435,8 +435,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtility_ED0FAD38(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -452,8 +452,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtility_88BC7406(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -469,8 +469,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtilityMsgDialogInitStart(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -486,8 +486,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtilityMsgDialogShutdownStart(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -503,8 +503,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtilityMsgDialogUpdate(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -520,8 +520,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtilityMsgDialogGetStatus(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -537,8 +537,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtilityOskInitStart(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -554,8 +554,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtilityOskShutdownStart(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -571,8 +571,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtilityOskUpdate(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -588,8 +588,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtilityOskGetStatus(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -605,8 +605,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtilitySetSystemParamInt(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -622,8 +622,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtilitySetSystemParamString(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -639,8 +639,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtilityGetSystemParamInt(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
         int id = cpu.gpr[4];
@@ -667,8 +667,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtilityGetSystemParamString(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -684,8 +684,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtilityCheckNetParam(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 
 		int id = cpu.gpr[4];
 
@@ -695,8 +695,8 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtilityGetNetParam(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */

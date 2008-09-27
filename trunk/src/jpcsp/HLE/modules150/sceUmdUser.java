@@ -104,15 +104,15 @@ public class sceUmdUser implements HLEModule {
     // Export functions
 
     public void sceUmdCheckMedium(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Modules.log.debug("sceUmdCheckMedium (umd mounted = " + (iso != null) + ")");
         cpu.gpr[2] = (iso != null) ? 1 : 0;
     }
 
     public void sceUmdActivate(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
         int unit = cpu.gpr[4]; // should be always 1
         String drive = readStringZ(mem.mainmemory, (cpu.gpr[5] & 0x3fffffff) - MemoryMap.START_RAM);
@@ -121,8 +121,8 @@ public class sceUmdUser implements HLEModule {
     }
 
     public void sceUmdDeactivate(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -139,8 +139,8 @@ public class sceUmdUser implements HLEModule {
 
     /** wait until drive stat reaches a0 */
     public void sceUmdWaitDriveStat(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         int stat = cpu.gpr[4];
         Modules.log.debug("sceUmdWaitDriveStat = 0x" + Integer.toHexString(stat));
         cpu.gpr[2] = 0;
@@ -156,8 +156,8 @@ public class sceUmdUser implements HLEModule {
 
     /** wait until drive stat reaches a0 */
     public void sceUmdWaitDriveStatWithTimer(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -174,8 +174,8 @@ public class sceUmdUser implements HLEModule {
 
     /** wait until drive stat reaches a0 */
     public void sceUmdWaitDriveStatCB(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
 
         int stat = cpu.gpr[4];
         int timeout = cpu.gpr[5];
@@ -197,8 +197,8 @@ public class sceUmdUser implements HLEModule {
     }
 
     public void sceUmdCancelWaitDriveStat(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -214,8 +214,8 @@ public class sceUmdUser implements HLEModule {
     }
 
     public void sceUmdGetDriveStat(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
 
         int stat;
         if (iso != null) {
@@ -230,8 +230,8 @@ public class sceUmdUser implements HLEModule {
     }
 
     public void sceUmdGetErrorStat(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -247,8 +247,8 @@ public class sceUmdUser implements HLEModule {
     }
 
     public void sceUmdGetDiscInfo(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -265,8 +265,8 @@ public class sceUmdUser implements HLEModule {
 
     // TODO not fully implemented yet
     public void sceUmdRegisterUMDCallBack(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
 
         int uid = cpu.gpr[4];
         Modules.log.warn("UNIMPLEMENTED:sceUmdRegisterUMDCallBack SceUID=" + Integer.toHexString(uid));
@@ -281,8 +281,8 @@ public class sceUmdUser implements HLEModule {
     }
 
     public void sceUmdUnRegisterUMDCallBack(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
 
         int uid = cpu.gpr[4];
         Modules.log.debug("sceUmdUnRegisterUMDCallBack SceUID=" + Integer.toHexString(uid));

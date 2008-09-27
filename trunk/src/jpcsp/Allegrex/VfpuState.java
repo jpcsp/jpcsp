@@ -448,6 +448,325 @@ public class VfpuState extends FpuState {
         }
     }
 
+    // VFPU0
+    public void doVADD(int vsize, int vd, int vs, int vt) {
+        float[] x1 = loadVs(vsize, vs);
+        float[] x2 = loadVt(vsize, vt);
+
+        for (int i = 0; i < vsize; ++i) {
+            x1[i] += x2[i];
+        }
+
+        saveVd(vsize, vd, x1);
+    }
+
+    public void doVSUB(int vsize, int vd, int vs, int vt) {
+        float[] x1 = loadVs(vsize, vs);
+        float[] x2 = loadVt(vsize, vt);
+
+        for (int i = 0; i < vsize; ++i) {
+            x1[i] -= x2[i];
+        }
+
+        saveVd(vsize, vd, x1);
+    }
+
+    public void doVSBN(int vsize, int vd, int vs, int vt) {
+        if (vsize != 1) {
+            doUNK("Only supported VSBN.S instruction");
+        }
+
+        float[] x1 = loadVs(1, vs);
+        float[] x2 = loadVt(1, vt);
+
+        x1[0] = Math.scalb(x1[0], Float.floatToRawIntBits(x2[0]));
+
+        saveVd(1, vd, x1);
+    }
+
+    public void doVDIV(int vsize, int vd, int vs, int vt) {
+        float[] x1 = loadVs(vsize, vs);
+        float[] x2 = loadVt(vsize, vt);
+
+        for (int i = 0; i < vsize; ++i) {
+            x1[i] /= x2[i];
+        }
+
+        saveVd(vsize, vd, x1);
+    }
+
+    // VFPU1
+    public void doVMUL(int vsize, int vd, int vs, int vt) {
+        float[] x1 = loadVs(vsize, vs);
+        float[] x2 = loadVt(vsize, vt);
+
+        for (int i = 0; i < vsize; ++i) {
+            x1[i] *= x2[i];
+        }
+
+        saveVd(vsize, vd, x1);
+    }
+
+    public void doVDOT(int vsize, int vd, int vs, int vt) {
+        if (vsize == 1) {
+            doUNK("Unsupported VDOT.S instruction");
+        }
+
+        float[] x1 = loadVs(vsize, vs);
+        float[] x2 = loadVt(vsize, vt);
+        float[] x3 = new float[1];
+
+        for (int i = 0; i < vsize; ++i) {
+            x3[0] += x1[i] * x2[i];
+        }
+
+        saveVd(1, vd, x3);
+    }
+
+    public void doVSCL(int vsize, int vd, int vs, int vt) {
+        doUNK("Not yet supported VFPU instruction");
+    }
+
+    public void doVHDP(int vsize, int vd, int vs, int vt) {
+        if (vsize == 1) {
+            doUNK("Unsupported VHDP.S instruction");
+        }
+
+        float[] x1 = loadVs(vsize, vs);
+        float[] x2 = loadVt(vsize, vt);
+        float[] x3 = new float[1];
+
+        int i;
+        for (i = 0; i < vsize - 1; ++i) {
+            x3[0] += x1[i] * x2[i];
+        }
+
+        x3[0] += x2[i];
+
+        saveVd(1, vd, x3);
+    }
+
+    public void doVCRS(int vsize, int vd, int vs, int vt) {
+        if (vsize != 3) {
+            doUNK("Only supported VCRS.T instruction");
+        }
+
+        float[] x1 = loadVs(3, vs);
+        float[] x2 = loadVt(3, vt);
+        float[] x3 = new float[3];
+
+        x3[0] = x1[1] * x2[2];
+        x3[1] = x1[2] * x2[0];
+        x3[2] = x1[0] * x2[1];
+
+        saveVd(3, vd, x3);
+    }
+
+    public void doVDET(int vsize, int vd, int vs, int vt) {
+        if (vsize != 2) {
+            doUNK("Only supported VDET.P instruction");
+        }
+
+        float[] x1 = loadVs(2, vs);
+        float[] x2 = loadVt(2, vt);
+        float[] x3 = new float[1];
+
+        x3[0] = x1[0] * x2[1] - x1[1] * x2[0];
+
+        saveVd(1, vd, x3);
+    }
+
+    // VFPU3
+    public void doVCMP(int vsize, int vs, int vt, int cond) {
+        boolean cc_or = false;
+        boolean cc_and = true;
+
+        if ((cond & 8) == 0) {
+            boolean not = ((cond & 4) == 4);
+
+            boolean cc = false;
+
+            float[] x1 = loadVs(vsize, vs);
+            float[] x2 = loadVt(vsize, vt);
+
+            for (int i = 0; i < vsize; ++i) {
+                switch (cond & 3) {
+                    case 0:
+                        cc = not;
+                        break;
+
+                    case 1:
+                        cc = not ? (x1[i] != x2[i]) : (x1[i] == x2[i]);
+                        break;
+
+                    case 2:
+                        cc = not ? (x1[i] >= x2[i]) : (x1[i] < x2[i]);
+                        break;
+
+                    case 3:
+                        cc = not ? (x1[i] > x2[i]) : (x1[i] <= x2[i]);
+                        break;
+
+                }
+
+
+                vcr.cc[i] = cc;
+                cc_or = cc_or || cc;
+                cc_and = cc_and && cc;
+            }
+
+        } else {
+            float[] x1 = loadVs(vsize, vs);
+
+            for (int i = 0; i < vsize; ++i) {
+                boolean cc;
+                if ((cond & 3) == 0) {
+                    cc = ((cond & 4) == 0) ? (x1[i] == 0.0f) : (x1[i] != 0.0f);
+                } else {
+                    cc = (((cond & 1) == 1) && Float.isNaN(x1[i])) ||
+                            (((cond & 2) == 2) && Float.isInfinite(x1[i]));
+                    if ((cond & 4) == 4) {
+                        cc = !cc;
+                    }
+
+                }
+                vcr.cc[i] = cc;
+                cc_or = cc_or || cc;
+                cc_and = cc_and && cc;
+            }
+
+        }
+        vcr.cc[4] = cc_or;
+        vcr.cc[5] = cc_and;
+    }
+
+    public void doVMIN(int vsize, int vd, int vs, int vt) {
+        float[] x1 = loadVs(vsize, vs);
+        float[] x2 = loadVt(vsize, vt);
+
+        for (int i = 0; i < vsize; ++i) {
+            x1[i] = Math.min(x1[i], x2[i]);
+        }
+
+        saveVd(vsize, vd, x1);
+    }
+
+    public void doVMAX(int vsize, int vd, int vs, int vt) {
+        float[] x1 = loadVs(vsize, vs);
+        float[] x2 = loadVt(vsize, vt);
+
+        for (int i = 0; i < vsize; ++i) {
+            x1[i] = Math.max(x1[i], x2[i]);
+        }
+
+        saveVd(vsize, vd, x1);
+    }
+
+    public void doVSCMP(int vsize, int vd, int vs, int vt) {
+        float[] x1 = loadVs(vsize, vs);
+        float[] x2 = loadVt(vsize, vt);
+
+        for (int i = 0; i < vsize; ++i) {
+            x1[i] = Math.signum(x1[i] - x2[i]);
+        }
+
+        saveVd(vsize, vd, x1);
+    }
+
+    public void doVSGE(int vsize, int vd, int vs, int vt) {
+        float[] x1 = loadVs(vsize, vs);
+        float[] x2 = loadVt(vsize, vt);
+
+        for (int i = 0; i < vsize; ++i) {
+            x1[i] = (x1[i] >= x2[i]) ? 1.0f : 0.0f;
+        }
+
+        saveVd(vsize, vd, x1);
+    }
+
+    public void doVSLT(int vsize, int vd, int vs, int vt) {
+        float[] x1 = loadVs(vsize, vs);
+        float[] x2 = loadVt(vsize, vt);
+
+        for (int i = 0; i < vsize; ++i) {
+            x1[i] = (x1[i] < x2[i]) ? 1.0f : 0.0f;
+        }
+
+        saveVd(vsize, vd, x1);
+    }
+
+    public void doVPFXS(int imm24) {
+        vcr.pfxs.swz[0] = (imm24 >> 0) & 3;
+        vcr.pfxs.swz[1] = (imm24 >> 2) & 3;
+        vcr.pfxs.swz[2] = (imm24 >> 4) & 3;
+        vcr.pfxs.swz[3] = (imm24 >> 6) & 3;
+        vcr.pfxs.abs[0] = (imm24 >> 8) != 0;
+        vcr.pfxs.abs[1] = (imm24 >> 9) != 0;
+        vcr.pfxs.abs[2] = (imm24 >> 10) != 0;
+        vcr.pfxs.abs[3] = (imm24 >> 11) != 0;
+        vcr.pfxs.cst[0] = (imm24 >> 12) != 0;
+        vcr.pfxs.cst[1] = (imm24 >> 13) != 0;
+        vcr.pfxs.cst[2] = (imm24 >> 14) != 0;
+        vcr.pfxs.cst[3] = (imm24 >> 15) != 0;
+        vcr.pfxs.neg[0] = (imm24 >> 16) != 0;
+        vcr.pfxs.neg[1] = (imm24 >> 17) != 0;
+        vcr.pfxs.neg[2] = (imm24 >> 18) != 0;
+        vcr.pfxs.neg[3] = (imm24 >> 19) != 0;
+        vcr.pfxs.enabled = true;
+    }
+
+    public void doVPFXT(int imm24) {
+        vcr.pfxt.swz[0] = (imm24 >> 0) & 3;
+        vcr.pfxt.swz[1] = (imm24 >> 2) & 3;
+        vcr.pfxt.swz[2] = (imm24 >> 4) & 3;
+        vcr.pfxt.swz[3] = (imm24 >> 6) & 3;
+        vcr.pfxt.abs[0] = (imm24 >> 8) != 0;
+        vcr.pfxt.abs[1] = (imm24 >> 9) != 0;
+        vcr.pfxt.abs[2] = (imm24 >> 10) != 0;
+        vcr.pfxt.abs[3] = (imm24 >> 11) != 0;
+        vcr.pfxt.cst[0] = (imm24 >> 12) != 0;
+        vcr.pfxt.cst[1] = (imm24 >> 13) != 0;
+        vcr.pfxt.cst[2] = (imm24 >> 14) != 0;
+        vcr.pfxt.cst[3] = (imm24 >> 15) != 0;
+        vcr.pfxt.neg[0] = (imm24 >> 16) != 0;
+        vcr.pfxt.neg[1] = (imm24 >> 17) != 0;
+        vcr.pfxt.neg[2] = (imm24 >> 18) != 0;
+        vcr.pfxt.neg[3] = (imm24 >> 19) != 0;
+        vcr.pfxt.enabled = true;
+    }
+
+    public void doVPFXD(int imm24) {
+        vcr.pfxd.sat[0] = (imm24 >> 0) & 3;
+        vcr.pfxd.sat[1] = (imm24 >> 2) & 3;
+        vcr.pfxd.sat[2] = (imm24 >> 4) & 3;
+        vcr.pfxd.sat[3] = (imm24 >> 6) & 3;
+        vcr.pfxd.msk[0] = (imm24 >> 8) != 0;
+        vcr.pfxd.msk[1] = (imm24 >> 9) != 0;
+        vcr.pfxd.msk[2] = (imm24 >> 10) != 0;
+        vcr.pfxd.msk[3] = (imm24 >> 11) != 0;
+        vcr.pfxd.enabled = true;
+    }
+
+    public void doVIIM(int vs, int imm16) {
+        float[] result = new float[1];
+
+        result[0] = (float) imm16;
+
+        saveVd(1, vs, result);
+    }
+
+    public void doVFIM(int vs, int imm16) {
+        float[] result = new float[1];
+
+        float s = ((imm16 >> 15) == 0) ? 1.0f : -1.0f;
+        int e = ((imm16 >> 10) & 0x1f);
+        int m = (e == 0) ? ((imm16 & 0x3ff) << 1) : ((imm16 & 0x3ff) | 0x400);
+
+        result[0] = s * ((float) m) * ((float) (1 << e)) / ((float) (1 << 41));
+
+        saveVd(1, vs, result);
+    }
+    
     public void doLVS(int vt, int rs, int simm14) {
         int r = (vt >> 5) & 3;
         int m = (vt >> 2) & 7;
@@ -456,6 +775,20 @@ public class VfpuState extends FpuState {
     }
 
     public void doSVS(int vt, int rs, int simm14) {
+        int r = (vt >> 5) & 3;
+        int m = (vt >> 2) & 7;
+        int c = (vt >> 0) & 3;
+        memory.write32(gpr[rs] + (simm14 << 2), Float.floatToRawIntBits(vpr[m][r][c]));
+    }
+    
+    public void doLVQ(int vt, int rs, int simm14) {
+        int r = (vt >> 5) & 3;
+        int m = (vt >> 2) & 7;
+        int c = (vt >> 0) & 3;
+        vpr[m][c][r] = Float.intBitsToFloat(memory.read32(gpr[rs] + (simm14 << 2)));
+    }
+
+    public void doSVQ(int vt, int rs, int simm14) {
         int r = (vt >> 5) & 3;
         int m = (vt >> 2) & 7;
         int c = (vt >> 0) & 3;
