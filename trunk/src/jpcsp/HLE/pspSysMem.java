@@ -214,9 +214,17 @@ public class pspSysMem {
         // TODO
     }
 
+    /** @return the size of the largest allocatable block */
     public void sceKernelMaxFreeMemSize()
     {
-        int maxFree = heapTop - heapBottom - 64; // don't forget our alignment padding!
+        // Since some apps try and allocate the value of sceKernelMaxFreeMemSize,
+        // which will leave no space for stacks we're going to reserve 0x09f00000
+        // to 0x09ffffff for stacks, but stacks are allowed to go below that
+        // (if there's free space of course).
+        int heapTopGuard = heapTop;
+        if (heapTopGuard > 0x09f00000)
+            heapTopGuard = 0x09f00000;
+        int maxFree = heapTopGuard - heapBottom - 64; // don't forget our alignment padding!
         Modules.log.debug("sceKernelMaxFreeMemSize " + maxFree
                 + " (hex=" + Integer.toHexString(maxFree) + ")");
         Emulator.getProcessor().gpr[2] = maxFree;
@@ -224,7 +232,7 @@ public class pspSysMem {
 
     public void sceKernelTotalFreeMemSize()
     {
-        int totalFree = heapTop - heapBottom - 64; // don't forget our alignment padding!
+        int totalFree = heapTop - heapBottom;
         Modules.log.debug("sceKernelTotalFreeMemSize " + totalFree
                 + " (hex=" + Integer.toHexString(totalFree) + ")");
         Emulator.getProcessor().gpr[2] = totalFree;

@@ -92,14 +92,14 @@ public class ThreadMan {
         // Setup args by copying them onto the stack
         //Modules.log.debug("pspfilename - '" + pspfilename + "'");
         int len = pspfilename.length();
-        int alignlen = (len + 3) & ~3; // 4 byte align
+        int alignlen = (len + 1+ 3) & ~3; // string terminator + 4 byte align
         Memory mem = Memory.getInstance();
         for (int i = 0; i < len; i++)
             mem.write8((current_thread.stack_addr - alignlen) + i, (byte)pspfilename.charAt(i));
         for (int i = len; i < alignlen; i++)
             mem.write8((current_thread.stack_addr - alignlen) + i, (byte)0);
         current_thread.gpr[29] -= alignlen; // Adjust sp for size of args
-        current_thread.gpr[4] = len; // a0 = len
+        current_thread.gpr[4] = len + 1; // a0 = len + string terminator
         current_thread.gpr[5] = current_thread.gpr[29]; // a1 = pointer to arg data in stack
         current_thread.status = PspThreadStatus.PSP_THREAD_READY;
 
