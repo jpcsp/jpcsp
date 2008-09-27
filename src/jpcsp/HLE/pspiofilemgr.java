@@ -309,12 +309,12 @@ public class pspiofilemgr {
     // TODO sceIoLseek with 64-bit return value
     public void sceIoLseek(int uid, long offset, int whence) {
         if (debug) System.out.println("sceIoLseek - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Long.toHexString(offset) + ") whence " + getWhenceName(whence));
-        seek(uid, offset, whence);
+        seek(uid, offset, whence, true);
     }
 
     public void sceIoLseek32(int uid, int offset, int whence) {
         if (debug) System.out.println("sceIoLseek32 - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
-        seek(uid, offset, whence);
+        seek(uid, ((long)offset & 0xFFFFFFFFL), whence, false);
     }
 
     private String getWhenceName(int whence) {
@@ -326,12 +326,14 @@ public class pspiofilemgr {
         }
     }
 
-    private void seek(int uid, long offset, int whence) {
+    private void seek(int uid, long offset, int whence, boolean resultIs64bit) {
         //if (debug) System.out.println("seek - uid " + Integer.toHexString(uid) + " offset " + offset + " whence " + whence);
 
         if (uid == 1 || uid == 2 || uid == 3) { // stdio
             System.out.println("seek - can't seek on stdio uid " + Integer.toHexString(uid));
             Emulator.getProcessor().cpu.gpr[2] = -1;
+            if (resultIs64bit)
+                Emulator.getProcessor().cpu.gpr[3] = -1;
         } else {
             try {
                 SceUIDMan.get_instance().checkUidPurpose(uid, "IOFileManager-File", true);
@@ -339,6 +341,8 @@ public class pspiofilemgr {
                 if (info == null) {
                     System.out.println("seek - unknown uid " + Integer.toHexString(uid));
                     Emulator.getProcessor().cpu.gpr[2] = -1;
+                    if (resultIs64bit)
+                        Emulator.getProcessor().cpu.gpr[3] = -1;
                 } else {
                     switch(whence) {
                         case PSP_SEEK_SET:
@@ -354,11 +358,16 @@ public class pspiofilemgr {
                             System.out.println("seek - unhandled whence " + whence);
                             break;
                     }
-                    Emulator.getProcessor().cpu.gpr[2] = (int)info.readOnlyFile.getFilePointer();
+                    long result = info.readOnlyFile.getFilePointer();
+                    Emulator.getProcessor().cpu.gpr[2] = (int)(result & 0xFFFFFFFFL);
+                    if (resultIs64bit)
+                        Emulator.getProcessor().cpu.gpr[3] = (int)(result >> 32);
                 }
             } catch(IOException e) {
                 e.printStackTrace();
                 Emulator.getProcessor().cpu.gpr[2] = -1;
+                if (resultIs64bit)
+                    Emulator.getProcessor().cpu.gpr[3] = -1;
             }
         }
     }
