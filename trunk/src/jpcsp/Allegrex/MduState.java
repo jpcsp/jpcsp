@@ -50,11 +50,11 @@ public class MduState extends GprState {
     }
     
     public static final long signedDivMod(int x, int y) {
-        return ((long) (x % y)) << 32 | (((long) (x / y)) & 0xffffffff);
+        return ((long) (x % y)) << 32 | (((long) (x / y)) & 0xffffffffL);
     }
 
     public static final long unsignedDivMod(long x, long y) {
-        return ((x % y)) << 32 | ((x / y) & 0xffffffff);
+        return ((x % y)) << 32 | ((x / y) & 0xffffffffL);
     }
 
     public final void doMFHI(int rd) {
@@ -65,7 +65,7 @@ public class MduState extends GprState {
 
     public final void doMTHI(int rs) {
         int hi = gpr[rs];
-        hilo = (((long) hi) << 32) | (hilo & 0xffffffff);
+        hilo = (((long) hi) << 32) | (hilo & 0xffffffffL);
     }
 
     public final void doMFLO(int rd) {
@@ -84,21 +84,21 @@ public class MduState extends GprState {
     }
 
     public final void doMULTU(int rs, int rt) {
-        hilo = (((long) gpr[rs]) & 0xffffffff) * (((long) gpr[rt]) & 0xffffffff);
+        hilo = (((long) gpr[rs]) & 0xffffffffL) * (((long) gpr[rt]) & 0xffffffffL);
     }
 
     public final void doDIV(int rs, int rt) {
         int lo = gpr[rs] / gpr[rt];
         int hi = gpr[rs] % gpr[rt];
-        hilo = ((long) hi) << 32 | (((long) lo) & 0xffffffff);
+        hilo = ((long) hi) << 32 | (((long) lo) & 0xffffffffL);
     }
 
     public final void doDIVU(int rs, int rt) {
-        long x = ((long) gpr[rs]) & 0xffffffff;
-        long y = ((long) gpr[rt]) & 0xffffffff;
+        long x = ((long) gpr[rs]) & 0xffffffffL;
+        long y = ((long) gpr[rt]) & 0xffffffffL;
         int lo = (int) (x / y);
         int hi = (int) (x % y);
-        hilo = ((long) hi) << 32 | (((long) lo) & 0xffffffff);
+        hilo = ((long) hi) << 32 | (((long) lo) & 0xffffffffL);
     }   
 
     public final void doMADD(int rs, int rt) {
@@ -106,7 +106,7 @@ public class MduState extends GprState {
     }
 
     public final void doMADDU(int rs, int rt) {
-        hilo += (((long) gpr[rs]) & 0xffffffff) * (((long) gpr[rt]) & 0xffffffff);
+        hilo += (((long) gpr[rs]) & 0xffffffffL) * (((long) gpr[rt]) & 0xffffffffL);
     }
 
     public final void doMSUB(int rs, int rt) {
@@ -114,7 +114,7 @@ public class MduState extends GprState {
     }
 
     public final void doMSUBU(int rs, int rt) {
-        hilo -= (((long) gpr[rs]) & 0xffffffff) * (((long) gpr[rt]) & 0xffffffff);
+        hilo -= (((long) gpr[rs]) & 0xffffffffL) * (((long) gpr[rt]) & 0xffffffffL);
     }
     
 }
