@@ -598,7 +598,8 @@ public void loadUMD(File file) {
         ByteBuffer buf1 = ByteBuffer.wrap(bootfile);
         emulator.load("disc0:/PSP_GAME/SYSDIR/BOOT.BIN", buf1);
 
-        pspiofilemgr.get_instance().setfilepath("disc0/"); // or disc0/PSP_GAME/SYSDIR ?
+        pspiofilemgr.get_instance().setfilepath("disc0/");
+        //pspiofilemgr.get_instance().setfilepath("disc0/PSP_GAME/SYSDIR");
         pspiofilemgr.get_instance().setIsoReader(iso);
         jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(iso);
 

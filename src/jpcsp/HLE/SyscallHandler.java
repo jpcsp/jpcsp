@@ -18,7 +18,7 @@ package jpcsp.HLE;
 
 
 import jpcsp.Emulator;
-import jpcsp.Processor;
+//import jpcsp.Processor;
 import jpcsp.GeneralJpcspException;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.Allegrex.CpuState;
@@ -28,6 +28,7 @@ public class SyscallHandler {
     // Change this to return the number of cycles used?
     public static void syscall(int code) {
         int gpr[] = Emulator.getProcessor().cpu.gpr;
+        ThreadMan.get_instance().clearSyscallFreeCycles();
 
         // Some syscalls implementation throw GeneralJpcspException,
         // and Processor isn't setup to catch exceptions so we'll do it
@@ -319,8 +320,12 @@ public class SyscallHandler {
                 case 0x20c0:
                     psputils.get_instance().sceKernelUtilsMt19937UInt(gpr[4]);
                     break;
-		// sceKernelGetGPI(0x20c1),
-		// sceKernelSetGPO(0x20c2),
+                case 0x20c1:
+                    psputils.get_instance().sceKernelGetGPI();
+                    break;
+                case 0x20c2:
+                    psputils.get_instance().sceKernelSetGPO(gpr[4]);
+                    break;
                 case 0x20c3:
                     psputils.get_instance().sceKernelLibcClock();
                     break;

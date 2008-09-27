@@ -156,12 +156,6 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
 
                     int HI_addr = 0; // We'll use this to relocate R_MIPS_HI16 when we get a R_MIPS_LO16
 
-                    // Relocation modes, only 1 is allowed at a time
-                    boolean external = true; // copied from soywiz/pspemulator
-
-                    boolean local = false;
-                    boolean _gp_disp = false;
-
                     for (int i = 0; i < RelCount; i++) {
                         rel.read(romManager.getActualFile());
 
@@ -224,7 +218,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
 
                                 AHL |= A & 0x0000FFFF;
 
-                                if (external || local) {
+
                                     result = AHL + S;
                                     data &= ~0x0000FFFF;
                                     data |= result & 0x0000FFFF; // truncate
@@ -235,60 +229,22 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                                     data2 |= (result >> 16) & 0x0000FFFF; // truncate
 
                                     Memory.getInstance().write32(HI_addr, data2);
-                                } else if (_gp_disp) {
-                                    result = AHL + GP - P + 4;
-
-                                    // verify
-                                    if ((result & ~0xFFFFFFFF) != 0) {
-                                        throw new IOException("Relocation overflow (R_MIPS_LO16)");
-                                    }
-                                    data &= ~0x0000FFFF;
-                                    data |= result & 0x0000FFFF;
-
-                                    // Process deferred R_MIPS_HI16
-                                    int data2 = Memory.getInstance().read32(HI_addr);
-
-                                    result = AHL + GP - P;
-
-                                    // verify
-                                    if ((result & ~0xFFFFFFFF) != 0) {
-                                        throw new IOException("Relocation overflow (R_MIPS_HI16)");
-                                    }
-                                    data2 &= ~0x0000FFFF;
-                                    data2 |= (result >> 16) & 0x0000FFFF;
-                                    Memory.getInstance().write32(HI_addr, data2);
-                                }
                                 break;
 
                             case 4: //R_MIPS_26
+                                A = targ26;
 
-                                if (local) {
-                                    A = targ26;
-                                    result = ((A << 2) | (P & 0xf0000000) + S) >> 2;
-                                    data &= ~0x03FFFFFF;
-                                    data |= (int) (result & 0x03FFFFFF); // truncate
+                                // docs say "sign-extend(A < 2)", but is it meant to be A << 2? if so then there's no point sign extending
+                                //result = (sign-extend(A < 2) + S) >> 2;
+                                //result = (((A < 2) ? 0xFFFFFFFF : 0x00000000) + S) >> 2;
+                                result = ((A << 2) + S) >> 2; // copied from soywiz/pspemulator
 
-                                } else if (external) {
-                                    A = targ26;
-
-                                    // docs say "sign-extend(A < 2)", but is it meant to be A << 2? if so then there's no point sign extending
-                                    //result = (sign-extend(A < 2) + S) >> 2;
-                                    //result = (((A < 2) ? 0xFFFFFFFF : 0x00000000) + S) >> 2;
-                                    result = ((A << 2) + S) >> 2; // copied from soywiz/pspemulator
-
-                                    data &= ~0x03FFFFFF;
-                                    data |= (int) (result & 0x03FFFFFF); // truncate
-
-                                }
+                                data &= ~0x03FFFFFF;
+                                data |= (int) (result & 0x03FFFFFF); // truncate
                                 break;
 
                             case 2: //R_MIPS_32
-                                // This doesn't match soywiz/pspemulator but it generates more sensible addresses (fiveofhearts)
-
-                                A = word32;
-                                result = S + A;
-                                data = (int)(((long)data & 0xFFFFFFFF00000000L) | (result & 0xFFFFFFFFL));
-                                
+                                data += S;
                                 break;
 
                             /* sample before relocation: 0x00015020: 0x8F828008 '....' - lw         $v0, -32760($gp)
@@ -328,7 +284,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                             */
 
                             default:
-                            	Memory.log.debug("Unhandled relocation type " + R_TYPE + " at " + String.format("%08x", (int) romManager.getBaseoffset() + (int) rel.getR_offset()));
+                            	Memory.log.warn("Unhandled relocation type " + R_TYPE + " at " + String.format("%08x", (int) romManager.getBaseoffset() + (int) rel.getR_offset()));
                                 break;
                         }
 
@@ -455,7 +411,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
         //set the default values for registers not sure if they are correct and UNTESTED!!
         //some settings from soywiz/pspemulator
         CpuState cpu = processor.cpu;
-        
+
         cpu.pc = (int)(romManager.getBaseoffset() + elf.getHeader().getE_entry()); //set the pc register.
         cpu.npc = cpu.pc + 4;
         // Gets set in ThreadMan cpu.gpr[4] = 0; //a0
@@ -474,6 +430,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
         jpcsp.HLE.psputils.get_instance().Initialise();
         jpcsp.HLE.pspge.get_instance().Initialise();
         jpcsp.HLE.pspdisplay.get_instance().Initialise();
+        jpcsp.HLE.pspiofilemgr.get_instance().Initialise();
     }
 
     private void initDebugWindowsByPbp() {
@@ -535,6 +492,8 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
             run = true;
             mainThread.start();
         }
+
+        jpcsp.HLE.ThreadMan.get_instance().clearSyscallFreeCycles();
 
         gui.RefreshButtons();
         if (debugger != null)
