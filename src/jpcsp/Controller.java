@@ -27,54 +27,48 @@ public class Controller {
     private int Buttons = 0;
     private keyCode lastKey = keyCode.RELEASED;
     private long lastUpdate;
-    private boolean pressed = false; 
-    private boolean changed = true;
-    
+
     private HashMap<Integer, keyCode> keys;
-    
-    public enum keyCode { 
-        UP, DOWN, LEFT, RIGHT, ANUP, ANDOWN, ANLEFT, ANRIGHT, START, SELECT, 
-        TRIANGLE, SQUARE, CIRCLE, CROSS, L1, R1, HOME, HOLD, VOLMIN, VOLPLUS, 
+
+    public enum keyCode {
+        UP, DOWN, LEFT, RIGHT, ANUP, ANDOWN, ANLEFT, ANRIGHT, START, SELECT,
+        TRIANGLE, SQUARE, CIRCLE, CROSS, L1, R1, HOME, HOLD, VOLMIN, VOLPLUS,
         SCREEN, MUSIC, RELEASED };
-    
+
     public Controller() {
         /* load the button config */
         keys = new HashMap<Integer, keyCode>(22);
         loadKeyConfig();
         lastUpdate = System.currentTimeMillis();
     }
-    
+
     public void loadKeyConfig() {
         keys.clear();
         keys.putAll(Settings.get_instance().loadKeys());
     }
-    
+
     public void loadKeyConfig(HashMap<Integer, keyCode> newLayout) {
         keys.clear();
         keys.putAll(newLayout);
     }
-    
+
     public void checkControllerState(){
-        if (!changed)
-            return;
-        
-        /* checkControllerState is called every cpu step,
-         * so we need to delay that a bit */
+        // checkControllerState is called every cpu step,
+        // so we need to delay that a bit
         long now = System.currentTimeMillis();
         if (now - lastUpdate < 1000 / 30) {
             return;
         }
-        
-        jpcsp.HLE.pspctrl.get_instance().setButtons(Lx, Ly, Buttons, pressed);
-        changed = false;
+
+        jpcsp.HLE.pspctrl.get_instance().setButtons(Lx, Ly, Buttons);
         lastUpdate = now;
     }
-   
+
     public void keyPressed(KeyEvent arg0) {
         keyCode key = keys.get(arg0.getKeyCode());
         if (key == null || key == lastKey)
             return;
-        
+
         /* in digital mode, analoge keys behave as the digital keys (right?) */
         if (jpcsp.HLE.pspctrl.get_instance().isModeDigital()) {
             switch (key) {
@@ -84,7 +78,7 @@ public class Controller {
                 case ANRIGHT:   key = keyCode.RIGHT; break;
             }
         }
-        
+
         switch (key) {
             case DOWN:      this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_DOWN; break;
             case UP:        this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_UP; break;
@@ -94,7 +88,7 @@ public class Controller {
             case ANUP:      this.Lx = (byte)255; break;
             case ANLEFT:    this.Ly = 0; break;
             case ANRIGHT:   this.Ly = (byte)255; break;
-            
+
             case TRIANGLE:  this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_TRIANGLE; break;
             case SQUARE:    this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_SQUARE; break;
             case CIRCLE:    this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_CIRCLE; break;
@@ -103,19 +97,17 @@ public class Controller {
             case R1:        this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_RTRIGGER; break;
             case START:     this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_START; break;
             case SELECT:    this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_SELECT; break;
-            
+
             case HOME:      this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_HOME; break;
             case HOLD:      this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_HOLD; break;
             case VOLMIN:    this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_VOLDOWN; break;
             case VOLPLUS:   this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_VOLUP; break;
             case SCREEN:    this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_SCREEN; break;
             case MUSIC:     this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_NOTE; break;
-                        
+
             default: return;
         }
-        changed = true;
         lastKey = key;
-        pressed = true;
         //System.out.println("keyPressed!! " + this.Buttons);
     }
 
@@ -123,7 +115,7 @@ public class Controller {
         keyCode key = keys.get(arg0.getKeyCode());
         if (key == null)
             return;
-        
+
         if (jpcsp.HLE.pspctrl.get_instance().isModeDigital()) {
             switch (key) {
                 case ANDOWN:    key = keyCode.DOWN; break;
@@ -132,7 +124,7 @@ public class Controller {
                 case ANRIGHT:   key = keyCode.RIGHT; break;
             }
         }
-        
+
         switch (key) {
             case DOWN:      this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_DOWN; break;
             case UP:        this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_UP; break;
@@ -142,7 +134,7 @@ public class Controller {
             case ANUP:      this.Lx = (byte)128; break;
             case ANLEFT:    this.Ly = (byte)128; break;
             case ANRIGHT:   this.Ly = (byte)128; break;
-            
+
             case TRIANGLE:  this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_TRIANGLE; break;
             case SQUARE:    this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_SQUARE; break;
             case CIRCLE:    this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_CIRCLE; break;
@@ -151,18 +143,16 @@ public class Controller {
             case R1:        this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_RTRIGGER; break;
             case START:     this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_START; break;
             case SELECT:    this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_SELECT; break;
-            
+
             case HOME:      this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_HOME; break;
             case HOLD:      this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_HOLD; break;
             case VOLMIN:    this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_VOLDOWN; break;
             case VOLPLUS:   this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_VOLUP; break;
             case SCREEN:    this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_SCREEN; break;
             case MUSIC:     this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_NOTE; break;
-           
+
             default: return;
         }
-        changed = true;
         lastKey = keyCode.RELEASED;
-        pressed = false;
     }
 }
