@@ -55,7 +55,7 @@ public class ThreadMan {
 
     // TODO figure out a decent number of cycles to wait
     private final int WDT_THREAD_IDLE_CYCLES = 1000000;
-    private final int WDT_THREAD_HOG_CYCLES = 1000000;
+    private final int WDT_THREAD_HOG_CYCLES = 5000000;
 
     //private static int stackAllocated;
 
