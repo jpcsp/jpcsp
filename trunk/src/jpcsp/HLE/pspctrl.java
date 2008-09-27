@@ -28,9 +28,12 @@ public class pspctrl {
 
     private int cycle;
     private int mode;
-    private int uiPress = 0;
-    private int uiRelease = 1;
+    private int uiMake;
+    private int uiBreak;
+    private int uiPress;
+    private int uiRelease;
 
+    private int TimeStamp;
     private byte Lx;
     private byte Ly;
     private int Buttons;
@@ -72,19 +75,38 @@ public class pspctrl {
     private pspctrl() {
     }
 
-    public void setButtons(byte Lx, byte Ly, int Buttons, boolean pressed)
+    /** Need to call setButtons even if the user didn't move any fingers, otherwise we can't track "press" properly */
+    public void setButtons(byte Lx, byte Ly, int Buttons)
     {
+        int oldButtons = this.Buttons;
+
+        this.TimeStamp++;
         this.Lx = Lx;
         this.Ly = Ly;
         this.Buttons = Buttons;
 
-        if (pressed) {
-            this.uiRelease = 0;
-            this.uiPress = 1;
-        } else {
-            this.uiRelease = 1;
-            this.uiPress = 0;
-        }
+        int changed = oldButtons ^ Buttons;
+        int changed2 = oldButtons & Buttons;
+
+        /* testing
+        if ((changed2 & PSP_CTRL_CROSS) == PSP_CTRL_CROSS)
+            System.out.println("PSP_CTRL_CROSS press");
+        else
+            System.out.println("PSP_CTRL_CROSS release");
+
+        if ((changed & PSP_CTRL_CROSS) == PSP_CTRL_CROSS &&
+            (oldButtons & PSP_CTRL_CROSS) == PSP_CTRL_CROSS)
+            System.out.println("PSP_CTRL_CROSS break");
+
+        if ((changed & PSP_CTRL_CROSS) == PSP_CTRL_CROSS &&
+            (Buttons & PSP_CTRL_CROSS) == PSP_CTRL_CROSS)
+            System.out.println("PSP_CTRL_CROSS make");
+        /* */
+
+        uiMake = changed & Buttons;
+        uiBreak = changed & oldButtons;
+        uiPress = changed2;
+        uiRelease = ~changed2;
     }
 
     public boolean isModeDigital() {
@@ -123,9 +145,6 @@ public class pspctrl {
         int i;
 
         for (i = 0; i < a1; i++) {
-            // TODO set timestamp
-            int TimeStamp = 0;
-
             mem.write32(a0, TimeStamp);
             mem.write32(a0 + 4, Buttons);
             mem.write8(a0 + 8, Lx);
@@ -142,9 +161,6 @@ public class pspctrl {
         int i;
 
         for (i = 0; i < a1; i++) {
-            // TODO set timestamp
-            int TimeStamp = 0;
-
             mem.write32(a0, TimeStamp);
             mem.write32(a0 + 4, ~Buttons);
             mem.write8(a0 + 8, Lx);
@@ -161,9 +177,6 @@ public class pspctrl {
         int i;
 
         for (i = 0; i < a1; i++) {
-            // TODO set timestamp
-            int TimeStamp = 0;
-
             mem.write32(a0, TimeStamp);
             mem.write32(a0 + 4, Buttons);
             mem.write8(a0 + 8, Lx);
@@ -181,9 +194,6 @@ public class pspctrl {
         int i;
 
         for (i = 0; i < a1; i++) {
-            // TODO set timestamp
-            int TimeStamp = 0;
-
             mem.write32(a0, TimeStamp);
             mem.write32(a0 + 4, ~Buttons);
             mem.write8(a0 + 8, Lx);
@@ -198,8 +208,8 @@ public class pspctrl {
     public void sceCtrlPeekLatch(int a0) {
         Memory mem = Memory.getInstance();
 
-        mem.write32(a0, 0);             //uiMake
-        mem.write32(a0 +4, 0);          //uiBreak
+        mem.write32(a0, uiMake);
+        mem.write32(a0 +4, uiBreak);
         mem.write32(a0 +8, uiPress);
         mem.write32(a0 +12, uiRelease);
         Emulator.getProcessor().gpr[2] = 0;
@@ -208,8 +218,8 @@ public class pspctrl {
     public void sceCtrlReadLatch(int a0) {
         Memory mem = Memory.getInstance();
 
-        mem.write32(a0, 0);             //uiMake
-        mem.write32(a0 +4, 0);          //uiBreak
+        mem.write32(a0, uiMake);
+        mem.write32(a0 +4, uiBreak);
         mem.write32(a0 +8, uiPress);
         mem.write32(a0 +12, uiRelease);
         Emulator.getProcessor().gpr[2] = 0;
