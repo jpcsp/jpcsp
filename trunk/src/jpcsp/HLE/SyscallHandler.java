@@ -18,6 +18,7 @@ package jpcsp.HLE;
 
 
 import jpcsp.Emulator;
+import jpcsp.Processor;
 import jpcsp.GeneralJpcspException;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.Allegrex.CpuState;
@@ -241,11 +242,17 @@ public class SyscallHandler {
 		// sceIoLseekAsync(0x2096),
 
                 case 0x2095:
-                    pspiofilemgr.get_instance().sceIoLseek(gpr[4], gpr[6] | (gpr[7]<<32), gpr[8]);
+                    pspiofilemgr.get_instance().sceIoLseek(
+                            gpr[4],
+                            ((((long)gpr[6]) & 0xFFFFFFFFL) | (((long)gpr[7])<<32)),
+                            gpr[8]);
                     break;
 
                 case 0x2097:
-                    pspiofilemgr.get_instance().sceIoLseek32(gpr[4], gpr[6] | (gpr[7]<<32), gpr[8]);
+                    pspiofilemgr.get_instance().sceIoLseek32(
+                            gpr[4],
+                            gpr[5],
+                            gpr[6]);
                     break;
 		// sceIoLseek32Async(0x2098),
 		// sceIoIoctl(0x2099),
