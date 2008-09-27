@@ -36,15 +36,15 @@ public class pspstdio {
     }
    public void sceKernelStdin()//Function to get the current standard in file no.
    {
-       Emulator.getProcessor().gpr[2] =3;//not sure if it returns okay but seems so
+       Emulator.getProcessor().cpu.gpr[2] =3;//not sure if it returns okay but seems so
    }
    public void sceKernelStdout ()//Function to get the current standard out file no.
    {
-       Emulator.getProcessor().gpr[2] =1;//not sure if it returns okay but seems so
+       Emulator.getProcessor().cpu.gpr[2] =1;//not sure if it returns okay but seems so
    }
    public void sceKernelStderr ()//Function to get the current standard err file no. 
    {
-       Emulator.getProcessor().gpr[2] =2;//not sure if it returns okay but seems so
+       Emulator.getProcessor().cpu.gpr[2] =2;//not sure if it returns okay but seems so
    }
    
 }

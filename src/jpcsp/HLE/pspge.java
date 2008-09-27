@@ -73,11 +73,11 @@ public class pspge {
     }
     
     public void sceGeEdramGetSize() {
-        Emulator.getProcessor().gpr[2] = MemoryMap.SIZE_VRAM;
+        Emulator.getProcessor().cpu.gpr[2] = MemoryMap.SIZE_VRAM;
     }
 
     public void sceGeEdramGetAddr() {
-        Emulator.getProcessor().gpr[2] = MemoryMap.START_VRAM;
+        Emulator.getProcessor().cpu.gpr[2] = MemoryMap.START_VRAM;
     }
 
     public void sceGeListEnQueue(int list, int stall, int callbackId, int argument) {
@@ -101,7 +101,7 @@ public class pspge {
         if (displayList.status == DisplayList.QUEUED)
             pspdisplay.get_instance().setDirty(true);
 
-        Emulator.getProcessor().gpr[2] = displayList.id;
+        Emulator.getProcessor().cpu.gpr[2] = displayList.id;
         DisplayList.Unlock();
     }
 
@@ -110,10 +110,10 @@ public class pspge {
         // TODO if we render asynchronously, using another thread then we need to interupt it first
         if (DisplayList.removeDisplayList(qid)) {
             log("sceGeListDeQueue qid=" + qid);
-            Emulator.getProcessor().gpr[2] = 0;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
         } else {
             log("sceGeListDeQueue failed qid=" + qid);
-            Emulator.getProcessor().gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = -1;
         }
         DisplayList.Unlock();
     }
@@ -135,10 +135,10 @@ public class pspge {
                 pspdisplay.get_instance().setDirty(true);
             }
 
-            Emulator.getProcessor().gpr[2] = 0;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
         } else {
             log("sceGeListUpdateStallAddr qid="+ qid +" failed, no longer exists");
-            Emulator.getProcessor().gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = -1;
         }
         DisplayList.Unlock();
     }
@@ -146,7 +146,7 @@ public class pspge {
     // TODO handle sync type
     public void sceGeDrawSync(int syncType) {
         log("sceGeDrawSync syncType=" + syncType);
-        Emulator.getProcessor().gpr[2] = 0;
+        Emulator.getProcessor().cpu.gpr[2] = 0;
         if (!pspdisplay.get_instance().disableGE) {
             waitingForSync = true;
             syncThreadId = ThreadMan.get_instance().getCurrentThreadID();

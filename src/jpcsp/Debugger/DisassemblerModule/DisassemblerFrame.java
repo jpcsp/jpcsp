@@ -38,6 +38,7 @@ import jpcsp.util.JpcspDialogManager;
 import jpcsp.util.OptionPaneMultiple;
 import jpcsp.Allegrex.Instructions.*;
 import jpcsp.Allegrex.Decoder;
+import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Common.Instruction;
 
 /**
@@ -75,10 +76,11 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
     }
 
     public void RefreshDebugger() {
+        CpuState cpu = Emulator.getProcessor().cpu;
         int pc;
         int cnt;
         if (DebuggerPC == 0) {
-            DebuggerPC = Emulator.getProcessor().pc;
+            DebuggerPC = cpu.pc;
         }
         listmodel.clear();
 
@@ -98,14 +100,14 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             }
         }
     //refreshregisters
-        jTable1.setValueAt(Integer.toHexString(Emulator.getProcessor().pc), 0, 1);
-        jTable1.setValueAt(Integer.toHexString(Emulator.getProcessor().hi()), 1, 1);
-        jTable1.setValueAt(Integer.toHexString(Emulator.getProcessor().lo()), 2, 1);
+        jTable1.setValueAt(Integer.toHexString(cpu.pc), 0, 1);
+        jTable1.setValueAt(Integer.toHexString(cpu.getHi()), 1, 1);
+        jTable1.setValueAt(Integer.toHexString(cpu.getLo()), 2, 1);
         for (int i = 0; i < 32; i++) {
-            jTable1.setValueAt(Integer.toHexString(Emulator.getProcessor().gpr[i]), 3 + i, 1);
+            jTable1.setValueAt(Integer.toHexString(cpu.gpr[i]), 3 + i, 1);
         }
         for (int i = 0; i < 32; i++) {
-            jTable3.setValueAt(Emulator.getProcessor().fpr[i], i, 1);
+            jTable3.setValueAt(cpu.fpr[i], i, 1);
         }
     }
     /** This method is called from within the constructor to
@@ -555,12 +557,12 @@ private void disasmListMouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GE
 }//GEN-LAST:event_disasmListMouseWheelMoved
 
 private void ResetToPCbuttonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetToPCbuttonActionPerformed
-    DebuggerPC = Emulator.getProcessor().pc;
+    DebuggerPC = Emulator.getProcessor().cpu.pc;
     RefreshDebugger();
 }//GEN-LAST:event_ResetToPCbuttonActionPerformed
 
 private void JumpToAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_JumpToAddressActionPerformed
-    String input = (String) JOptionPane.showInputDialog(this, "Enter the address to which to jump (Hex)", "Jpcsp", JOptionPane.QUESTION_MESSAGE, null, null, String.format("%08x", Emulator.getProcessor().pc));
+    String input = (String) JOptionPane.showInputDialog(this, "Enter the address to which to jump (Hex)", "Jpcsp", JOptionPane.QUESTION_MESSAGE, null, null, String.format("%08x", Emulator.getProcessor().cpu.pc));
     if (input == null) {
         return;
     }
@@ -762,8 +764,8 @@ private void RunDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
 public void step() {
     //check if there is a breakpoint
     if (breakpoints.size() > 0 &&
-        breakpoints.indexOf(Emulator.getProcessor().pc) != -1) {
-        emu.PauseEmu();
+        breakpoints.indexOf(Emulator.getProcessor().cpu.pc) != -1) {
+        Emulator.PauseEmu();
 
         DebuggerPC = 0;
         RefreshDebugger();

@@ -227,7 +227,7 @@ public class pspSysMem {
         int maxFree = heapTopGuard - heapBottom - 64; // don't forget our alignment padding!
         Modules.log.debug("sceKernelMaxFreeMemSize " + maxFree
                 + " (hex=" + Integer.toHexString(maxFree) + ")");
-        Emulator.getProcessor().gpr[2] = maxFree;
+        Emulator.getProcessor().cpu.gpr[2] = maxFree;
     }
 
     public void sceKernelTotalFreeMemSize()
@@ -235,7 +235,7 @@ public class pspSysMem {
         int totalFree = heapTop - heapBottom;
         Modules.log.debug("sceKernelTotalFreeMemSize " + totalFree
                 + " (hex=" + Integer.toHexString(totalFree) + ")");
-        Emulator.getProcessor().gpr[2] = totalFree;
+        Emulator.getProcessor().cpu.gpr[2] = totalFree;
     }
 
     /**
@@ -270,11 +270,11 @@ public class pspSysMem {
         if (addr != 0)
         {
             SysMemInfo info = new SysMemInfo(partitionid, name, type, size, addr);
-            Emulator.getProcessor().gpr[2] = info.uid;
+            Emulator.getProcessor().cpu.gpr[2] = info.uid;
         }
         else
         {
-            Emulator.getProcessor().gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = -1;
         }
     }
 
@@ -284,11 +284,11 @@ public class pspSysMem {
         SysMemInfo info = blockList.remove(uid);
         if (info == null) {
             Modules.log.warn("sceKernelFreePartitionMemory unknown SceUID=" + Integer.toHexString(uid));
-            Emulator.getProcessor().gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = -1;
         } else {
             free(info);
             Modules.log.warn("UNIMPLEMENT:sceKernelFreePartitionMemory SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "'");
-            Emulator.getProcessor().gpr[2] = 0;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
         }
     }
 
@@ -298,10 +298,10 @@ public class pspSysMem {
         SysMemInfo info = blockList.get(uid);
         if (info == null) {
             Modules.log.warn("sceKernelGetBlockHeadAddr unknown SceUID=" + Integer.toHexString(uid));
-            Emulator.getProcessor().gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = -1;
         } else {
             Modules.log.debug("sceKernelGetBlockHeadAddr SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "' headAddr:" + Integer.toHexString(info.addr));
-            Emulator.getProcessor().gpr[2] = info.addr;
+            Emulator.getProcessor().cpu.gpr[2] = info.addr;
         }
     }
 
@@ -310,7 +310,7 @@ public class pspSysMem {
         // Return 1.5 for now
         int version = PSP_FIRMWARE_150;
         Modules.log.debug("sceKernelDevkitVersion 0x" + Integer.toHexString(version));
-        Emulator.getProcessor().gpr[2] = version;
+        Emulator.getProcessor().cpu.gpr[2] = version;
     }
 
     class SysMemInfo {

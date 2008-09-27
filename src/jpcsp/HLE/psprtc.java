@@ -40,12 +40,12 @@ public class psprtc {
 
     public void sceRtcGetTickResolution() {
         /* 1000 ticks a second */
-        Emulator.getProcessor().gpr[2] = 1000;
+        Emulator.getProcessor().cpu.gpr[2] = 1000;
     }
 
     public void sceRtcGetCurrentTick(int a0) {
         Memory.getInstance().write64(a0, System.currentTimeMillis());
-        Emulator.getProcessor().gpr[2] = 0;
+        Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
     public void sceRtcGetCurrentClockLocalTime(int a0) {
@@ -54,7 +54,7 @@ public class psprtc {
 
         pspTime.write(mem, a0);
 
-        Emulator.getProcessor().gpr[2] = 0;
+        Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
 }

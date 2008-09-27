@@ -490,7 +490,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             ",height=" + height + ")");
 
         if (width <= 0 || height <= 0) {
-            Emulator.getProcessor().gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = -1;
         } else {
             this.mode   = mode;
             this.width  = width;
@@ -502,7 +502,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
             refreshRequired = true;
 
-            Emulator.getProcessor().gpr[2] = 0;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
         }
     }
 
@@ -512,12 +512,12 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             !memory.isAddressGood(pwidth ) ||
             !memory.isAddressGood(pheight))
         {
-            Emulator.getProcessor().gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = -1;
         } else {
             memory.write32(pmode  , mode  );
             memory.write32(pwidth , width );
             memory.write32(pheight, height);
-            Emulator.getProcessor().gpr[2] = 0;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
         }
     }
 
@@ -530,7 +530,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             pixelformat < 0 || pixelformat > 3 ||
             sync < 0 || sync > 1)
         {
-            Emulator.getProcessor().gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = -1;
         } else {
             if (pixelformatFb != this.pixelformatFb ||
                 bufferwidthFb != this.bufferwidthFb ||
@@ -555,7 +555,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             refreshRequired = true;
             //display();
 
-            Emulator.getProcessor().gpr[2] = 0;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
         }
     }
 
@@ -568,42 +568,42 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             !memory.isAddressGood(pixelformat) ||
             !memory.isAddressGood(sync))
         {
-            Emulator.getProcessor().gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = -1;
         } else {
             memory.write32(topaddr    , this.topaddrFb    );
             memory.write32(bufferwidth, this.bufferwidthFb);
             memory.write32(pixelformat, this.pixelformatFb);
             memory.write32(sync       , this.sync         );
-            Emulator.getProcessor().gpr[2] = 0;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
         }
     }
 
     public void sceDisplayGetVcount() {
         // TODO: implement sceDisplayGetVcount
-        Emulator.getProcessor().gpr[2] = 0;
+        Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
     public void sceDisplayWaitVblankStart() {
         // TODO: implement sceDisplayWaitVblankStart
-        Emulator.getProcessor().gpr[2] = 0;
+        Emulator.getProcessor().cpu.gpr[2] = 0;
         ThreadMan.get_instance().yieldCurrentThread();
     }
 
     public void sceDisplayWaitVblankStartCB() {
         // TODO: implement sceDisplayWaitVblankStartCB
-        Emulator.getProcessor().gpr[2] = 0;
+        Emulator.getProcessor().cpu.gpr[2] = 0;
         ThreadMan.get_instance().yieldCurrentThread();
     }
 
     public void sceDisplayWaitVblank() {
         // TODO: implement sceDisplayWaitVblank
-        Emulator.getProcessor().gpr[2] = 0;
+        Emulator.getProcessor().cpu.gpr[2] = 0;
         ThreadMan.get_instance().yieldCurrentThread();
     }
 
     public void sceDisplayWaitVblankCB() {
         // TODO: implement sceDisplayWaitVblankCB
-        Emulator.getProcessor().gpr[2] = 0;
+        Emulator.getProcessor().cpu.gpr[2] = 0;
         ThreadMan.get_instance().yieldCurrentThread();
     }
 }

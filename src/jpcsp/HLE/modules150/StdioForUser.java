@@ -68,8 +68,8 @@ public class StdioForUser implements HLEModule {
     }
 
     public void sceKernelStdioRead(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -85,8 +85,8 @@ public class StdioForUser implements HLEModule {
     }
 
     public void sceKernelStdioLseek(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -102,8 +102,8 @@ public class StdioForUser implements HLEModule {
     }
 
     public void sceKernelStdioSendChar(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -119,8 +119,8 @@ public class StdioForUser implements HLEModule {
     }
 
     public void sceKernelStdioWrite(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -136,8 +136,8 @@ public class StdioForUser implements HLEModule {
     }
 
     public void sceKernelStdioClose(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -153,8 +153,8 @@ public class StdioForUser implements HLEModule {
     }
 
     public void sceKernelStdioOpen(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -170,20 +170,20 @@ public class StdioForUser implements HLEModule {
     }
 
     public void sceKernelStdin(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         cpu.gpr[2] = 3;
     }
 
     public void sceKernelStdout(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         cpu.gpr[2] = 1;
     }
 
     public void sceKernelStderr(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         cpu.gpr[2] = 2;
     }
     public final HLEModuleFunction sceKernelStdioReadFunction = new HLEModuleFunction("StdioForUser", "sceKernelStdioRead") {

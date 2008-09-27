@@ -152,8 +152,8 @@ public class scePower implements HLEModule {
 
 
 	public void scePower_2B51FE2F(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		//// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -169,8 +169,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePower_442BFBAC(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -186,8 +186,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerTick(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -203,8 +203,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerGetIdleTimer(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -220,8 +220,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerIdleTimerEnable(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -237,8 +237,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerIdleTimerDisable(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -254,8 +254,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerBatteryUpdateInfo(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -271,8 +271,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePower_E8E4E204(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -288,8 +288,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerGetLowBatteryCapacity(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -305,8 +305,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerIsPowerOnline(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -322,8 +322,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerIsBatteryExist(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -339,8 +339,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerIsBatteryCharging(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -356,8 +356,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerGetBatteryChargingStatus(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -373,8 +373,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerIsLowBattery(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -390,8 +390,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePower_78A1A796(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -407,8 +407,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerGetBatteryRemainCapacity(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -424,8 +424,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerGetBatteryFullCapacity(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -441,8 +441,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerGetBatteryLifePercent(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -458,8 +458,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerGetBatteryLifeTime(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -475,8 +475,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerGetBatteryTemp(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -492,8 +492,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerGetBatteryElec(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -509,8 +509,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerGetBatteryVolt(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -526,8 +526,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePower_23436A4A(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -543,8 +543,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerSetPowerSwMode(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -560,8 +560,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerGetPowerSwMode(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -577,8 +577,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerVolatileMemLock(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -594,8 +594,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerVolatileMemTryLock(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -611,8 +611,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerVolatileMemUnlock(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -628,8 +628,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerLock(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -645,8 +645,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerUnlock(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -662,8 +662,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerCancelRequest(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -679,8 +679,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerIsRequest(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -696,8 +696,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerRequestStandby(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -713,8 +713,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerRequestSuspend(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -730,8 +730,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePower_2875994B(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -747,8 +747,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerWaitRequestCompletion(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -764,8 +764,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerGetResumeCount(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -781,8 +781,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerRegisterCallback(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 
         int slot = cpu.gpr[4];
         int uid = cpu.gpr[5];
@@ -793,8 +793,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerUnregisterCallback(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -810,8 +810,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerUnregitserCallback(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -827,8 +827,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerSetCpuClockFrequency(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -844,8 +844,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerSetBusClockFrequency(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -861,8 +861,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerGetCpuClockFrequency(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -878,8 +878,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerGetBusClockFrequency(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -895,8 +895,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerGetCpuClockFrequencyInt(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -912,8 +912,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerGetBusClockFrequencyInt(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -929,8 +929,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerGetPllClockFrequencyInt(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -946,8 +946,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerGetCpuClockFrequencyFloat(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -963,8 +963,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerGetBusClockFrequencyFloat(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -980,8 +980,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerGetPllClockFrequencyFloat(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */
@@ -997,8 +997,8 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerSetClockFrequency(Processor processor) {
-		// CpuState cpu = processor.cpu; // New-Style Processor
-		Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu; // New-Style Processor
+		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
 		/* put your own code here instead */

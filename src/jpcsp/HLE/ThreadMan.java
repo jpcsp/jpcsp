@@ -37,6 +37,7 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Processor;
+import jpcsp.Allegrex.CpuState;
 import static jpcsp.util.Utilities.*;
 
 
@@ -146,17 +147,18 @@ public class ThreadMan {
 
     /** to be called from the main emulation loop */
     public void step() {
+        CpuState cpu = Emulator.getProcessor().cpu;
         if (current_thread != null) {
             current_thread.runClocks++;
 
             //Modules.log.debug("pc=" + Emulator.getProcessor().pc + " ra=" + Emulator.getProcessor().gpr[31]);
 
             // Hook jr ra to 0 (thread function returned)
-            if (Emulator.getProcessor().pc == 0 && Emulator.getProcessor().gpr[31] == 0) {
+            if (cpu.pc == 0 && cpu.gpr[31] == 0) {
                 // Thread has exited
                 Modules.log.debug("Thread exit detected SceUID=" + Integer.toHexString(current_thread.uid)
-                    + " name:'" + current_thread.name + "' return:" + Emulator.getProcessor().gpr[2]);
-                current_thread.exitStatus = Emulator.getProcessor().gpr[2]; // v0
+                    + " name:'" + current_thread.name + "' return:" + cpu.gpr[2]);
+                current_thread.exitStatus = cpu.gpr[2]; // v0
                 current_thread.status = PspThreadStatus.PSP_THREAD_STOPPED;
                 onThreadStopped(current_thread);
                 contextSwitch(nextThread());
@@ -350,7 +352,7 @@ public class ThreadMan {
             thread.attr &= ~PSP_THREAD_ATTR_KERNEL;
         }
 
-        Emulator.getProcessor().gpr[2] = thread.uid;
+        Emulator.getProcessor().cpu.gpr[2] = thread.uid;
     }
 
     /** terminate thread a0 */
@@ -358,13 +360,13 @@ public class ThreadMan {
         SceUIDMan.get_instance().checkUidPurpose(a0, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadlist.get(a0);
         if (thread == null) {
-            Emulator.getProcessor().gpr[2] = 0x80020198; //notfoundthread
+            Emulator.getProcessor().cpu.gpr[2] = 0x80020198; //notfoundthread
         } else {
             Modules.log.debug("sceKernelTerminateThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
 
             thread.status = PspThreadStatus.PSP_THREAD_STOPPED; // PSP_THREAD_STOPPED or PSP_THREAD_KILLED ?
 
-            Emulator.getProcessor().gpr[2] = 0;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
             onThreadStopped(thread);
         }
     }
@@ -374,14 +376,14 @@ public class ThreadMan {
         SceUIDMan.get_instance().checkUidPurpose(a0, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadlist.get(a0);
         if (thread == null) {
-            Emulator.getProcessor().gpr[2] = 0x80020198; //notfoundthread
+            Emulator.getProcessor().cpu.gpr[2] = 0x80020198; //notfoundthread
         } else {
             Modules.log.debug("sceKernelDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
 
             // Mark thread for deletion
             thread.do_delete = true;
 
-            Emulator.getProcessor().gpr[2] = 0;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
         }
     }
 
@@ -389,7 +391,7 @@ public class ThreadMan {
         SceUIDMan.get_instance().checkUidPurpose(uid, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadlist.get(uid);
         if (thread == null) {
-            Emulator.getProcessor().gpr[2] = 0x80020198; //notfoundthread
+            Emulator.getProcessor().cpu.gpr[2] = 0x80020198; //notfoundthread
         } else {
             Modules.log.debug("sceKernelStartThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
 
@@ -408,7 +410,7 @@ public class ThreadMan {
             thread.gpr[5] = thread.gpr[29]; // a1 = pointer to copy of data at data_addr
             thread.status = PspThreadStatus.PSP_THREAD_READY;
 
-            Emulator.getProcessor().gpr[2] = 0;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
 
             // TODO does start thread defer start or really start?
             contextSwitch(thread);
@@ -422,7 +424,7 @@ public class ThreadMan {
 
         current_thread.status = PspThreadStatus.PSP_THREAD_STOPPED;
         current_thread.exitStatus = exitStatus;
-        Emulator.getProcessor().gpr[2] = 0;
+        Emulator.getProcessor().cpu.gpr[2] = 0;
         onThreadStopped(current_thread);
 
         contextSwitch(nextThread());
@@ -437,7 +439,7 @@ public class ThreadMan {
         // Exit
         current_thread.status = PspThreadStatus.PSP_THREAD_STOPPED;
         current_thread.exitStatus = exitStatus;
-        Emulator.getProcessor().gpr[2] = 0;
+        Emulator.getProcessor().cpu.gpr[2] = 0;
         onThreadStopped(current_thread); // TODO maybe not here in Exit and Delete thread function
 
         // Mark thread for deletion
@@ -452,7 +454,7 @@ public class ThreadMan {
 
         current_thread.status = PspThreadStatus.PSP_THREAD_SUSPEND;
         current_thread.do_callbacks = true;
-        Emulator.getProcessor().gpr[2] = 0;
+        Emulator.getProcessor().cpu.gpr[2] = 0;
 
         contextSwitch(nextThread());
     }
@@ -463,7 +465,7 @@ public class ThreadMan {
 
         current_thread.status = PspThreadStatus.PSP_THREAD_SUSPEND;
         current_thread.do_callbacks = false;
-        Emulator.getProcessor().gpr[2] = 0;
+        Emulator.getProcessor().cpu.gpr[2] = 0;
 
         contextSwitch(nextThread());
     }
@@ -474,7 +476,7 @@ public class ThreadMan {
         //current_thread.delaysteps = a0 * 200000000 / 1000000; // TODO delaysteps = a0 * steprate
         current_thread.delaysteps = a0; // test version
         current_thread.do_callbacks = false;
-        Emulator.getProcessor().gpr[2] = 0;
+        Emulator.getProcessor().cpu.gpr[2] = 0;
 
         contextSwitch(nextThread());
     }
@@ -485,7 +487,7 @@ public class ThreadMan {
         //current_thread.delaysteps = millis * 200000000 / 1000000; // TODO delaysteps = millis * steprate
         current_thread.delaysteps = millis; // test version
         current_thread.do_callbacks = true;
-        Emulator.getProcessor().gpr[2] = 0;
+        Emulator.getProcessor().cpu.gpr[2] = 0;
 
         contextSwitch(nextThread());
     }
@@ -497,19 +499,19 @@ public class ThreadMan {
         Modules.log.debug("sceKernelCreateCallback SceUID=" + Integer.toHexString(callback.uid)
             + " PC=" + Integer.toHexString(callback.callback_addr) + " name:'" + callback.name + "'");
 
-        Emulator.getProcessor().gpr[2] = callback.uid;
+        Emulator.getProcessor().cpu.gpr[2] = callback.uid;
     }
 
     public void ThreadMan_sceKernelGetThreadId() {
         //Get the current thread Id
-        Emulator.getProcessor().gpr[2] = current_thread.uid;
+        Emulator.getProcessor().cpu.gpr[2] = current_thread.uid;
     }
 
     public void ThreadMan_sceKernelReferThreadStatus(int a0, int a1) {
         //Get the status information for the specified thread
         SceKernelThreadInfo thread = threadlist.get(a0);
         if (thread == null) {
-            Emulator.getProcessor().gpr[2] = 0x80020198; //notfoundthread
+            Emulator.getProcessor().cpu.gpr[2] = 0x80020198; //notfoundthread
             return;
         }
 
@@ -543,7 +545,7 @@ public class ThreadMan {
         mem.write32(a1 +98, thread.threadPreemptCount);
         mem.write32(a1 +102, thread.releaseCount);
 
-        Emulator.getProcessor().gpr[2] = 0;
+        Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
     public void ThreadMan_sceKernelChangeThreadPriority(int uid, int priority) {
@@ -551,14 +553,14 @@ public class ThreadMan {
         SceKernelThreadInfo thread = threadlist.get(uid);
         if (thread == null) {
             Modules.log.warn("sceKernelChangeThreadPriority unknown thread");
-            Emulator.getProcessor().gpr[2] = 0x80020198; //notfoundthread
+            Emulator.getProcessor().cpu.gpr[2] = 0x80020198; //notfoundthread
         } else {
             Modules.log.debug("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(thread.uid)
                     + " newPriority:0x" + Integer.toHexString(priority) + " oldPriority:0x" + Integer.toHexString(thread.currentPriority));
 
             thread.currentPriority = priority;
 
-            Emulator.getProcessor().gpr[2] = 0;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
         }
     }
 
@@ -577,7 +579,7 @@ public class ThreadMan {
 
         current_thread.attr = attr;
 
-        Emulator.getProcessor().gpr[2] = 0;
+        Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
     public void ThreadMan_sceKernelWakeupThread(int uid) {
@@ -586,13 +588,13 @@ public class ThreadMan {
         SceKernelThreadInfo thread = threadlist.get(uid);
         if (thread == null) {
             Modules.log.warn("sceKernelWakeupThread unknown thread");
-            Emulator.getProcessor().gpr[2] = 0x80020198; //notfoundthread
+            Emulator.getProcessor().cpu.gpr[2] = 0x80020198; //notfoundthread
         } else if (thread.status != PspThreadStatus.PSP_THREAD_SUSPEND) {
             Modules.log.warn("sceKernelWakeupThread thread not suspended (status=" + thread.status + ")");
-            Emulator.getProcessor().gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = -1;
         } else {
             thread.status = PspThreadStatus.PSP_THREAD_READY;
-            Emulator.getProcessor().gpr[2] = 0;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
         }
     }
 
@@ -602,11 +604,11 @@ public class ThreadMan {
         SceKernelThreadInfo thread = threadlist.get(uid);
         if (thread == null) {
             Modules.log.warn("sceKernelWaitThreadEnd unknown thread");
-            Emulator.getProcessor().gpr[2] = 0x80020198; //notfoundthread
+            Emulator.getProcessor().cpu.gpr[2] = 0x80020198; //notfoundthread
         } else if (waitthreadendlist.get(uid) != null) {
             // TODO out current implementation only allows 1 thread to wait on another thread to end
             Modules.log.warn("UNIMPLEMENTED:sceKernelWaitThreadEnd another thread already waiting for the target thread to end");
-            Emulator.getProcessor().gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = -1;
         } else {
             waitthreadendlist.put(uid, current_thread.uid);
 
@@ -621,7 +623,7 @@ public class ThreadMan {
             current_thread.do_callbacks = false;
             current_thread.do_waitThreadEnd = true;
             current_thread.waitThreadEndUid = uid;
-            Emulator.getProcessor().gpr[2] = 0;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
 
             contextSwitch(nextThread());
         }
@@ -749,7 +751,7 @@ public class ThreadMan {
             stack_addr = mallocStack(stackSize);
             if ((attr & PSP_THREAD_ATTR_NO_FILLSTACK) != PSP_THREAD_ATTR_NO_FILLSTACK)
                 memset(stack_addr - stackSize, (byte)0xFF, stackSize);
-            gpReg_addr = Emulator.getProcessor().gpr[28]; // inherit gpReg
+            gpReg_addr = Emulator.getProcessor().cpu.gpr[28]; // inherit gpReg
             currentPriority = initPriority;
             waitType = 0; // ?
             waitId = 0; // ?
@@ -786,7 +788,11 @@ public class ThreadMan {
         }
 
         public void saveContext() {
-            Processor cpu = Emulator.getProcessor();
+            // New-Style
+            // context = Emulator.getProcessor().cpu;
+            // return;
+            
+            CpuState cpu = Emulator.getProcessor().cpu;
             pcreg = cpu.pc;
             npcreg = cpu.npc;
             hilo = cpu.hilo;
@@ -798,7 +804,11 @@ public class ThreadMan {
         }
 
         public void restoreContext() {
-            Processor cpu = Emulator.getProcessor();
+            CpuState cpu = Emulator.getProcessor().cpu;
+            // New-Style
+            // Emulator.getProcessor().cpu = context;
+            // return;
+            
             cpu.pc = pcreg;
             cpu.npc = npcreg;
             cpu.hilo = hilo;
@@ -833,7 +843,7 @@ public class ThreadMan {
         if(option !=0) Modules.log.warn("sceKernelCreateSema: UNSUPPORTED Option Value");
         SceKernelSemaphoreInfo sema = new SceKernelSemaphoreInfo(name,attr,initCount,currentCount,maxCount);
 
-        Emulator.getProcessor().gpr[2] = sema.uid;
+        Emulator.getProcessor().cpu.gpr[2] = sema.uid;
     }
     public void ThreadMan_sceKernelWaitSema(int semaid , int signal , int timeoutptr , int timeout)
     {
@@ -842,18 +852,18 @@ public class ThreadMan {
             SceKernelSemaphoreInfo sema = semalist.get(semaid);
             if (sema == null) {
                     Modules.log.warn("sceKernelWaitSema - unknown uid " + Integer.toHexString(semaid));
-                Emulator.getProcessor().gpr[2] = -1;
+                Emulator.getProcessor().cpu.gpr[2] = -1;
             } else {
                 if(sema.currentCount >= signal)
                 {
                   sema.currentCount-=signal;
-                  Emulator.getProcessor().gpr[2] = 0;
+                  Emulator.getProcessor().cpu.gpr[2] = 0;
                 }
                 else
                 {
                     waitingThreads.add(getCurrentThreadID());
                     Modules.log.debug(getCurrentThreadID());
-                    Emulator.getProcessor().gpr[2] = 0;
+                    Emulator.getProcessor().cpu.gpr[2] = 0;
                     blockCurrentThread();
                 }
 
@@ -868,7 +878,7 @@ public class ThreadMan {
             SceKernelSemaphoreInfo sema = semalist.get(semaid);
             if (sema == null) {
                     Modules.log.warn("sceKernelSignalSema - unknown uid " + Integer.toHexString(semaid));
-                Emulator.getProcessor().gpr[2] = -1;
+                Emulator.getProcessor().cpu.gpr[2] = -1;
             } else {
                 int oldcurrentCount = sema.currentCount;
                 sema.currentCount+=signal;
@@ -878,7 +888,7 @@ public class ThreadMan {
                   Modules.log.debug("UNNNNNNNNNNNNNNNN Wait threads = " + waitThreads.next());
                 }
             }
-            Emulator.getProcessor().gpr[2] = 0;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
 
     }
     private class SceKernelSemaphoreInfo
@@ -912,7 +922,7 @@ public class ThreadMan {
         if(option !=0) Modules.log.warn("sceKernelCreateSema: UNSUPPORTED Option Value");
         SceKernelEventFlagInfo event = new SceKernelEventFlagInfo(name,attr,initPattern,initPattern);//initPattern and currentPattern should be the same at init
 
-        Emulator.getProcessor().gpr[2] = event.uid;
+        Emulator.getProcessor().cpu.gpr[2] = event.uid;
     }
     private class SceKernelEventFlagInfo
     {

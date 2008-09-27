@@ -38,14 +38,6 @@ public class GprState {
         Emulator.log.error("Interpreter : " + reason);
     }   
     
-    public static final int max(int x, int y) {
-        return (x > y) ? x : y;
-    }
-
-    public static final int min(int x, int y) {
-        return (x < y) ? x : y;
-    }
-
     public static final int extractBits(int x, int pos, int len) {
         return (x >>> pos) & ~(~0 << len);
     }
@@ -166,7 +158,7 @@ public class GprState {
 
     public final void doADDIU(int rt, int rs, int simm16) {
         if (rt != 0) {
-                gpr[rt] = gpr[rs] + simm16;
+                gpr[rt] = gpr[rs] + (int)(short)simm16;
         }
     }
 

@@ -32,7 +32,7 @@ public class MemoryViewer extends javax.swing.JFrame {
     /** Creates new form MemoryViewer */
     public MemoryViewer() {
         //this.cpu = c;
-        startaddress=Emulator.getProcessor().pc;
+        startaddress=Emulator.getProcessor().cpu.pc;
         initComponents();
 
         RefreshMemory();

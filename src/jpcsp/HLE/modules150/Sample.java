@@ -22,6 +22,7 @@ import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.Memory;
 import jpcsp.Processor;
+import jpcsp.Allegrex.CpuState;
 
 public class Sample implements HLEModule {
 
@@ -46,8 +47,8 @@ public class Sample implements HLEModule {
     // then sceKernelStartThread gets that object out of the list and modifies it.
     // Example: sceKernelStdin, this just returns a value and doesn't do any processing.
     public void pspSampleFoo(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         int param = cpu.gpr[4];
 
         System.out.println("pspSampleFoo 150 context = " + someContext);

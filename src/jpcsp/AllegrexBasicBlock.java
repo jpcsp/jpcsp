@@ -54,7 +54,7 @@ public class AllegrexBasicBlock {
 
         creationTimestamp = System.currentTimeMillis();
 
-        processor.tracked_gpr = new Processor.RegisterTracking[32];
+        //processor.tracked_gpr = new Processor.RegisterTracking[32];
     }
 
     public void emit(String javaCode) {
@@ -69,7 +69,7 @@ public class AllegrexBasicBlock {
 
     public void freeze() {
 
-        processor.reset_register_tracking();
+        //processor.reset_register_tracking();
         
         Processor.log.debug("Freezing basic block : " + Integer.toHexString(entry));
 

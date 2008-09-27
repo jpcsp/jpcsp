@@ -302,8 +302,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void _sceKernelReturnFromCallback(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -319,8 +319,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelRegisterThreadEventHandler(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -336,8 +336,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelReleaseThreadEventHandler(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -353,8 +353,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelReferThreadEventHandlerStatus(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -370,8 +370,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelCreateCallback(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -387,8 +387,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelDeleteCallback(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -404,8 +404,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelNotifyCallback(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -421,8 +421,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelCancelCallback(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -438,8 +438,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelGetCallbackCount(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -455,8 +455,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelCheckCallback(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -472,8 +472,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelReferCallbackStatus(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -489,8 +489,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelSleepThread(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -506,8 +506,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelSleepThreadCB(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -523,8 +523,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelWakeupThread(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -540,8 +540,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelCancelWakeupThread(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -557,8 +557,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelSuspendThread(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -574,8 +574,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelResumeThread(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -591,8 +591,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelWaitThreadEnd(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -608,8 +608,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelWaitThreadEndCB(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -625,8 +625,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelDelayThread(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -642,8 +642,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelDelayThreadCB(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -659,8 +659,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelDelaySysClockThread(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -676,8 +676,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelDelaySysClockThreadCB(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -693,8 +693,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelCreateSema(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -710,8 +710,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelDeleteSema(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -727,8 +727,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelSignalSema(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -744,8 +744,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelWaitSema(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -761,8 +761,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelWaitSemaCB(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -778,8 +778,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelPollSema(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -795,8 +795,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelCancelSema(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -812,8 +812,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelReferSemaStatus(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -829,8 +829,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelCreateEventFlag(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -846,8 +846,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelDeleteEventFlag(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -863,8 +863,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelSetEventFlag(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -880,8 +880,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelClearEventFlag(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -897,8 +897,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelWaitEventFlag(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -914,8 +914,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelWaitEventFlagCB(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -931,8 +931,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelPollEventFlag(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -948,8 +948,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelCancelEventFlag(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -965,8 +965,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelReferEventFlagStatus(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -982,8 +982,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelCreateMbx(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -999,8 +999,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelDeleteMbx(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1016,8 +1016,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelSendMbx(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1033,8 +1033,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelReceiveMbx(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1050,8 +1050,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelReceiveMbxCB(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1067,8 +1067,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelPollMbx(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1084,8 +1084,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelCancelReceiveMbx(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1101,8 +1101,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelReferMbxStatus(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1118,8 +1118,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelCreateMsgPipe(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1135,8 +1135,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelDeleteMsgPipe(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1152,8 +1152,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelSendMsgPipe(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1169,8 +1169,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelSendMsgPipeCB(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1186,8 +1186,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelTrySendMsgPipe(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1203,8 +1203,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelReceiveMsgPipe(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1220,8 +1220,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelReceiveMsgPipeCB(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1237,8 +1237,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelTryReceiveMsgPipe(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1254,8 +1254,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelCancelMsgPipe(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1271,8 +1271,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelReferMsgPipeStatus(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1288,8 +1288,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelCreateVpl(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1305,8 +1305,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelDeleteVpl(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1322,8 +1322,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelAllocateVpl(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1339,8 +1339,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelAllocateVplCB(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1356,8 +1356,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelTryAllocateVpl(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1373,8 +1373,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelFreeVpl(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1390,8 +1390,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelCancelVpl(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1407,8 +1407,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelReferVplStatus(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1424,8 +1424,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelCreateFpl(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1441,8 +1441,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelDeleteFpl(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1458,8 +1458,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelAllocateFpl(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1475,8 +1475,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelAllocateFplCB(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1492,8 +1492,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelTryAllocateFpl(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1509,8 +1509,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelFreeFpl(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1526,8 +1526,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelCancelFpl(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1543,8 +1543,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelReferFplStatus(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1560,8 +1560,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void _sceKernelReturnFromTimerHandler(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1577,8 +1577,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelUSec2SysClock(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1594,8 +1594,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelUSec2SysClockWide(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1611,8 +1611,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelSysClock2USec(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1628,8 +1628,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelSysClock2USecWide(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1645,8 +1645,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelGetSystemTime(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1662,8 +1662,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelGetSystemTimeWide(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1679,8 +1679,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelGetSystemTimeLow(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1696,8 +1696,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelSetAlarm(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1713,8 +1713,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelSetSysClockAlarm(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1730,8 +1730,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelCancelAlarm(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1747,8 +1747,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelReferAlarmStatus(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1764,8 +1764,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelCreateVTimer(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1781,8 +1781,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelDeleteVTimer(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1798,8 +1798,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelGetVTimerBase(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1815,8 +1815,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelGetVTimerBaseWide(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1832,8 +1832,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelGetVTimerTime(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1849,8 +1849,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelGetVTimerTimeWide(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1866,8 +1866,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelSetVTimerTime(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1883,8 +1883,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelSetVTimerTimeWide(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1900,8 +1900,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelStartVTimer(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1917,8 +1917,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelStopVTimer(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1934,8 +1934,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelSetVTimerHandler(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1951,8 +1951,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelSetVTimerHandlerWide(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1968,8 +1968,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelCancelVTimerHandler(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -1985,8 +1985,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelReferVTimerStatus(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -2002,8 +2002,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelCreateThread(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -2019,8 +2019,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelDeleteThread(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -2036,8 +2036,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelStartThread(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -2053,8 +2053,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void _sceKernelExitThread(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -2070,8 +2070,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelExitThread(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -2087,8 +2087,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelExitDeleteThread(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -2104,8 +2104,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelTerminateThread(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -2121,8 +2121,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelTerminateDeleteThread(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -2138,8 +2138,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelSuspendDispatchThread(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -2155,8 +2155,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelResumeDispatchThread(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -2172,8 +2172,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelChangeCurrentThreadAttr(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -2189,8 +2189,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelChangeThreadPriority(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -2206,8 +2206,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelRotateThreadReadyQueue(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -2223,8 +2223,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelReleaseWaitThread(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -2240,8 +2240,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelGetThreadId(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -2257,8 +2257,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelGetThreadCurrentPriority(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -2274,8 +2274,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelGetThreadExitStatus(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -2291,8 +2291,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelCheckThreadStack(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -2308,8 +2308,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelGetThreadStackFreeSize(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -2325,8 +2325,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelReferThreadStatus(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -2342,8 +2342,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelReferThreadRunStatus(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -2359,8 +2359,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelReferSystemStatus(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -2376,8 +2376,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelGetThreadmanIdList(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -2393,8 +2393,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelGetThreadmanIdType(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -2410,8 +2410,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelReferThreadProfiler(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
@@ -2427,8 +2427,8 @@ public class ThreadManForUser implements HLEModule {
     }
 
     public void sceKernelReferGlobalProfiler(Processor processor) {
-        // CpuState cpu = processor.cpu; // New-Style Processor
-        Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
