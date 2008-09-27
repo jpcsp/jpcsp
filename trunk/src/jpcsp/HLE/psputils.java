@@ -154,4 +154,15 @@ public class psputils {
             r = new Random(seed);
         }
     }
+
+    /** a0 = address to write result to? */
+    public void sceKernelGetGPI() {
+        Modules.log.warn("UNIMPLEMENTED:sceKernelGetGPI");
+        Emulator.getProcessor().cpu.gpr[2] = 0;
+    }
+
+    public void sceKernelSetGPO(int value) {
+        Modules.log.warn("UNIMPLEMENTED:sceKernelSetGPO 0x" + Integer.toHexString(value));
+        Emulator.getProcessor().cpu.gpr[2] = 0;
+    }
 }

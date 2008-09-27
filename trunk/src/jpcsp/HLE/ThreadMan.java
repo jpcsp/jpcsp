@@ -50,7 +50,12 @@ public class ThreadMan {
     private  ArrayList<Integer> waitingThreads;
     private SceKernelThreadInfo current_thread;
     private SceKernelThreadInfo idle0, idle1;
-    private int continuousIdleCycles; // watch dog timer
+    private int continuousIdleCycles; // watch dog timer - number of continuous cycles in any idle thread
+    private int syscallFreeCycles; // watch dog timer - number of cycles since last syscall
+
+    // TODO figure out a decent number of cycles to wait
+    private final int WDT_THREAD_IDLE_CYCLES = 1000000;
+    private final int WDT_THREAD_HOG_CYCLES = 1000000;
 
     //private static int stackAllocated;
 
@@ -93,7 +98,7 @@ public class ThreadMan {
         // Setup args by copying them onto the stack
         //Modules.log.debug("pspfilename - '" + pspfilename + "'");
         int len = pspfilename.length();
-        int alignlen = (len + 1+ 3) & ~3; // string terminator + 4 byte align
+        int alignlen = (len + 1 + 3) & ~3; // string terminator + 4 byte align
         Memory mem = Memory.getInstance();
         for (int i = 0; i < len; i++)
             mem.write8((current_thread.stack_addr - alignlen) + i, (byte)pspfilename.charAt(i));
@@ -107,6 +112,7 @@ public class ThreadMan {
         // Switch in the thread
         current_thread.status = PspThreadStatus.PSP_THREAD_RUNNING;
         current_thread.restoreContext();
+        syscallFreeCycles = 0;
     }
 
     private void install_idle_threads() {
@@ -167,13 +173,17 @@ public class ThreadMan {
             // Watch dog timer
             if (current_thread == idle0 || current_thread == idle1) {
                 continuousIdleCycles++;
-                // TODO figure out a decent number of cycles to wait
-                if (continuousIdleCycles > 1000000) {
-                    Modules.log.info("Watch dog timer - pausing emulator");
+                if (continuousIdleCycles > WDT_THREAD_IDLE_CYCLES) {
+                    Modules.log.info("Watch dog timer - pausing emulator (idle)");
                     Emulator.PauseEmu();
                 }
             } else {
                 continuousIdleCycles = 0;
+                syscallFreeCycles++;
+                if (syscallFreeCycles > WDT_THREAD_HOG_CYCLES) {
+                    Modules.log.info("Watch dog timer - pausing emulator (thread hogging)");
+                    Emulator.PauseEmu();
+                }
             }
         } else {
             // We always need to be in a thread! we shouldn't get here.
@@ -219,6 +229,10 @@ public class ThreadMan {
         }
     }
 
+    public void clearSyscallFreeCycles() {
+        syscallFreeCycles = 0;
+    }
+
     private void contextSwitch(SceKernelThreadInfo newthread) {
         if (current_thread != null) {
             // Switch out old thread
@@ -258,6 +272,7 @@ public class ThreadMan {
         }
 
         current_thread = newthread;
+        syscallFreeCycles = 0;
     }
 
     // This function must have the property of never returning current_thread, unless current_thread is already null
@@ -791,7 +806,7 @@ public class ThreadMan {
             // New-Style
             // context = Emulator.getProcessor().cpu;
             // return;
-            
+
             CpuState cpu = Emulator.getProcessor().cpu;
             pcreg = cpu.pc;
             npcreg = cpu.npc;
@@ -808,7 +823,7 @@ public class ThreadMan {
             // New-Style
             // Emulator.getProcessor().cpu = context;
             // return;
-            
+
             cpu.pc = pcreg;
             cpu.npc = npcreg;
             cpu.hilo = hilo;

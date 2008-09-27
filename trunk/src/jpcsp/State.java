@@ -13,13 +13,15 @@ import java.nio.ByteBuffer;
  */
 public class State extends jpcsp.HLE.Modules {
 
-    public static final Processor processor = new Processor();
+    // re-enable this when we remove getInstance from all code
+    // also Emulator calls new Processor() too!
+    //public static final Processor processor = new Processor();
     public static final Memory memory = Memory.getInstance();
-    
+
     @Override
     public void step() {
         processor.step();
-        
+
         super.step();
     }
 
@@ -27,7 +29,7 @@ public class State extends jpcsp.HLE.Modules {
     public void load(ByteBuffer buffer) {
         processor.load(buffer);
         memory.load(buffer);
-        
+
         super.load(buffer);
     }
 
@@ -35,7 +37,7 @@ public class State extends jpcsp.HLE.Modules {
     public void save(ByteBuffer buffer) {
         processor.save(buffer);
         memory.save(buffer);
-        
+
         super.save(buffer);
-    }    
+    }
 }
