@@ -331,15 +331,15 @@ public class Processor implements AllegrexInstructions {
     }
 
     public int lo() {
-        return (int) (hilo & 0xffffffff);
+        return (int) (hilo & 0xffffffffL);
     }
 
     public static long signedDivMod(int x, int y) {
-        return ((long) (x % y)) << 32 | (((long) (x / y)) & 0xffffffff);
+        return ((long) (x % y)) << 32 | (((long) (x / y)) & 0xffffffffL);
     }
 
     public static long unsignedDivMod(long x, long y) {
-        return ((x % y)) << 32 | ((x / y) & 0xffffffff);
+        return ((x % y)) << 32 | ((x / y) & 0xffffffffL);
     }
 
     public static int max(int x, int y) {
@@ -392,8 +392,7 @@ public class Processor implements AllegrexInstructions {
     }
 
     private static boolean addSubOverflow(long value) {
-        long tmp = value << (62 - 31);
-        return ((tmp >>> 1) == (tmp & 1));
+        return (value >> 32) != (value >> 31);
     }
 
     private void updateCyclesFdFsFt(int fd, int fs, int ft, long latency) {
@@ -625,7 +624,7 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doMTHI(int rs) {
         int hi = gpr[rs];
-        hilo = (((long) hi) << 32) | (hilo & 0xffffffff);
+        hilo = (((long) hi) << 32) | (hilo & 0xffffffffL);
         if (cycles < hilo_cycles) {
             cycles = hilo_cycles;
         }
@@ -644,7 +643,7 @@ public class Processor implements AllegrexInstructions {
     @Override
     public void doMTLO(int rs) {
         int lo = gpr[rs];
-        hilo = ((hilo >>> 32) << 32) | (((long) lo) & 0xffffffff);
+        hilo = ((hilo >>> 32) << 32) | (((long) lo) & 0xffffffffL);
         if (cycles < hilo_cycles) {
             cycles = hilo_cycles;
         }
@@ -661,7 +660,7 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doMULTU(int rs, int rt) {
-        hilo = (((long) gpr[rs]) & 0xffffffff) * (((long) gpr[rt]) & 0xffffffff);
+        hilo = (((long) gpr[rs]) & 0xffffffffL) * (((long) gpr[rt]) & 0xffffffffL);
         if (cycles < hilo_cycles) {
             cycles = hilo_cycles;
         }
@@ -672,7 +671,7 @@ public class Processor implements AllegrexInstructions {
     public void doDIV(int rs, int rt) {
         int lo = gpr[rs] / gpr[rt];
         int hi = gpr[rs] % gpr[rt];
-        hilo = ((long) hi) << 32 | (((long) lo) & 0xffffffff);
+        hilo = ((long) hi) << 32 | (((long) lo) & 0xffffffffL);
         if (cycles < hilo_cycles) {
             cycles = hilo_cycles;
         }
@@ -681,11 +680,11 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doDIVU(int rs, int rt) {
-        long x = ((long) gpr[rs]) & 0xffffffff;
-        long y = ((long) gpr[rt]) & 0xffffffff;
+        long x = ((long) gpr[rs]) & 0xffffffffL;
+        long y = ((long) gpr[rt]) & 0xffffffffL;
         int lo = (int) (x / y);
         int hi = (int) (x % y);
-        hilo = ((long) hi) << 32 | (((long) lo) & 0xffffffff);
+        hilo = ((long) hi) << 32 | (((long) lo) & 0xffffffffL);
         if (cycles < hilo_cycles) {
             cycles = hilo_cycles;
         }
@@ -1476,7 +1475,7 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doMADDU(int rs, int rt) {
-        hilo += (((long) gpr[rs]) & 0xffffffff) * (((long) gpr[rt]) & 0xffffffff);
+        hilo += (((long) gpr[rs]) & 0xffffffffL) * (((long) gpr[rt]) & 0xffffffffL);
         if (cycles < hilo_cycles) {
             cycles = hilo_cycles;
         }
@@ -1512,7 +1511,7 @@ public class Processor implements AllegrexInstructions {
 
     @Override
     public void doMSUBU(int rs, int rt) {
-        hilo -= (((long) gpr[rs]) & 0xffffffff) * (((long) gpr[rt]) & 0xffffffff);
+        hilo -= (((long) gpr[rs]) & 0xffffffffL) * (((long) gpr[rt]) & 0xffffffffL);
         if (cycles < hilo_cycles) {
             cycles = hilo_cycles;
         }
