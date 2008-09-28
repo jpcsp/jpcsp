@@ -25,6 +25,7 @@ public class Modules {
     public static scePower scePowerModule = new scePower();
     public static sceUmdUser sceUmdUserModule = new sceUmdUser();
     public static sceUtility sceUtilityModule = new sceUtility();
+    public static sceRtc sceRtcModule = new sceRtc();
 
     public static Logger log = Logger.getLogger("hle");
 
