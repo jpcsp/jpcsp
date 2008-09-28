@@ -26,6 +26,7 @@ public class Modules {
     public static sceUmdUser sceUmdUserModule = new sceUmdUser();
     public static sceUtility sceUtilityModule = new sceUtility();
     public static sceRtc sceRtcModule = new sceRtc();
+    public static Kernel_Library Kernel_LibraryModule = new Kernel_Library();
 
     public static Logger log = Logger.getLogger("hle");
 
