@@ -55,7 +55,7 @@ public class ThreadMan {
 
     // TODO figure out a decent number of cycles to wait
     private final int WDT_THREAD_IDLE_CYCLES = 1000000;
-    private final int WDT_THREAD_HOG_CYCLES = 5000000;
+    private final int WDT_THREAD_HOG_CYCLES = 10000000;
 
     //private static int stackAllocated;
 
@@ -486,10 +486,10 @@ public class ThreadMan {
     }
 
     /** sleep the current thread for a certain number of microseconds */
-    public void ThreadMan_sceKernelDelayThread(int a0) {
+    public void ThreadMan_sceKernelDelayThread(int micros) {
         current_thread.status = PspThreadStatus.PSP_THREAD_WAITING;
-        //current_thread.delaysteps = a0 * 200000000 / 1000000; // TODO delaysteps = a0 * steprate
-        current_thread.delaysteps = a0; // test version
+        //current_thread.delaysteps = micros * 200000000 / 1000000; // TODO delaysteps = micros * steprate
+        current_thread.delaysteps = micros; // test version
         current_thread.do_callbacks = false;
         Emulator.getProcessor().cpu.gpr[2] = 0;
 
@@ -497,10 +497,10 @@ public class ThreadMan {
     }
 
     /** sleep the current thread for a certain number of microseconds */
-    public void ThreadMan_sceKernelDelayThreadCB(int millis) {
+    public void ThreadMan_sceKernelDelayThreadCB(int micros) {
         current_thread.status = PspThreadStatus.PSP_THREAD_WAITING;
-        //current_thread.delaysteps = millis * 200000000 / 1000000; // TODO delaysteps = millis * steprate
-        current_thread.delaysteps = millis; // test version
+        //current_thread.delaysteps = micros * 200000000 / 1000000; // TODO delaysteps = micros * steprate
+        current_thread.delaysteps = micros; // test version
         current_thread.do_callbacks = true;
         Emulator.getProcessor().cpu.gpr[2] = 0;
 
@@ -629,7 +629,7 @@ public class ThreadMan {
 
             if (micros > 0) {
                 current_thread.status = PspThreadStatus.PSP_THREAD_WAITING;
-                //current_thread.delaysteps = micros * 200000000 / 1000000; // TODO delaysteps = a0 * steprate
+                //current_thread.delaysteps = micros * 200000000 / 1000000; // TODO delaysteps = micros * steprate
                 current_thread.delaysteps = micros; // test version
             } else {
                 current_thread.status = PspThreadStatus.PSP_THREAD_SUSPEND;
