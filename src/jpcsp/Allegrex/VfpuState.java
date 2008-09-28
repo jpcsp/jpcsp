@@ -107,7 +107,7 @@ public class VfpuState extends FpuState {
     @Override
     public void reset() {
         super.reset();
-        vpr = new float[8][4][4]; // [matrix][column][row]           
+        vpr = new float[8][4][4]; // [matrix][column][row]
         vcr = new Vcr();
     }
 
@@ -119,8 +119,8 @@ public class VfpuState extends FpuState {
         super.copy(that);
         vpr = new float[8][4][4]; // [matrix][column][row]
         for (int m = 0; m < 8; ++m) {
-            for (int c = 0; m < 8; ++m) {
-                for (int r = 0; m < 8; ++m) {
+            for (int c = 0; c < 4; ++c) {
+                for (int r = 0; r < 4; ++r) {
                     vpr[m][c][r] = that.vpr[m][c][r];
                 }
             }
@@ -131,7 +131,7 @@ public class VfpuState extends FpuState {
     public VfpuState(VfpuState that) {
         copy(that);
     }
-    
+
     // VFPU stuff
     private float transformVr(int swz, boolean abs, boolean cst, boolean neg, float[] x) {
         float value = 0.0f;
@@ -767,7 +767,7 @@ public class VfpuState extends FpuState {
 
         saveVd(1, vs, result);
     }
-    
+
     public void doLVS(int vt, int rs, int simm14) {
         int r = (vt >> 5) & 3;
         int m = (vt >> 2) & 7;
@@ -781,7 +781,7 @@ public class VfpuState extends FpuState {
         int c = (vt >> 0) & 3;
         memory.write32(gpr[rs] + (simm14 << 2), Float.floatToRawIntBits(vpr[m][r][c]));
     }
-    
+
     public void doLVQ(int vt, int rs, int simm14) {
         int r = (vt >> 5) & 3;
         int m = (vt >> 2) & 7;
@@ -795,5 +795,5 @@ public class VfpuState extends FpuState {
         int c = (vt >> 0) & 3;
         memory.write32(gpr[rs] + (simm14 << 2), Float.floatToRawIntBits(vpr[m][r][c]));
     }
-    
+
 }
