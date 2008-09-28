@@ -847,6 +847,54 @@ public class VideoEngine {
             	int 	texture_type = 0;
 
             	switch (texture_storage) {
+            		case TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED: {
+            			// TODO: Refactor this to avoid code duplication
+            			switch (tex_clut_mode) {
+            				case TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650: {
+            					texture_type = GL.GL_UNSIGNED_SHORT_5_6_5_REV;
+
+	            				for (int i = 0; i < texture_width0*texture_height0; i += 2) {
+	            					
+	            					int clut = mem.read8(texture_base_pointer0+i);
+	            					
+	            					// TODO:  I don't know if it's correct, or should read the 4bits in
+	            					//       reverse order
+	            					tmp_texture_buffer16[i] 	= (short)mem.read16(tex_clut_addr + ((clut>>4)&0xF));
+	            					tmp_texture_buffer16[i+1] 	= (short)mem.read16(tex_clut_addr + (clut&0xF));
+	            				}
+
+	            				final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
+
+	            				break;
+	            			}
+            				
+	            			case CMODE_FORMAT_32BIT_ABGR8888: {
+	            				texture_type = GL.GL_UNSIGNED_BYTE;
+
+	            				for (int i = 0; i < texture_width0*texture_height0; i += 2) {
+	            					
+	            					int clut = mem.read8(texture_base_pointer0+i);
+	            					
+	            					// TODO:  I don't know if it's correct, or should read the 4bits in
+	            					//       reverse order
+	            					tmp_texture_buffer32[i] 	= mem.read32(tex_clut_addr + ((clut>>4)&0xF));
+	            					tmp_texture_buffer32[i+1] 	= mem.read32(tex_clut_addr + (clut&0xF));
+	            				}
+
+	            				final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
+
+	            				break;
+	            			}
+
+	                		default: {
+	                			VideoEngine.log.error("Unhandled clut texture mode " + tex_clut_mode);
+	                            Emulator.PauseEmu();
+	                            break;
+	                		}
+	            		}
+            			
+            			break;
+            		}
             		case TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED: {
 
             			// TODO: Refactor this to avoid code duplication
