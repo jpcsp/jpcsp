@@ -102,6 +102,7 @@ public class MemoryViewer extends javax.swing.JFrame {
         memoryview = new javax.swing.JTextArea();
         AddressField = new javax.swing.JTextField();
         GoToButton = new javax.swing.JButton();
+        GoToSP = new javax.swing.JButton();
 
         setTitle("Memory Viewer");
         setResizable(false);
@@ -134,6 +135,13 @@ public class MemoryViewer extends javax.swing.JFrame {
             }
         });
 
+        GoToSP.setText("Go To SP");
+        GoToSP.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                GoToSPActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -144,7 +152,9 @@ public class MemoryViewer extends javax.swing.JFrame {
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(AddressField, javax.swing.GroupLayout.PREFERRED_SIZE, 216, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(GoToButton))
+                        .addComponent(GoToButton)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(GoToSP))
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 646, Short.MAX_VALUE))
                 .addContainerGap())
         );
@@ -154,7 +164,8 @@ public class MemoryViewer extends javax.swing.JFrame {
                 .addContainerGap(32, Short.MAX_VALUE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(AddressField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(GoToButton))
+                    .addComponent(GoToButton)
+                    .addComponent(GoToSP))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 314, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
@@ -221,11 +232,25 @@ private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:
         Settings.get_instance().writeWindowPos("memoryview", getLocation());
 }//GEN-LAST:event_formWindowDeactivated
 
+private void GoToSPActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_GoToSPActionPerformed
+         /*String gettext = AddressField.getText();
+         int value;
+         try {
+            value = Integer.parseInt(gettext, 16);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "The Number you enter is not correct");
+            return;
+        }*/
+         startaddress = Emulator.getProcessor().cpu.gpr[29];
+         RefreshMemory();
+}//GEN-LAST:event_GoToSPActionPerformed
+
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTextField AddressField;
     private javax.swing.JButton GoToButton;
+    private javax.swing.JButton GoToSP;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTextArea memoryview;
     // End of variables declaration//GEN-END:variables

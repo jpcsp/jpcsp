@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import javax.swing.DefaultListModel;
 import javax.swing.JOptionPane;
+import javax.swing.JTable;
 import javax.swing.SwingUtilities;
 import jpcsp.Emulator;
 import jpcsp.Memory;
@@ -122,6 +123,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         CopyAddress = new javax.swing.JMenuItem();
         CopyAll = new javax.swing.JMenuItem();
         BranchOrJump = new javax.swing.JMenuItem();
+        RegMenu = new javax.swing.JPopupMenu();
+        CopyValue = new javax.swing.JMenuItem();
         disasmList = new javax.swing.JList(listmodel);
         DisasmToolbar = new javax.swing.JToolBar();
         RunDebugger = new javax.swing.JToggleButton();
@@ -168,6 +171,14 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             }
         });
         DisMenu.add(BranchOrJump);
+
+        CopyValue.setText("Copy value");
+        CopyValue.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                CopyValueActionPerformed(evt);
+            }
+        });
+        RegMenu.add(CopyValue);
 
         setTitle("Debugger");
         setResizable(false);
@@ -394,7 +405,13 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 return canEdit [columnIndex];
             }
         });
+        jTable1.setColumnSelectionAllowed(true);
         jTable1.getTableHeader().setReorderingAllowed(false);
+        jTable1.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jTable1MouseClicked(evt);
+            }
+        });
         jTabbedPane1.addTab("GPR", jTable1);
 
         jTable2.setModel(new javax.swing.table.DefaultTableModel(
@@ -479,6 +496,12 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 return canEdit [columnIndex];
             }
         });
+        jTable3.setColumnSelectionAllowed(true);
+        jTable3.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jTable3MouseClicked(evt);
+            }
+        });
         jTabbedPane1.addTab("COP1", jTable3);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -486,12 +509,12 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addComponent(DisasmToolbar, javax.swing.GroupLayout.DEFAULT_SIZE, 763, Short.MAX_VALUE)
+                .addComponent(DisasmToolbar, javax.swing.GroupLayout.DEFAULT_SIZE, 793, Short.MAX_VALUE)
                 .addContainerGap())
-            .addGroup(layout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(disasmList, javax.swing.GroupLayout.PREFERRED_SIZE, 491, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 30, Short.MAX_VALUE)
+                .addComponent(disasmList, javax.swing.GroupLayout.DEFAULT_SIZE, 533, Short.MAX_VALUE)
+                .addGap(18, 18, 18)
                 .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 223, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(19, 19, 19))
         );
@@ -788,6 +811,44 @@ private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:
     if (Settings.get_instance().readBoolOptions("guisettings/saveWindowPos"))
         Settings.get_instance().writeWindowPos("disassembler", getLocation());
 }//GEN-LAST:event_formWindowDeactivated
+private boolean isCellChecked(JTable table)
+{
+  for(int i=0; i<table.getRowCount(); i++)
+  {
+       if(table.isCellSelected(i, 1)) return true;
+       
+  }
+  return false;
+}
+private void jTable3MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTable3MouseClicked
+   if (SwingUtilities.isRightMouseButton(evt) && jTable3.isColumnSelected(1) && isCellChecked(jTable3))
+   {
+     RegMenu.show(jTable3, evt.getX(), evt.getY());
+   }
+}//GEN-LAST:event_jTable3MouseClicked
+
+private void CopyValueActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CopyValueActionPerformed
+ if(jTable3.isShowing()){
+    float value = (Float)jTable3.getValueAt(jTable3.getSelectedRow(),1);
+    StringSelection stringSelection = new StringSelection( Float.toString(value));
+    Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+    clipboard.setContents(stringSelection, this);
+ }
+ else if(jTable1.isShowing())
+ {
+    String value = (String)jTable1.getValueAt(jTable1.getSelectedRow(),1);
+    StringSelection stringSelection = new StringSelection(value);
+    Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+    clipboard.setContents(stringSelection, this);
+ }
+}//GEN-LAST:event_CopyValueActionPerformed
+
+private void jTable1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTable1MouseClicked
+   if (SwingUtilities.isRightMouseButton(evt) && jTable1.isColumnSelected(1) && isCellChecked(jTable1))
+   {
+     RegMenu.show(jTable1, evt.getX(), evt.getY());
+   }
+}//GEN-LAST:event_jTable1MouseClicked
 
 
 
@@ -797,6 +858,7 @@ private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:
     private javax.swing.JMenuItem BranchOrJump;
     private javax.swing.JMenuItem CopyAddress;
     private javax.swing.JMenuItem CopyAll;
+    private javax.swing.JMenuItem CopyValue;
     private javax.swing.JButton DeleteAllBreakpoints;
     private javax.swing.JButton DeleteBreakpoint;
     private javax.swing.JPopupMenu DisMenu;
@@ -804,6 +866,7 @@ private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:
     private javax.swing.JButton DumpCodeToText;
     private javax.swing.JButton JumpToAddress;
     private javax.swing.JButton PauseDebugger;
+    private javax.swing.JPopupMenu RegMenu;
     private javax.swing.JButton ResetToPCbutton;
     private javax.swing.JToggleButton RunDebugger;
     private javax.swing.JButton StepInto;
