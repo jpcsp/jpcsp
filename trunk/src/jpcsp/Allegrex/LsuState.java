@@ -16,11 +16,14 @@ public class LsuState extends MduState {
     
     @Override
     public void reset() {
-        super.reset();
     }
 
+    @Override
+    public void resetAll() {
+        super.resetAll();
+    }   
+    
     public LsuState() {
-        reset();
     }
 
     public void copy(LsuState that) {
@@ -28,7 +31,7 @@ public class LsuState extends MduState {
     }
 
     public LsuState(LsuState that) {
-        this.copy(that);
+        super(that);
     }
     
     public void doLB(int rt, int rs, int simm16) {

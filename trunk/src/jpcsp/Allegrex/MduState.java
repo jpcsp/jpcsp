@@ -32,12 +32,17 @@ public class MduState extends GprState {
 
     @Override
     public void reset() {
-        super.reset();
         hilo = 0;
     }
 
+    @Override
+    public void resetAll() {
+        super.resetAll();
+        hilo = 0;
+    }   
+
     public MduState() {
-        reset();
+        hilo = 0;
     }
 
     public void copy(MduState that) {
@@ -46,7 +51,8 @@ public class MduState extends GprState {
     }
 
     public MduState(MduState that) {
-        copy(that);
+        super(that);
+        hilo = that.hilo;
     }
     
     public static final long signedDivMod(int x, int y) {
