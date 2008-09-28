@@ -372,7 +372,7 @@ public class Common {
     }
 
     public static String disasmOFFSET(String opname, int simm16, int opcode_address) {
-        return String.format("%1$-10s 0x%4$04X", opname, ((int) (short) simm16) * 4 + opcode_address + 4);
+        return String.format("%1$-10s 0x%2$08X", opname, ((int) (short) simm16) * 4 + opcode_address + 4);
     }
 
     public static String disasmRTRSIMM(String opname, int rt, int rs, int imm16) {

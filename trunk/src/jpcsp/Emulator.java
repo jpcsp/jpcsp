@@ -164,7 +164,13 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                         int ADDR_BASE = (int) ((rel.getR_info() >> 16) & 0xFF);
                         //System.out.println("type=" + R_TYPE + ",base=" + OFS_BASE + ",addr=" + ADDR_BASE + "");
 
-                        int data = Memory.getInstance().read32((int) romManager.getBaseoffset() + (int) rel.getR_offset());
+                        int phOffset = (int)elf.getProgramHeader(OFS_BASE).getP_vaddr();
+                        int phBaseOffset = (int)elf.getProgramHeader(ADDR_BASE).getP_vaddr();
+
+                        // Address of data to relocate
+                        int data_addr = (int)(romManager.getBaseoffset() + rel.getR_offset() + phOffset);
+                        // Value of data to relocate
+                        int data = Memory.getInstance().read32(data_addr);
                         long result = 0; // Used to hold the result of relocation, OR this back into data
 
                         // these are the addends?
@@ -176,59 +182,52 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                         int hi16 = data & 0x0000FFFF;
                         int lo16 = data & 0x0000FFFF;
                         int rel16 = data & 0x0000FFFF;
-                        int lit16 = data & 0x0000FFFF; // 31/07/08 unused (fiveofhearts)
-
-                        int pc = data & 0x0000FFFF; // 31/07/08 unused (fiveofhearts)
 
                         int A = 0; // addend
                         // moved outside the loop so context is saved
                         //int AHL = 0; // (AHI << 16) | (ALO & 0xFFFF)
 
-                        int P = (int) romManager.getBaseoffset() + (int) rel.getR_offset(); // address of instruction being relocated? 31/07/08 unused when external=true (fiveofhearts)
-
-                        int S = (int) romManager.getBaseoffset(); // ? copied from soywiz/pspemulator, but doesn't match the docs (fiveofhearts)
-
-                        int G = 0; // ? 31/07/08 unused (fiveofhearts)
-
+                        int S = (int) romManager.getBaseoffset() + phBaseOffset;
                         int GP = (int) romManager.getBaseoffset() + (int) romManager.getPSPModuleInfo().getM_gp(); // final gp value, computed correctly? 31/07/08 only used in R_MIPS_GPREL16 which is untested (fiveofhearts)
 
-                        int GP0 = (int) romManager.getPSPModuleInfo().getM_gp(); // gp value, computed correctly? 31/07/08 unused when external=true (fiveofhearts)
-
-                        int EA = 0; // ? 31/07/08 unused (fiveofhearts)
-
-                        int L = 0; // ? 31/07/08 unused (fiveofhearts)
-
+                        final boolean logRelocations = false;
                         switch (R_TYPE) {
                             case 0: //R_MIPS_NONE
                                 // Don't do anything
-
+                                Memory.log.warn("R_MIPS_NONE addr=" + String.format("%08x", data_addr));
                                 break;
 
                             case 5: //R_MIPS_HI16
-
                                 A = hi16;
                                 AHL = A << 16;
-                                HI_addr = (int) romManager.getBaseoffset() + (int) rel.getR_offset();
+                                HI_addr = data_addr;
+                                if (logRelocations) Memory.log.debug("R_MIPS_HI16 addr=" + String.format("%08x", data_addr));
                                 break;
 
                             case 6: //R_MIPS_LO16
-
                                 A = lo16;
                                 AHL &= ~0x0000FFFF; // delete lower bits, since many R_MIPS_LO16 can follow one R_MIPS_HI16
 
                                 AHL |= A & 0x0000FFFF;
 
+                                result = AHL + S;
+                                data &= ~0x0000FFFF;
+                                data |= result & 0x0000FFFF; // truncate
 
-                                    result = AHL + S;
-                                    data &= ~0x0000FFFF;
-                                    data |= result & 0x0000FFFF; // truncate
+                                // Process deferred R_MIPS_HI16
+                                int data2 = Memory.getInstance().read32(HI_addr);
+                                data2 &= ~0x0000FFFF;
+                                data2 |= (result >> 16) & 0x0000FFFF; // truncate
 
-                                    // Process deferred R_MIPS_HI16
-                                    int data2 = Memory.getInstance().read32(HI_addr);
-                                    data2 &= ~0x0000FFFF;
-                                    data2 |= (result >> 16) & 0x0000FFFF; // truncate
+                                Memory.getInstance().write32(HI_addr, data2);
 
-                                    Memory.getInstance().write32(HI_addr, data2);
+                                if (logRelocations)  {
+                                    Memory.log.debug("R_MIPS_LO16 addr=" + String.format("%08x", HI_addr) + " data2 before=" + Integer.toHexString(Memory.getInstance().read32(HI_addr))
+                                        + " after=" + Integer.toHexString(data2));
+
+                                    Memory.log.debug("R_MIPS_LO16 addr=" + String.format("%08x", data_addr) + " data before=" + Integer.toHexString(word32)
+                                        + " after=" + Integer.toHexString(data));
+                                }
                                 break;
 
                             case 4: //R_MIPS_26
@@ -241,59 +240,56 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
 
                                 data &= ~0x03FFFFFF;
                                 data |= (int) (result & 0x03FFFFFF); // truncate
+
+                                if (logRelocations) {
+                                    Memory.log.debug("R_MIPS_26 addr=" + String.format("%08x", data_addr) + " before=" + Integer.toHexString(word32)
+                                        + " after=" + Integer.toHexString(data));
+                                }
                                 break;
 
                             case 2: //R_MIPS_32
                                 data += S;
+
+                                if (logRelocations) {
+                                    Memory.log.debug("R_MIPS_32 addr=" + String.format("%08x", data_addr) + " before=" + Integer.toHexString(word32)
+                                        + " after=" + Integer.toHexString(data));
+                                }
                                 break;
 
                             /* sample before relocation: 0x00015020: 0x8F828008 '....' - lw         $v0, -32760($gp)
                             case 7: //R_MIPS_GPREL16
                                 // 31/07/08 untested (fiveofhearts)
-                                System.out.println("Untested relocation type " + R_TYPE + " at " + String.format("%08x", (int)baseoffset + (int)rel.r_offset));
+                                Memory.log.warn("Untested relocation type " + R_TYPE + " at " + String.format("%08x", data_addr));
 
-                                if (external)
-                                {
-                                    A = rel16;
+                                A = rel16;
 
-                                    //result = sign-extend(A) + S + GP;
-                                    result = (((A & 0x00008000) != 0) ? A & 0xFFFF0000 : A) + S + GP;
+                                //result = sign-extend(A) + S + GP;
+                                result = (((A & 0x00008000) != 0) ? A | 0xFFFF0000 : A) + S + GP;
 
-                                    // verify
-                                    if ((result & ~0x0000FFFF) != 0)
-                                        throw new IOException("Relocation overflow (R_MIPS_GPREL16)");
-
-                                    data &= ~0x0000FFFF;
-                                    data |= (int)(result & 0x0000FFFF);
+                                // verify
+                                if ((result & ~0x0000FFFF) != 0) {
+                                    //throw new IOException("Relocation overflow (R_MIPS_GPREL16)");
+                                    Memory.log.warn("Relocation overflow (R_MIPS_GPREL16)");
                                 }
-                                else if (local)
-                                {
-                                    A = rel16;
 
-                                    //result = sign-extend(A) + S + GP;
-                                    result = (((A & 0x00008000) != 0) ? A & 0xFFFF0000 : A) + S + GP0 - GP;
+                                data &= ~0x0000FFFF;
+                                data |= (int)(result & 0x0000FFFF);
 
-                                    // verify
-                                    if ((result & ~0x0000FFFF) != 0)
-                                        throw new IOException("Relocation overflow (R_MIPS_GPREL16)");
-
-                                    data &= ~0x0000FFFF;
-                                    data |= (int)(result & 0x0000FFFF);
-                                }
                                 break;
-                            */
+                            /* */
 
                             default:
-                            	Memory.log.warn("Unhandled relocation type " + R_TYPE + " at " + String.format("%08x", (int) romManager.getBaseoffset() + (int) rel.getR_offset()));
+                            	Memory.log.warn("Unhandled relocation type " + R_TYPE + " at " + String.format("%08x", data_addr));
                                 break;
                         }
 
                         //System.out.println("Relocation type " + R_TYPE + " at " + String.format("%08x", (int)baseoffset + (int)rel.r_offset));
-                        Memory.getInstance().write32((int) romManager.getBaseoffset() + (int) rel.getR_offset(), data);
+                        Memory.getInstance().write32(data_addr, data);
                     }
                 }
             }
         }
+
         int numberoffailedNIDS=0;
         int numberofmappedNIDS=0;
         // Imports
@@ -424,7 +420,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
         // Gets set in ThreadMan cpu.gpr[31] = 0x08000004; //ra, should this be 0?
         // All other registers are uninitialised/random values
 
-        jpcsp.HLE.modules.HLEModuleManager.get_instance().Initialise();
+        jpcsp.HLE.modules.HLEModuleManager.getInstance().Initialise();
         jpcsp.HLE.pspSysMem.get_instance().Initialise(romManager.getLoadAddressLow(), romManager.getLoadAddressHigh() - romManager.getLoadAddressLow());
         jpcsp.HLE.ThreadMan.get_instance().Initialise(cpu.pc, romManager.getPSPModuleInfo().getM_attr(), pspfilename);
         jpcsp.HLE.psputils.get_instance().Initialise();
@@ -467,7 +463,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                 jpcsp.HLE.pspge.get_instance().step();
                 jpcsp.HLE.ThreadMan.get_instance().step();
                 jpcsp.HLE.pspdisplay.get_instance().step();
-                jpcsp.HLE.modules.HLEModuleManager.get_instance().step();
+                jpcsp.HLE.modules.HLEModuleManager.getInstance().step();
                 controller.checkControllerState();
 
                 if (debugger != null)
