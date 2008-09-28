@@ -14,11 +14,10 @@ public class CpuState extends VfpuState {
 
     @Override
     public void reset() {
-        super.reset();
+        resetAll();
     }
 
     public CpuState() {
-        reset();
     }
 
     public void copy(CpuState that) {

@@ -4,6 +4,8 @@
  */
 package jpcsp.Allegrex;
 
+import java.util.Arrays;
+
 /**
  * Floating Point Unit, handles floating point operations, including BCU and LSU
  *
@@ -46,26 +48,32 @@ public class FpuState extends BcuState {
 
     @Override
     public void reset() {
-        super.reset();
+        Arrays.fill(fpr, 0.0f);
+        fcr31.reset();
+    }
+
+    @Override
+    public void resetAll() {
+        super.resetAll();
+        Arrays.fill(fpr, 0.0f);
+        fcr31.reset();
+    }          
+    
+    public FpuState() {
         fpr = new float[32];
         fcr31 = new Fcr31();
     }
 
-    public FpuState() {
-        reset();
-    }
-
     public void copy(FpuState that) {
         super.copy(that);
-        fpr = new float[32];
-        for (int reg = 0; reg < 32; ++reg) {
-            fpr[reg] = that.fpr[reg];
-        }
+        fpr = that.fpr.clone();
         fcr31 = new Fcr31(that.fcr31);
     }
 
     public FpuState(FpuState that) {
-        copy(that);
+        super(that);
+        fpr = that.fpr.clone();
+        fcr31 = new Fcr31(that.fcr31);
     }
     
     public void doMFC1(int rt, int c1dr) {

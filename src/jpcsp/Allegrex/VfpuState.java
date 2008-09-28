@@ -4,6 +4,8 @@
  */
 package jpcsp.Allegrex;
 
+import java.util.Arrays;
+
 /**
  * Vectorial Floating Point Unit, handles scalar, vector and matrix operations.
  *
@@ -24,6 +26,14 @@ public class VfpuState extends FpuState {
             public boolean enabled;
 
             public void reset() {
+                Arrays.fill(swz, 0);
+                Arrays.fill(abs, false);
+                Arrays.fill(cst, false);
+                Arrays.fill(neg, false);
+                enabled = false;
+            }
+
+            public PfxSrc() {
                 swz = new int[4];
                 abs = new boolean[4];
                 cst = new boolean[4];
@@ -31,22 +41,16 @@ public class VfpuState extends FpuState {
                 enabled = false;
             }
 
-            public PfxSrc() {
-                reset();
+            public void copy(PfxSrc that) {
+                swz = that.swz.clone();
+                abs = that.abs.clone();
+                cst = that.cst.clone();
+                neg = that.neg.clone();
+                enabled = that.enabled;
             }
-
+            
             public PfxSrc(PfxSrc that) {
-                swz = new int[4];
-                abs = new boolean[4];
-                cst = new boolean[4];
-                neg = new boolean[4];
-                for (int i = 0; i < 4; ++i) {
-                    swz[i] = that.swz[i];
-                    abs[i] = that.abs[i];
-                    cst[i] = that.cst[i];
-                    neg[i] = that.neg[i];
-                    enabled = that.enabled;
-                }
+                copy(that);
             }
         }
         public PfxSrc pfxs;
@@ -59,77 +63,97 @@ public class VfpuState extends FpuState {
             public boolean enabled;
 
             public void reset() {
+                Arrays.fill(sat, 0);
+                Arrays.fill(msk, false);
+                enabled = false;
+            }
+
+            public PfxDst() {
                 sat = new int[4];
                 msk = new boolean[4];
                 enabled = false;
             }
 
-            public PfxDst() {
-                reset();
+            public void copy(PfxDst that) {
+                sat = that.sat.clone();
+                msk = that.msk.clone();
+                enabled = that.enabled;
             }
 
             public PfxDst(PfxDst that) {
-                sat = new int[4];
-                msk = new boolean[4];
-                for (int i = 0; i < 4; ++i) {
-                    sat[i] = that.sat[i];
-                    msk[i] = that.msk[i];
-                    enabled = that.enabled;
-                }
+                copy(that);
             }
         }
         public PfxDst pfxd;
         public boolean[] /* 131 */ cc;
 
         public void reset() {
+            pfxs.reset();
+            pfxt.reset();
+            pfxd.reset();
+            Arrays.fill(cc, false);
+        }
+
+        public Vcr() {
             pfxs = new PfxSrc();
             pfxt = new PfxSrc();
             pfxd = new PfxDst();
             cc = new boolean[6];
         }
 
-        public Vcr() {
-            reset();
+        public void copy(Vcr that) {
+            pfxs.copy(that.pfxs);
+            pfxt.copy(that.pfxt);
+            pfxd.copy(that.pfxd);
+            cc = that.cc.clone();
         }
-
+        
         public Vcr(Vcr that) {
             pfxs = new PfxSrc(that.pfxs);
             pfxt = new PfxSrc(that.pfxt);
             pfxd = new PfxDst(that.pfxd);
-            cc = new boolean[6];
-            for (int i = 0; i < 6; ++i) {
-                cc[i] = that.cc[i];
-            }
+            cc = that.cc.clone();
         }
     }
     public Vcr vcr;
 
+    private void resetFpr() {
+        for (float[][] m : vpr) {
+            for (float [] v : m) {
+                Arrays.fill(v, 0.0f);
+            }
+        }
+    }
+    
+    
     @Override
     public void reset() {
-        super.reset();
+        resetFpr();
+        vcr.reset();
+    }
+    
+    @Override
+    public void resetAll() {
+        super.resetAll();
+        resetFpr();
+        vcr.reset();
+    }       
+        
+    public VfpuState() {
         vpr = new float[8][4][4]; // [matrix][column][row]
         vcr = new Vcr();
     }
 
-    public VfpuState() {
-        reset();
-    }
-
     public void copy(VfpuState that) {
         super.copy(that);
-        vpr = new float[8][4][4]; // [matrix][column][row]
-        for (int m = 0; m < 8; ++m) {
-            for (int c = 0; c < 4; ++c) {
-                for (int r = 0; r < 4; ++r) {
-                    vpr[m][c][r] = that.vpr[m][c][r];
-                }
-            }
-        }
+        vpr = that.vpr.clone();
         vcr = new Vcr(that.vcr);
     }
 
     public VfpuState(VfpuState that) {
-        copy(that);
+        super(that);
+        vpr = that.vpr.clone();
+        vcr = new Vcr(that.vcr);
     }
 
     // VFPU stuff

@@ -6,6 +6,7 @@
 package jpcsp.Allegrex;
 
 import jpcsp.Emulator;
+import java.util.Arrays;
 
 /**
  * General Purpose Registers, handles integer operations like ALU, shifter, etc.
@@ -16,22 +17,23 @@ public class GprState {
     public int[] gpr;
 
     public void reset() {
-        gpr = new int[32];
+        Arrays.fill(gpr, 0);
     }
 
+    public void resetAll() {
+        Arrays.fill(gpr, 0);
+    }
+    
     public GprState() {
-        reset();
+        gpr = new int[32];
     }
 
     public void copy(GprState that) {
-        gpr = new int[32];
-        for (int reg = 0; reg < 32; ++reg) {
-            gpr[reg] = that.gpr[reg];
-        }
+        gpr = that.gpr.clone();
     }
 
     public GprState(GprState that) {
-        this.copy(that);
+        gpr = that.gpr.clone();
     }
     
     public void doUNK(String reason) {

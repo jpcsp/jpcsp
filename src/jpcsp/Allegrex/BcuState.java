@@ -19,13 +19,20 @@ public class BcuState extends LsuState {
 
     @Override
     public void reset() {
-        super.reset();
         pc = 0;
         npc = 0;
     }
 
+    @Override
+    public void resetAll() {
+        super.resetAll();
+        pc = 0;
+        npc = 0;
+    }       
+    
     public BcuState() {
-        reset();
+        pc = 0;
+        npc = 0;
     }
 
     public void copy(BcuState that) {
@@ -35,7 +42,9 @@ public class BcuState extends LsuState {
     }
 
     public BcuState(BcuState that) {
-        this.copy(that);
+        super(that);
+        pc = that.pc;
+        npc = that.npc;
     }
     
     public static int branchTarget(int npc, int simm16) {
