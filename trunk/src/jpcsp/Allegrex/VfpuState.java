@@ -96,6 +96,7 @@ public class VfpuState extends FpuState {
             pfxs = new PfxSrc(that.pfxs);
             pfxt = new PfxSrc(that.pfxt);
             pfxd = new PfxDst(that.pfxd);
+            cc = new boolean[6];
             for (int i = 0; i < 6; ++i) {
                 cc[i] = that.cc[i];
             }
