@@ -2,23 +2,24 @@
 <!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
 
 <log4j:configuration>
-        
+
   <appender name="JpcspAppender" class="jpcsp.log.TextPaneAppender">
-  	<layout class="org.apache.log4j.PatternLayout"> 
-      <param name="ConversionPattern" value="%r [%t] %-5p %c %x - %m%n"/> 
+  	<layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="%r [%t] %-5p %c %x - %m%n"/>
     </layout>
   </appender>
-  
-  <logger name="cpu" />  
+
+  <logger name="cpu" />
   <logger name="hle" />
   <logger name="memory" />
-  
+  <logger name="ge" />
+
   <logger name="misc">
   	<level value="info" />
   </logger>
 
   <root>
-    <level value ="info" />
+    <level value ="debug" />
     <appender-ref ref="JpcspAppender"/>
   </root>
 
