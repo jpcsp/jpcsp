@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp;
 
-//import static jpcsp.AllegrexInstructions;
 import jpcsp.Allegrex.*;
 import java.nio.ByteBuffer;
 
@@ -24,7 +23,6 @@ import org.apache.log4j.Logger;
 
 public class Processor {
 
-// "New-Style" Processor
     public CpuState cpu = new CpuState();
 
     public static final jpcsp.Memory memory = jpcsp.Memory.getInstance();

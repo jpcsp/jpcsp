@@ -50,7 +50,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
     private Emulator emu;
     private DefaultListModel listmodel = new DefaultListModel();
     private int opcode_address; // store the address of the opcode used for offsetdecode
-    private DisasmOpcodes disOp = new DisasmOpcodes();
     private ArrayList<Integer> breakpoints = new ArrayList<Integer>();
     private MemoryViewer memview;
 
@@ -773,7 +772,7 @@ public void step() {
 }
 
 private void PauseDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PauseDebuggerActionPerformed
-    emu.PauseEmu();
+    Emulator.PauseEmu();
 
     DebuggerPC = 0;
     RefreshDebugger();
