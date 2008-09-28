@@ -104,9 +104,9 @@ public class ThreadMan {
             mem.write8((current_thread.stack_addr - alignlen) + i, (byte)pspfilename.charAt(i));
         for (int i = len; i < alignlen; i++)
             mem.write8((current_thread.stack_addr - alignlen) + i, (byte)0);
-        current_thread.gpr[29] -= alignlen; // Adjust sp for size of args
-        current_thread.gpr[4] = len + 1; // a0 = len + string terminator
-        current_thread.gpr[5] = current_thread.gpr[29]; // a1 = pointer to arg data in stack
+        current_thread.cpuContext.gpr[29] -= alignlen; // Adjust sp for size of args
+        current_thread.cpuContext.gpr[4] = len + 1; // a0 = len + string terminator
+        current_thread.cpuContext.gpr[5] = current_thread.cpuContext.gpr[29]; // a1 = pointer to arg data in stack
         current_thread.status = PspThreadStatus.PSP_THREAD_READY;
 
         // Switch in the thread
@@ -349,7 +349,7 @@ public class ThreadMan {
         SceKernelThreadInfo thread = new SceKernelThreadInfo(name, entry_addr, initPriority, stackSize, attr);
 
         Modules.log.debug("sceKernelCreateThread SceUID=" + Integer.toHexString(thread.uid)
-            + " name:'" + thread.name + "' PC=" + Integer.toHexString(thread.pcreg)
+            + " name:'" + thread.name + "' PC=" + Integer.toHexString(thread.cpuContext.pc)
             + " attr:" + Integer.toHexString(attr));
 
         // Inherit kernel mode if user mode bit is not set
@@ -419,10 +419,10 @@ public class ThreadMan {
                 mem.write8((thread.stack_addr - alignlen) + i, (byte)mem.read8(data_addr + i));
             for (int i = len; i < alignlen; i++)
                 mem.write8((thread.stack_addr - alignlen) + i, (byte)0);
-            thread.gpr[29] -= alignlen; // Adjust sp for size of user data
+            thread.cpuContext.gpr[29] -= alignlen; // Adjust sp for size of user data
             // TODO test on real psp if len is not 32-bit aligned will the psp align it?
-            thread.gpr[4] = len; // a0 = len
-            thread.gpr[5] = thread.gpr[29]; // a1 = pointer to copy of data at data_addr
+            thread.cpuContext.gpr[4] = len; // a0 = len
+            thread.cpuContext.gpr[5] = thread.cpuContext.gpr[29]; // a1 = pointer to copy of data at data_addr
             thread.status = PspThreadStatus.PSP_THREAD_READY;
 
             Emulator.getProcessor().cpu.gpr[2] = 0;
@@ -738,11 +738,7 @@ public class ThreadMan {
 
         // internal variables
         private int uid;
-        private int pcreg, npcreg;
-        private long hilo;
-        private int[] gpr;
-        private float[] fpr;
-        private float[] vpr;
+        private CpuState cpuContext;
         private long delaysteps;
         private boolean do_delete;
         private boolean do_callbacks; // in this implementation, only valid for PSP_THREAD_WAITING and PSP_THREAD_SUSPEND
@@ -781,20 +777,19 @@ public class ThreadMan {
             uid = SceUIDMan.get_instance().getNewUid("ThreadMan-thread");
             threadlist.put(uid, this);
 
-            gpr = new int[32];
-            fpr = new float[32];
-            vpr = new float[128];
-
             // Inherit context
-            saveContext();
+            //cpuContext = new CpuState();
+            //saveContext();
+            cpuContext = new CpuState(Emulator.getProcessor().cpu);
+
             // Thread specific registers
-            pcreg = entry_addr;
-            npcreg = entry_addr; // + 4;
-            gpr[29] = stack_addr; //sp
-            gpr[26] = gpr[29]; // k0 mirrors sp?
+            cpuContext.pc = entry_addr;
+            cpuContext.npc = entry_addr; // + 4;
+            cpuContext.gpr[29] = stack_addr; //sp
+            cpuContext.gpr[26] = cpuContext.gpr[29]; // k0 mirrors sp?
 
             // We'll hook "jr ra" where ra = 0 as the thread exiting
-            gpr[31] = 0; // ra
+            cpuContext.gpr[31] = 0; // ra
 
             delaysteps = 0;
             do_delete = false;
@@ -803,41 +798,23 @@ public class ThreadMan {
         }
 
         public void saveContext() {
-            // New-Style
-            // context = Emulator.getProcessor().cpu;
-            // return;
+            cpuContext = Emulator.getProcessor().cpu;
+            //cpuContext.copy(Emulator.getProcessor().cpu);
 
-            CpuState cpu = Emulator.getProcessor().cpu;
-            pcreg = cpu.pc;
-            npcreg = cpu.npc;
-            hilo = cpu.hilo;
-            for (int i = 0; i < 32; i++) {
-                gpr[i] = cpu.gpr[i];
-            }
-
-            // TODO check attr for PSP_THREAD_ATTR_VFPU and save vfpu registers
+            // ignore PSP_THREAD_ATTR_VFPU flag
         }
 
         public void restoreContext() {
-            CpuState cpu = Emulator.getProcessor().cpu;
-            // New-Style
-            // Emulator.getProcessor().cpu = context;
-            // return;
-
-            cpu.pc = pcreg;
-            cpu.npc = npcreg;
-            cpu.hilo = hilo;
-            for (int i = 0; i < 32; i++) {
-                cpu.gpr[i] = gpr[i];
-            }
-
             // Assuming context switching only happens on syscall,
             // we always execute npc after a syscall,
             // so we can set pc = npc regardless of cop0.status.bd.
             //if (!cpu.cop0_status_bd)
-                cpu.pc = cpu.npc;
+                cpuContext.pc = cpuContext.npc;
 
-            // TODO check attr for PSP_THREAD_ATTR_VFPU and restore vfpu registers
+            Emulator.getProcessor().cpu = cpuContext;
+            //Emulator.getProcessor().cpu.copy(cpuContext);
+
+            // ignore PSP_THREAD_ATTR_VFPU flag
         }
 
         /** For use in the scheduler */
@@ -846,6 +823,7 @@ public class ThreadMan {
             return o1.currentPriority - o2.currentPriority;
         }
     }
+
     public void ThreadMan_sceKernelCreateSema(int name_addr, int attr, int initVal, int maxVal, int option)
     {
         String name = readStringZ(Memory.getInstance().mainmemory,
