@@ -22,7 +22,9 @@ import jpcsp.Emulator;
 import jpcsp.GeneralJpcspException;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.Allegrex.CpuState;
-
+import jpcsp.Memory;
+import jpcsp.MemoryMap;
+import static jpcsp.util.Utilities.*;
 public class SyscallHandler {
 
     // Change this to return the number of cycles used?
@@ -353,6 +355,12 @@ public class SyscallHandler {
 		// sceKernelIcacheProbe(0x20cd),
 		// sceKernelIcacheReadTag(0x20ce),
 		// sceKernelLoadModule(0x20cf),
+                case 0x20cf:
+                     String name = readStringZ(Memory.getInstance().mainmemory,
+                     (gpr[4] & 0x3fffffff) - MemoryMap.START_RAM);
+                     System.out.println("LoadModule " + name);
+                     gpr[2]=1;
+                    break;
 		// sceKernelLoadModuleByID(0x20d0),
 		// sceKernelLoadModuleMs(0x20d1),
 		// sceKernelLoadModuleBufferUsbWlan(0x20d2),
@@ -439,7 +447,7 @@ public class SyscallHandler {
                     pspge.get_instance().sceGeUnsetCallback(gpr[4]);
                     break;
                 */
-                case 0x2100:
+               /* case 0x2100:
                     psprtc.get_instance().sceRtcGetTickResolution();
                     break;
                 case 0x2101:
@@ -450,7 +458,7 @@ public class SyscallHandler {
 		// sceRtcGetCurrentClock(0x2104),
                 case 0x2105:
                     psprtc.get_instance().sceRtcGetCurrentClockLocalTime(gpr[4]);
-                    break;
+                    break;*/
 		// sceRtcConvertUtcToLocalTime(0x2106),
 		// sceRtcConvertLocalTimeToUTC(0x2107),
 		// sceRtcIsLeapYear(0x2108),
