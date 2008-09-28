@@ -29,7 +29,7 @@ import jpcsp.NIDMapper;
 /**
  * For backwards compatibility with the current jpcsp code, the old
  * SyscallHandler can still be used. When an unhandled syscall is found
- * HLEModuleManager.get_instance().handleSyscall(code) should be called.
+ * HLEModuleManager.getInstance().handleSyscall(code) should be called.
  * This function will then return true if the syscall is handled, in which case
  * no error message should be printed by SyscallHandler.java.
  *
@@ -57,7 +57,7 @@ public class HLEModuleManager {
         Modules.sceUtilityModule,
     };
 
-    public static HLEModuleManager get_instance() {
+    public static HLEModuleManager getInstance() {
         if (instance == null) {
             instance = new HLEModuleManager();
         }

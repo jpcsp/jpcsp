@@ -755,7 +755,7 @@ public class SyscallHandler {
                 default:
                 {
                     // Try and handle as an HLE module export
-                    boolean handled = HLEModuleManager.get_instance().handleSyscall(code);
+                    boolean handled = HLEModuleManager.getInstance().handleSyscall(code);
                     if (!handled) {
                         CpuState cpu = Emulator.getProcessor().cpu;
                         // At least set a decent return value

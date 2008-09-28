@@ -29,10 +29,6 @@ public class Elf32 {
     private List<Elf32ProgramHeader> programheaders;
     private List<Elf32SectionHeader> sectionheaders;
 
-    public List<Elf32SectionHeader> getListSectionHeader(){
-        return sectionheaders;
-    }
-
     public Elf32(ByteBuffer f) throws IOException {
         header = new Elf32Header(f);
         ElfInfo = header.toString();
@@ -52,8 +48,28 @@ public class Elf32 {
         this.programheaders = programheaders;
     }
 
+    public List<Elf32ProgramHeader> getListProgramHeader() {
+        return programheaders;
+    }
+
+    public Elf32ProgramHeader getProgramHeader(int index) {
+        if (programheaders != null)
+            return programheaders.get(index);
+        return null;
+    }
+
     public void setListSectionHeader(List<Elf32SectionHeader> sectionheaders) {
         this.sectionheaders = sectionheaders;
+    }
+
+    public List<Elf32SectionHeader> getListSectionHeader() {
+        return sectionheaders;
+    }
+
+    public Elf32SectionHeader getSectionHeader(int index) {
+        if (sectionheaders != null)
+            return sectionheaders.get(index);
+        return null;
     }
 
     public String getElfInfo() {

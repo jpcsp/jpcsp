@@ -29,6 +29,10 @@ public class Modules {
     public static Logger log = Logger.getLogger("hle");
 
     public void step() {
+        //jpcsp.HLE.pspge.get_instance().step();
+        //jpcsp.HLE.ThreadMan.get_instance().step();
+        //jpcsp.HLE.pspdisplay.get_instance().step();
+        //HLEModuleManager.getInstance().step();
     }
 
     public void load(ByteBuffer buffer) {

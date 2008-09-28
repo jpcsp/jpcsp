@@ -350,9 +350,19 @@ public class FileManager {
                         moduleinfo.read(f);
                         //System.out.println(Long.toHexString(moduleinfo.m_gp));
 
-                        Emulator.log.debug(("Found ModuleInfo name:'" + moduleinfo.getM_namez()
+                        Emulator.log.debug("Found ModuleInfo name:'" + moduleinfo.getM_namez()
                             + "' version:" + String.format("%04x", moduleinfo.getM_version())
-                            + " attr:" + String.format("%08x", moduleinfo.getM_attr())));
+                            + " attr:" + String.format("%08x", moduleinfo.getM_attr()));
+
+                        /* alternate method of locating .rodata.sceModuleInfo, only works on PRX's
+                        if (elf.getHeader().isPRXDetected()) {
+                            int diff = (int)((elf.getProgramHeader(0).getP_paddr() & 0x7fffffffL) - shdr.getSh_offset());
+                            Emulator.log.debug("SH#ModuleInfo sh_addr " + String.format("%08x", (int)shdr.getSh_addr()));
+                            Emulator.log.debug("SH#ModuleInfo sh_offset " + String.format("%08x", (int)shdr.getSh_offset()));
+                            Emulator.log.debug("PH#0 p_addr " + String.format("%08x", (int)elf.getProgramHeader(0).getP_paddr()));
+                            Emulator.log.debug("DIFF " + String.format("%08x", diff));
+                        }
+                        */
 
                         if ((moduleinfo.getM_attr() & 0x1000) != 0) {
                             Emulator.log.debug("Kernel mode module detected");
