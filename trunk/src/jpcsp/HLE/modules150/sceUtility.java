@@ -21,6 +21,7 @@ package jpcsp.HLE.modules150;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.Modules;
 
 import jpcsp.Memory;
 import jpcsp.Processor;
@@ -124,6 +125,18 @@ public class sceUtility implements HLEModule {
     public static final int PSP_SYSTEMPARAM_ID_INT_DAYLIGHTSAVINGS = 7;
     public static final int PSP_SYSTEMPARAM_ID_INT_LANGUAGE = 8;
     public static final int PSP_SYSTEMPARAM_ID_INT_UNKNOWN = 9;
+
+    public static final int PSP_SYSTEMPARAM_LANGUAGE_ENGLISH = 1;
+    public static final int PSP_SYSTEMPARAM_LANGUAGE_FRENCH = 2;
+    public static final int PSP_SYSTEMPARAM_LANGUAGE_SPANISH = 3;
+    public static final int PSP_SYSTEMPARAM_LANGUAGE_GERMAN = 4;
+    public static final int PSP_SYSTEMPARAM_LANGUAGE_ITALIAN = 5;
+    public static final int PSP_SYSTEMPARAM_LANGUAGE_DUTCH = 6;
+    public static final int PSP_SYSTEMPARAM_LANGUAGE_PORTUGUESE = 7;
+    public static final int PSP_SYSTEMPARAM_LANGUAGE_RUSSIAN = 8;
+    public static final int PSP_SYSTEMPARAM_LANGUAGE_KOREAN = 9;
+    public static final int PSP_SYSTEMPARAM_LANGUAGE_CHINESE_TRADITIONAL = 10;
+    public static final int PSP_SYSTEMPARAM_LANGUAGE_CHINESE_SIMPLIFIED = 11;
 
     public static final int PSP_NETPARAM_ERROR_BAD_NETCONF = 0x80110601;
     public static final int PSP_NETPARAM_ERROR_BAD_PARAM = 0x80110604;
@@ -647,10 +660,10 @@ public class sceUtility implements HLEModule {
         int value_addr = cpu.gpr[5];
 
         if (!mem.isAddressGood(value_addr)) {
-            System.out.println("sceUtilityGetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ") bad address");
+            Modules.log.warn("sceUtilityGetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ") bad address");
             cpu.gpr[2] = -1;
         } else {
-            System.out.println("sceUtilityGetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ")");
+            Modules.log.debug("PARTIAL:sceUtilityGetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ")");
 
             cpu.gpr[2] = 0;
             switch(id) {
@@ -658,8 +671,14 @@ public class sceUtility implements HLEModule {
                     // TODO probably minutes west or east of UTC, also need to check data size, int?
                     mem.write32(value_addr, 0);
                     break;
+
+                case PSP_SYSTEMPARAM_ID_INT_LANGUAGE:
+                    // TODO add an option to SettingsGUI to allow users to set the prefered language
+                    mem.write32(value_addr, PSP_SYSTEMPARAM_LANGUAGE_ENGLISH);
+                    break;
+
                 default:
-                    System.out.println("UNIMPLEMENTED:sceUtilityGetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ") unhandled id");
+                    Modules.log.warn("UNIMPLEMENTED:sceUtilityGetSystemParamInt(id=" + id + ",value=0x" + Integer.toHexString(value_addr) + ") unhandled id");
                     cpu.gpr[2] = -1;
                     break;
             }
@@ -689,7 +708,7 @@ public class sceUtility implements HLEModule {
 
 		int id = cpu.gpr[4];
 
-		System.out.println("UNIMPLEMENTED:sceUtilityCheckNetParam(id=" + id + ")");
+		Modules.log.warn("UNIMPLEMENTED:sceUtilityCheckNetParam(id=" + id + ")");
 
 		cpu.gpr[2] = PSP_NETPARAM_ERROR_BAD_PARAM;
 	}
