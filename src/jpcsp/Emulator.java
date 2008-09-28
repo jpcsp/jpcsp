@@ -18,6 +18,7 @@ package jpcsp;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Iterator;
 import java.util.List;
 import java.util.LinkedList;
 
@@ -141,6 +142,9 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
 
     private void initRamBy(Elf32 elf) throws IOException {
         // Relocation
+        final boolean logRelocations = false;
+        //boolean logRelocations = true;
+
         if (elf.getHeader().requiresRelocation()) {
             for (Elf32SectionHeader shdr : elf.getListSectionHeader()) {
                 if (shdr.getSh_type() == ShType.PRXREL.getValue() /*|| // 0x700000A0
@@ -154,7 +158,8 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
 
                     int AHL = 0; // (AHI << 16) | (ALO & 0xFFFF)
 
-                    int HI_addr = 0; // We'll use this to relocate R_MIPS_HI16 when we get a R_MIPS_LO16
+                    //int HI_addr = 0; // We'll use this to relocate R_MIPS_HI16 when we get a R_MIPS_LO16
+                    List<Integer> deferredHi16 = new LinkedList<Integer>();
 
                     for (int i = 0; i < RelCount; i++) {
                         rel.read(romManager.getActualFile());
@@ -190,7 +195,6 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                         int S = (int) romManager.getBaseoffset() + phBaseOffset;
                         int GP = (int) romManager.getBaseoffset() + (int) romManager.getPSPModuleInfo().getM_gp(); // final gp value, computed correctly? 31/07/08 only used in R_MIPS_GPREL16 which is untested (fiveofhearts)
 
-                        final boolean logRelocations = false;
                         switch (R_TYPE) {
                             case 0: //R_MIPS_NONE
                                 // Don't do anything
@@ -200,7 +204,8 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                             case 5: //R_MIPS_HI16
                                 A = hi16;
                                 AHL = A << 16;
-                                HI_addr = data_addr;
+                                //HI_addr = data_addr;
+                                deferredHi16.add(data_addr);
                                 if (logRelocations) Memory.log.debug("R_MIPS_HI16 addr=" + String.format("%08x", data_addr));
                                 break;
 
@@ -215,16 +220,22 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                                 data |= result & 0x0000FFFF; // truncate
 
                                 // Process deferred R_MIPS_HI16
-                                int data2 = Memory.getInstance().read32(HI_addr);
-                                data2 &= ~0x0000FFFF;
-                                data2 |= (result >> 16) & 0x0000FFFF; // truncate
+                                for (Iterator<Integer> it = deferredHi16.iterator(); it.hasNext();) {
+                                    int data_addr2 = it.next();
+                                    int data2 = Memory.getInstance().read32(data_addr2);
+                                    data2 &= ~0x0000FFFF;
+                                    data2 |= (result >> 16) & 0x0000FFFF; // truncate
 
-                                Memory.getInstance().write32(HI_addr, data2);
+                                    Memory.getInstance().write32(data_addr2, data2);
+                                    if (logRelocations)  {
+                                        Memory.log.debug("R_MIPS_HILO16 addr=" + String.format("%08x", data_addr2)
+                                            + " data2 before=" + Integer.toHexString(Memory.getInstance().read32(data_addr2))
+                                            + " after=" + Integer.toHexString(data2));
+                                    }
+                                    it.remove();
+                                }
 
                                 if (logRelocations)  {
-                                    Memory.log.debug("R_MIPS_LO16 addr=" + String.format("%08x", HI_addr) + " data2 before=" + Integer.toHexString(Memory.getInstance().read32(HI_addr))
-                                        + " after=" + Integer.toHexString(data2));
-
                                     Memory.log.debug("R_MIPS_LO16 addr=" + String.format("%08x", data_addr) + " data before=" + Integer.toHexString(word32)
                                         + " after=" + Integer.toHexString(data));
                                 }
@@ -292,12 +303,15 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
 
         int numberoffailedNIDS=0;
         int numberofmappedNIDS=0;
+        boolean foundStubSection = false;
+
         // Imports
         for (Elf32SectionHeader shdr : elf.getListSectionHeader()) {
             if (shdr.getSh_namez().equals(".lib.stub")) {
                 Memory mem = Memory.getInstance();
                 int stubHeadersAddress = (int)(romManager.getBaseoffset() + shdr.getSh_addr());
                 int stubHeadersCount = (int)(shdr.getSh_size() / Elf32StubHeader.sizeof());
+                foundStubSection = true;
 
                 Elf32StubHeader stubHeader;
                 List<DeferredStub> deferred = new LinkedList<DeferredStub>();
@@ -361,6 +375,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
 
                 romManager.addDeferredImports(deferred);
             }
+
             //the following are used for the instruction counter panel
             if(shdr.getSh_namez().equals(".text"))
             {
@@ -399,8 +414,10 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
             }
             System.out.println(jpcsp.Allegrex.Instructions.ADDIU.getCount());*/
         }
+
+        if (!foundStubSection) Modules.log.warn("Failed to find .lib.stub section");
         Modules.log.info(numberofmappedNIDS + " NIDS mapped");
-        if(numberoffailedNIDS>0) Modules.log.warn("Total Failed to map NIDS = " + numberoffailedNIDS);
+        if (numberoffailedNIDS > 0) Modules.log.warn("Total Failed to map NIDS = " + numberoffailedNIDS);
     }
 
     private void initCpuBy(Elf32 elf) {

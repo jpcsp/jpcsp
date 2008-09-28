@@ -80,6 +80,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     private int bufferwidthFb;
     private int pixelformatFb;
     private int sync;
+    private boolean setGeBufCalledAtLeastOnce;
 
     // additional variables
     private int bottomaddrFb;
@@ -143,6 +144,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         pixelformatGe = pixelformatFb;
         bottomaddrGe  = bottomaddrFb;
         pixelsGe = getPixels(topaddrGe, bottomaddrGe);
+        setGeBufCalledAtLeastOnce = false;
     }
 
     public void step() {
@@ -188,13 +190,21 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             pixelformat < 0 || pixelformat > 3 ||
             sync < 0 || sync > 1)
         {
-            System.out.println("hleDisplaySetGeBuf bad params ("
+            String msg = "hleDisplaySetGeBuf bad params ("
                 + Integer.toHexString(topaddr)
                 + "," + bufferwidth
-                + "," + pixelformat + ")");
+                + "," + pixelformat + ")";
+
+            // First time is usually initializing GE, so we can ignore it
+            if (setGeBufCalledAtLeastOnce)
+                Modules.log.warn(msg);
+            else
+                Modules.log.debug(msg);
+
+            setGeBufCalledAtLeastOnce = true;
             return;
         } else {
-//            System.out.println("hleDisplaySetGeBuf ok ("
+//            Modules.log.debug("hleDisplaySetGeBuf ok ("
 //                + Integer.toHexString(topaddr)
 //                + "," + bufferwidth
 //                + "," + pixelformat + ")");
@@ -208,6 +218,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                 getPixelFormatBytes(pixelformatGe);
             pixelsGe = getPixels(topaddrGe, bottomaddrGe);
         }
+
+        setGeBufCalledAtLeastOnce = true;
     }
 
     private static int getPixelFormatBytes(int pixelformat) {
@@ -338,7 +350,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 //            int xstride = 512;
 //            int y = 6;
 //            int address = (x + y * xstride) * getPixelFormatBytes(pixelformatFb);
-//            System.out.println(String.format("%08x", temp.getInt(address)));
+//            Modules.log.debug(String.format("%08x", temp.getInt(address)));
 //        }
 
         // Post effects here, for testing purpose :)
@@ -382,7 +394,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             }
             gl.glGenTextures(1, textures, 0);
             texFb = textures[0];
-            //System.out.println("texFb = " + texFb);
+            //Modules.log.debug("texFb = " + texFb);
 
             gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
             gl.glTexImage2D(
@@ -484,7 +496,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     // HLE functions
 
     public void sceDisplaySetMode(int mode, int width, int height) {
-        System.out.println(
+        Modules.log.debug(
             "sceDisplaySetMode(mode=" + mode +
             ",width=" + width +
             ",height=" + height + ")");

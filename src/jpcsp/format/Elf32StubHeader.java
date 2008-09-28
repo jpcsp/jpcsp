@@ -29,7 +29,7 @@ public class Elf32StubHeader
     private long s_modulename;
     private int s_version;
     private int s_flags;
-    private int s_size;
+    private int s_size; // var count in upper 8bits?
     private int s_imports;
     private long s_nid;
     private long s_text;
