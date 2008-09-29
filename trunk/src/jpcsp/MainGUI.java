@@ -398,7 +398,7 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
 private String pspifyFilename(String pcfilename) {
     // Files on memstick
     if (pcfilename.startsWith("ms0"))
-        return "ms0:" + pcfilename.substring(3); //.replaceAll("\\\\", "/");
+        return "ms0:" + pcfilename.substring(3).replaceAll("\\\\", "/");
 
     // Files anywhere on user's hard drive, may not work
     // use host0:/ ?
