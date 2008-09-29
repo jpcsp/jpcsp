@@ -60,6 +60,13 @@ public class pspSysMem {
     public static final int PSP_FIRMWARE_270 = 0x02070010;
     public static final int PSP_FIRMWARE_271 = 0x02070110;
 
+    public final static int PSP_ERROR_ILLEGAL_PARTITION_ID                 = 0x800200d6;
+    public final static int PSP_ERROR_PARTITION_IN_USE                     = 0x800200d7;
+    public final static int PSP_ERROR_ILLEGAL_MEMORY_BLOCK_ALLOCATION_TYPE = 0x800200d8;
+    public final static int PSP_ERROR_FAILED_TO_ALLOCATE_MEMORY_BLOCK      = 0x800200d9;
+    public final static int PSP_ERROR_ILLEGAL_CHUNK_ID                     = 0x800200de; // may not be for pspsysmem...
+
+
     private pspSysMem() { }
 
     public static pspSysMem get_instance() {
@@ -266,15 +273,22 @@ public class pspSysMem {
                 + ",name='" + name + "',type=" + typeStr + ",size=" + size
                 + ",addr=0x" + Integer.toHexString(addr) + ")");
 
-        addr = malloc(partitionid, type, size, addr);
-        if (addr != 0)
+        if (type < PSP_SMEM_Low || type > PSP_SMEM_HighAligned)
         {
-            SysMemInfo info = new SysMemInfo(partitionid, name, type, size, addr);
-            Emulator.getProcessor().cpu.gpr[2] = info.uid;
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_ILLEGAL_MEMORY_BLOCK_ALLOCATION_TYPE;
         }
         else
         {
-            Emulator.getProcessor().cpu.gpr[2] = -1;
+            addr = malloc(partitionid, type, size, addr);
+            if (addr != 0)
+            {
+                SysMemInfo info = new SysMemInfo(partitionid, name, type, size, addr);
+                Emulator.getProcessor().cpu.gpr[2] = info.uid;
+            }
+            else
+            {
+                Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_FAILED_TO_ALLOCATE_MEMORY_BLOCK;
+            }
         }
     }
 
@@ -284,7 +298,7 @@ public class pspSysMem {
         SysMemInfo info = blockList.remove(uid);
         if (info == null) {
             Modules.log.warn("sceKernelFreePartitionMemory unknown SceUID=" + Integer.toHexString(uid));
-            Emulator.getProcessor().cpu.gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_ILLEGAL_CHUNK_ID;
         } else {
             free(info);
             Modules.log.warn("UNIMPLEMENT:sceKernelFreePartitionMemory SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "'");
@@ -298,7 +312,7 @@ public class pspSysMem {
         SysMemInfo info = blockList.get(uid);
         if (info == null) {
             Modules.log.warn("sceKernelGetBlockHeadAddr unknown SceUID=" + Integer.toHexString(uid));
-            Emulator.getProcessor().cpu.gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_ILLEGAL_CHUNK_ID;
         } else {
             Modules.log.debug("sceKernelGetBlockHeadAddr SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "' headAddr:" + Integer.toHexString(info.addr));
             Emulator.getProcessor().cpu.gpr[2] = info.addr;

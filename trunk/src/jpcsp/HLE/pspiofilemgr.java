@@ -56,6 +56,11 @@ public class pspiofilemgr {
     public final static int PSP_SEEK_CUR  = 1;
     public final static int PSP_SEEK_END  = 2;
 
+    public final static int PSP_ERROR_FILE_READ_ERROR     = 0x80020130;
+    public final static int PSP_ERROR_TOO_MANY_OPEN_FILES = 0x80020320;
+    public final static int PSP_ERROR_BAD_FILE_DESCRIPTOR = 0x80020323;
+    public final static int PSP_ERROR_FILENAME_TOO_LONG   = 0x8002032d;
+
     private HashMap<Integer, IoInfo> filelist;
     private HashMap<Integer, IoDirInfo> dirlist;
 
@@ -326,7 +331,7 @@ public class pspiofilemgr {
                 IoInfo info = filelist.get(uid);
                 if (info == null) {
                     Modules.log.warn("sceIoRead - unknown uid " + Integer.toHexString(uid));
-                    Emulator.getProcessor().cpu.gpr[2] = -1;
+                    Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
                 } else if ((data_addr >= MemoryMap.START_RAM ) && (data_addr + size <= MemoryMap.END_RAM)) {
                     // Using readFully for ms/umd compatibility, but now we must
                     // manually make sure it doesn't read off the end of the file.
@@ -344,11 +349,11 @@ public class pspiofilemgr {
                     Emulator.getProcessor().cpu.gpr[2] = size;
                 } else {
                     Modules.log.warn("sceIoRead - data is outside of ram " + Integer.toHexString(data_addr));
-                    Emulator.getProcessor().cpu.gpr[2] = -1;
+                    Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_FILE_READ_ERROR;
                 }
             } catch(IOException e) {
                 e.printStackTrace();
-                Emulator.getProcessor().cpu.gpr[2] = -1;
+                Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_FILE_READ_ERROR;
             }
         }
     }
@@ -487,7 +492,7 @@ public class pspiofilemgr {
         IoDirInfo info = dirlist.get(uid);
         if (info == null) {
             Modules.log.warn("sceIoDread - unknown uid " + Integer.toHexString(uid));
-            Emulator.getProcessor().cpu.gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
         } else if (info.hasNext()) {
             //String filename = info.path + "/" + info.next(); // TODO is the separator needed?
             String filename = info.next(); // TODO is the separator needed?
@@ -518,7 +523,7 @@ public class pspiofilemgr {
         IoDirInfo info = dirlist.remove(uid);
         if (info == null) {
             Modules.log.warn("sceIoDclose - unknown uid " + Integer.toHexString(uid));
-            Emulator.getProcessor().cpu.gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
         } else {
             SceUIDMan.get_instance().releaseUid(info.uid, "IOFileManager-Directory");
             Emulator.getProcessor().cpu.gpr[2] = 0;
