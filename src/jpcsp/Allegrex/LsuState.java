@@ -13,7 +13,8 @@ package jpcsp.Allegrex;
 public class LsuState extends MduState {
 
     public static final jpcsp.Memory memory = jpcsp.Memory.getInstance();
-    
+    private static final boolean CHECK_ALIGNMENT = true;
+
     @Override
     public void reset() {
     }
@@ -33,7 +34,7 @@ public class LsuState extends MduState {
     public LsuState(LsuState that) {
         super(that);
     }
-    
+
     public void doLB(int rt, int rs, int simm16) {
         int word = (memory.read8(gpr[rs] + (int)(short)simm16) << 24) >> 24;
         if (rt != 0) {
@@ -49,6 +50,14 @@ public class LsuState extends MduState {
     }
 
     public void doLH(int rt, int rs, int simm16) {
+        if (CHECK_ALIGNMENT) {
+            int address = gpr[rs] + (int)(short)simm16;
+            if ((address & 1) != 0) {
+                memory.log.error("LH unaligned addr:0x" + String.format("%08x", address)
+                    + " pc:0x" + String.format("%08x", jpcsp.Emulator.getProcessor().cpu.pc));
+            }
+        }
+
         int word = (memory.read16(gpr[rs] + (int)(short)simm16) << 16) >> 16;
         if (rt != 0) {
             gpr[rt] = word;
@@ -56,6 +65,14 @@ public class LsuState extends MduState {
     }
 
     public void doLHU(int rt, int rs, int simm16) {
+        if (CHECK_ALIGNMENT) {
+            int address = gpr[rs] + (int)(short)simm16;
+            if ((address & 1) != 0) {
+                memory.log.error("LHU unaligned addr:0x" + String.format("%08x", address)
+                    + " pc:0x" + String.format("%08x", jpcsp.Emulator.getProcessor().cpu.pc));
+            }
+        }
+
         int word = memory.read16(gpr[rs] + (int)(short)simm16) & 0xffff;
         if (rt != 0) {
             gpr[rt] = word;
@@ -92,6 +109,14 @@ public class LsuState extends MduState {
     }
 
     public void doLW(int rt, int rs, int simm16) {
+        if (CHECK_ALIGNMENT) {
+            int address = gpr[rs] + (int)(short)simm16;
+            if ((address & 3) != 0) {
+                memory.log.error("LW unaligned addr:0x" + String.format("%08x", address)
+                    + " pc:0x" + String.format("%08x", jpcsp.Emulator.getProcessor().cpu.pc));
+            }
+        }
+
         int word = memory.read32(gpr[rs] + (int)(short)simm16);
         if (rt != 0) {
             gpr[rt] = word;
@@ -132,6 +157,14 @@ public class LsuState extends MduState {
     }
 
     public void doSH(int rt, int rs, int simm16) {
+        if (CHECK_ALIGNMENT) {
+            int address = gpr[rs] + (int)(short)simm16;
+            if ((address & 1) != 0) {
+                memory.log.error("SH unaligned addr:0x" + String.format("%08x", address)
+                    + " pc:0x" + String.format("%08x", jpcsp.Emulator.getProcessor().cpu.pc));
+            }
+        }
+
         memory.write16(gpr[rs] + (int)(short)simm16, (short) (gpr[rt] & 0xFFFF));
     }
 
@@ -163,6 +196,14 @@ public class LsuState extends MduState {
     }
 
     public void doSW(int rt, int rs, int simm16) {
+        if (CHECK_ALIGNMENT) {
+            int address = gpr[rs] + (int)(short)simm16;
+            if ((address & 3) != 0) {
+                memory.log.error("SW unaligned addr:0x" + String.format("%08x", address)
+                    + " pc:0x" + String.format("%08x", jpcsp.Emulator.getProcessor().cpu.pc));
+            }
+        }
+
         memory.write32(gpr[rs] + (int)(short)simm16, gpr[rt]);
     }
 
@@ -206,5 +247,5 @@ public class LsuState extends MduState {
         if (rt != 0) {
             gpr[rt] = 1; // = ll_bit;
         }
-    }    
+    }
 }

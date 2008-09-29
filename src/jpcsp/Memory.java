@@ -18,6 +18,7 @@ package jpcsp;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 
@@ -55,8 +56,7 @@ public class Memory {
     }
 
     public void Initialise() {
-        for (int i = 0; i < all.length; i++)
-            all[i] = 0;
+        Arrays.fill(all, (byte)0);
     }
 
     private Memory() {
@@ -90,8 +90,7 @@ public class Memory {
         int i;
         int page;
 
-        for (i = 0; i < PAGE_COUNT; ++i)
-            map[i] = -1;
+        Arrays.fill(map, -1);
 
         page = START_SCRATCHPAD >>> PAGE_SHIFT;
         for (i = 0; i < (SIZE_SCRATCHPAD >>> PAGE_SHIFT); ++i) {
@@ -179,7 +178,7 @@ public class Memory {
         }
     }
     */
-    
+
     public int read32(int page, int address) {
         try {
             return buf.getInt(page + (address & PAGE_MASK));
@@ -189,7 +188,7 @@ public class Memory {
             return 0;
         }
     }
-    
+
     public void write8(int address, byte data) {
         try {
             int page = indexFromAddr(address);

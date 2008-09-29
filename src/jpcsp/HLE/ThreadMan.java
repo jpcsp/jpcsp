@@ -25,6 +25,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -56,6 +57,23 @@ public class ThreadMan {
     // TODO figure out a decent number of cycles to wait
     private final int WDT_THREAD_IDLE_CYCLES = 1000000;
     private final int WDT_THREAD_HOG_CYCLES = 10000000;
+
+    public final static int PSP_ERROR_NOT_FOUND_THREAD               = 0x80020198;
+    public final static int PSP_ERROR_NOT_FOUND_SEMAPHORE            = 0x80020199;
+    public final static int PSP_ERROR_NOT_FOUND_EVENT_FLAG           = 0x8002019a;
+    public final static int PSP_ERROR_NOT_FOUND_MESSAGE_BOX          = 0x8002019b;
+    public final static int PSP_ERROR_NOT_FOUND_VPOOL                = 0x8002019c;
+    public final static int PSP_ERROR_NOT_FOUND_FPOOL                = 0x8002019d;
+    public final static int PSP_ERROR_NOT_FOUND_MESSAGE_PIPE         = 0x8002019e;
+    public final static int PSP_ERROR_NOT_FOUND_ALARM                = 0x8002019f;
+    public final static int PSP_ERROR_NOT_FOUND_THREAD_EVENT_HANDLER = 0x800201a0;
+    public final static int PSP_ERROR_NOT_FOUND_CALLBACK             = 0x800201a1;
+
+    public final static int PSP_ERROR_THREAD_ALREADY_DORMANT         = 0x800201a2;
+    public final static int PSP_ERROR_THREAD_ALREADY_SUSPEND         = 0x800201a3;
+    public final static int PSP_ERROR_THREAD_IS_NOT_DORMANT          = 0x800201a4;
+    public final static int PSP_ERROR_THREAD_IS_NOT_SUSPEND          = 0x800201a5;
+    public final static int PSP_ERROR_THREAD_IS_NOT_WAIT             = 0x800201a6;
 
     //private static int stackAllocated;
 
@@ -375,7 +393,7 @@ public class ThreadMan {
         SceUIDMan.get_instance().checkUidPurpose(a0, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadlist.get(a0);
         if (thread == null) {
-            Emulator.getProcessor().cpu.gpr[2] = 0x80020198; //notfoundthread
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_THREAD;
         } else {
             Modules.log.debug("sceKernelTerminateThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
 
@@ -391,7 +409,7 @@ public class ThreadMan {
         SceUIDMan.get_instance().checkUidPurpose(a0, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadlist.get(a0);
         if (thread == null) {
-            Emulator.getProcessor().cpu.gpr[2] = 0x80020198; //notfoundthread
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_THREAD;
         } else {
             Modules.log.debug("sceKernelDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
 
@@ -406,7 +424,7 @@ public class ThreadMan {
         SceUIDMan.get_instance().checkUidPurpose(uid, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadlist.get(uid);
         if (thread == null) {
-            Emulator.getProcessor().cpu.gpr[2] = 0x80020198; //notfoundthread
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_THREAD;
         } else {
             Modules.log.debug("sceKernelStartThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
 
@@ -526,7 +544,7 @@ public class ThreadMan {
         //Get the status information for the specified thread
         SceKernelThreadInfo thread = threadlist.get(a0);
         if (thread == null) {
-            Emulator.getProcessor().cpu.gpr[2] = 0x80020198; //notfoundthread
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_THREAD;
             return;
         }
 
@@ -568,7 +586,7 @@ public class ThreadMan {
         SceKernelThreadInfo thread = threadlist.get(uid);
         if (thread == null) {
             Modules.log.warn("sceKernelChangeThreadPriority unknown thread");
-            Emulator.getProcessor().cpu.gpr[2] = 0x80020198; //notfoundthread
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_THREAD;
         } else {
             Modules.log.debug("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(thread.uid)
                     + " newPriority:0x" + Integer.toHexString(priority) + " oldPriority:0x" + Integer.toHexString(thread.currentPriority));
@@ -603,10 +621,10 @@ public class ThreadMan {
         SceKernelThreadInfo thread = threadlist.get(uid);
         if (thread == null) {
             Modules.log.warn("sceKernelWakeupThread unknown thread");
-            Emulator.getProcessor().cpu.gpr[2] = 0x80020198; //notfoundthread
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_THREAD;
         } else if (thread.status != PspThreadStatus.PSP_THREAD_SUSPEND) {
             Modules.log.warn("sceKernelWakeupThread thread not suspended (status=" + thread.status + ")");
-            Emulator.getProcessor().cpu.gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_THREAD_IS_NOT_SUSPEND;
         } else {
             thread.status = PspThreadStatus.PSP_THREAD_READY;
             Emulator.getProcessor().cpu.gpr[2] = 0;
@@ -619,7 +637,7 @@ public class ThreadMan {
         SceKernelThreadInfo thread = threadlist.get(uid);
         if (thread == null) {
             Modules.log.warn("sceKernelWaitThreadEnd unknown thread");
-            Emulator.getProcessor().cpu.gpr[2] = 0x80020198; //notfoundthread
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_THREAD;
         } else if (waitthreadendlist.get(uid) != null) {
             // TODO out current implementation only allows 1 thread to wait on another thread to end
             Modules.log.warn("UNIMPLEMENTED:sceKernelWaitThreadEnd another thread already waiting for the target thread to end");
@@ -710,9 +728,9 @@ public class ThreadMan {
 
     private void memset(int address, byte c, int length) {
         Memory mem = Memory.getInstance();
-        for (int i = 0; i < length; i++) {
-            mem.write8(address + i, c);
-        }
+        byte[] all = mem.mainmemory.array();
+        int offset = address - MemoryMap.START_RAM + mem.mainmemory.arrayOffset();
+        Arrays.fill(all, offset, offset + length, c);
     }
 
     private class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
@@ -760,7 +778,7 @@ public class ThreadMan {
 
             status = PspThreadStatus.PSP_THREAD_SUSPEND;
             stack_addr = mallocStack(stackSize);
-            if ((attr & PSP_THREAD_ATTR_NO_FILLSTACK) != PSP_THREAD_ATTR_NO_FILLSTACK)
+            if (stackSize > 0 && (attr & PSP_THREAD_ATTR_NO_FILLSTACK) != PSP_THREAD_ATTR_NO_FILLSTACK)
                 memset(stack_addr - stackSize, (byte)0xFF, stackSize);
             gpReg_addr = Emulator.getProcessor().cpu.gpr[28]; // inherit gpReg
             currentPriority = initPriority;
@@ -845,7 +863,7 @@ public class ThreadMan {
             SceKernelSemaphoreInfo sema = semalist.get(semaid);
             if (sema == null) {
                     Modules.log.warn("sceKernelWaitSema - unknown uid " + Integer.toHexString(semaid));
-                Emulator.getProcessor().cpu.gpr[2] = -1;
+                Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_SEMAPHORE;
             } else {
                 if(sema.currentCount >= signal)
                 {
@@ -871,7 +889,7 @@ public class ThreadMan {
             SceKernelSemaphoreInfo sema = semalist.get(semaid);
             if (sema == null) {
                     Modules.log.warn("sceKernelSignalSema - unknown uid " + Integer.toHexString(semaid));
-                Emulator.getProcessor().cpu.gpr[2] = -1;
+                Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_SEMAPHORE;
             } else {
                 int oldcurrentCount = sema.currentCount;
                 sema.currentCount+=signal;

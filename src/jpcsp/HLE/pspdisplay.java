@@ -542,6 +542,12 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             pixelformat < 0 || pixelformat > 3 ||
             sync < 0 || sync > 1)
         {
+            // TODO allow main memory as well as vram when we find an app that does that
+            Modules.log.warn(
+                "sceDisplaySetFrameBuf(topaddr=0x" + Integer.toHexString(topaddr) +
+                ",bufferwidth=" + bufferwidth +
+                ",pixelformat=" + pixelformat +
+                ",sync=" + sync + ") bad params");
             Emulator.getProcessor().cpu.gpr[2] = -1;
         } else {
             if (pixelformatFb != this.pixelformatFb ||
