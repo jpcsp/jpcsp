@@ -55,7 +55,8 @@ public class HLEModuleManager {
         Modules.sceUmdUserModule,
         Modules.scePowerModule,
         Modules.sceUtilityModule,
-        Modules.sceRtcModule
+        Modules.sceRtcModule,
+        Modules.Kernel_LibraryModule
     };
 
     public static HLEModuleManager getInstance() {

@@ -35,12 +35,11 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Settings;
 import jpcsp.Debugger.MemoryViewer;
-import jpcsp.util.JpcspDialogManager;
-import jpcsp.util.OptionPaneMultiple;
 import jpcsp.Allegrex.Instructions.*;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Common.Instruction;
+import jpcsp.util.*;
 
 /**
  *
@@ -59,7 +58,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         this.emu=emu;
         listmodel = new DefaultListModel();
         initComponents();
-
+        ViewTooltips.register(disasmList);
         DebuggerPC = 0;
         RefreshDebugger();
     }
