@@ -20,6 +20,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import jpcsp.filesystems.*;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import jpcsp.format.DeferredStub;
@@ -288,17 +289,25 @@ public class FileManager {
                         //System.out.println("NO BITS");
                         // zero out this memory
                         offsettoread = (int)(getBaseoffset() + shdr.getSh_addr() - MemoryMap.START_RAM);
-                        ByteBuffer mainmemory = Memory.getInstance().mainmemory;
-                        for (int j = 0; j < (int)shdr.getSh_size(); j++)
-                            mainmemory.put(offsettoread + j, (byte)0);
+                        if (offsettoread >= 0 && offsettoread < MemoryMap.SIZE_RAM) {
+                            Memory mem = Memory.getInstance();
+                            byte[] all = Memory.getInstance().mainmemory.array();
+                            Arrays.fill(all,
+                                offsettoread + mem.mainmemory.arrayOffset(),
+                                offsettoread + mem.mainmemory.arrayOffset() + (int)shdr.getSh_size(),
+                                (byte)0x0);
 
-                        if ((int)(baseoffset + shdr.getSh_addr()) < loadAddressLow) {
-                            loadAddressLow = (int)(baseoffset + shdr.getSh_addr());
-                            //Memory.log.debug("sh8 low " + Integer.toHexString(loadAddressLow));
-                        }
-                        if ((int)(baseoffset + shdr.getSh_addr() + shdr.getSh_size()) > loadAddressHigh) {
-                            loadAddressHigh = (int)(baseoffset + shdr.getSh_addr() + shdr.getSh_size());
-                            //Memory.log.debug("sh8 high " + Integer.toHexString(loadAddressHigh));
+                            if ((int)(baseoffset + shdr.getSh_addr()) < loadAddressLow) {
+                                loadAddressLow = (int)(baseoffset + shdr.getSh_addr());
+                                //Memory.log.debug("sh8 low " + Integer.toHexString(loadAddressLow));
+                            }
+                            if ((int)(baseoffset + shdr.getSh_addr() + shdr.getSh_size()) > loadAddressHigh) {
+                                loadAddressHigh = (int)(baseoffset + shdr.getSh_addr() + shdr.getSh_size());
+                                //Memory.log.debug("sh8 high " + Integer.toHexString(loadAddressHigh));
+                            }
+                        } else {
+                            Memory.log.warn("elf section type 8 attempting to allocate memory outside valid range 0x"
+                                + Integer.toHexString((int)(getBaseoffset() + shdr.getSh_addr())));
                         }
                         break;
                 }
