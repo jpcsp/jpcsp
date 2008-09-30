@@ -291,7 +291,7 @@ public class FileManager {
                         offsettoread = (int)(getBaseoffset() + shdr.getSh_addr() - MemoryMap.START_RAM);
                         if (offsettoread >= 0 && offsettoread < MemoryMap.SIZE_RAM) {
                             Memory mem = Memory.getInstance();
-                            byte[] all = Memory.getInstance().mainmemory.array();
+                            byte[] all = mem.mainmemory.array();
                             Arrays.fill(all,
                                 offsettoread + mem.mainmemory.arrayOffset(),
                                 offsettoread + mem.mainmemory.arrayOffset() + (int)shdr.getSh_size(),

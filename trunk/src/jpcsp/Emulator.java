@@ -56,7 +56,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
     public static int[] textsection = new int[2];
     public static int[] initsection = new int[2];
     public static int[] finisection = new int[2];
-    public static int[] Stubtextsection=new int[2];
+    public static int[] stubtextsection= new int[2];
 
     public Emulator(MainGUI gui) {
         Emulator.gui = gui;
@@ -301,11 +301,17 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
             }
         }
 
+        // Imports
+        // ... and code section finder, for instruction counter (should not be here! should go in FileManager.secondStep())
         int numberoffailedNIDS=0;
         int numberofmappedNIDS=0;
         boolean foundStubSection = false;
 
-        // Imports
+        textsection[0] = textsection[1] = 0;
+        initsection[0] = initsection[1] = 0;
+        finisection[0] = finisection[1] = 0;
+        stubtextsection[0] = stubtextsection[1] = 0;
+
         for (Elf32SectionHeader shdr : elf.getListSectionHeader()) {
             if (shdr.getSh_namez().equals(".lib.stub")) {
                 Memory mem = Memory.getInstance();
@@ -377,25 +383,25 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
             }
 
             //the following are used for the instruction counter panel
-            if(shdr.getSh_namez().equals(".text"))
+            if (shdr.getSh_namez().equals(".text"))
             {
                 textsection[0] = (int)(romManager.getBaseoffset() + shdr.getSh_addr());
                 textsection[1] = (int)shdr.getSh_size();
             }
-            if(shdr.getSh_namez().equals(".init"))
+            if (shdr.getSh_namez().equals(".init"))
             {
                 initsection[0] = (int)(romManager.getBaseoffset() + shdr.getSh_addr());
                 initsection[1] = (int)shdr.getSh_size();
             }
-            if(shdr.getSh_namez().equals(".fini"))
+            if (shdr.getSh_namez().equals(".fini"))
             {
                 finisection[0] = (int)(romManager.getBaseoffset() + shdr.getSh_addr());
                 finisection[1] = (int)shdr.getSh_size();
             }
-            if(shdr.getSh_namez().equals(".sceStub.text"))
+            if (shdr.getSh_namez().equals(".sceStub.text"))
             {
-                Stubtextsection[0] = (int)(romManager.getBaseoffset() + shdr.getSh_addr());
-                Stubtextsection[1] = (int)shdr.getSh_size();
+                stubtextsection[0] = (int)(romManager.getBaseoffset() + shdr.getSh_addr());
+                stubtextsection[1] = (int)shdr.getSh_size();
             }
 
             //test the instruction counter
