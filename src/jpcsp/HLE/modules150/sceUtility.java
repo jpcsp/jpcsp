@@ -27,6 +27,8 @@ import jpcsp.Memory;
 import jpcsp.Processor;
 
 import jpcsp.Allegrex.CpuState; // New-Style Processor
+import jpcsp.MemoryMap;
+import static jpcsp.util.Utilities.*;
 
 public class sceUtility implements HLEModule {
 	@Override
@@ -140,7 +142,44 @@ public class sceUtility implements HLEModule {
 
     public static final int PSP_NETPARAM_ERROR_BAD_NETCONF = 0x80110601;
     public static final int PSP_NETPARAM_ERROR_BAD_PARAM = 0x80110604;
+    /* save-load error codes */
+    public static final int SCE_UTILITY_SAVEDATA_ERROR_TYPE=0x80110300;
 
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_LOAD_NO_MS=0x80110301;
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_LOAD_EJECT_MS=0x80110302;
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_LOAD_ACCESS_ERROR=0x80110305;
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_LOAD_DATA_BROKEN=0x80110306;
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_LOAD_NO_DATA=0x80110307;
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_LOAD_PARAM=0x80110308;
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_LOAD_INTERNAL=0x8011030b;
+
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_SAVE_NO_MS=0x80110381;
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_SAVE_EJECT_MS=0x80110382;
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_SAVE_MS_NOSPACE=0x80110383;
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_SAVE_MS_PROTECTED=0x80110384;
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_SAVE_ACCESS_ERROR=0x80110385;
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_SAVE_PARAM=0x80110388;
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_SAVE_NO_UMD=0x80110389;
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_SAVE_WRONG_UMD=0x8011038a;
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_SAVE_INTERNAL=0x8011038b;
+
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_DELETE_NO_MS=0x80110341;
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_DELETE_EJECT_MS=0x80110342;
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_DELETE_MS_PROTECTED=0x80110344;
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_DELETE_ACCESS_ERROR=0x80110345;
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_DELETE_NO_DATA=0x80110347;
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_DELETE_PARAM=0x80110348;
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_DELETE_INTERNAL=0x8011034b;
+
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_SIZES_NO_MS=0x801103C1;
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_SIZES_EJECT_MS=0x801103C2;
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_SIZES_ACCESS_ERROR=0x801103C5;
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_SIZES_NO_DATA=0x801103C7;
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_SIZES_PARAM=0x801103C8;
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_SIZES_NO_UMD=0x801103C9;
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_SIZES_WRONG_UMD=0x801103Ca;
+    public static final int  SCE_UTILITY_SAVEDATA_ERROR_SIZES_INTERNAL=0x801103Cb;
+    
 	public void sceUtilityGameSharingInitStart(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		// Processor cpu = processor; // Old-Style Processor
@@ -344,22 +383,25 @@ public class sceUtility implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
+        int mode=0;//hacky should be done better 
 
 	public void sceUtilitySavedataInitStart(Processor processor) {
+                //hacky impelementation so it ignores. 
 		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
+		
 		Memory mem = Processor.memory;
+                int a0 = cpu.gpr[4];
+                Modules.log.debug("sceUtilitySavedataInitStart a0= " + a0);
+                mode=mem.read32(a0+48);
 
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceUtilitySavedataInitStart [0x50C4CD57]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+                if(mode==0)//load 
+                {
+                  cpu.gpr[2] = SCE_UTILITY_SAVEDATA_ERROR_LOAD_NO_DATA;
+                }
+                else
+                {
+                  cpu.gpr[2] =SCE_UTILITY_SAVEDATA_ERROR_SAVE_NO_MS;
+                }
 	}
 
 	public void sceUtilitySavedataShutdownStart(Processor processor) {
