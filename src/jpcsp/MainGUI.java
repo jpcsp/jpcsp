@@ -408,14 +408,13 @@ private String pspifyFilename(String pcfilename) {
 public void loadFile(File file) {
     //This is where a real application would open the file.
     try {
-        if(consolewin!=null)
+        if (consolewin != null)
             consolewin.clearScreenMessages();
 
         umdLoaded = false;
         loadedFile = file;
 
-       //emulator.load(file.getPath());
-       // Create a read-only memory-mapped file
+        // Create a read-only memory-mapped file
         FileChannel roChannel = new RandomAccessFile(file, "r").getChannel();
         ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
         emulator.load(pspifyFilename(file.getPath()), readbuffer);
@@ -425,6 +424,9 @@ public void loadFile(File file) {
         pspiofilemgr.get_instance().setfilepath(findpath);
         pspiofilemgr.get_instance().setIsoReader(null);
         jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(null);
+
+        if (instructioncounter != null)
+            instructioncounter.RefreshWindow();
         this.setTitle(version + " - " + file.getName());
     } catch (IOException e) {
         e.printStackTrace();
@@ -575,7 +577,7 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
 public void loadUMD(File file) {
     try {
-        if(consolewin!=null)
+        if (consolewin!=null)
             consolewin.clearScreenMessages();
 
         umdLoaded = true;
@@ -603,6 +605,8 @@ public void loadUMD(File file) {
         pspiofilemgr.get_instance().setIsoReader(iso);
         jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(iso);
 
+        if (instructioncounter != null)
+            instructioncounter.RefreshWindow();
     } catch (IOException e) {
         e.printStackTrace();
         JpcspDialogManager.showError(this, "IO Error : " + e.getMessage());
@@ -631,19 +635,20 @@ private void resetEmu() {
 }
 
 private void InstructionCounterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_InstructionCounterActionPerformed
-    if(instructioncounter==null)
-     {
-      PauseEmu();
-      instructioncounter = new InstructionCounter(emulator);
-      Point mainwindow = this.getLocation();
-      instructioncounter.setLocation(mainwindow.x+100, mainwindow.y+50);
-      instructioncounter.setVisible(true);
-     }
-     else
-     {
-         instructioncounter.setVisible(true);
-         instructioncounter.RefreshWindow();
-     }
+    if (instructioncounter==null)
+    {
+        PauseEmu();
+        instructioncounter = new InstructionCounter(emulator);
+        Point mainwindow = this.getLocation();
+        instructioncounter.setLocation(mainwindow.x+100, mainwindow.y+50);
+        instructioncounter.setVisible(true);
+    }
+    else
+    {
+        PauseEmu();
+        instructioncounter.RefreshWindow();
+        instructioncounter.setVisible(true);
+    }
 }//GEN-LAST:event_InstructionCounterActionPerformed
 
 

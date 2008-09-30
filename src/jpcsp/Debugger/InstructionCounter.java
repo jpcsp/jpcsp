@@ -49,35 +49,45 @@ public class InstructionCounter extends javax.swing.JFrame implements PropertyCh
 
     public void RefreshWindow() {
         resetcounts();
-        initcheck.setSelected(false);
-        finicheck.setSelected(false);
-        textcheck.setSelected(false);
-        stubtextcheck.setSelected(false);
         areastatus.setText("");
-        if (emu.initsection[0] == 0) {
-            initcheck.setEnabled(false);
-        } else {
-            initcheck.setEnabled(true);
-        }
-        if (emu.finisection[0] == 0) {
-            finicheck.setEnabled(false);
-        } else {
-            finicheck.setEnabled(true);
-        }
+
         if (emu.textsection[0] == 0) {
             textcheck.setEnabled(false);
+            textcheck.setSelected(false);
         } else {
             textcheck.setEnabled(true);
+            textcheck.setSelected(true);
+            areastatus.append("Found .text section at " + Integer.toHexString(emu.textsection[0]) + " size " + emu.textsection[1] + "\n");
         }
-        if (emu.Stubtextsection[0] == 0) {
+
+        if (emu.initsection[0] == 0) {
+            initcheck.setEnabled(false);
+            initcheck.setSelected(false);
+        } else {
+            initcheck.setEnabled(true);
+            initcheck.setSelected(true);
+            areastatus.append("Found .init section at " + Integer.toHexString(emu.initsection[0]) + " size " + emu.initsection[1] + "\n");
+        }
+
+        if (emu.finisection[0] == 0) {
+            finicheck.setEnabled(false);
+            finicheck.setSelected(false);
+        } else {
+            finicheck.setEnabled(true);
+            finicheck.setSelected(true);
+            areastatus.append("Found .fini section at " + Integer.toHexString(emu.finisection[0]) + " size " + emu.finisection[1] + "\n");
+        }
+
+        if (emu.stubtextsection[0] == 0) {
             stubtextcheck.setEnabled(false);
+            stubtextcheck.setSelected(false);
         } else {
             stubtextcheck.setEnabled(true);
+            stubtextcheck.setSelected(true);
+            areastatus.append("Found .sceStub.text at " + Integer.toHexString(emu.stubtextsection[0]) + " size " + emu.stubtextsection[1]);
         }
-        areastatus.append("Found init section at " + Integer.toHexString(emu.initsection[0]) + " size " + emu.initsection[1] + "\n");
-        areastatus.append("Found fini section at " + Integer.toHexString(emu.finisection[0]) + " size " + emu.finisection[1] + "\n");
-        areastatus.append("Found text section at " + Integer.toHexString(emu.textsection[0]) + " size " + emu.textsection[1] + "\n");
-        areastatus.append("Found stubtext section at " + Integer.toHexString(emu.Stubtextsection[0]) + " size " + emu.Stubtextsection[1] + "\n");
+
+        pack();
     }
 
     /** This method is called from within the constructor to
@@ -122,7 +132,7 @@ public class InstructionCounter extends javax.swing.JFrame implements PropertyCh
 
         areastatus.setColumns(20);
         areastatus.setFont(new java.awt.Font("Courier New", 0, 12));
-        areastatus.setRows(5);
+        areastatus.setRows(4);
         jScrollPane1.setViewportView(areastatus);
 
         OpcodeTable.setModel(new javax.swing.table.DefaultTableModel(
@@ -148,7 +158,7 @@ public class InstructionCounter extends javax.swing.JFrame implements PropertyCh
         });
         jScrollPane2.setViewportView(OpcodeTable);
 
-        stubtextcheck.setText(".Stub.text");
+        stubtextcheck.setText(".sceStub.text");
 
         Save.setText("Save to file");
         Save.addActionListener(new java.awt.event.ActionListener() {
@@ -215,6 +225,7 @@ private void startbuttonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
     setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
     //Instances of javax.swing.SwingWorker are not reusuable, so
     //we create new instances as needed.
+    progressBar.setIndeterminate(true);
     task = new Task();
     task.addPropertyChangeListener(this);
     task.execute();
@@ -268,27 +279,19 @@ private void SaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:ev
      */
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
-        if ("progress" == evt.getPropertyName()) {
+        if (evt.getPropertyName().equals("progress")) {
             int progress = (Integer) evt.getNewValue();
             progressBar.setValue(progress);
-        } 
+        }
     }
-    public void proccesssections()
-    {
-        resetcounts();
-        if(initcheck.isSelected()) findinitsections();
-        if(textcheck.isSelected()) findtextsections();
-        if(finicheck.isSelected()) findfinisections();
-        if(stubtextcheck.isSelected()) findstubtextsections();
-     }
-            
+
     public void findinitsections()
     {
        for(int i =0; i< emu.initsection[1]; i+=4)
        {
-          int memread32 = Memory.getInstance().read32(emu.initsection[0]+i);      
+          int memread32 = Memory.getInstance().read32(emu.initsection[0]+i);
           jpcsp.Allegrex.Decoder.instruction(memread32).increaseCount();
-       }   
+       }
     }
     public void findfinisections()
     {
@@ -296,7 +299,7 @@ private void SaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:ev
        {
           int memread32 = Memory.getInstance().read32(emu.finisection[0]+i);
           jpcsp.Allegrex.Decoder.instruction(memread32).increaseCount();
-       }   
+       }
     }
     public void findtextsections()
     {
@@ -304,16 +307,16 @@ private void SaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:ev
        {
           int memread32 = Memory.getInstance().read32(emu.textsection[0]+i);
           jpcsp.Allegrex.Decoder.instruction(memread32).increaseCount();
-       }   
+       }
     }
     public void findstubtextsections()
     {
-        for(int i =0; i< emu.Stubtextsection[1]; i+=4)
+        for(int i =0; i< emu.stubtextsection[1]; i+=4)
        {
-          int memread32 = Memory.getInstance().read32(emu.Stubtextsection[0]+i);
+          int memread32 = Memory.getInstance().read32(emu.stubtextsection[0]+i);
           jpcsp.Allegrex.Decoder.instruction(memread32).increaseCount();
-       }   
-        
+       }
+
     }
     class Task extends SwingWorker<Void, Void> {
         /*
@@ -322,9 +325,22 @@ private void SaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:ev
         @Override
         public Void doInBackground() {
             setProgress(0);
-            progressBar.setIndeterminate(true);
-            proccesssections();
-            refreshCounter();
+
+            resetcounts();
+            setProgress(20);
+
+            if (initcheck.isSelected()) findinitsections();
+            setProgress(40);
+
+            if (textcheck.isSelected()) findtextsections();
+            setProgress(60);
+
+            if (finicheck.isSelected()) findfinisections();
+            setProgress(80);
+
+            if (stubtextcheck.isSelected()) findstubtextsections();
+            setProgress(100);
+
             return null;
         }
 
@@ -333,6 +349,7 @@ private void SaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:ev
          */
         @Override
         public void done() {
+            refreshCounter();
             Toolkit.getDefaultToolkit().beep();
             startbutton.setEnabled(true);
             setCursor(null); //turn off the wait cursor
@@ -340,9 +357,9 @@ private void SaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:ev
         }
     }
     // Let's instanciate this private member so the two following methods
-    // can retrieve the right opcodes.  
+    // can retrieve the right opcodes.
     public static jpcsp.Allegrex.Instructions INSTRUCTIONS = new jpcsp.Allegrex.Instructions();
-    
+
     public void refreshCounter()
     {
         int i = 0;
@@ -363,13 +380,17 @@ private void SaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:ev
     }
     public void resetcounts()
     {
+        int i = 0;
+
         for (Instruction insn : jpcsp.Allegrex.Common.instructions()) {
             if (insn != null) {
                 insn.resetCount();
+                OpcodeTable.setValueAt("", i, 2);
+                i++;
             }
         }
     }
-   
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTable OpcodeTable;
