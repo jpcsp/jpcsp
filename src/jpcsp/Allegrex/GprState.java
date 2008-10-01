@@ -2,7 +2,6 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package jpcsp.Allegrex;
 
 import jpcsp.Emulator;
@@ -14,6 +13,7 @@ import java.util.Arrays;
  * @author hli
  */
 public class GprState {
+
     public int[] gpr;
 
     public void reset() {
@@ -23,7 +23,7 @@ public class GprState {
     public void resetAll() {
         Arrays.fill(gpr, 0);
     }
-    
+
     public GprState() {
         gpr = new int[32];
     }
@@ -35,11 +35,11 @@ public class GprState {
     public GprState(GprState that) {
         gpr = that.gpr.clone();
     }
-    
+
     public void doUNK(String reason) {
         Emulator.log.error("Interpreter : " + reason);
-    }   
-    
+    }
+
     public static final int extractBits(int x, int pos, int len) {
         return (x >>> pos) & ~(~0 << len);
     }
@@ -69,8 +69,8 @@ public class GprState {
         return (i - j) >>> 31;
     }
 
-    public static final int unsignedCompare(int i, int j) {
-        return ((i - j) ^ i ^ j) >>> 31;
+    public static final int unsignedCompare(long i, long j) {
+        return (int)(((i & 0xFFFFFFFFL) - (j & 0xFFFFFFFFL)) >>> 63);
     }
 
     public final void doSLL(int rd, int rt, int sa) {
@@ -93,19 +93,19 @@ public class GprState {
 
     public final void doSLLV(int rd, int rt, int rs) {
         if (rd != 0) {
-                gpr[rd] = (gpr[rt] << (gpr[rs] & 31));
+            gpr[rd] = (gpr[rt] << (gpr[rs] & 31));
         }
     }
 
     public final void doSRLV(int rd, int rt, int rs) {
         if (rd != 0) {
-                gpr[rd] = (gpr[rt] >>> (gpr[rs] & 31));
+            gpr[rd] = (gpr[rt] >>> (gpr[rs] & 31));
         }
     }
 
     public final void doSRAV(int rd, int rt, int rs) {
         if (rd != 0) {
-                gpr[rd] = (gpr[rt] >> (gpr[rs] & 31));
+            gpr[rd] = (gpr[rt] >> (gpr[rs] & 31));
         }
     }
 
@@ -157,46 +157,45 @@ public class GprState {
         }
     }
 
-
     public final void doADDIU(int rt, int rs, int simm16) {
         if (rt != 0) {
-                gpr[rt] = gpr[rs] + (int)(short)simm16;
+            gpr[rt] = gpr[rs] + (int) (short) simm16;
         }
     }
 
     public final void doSLTI(int rt, int rs, int simm16) {
         if (rt != 0) {
-                gpr[rt] = signedCompare(gpr[rs], simm16);
+            gpr[rt] = signedCompare(gpr[rs], (int) (short) simm16);
         }
     }
 
     public final void doSLTIU(int rt, int rs, int simm16) {
         if (rt != 0) {
-                gpr[rt] = unsignedCompare(gpr[rs], simm16);
+            gpr[rt] = unsignedCompare(gpr[rs], (int) (short) simm16);
         }
     }
 
     public final void doANDI(int rt, int rs, int uimm16) {
         if (rt != 0) {
-                gpr[rt] = gpr[rs] & uimm16;
+            gpr[rt] = gpr[rs] & uimm16;
         }
     }
 
     public final void doORI(int rt, int rs, int uimm16) {
         if (rt != 0) {
-                gpr[rt] = gpr[rs] | uimm16;
+            gpr[rt] = gpr[rs] | uimm16;
         }
     }
 
     public final void doXORI(int rt, int rs, int uimm16) {
         if (rt != 0) {
-                gpr[rt] = gpr[rs] ^ uimm16;
+            gpr[rt] = gpr[rs] ^ uimm16;
         }
     }
 
     public final void doLUI(int rt, int uimm16) {
         if (rt != 0) {
-                gpr[rt] = uimm16 << 16;
+            gpr[rt] = uimm16 << 16;
         }
     }
 
@@ -251,15 +250,13 @@ public class GprState {
 
     public final void doEXT(int rt, int rs, int rd, int sa) {
         if (rt != 0) {
-            int mask = ~(~0 << (rd + 1));
-            gpr[rt] = (gpr[rs] >>> sa) & mask;
+            gpr[rt] = extractBits(gpr[rs], sa, (rd + 1)); 
         }
     }
 
     public final void doINS(int rt, int rs, int rd, int sa) {
         if (rt != 0) {
-            int mask = ~(~0 << (rd - sa + 1)) << sa;
-            gpr[rt] = (gpr[rt] & ~mask) | ((gpr[rs] << sa) & mask);
+            gpr[rt] = insertBits(gpr[rt], gpr[rs], sa, rd);
         }
     }
 
@@ -291,5 +288,5 @@ public class GprState {
         if (rd != 0) {
             gpr[rd] = (gpr[rt] << 16) >> 16;
         }
-    }      
+    }
 }
