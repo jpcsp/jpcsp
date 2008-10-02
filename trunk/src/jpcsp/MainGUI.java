@@ -427,6 +427,9 @@ public void loadFile(File file) {
 
         if (instructioncounter != null)
             instructioncounter.RefreshWindow();
+        StepLogger.clear();
+        StepLogger.setName(file.getPath());
+
         this.setTitle(version + " - " + file.getName());
     } catch (IOException e) {
         e.printStackTrace();
@@ -607,6 +610,8 @@ public void loadUMD(File file) {
 
         if (instructioncounter != null)
             instructioncounter.RefreshWindow();
+        StepLogger.clear();
+        StepLogger.setName(file.getPath());
     } catch (IOException e) {
         e.printStackTrace();
         JpcspDialogManager.showError(this, "IO Error : " + e.getMessage());
@@ -685,7 +690,7 @@ private void PauseEmu()
 {
     // This will only enter pause mode
     if (emulator.run && !emulator.pause) {
-        emulator.PauseEmu();
+        emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_PAUSE);
     }
 }
 public void RefreshButtons()

@@ -328,7 +328,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                 for (int i = 0; i < stubHeadersCount; i++)
                 {
                     stubHeader = new Elf32StubHeader(mem, stubHeadersAddress);
-                    stubHeader.setModuleNamez(readStringZ(mem.mainmemory, (int)(stubHeader.getOffsetModuleName() - MemoryMap.START_RAM)));
+                    stubHeader.setModuleNamez(readStringNZ(mem.mainmemory, (int)(stubHeader.getOffsetModuleName() - MemoryMap.START_RAM), 64));
                     stubHeadersAddress += Elf32StubHeader.sizeof(); //stubHeader.s_size * 4;
                     //System.out.println(stubHeader.toString());
 
@@ -518,6 +518,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
         if (debugger != null)
             debugger.RefreshButtons();
     }
+
     // static so Memory can pause emu on invalid read/write
     public static synchronized void PauseEmu()
     {
@@ -532,12 +533,47 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
 
             if (memview != null)
                 memview.RefreshMemory();
+
+            StepLogger.flush();
         }
     }
+
+    // static so Memory can pause emu on invalid read/write
+    public static final int EMU_STATUS_OK = 0x00;
+    public static final int EMU_STATUS_UNKNOWN = 0xFFFFFFFF;
+    public static final int EMU_STATUS_WDT_IDLE = 0x01;
+    public static final int EMU_STATUS_WDT_HOG = 0x02;
+    public static final int EMU_STATUS_WDT_ANY = EMU_STATUS_WDT_IDLE | EMU_STATUS_WDT_HOG;
+    public static final int EMU_STATUS_MEM_READ = 0x04;
+    public static final int EMU_STATUS_MEM_WRITE = 0x08;
+    public static final int EMU_STATUS_MEM_ANY = EMU_STATUS_MEM_READ | EMU_STATUS_MEM_WRITE;
+    public static final int EMU_STATUS_BREAKPOINT = 0x10;
+    public static final int EMU_STATUS_UNIMPLEMENTED = 0x20;
+    public static final int EMU_STATUS_PAUSE = 0x40;
+    public static synchronized void PauseEmuWithStatus(int status)
+    {
+        if (run && !pause)
+        {
+            pause = true;
+
+            gui.RefreshButtons();
+
+            if (debugger != null)
+                debugger.RefreshButtons();
+
+            if (memview != null)
+                memview.RefreshMemory();
+
+            StepLogger.setStatus(status);
+            StepLogger.flush();
+        }
+    }
+
     public static void setFpsTitle(String fps)
     {
          gui.setMainTitle(fps);
     }
+
     public static Processor getProcessor() {
         return processor;
     }
