@@ -153,9 +153,15 @@ public class SyscallHandler {
 		// sceKernelUSec2SysClockWide(0x2055),
 		// sceKernelSysClock2USec(0x2056),
 		// sceKernelSysClock2USecWide(0x2057),
-		// sceKernelGetSystemTime(0x2058),
-		// sceKernelGetSystemTimeWide(0x2059),
-		// sceKernelGetSystemTimeLow(0x205a),
+                case 0x2058:
+                    ThreadMan.get_instance().ThreadMan_sceKernelGetSystemTime(gpr[4]);
+                    break;
+                case 0x2059:
+                    ThreadMan.get_instance().ThreadMan_sceKernelGetSystemTimeWide();
+                    break;
+                case 0x205a:
+                    ThreadMan.get_instance().ThreadMan_sceKernelGetSystemTimeLow();
+                    break;
 		// sceKernelSetAlarm(0x205b),
 		// sceKernelSetSysClockAlarm(0x205c),
 		// sceKernelCancelAlarm(0x205d),
@@ -535,11 +541,15 @@ public class SyscallHandler {
                 case 0x2145:
                     pspdisplay.get_instance().sceDisplayWaitVblank();
                     break;
-		// sceDisplayWaitVblankCB(0x2146),
+                case 0x2146:
+                    pspdisplay.get_instance().sceDisplayWaitVblankCB();
+                    break;
                 case 0x2147:
                     pspdisplay.get_instance().sceDisplayWaitVblankStart();
                     break;
-		// sceDisplayWaitVblankStartCB(0x2148),
+                case 0x2148:
+                    pspdisplay.get_instance().sceDisplayWaitVblankStartCB();
+                    break;
 		// sceDisplayGetCurrentHcount(0x2149),
 		// sceDisplayGetAccumulatedHcount(0x214a),
 		// sceDisplay_A83EF139(0x214b),

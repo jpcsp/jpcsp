@@ -85,27 +85,27 @@ public class DisplayList {
     public static synchronized Iterator<DisplayList> iterator() {
         return displayLists.values().iterator();
     }
-    
+
     public static void Lock() {
         try {
             displayListLock.acquire();
         } catch (InterruptedException e) {
         }
     }
-    
+
     //  HACK: This shouldn't exist, but I need to be sure a list
     // is complete before processing it
     public boolean HasFinish () {
     	boolean hasFinish = false;
     	int currPC = start;
-    	
+
     	while (!hasFinish && currPC != stallAddress) {
             int instruction = Emulator.getMemory().read32(currPC)>>24;
             currPC += 4;
-            hasFinish = (instruction == END || instruction == FINISH); 
-        }    	
-    	
-    	return hasFinish;    	
+            hasFinish = (instruction == END || instruction == FINISH);
+        }
+
+    	return hasFinish;
     }
 
     public static void Unlock() {
@@ -115,7 +115,6 @@ public class DisplayList {
     @Override
     public synchronized String toString() {
         return "id = " + id + ", start address = " + Integer.toHexString(start)
-                + ", end address = " + Integer.toHexString(stallAddress)
-                + ", initial command instruction = " + Integer.toHexString(Emulator.getMemory().read32(pc));
+                + ", end address = " + Integer.toHexString(stallAddress);
     }
 }

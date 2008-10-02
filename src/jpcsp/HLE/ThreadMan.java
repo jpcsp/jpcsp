@@ -193,14 +193,14 @@ public class ThreadMan {
                 continuousIdleCycles++;
                 if (continuousIdleCycles > WDT_THREAD_IDLE_CYCLES) {
                     Modules.log.info("Watch dog timer - pausing emulator (idle)");
-                    Emulator.PauseEmu();
+                    Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_WDT_IDLE);
                 }
             } else {
                 continuousIdleCycles = 0;
                 syscallFreeCycles++;
                 if (syscallFreeCycles > WDT_THREAD_HOG_CYCLES) {
                     Modules.log.info("Watch dog timer - pausing emulator (thread hogging)");
-                    Emulator.PauseEmu();
+                    Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_WDT_HOG);
                 }
             }
         } else {
@@ -286,7 +286,7 @@ public class ThreadMan {
         } else {
             // Shouldn't get here now we are using idle threads
             Modules.log.info("No ready threads - pausing emulator");
-            Emulator.PauseEmu();
+            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNKNOWN);
         }
 
         current_thread = newthread;
@@ -322,6 +322,15 @@ public class ThreadMan {
 
     public int getCurrentThreadID() {
         return current_thread.uid;
+    }
+
+    public String getThreadName(int uid) {
+        SceKernelThreadInfo thread = threadlist.get(uid);
+        if (thread == null) {
+            return "NOT A THREAD";
+        } else {
+            return thread.name;
+        }
     }
 
     public void yieldCurrentThread()
@@ -662,6 +671,38 @@ public class ThreadMan {
         }
     }
 
+    /** SceKernelSysClock time_addr http://psp.jim.sh/pspsdk-doc/structSceKernelSysClock.html
+     * +1mil every second
+     * high 32-bits never set on real psp? */
+    public void ThreadMan_sceKernelGetSystemTime(int time_addr) {
+        Modules.log.debug("sceKernelGetSystemTime 0x" + Integer.toHexString(time_addr));
+        Memory mem = Memory.getInstance();
+        if (mem.isAddressGood(time_addr)) {
+            long systemTime = System.nanoTime();
+            int low = (int)(systemTime & 0xffffffffL);
+            int hi = (int)((systemTime >> 32) & 0xffffffffL);
+
+            mem.write32(time_addr, low);
+            mem.write32(time_addr + 4, hi);
+            Emulator.getProcessor().cpu.gpr[2] = 0;
+        } else {
+            Emulator.getProcessor().cpu.gpr[2] = -1;
+        }
+    }
+
+    public void ThreadMan_sceKernelGetSystemTimeWide() {
+        Modules.log.debug("sceKernelGetSystemTimeWide");
+        long systemTime = System.nanoTime();
+        Emulator.getProcessor().cpu.gpr[2] = (int)(systemTime & 0xffffffffL);
+        Emulator.getProcessor().cpu.gpr[3] = (int)((systemTime >> 32) & 0xffffffffL);
+    }
+
+    public void ThreadMan_sceKernelGetSystemTimeLow() {
+        Modules.log.debug("sceKernelGetSystemTimeLow");
+        long systemTime = System.nanoTime();
+        Emulator.getProcessor().cpu.gpr[2] = (int)(systemTime & 0xffffffffL);
+    }
+
     private class SceKernelCallbackInfo {
         private String name;
         private int threadId;
@@ -730,6 +771,8 @@ public class ThreadMan {
         Memory mem = Memory.getInstance();
         byte[] all = mem.mainmemory.array();
         int offset = address - MemoryMap.START_RAM + mem.mainmemory.arrayOffset();
+        Modules.log.debug("memset 0x" + Integer.toHexString(address)
+            + " (offset:0x" + Integer.toHexString(offset) + ") len:0x" + Integer.toHexString(length));
         Arrays.fill(all, offset, offset + length, c);
     }
 

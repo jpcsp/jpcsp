@@ -23,11 +23,13 @@ import org.apache.log4j.Logger;
 
 public class Processor {
 
+    public static final boolean ENABLE_STEP_TRACE = false;
+
     public CpuState cpu = new CpuState();
 
     public static final jpcsp.Memory memory = jpcsp.Memory.getInstance();
     public static Logger log = Logger.getLogger("cpu");
-    
+
     Processor() {
         reset();
     }
@@ -37,34 +39,40 @@ public class Processor {
     }
 
     public void load(ByteBuffer buffer) {
-        
+
     }
 
     public void save(ByteBuffer buffer) {
-        
+
     }
-    
+
     public void interpret() {
 
+        if (ENABLE_STEP_TRACE) StepLogger.append(cpu);
+
         int opcode = cpu.fetchOpcode();
-        
+
         Common.Instruction insn = Decoder.instruction(opcode);
-        
+
         insn.interpret(this, opcode);
+        insn.increaseCount();
     }
 
     public void interpretDelayslot() {
 
+        if (ENABLE_STEP_TRACE) StepLogger.append(cpu);
+
         int opcode = cpu.nextOpcode();
-        
+
         Common.Instruction insn = Decoder.instruction(opcode);
-        
+
         insn.interpret(this, opcode);
-        
+        insn.increaseCount();
+
         cpu.nextPc();
     }
 
     public void step() {
         interpret();
-    }    
+    }
 }

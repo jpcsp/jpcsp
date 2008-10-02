@@ -854,9 +854,9 @@ public class VideoEngine {
             					texture_type = GL.GL_UNSIGNED_SHORT_5_6_5_REV;
 
 	            				for (int i = 0; i < texture_width0*texture_height0; i += 2) {
-	            					
+
 	            					int clut = mem.read8(texture_base_pointer0+i);
-	            					
+
 	            					// TODO:  I don't know if it's correct, or should read the 4bits in
 	            					//       reverse order
 	            					tmp_texture_buffer16[i] 	= (short)mem.read16(tex_clut_addr + ((clut>>4)&0xF));
@@ -867,14 +867,14 @@ public class VideoEngine {
 
 	            				break;
 	            			}
-            				
+
 	            			case CMODE_FORMAT_32BIT_ABGR8888: {
 	            				texture_type = GL.GL_UNSIGNED_BYTE;
 
 	            				for (int i = 0; i < texture_width0*texture_height0; i += 2) {
-	            					
+
 	            					int clut = mem.read8(texture_base_pointer0+i);
-	            					
+
 	            					// TODO:  I don't know if it's correct, or should read the 4bits in
 	            					//       reverse order
 	            					tmp_texture_buffer32[i] 	= mem.read32(tex_clut_addr + ((clut>>4)&0xF));
@@ -888,11 +888,11 @@ public class VideoEngine {
 
 	                		default: {
 	                			VideoEngine.log.error("Unhandled clut texture mode " + tex_clut_mode);
-	                            Emulator.PauseEmu();
+                                Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
 	                            break;
 	                		}
 	            		}
-            			
+
             			break;
             		}
             		case TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED: {
@@ -914,7 +914,7 @@ public class VideoEngine {
 
 	                		default: {
 	                			VideoEngine.log.error("Unhandled clut texture mode " + tex_clut_mode);
-	                            Emulator.PauseEmu();
+	                            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
 	                            break;
 	                		}
 	            		}
@@ -972,7 +972,7 @@ public class VideoEngine {
 
             		default: {
             			System.out.println("Unhandled texture storage " + texture_storage);
-                        Emulator.PauseEmu();
+                        Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
                         break;
             		}
             	}

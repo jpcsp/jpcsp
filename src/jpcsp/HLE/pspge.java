@@ -21,6 +21,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE;
 
 import jpcsp.Emulator;
+import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.graphics.DisplayList;
 import jpcsp.graphics.VideoEngine;
@@ -52,12 +53,12 @@ public class pspge {
         DisplayList.Lock();
         DisplayList.Initialise();
         DisplayList.Unlock();
-        
+
         syncThreadId = -1;
         waitingForSync = false;
         syncDone = false;
     }
-    
+
     public void step() {
         if (waitingForSync) {
             if (syncDone) {
@@ -71,7 +72,7 @@ public class pspge {
             }
         }
     }
-    
+
     public void sceGeEdramGetSize() {
         Emulator.getProcessor().cpu.gpr[2] = MemoryMap.SIZE_VRAM;
     }
@@ -94,14 +95,19 @@ public class pspge {
         list &= 0x3fffffff;
         stall &= 0x3fffffff;
 
-        DisplayList displayList = new DisplayList(list, stall, callbackId, argument);
-        DisplayList.addDisplayList(displayList);
-        log("The list " + displayList.toString());
+        if (Memory.getInstance().isAddressGood(list)) {
+            DisplayList displayList = new DisplayList(list, stall, callbackId, argument);
+            DisplayList.addDisplayList(displayList);
+            log("The list " + displayList.toString());
 
-        if (displayList.status == DisplayList.QUEUED)
-            pspdisplay.get_instance().setDirty(true);
+            if (displayList.status == DisplayList.QUEUED)
+                pspdisplay.get_instance().setDirty(true);
 
-        Emulator.getProcessor().cpu.gpr[2] = displayList.id;
+            Emulator.getProcessor().cpu.gpr[2] = displayList.id;
+        } else {
+            VideoEngine.log.error("sceGeListEnQueue bad address 0x" + Integer.toHexString(stall));
+            Emulator.getProcessor().cpu.gpr[2] = -1;
+        }
         DisplayList.Unlock();
     }
 

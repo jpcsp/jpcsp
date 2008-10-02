@@ -508,11 +508,11 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addComponent(DisasmToolbar, javax.swing.GroupLayout.DEFAULT_SIZE, 793, Short.MAX_VALUE)
+                .addComponent(DisasmToolbar, javax.swing.GroupLayout.DEFAULT_SIZE, 763, Short.MAX_VALUE)
                 .addContainerGap())
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(disasmList, javax.swing.GroupLayout.DEFAULT_SIZE, 533, Short.MAX_VALUE)
+                .addComponent(disasmList, javax.swing.GroupLayout.PREFERRED_SIZE, 491, Short.MAX_VALUE)
                 .addGap(18, 18, 18)
                 .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 223, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(19, 19, 19))
@@ -786,7 +786,7 @@ public void step() {
     //check if there is a breakpoint
     if (breakpoints.size() > 0 &&
         breakpoints.indexOf(Emulator.getProcessor().cpu.pc) != -1) {
-        Emulator.PauseEmu();
+        Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_BREAKPOINT);
 
         DebuggerPC = 0;
         RefreshDebugger();
@@ -794,7 +794,7 @@ public void step() {
 }
 
 private void PauseDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PauseDebuggerActionPerformed
-    Emulator.PauseEmu();
+    Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_PAUSE);
 
     DebuggerPC = 0;
     RefreshDebugger();
@@ -815,7 +815,7 @@ private boolean isCellChecked(JTable table)
   for(int i=0; i<table.getRowCount(); i++)
   {
        if(table.isCellSelected(i, 1)) return true;
-       
+
   }
   return false;
 }
