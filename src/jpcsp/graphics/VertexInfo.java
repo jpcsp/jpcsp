@@ -71,7 +71,7 @@ public class VertexInfo {
         weight              = (param >>  9) & 0x3;
         index               = (param >> 11) & 0x3;
         skinningWeightCount = ((param >> 14) & 0x7) + 1;
-        morphingVertexCount = (param >> 18) & 0x3;
+        morphingVertexCount = ((param >> 18) & 0x7) + 1;
 
         vertexSize = 0;
         vertexSize += size_mapping[weight] * skinningWeightCount;
@@ -97,6 +97,21 @@ public class VertexInfo {
     public VertexState readVertex(Memory mem, int addr) {
         VertexState v = new VertexState();
 
+		for (int i = 0; i < skinningWeightCount; ++i) {
+			switch (weight) {
+			case 1:
+				v.boneWeights[i] = Emulator.getMemory().read8(addr); addr += 1;
+				break;
+			case 2:
+				v.boneWeights[i] = Emulator.getMemory().read16(addr); addr += 2;
+				break;
+			case 3:
+				v.boneWeights[i] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+				break;
+			}
+			//System.err.println(String.format("Weight %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f", v.boneWeights[0], v.boneWeights[1], v.boneWeights[2], v.boneWeights[3], v.boneWeights[4], v.boneWeights[5], v.boneWeights[6], v.boneWeights[7]));
+		}
+        
         switch(texture) {
             case 1:
                 v.u = Emulator.getMemory().read8(addr); addr += 1;
@@ -113,8 +128,8 @@ public class VertexInfo {
         }
 
         switch(color) {
-            case 1: case 2: case 3: VideoEngine.log.debug("unimplemented color type"); addr += 1; break;
-            case 4: case 5: case 6: VideoEngine.log.debug("unimplemented color type"); addr += 2; break;
+            case 1: case 2: case 3: VideoEngine.log.warn("unimplemented color type"); addr += 1; break;
+            case 4: case 5: case 6: VideoEngine.log.warn("unimplemented color type"); addr += 2; break;
             case 7: { // GU_COLOR_8888
                 int packed = mem.read32(addr); addr += 4;
                 v.r = (float)((packed      ) & 0xff) / 255;
@@ -141,22 +156,29 @@ public class VertexInfo {
                 v.ny = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
                 v.nz = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
                 break;
-        }
+		}
 
-        switch(position) {
-            case 1: VideoEngine.log.debug("unimplemented vertex type 1"); addr += 1; break;
-            case 2: VideoEngine.log.debug("unimplemented vertex type 2"); addr += 2; break;
-            case 3: { // GU_VERTEX_32BITF
-                v.px = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-                v.py = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-                v.pz = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-                break;
-            }
-        }
+		switch (position) {
+			case 1:
+				v.px = Emulator.getMemory().read8(addr); addr += 1;
+				v.py = Emulator.getMemory().read8(addr); addr += 1;
+				v.pz = Emulator.getMemory().read8(addr); addr += 1;
+				break;
+			case 2:
+				v.px = Emulator.getMemory().read16(addr); addr += 2;
+				v.py = Emulator.getMemory().read16(addr); addr += 2;
+				v.pz = Emulator.getMemory().read16(addr); addr += 2;
+				break;
+			case 3: // GU_VERTEX_32BITF
+				v.px = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+				v.py = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+				v.pz = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+				break;
+		}
 
         return v;
     }
-
+    
     @Override
     public String toString() {
         StringBuffer sb = new StringBuffer();

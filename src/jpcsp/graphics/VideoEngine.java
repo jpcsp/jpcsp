@@ -63,6 +63,15 @@ public class VideoEngine {
     private int view_upload_y;
     private float[] view_matrix = new float[4 * 4];
     private float[] view_uploaded_matrix = new float[4 * 4];
+    
+    private boolean bone_upload_start;
+    private int bone_upload_x;
+    private int bone_upload_y;
+    private int bone_matrix_offset;
+    private float[] bone_matrix = new float[4 * 4];
+    private float[] bone_uploaded_matrix = new float[8 * 4 * 4];
+    
+    private float[] morph_weight = new float[8];
 
     private float[] tex_envmap_matrix = new float[4*4];
 
@@ -1268,7 +1277,6 @@ public class VideoEngine {
                 if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
                 	gl.glMultMatrixf(model_uploaded_matrix, 0);
 
-
                 // GL
                 switch (type) {
                     case PRIM_POINT:
@@ -1284,7 +1292,11 @@ public class VideoEngine {
                                 if (vinfo.texture  != 0) gl.glTexCoord2f(v.u, v.v);
                                 if (vinfo.color    != 0) gl.glColor4f(v.r, v.g, v.b, v.a);
                                 if (vinfo.normal   != 0) gl.glNormal3f(v.nx, v.ny, v.nz);
-                                if (vinfo.position != 0) gl.glVertex3f(v.px, v.py, v.pz);
+                                if (vinfo.position != 0) { 
+                                	if(vinfo.weight != 0)
+                                		doSkinning(vinfo, v);
+                                    gl.glVertex3f(v.px, v.py, v.pz);
+                                }
                             }
                         gl.glEnd();
                         break;
@@ -1560,6 +1572,54 @@ public class VideoEngine {
             case NOP:
                 log(helper.getCommandString(NOP));
                 break;
+            
+            /*
+             * Skinning
+             */
+            case BOFS:
+            	log("bone matrix offset", normalArgument);
+            	if(normalArgument % 12 != 0)
+            		VideoEngine.log.warn("bone matrix offset " + normalArgument + " isn't a multiple of 12");
+            	bone_matrix_offset = normalArgument;
+            	bone_upload_start = true;
+            	break;
+            case BONE:
+            	if (bone_upload_start) {
+            		bone_upload_x = 0;
+            		bone_upload_y = 0;
+            		bone_upload_start = false;
+                }
+
+                if (bone_upload_y < 4) {
+                    if (bone_upload_x < 3) {
+                        bone_matrix[bone_upload_x + bone_upload_y * 4] = floatArgument;
+
+                        bone_upload_x++;
+                        if (bone_upload_x == 3) {
+                            bone_matrix[bone_upload_x + bone_upload_y * 4] = (bone_upload_y == 3) ? 1.0f : 0.0f;
+                            bone_upload_x = 0;
+                            bone_upload_y++;
+                            if (bone_upload_y == 4) {
+                                log("bone matrix " + (bone_matrix_offset / 12), model_matrix);
+
+                                for (int i = 0; i < 4*4; i++)
+                                	bone_uploaded_matrix[i + bone_matrix_offset / 12 * 16] = bone_matrix[i];
+                            }
+                        }
+                    }
+                }
+                break;
+            case MW0:
+            case MW1:
+            case MW2:
+            case MW3:
+            case MW4:
+            case MW5:
+            case MW6:
+            case MW7:
+            	log("morph weight " + (command(instruction) - MW0), floatArgument);
+            	morph_weight[command(instruction) - MW0] = floatArgument;
+            	break;
 
             default:
                 log("Unknown/unimplemented video command [ " + helper.getCommandString(command(instruction)) + " ]");
@@ -1567,7 +1627,58 @@ public class VideoEngine {
 
     }
 
-    public void setFullScreenShoot(boolean b) {
+    private void doSkinning(VertexInfo vinfo, VertexState v) {
+    	float x = 0, y = 0, z = 0, w = 0;
+    	float nx = 0, ny = 0, nz = 0, nw = 0;
+		for(int i = 0; i < vinfo.skinningWeightCount; ++i) {
+			if(v.boneWeights[i] != 0) {
+				int matrix_base = bone_matrix_offset / 12 * 16;
+				x += (v.px * bone_uploaded_matrix[matrix_base + 0]
+								      + v.py * bone_uploaded_matrix[matrix_base + 1]
+								      + v.pz * bone_uploaded_matrix[matrix_base + 2]
+								      + bone_uploaded_matrix[matrix_base + 3]) * v.boneWeights[i];
+				y += (v.px * bone_uploaded_matrix[matrix_base + 4]
+				 				      + v.py * bone_uploaded_matrix[matrix_base + 5]
+				 				      + v.pz * bone_uploaded_matrix[matrix_base + 6]
+				 				      + bone_uploaded_matrix[matrix_base + 7]) * v.boneWeights[i];
+				z += (v.px * bone_uploaded_matrix[matrix_base + 8]
+				 				      + v.py * bone_uploaded_matrix[matrix_base + 9]
+				 				      + v.pz * bone_uploaded_matrix[matrix_base + 10]
+				 				      + bone_uploaded_matrix[matrix_base + 11]) * v.boneWeights[i];
+				w += (v.px * bone_uploaded_matrix[matrix_base + 12]
+				 				      + v.py * bone_uploaded_matrix[matrix_base + 13]
+				 				      + v.pz * bone_uploaded_matrix[matrix_base + 14]
+				 				      + bone_uploaded_matrix[matrix_base + 15]) * v.boneWeights[i];
+				
+				nx += (v.nx * bone_uploaded_matrix[matrix_base + 0]
+								      + v.ny * bone_uploaded_matrix[matrix_base + 1]
+								      + v.nz * bone_uploaded_matrix[matrix_base + 2]
+								      + bone_uploaded_matrix[matrix_base + 3]) * v.boneWeights[i];
+				ny += (v.nx * bone_uploaded_matrix[matrix_base + 4]
+				 				      + v.ny * bone_uploaded_matrix[matrix_base + 5]
+				 				      + v.nz * bone_uploaded_matrix[matrix_base + 6]
+				 				      + bone_uploaded_matrix[matrix_base + 7]) * v.boneWeights[i];
+				nz += (v.nx * bone_uploaded_matrix[matrix_base + 8]
+				 				      + v.ny * bone_uploaded_matrix[matrix_base + 9]
+				 				      + v.nz * bone_uploaded_matrix[matrix_base + 10]
+				 				      + bone_uploaded_matrix[matrix_base + 11]) * v.boneWeights[i];
+				nw += (v.nx * bone_uploaded_matrix[matrix_base + 12]
+				 				      + v.ny * bone_uploaded_matrix[matrix_base + 13]
+				 				      + v.nz * bone_uploaded_matrix[matrix_base + 14]
+				 				      + bone_uploaded_matrix[matrix_base + 15]) * v.boneWeights[i];
+			}
+		}
+		
+		v.px = x / w;
+		v.py = y / w;
+		v.pz = z / w;
+		
+		v.nx = nx / nw;
+		v.ny = ny / nw;
+		v.nz = nz / nw;
+	}
+
+	public void setFullScreenShoot(boolean b) {
     }
 
     public void setLineSize(int linesize) {
