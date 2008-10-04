@@ -114,7 +114,7 @@ public class ThreadMan {
         }
 
         // Setup args by copying them onto the stack
-        //Modules.log.debug("pspfilename - '" + pspfilename + "'");
+        Modules.log.debug("pspfilename - '" + pspfilename + "'");
         int len = pspfilename.length();
         int alignlen = (len + 1 + 3) & ~3; // string terminator + 4 byte align
         Memory mem = Memory.getInstance();
@@ -125,6 +125,13 @@ public class ThreadMan {
         current_thread.cpuContext.gpr[29] -= alignlen; // Adjust sp for size of args
         current_thread.cpuContext.gpr[4] = len + 1; // a0 = len + string terminator
         current_thread.cpuContext.gpr[5] = current_thread.cpuContext.gpr[29]; // a1 = pointer to arg data in stack
+
+        // HACK min stack size is set to 512, let's set sp to stack top - 512.
+        // this allows plenty of padding between the sp and the eboot path
+        // that we store at the top of the stack area. should help NesterJ and
+        // Calender, both use sp+16 at the beginning (expected sp-16).
+        current_thread.cpuContext.gpr[29] -= 512 - alignlen;
+
         current_thread.status = PspThreadStatus.PSP_THREAD_READY;
 
         // Switch in the thread
@@ -591,10 +598,12 @@ public class ThreadMan {
     }
 
     public void ThreadMan_sceKernelChangeThreadPriority(int uid, int priority) {
+        if (uid == 0) uid = getCurrentThreadID();
         SceUIDMan.get_instance().checkUidPurpose(uid, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadlist.get(uid);
         if (thread == null) {
-            Modules.log.warn("sceKernelChangeThreadPriority unknown thread");
+            Modules.log.warn("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid)
+                    + " newPriority:0x" + Integer.toHexString(priority) + " unknown thread");
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_THREAD;
         } else {
             Modules.log.debug("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(thread.uid)
@@ -611,6 +620,10 @@ public class ThreadMan {
                 + " unknown:" + unknown
                 + " newAttr:0x" + Integer.toHexString(attr)
                 + " oldAttr:0x" + Integer.toHexString(current_thread.attr));
+
+        // Probably meant to be sceKernelChangeThreadAttr unknown=uid
+        if (unknown != 0)
+            Modules.log.warn("sceKernelChangeCurrentThreadAttr unknown:" + unknown + " non-zero");
 
         // Don't allow switching into kernel mode!
         if ((current_thread.attr & PSP_THREAD_ATTR_USER) == PSP_THREAD_ATTR_USER &&
@@ -758,7 +771,8 @@ public class ThreadMan {
             //stackAllocated += size;
             //return p;
 
-            int p = pspSysMem.get_instance().malloc(2, pspSysMem.PSP_SMEM_HighAligned, size, 0x1000);
+            //int p = pspSysMem.get_instance().malloc(2, pspSysMem.PSP_SMEM_HighAligned, size, 0x1000);
+            int p = pspSysMem.get_instance().malloc(2, pspSysMem.PSP_SMEM_High, size, 0);
             p += size;
 
             return p;
@@ -808,9 +822,15 @@ public class ThreadMan {
         private int waitThreadEndUid;
 
         public SceKernelThreadInfo(String name, int entry_addr, int initPriority, int stackSize, int attr) {
-            // Stack size is rounded to the next nearest 4k
+            // Ignore 0 size from the idle threads (don't want them stealing space)
             if (stackSize != 0) {
-                stackSize = (stackSize + 0xFFF) & ~0xFFF;
+                if (stackSize < 512) {
+                    // 512 byte min
+                    stackSize = 512;
+                } else {
+                    // 256 byte size alignment
+                    stackSize = (stackSize + 0xFF) & ~0xFF;
+                }
             }
 
             this.name = name;
