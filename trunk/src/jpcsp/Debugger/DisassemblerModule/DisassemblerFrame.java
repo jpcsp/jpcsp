@@ -17,6 +17,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.Debugger.DisassemblerModule;
 
+import com.jidesoft.list.StyledListCellRenderer;
+import com.jidesoft.swing.StyleRange;
+import com.jidesoft.swing.StyledLabel;
+import java.awt.Color;
+import java.awt.Font;
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.ClipboardOwner;
@@ -27,7 +32,9 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
 import javax.swing.SwingUtilities;
@@ -60,11 +67,43 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         initComponents();
         ViewTooltips.register(disasmList);
         DebuggerPC = 0;
+            disasmList.setCellRenderer(new StyledListCellRenderer() {
+            @Override
+            protected void customizeStyledLabel(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                super.customizeStyledLabel(list, value, index, isSelected, cellHasFocus);
+                String text = getText();
+                setBorder(BorderFactory.createEmptyBorder(0, 2, 0, 2));
+                setIcon(null);
+                DisassemblerFrame.this.customizeStyledLabel(this, text);
+            }
+        });
         RefreshDebugger();
         
         
     }
-
+    private void customizeStyledLabel(StyledLabel label, String text) {
+        if(text.contains("<*>"))//breakpoint!
+        {
+            label.addStyleRange(new StyleRange(0, text.length(), Font.BOLD, Color.RED));     
+        }
+        if(text.startsWith("   0" + Integer.toHexString(Emulator.getProcessor().cpu.pc)))
+        {
+             
+             label.addStyleRange(new StyleRange(0, 12, Font.BOLD, Color.GREEN)); 
+        }
+        if(text.contains("[sce"))
+        {
+            int find = text.indexOf("[sce");
+            label.addStyleRange(new StyleRange(find, -1, Font.PLAIN, Color.BLUE)); 
+        }
+        if(text.contains("<=>"))
+        {
+           int find = text.indexOf("<=>");
+           label.addStyleRange(new StyleRange(find, -1, Font.PLAIN, Color.GRAY));  
+        }
+    }
+    
+    
     public void setMemoryViewer(MemoryViewer memview) {
         this.memview = memview;
     }
