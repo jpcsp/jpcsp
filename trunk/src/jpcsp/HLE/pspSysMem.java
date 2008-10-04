@@ -247,11 +247,9 @@ public class pspSysMem {
 
     /**
      * @param partitionid TODO probably user, kernel etc
-     * 0 = ?
-     * 1 = kernel?
-     * 2 = user?
+     * 1 = kernel, 2 = user, 3 = me, 4 = kernel mirror (from potemkin/dash)
      * @param type If type is PSP_SMEM_Addr, then addr specifies the lowest
-     * address allocate the block from.
+     * address to allocate the block from.
      */
     public void sceKernelAllocPartitionMemory(int partitionid, int pname, int type, int size, int addr)
     {

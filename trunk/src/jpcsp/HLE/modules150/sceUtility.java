@@ -179,7 +179,7 @@ public class sceUtility implements HLEModule {
     public static final int  SCE_UTILITY_SAVEDATA_ERROR_SIZES_NO_UMD=0x801103C9;
     public static final int  SCE_UTILITY_SAVEDATA_ERROR_SIZES_WRONG_UMD=0x801103Ca;
     public static final int  SCE_UTILITY_SAVEDATA_ERROR_SIZES_INTERNAL=0x801103Cb;
-    
+
 	public void sceUtilityGameSharingInitStart(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		// Processor cpu = processor; // Old-Style Processor
@@ -383,18 +383,18 @@ public class sceUtility implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-        int mode=0;//hacky should be done better 
+        int mode=0;//hacky should be done better
 
 	public void sceUtilitySavedataInitStart(Processor processor) {
-                //hacky impelementation so it ignores. 
+                //hacky impelementation so it ignores.
 		CpuState cpu = processor.cpu; // New-Style Processor
-		
+
 		Memory mem = Processor.memory;
                 int a0 = cpu.gpr[4];
                 Modules.log.debug("sceUtilitySavedataInitStart a0= " + a0);
                 mode=mem.read32(a0+48);
 
-                if(mode==0)//load 
+                if(mode==0)//load
                 {
                   cpu.gpr[2] = SCE_UTILITY_SAVEDATA_ERROR_LOAD_NO_DATA;
                 }
@@ -732,16 +732,34 @@ public class sceUtility implements HLEModule {
 		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+        int id = cpu.gpr[4];
+        int str_addr = cpu.gpr[5];
+        int len = cpu.gpr[6];
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        if (!mem.isAddressGood(str_addr)) {
+            Modules.log.warn("sceUtilityGetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ",len=" + len + ") bad address");
+            cpu.gpr[2] = -1;
+        } else {
+            Modules.log.debug("PARTIAL:sceUtilityGetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ",len=" + len + ")");
 
-		System.out.println("Unimplemented NID function sceUtilityGetSystemParamString [0x34B78343]");
+            cpu.gpr[2] = 0;
+            switch(id) {
+                case PSP_SYSTEMPARAM_ID_STRING_NICKNAME:
+                    // TODO let the user set a nickname somewhere
+                    String nickname = "JPCSP";
+                    for(int i = 0; i < len && i < nickname.length(); i++) {
+                        mem.write8(str_addr + i, (byte)nickname.charAt(i));
+                    }
+                    if (len > nickname.length())
+                        mem.write8(str_addr + nickname.length(), (byte)0);
+                    break;
 
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+                default:
+                    Modules.log.warn("UNIMPLEMENTED:sceUtilityGetSystemParamString(id=" + id + ",str=0x" + Integer.toHexString(str_addr) + ",len=" + len + ") unhandled id");
+                    cpu.gpr[2] = -1;
+                    break;
+            }
+        }
 	}
 
 	public void sceUtilityCheckNetParam(Processor processor) {
