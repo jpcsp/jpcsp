@@ -114,7 +114,7 @@ public class ThreadMan {
         }
 
         // Setup args by copying them onto the stack
-        Modules.log.debug("pspfilename - '" + pspfilename + "'");
+        //Modules.log.debug("pspfilename - '" + pspfilename + "'");
         int len = pspfilename.length();
         int alignlen = (len + 1 + 3) & ~3; // string terminator + 4 byte align
         Memory mem = Memory.getInstance();
@@ -714,6 +714,12 @@ public class ThreadMan {
         Modules.log.debug("sceKernelGetSystemTimeLow");
         long systemTime = System.nanoTime();
         Emulator.getProcessor().cpu.gpr[2] = (int)(systemTime & 0xffffffffL);
+    }
+
+    public void ThreadMan_sceKernelCheckCallback() {
+        Modules.log.debug("PARTIAL:sceKernelCheckCallback");
+        // TODO process callbacks
+        yieldCurrentThread();
     }
 
     private class SceKernelCallbackInfo {

@@ -62,7 +62,7 @@ public class pspge {
     public void step() {
         if (waitingForSync) {
             if (syncDone) {
-                log("syncDone");
+                VideoEngine.log.debug("syncDone");
                 ThreadMan.get_instance().unblockThread(syncThreadId);
                 waitingForSync = false;
                 syncDone = false;
@@ -98,7 +98,7 @@ public class pspge {
         if (Memory.getInstance().isAddressGood(list)) {
             DisplayList displayList = new DisplayList(list, stall, callbackId, argument);
             DisplayList.addDisplayList(displayList);
-            log("The list " + displayList.toString());
+            VideoEngine.log.debug("New list " + displayList.toString());
 
             if (displayList.status == DisplayList.QUEUED)
                 pspdisplay.get_instance().setDirty(true);
@@ -115,10 +115,10 @@ public class pspge {
         DisplayList.Lock();
         // TODO if we render asynchronously, using another thread then we need to interupt it first
         if (DisplayList.removeDisplayList(qid)) {
-            log("sceGeListDeQueue qid=" + qid);
+            VideoEngine.log.debug("sceGeListDeQueue qid=" + qid);
             Emulator.getProcessor().cpu.gpr[2] = 0;
         } else {
-            log("sceGeListDeQueue failed qid=" + qid);
+            VideoEngine.log.error("sceGeListDeQueue failed qid=" + qid);
             Emulator.getProcessor().cpu.gpr[2] = -1;
         }
         DisplayList.Unlock();
@@ -131,7 +131,7 @@ public class pspge {
             // remove uncache bit
             stallAddress &= 0x3fffffff;
 
-            log("sceGeListUpdateStallAddr qid=" + qid
+            VideoEngine.log.debug("sceGeListUpdateStallAddr qid=" + qid
                 + " addr:" + String.format("%08x", stallAddress)
                 + " approx " + ((stallAddress - displayList.stallAddress) / 4) + " new commands");
 
@@ -143,7 +143,7 @@ public class pspge {
 
             Emulator.getProcessor().cpu.gpr[2] = 0;
         } else {
-            log("sceGeListUpdateStallAddr qid="+ qid +" failed, no longer exists");
+            VideoEngine.log.error("sceGeListUpdateStallAddr qid="+ qid +" failed, no longer exists");
             Emulator.getProcessor().cpu.gpr[2] = -1;
         }
         DisplayList.Unlock();
@@ -151,16 +151,21 @@ public class pspge {
 
     // TODO handle sync type
     public void sceGeDrawSync(int syncType) {
-        log("sceGeDrawSync syncType=" + syncType);
+        VideoEngine.log.debug("sceGeDrawSync syncType=" + syncType);
         Emulator.getProcessor().cpu.gpr[2] = 0;
         if (!pspdisplay.get_instance().disableGE) {
-            waitingForSync = true;
-            syncThreadId = ThreadMan.get_instance().getCurrentThreadID();
-            ThreadMan.get_instance().blockCurrentThread();
+            if (syncType == DisplayList.QUEUED) {
+                // We always queue straight away so I guess we can return straight away? (fiveofhearts)
+                ThreadMan.get_instance().yieldCurrentThread();
+            } else {
+                waitingForSync = true;
+                syncThreadId = ThreadMan.get_instance().getCurrentThreadID();
+                ThreadMan.get_instance().blockCurrentThread();
+            }
         }
     }
 
-    /* Not sure if this is correct
+    /* Not sure if this is correct, or even needed
     public void sceGeSetCallback(int cbdata_addr) {
         // TODO list of callbacks, for now we allow only 1
         if (cbid == -1) {
@@ -185,10 +190,5 @@ public class pspge {
         }
     }
     */
-
-    private void log(String msg){
-    	VideoEngine.log.debug(msg);
-    }
-
 
 }

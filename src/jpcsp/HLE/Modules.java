@@ -17,6 +17,7 @@ import org.apache.log4j.Logger;
 public class Modules {
 
     public static Sample SampleModule = new Sample();
+
     public static ThreadManForUser ThreadManForUserModule = new ThreadManForUser();
     public static StdioForUser StdioForUserModule = new StdioForUser();
     public static sceCtrl sceCtrlModule = new sceCtrl();
@@ -27,6 +28,7 @@ public class Modules {
     public static sceUtility sceUtilityModule = new sceUtility();
     public static sceRtc sceRtcModule = new sceRtc();
     public static Kernel_Library Kernel_LibraryModule = new Kernel_Library();
+    public static ModuleMgrForUser ModuleMgrForUserModule = new ModuleMgrForUser();
 
     public static Logger log = Logger.getLogger("hle");
 

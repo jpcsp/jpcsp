@@ -63,14 +63,14 @@ public class VideoEngine {
     private int view_upload_y;
     private float[] view_matrix = new float[4 * 4];
     private float[] view_uploaded_matrix = new float[4 * 4];
-    
+
     private boolean bone_upload_start;
     private int bone_upload_x;
     private int bone_upload_y;
     private int bone_matrix_offset;
     private float[] bone_matrix = new float[4 * 4];
     private float[] bone_uploaded_matrix = new float[8 * 4 * 4];
-    
+
     private float[] morph_weight = new float[8];
 
     private float[] tex_envmap_matrix = new float[4*4];
@@ -101,7 +101,8 @@ public class VideoEngine {
     short[] tmp_texture_buffer16 = new short[1024*1024];
     int tex_map_mode = TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV;
 
-    private boolean listIsOver;
+    private boolean listHasEnded;
+    private boolean listHasFinished;
     private DisplayList actualList; // The currently executing list
     private int clearFlags;
     private static void log(String msg) {
@@ -152,7 +153,9 @@ public class VideoEngine {
             if (list.status == DisplayList.QUEUED && list.HasFinish()) {
                 executeList(list);
 
-                if (list.status == DisplayList.DONE) {
+                if (list.status == DisplayList.DRAWING_DONE) {
+                    updated = true;
+                } else if (list.status == DisplayList.DONE) {
                     it.remove();
                     updated = true;
                 }
@@ -170,11 +173,13 @@ public class VideoEngine {
     // call from GL thread
     private void executeList(DisplayList list) {
         actualList = list;
-        listIsOver = false;
+        listHasEnded = false;
+        listHasFinished = false;
 
         log("executeList id " + list.id);
 
-        while (!listIsOver && actualList.pc != actualList.stallAddress && !Emulator.pause) {
+        while (!listHasEnded && !listHasFinished &&
+            actualList.pc != actualList.stallAddress && !Emulator.pause) {
             int ins = Emulator.getMemory().read32(actualList.pc);
             actualList.pc += 4;
             executeCommand(ins);
@@ -185,10 +190,14 @@ public class VideoEngine {
             log("list " + actualList.id + " stalled at " + String.format("%08x", actualList.stallAddress));
         }
 
-        if (listIsOver) {
-            // Set list for deferred remove
+        if (listHasFinished) {
+            // List can still be updated
+            // TODO we should probably recycle lists if they never reach the end state
+            actualList.status = DisplayList.DRAWING_DONE;
+        }
+        if (listHasEnded) {
+            // Now we can remove the list context
             actualList.status = DisplayList.DONE;
-            actualList = null;
         }
     }
 
@@ -269,11 +278,11 @@ public class VideoEngine {
 
         switch (command(instruction)) {
             case END:
-                listIsOver = true;
+                listHasEnded = true;
                 log(helper.getCommandString(END));
                 break;
             case FINISH:
-                listIsOver = true;
+                listHasFinished = true;
                 log(helper.getCommandString(FINISH));
                 break;
             case BASE:
@@ -859,12 +868,12 @@ public class VideoEngine {
             		case TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED: {
             			// TODO: Refactor this to avoid code duplication
             			switch (tex_clut_mode) {
-            				case TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650: {
+            				case CMODE_FORMAT_16BIT_BGR5650: {
             					texture_type = GL.GL_UNSIGNED_SHORT_5_6_5_REV;
 
-	            				for (int i = 0; i < texture_width0*texture_height0; i += 2) {
+	            				for (int i = 0, j = 0; i < texture_width0*texture_height0; i += 2, j++) {
 
-	            					int clut = mem.read8(texture_base_pointer0+i);
+	            					int clut = mem.read8(texture_base_pointer0+j);
 
 	            					// TODO:  I don't know if it's correct, or should read the 4bits in
 	            					//       reverse order
@@ -880,9 +889,9 @@ public class VideoEngine {
 	            			case CMODE_FORMAT_32BIT_ABGR8888: {
 	            				texture_type = GL.GL_UNSIGNED_BYTE;
 
-	            				for (int i = 0; i < texture_width0*texture_height0; i += 2) {
+	            				for (int i = 0, j = 0; i < texture_width0*texture_height0; i += 2, j++) {
 
-	            					int clut = mem.read8(texture_base_pointer0+i);
+	            					int clut = mem.read8(texture_base_pointer0+j);
 
 	            					// TODO:  I don't know if it's correct, or should read the 4bits in
 	            					//       reverse order
@@ -896,7 +905,7 @@ public class VideoEngine {
 	            			}
 
 	                		default: {
-	                			VideoEngine.log.error("Unhandled clut texture mode " + tex_clut_mode);
+	                			VideoEngine.log.error("Unhandled clut texture mode " + texture_storage + "/" + tex_clut_mode);
                                 Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
 	                            break;
 	                		}
@@ -908,6 +917,19 @@ public class VideoEngine {
 
             			// TODO: Refactor this to avoid code duplication
             			switch (tex_clut_mode) {
+            				case CMODE_FORMAT_16BIT_BGR5650: {
+            					texture_type = GL.GL_UNSIGNED_SHORT_5_6_5_REV;
+
+	            				for (int i = 0; i < texture_width0*texture_height0; i++) {
+	            					int clut = mem.read8(texture_base_pointer0+i);
+	            					tmp_texture_buffer16[i] 	= (short)mem.read16(tex_clut_addr + clut);
+	            				}
+
+	            				final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
+
+	            				break;
+	            			}
+
 	            			case CMODE_FORMAT_32BIT_ABGR8888: {
 	            				texture_type = GL.GL_UNSIGNED_BYTE;
 
@@ -922,7 +944,7 @@ public class VideoEngine {
 	            			}
 
 	                		default: {
-	                			VideoEngine.log.error("Unhandled clut texture mode " + tex_clut_mode);
+	                			VideoEngine.log.error("Unhandled clut texture mode " + texture_storage + "/" + tex_clut_mode);
 	                            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
 	                            break;
 	                		}
@@ -1292,7 +1314,7 @@ public class VideoEngine {
                                 if (vinfo.texture  != 0) gl.glTexCoord2f(v.u, v.v);
                                 if (vinfo.color    != 0) gl.glColor4f(v.r, v.g, v.b, v.a);
                                 if (vinfo.normal   != 0) gl.glNormal3f(v.nx, v.ny, v.nz);
-                                if (vinfo.position != 0) { 
+                                if (vinfo.position != 0) {
                                 	if(vinfo.weight != 0)
                                 		doSkinning(vinfo, v);
                                     gl.glVertex3f(v.px, v.py, v.pz);
@@ -1477,21 +1499,31 @@ public class VideoEngine {
                 }
                 break;
             case JUMP:
+            {
                 int npc = (normalArgument | actualList.base) & 0xFFFFFFFC;
                 //I guess it must be unsign as psp player emulator
                 log(helper.getCommandString(JUMP) + " old PC:" + String.format("%08x", actualList.pc)
                     + " new PC:" + String.format("%08x", npc));
                 actualList.pc = npc;
                 break;
+            }
             case CALL:
+            {
                 actualList.stack[actualList.stackIndex++] = actualList.pc + 4;
-                actualList.pc = (normalArgument | actualList.base) & 0xFFFFFFFC;
-                log(helper.getCommandString(CALL), actualList.pc);
+                int npc = (normalArgument | actualList.base) & 0xFFFFFFFC;
+                log(helper.getCommandString(CALL) + " old PC:" + String.format("%08x", actualList.pc)
+                    + " new PC:" + String.format("%08x", npc));
+                actualList.pc = npc;
                 break;
+            }
             case RET:
-                actualList.pc = actualList.stack[--actualList.stackIndex];
-                log(helper.getCommandString(RET), actualList.pc);
+            {
+                int npc = actualList.stack[--actualList.stackIndex];
+                log(helper.getCommandString(RET) + " old PC:" + String.format("%08x", actualList.pc)
+                    + " new PC:" + String.format("%08x", npc));
+                actualList.pc = npc;
                 break;
+            }
 
             case ZMSK: {
             	// NOTE: PSP depth mask as 1 is meant to avoid depth writes,
@@ -1572,7 +1604,7 @@ public class VideoEngine {
             case NOP:
                 log(helper.getCommandString(NOP));
                 break;
-            
+
             /*
              * Skinning
              */
@@ -1649,7 +1681,7 @@ public class VideoEngine {
 				 				      + v.py * bone_uploaded_matrix[matrix_base + 13]
 				 				      + v.pz * bone_uploaded_matrix[matrix_base + 14]
 				 				      + bone_uploaded_matrix[matrix_base + 15]) * v.boneWeights[i];
-				
+
 				nx += (v.nx * bone_uploaded_matrix[matrix_base + 0]
 								      + v.ny * bone_uploaded_matrix[matrix_base + 1]
 								      + v.nz * bone_uploaded_matrix[matrix_base + 2]
@@ -1668,11 +1700,11 @@ public class VideoEngine {
 				 				      + bone_uploaded_matrix[matrix_base + 15]) * v.boneWeights[i];
 			}
 		}
-		
+
 		v.px = x / w;
 		v.py = y / w;
 		v.pz = z / w;
-		
+
 		v.nx = nx / nw;
 		v.ny = ny / nw;
 		v.nz = nz / nw;
