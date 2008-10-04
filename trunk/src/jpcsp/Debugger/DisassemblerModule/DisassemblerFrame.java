@@ -86,7 +86,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         {
             label.addStyleRange(new StyleRange(0, text.length(), Font.BOLD, Color.RED));     
         }
-        if(text.startsWith("   0" + Integer.toHexString(Emulator.getProcessor().cpu.pc)))
+        if(text.startsWith("   0" + Integer.toHexString(Emulator.getProcessor().cpu.pc).toUpperCase()))
         {
              
              label.addStyleRange(new StyleRange(0, 12, Font.BOLD, Color.GREEN)); 
