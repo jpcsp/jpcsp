@@ -1,7 +1,8 @@
 /*
 Function:
 - HLE everything in http://psp.jim.sh/pspsdk-doc/pspiofilemgr_8h.html
-
+Notes:
+- Just redirecting the xxxAsync calls to xxx
 
 This file is part of jpcsp.
 
@@ -95,7 +96,7 @@ public class pspiofilemgr {
     }
 
     private String getDeviceFilePath(String pspfilename) {
-        Modules.log.debug("getDeviceFilePath filepath='" + filepath + "' pspfilename='" + pspfilename + "'");
+        //Modules.log.debug("getDeviceFilePath filepath='" + filepath + "' pspfilename='" + pspfilename + "'");
         String device = filepath;
         String path = pspfilename;
         String filename = null;
@@ -112,7 +113,7 @@ public class pspiofilemgr {
             // Device absolute
             device = pspfilename.substring(0, findcolon);
             path = pspfilename.substring(findcolon + 1);
-            Modules.log.debug("getDeviceFilePath split device='" + device + "' path='" + path + "'");
+            //Modules.log.debug("getDeviceFilePath split device='" + device + "' path='" + path + "'");
         }
 
         if (path.startsWith("/")) {
@@ -137,14 +138,35 @@ public class pspiofilemgr {
             }
         }
 
-        if (filename != null)
-            Modules.log.debug("getDeviceFilePath filename='" + filename + "'");
+        //if (filename != null)
+        //    Modules.log.debug("getDeviceFilePath filename='" + filename + "'");
 
         return filename;
     }
 
     private boolean isUmdPath(String deviceFilePath) {
-        return deviceFilePath.startsWith("disc0/");
+        return deviceFilePath.toLowerCase().startsWith("disc0/");
+    }
+
+    public void sceIoWaitAsync(int uid, int res_addr) {
+        if (debug) Modules.log.debug("sceIoWaitAsync - uid " + Integer.toHexString(uid) + " res:0x" + Integer.toHexString(res_addr));
+
+        SceUIDMan.get_instance().checkUidPurpose(uid, "IOFileManager-File", true);
+        IoInfo info = filelist.get(uid);
+        if (info == null) {
+            Modules.log.warn("sceIoClose - unknown uid " + Integer.toHexString(uid));
+            Emulator.getProcessor().cpu.gpr[2] = -1;
+        } else {
+            Memory mem = Memory.getInstance();
+            if (mem.isAddressGood(res_addr)) {
+                mem.write32(res_addr, (int)(info.result & 0xffffffffL));
+                mem.write32(res_addr + 4, (int)((info.result >> 32) & 0xffffffffL));
+            }
+
+            Emulator.getProcessor().cpu.gpr[2] = 0;
+        }
+
+        ThreadMan.get_instance().yieldCurrentThread();
     }
 
     public void sceIoOpen(int filename_addr, int flags, int permissions) {
@@ -215,6 +237,7 @@ public class pspiofilemgr {
                         try {
                             UmdIsoFile file = iso.getFile(pcfilename.substring(6));
                             IoInfo info = new IoInfo(file, mode, flags, permissions);
+                            info.result = info.uid;
                             Emulator.getProcessor().cpu.gpr[2] = info.uid;
                         } catch(IOException e) {
                             Modules.log.error("sceIoOpen - error opening umd media: " + e.getMessage());
@@ -239,6 +262,7 @@ public class pspiofilemgr {
 
                         SeekableRandomFile raf = new SeekableRandomFile(pcfilename, mode);
                         IoInfo info = new IoInfo(raf, mode, flags, permissions);
+                        info.result = info.uid;
                         Emulator.getProcessor().cpu.gpr[2] = info.uid;
                     }
                 }
@@ -250,6 +274,11 @@ public class pspiofilemgr {
             if (debug) Modules.log.debug("pspiofilemgr - file not found (ok to ignore this message, debug purpose only)");
             Emulator.getProcessor().cpu.gpr[2] = -1;
         }
+    }
+
+    public void sceIoOpenAsync(int filename_addr, int flags, int permissions) {
+        if (debug) Modules.log.debug("sceIoOpenAsync redirecting to sceIoOpen");
+        sceIoOpen(filename_addr, flags, permissions);
     }
 
     public void sceIoClose(int uid) {
@@ -265,6 +294,7 @@ public class pspiofilemgr {
             } else {
                 info.readOnlyFile.close();
                 SceUIDMan.get_instance().releaseUid(info.uid, "IOFileManager-File");
+                info.result = 0;
                 Emulator.getProcessor().cpu.gpr[2] = 0;
             }
         } catch(IOException e) {
@@ -272,6 +302,11 @@ public class pspiofilemgr {
             e.printStackTrace();
             Emulator.getProcessor().cpu.gpr[2] = -1;
         }
+    }
+
+    public void sceIoCloseAsync(int uid) {
+        if (debug) Modules.log.debug("sceIoCloseAsync redirecting to sceIoClose");
+        sceIoClose(uid);
     }
 
     public void sceIoWrite(int uid, int data_addr, int size) {
@@ -306,9 +341,11 @@ public class pspiofilemgr {
                         Memory.getInstance().mainmemory.arrayOffset() + data_addr - MemoryMap.START_RAM,
                         size);
 
+                    info.result = size;
                     Emulator.getProcessor().cpu.gpr[2] = size;
                 } else {
                     Modules.log.warn("sceIoWrite - data is outside of ram " + Integer.toHexString(data_addr));
+                    info.result = -1;
                     Emulator.getProcessor().cpu.gpr[2] = -1;
                 }
             } catch(IOException e) {
@@ -316,6 +353,11 @@ public class pspiofilemgr {
                 Emulator.getProcessor().cpu.gpr[2] = -1;
             }
         }
+    }
+
+    public void sceIoWriteAsync(int uid, int data_addr, int size) {
+        if (debug) Modules.log.debug("sceIoWriteAsync redirecting to sceIoWrite");
+        sceIoWrite(uid, data_addr, size);
     }
 
     public void sceIoRead(int uid, int data_addr, int size) {
@@ -346,9 +388,12 @@ public class pspiofilemgr {
                         Memory.getInstance().mainmemory.array(),
                         Memory.getInstance().mainmemory.arrayOffset() + data_addr - MemoryMap.START_RAM,
                         size);
+
+                    info.result = size;
                     Emulator.getProcessor().cpu.gpr[2] = size;
                 } else {
                     Modules.log.warn("sceIoRead - data is outside of ram " + Integer.toHexString(data_addr));
+                    info.result = PSP_ERROR_FILE_READ_ERROR;
                     Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_FILE_READ_ERROR;
                 }
             } catch(IOException e) {
@@ -358,14 +403,29 @@ public class pspiofilemgr {
         }
     }
 
+    public void sceIoReadAsync(int uid, int data_addr, int size) {
+        if (debug) Modules.log.debug("sceIoReadAsync redirecting to sceIoRead");
+        sceIoRead(uid, data_addr, size);
+    }
+
     // TODO sceIoLseek with 64-bit return value
     public void sceIoLseek(int uid, long offset, int whence) {
         if (debug) Modules.log.debug("sceIoLseek - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Long.toHexString(offset) + ") whence " + getWhenceName(whence));
         seek(uid, offset, whence, true);
     }
 
+    public void sceIoLseekAsync(int uid, long offset, int whence) {
+        if (debug) Modules.log.debug("sceIoLseekAsync - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Long.toHexString(offset) + ") whence " + getWhenceName(whence));
+        seek(uid, offset, whence, true);
+    }
+
     public void sceIoLseek32(int uid, int offset, int whence) {
         if (debug) System.out.println("sceIoLseek32 - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
+        seek(uid, ((long)offset & 0xFFFFFFFFL), whence, false);
+    }
+
+    public void sceIoLseek32Async(int uid, int offset, int whence) {
+        if (debug) System.out.println("sceIoLseek32Async - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
         seek(uid, ((long)offset & 0xFFFFFFFFL), whence, false);
     }
 
@@ -414,6 +474,8 @@ public class pspiofilemgr {
                             break;
                     }
                     long result = info.readOnlyFile.getFilePointer();
+
+                    info.result = result;
                     Emulator.getProcessor().cpu.gpr[2] = (int)(result & 0xFFFFFFFFL);
                     if (resultIs64bit)
                         Emulator.getProcessor().cpu.gpr[3] = (int)(result >> 32);
@@ -616,6 +678,7 @@ public class pspiofilemgr {
         public final int permissions;
 
         public final int uid;
+        public long result; // The return value from the last operation on this file, used by sceIoWaitAsync
 
         public IoInfo(SeekableRandomFile f, String mode, int flags, int permissions) {
             this.msFile = f;

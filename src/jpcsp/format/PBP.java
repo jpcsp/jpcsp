@@ -50,6 +50,7 @@ public class PBP {
     private long p_offset_psp_data;
     private long p_offset_psar_data;
     private Elf32 elf32;
+    private PSF psf;
 
     public boolean isValid() {
         return ((p_magic & 0xFFFFFFFFL) == PBP_MAGIC);
@@ -58,9 +59,13 @@ public class PBP {
     public void setElf32(Elf32 elf) {
         elf32 = elf;
     }
-    
+
     public Elf32 getElf32() {
         return elf32;
+    }
+
+    public PSF getPSF() {
+        return psf;
     }
 
     public void setInfo(String msg) {
@@ -101,9 +106,9 @@ public class PBP {
     public PSF readPSF(ByteBuffer f) throws IOException {
     	if(p_offset_param_sfo > 0) {
            f.position((int)p_offset_param_sfo);
-           PSF psf1= new PSF(p_offset_param_sfo);
-           psf1.read(f);
-           return psf1;
+           psf = new PSF(p_offset_param_sfo);
+           psf.read(f);
+           return psf;
     	}
     	return null;
     }

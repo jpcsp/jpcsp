@@ -402,7 +402,7 @@ private String pspifyFilename(String pcfilename) {
 
     // Files anywhere on user's hard drive, may not work
     // use host0:/ ?
-    return pcfilename;
+    return pcfilename.replaceAll("\\\\", "/");
 }
 
 public void loadFile(File file) {
@@ -410,6 +410,7 @@ public void loadFile(File file) {
     try {
         if (consolewin != null)
             consolewin.clearScreenMessages();
+        this.setTitle(version + " - " + file.getName());
 
         umdLoaded = false;
         loadedFile = file;
@@ -429,8 +430,6 @@ public void loadFile(File file) {
             instructioncounter.RefreshWindow();
         StepLogger.clear();
         StepLogger.setName(file.getPath());
-
-        this.setTitle(version + " - " + file.getName());
     } catch (IOException e) {
         e.printStackTrace();
         JpcspDialogManager.showError(this, "IO Error : " + e.getMessage());
@@ -545,37 +544,36 @@ private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:even
 }//GEN-LAST:event_formWindowClosing
 
 private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openUmdActionPerformed
-        PauseEmu();//GEN-LAST:event_openUmdActionPerformed
+    PauseEmu();//GEN-LAST:event_openUmdActionPerformed
 
-   if (Settings.get_instance().readBoolOptions("emuoptions/umdbrowser"))
-   {
-      if(umdbrowser==null)
-      {
-
-      umdbrowser = new UmdBrowser(this, new File(Settings.get_instance().readStringOptions("emuoptions/umdpath") + "/"));
-      Point mainwindow = this.getLocation();
-      umdbrowser.setLocation(mainwindow.x+100, mainwindow.y+50);
-      umdbrowser.setVisible(true);
-     }
-     else
-     {
-      umdbrowser.refreshFiles();
-      umdbrowser.setVisible(true);
-     }
-   }
-   else
-   {
-    final JFileChooser fc = makeJFileChooser();
-    fc.setDialogTitle("Open umd iso");
-    int returnVal = fc.showOpenDialog(this);
-
-    if (userChooseSomething(returnVal)) {
-        File file = fc.getSelectedFile();
-        loadUMD(file);
-    } else {
-        return; //user cancel the action
+    if (Settings.get_instance().readBoolOptions("emuoptions/umdbrowser"))
+    {
+        if(umdbrowser==null)
+        {
+            umdbrowser = new UmdBrowser(this, new File(Settings.get_instance().readStringOptions("emuoptions/umdpath") + "/"));
+            Point mainwindow = this.getLocation();
+            umdbrowser.setLocation(mainwindow.x+100, mainwindow.y+50);
+            umdbrowser.setVisible(true);
+        }
+        else
+        {
+            umdbrowser.refreshFiles();
+            umdbrowser.setVisible(true);
+        }
     }
-   }
+    else
+    {
+        final JFileChooser fc = makeJFileChooser();
+        fc.setDialogTitle("Open umd iso");
+        int returnVal = fc.showOpenDialog(this);
+
+        if (userChooseSomething(returnVal)) {
+            File file = fc.getSelectedFile();
+            loadUMD(file);
+        } else {
+            return; //user cancel the action
+        }
+    }
 }
 
 public void loadUMD(File file) {
@@ -596,8 +594,9 @@ public void loadUMD(File file) {
         ByteBuffer buf = ByteBuffer.wrap(sfo);
         params.read(buf);
         Emulator.log.info("UMD param.sfo :\n" + params);
+        setTitle(version + " - " + params.getString("TITLE"));
 
-        UmdIsoFile bootBin = iso.getFile("PSP_GAME/SYSDIR/boot.bin");
+        UmdIsoFile bootBin = iso.getFile("PSP_GAME/SYSDIR/BOOT.BIN");
         byte[] bootfile = new byte[(int)bootBin.length()];
         bootBin.read(bootfile);
         ByteBuffer buf1 = ByteBuffer.wrap(bootfile);
@@ -656,8 +655,6 @@ private void InstructionCounterActionPerformed(java.awt.event.ActionEvent evt) {
     }
 }//GEN-LAST:event_InstructionCounterActionPerformed
 
-
-
 private void exitEmu() {
     if (Settings.get_instance().readBoolOptions("guisettings/saveWindowPos"))
         Settings.get_instance().writeWindowPos("mainwindow", getLocation());
@@ -675,17 +672,19 @@ private void RunEmu()
 {
     emulator.RunEmu();
 }
+
 private void TogglePauseEmu()
 {
     // This is a toggle, so can pause and unpause
     if (emulator.run)
     {
         if (!emulator.pause)
-            emulator.PauseEmu();
+            emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_PAUSE);
         else
             RunEmu();
     }
 }
+
 private void PauseEmu()
 {
     // This will only enter pause mode
@@ -693,25 +692,29 @@ private void PauseEmu()
         emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_PAUSE);
     }
 }
+
 public void RefreshButtons()
 {
     RunButton.setSelected(emulator.run && !emulator.pause);
     PauseButton.setSelected(emulator.run && emulator.pause);
 }
+
+/** set the FPS portion of the title */
 public void setMainTitle(String message)
 {
-     String oldtitle = getTitle();
-     int sub = oldtitle.indexOf("average");
-     if(sub!=-1)
-     {
-      String newtitle= oldtitle.substring(0, sub-1);
-      setTitle(newtitle + " " + message);
-     }
-     else
-     {
-         setTitle(oldtitle + " " + message);
-     }
+    String oldtitle = getTitle();
+    int sub = oldtitle.indexOf("average");
+    if(sub!=-1)
+    {
+        String newtitle= oldtitle.substring(0, sub-1);
+        setTitle(newtitle + " " + message);
+    }
+    else
+    {
+        setTitle(oldtitle + " " + message);
+    }
 }
+
     /**
     * @param args the command line arguments
     */

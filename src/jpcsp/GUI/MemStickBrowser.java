@@ -59,7 +59,7 @@ import jpcsp.util.MetaInformation;
 
 /**
  * @author Orphis
- * 
+ *
  */
 public class MemStickBrowser extends JDialog {
 
@@ -94,16 +94,16 @@ public class MemStickBrowser extends JDialog {
 			tableColumn2.setHeaderValue("Title");
 			TableColumn tableColumn3 = new TableColumn(2, 200, cellRenderer, null);
 			tableColumn3.setHeaderValue("Path");
-			addColumn(tableColumn);			
-			addColumn(tableColumn2);			
+			addColumn(tableColumn);
+			addColumn(tableColumn2);
 			addColumn(tableColumn3);
 		}
 	}
 
 	private final class MemStickTableModel extends AbstractTableModel {
 		private static final long serialVersionUID = -1675488447176776560L;
-		
-		
+
+
 
 		public MemStickTableModel(File path) {
 			if(!path.isDirectory()) {
@@ -130,11 +130,11 @@ public class MemStickBrowser extends JDialog {
 					return false;
 				}
 			});
-			
+
 			icons = new ImageIcon[programs.length];
 			pbps = new PBP[programs.length];
 			psfs = new PSF[programs.length];
-			
+
 			for (int i = 0; i < programs.length; ++i) {
 				try {
 					File metapbp = programs[i];
@@ -145,9 +145,9 @@ public class MemStickBrowser extends JDialog {
 								return arg0.getName().equalsIgnoreCase("eboot.pbp");
 							}
 						});
-												
+
 						metapbp = programs[i] = eboot[0];
-						
+
 						File metadir = new File(programs[i].getParentFile().getParentFile().getPath()
 								+ File.separatorChar + "%" + programs[i].getParentFile().getName());
 						if(metadir.exists()) {
@@ -160,7 +160,7 @@ public class MemStickBrowser extends JDialog {
 							if(eboot.length > 0)
 								metapbp = eboot[0];
 						}
-						
+
 						metadir = new File(programs[i].getParentFile().getParentFile().getPath()
 								+ File.separatorChar + programs[i].getParentFile().getName() + "%");
 						if(metadir.exists()) {
@@ -185,7 +185,7 @@ public class MemStickBrowser extends JDialog {
 							readbuffer.get(icon0);
 							icons[i] = new ImageIcon(icon0);
 						}
-					} 
+					}
 				} catch (FileNotFoundException e) {
 					e.printStackTrace();
 				} catch (IOException e) {
@@ -232,7 +232,7 @@ public class MemStickBrowser extends JDialog {
 	}
 
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = 7788144302296106541L;
 	private JButton loadButton;
@@ -247,10 +247,10 @@ public class MemStickBrowser extends JDialog {
 	 */
 	public MemStickBrowser(MainGUI arg0, File path) {
 		super(arg0);
-		
+
 		this.path = path;
 		setModal(true);
-		
+
 		setTitle("Memory Stick Browser");
 		setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 		table = new JTable(new MemStickTableModel(path), new MemStickTableColumnModel());
@@ -271,7 +271,7 @@ public class MemStickBrowser extends JDialog {
 			@Override
 			public void mouseClicked(MouseEvent arg0) {
 				if(arg0.getClickCount() == 2 && arg0.getButton() == MouseEvent.BUTTON1)
-					loadSelectedfile();				
+					loadSelectedfile();
 			}
 		});
 
@@ -297,13 +297,13 @@ public class MemStickBrowser extends JDialog {
 						.getValueAt(r, c), false, false, r, c);
 				width = Math.max(width, comp.getPreferredSize().width);
 			}
-			
+
 			width += 2 * colModel.getColumnMargin();
 			col.setPreferredWidth(width);
 		}
-		
+
 		JScrollPane scrollPane = new JScrollPane(table);
-		
+
 		GroupLayout layout = new GroupLayout(getRootPane());
 		layout.setAutoCreateGaps(true);
 		layout.setAutoCreateContainerGaps(true);
@@ -343,12 +343,14 @@ public class MemStickBrowser extends JDialog {
 	public void refreshFiles() {
 		table.setModel(new MemStickTableModel(path));
 	}
-	
+
 	private void loadSelectedfile() {
 		File selectedFile = programs[table.getSelectedRow()];
 			((MainGUI) getParent()).loadFile(selectedFile);
-		((Frame) getParent()).setTitle(MetaInformation.FULL_NAME + " - "
-				+ table.getModel().getValueAt(table.getSelectedRow(), 1));
+
+        // Not needed anymore, moved into Emulator.java so we catch regular load file as well as load from mstick browser
+		//((Frame) getParent()).setTitle(MetaInformation.FULL_NAME + " - "
+		//		+ table.getModel().getValueAt(table.getSelectedRow(), 1));
 		setVisible(false);
 		dispose();
 	}
@@ -361,7 +363,7 @@ public class MemStickBrowser extends JDialog {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		} catch (Exception e) {
 			e.printStackTrace();
-		} 
+		}
 		MemStickBrowser msb = new MemStickBrowser(null, new File("ms0/PSP/Game"));
 		msb.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 		msb.setVisible(true);
