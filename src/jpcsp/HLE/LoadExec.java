@@ -47,7 +47,7 @@ public class LoadExec {
     public void sceKernelExitGame()
     {
         Modules.log.info("Program exit detected (sceKernelExitGame)");
-        Emulator.PauseEmu();
+        Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_OK);
     }
 
     /* TODO

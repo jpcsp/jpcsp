@@ -25,6 +25,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE;
 
 import java.util.HashMap;
+import jpcsp.Emulator;
 
 public class SceUIDMan {
     private static SceUIDMan instance;
@@ -64,14 +65,14 @@ public class SceUIDMan {
 
         if (found == null) {
             if (!allowUnknown) {
-                System.out.println("Attempt to use unknown SceUID (purpose='" + purpose.toString() + "')");
+                Emulator.log.warn("Attempt to use unknown SceUID (purpose='" + purpose.toString() + "')");
                 return false;
             }
         } else if (!purpose.equals(found.getPurpose())) {
-            System.out.println("Attempt to use SceUID for different purpose (purpose='" + purpose.toString() + "',original='" + found.getPurpose().toString() + "')");
+            Emulator.log.error("Attempt to use SceUID for different purpose (purpose='" + purpose.toString() + "',original='" + found.getPurpose().toString() + "')");
             return false;
         }
-        
+
         return true;
     }
 
@@ -81,17 +82,17 @@ public class SceUIDMan {
         SceUID found = uids.get(uid);
 
         if (found == null) {
-            System.out.println("Attempt to release unknown SceUID (purpose='" + purpose.toString() + "')");
+            Emulator.log.warn("Attempt to release unknown SceUID (purpose='" + purpose.toString() + "')");
             return false;
         }
 
         if (purpose.equals(found.getPurpose())) {
             uids.remove(found);
         } else {
-            System.out.println("Attempt to release SceUID for different purpose (purpose='" + purpose.toString() + "',original='" + found.getPurpose().toString() + "')");
+            Emulator.log.error("Attempt to release SceUID for different purpose (purpose='" + purpose.toString() + "',original='" + found.getPurpose().toString() + "')");
             return false;
         }
-        
+
         return true;
     }
 
