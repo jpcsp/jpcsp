@@ -16,6 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Debugger.DisassemblerModule;
 
+/* The contents of this file are subject to the terms of the Common Development and Distribution License (the License). You may not use this file except in compliance with the License. You can obtain a copy of the License at http://www.netbeans.org/cddl.html or http://www.netbeans.org/cddl.txt. When distributing Covered Code, include this CDDL Header Notice in each file and include the License file at http://www.netbeans.org/cddl.txt. If applicable, add the following below the CDDL Header, with the fields enclosed by brackets [] replaced by your own identifying information: "Portions Copyrighted [year] [name of copyright owner]" Copyright 2006 Sun Microsystems, all rights reserved. */
+   
+
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -64,8 +67,9 @@ import javax.swing.tree.TreePath;
  * JTree or JList.
  *
  * @author Tim Boudreau
+ * @modified Vimal
  */
-final class ViewTooltips extends MouseAdapter implements MouseMotionListener {
+public final class ViewTooltips extends MouseAdapter implements MouseMotionListener {
     /** The default instance, reference counted */
     private static ViewTooltips INSTANCE = null;
     /** A reference count for number of comps listened to */
@@ -87,7 +91,7 @@ final class ViewTooltips extends MouseAdapter implements MouseMotionListener {
      * for now) which should show helper tooltips.  Should be called
      * from the component's addNotify() method.
      */
-    static void register (JComponent comp) {
+    public static void register (JComponent comp) {
         if (INSTANCE == null) {
             INSTANCE = new ViewTooltips();
         }
@@ -99,9 +103,9 @@ final class ViewTooltips extends MouseAdapter implements MouseMotionListener {
      * for now) which should show helper tooltips. Should be called
      * from the component's removeNotify() method.
      */
-    static void unregister (JComponent comp) {
+    public static void unregister (JComponent comp) {
         assert INSTANCE != null : "Unregister asymmetrically called";
-        if (INSTANCE.detachFrom (comp) == 0) {
+        if (null!=INSTANCE && INSTANCE.detachFrom (comp) == 0) {
             INSTANCE.hide();
             INSTANCE = null;
         }
@@ -586,8 +590,14 @@ final class ViewTooltips extends MouseAdapter implements MouseMotionListener {
                 list.addHierarchyListener(this);
                 list.addComponentListener(this);
             }
-            pane.getHorizontalScrollBar().getModel().addChangeListener(this);
-            pane.getVerticalScrollBar().getModel().addChangeListener(this);
+            if(null!=pane.getHorizontalScrollBar())
+            {
+            	pane.getHorizontalScrollBar().getModel().addChangeListener(this);
+            }
+            if(null!=pane.getVerticalScrollBar())
+            {
+            	pane.getVerticalScrollBar().getModel().addChangeListener(this);
+            }
             KeyboardFocusManager.getCurrentKeyboardFocusManager().addPropertyChangeListener(this);
         }
         
@@ -607,8 +617,14 @@ final class ViewTooltips extends MouseAdapter implements MouseMotionListener {
                 list.removeHierarchyListener(this);
                 list.removeComponentListener(this);
             }
-            pane.getHorizontalScrollBar().getModel().removeChangeListener(this);
-            pane.getVerticalScrollBar().getModel().removeChangeListener(this);
+            if(null!=pane.getHorizontalScrollBar())
+            {
+            	pane.getHorizontalScrollBar().getModel().removeChangeListener(this);
+            }
+            if(null!=pane.getVerticalScrollBar())
+            {
+            	pane.getVerticalScrollBar().getModel().removeChangeListener(this);
+            }
             detached = true;
         }
         
@@ -691,3 +707,5 @@ final class ViewTooltips extends MouseAdapter implements MouseMotionListener {
         }
     }
 }
+
+

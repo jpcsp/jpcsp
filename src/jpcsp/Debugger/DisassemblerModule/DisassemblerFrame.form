@@ -121,6 +121,7 @@
           <StringArray count="0"/>
         </Property>
         <Property name="selectionMode" type="int" value="0"/>
+        <Property name="toolTipText" type="java.lang.String" value=""/>
       </Properties>
       <Events>
         <EventHandler event="mouseWheelMoved" listener="java.awt.event.MouseWheelListener" parameters="java.awt.event.MouseWheelEvent" handler="disasmListMouseWheelMoved"/>
