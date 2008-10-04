@@ -61,6 +61,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         ViewTooltips.register(disasmList);
         DebuggerPC = 0;
         RefreshDebugger();
+        
+        
     }
 
     public void setMemoryViewer(MemoryViewer memview) {
@@ -81,6 +83,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         if (DebuggerPC == 0) {
             DebuggerPC = cpu.pc;
         }
+        ViewTooltips.unregister(disasmList);
         listmodel.clear();
 
         for (pc = DebuggerPC , cnt = 0; pc < (DebuggerPC + 0x00000094); pc += 0x00000004, cnt++) {
@@ -98,6 +101,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 listmodel.addElement(String.format("   %08x: invalid address", pc));
             }
         }
+        ViewTooltips.register(disasmList);
     //refreshregisters
         jTable1.setValueAt(Integer.toHexString(cpu.pc), 0, 1);
         jTable1.setValueAt(Integer.toHexString(cpu.getHi()), 1, 1);
@@ -187,8 +191,9 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             }
         });
 
-        disasmList.setFont(new java.awt.Font("Courier New", 0, 11));
+        disasmList.setFont(new java.awt.Font("Courier New", 0, 11)); // NOI18N
         disasmList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        disasmList.setToolTipText("");
         disasmList.addMouseWheelListener(new java.awt.event.MouseWheelListener() {
             public void mouseWheelMoved(java.awt.event.MouseWheelEvent evt) {
                 disasmListMouseWheelMoved(evt);
@@ -508,11 +513,11 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addComponent(DisasmToolbar, javax.swing.GroupLayout.DEFAULT_SIZE, 763, Short.MAX_VALUE)
+                .addComponent(DisasmToolbar, javax.swing.GroupLayout.DEFAULT_SIZE, 793, Short.MAX_VALUE)
                 .addContainerGap())
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(disasmList, javax.swing.GroupLayout.PREFERRED_SIZE, 491, Short.MAX_VALUE)
+                .addComponent(disasmList, javax.swing.GroupLayout.DEFAULT_SIZE, 533, Short.MAX_VALUE)
                 .addGap(18, 18, 18)
                 .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 223, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(19, 19, 19))
@@ -701,7 +706,8 @@ public void lostOwnership( Clipboard aClipboard, Transferable aContents) {
      //do nothing
  }
 private void disasmListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_disasmListMouseClicked
-        BranchOrJump.setEnabled(false);
+      
+       BranchOrJump.setEnabled(false);
        if (SwingUtilities.isRightMouseButton(evt) && !disasmList.isSelectionEmpty() && disasmList.locationToIndex(evt.getPoint()) == disasmList.getSelectedIndex())
        {
            //check if we can enable branch or jump address copy
