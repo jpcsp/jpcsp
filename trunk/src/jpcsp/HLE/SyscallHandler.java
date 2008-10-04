@@ -60,7 +60,9 @@ public class SyscallHandler {
                // case 0x200f: //sceKernelNotifyCallback
               //  case 0x2010: //sceKernelCancelCallback
               //  case 0x2011: //sceKernelGetCallbackCount
-              //  case 0x2012: //sceKernelCheckCallback
+                case 0x2012:
+                    ThreadMan.get_instance().ThreadMan_sceKernelCheckCallback();
+                    break;
               //  case 0x2013: //sceKernelReferCallbackStatus
                 case 0x2014:
                     ThreadMan.get_instance().ThreadMan_sceKernelSleepThread();
@@ -383,12 +385,6 @@ public class SyscallHandler {
 		// sceKernelIcacheProbe(0x20cd),
 		// sceKernelIcacheReadTag(0x20ce),
 		// sceKernelLoadModule(0x20cf),
-                case 0x20cf:
-                     String name = readStringZ(Memory.getInstance().mainmemory,
-                     (gpr[4] & 0x3fffffff) - MemoryMap.START_RAM);
-                     System.out.println("LoadModule " + name);
-                     gpr[2]=1;
-                    break;
 		// sceKernelLoadModuleByID(0x20d0),
 		// sceKernelLoadModuleMs(0x20d1),
 		// sceKernelLoadModuleBufferUsbWlan(0x20d2),
