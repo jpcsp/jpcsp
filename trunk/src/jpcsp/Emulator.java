@@ -34,6 +34,7 @@ import jpcsp.format.Elf32Relocate;
 import jpcsp.format.Elf32SectionHeader;
 import jpcsp.format.Elf32SectionHeader.ShType;
 import jpcsp.format.Elf32StubHeader;
+import jpcsp.format.PSF;
 import static jpcsp.util.Utilities.*;
 
 public class Emulator implements Runnable {
@@ -71,7 +72,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
         mainThread = new Thread(this, "Emu");
     }
 
-    /* unused ?
+    /* unused
     public void load(SeekableDataInput f) throws IOException
     {
         this.pspfilename = "";
@@ -124,20 +125,23 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
         }
     }
 
-    //elf32 initElf32
     private void initElf32() throws IOException {
         mediaImplemented = true;
         initRamBy(romManager.getElf32());
         initCpuBy(romManager.getElf32());
-        initDebugWindowsByElf32();
     }
 
     private void initPbp() throws IOException {
         mediaImplemented = true;
         initRamBy(romManager.getPBP().getElf32());
         initCpuBy(romManager.getPBP().getElf32());
-        initDebugWindowsByPbp();
-        //RAM, CPU, GPU...
+
+        // Set gui title from param.sfo
+        PSF psf = romManager.getPBP().getPSF();
+        if (psf != null) {
+            String title = psf.getString("TITLE");
+            gui.setTitle(jpcsp.util.MetaInformation.FULL_NAME + " - " + title);
+        }
     }
 
     private void initRamBy(Elf32 elf) throws IOException {
@@ -147,6 +151,10 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
 
         if (elf.getHeader().requiresRelocation()) {
             for (Elf32SectionHeader shdr : elf.getListSectionHeader()) {
+                if (shdr.getSh_type() == ShType.REL.getValue()) {
+                    Memory.log.warn(shdr.getSh_namez() + ": not relocating section");
+                }
+
                 if (shdr.getSh_type() == ShType.PRXREL.getValue() /*|| // 0x700000A0
                         shdr.getSh_type() == ShType.REL.getValue()*/) // 0x00000009
                 {
@@ -198,7 +206,8 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                         switch (R_TYPE) {
                             case 0: //R_MIPS_NONE
                                 // Don't do anything
-                                Memory.log.warn("R_MIPS_NONE addr=" + String.format("%08x", data_addr));
+                                if (logRelocations)
+                                    Memory.log.warn("R_MIPS_NONE addr=" + String.format("%08x", data_addr));
                                 break;
 
                             case 5: //R_MIPS_HI16
@@ -450,21 +459,15 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
         jpcsp.HLE.pspge.get_instance().Initialise();
         jpcsp.HLE.pspdisplay.get_instance().Initialise();
         jpcsp.HLE.pspiofilemgr.get_instance().Initialise();
-    }
 
-    private void initDebugWindowsByPbp() {
-    }
-
-    private void initDebugWindowsByElf32() {
+        if (memview != null)
+            memview.RefreshMemory();
     }
 
     private void initNewPsp() {
         getProcessor().reset();
         Memory.getInstance().Initialise();
         NIDMapper.get_instance().Initialise();
-
-        if (memview != null)
-            memview.RefreshMemory();
     }
 
     @Override

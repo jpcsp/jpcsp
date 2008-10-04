@@ -110,8 +110,9 @@ public class FileManager {
 
             /*try pbp format*/
             pbp = new PBP(getActualFile());
-            if (pbp.getOffsetParam() > 0)
+            if (pbp.getOffsetParam() > 0) {
                 Emulator.log.info("PBP meta data :\n" + pbp.readPSF(getActualFile()));
+            }
             processPbp();
             if (getType() == FORMAT_PBP) {
                 return;

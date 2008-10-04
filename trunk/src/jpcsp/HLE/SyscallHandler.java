@@ -227,31 +227,46 @@ public class SyscallHandler {
 		// sceKernelReferThreadProfiler(0x2085),
 		// sceKernelReferGlobalProfiler(0x2086),
 		// sceIoPollAsync(0x2087),
-		// sceIoWaitAsync(0x2088),
+                case 0x2088:
+                    pspiofilemgr.get_instance().sceIoWaitAsync(gpr[4], gpr[5]);
+                    break;
 		// sceIoWaitAsyncCB(0x2089),
 		// sceIoGetAsyncStat(0x208a),
 		// sceIoChangeAsyncPriority(0x208b),
 		// sceIoSetAsyncCallback(0x208c),
-                case 0x208d:// sceIoClose
+                case 0x208d:
                     pspiofilemgr.get_instance().sceIoClose(gpr[4]);
                     break;
-		// sceIoCloseAsync(0x208e),
-                case 0x208f:// sceIoOpen
+                case 0x208e:
+                    pspiofilemgr.get_instance().sceIoCloseAsync(gpr[4]);
+                    break;
+                case 0x208f:
                     pspiofilemgr.get_instance().sceIoOpen(gpr[4], gpr[5], gpr[6]);
                     break;
-		// sceIoOpenAsync(0x2090),
-                case 0x2091: //sceIoRead
+                case 0x2090:
+                    pspiofilemgr.get_instance().sceIoOpenAsync(gpr[4], gpr[5], gpr[6]);
+                    break;
+                case 0x2091:
                     pspiofilemgr.get_instance().sceIoRead(gpr[4], gpr[5], gpr[6]);
                     break;
-		// sceIoReadAsync(0x2092),
-                case 0x2093:// sceIoWrite
+                case 0x2092:
+                    pspiofilemgr.get_instance().sceIoReadAsync(gpr[4], gpr[5], gpr[6]);
+                    break;
+                case 0x2093:
                     pspiofilemgr.get_instance().sceIoWrite(gpr[4], gpr[5], gpr[6]);
                     break;
-		// sceIoWriteAsync(0x2094),
-		// sceIoLseekAsync(0x2096),
+                case 0x2094:
+                    pspiofilemgr.get_instance().sceIoWriteAsync(gpr[4], gpr[5], gpr[6]);
+                    break;
 
                 case 0x2095:
                     pspiofilemgr.get_instance().sceIoLseek(
+                            gpr[4],
+                            ((((long)gpr[6]) & 0xFFFFFFFFL) | (((long)gpr[7])<<32)),
+                            gpr[8]);
+                    break;
+                case 0x2096:
+                    pspiofilemgr.get_instance().sceIoLseekAsync(
                             gpr[4],
                             ((((long)gpr[6]) & 0xFFFFFFFFL) | (((long)gpr[7])<<32)),
                             gpr[8]);
@@ -263,9 +278,16 @@ public class SyscallHandler {
                             gpr[5],
                             gpr[6]);
                     break;
-		// sceIoLseek32Async(0x2098),
+                case 0x2098:
+                    pspiofilemgr.get_instance().sceIoLseek32Async(
+                            gpr[4],
+                            gpr[5],
+                            gpr[6]);
+                    break;
+
 		// sceIoIoctl(0x2099),
 		// sceIoIoctlAsync(0x209a),
+
             case 0x209b://sceIoDopen
                     pspiofilemgr.get_instance().sceIoDopen(gpr[4]);
                     break;

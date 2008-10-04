@@ -57,7 +57,7 @@ import jpcsp.util.MetaInformation;
 
 /**
  * @author Orphis
- * 
+ *
  */
 public class UmdBrowser extends JDialog {
 
@@ -70,7 +70,7 @@ public class UmdBrowser extends JDialog {
 			@Override
 			public Component getTableCellRendererComponent(JTable table,
                                 Object obj, boolean isSelected, boolean hasFocus,
-                                int row, int column) 
+                                int row, int column)
             {
 				if(obj instanceof Icon) {
 					setText("");
@@ -97,8 +97,8 @@ public class UmdBrowser extends JDialog {
 			tableColumn4.setHeaderValue("Firmware");
 			TableColumn tableColumn5 = new TableColumn(4, 200, cellRenderer, null);
 			tableColumn5.setHeaderValue("Path");
-			addColumn(tableColumn);			
-			addColumn(tableColumn2);			
+			addColumn(tableColumn);
+			addColumn(tableColumn2);
 			addColumn(tableColumn3);
                         addColumn(tableColumn4);
                         addColumn(tableColumn5);
@@ -107,8 +107,8 @@ public class UmdBrowser extends JDialog {
 
 	private final class MemStickTableModel extends AbstractTableModel {
 		private static final long serialVersionUID = -1675488447176776560L;
-		
-		
+
+
 
 		public MemStickTableModel(File path) {
 			if(!path.isDirectory()) {
@@ -133,11 +133,11 @@ public class UmdBrowser extends JDialog {
 					return false;
 				}
 			});
-			
+
 			icons = new ImageIcon[programs.length];
 			pbps = new PBP[programs.length];
 			psfs = new PSF[programs.length];
-			
+
 			for (int i = 0; i < programs.length; ++i) {
 				try {
                         if(programs[i].isDirectory()) {
@@ -149,7 +149,7 @@ public class UmdBrowser extends JDialog {
                                 });
                                 programs[i] = eboot[0];
                         }
-                                    
+
                         if(!programs[i].isDirectory())
                         {
                             UmdIsoReader iso = new UmdIsoReader(programs[i].getPath());
@@ -206,7 +206,7 @@ public class UmdBrowser extends JDialog {
                                 case 3:
                                     	String firmware;
 					if(psfs[rowIndex] == null || (firmware = psfs[rowIndex].getString("PSP_SYSTEM_VER")) == null) {
-						
+
 						firmware =  "Not found";
 					}
 					return firmware;
@@ -225,7 +225,7 @@ public class UmdBrowser extends JDialog {
 	}
 
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = 7788144302296106541L;
 	private JButton loadButton;
@@ -240,10 +240,10 @@ public class UmdBrowser extends JDialog {
 	 */
 	public UmdBrowser(MainGUI arg0, File path) {
 		super(arg0);
-		
+
 		this.path = path;
 		setModal(true);
-		
+
 		setTitle("Umd Iso/Cso Browser");
 		setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 		table = new JTable(new MemStickTableModel(path), new MemStickTableColumnModel());
@@ -264,7 +264,7 @@ public class UmdBrowser extends JDialog {
 			@Override
 			public void mouseClicked(MouseEvent arg0) {
 				if(arg0.getClickCount() == 2 && arg0.getButton() == MouseEvent.BUTTON1)
-					loadSelectedfile();				
+					loadSelectedfile();
 			}
 		});
 
@@ -290,13 +290,13 @@ public class UmdBrowser extends JDialog {
 						.getValueAt(r, c), false, false, r, c);
 				width = Math.max(width, comp.getPreferredSize().width);
 			}
-			
+
 			width += 2 * colModel.getColumnMargin();
 			col.setPreferredWidth(width);
 		}
-		
+
 		JScrollPane scrollPane = new JScrollPane(table);
-		
+
 		GroupLayout layout = new GroupLayout(getRootPane());
 		layout.setAutoCreateGaps(true);
 		layout.setAutoCreateContainerGaps(true);
@@ -336,14 +336,15 @@ public class UmdBrowser extends JDialog {
 	public void refreshFiles() {
 		table.setModel(new MemStickTableModel(path));
 	}
-	
+
 	private void loadSelectedfile() {
 		File selectedFile = programs[table.getSelectedRow()];
 		String lower = selectedFile.getName().toLowerCase();
 			((MainGUI) getParent()).loadUMD(selectedFile);
 
-		((Frame) getParent()).setTitle(MetaInformation.FULL_NAME + " - "
-				+ table.getModel().getValueAt(table.getSelectedRow(), 1));
+        // Not needed anymore, moved into MainGUI.java so we catch regular load umd as well as load from umd browser
+		//((Frame) getParent()).setTitle(MetaInformation.FULL_NAME + " - "
+		//		+ table.getModel().getValueAt(table.getSelectedRow(), 1));
 		setVisible(false);
 		dispose();
 	}
