@@ -804,15 +804,15 @@ public class syscallsFirm15 {
 
 
                  /* FAKE MAPPING!! for Final Fantasy checks*/
-                 ModuleMgrForUser_8F2DF740(0x3000,0x8f2df740), // fw 3.52
+                 ModuleMgrForUser_8F2DF740(0x3000,0x8f2df740), // fw 3.52 or less?
                  sceKernelSetCompiledSdkVersion(0x3001,0x7591c7db), // fw 2.5
                  sceKernelSetCompilerVersion(0x3002,0xf77d77cb), // fw 2.5
                  sceAtracIsSecondBufferNeeded(0x3003,0xeca32a99), // fw 2.5
-                 sceUtilityLoadModule(0x3004,0x2a2b3de0), // fw 3.52
-                 sceUtilityMsgDialogAbort(0x3005,0x4928bd96), // fw 3.52
-                 sceUtilityUnloadModule(0x3006,0xe49bfe92), // fw 3.52
+                 sceUtilityLoadModule(0x3004,0x2a2b3de0), // fw 3.52 or less?
+                 sceUtilityMsgDialogAbort(0x3005,0x4928bd96), // fw 3.52 or less?
+                 sceUtilityUnloadModule(0x3006,0xe49bfe92), // fw 3.52 or less?
                  /* more fake mapping */
-                 sceUmd_87533940(0x3007,0x87533940),//umd function 2.00 +
+                 sceUmdReplaceProhibit(0x3007,0x87533940),//umd function 2.00 +
                  sceNetAdhocMatching_8f58bedf(0x3008,0x8f58bedf), //2.50+
                  sceFontFindOptimumFont(0x3009,0x99ef33c),//2.00 +
                  sceFontGetFontInfo(0x300a,0xda7535e),//2.00+
@@ -822,14 +822,14 @@ public class syscallsFirm15 {
                  sceFontOpen(0x300e,0xa834319d),//2.00+
                  sceFontGetCharGlyphImage_Clip(0x300f,0xca1e6945),//2.00+
                  sceFontGetCharInfo(0x3010,0xdcc80c2f),//2.00+
-                 sceUtility_1579a159(0x3011,0x1579a159),//2.00+
-                 sceUtility_64d50c56(0x3012,0x64d50c56),//2.00+
-                 sceUtility_c629af26(0x3013,0xc629af26),//2.70+
+                 sceUtilityLoadNetModule(0x3011,0x1579a159),//2.00+
+                 sceUtilityUnloadNetModule(0x3012,0x64d50c56),//2.00+
+                 sceUtilityLoadAvModule(0x3013,0xc629af26),//2.70+
                  sceFontGetCharGlyphImage(0x3014,0x980f4895),//2.00 , 2.01 and 3.00 +
-                 ThreadManForUser_f8170fbe(0x3015,0xf8170fbe),//2.70+
-                 ThreadManForUser_6b30100f(0x3016,0x6b30100f),//2.70+
-                 ThreadManForUser_b011b11f(0x3017,0xb011b11f),//2.70+
-                 ThreadManForUser_b7d098c6(0x3017,0xb7d098c6);//2.70+
+                 sceKernelDeleteMutex(0x3015,0xf8170fbe),//2.70+
+                 sceKernelUnlockMutex(0x3016,0x6b30100f),//2.70+
+                 sceKernelLockMutex(0x3017,0xb011b11f),//2.70+
+                 sceKernelCreateMutex(0x3017,0xb7d098c6);//2.70+
 
 
 

@@ -52,6 +52,7 @@ public class pspiofilemgr {
     public final static int PSP_O_TRUNC   = 0x0400;
     public final static int PSP_O_EXCL    = 0x0800;
     public final static int PSP_O_NOWAIT  = 0x8000;
+    public final static int PSP_O_UNKNOWN1  = 0xf0000; // seen on Wipeout Pure
 
     public final static int PSP_SEEK_SET  = 0;
     public final static int PSP_SEEK_CUR  = 1;
@@ -145,7 +146,15 @@ public class pspiofilemgr {
     }
 
     private boolean isUmdPath(String deviceFilePath) {
-        return deviceFilePath.toLowerCase().startsWith("disc0/");
+        return deviceFilePath.toLowerCase().startsWith("disc0");
+    }
+
+    private String trimUmdPrefix(String pcfilename) {
+        if (pcfilename.toLowerCase().startsWith("disc0/"))
+            return pcfilename.substring(6);
+        if (pcfilename.toLowerCase().startsWith("disc0"))
+            return pcfilename.substring(5);
+        return pcfilename;
     }
 
     public void sceIoSync(int device_addr, int unknown) {
@@ -247,10 +256,13 @@ public class pspiofilemgr {
                     } else {
                         // open file
                         try {
-                            UmdIsoFile file = iso.getFile(pcfilename.substring(6));
+                            UmdIsoFile file = iso.getFile(trimUmdPrefix(pcfilename));
                             IoInfo info = new IoInfo(file, mode, flags, permissions);
                             info.result = info.uid;
                             Emulator.getProcessor().cpu.gpr[2] = info.uid;
+                        } catch(FileNotFoundException e) {
+                            if (debug) Modules.log.debug("sceIoOpen - umd file not found (ok to ignore this message, debug purpose only)");
+                            Emulator.getProcessor().cpu.gpr[2] = -1;
                         } catch(IOException e) {
                             Modules.log.error("sceIoOpen - error opening umd media: " + e.getMessage());
                             Emulator.getProcessor().cpu.gpr[2] = -1;
@@ -283,7 +295,7 @@ public class pspiofilemgr {
             }
         } catch(FileNotFoundException e) {
             // To be expected under mode="r" and file doesn't exist
-            if (debug) Modules.log.debug("pspiofilemgr - file not found (ok to ignore this message, debug purpose only)");
+            if (debug) Modules.log.debug("sceIoOpen - file not found (ok to ignore this message, debug purpose only)");
             Emulator.getProcessor().cpu.gpr[2] = -1;
         }
     }
@@ -545,14 +557,42 @@ public class pspiofilemgr {
 
         String pcfilename = getDeviceFilePath(dirname);
         if (pcfilename != null) {
-            //if (debug) Modules.log.debug("sceIoDopen - pcfilename = " + pcfilename);
-            File f = new File(pcfilename);
-            if (f.isDirectory()) {
-                IoDirInfo info = new IoDirInfo(pcfilename, f);
-                Emulator.getProcessor().cpu.gpr[2] = info.uid;
+            if (debug) Modules.log.debug("sceIoDopen - pcfilename = " + pcfilename);
+            if (isUmdPath(pcfilename)) {
+                // check umd is mounted
+                if (iso == null) {
+                    Modules.log.error("sceIoDopen - no umd mounted");
+                    Emulator.getProcessor().cpu.gpr[2] = -1;
+                } else {
+                    String isofilename = trimUmdPrefix(pcfilename);
+                    if (debug) Modules.log.debug("sceIoDopen - isofilename = " + isofilename);
+                    try {
+                        if (iso.isDirectory(isofilename)) {
+                            String[] filenames = iso.listDirectory(isofilename);
+                            if (debug) Modules.log.debug("sceIoDopen on umd, " + filenames.length + " files");
+                            IoDirInfo info = new IoDirInfo(pcfilename, filenames);
+                            Emulator.getProcessor().cpu.gpr[2] = info.uid;
+                        } else {
+                            if (debug) Modules.log.warn("sceIoDopen not a umd directory!");
+                            Emulator.getProcessor().cpu.gpr[2] = -1;
+                        }
+                    } catch(FileNotFoundException e) {
+                        Modules.log.warn("sceIoDopen - umd file not found");
+                        Emulator.getProcessor().cpu.gpr[2] = -1;
+                    } catch(IOException e) {
+                        Modules.log.warn("sceIoDopen - umd io error: " + e.getMessage());
+                        Emulator.getProcessor().cpu.gpr[2] = -1;
+                    }
+                }
             } else {
-                if (debug) Modules.log.warn("sceIoDopen not a directory!");
-                Emulator.getProcessor().cpu.gpr[2] = -1;
+                File f = new File(pcfilename);
+                if (f.isDirectory()) {
+                    IoDirInfo info = new IoDirInfo(pcfilename, f.list());
+                    Emulator.getProcessor().cpu.gpr[2] = info.uid;
+                } else {
+                    if (debug) Modules.log.warn("sceIoDopen not a directory!");
+                    Emulator.getProcessor().cpu.gpr[2] = -1;
+                }
             }
         } else {
             Emulator.getProcessor().cpu.gpr[2] = -1;
@@ -568,20 +608,16 @@ public class pspiofilemgr {
             Modules.log.warn("sceIoDread - unknown uid " + Integer.toHexString(uid));
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
         } else if (info.hasNext()) {
-            //String filename = info.path + "/" + info.next(); // TODO is the separator needed?
             String filename = info.next(); // TODO is the separator needed?
-            Modules.log.debug("sceIoDread - filename = " + filename);
+            Modules.log.debug("sceIoDread - path = " + info.path + " filename = " + filename);
 
-            //String pcfilename = getDeviceFilePath(filename);
-            //String pcfilename = getDeviceFilePath(info.path + "/" + filename);
-            //SceIoStat stat = stat(pcfilename);
             SceIoStat stat = stat(info.path + "/" + filename);
             if (stat != null) {
                 SceIoDirent dirent = new SceIoDirent(stat, filename);
                 dirent.write(Memory.getInstance(), dirent_addr);
-                Emulator.getProcessor().cpu.gpr[2] = 1; // TODO "> 0", so number of files remaining?
+                Emulator.getProcessor().cpu.gpr[2] = 1; // TODO "> 0", so number of files remaining or 1 is ok?
             } else {
-                Modules.log.warn("sceIoDread - stat failed");
+                Modules.log.warn("sceIoDread - stat failed (" + info.path + "/" + filename + ")");
                 Emulator.getProcessor().cpu.gpr[2] = -1;
             }
         } else {
@@ -617,15 +653,15 @@ public class pspiofilemgr {
 
         switch(cmd) {
             case 0x2415821:
-                Modules.log.debug("UNIMPLEMENTED: sceIoDevctl register ms eject callback");
+                Modules.log.warn("UNIMPLEMENTED: sceIoDevctl register ms eject callback");
+                Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
                 break;
+
             default:
                 Modules.log.warn("sceIoDevctl unknown command " + String.format("0x%08X", cmd));
+                Emulator.getProcessor().cpu.gpr[2] = -1; // Just fail for now
                 break;
         }
-
-        // Just fail for now
-        Emulator.getProcessor().cpu.gpr[2] = -1;
     }
 
     /** @param pcfilename can be null for convenience
@@ -634,28 +670,66 @@ public class pspiofilemgr {
         SceIoStat stat = null;
         if (pcfilename != null) {
             //if (debug) Modules.log.debug("stat - pcfilename = " + pcfilename);
-            File file = new File(pcfilename);
-            if (file.exists()) {
-                int mode = (file.canRead() ? 4 : 0) + (file.canWrite() ? 2 : 0) + (file.canExecute() ? 1 : 0);
-                int attr = 0;
-                long size = file.length();
-                long mtime = file.lastModified();
+            if (isUmdPath(pcfilename)) {
+                // check umd is mounted
+                if (iso == null) {
+                    Modules.log.error("stat - no umd mounted");
+                    Emulator.getProcessor().cpu.gpr[2] = -1;
+                } else {
+                    String isofilename = trimUmdPrefix(pcfilename);
+                    try {
+                        int mode = 4; // 4=readable
+                        int attr = 0;
+                        long size = 0;
 
-                // Octal extend into user and group
-                mode = mode + mode * 8 + mode * 64;
-                //if (debug) Modules.log.debug("stat - permissions = " + Integer.toOctalString(mode));
+                        // Set attr (dir/file)
+                        if (iso.isDirectory(isofilename)) {
+                            attr |= 0x10;
+                            mode |= 1; // 1=executable
+                        } else { // isFile
+                            attr |= 0x20;
+                            UmdIsoFile file = iso.getFile(isofilename);
+                            size = file.length();
+                        }
 
-                // Set attr (dir/file) and copy into mode
-                if (file.isDirectory())
-                    attr |= 0x10;
-                if (file.isFile())
-                    attr |= 0x20;
-                mode |= attr << 8;
+                        // Octal extend into user and group
+                        mode = mode + mode * 8 + mode * 64;
+                        // Copy attr into mode
+                        mode |= attr << 8;
 
-                // Java can't see file create/access time
-                stat = new SceIoStat(mode, attr, size,
-                    new ScePspDateTime(0), new ScePspDateTime(0),
-                    new ScePspDateTime(mtime));
+                        stat = new SceIoStat(mode, attr, size,
+                            new ScePspDateTime(0), new ScePspDateTime(0),
+                            new ScePspDateTime(0));
+                    } catch(FileNotFoundException e) {
+                        Modules.log.warn("stat - umd file not found");
+                    } catch(IOException e) {
+                        Modules.log.warn("stat - umd io error: " + e.getMessage());
+                    }
+                }
+            } else {
+                File file = new File(pcfilename);
+                if (file.exists()) {
+                    int mode = (file.canRead() ? 4 : 0) + (file.canWrite() ? 2 : 0) + (file.canExecute() ? 1 : 0);
+                    int attr = 0;
+                    long size = file.length();
+                    long mtime = file.lastModified();
+
+                    // Octal extend into user and group
+                    mode = mode + mode * 8 + mode * 64;
+                    //if (debug) Modules.log.debug("stat - permissions = " + Integer.toOctalString(mode));
+
+                    // Set attr (dir/file) and copy into mode
+                    if (file.isDirectory())
+                        attr |= 0x10;
+                    if (file.isFile())
+                        attr |= 0x20;
+                    mode |= attr << 8;
+
+                    // Java can't see file create/access time
+                    stat = new SceIoStat(mode, attr, size,
+                        new ScePspDateTime(0), new ScePspDateTime(0),
+                        new ScePspDateTime(mtime));
+                }
             }
         }
         return stat;
@@ -743,11 +817,22 @@ public class pspiofilemgr {
         int position;
         final int uid;
 
-        public IoDirInfo(String path, File f) {
+        public IoDirInfo(String path, String[] filenames) {
+            // iso reader doesn't like path//filename, so trim trailing /
+            // (it's like doing cd somedir/ instead of cd somedir, makes little difference)
+            if (path.endsWith("/"))
+                path = path.substring(0, path.length() - 1);
+
             this.path = path;
 
-            filenames = f.list();
+            this.filenames = filenames;
             position = 0;
+
+            // Hide iso special files
+            if (filenames.length > position && filenames[position].equals("."))
+                position++;
+            if (filenames.length > position && filenames[position].equals("\01"))
+                position++;
 
             uid = SceUIDMan.get_instance().getNewUid("IOFileManager-Directory");
             dirlist.put(uid, this);
