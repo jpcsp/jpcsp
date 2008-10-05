@@ -65,7 +65,18 @@ public class Iso9660Directory {
             }
         }
 
+
         throw new FileNotFoundException("File " + fileName + " not found in directory.");
     }
-
+    
+    public String[] getFileList() throws FileNotFoundException
+    {
+        String[] list = new String[files.size()];
+        for(int i=0;i<files.size();i++)
+        {
+            list[i] = files.get(i).getFileName();
+        }
+        return list;
+    }
+    
 }
