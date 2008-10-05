@@ -68,8 +68,8 @@ public class VideoEngine {
     private int bone_upload_x;
     private int bone_upload_y;
     private int bone_matrix_offset;
-    private float[] bone_matrix = new float[4 * 4];
-    private float[] bone_uploaded_matrix = new float[8 * 4 * 4];
+    private float[] bone_matrix = new float[4 * 3];
+    private float[][] bone_uploaded_matrix = new float[8][4 * 3];
 
     private float[] morph_weight = new float[8];
 
@@ -396,9 +396,10 @@ public class VideoEngine {
             case ALC0: {
             	float [] color = new float[4];
 
-            	color[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	
+            	color[0] = ((normalArgument      ) & 255) / 255.f;
             	color[1] = ((normalArgument >>  8) & 255) / 255.f;
-            	color[2] = ((normalArgument      ) & 255) / 255.f;
+            	color[2] = ((normalArgument >> 16) & 255) / 255.f;
             	color[3] = 1.f;
 
             	gl.glLightfv(GL.GL_LIGHT0, GL.GL_AMBIENT, color, 0);
@@ -409,9 +410,9 @@ public class VideoEngine {
             case DLC0: {
             	float [] color = new float[4];
 
-            	color[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	color[0] = ((normalArgument      ) & 255) / 255.f;
             	color[1] = ((normalArgument >>  8) & 255) / 255.f;
-            	color[2] = ((normalArgument      ) & 255) / 255.f;
+            	color[2] = ((normalArgument >> 16) & 255) / 255.f;
             	color[3] = 1.f;
 
             	gl.glLightfv(GL.GL_LIGHT0, GL.GL_DIFFUSE, color, 0);
@@ -422,9 +423,9 @@ public class VideoEngine {
             case SLC0: {
             	float [] color = new float[4];
 
-            	color[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	color[0] = ((normalArgument      ) & 255) / 255.f;
             	color[1] = ((normalArgument >>  8) & 255) / 255.f;
-            	color[2] = ((normalArgument      ) & 255) / 255.f;
+            	color[2] = ((normalArgument >> 16) & 255) / 255.f;
             	color[3] = 1.f;
 
             	gl.glLightfv(GL.GL_LIGHT0, GL.GL_SPECULAR, color, 0);
@@ -464,9 +465,9 @@ public class VideoEngine {
             case ALC1: {
             	float [] color = new float[4];
 
-            	color[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	color[0] = ((normalArgument      ) & 255) / 255.f;
             	color[1] = ((normalArgument >>  8) & 255) / 255.f;
-            	color[2] = ((normalArgument      ) & 255) / 255.f;
+            	color[2] = ((normalArgument >> 16) & 255) / 255.f;
             	color[3] = 1.f;
 
             	gl.glLightfv(GL.GL_LIGHT1, GL.GL_AMBIENT, color, 0);
@@ -477,9 +478,9 @@ public class VideoEngine {
             case DLC1: {
             	float [] color = new float[4];
 
-            	color[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	color[0] = ((normalArgument      ) & 255) / 255.f;
             	color[1] = ((normalArgument >>  8) & 255) / 255.f;
-            	color[2] = ((normalArgument      ) & 255) / 255.f;
+            	color[2] = ((normalArgument >> 16) & 255) / 255.f;
             	color[3] = 1.f;
 
             	gl.glLightfv(GL.GL_LIGHT1, GL.GL_DIFFUSE, color, 0);
@@ -490,9 +491,9 @@ public class VideoEngine {
             case SLC1: {
             	float [] color = new float[4];
 
-            	color[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	color[0] = ((normalArgument      ) & 255) / 255.f;
             	color[1] = ((normalArgument >>  8) & 255) / 255.f;
-            	color[2] = ((normalArgument      ) & 255) / 255.f;
+            	color[2] = ((normalArgument >> 16) & 255) / 255.f;
             	color[3] = 1.f;
 
             	gl.glLightfv(GL.GL_LIGHT1, GL.GL_SPECULAR, color, 0);
@@ -532,9 +533,9 @@ public class VideoEngine {
             case ALC2: {
             	float [] color = new float[4];
 
-            	color[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	color[0] = ((normalArgument      ) & 255) / 255.f;
             	color[1] = ((normalArgument >>  8) & 255) / 255.f;
-            	color[2] = ((normalArgument      ) & 255) / 255.f;
+            	color[2] = ((normalArgument >> 16) & 255) / 255.f;
             	color[3] = 1.f;
 
             	gl.glLightfv(GL.GL_LIGHT2, GL.GL_AMBIENT, color, 0);
@@ -545,9 +546,9 @@ public class VideoEngine {
             case DLC2: {
             	float [] color = new float[4];
 
-            	color[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	color[0] = ((normalArgument      ) & 255) / 255.f;
             	color[1] = ((normalArgument >>  8) & 255) / 255.f;
-            	color[2] = ((normalArgument      ) & 255) / 255.f;
+            	color[2] = ((normalArgument >> 16) & 255) / 255.f;
             	color[3] = 1.f;
 
             	gl.glLightfv(GL.GL_LIGHT2, GL.GL_DIFFUSE, color, 0);
@@ -558,9 +559,9 @@ public class VideoEngine {
             case SLC2: {
             	float [] color = new float[4];
 
-            	color[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	color[0] = ((normalArgument      ) & 255) / 255.f;
             	color[1] = ((normalArgument >>  8) & 255) / 255.f;
-            	color[2] = ((normalArgument      ) & 255) / 255.f;
+            	color[2] = ((normalArgument >> 16) & 255) / 255.f;
             	color[3] = 1.f;
 
             	gl.glLightfv(GL.GL_LIGHT2, GL.GL_SPECULAR, color, 0);
@@ -600,9 +601,9 @@ public class VideoEngine {
             case ALC3: {
             	float [] color = new float[4];
 
-            	color[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	color[0] = ((normalArgument      ) & 255) / 255.f;
             	color[1] = ((normalArgument >>  8) & 255) / 255.f;
-            	color[2] = ((normalArgument      ) & 255) / 255.f;
+            	color[2] = ((normalArgument >> 16) & 255) / 255.f;
             	color[3] = 1.f;
 
             	gl.glLightfv(GL.GL_LIGHT3, GL.GL_AMBIENT, color, 0);
@@ -613,9 +614,9 @@ public class VideoEngine {
             case DLC3: {
             	float [] color = new float[4];
 
-            	color[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	color[0] = ((normalArgument      ) & 255) / 255.f;
             	color[1] = ((normalArgument >>  8) & 255) / 255.f;
-            	color[2] = ((normalArgument      ) & 255) / 255.f;
+            	color[2] = ((normalArgument >> 16) & 255) / 255.f;
             	color[3] = 1.f;
 
             	gl.glLightfv(GL.GL_LIGHT3, GL.GL_DIFFUSE, color, 0);
@@ -626,9 +627,9 @@ public class VideoEngine {
             case SLC3: {
             	float [] color = new float[4];
 
-            	color[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	color[0] = ((normalArgument      ) & 255) / 255.f;
             	color[1] = ((normalArgument >>  8) & 255) / 255.f;
-            	color[2] = ((normalArgument      ) & 255) / 255.f;
+            	color[2] = ((normalArgument >> 16) & 255) / 255.f;
             	color[3] = 1.f;
 
             	gl.glLightfv(GL.GL_LIGHT3, GL.GL_SPECULAR, color, 0);
@@ -758,17 +759,17 @@ public class VideoEngine {
 
             	break;
             case AMC:
-            	mat_ambient[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	mat_ambient[0] = ((normalArgument	   ) & 255) / 255.f;
             	mat_ambient[1] = ((normalArgument >>  8) & 255) / 255.f;
-            	mat_ambient[2] = ((normalArgument      ) & 255) / 255.f;
+            	mat_ambient[2] = ((normalArgument >> 16) & 255) / 255.f;
             	gl.glMaterialfv(GL.GL_FRONT, GL.GL_AMBIENT, mat_ambient, 0);
 
             	log("sceGuAmbient");
             	break;
             case DMC:
-            	mat_diffuse[0] = ((normalArgument >> 16) & 255) / 255.f;
+            	mat_diffuse[0] = ((normalArgument      ) & 255) / 255.f;
             	mat_diffuse[1] = ((normalArgument >>  8) & 255) / 255.f;
-            	mat_diffuse[2] = ((normalArgument      ) & 255) / 255.f;
+            	mat_diffuse[2] = ((normalArgument >> 16) & 255) / 255.f;
             	mat_diffuse[3] = 1.f;
             	gl.glMaterialfv(GL.GL_FRONT, GL.GL_DIFFUSE, mat_diffuse, 0);
 
@@ -859,7 +860,7 @@ public class VideoEngine {
 
 
             	// Extract texture information with the minor conversion possible
-            	// TODO: Get rid of information copying, and implementent all the available formats
+            	// TODO: Get rid of information copying, and implement all the available formats
             	Memory 	mem = Emulator.getMemory();
             	Buffer 	final_buffer = null;
             	int 	texture_type = 0;
@@ -1298,8 +1299,12 @@ public class VideoEngine {
                 // Apply model matrix
                 if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
                 	gl.glMultMatrixf(model_uploaded_matrix, 0);
-
-                // GL
+                
+                // HACK: If we don't have a material set up, and have colors per vertex, this will
+                // override materials, so at least we'll see something, otherwise it would be black
+                if (vinfo.color != 0)
+                	gl.glEnable(GL.GL_COLOR_MATERIAL);
+                
                 switch (type) {
                     case PRIM_POINT:
                     case PRIM_LINE:
@@ -1366,13 +1371,16 @@ public class VideoEngine {
 		            	break;
 		            }
 		        }
+                
+                if (vinfo.color != 0)
+                	gl.glDisable	(GL.GL_COLOR_MATERIAL);
 
-                gl.glPopMatrix ();
-                gl.glMatrixMode(GL.GL_TEXTURE);
-                gl.glPopMatrix ();
-                gl.glMatrixMode(GL.GL_PROJECTION);
-                gl.glPopMatrix ();
-                gl.glMatrixMode(GL.GL_MODELVIEW);
+                gl.glPopMatrix 	();
+                gl.glMatrixMode	(GL.GL_TEXTURE);
+                gl.glPopMatrix 	();
+                gl.glMatrixMode	(GL.GL_PROJECTION);
+                gl.glPopMatrix 	();
+                gl.glMatrixMode	(GL.GL_MODELVIEW);
 
                 break;
             }
@@ -1608,39 +1616,43 @@ public class VideoEngine {
             /*
              * Skinning
              */
-            case BOFS:
+            case BOFS: {
             	log("bone matrix offset", normalArgument);
+            	
             	if(normalArgument % 12 != 0)
             		VideoEngine.log.warn("bone matrix offset " + normalArgument + " isn't a multiple of 12");
-            	bone_matrix_offset = normalArgument;
+            	
+            	bone_matrix_offset = normalArgument / (4*3);
             	bone_upload_start = true;
             	break;
-            case BONE:
+            }
+            	
+            case BONE: {
             	if (bone_upload_start) {
             		bone_upload_x = 0;
             		bone_upload_y = 0;
             		bone_upload_start = false;
                 }
 
-                if (bone_upload_y < 4) {
-                    if (bone_upload_x < 3) {
+                if (bone_upload_x < 4) {
+                	if (bone_upload_y < 3) {
                         bone_matrix[bone_upload_x + bone_upload_y * 4] = floatArgument;
 
                         bone_upload_x++;
-                        if (bone_upload_x == 3) {
-                            bone_matrix[bone_upload_x + bone_upload_y * 4] = (bone_upload_y == 3) ? 1.0f : 0.0f;
+                        if (bone_upload_x == 4) {
                             bone_upload_x = 0;
                             bone_upload_y++;
-                            if (bone_upload_y == 4) {
-                                log("bone matrix " + (bone_matrix_offset / 12), model_matrix);
+                            if (bone_upload_y == 3) {
+                                log("bone matrix " + bone_matrix_offset, model_matrix);
 
-                                for (int i = 0; i < 4*4; i++)
-                                	bone_uploaded_matrix[i + bone_matrix_offset / 12 * 16] = bone_matrix[i];
+                                for (int i = 0; i < 4*3; i++)
+                                	bone_uploaded_matrix[bone_matrix_offset][i] = bone_matrix[i];
                             }
                         }
                     }
                 }
                 break;
+            }
             case MW0:
             case MW1:
             case MW2:
@@ -1660,54 +1672,58 @@ public class VideoEngine {
     }
 
     private void doSkinning(VertexInfo vinfo, VertexState v) {
-    	float x = 0, y = 0, z = 0, w = 0;
-    	float nx = 0, ny = 0, nz = 0, nw = 0;
+    	float x = 0, y = 0, z = 0;
+    	float nx = 0, ny = 0, nz = 0;
 		for(int i = 0; i < vinfo.skinningWeightCount; ++i) {
-			if(v.boneWeights[i] != 0) {
-				int matrix_base = bone_matrix_offset / 12 * 16;
-				x += (v.px * bone_uploaded_matrix[matrix_base + 0]
-								      + v.py * bone_uploaded_matrix[matrix_base + 1]
-								      + v.pz * bone_uploaded_matrix[matrix_base + 2]
-								      + bone_uploaded_matrix[matrix_base + 3]) * v.boneWeights[i];
-				y += (v.px * bone_uploaded_matrix[matrix_base + 4]
-				 				      + v.py * bone_uploaded_matrix[matrix_base + 5]
-				 				      + v.pz * bone_uploaded_matrix[matrix_base + 6]
-				 				      + bone_uploaded_matrix[matrix_base + 7]) * v.boneWeights[i];
-				z += (v.px * bone_uploaded_matrix[matrix_base + 8]
-				 				      + v.py * bone_uploaded_matrix[matrix_base + 9]
-				 				      + v.pz * bone_uploaded_matrix[matrix_base + 10]
-				 				      + bone_uploaded_matrix[matrix_base + 11]) * v.boneWeights[i];
-				w += (v.px * bone_uploaded_matrix[matrix_base + 12]
-				 				      + v.py * bone_uploaded_matrix[matrix_base + 13]
-				 				      + v.pz * bone_uploaded_matrix[matrix_base + 14]
-				 				      + bone_uploaded_matrix[matrix_base + 15]) * v.boneWeights[i];
-
-				nx += (v.nx * bone_uploaded_matrix[matrix_base + 0]
-								      + v.ny * bone_uploaded_matrix[matrix_base + 1]
-								      + v.nz * bone_uploaded_matrix[matrix_base + 2]
-								      + bone_uploaded_matrix[matrix_base + 3]) * v.boneWeights[i];
-				ny += (v.nx * bone_uploaded_matrix[matrix_base + 4]
-				 				      + v.ny * bone_uploaded_matrix[matrix_base + 5]
-				 				      + v.nz * bone_uploaded_matrix[matrix_base + 6]
-				 				      + bone_uploaded_matrix[matrix_base + 7]) * v.boneWeights[i];
-				nz += (v.nx * bone_uploaded_matrix[matrix_base + 8]
-				 				      + v.ny * bone_uploaded_matrix[matrix_base + 9]
-				 				      + v.nz * bone_uploaded_matrix[matrix_base + 10]
-				 				      + bone_uploaded_matrix[matrix_base + 11]) * v.boneWeights[i];
-				nw += (v.nx * bone_uploaded_matrix[matrix_base + 12]
-				 				      + v.ny * bone_uploaded_matrix[matrix_base + 13]
-				 				      + v.nz * bone_uploaded_matrix[matrix_base + 14]
-				 				      + bone_uploaded_matrix[matrix_base + 15]) * v.boneWeights[i];
+			if(v.boneWeights[i] != 0.f) {
+				
+				x += (	v.px * 	bone_uploaded_matrix[i][0]
+				     + 	v.py * 	bone_uploaded_matrix[i][3]
+				     + 	v.pz * 	bone_uploaded_matrix[i][6]
+				     + 			bone_uploaded_matrix[i][9]) * v.boneWeights[i];
+				
+				y += (	v.px * 	bone_uploaded_matrix[i][1]
+				     + 	v.py * 	bone_uploaded_matrix[i][4]
+				     + 	v.pz * 	bone_uploaded_matrix[i][7]
+				     + 			bone_uploaded_matrix[i][10]) * v.boneWeights[i];
+				
+				z += (	v.px * 	bone_uploaded_matrix[i][2]
+				     + 	v.py * 	bone_uploaded_matrix[i][5]
+				     + 	v.pz * 	bone_uploaded_matrix[i][8]
+				     + 			bone_uploaded_matrix[i][11]) * v.boneWeights[i];
+				
+				// Normals shouldn't be translated :)
+				nx += (	v.nx * bone_uploaded_matrix[i][0]
+				   + 	v.ny * bone_uploaded_matrix[i][3]
+				   +	v.nz * bone_uploaded_matrix[i][6]) * v.boneWeights[i];
+				
+				ny += (	v.nx * bone_uploaded_matrix[i][1]
+				   + 	v.ny * bone_uploaded_matrix[i][4]
+				   + 	v.nz * bone_uploaded_matrix[i][7]) * v.boneWeights[i];
+				
+				nz += (	v.nx * bone_uploaded_matrix[i][2]
+				   + 	v.ny * bone_uploaded_matrix[i][5]
+				   + 	v.nz * bone_uploaded_matrix[i][8]) * v.boneWeights[i];
 			}
 		}
 
-		v.px = x / w;
-		v.py = y / w;
-		v.pz = z / w;
-
-		v.nx = nx / nw;
-		v.ny = ny / nw;
-		v.nz = nz / nw;
+		v.px = x;	v.py = y;	v.pz = z;
+		
+		/*
+		// TODO: I doubt psp hardware normalizes normals after skinning,
+		// but if it does, this should be uncommented :)
+		float length = nx*nx + ny*ny + nz*nz;
+		
+		if (length > 0.f) {
+			length = 1.f / (float)Math.sqrt(length);
+			
+			nx *= length;
+			ny *= length;
+			nz *= length;
+		}
+		*/
+		
+		v.nx = nx;	v.ny = ny;	v.nz = nz;
 	}
 
 	public void setFullScreenShoot(boolean b) {
