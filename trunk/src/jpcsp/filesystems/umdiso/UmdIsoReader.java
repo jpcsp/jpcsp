@@ -204,7 +204,7 @@ public class UmdIsoReader {
         // walk through path
         for(int i=0;i<path.length;)
         {
-            if(path[i].compareToIgnoreCase(".")==0)
+            if(path[i].compareTo(".")==0)
             {
                 if(i==(path.length-1))
                 {
@@ -212,7 +212,7 @@ public class UmdIsoReader {
                 }
                 //do nothing
             }
-            else if(path[i].compareToIgnoreCase("..")==0)
+            else if(path[i].compareTo("..")==0)
             {
                 i=Math.max(0,i-1);
             }
@@ -256,7 +256,7 @@ public class UmdIsoReader {
     {
         Iso9660Directory dir = null;
         
-        if(filePath == "")
+        if(filePath.compareTo("")==0)
         {
             dir = new Iso9660Handler(this);
         }
@@ -280,7 +280,7 @@ public class UmdIsoReader {
 
     public int getFileProperties(String filePath) throws IOException, FileNotFoundException
     {
-        if(filePath=="")
+        if(filePath.compareTo("")==0)
         {
             return 2;
         }
