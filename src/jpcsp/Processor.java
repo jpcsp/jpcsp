@@ -21,7 +21,7 @@ import java.nio.ByteBuffer;
 
 import org.apache.log4j.Logger;
 
-public class Processor {
+public class Processor /* extends OldCpuState */ {
 
     public static boolean ENABLE_STEP_TRACE = false;
 

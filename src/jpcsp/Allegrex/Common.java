@@ -477,7 +477,12 @@ public class Common {
     }
 
     public static String disasmVTIMMRS(String opname, int vsize, int vt, int rs, int imm) {
-        return String.format("%1$-10s %2$s, %4$d(%3$s)", opname + vsuffix[vsize - 1], vprNames[vsize - 1][vt], gprNames[rs], imm);
+        return String.format(
+                "%1$-10s %2$s, %4$d(%3$s)",
+                opname + vsuffix[vsize - 1],
+                vprNames[vsize - 1][vt],
+                gprNames[rs],
+                imm);
     }
 
     public static String disasmVDVSVT(String opname, int vsize, int vd, int vs, int vt) {

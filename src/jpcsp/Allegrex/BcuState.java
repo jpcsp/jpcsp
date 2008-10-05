@@ -48,7 +48,7 @@ public class BcuState extends LsuState {
     }
     
     public static int branchTarget(int npc, int simm16) {
-        return npc + (((int)(short)simm16) << 2);
+        return npc + (simm16 << 2);
     }
 
     public static int jumpTarget(int npc, int uimm26) {

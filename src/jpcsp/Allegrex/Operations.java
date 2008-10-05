@@ -10,301 +10,301 @@ package jpcsp.Allegrex;
  */
 public interface Operations {
 
-    public void doUNK(String reason);
+    public void opUNK(String reason);
 
-    public void doNOP();
+    public void opNOP();
 
-    public void doSLL(int rd, int rt, int sa);
+    public void opSLL(int rd, int rt, int sa);
 
-    public void doSRL(int rd, int rt, int sa);
+    public void opSRL(int rd, int rt, int sa);
 
-    public void doSRA(int rd, int rt, int sa);
+    public void opSRA(int rd, int rt, int sa);
 
-    public void doSLLV(int rd, int rt, int rs);
+    public void opSLLV(int rd, int rt, int rs);
 
-    public void doSRLV(int rd, int rt, int rs);
+    public void opSRLV(int rd, int rt, int rs);
 
-    public void doSRAV(int rd, int rt, int rs);
+    public void opSRAV(int rd, int rt, int rs);
 
-    public void doJR(int rs);
+    public void opJR(int rs);
 
-    public void doJALR(int rd, int rs);
+    public void opJALR(int rd, int rs);
 
-    public void doMFHI(int rd);
+    public void opMFHI(int rd);
 
-    public void doMTHI(int rs);
+    public void opMTHI(int rs);
 
-    public void doMFLO(int rd);
+    public void opMFLO(int rd);
 
-    public void doMTLO(int rs);
+    public void opMTLO(int rs);
 
-    public void doMULT(int rs, int rt);
+    public void opMULT(int rs, int rt);
 
-    public void doMULTU(int rs, int rt);
+    public void opMULTU(int rs, int rt);
 
-    public void doDIV(int rs, int rt);
+    public void opDIV(int rs, int rt);
 
-    public void doDIVU(int rs, int rt);
+    public void opDIVU(int rs, int rt);
 
-    public void doADD(int rd, int rs, int rt);
+    public void opADD(int rd, int rs, int rt);
 
-    public void doADDU(int rd, int rs, int rt);
+    public void opADDU(int rd, int rs, int rt);
 
-    public void doSUB(int rd, int rs, int rt);
+    public void opSUB(int rd, int rs, int rt);
 
-    public void doSUBU(int rd, int rs, int rt);
+    public void opSUBU(int rd, int rs, int rt);
 
-    public void doAND(int rd, int rs, int rt);
+    public void opAND(int rd, int rs, int rt);
 
-    public void doOR(int rd, int rs, int rt);
+    public void opOR(int rd, int rs, int rt);
 
-    public void doXOR(int rd, int rs, int rt);
+    public void opXOR(int rd, int rs, int rt);
 
-    public void doNOR(int rd, int rs, int rt);
+    public void opNOR(int rd, int rs, int rt);
 
-    public void doSLT(int rd, int rs, int rt);
+    public void opSLT(int rd, int rs, int rt);
 
-    public void doSLTU(int rd, int rs, int rt);
+    public void opSLTU(int rd, int rs, int rt);
 
-    public void doBLTZ(int rs, int simm16);
+    public void opBLTZ(int rs, int simm16);
 
-    public void doBGEZ(int rs, int simm16);
+    public void opBGEZ(int rs, int simm16);
 
-    public void doBLTZL(int rs, int simm16);
+    public void opBLTZL(int rs, int simm16);
 
-    public void doBGEZL(int rs, int simm16);
+    public void opBGEZL(int rs, int simm16);
 
-    public void doBLTZAL(int rs, int simm16);
+    public void opBLTZAL(int rs, int simm16);
 
-    public void doBGEZAL(int rs, int simm16);
+    public void opBGEZAL(int rs, int simm16);
 
-    public void doBLTZALL(int rs, int simm16);
+    public void opBLTZALL(int rs, int simm16);
 
-    public void doBGEZALL(int rs, int simm16);
+    public void opBGEZALL(int rs, int simm16);
 
-    public void doJ(int uimm26);
+    public void opJ(int uimm26);
 
-    public void doJAL(int uimm26);
+    public void opJAL(int uimm26);
 
-    public void doBEQ(int rs, int rt, int simm16);
+    public void opBEQ(int rs, int rt, int simm16);
 
-    public void doBNE(int rs, int rt, int simm16);
+    public void opBNE(int rs, int rt, int simm16);
 
-    public void doBLEZ(int rs, int simm16);
+    public void opBLEZ(int rs, int simm16);
 
-    public void doBGTZ(int rs, int simm16);
+    public void opBGTZ(int rs, int simm16);
 
-    public void doBEQL(int rs, int rt, int simm16);
+    public void opBEQL(int rs, int rt, int simm16);
 
-    public void doBNEL(int rs, int rt, int simm16);
+    public void opBNEL(int rs, int rt, int simm16);
 
-    public void doBLEZL(int rs, int simm16);
+    public void opBLEZL(int rs, int simm16);
 
-    public void doBGTZL(int rs, int simm16);
+    public void opBGTZL(int rs, int simm16);
 
-    public void doADDI(int rt, int rs, int simm16);
+    public void opADDI(int rt, int rs, int simm16);
 
-    public void doADDIU(int rt, int rs, int simm16);
+    public void opADDIU(int rt, int rs, int simm16);
 
-    public void doSLTI(int rt, int rs, int simm16);
+    public void opSLTI(int rt, int rs, int simm16);
 
-    public void doSLTIU(int rt, int rs, int simm16);
+    public void opSLTIU(int rt, int rs, int simm16);
 
-    public void doANDI(int rt, int rs, int uimm16);
+    public void opANDI(int rt, int rs, int uimm16);
 
-    public void doORI(int rt, int rs, int uimm16);
+    public void opORI(int rt, int rs, int uimm16);
 
-    public void doXORI(int rt, int rs, int uimm16);
+    public void opXORI(int rt, int rs, int uimm16);
 
-    public void doLUI(int rt, int uimm16);
+    public void opLUI(int rt, int uimm16);
 
-    public void doHALT();
+    public void opHALT();
 
-    public void doMFIC(int rt);
+    public void opMFIC(int rt);
 
-    public void doMTIC(int rt);
+    public void opMTIC(int rt);
 
-    public void doMFC0(int rt, int c0dr);
+    public void opMFC0(int rt, int c0dr);
 
-    public void doCFC0(int rt, int c0cr);
+    public void opCFC0(int rt, int c0cr);
 
-    public void doMTC0(int rt, int c0dr);
+    public void opMTC0(int rt, int c0dr);
 
-    public void doCTC0(int rt, int c0cr);
+    public void opCTC0(int rt, int c0cr);
 
-    public void doERET();
+    public void opERET();
 
-    public void doLB(int rt, int rs, int simm16);
+    public void opLB(int rt, int rs, int simm16);
 
-    public void doLBU(int rt, int rs, int simm16);
+    public void opLBU(int rt, int rs, int simm16);
 
-    public void doLH(int rt, int rs, int simm16);
+    public void opLH(int rt, int rs, int simm16);
 
-    public void doLHU(int rt, int rs, int simm16);
+    public void opLHU(int rt, int rs, int simm16);
 
-    public void doLWL(int rt, int rs, int simm16);
+    public void opLWL(int rt, int rs, int simm16);
 
-    public void doLW(int rt, int rs, int simm16);
+    public void opLW(int rt, int rs, int simm16);
 
-    public void doLWR(int rt, int rs, int simm16);
+    public void opLWR(int rt, int rs, int simm16);
 
-    public void doSB(int rt, int rs, int simm16);
+    public void opSB(int rt, int rs, int simm16);
 
-    public void doSH(int rt, int rs, int simm16);
+    public void opSH(int rt, int rs, int simm16);
 
-    public void doSWL(int rt, int rs, int simm16);
+    public void opSWL(int rt, int rs, int simm16);
 
-    public void doSW(int rt, int rs, int simm16);
+    public void opSW(int rt, int rs, int simm16);
 
-    public void doSWR(int rt, int rs, int simm16);
+    public void opSWR(int rt, int rs, int simm16);
 
-    public void doCACHE(int rt, int rs, int simm16);
+    public void opCACHE(int rt, int rs, int simm16);
 
-    public void doLL(int rt, int rs, int simm16);
+    public void opLL(int rt, int rs, int simm16);
 
-    public void doLWC1(int rt, int rs, int simm16);
+    public void opLWC1(int rt, int rs, int simm16);
 
-    public void doLVS(int vt, int rs, int simm14);
+    public void opLVS(int vt, int rs, int simm14);
 
-    public void doSC(int rt, int rs, int simm16);
+    public void opSC(int rt, int rs, int simm16);
 
-    public void doSWC1(int rt, int rs, int simm16);
+    public void opSWC1(int rt, int rs, int simm16);
 
-    public void doSVS(int vt, int rs, int simm14);
+    public void opSVS(int vt, int rs, int simm14);
 
-    public void doROTR(int rd, int rt, int sa);
+    public void opROTR(int rd, int rt, int sa);
 
-    public void doROTRV(int rd, int rt, int rs);
+    public void opROTRV(int rd, int rt, int rs);
 
-    public void doMOVZ(int rd, int rs, int rt);
+    public void opMOVZ(int rd, int rs, int rt);
 
-    public void doMOVN(int rd, int rs, int rt);
+    public void opMOVN(int rd, int rs, int rt);
 
-    public void doSYSCALL(int code);
+    public void opSYSCALL(int code);
 
-    public void doBREAK(int code);
+    public void opBREAK(int code);
 
-    public void doSYNC();
+    public void opSYNC();
 
-    public void doCLZ(int rd, int rs);
+    public void opCLZ(int rd, int rs);
 
-    public void doCLO(int rd, int rs);
+    public void opCLO(int rd, int rs);
 
-    public void doMADD(int rs, int rt);
+    public void opMADD(int rs, int rt);
 
-    public void doMADDU(int rs, int rt);
+    public void opMADDU(int rs, int rt);
 
-    public void doMAX(int rd, int rs, int rt);
+    public void opMAX(int rd, int rs, int rt);
 
-    public void doMIN(int rd, int rs, int rt);
+    public void opMIN(int rd, int rs, int rt);
 
-    public void doMSUB(int rs, int rt);
+    public void opMSUB(int rs, int rt);
 
-    public void doMSUBU(int rs, int rt);
+    public void opMSUBU(int rs, int rt);
 
-    public void doEXT(int rt, int rs, int rd, int sa);
+    public void opEXT(int rt, int rs, int rd, int sa);
 
-    public void doINS(int rt, int rs, int rd, int sa);
+    public void opINS(int rt, int rs, int rd, int sa);
 
-    public void doWSBH(int rd, int rt);
+    public void opWSBH(int rd, int rt);
 
-    public void doWSBW(int rd, int rt);
+    public void opWSBW(int rd, int rt);
 
-    public void doSEB(int rd, int rt);
+    public void opSEB(int rd, int rt);
 
-    public void doBITREV(int rd, int rt);
+    public void opBITREV(int rd, int rt);
 
-    public void doSEH(int rd, int rt);
+    public void opSEH(int rd, int rt);
     //COP1 instructions
-    public void doMFC1(int rt, int c1dr);
+    public void opMFC1(int rt, int c1dr);
 
-    public void doCFC1(int rt, int c1cr);
+    public void opCFC1(int rt, int c1cr);
 
-    public void doMTC1(int rt, int c1dr);
+    public void opMTC1(int rt, int c1dr);
 
-    public void doCTC1(int rt, int c1cr);
+    public void opCTC1(int rt, int c1cr);
 
-    public void doBC1F(int simm16);
+    public void opBC1F(int simm16);
 
-    public void doBC1T(int simm16);
+    public void opBC1T(int simm16);
 
-    public void doBC1FL(int simm16);
+    public void opBC1FL(int simm16);
 
-    public void doBC1TL(int simm16);
+    public void opBC1TL(int simm16);
 
-    public void doADDS(int fd, int fs, int ft);
+    public void opADDS(int fd, int fs, int ft);
 
-    public void doSUBS(int fd, int fs, int ft);
+    public void opSUBS(int fd, int fs, int ft);
 
-    public void doMULS(int fd, int fs, int ft);
+    public void opMULS(int fd, int fs, int ft);
 
-    public void doDIVS(int fd, int fs, int ft);
+    public void opDIVS(int fd, int fs, int ft);
 
-    public void doSQRTS(int fd, int fs);
+    public void opSQRTS(int fd, int fs);
 
-    public void doABSS(int fd, int fs);
+    public void opABSS(int fd, int fs);
 
-    public void doMOVS(int fd, int fs);
+    public void opMOVS(int fd, int fs);
 
-    public void doNEGS(int fd, int fs);
+    public void opNEGS(int fd, int fs);
 
-    public void doROUNDWS(int fd, int fs);
+    public void opROUNDWS(int fd, int fs);
 
-    public void doTRUNCWS(int fd, int fs);
+    public void opTRUNCWS(int fd, int fs);
 
-    public void doCEILWS(int fd, int fs);
+    public void opCEILWS(int fd, int fs);
 
-    public void doFLOORWS(int fd, int fs);
+    public void opFLOORWS(int fd, int fs);
 
-    public void doCVTSW(int fd, int fs);
+    public void opCVTSW(int fd, int fs);
 
-    public void doCVTWS(int fd, int fs);
+    public void opCVTWS(int fd, int fs);
 
-    public void doCCONDS(int fs, int ft, int cond);
+    public void opCCONDS(int fs, int ft, int cond);
 
     // VFPU0
-    public void doVADD(int vsize, int vd, int vs, int vt);
+    public void opVADD(int vsize, int vd, int vs, int vt);
 
-    public void doVSUB(int vsize, int vd, int vs, int vt);
+    public void opVSUB(int vsize, int vd, int vs, int vt);
 
-    public void doVSBN(int vsize, int vd, int vs, int vt);
+    public void opVSBN(int vsize, int vd, int vs, int vt);
 
-    public void doVDIV(int vsize, int vd, int vs, int vt);
+    public void opVDIV(int vsize, int vd, int vs, int vt);
 
     // VFPU1
-    public void doVMUL(int vsize, int vd, int vs, int vt);
+    public void opVMUL(int vsize, int vd, int vs, int vt);
 
-    public void doVDOT(int vsize, int vd, int vs, int vt);
+    public void opVDOT(int vsize, int vd, int vs, int vt);
 
-    public void doVSCL(int vsize, int vd, int vs, int vt);
+    public void opVSCL(int vsize, int vd, int vs, int vt);
 
-    public void doVHDP(int vsize, int vd, int vs, int vt);
+    public void opVHDP(int vsize, int vd, int vs, int vt);
 
-    public void doVCRS(int vsize, int vd, int vs, int vt);
+    public void opVCRS(int vsize, int vd, int vs, int vt);
 
-    public void doVDET(int vsize, int vd, int vs, int vt);
+    public void opVDET(int vsize, int vd, int vs, int vt);
 
     // VFPU3
-    public void doVCMP(int vsize, int vs, int vt, int cond);
+    public void opVCMP(int vsize, int vs, int vt, int cond);
 
-    public void doVMIN(int vsize, int vd, int vs, int vt);
+    public void opVMIN(int vsize, int vd, int vs, int vt);
 
-    public void doVMAX(int vsize, int vd, int vs, int vt);
+    public void opVMAX(int vsize, int vd, int vs, int vt);
 
-    public void doVSCMP(int vsize, int vd, int vs, int vt);
+    public void opVSCMP(int vsize, int vd, int vs, int vt);
 
-    public void doVSGE(int vsize, int vd, int vs, int vt);
+    public void opVSGE(int vsize, int vd, int vs, int vt);
 
-    public void doVSLT(int vsize, int vd, int vs, int vt);
+    public void opVSLT(int vsize, int vd, int vs, int vt);
 
     // VFPU5
-    public void doVPFXS(int imm24);
+    public void opVPFXS(int imm24);
 
-    public void doVPFXT(int imm24);
+    public void opVPFXT(int imm24);
 
-    public void doVPFXD(int imm24);
+    public void opVPFXD(int imm24);
 
-    public void doVIIM(int vs, int imm16);
+    public void opVIIM(int vs, int imm16);
 
-    public void doVFIM(int vs, int imm16);
+    public void opVFIM(int vs, int imm16);
 }

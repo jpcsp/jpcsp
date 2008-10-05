@@ -18,7 +18,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.Allegrex;
 
 import jpcsp.HLE.SyscallHandler;
+
 import jpcsp.Allegrex.Common.*;
+
 import jpcsp.Processor;
 
 /**
@@ -1696,7 +1698,7 @@ public void interpret(Processor processor, int insn) {
 	int rs = (insn>>21)&31;
 
 
-                processor.cpu.doEXT(rt, rs, lsb, msb+1);
+                processor.cpu.doEXT(rt, rs, lsb, msb);
             
 }
 @Override
@@ -2776,6 +2778,8 @@ public void interpret(Processor processor, int insn) {
 	int imm3 = (insn>>18)&7;
 
 
+                if (processor.cpu.doBVF(imm3, (int)(short)imm16))
+                    processor.interpretDelayslot();
             
 }
 @Override
@@ -2803,6 +2807,8 @@ public void interpret(Processor processor, int insn) {
 	int imm3 = (insn>>18)&7;
 
 
+                if (processor.cpu.doBVT(imm3, (int)(short)imm16))
+                    processor.interpretDelayslot();
             
 }
 @Override
@@ -2813,7 +2819,7 @@ public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int imm3 = (insn>>18)&7;
 
-return "Unimplemented BVF";
+return "Unimplemented BVT";
 }
 };
 public static final Instruction BVFL = new Instruction(99) {
@@ -2830,6 +2836,8 @@ public void interpret(Processor processor, int insn) {
 	int imm3 = (insn>>18)&7;
 
 
+                if (processor.cpu.doBVFL(imm3, (int)(short)imm16))
+                    processor.interpretDelayslot();
             
 }
 @Override
@@ -2840,7 +2848,7 @@ public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int imm3 = (insn>>18)&7;
 
-return "Unimplemented BVF";
+return "Unimplemented BVFL";
 }
 };
 public static final Instruction BVTL = new Instruction(100) {
@@ -2857,6 +2865,8 @@ public void interpret(Processor processor, int insn) {
 	int imm3 = (insn>>18)&7;
 
 
+                if (processor.cpu.doBVTL(imm3, (int)(short)imm16))
+                    processor.interpretDelayslot();
             
 }
 @Override
@@ -2867,7 +2877,7 @@ public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int imm3 = (insn>>18)&7;
 
-return "Unimplemented BVF";
+return "Unimplemented BVTL";
 }
 };
 public static final Instruction LB = new Instruction(101) {
@@ -3306,6 +3316,7 @@ public void interpret(Processor processor, int insn) {
 	int rs = (insn>>21)&31;
 
 
+                processor.cpu.doLVS((vt5 + (vt2 << 32)), rs, (int)(short)(imm14 << 2));
             
 }
 @Override
@@ -3337,6 +3348,7 @@ public void interpret(Processor processor, int insn) {
 	int rs = (insn>>21)&31;
 
 
+                processor.cpu.doLVLQ((vt5 + (vt1 << 32)), rs, (int)(short)(imm14 << 2));
             
 }
 @Override
@@ -3368,6 +3380,7 @@ public void interpret(Processor processor, int insn) {
 	int rs = (insn>>21)&31;
 
 
+                processor.cpu.doLVRQ((vt5 + (vt1 << 32)), rs, (int)(short)(imm14 << 2));
             
 }
 @Override
@@ -3399,6 +3412,7 @@ public void interpret(Processor processor, int insn) {
 	int rs = (insn>>21)&31;
 
 
+                processor.cpu.doLVQ((vt5 + (vt1 << 32)), rs, (((int)(short)imm14) << 2));
             
 }
 @Override
@@ -3490,6 +3504,7 @@ public void interpret(Processor processor, int insn) {
 	int rs = (insn>>21)&31;
 
 
+                processor.cpu.doSVS((vt5 + (vt2 << 32)), rs, (((int)(short)imm14) << 2));
             
 }
 @Override
@@ -3521,6 +3536,7 @@ public void interpret(Processor processor, int insn) {
 	int rs = (insn>>21)&31;
 
 
+                processor.cpu.doSVLQ((vt5 + (vt1 << 32)), rs, (((int)(short)imm14) << 2));
             
 }
 @Override
@@ -3552,6 +3568,7 @@ public void interpret(Processor processor, int insn) {
 	int rs = (insn>>21)&31;
 
 
+                processor.cpu.doSVRQ((vt5 + (vt1 << 32)), rs, (((int)(short)imm14) << 2));
             
 }
 @Override
@@ -3583,6 +3600,7 @@ public void interpret(Processor processor, int insn) {
 	int rs = (insn>>21)&31;
 
 
+                processor.cpu.doSVQ((vt5 + (vt1 << 32)), rs, (((int)(short)imm14) << 2));
             
 }
 @Override
@@ -3614,6 +3632,7 @@ public void interpret(Processor processor, int insn) {
 	int rs = (insn>>21)&31;
 
 
+                processor.cpu.doSVQ((vt5 + (vt1 << 32)), rs, (((int)(short)imm14) << 2));
             
 }
 @Override
@@ -4296,14 +4315,7 @@ public void interpret(Processor processor, int insn) {
 	int vt = (insn>>16)&127;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two<<1);               
-                float[] x = cpu.loadVs(vsize, vs);
-                float[] y = cpu.loadVt(vsize, vt);
-                for (int i = 0; i < vsize; ++i) {
-                    x[i] += y[i];
-                }
-                cpu.saveVd(vsize, vd, x);
+                processor.cpu.doVADD(1 + one + (two<<1), vd, vs, vt);
             
 }
 @Override
@@ -4337,14 +4349,7 @@ public void interpret(Processor processor, int insn) {
 	int vt = (insn>>16)&127;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two<<1);               
-                float[] x = cpu.loadVs(vsize, vs);
-                float[] y = cpu.loadVt(vsize, vt);
-                for (int i = 0; i < vsize; ++i) {
-                    x[i] += (0.0f - y[i]);
-                }
-                cpu.saveVd(vsize, vd, x);
+                processor.cpu.doVSUB(1 + one + (two<<1), vd, vs, vt);
             
 }
 @Override
@@ -4378,13 +4383,7 @@ public void interpret(Processor processor, int insn) {
 	int vt = (insn>>16)&127;
 
 
-                if (one + two == 0) {
-                    CpuState cpu = processor.cpu;
-                    float[] x = cpu.loadVs(1, vs);
-                    float[] y = cpu.loadVt(1, vt);
-                    x[0] = Math.scalb(x[0], Float.floatToRawIntBits(y[0]));
-                    cpu.saveVd(1, vd, x);
-                }
+                processor.cpu.doVSBN(1 + one + (two<<1), vd, vs, vt);
             
 }
 @Override
@@ -4418,14 +4417,7 @@ public void interpret(Processor processor, int insn) {
 	int vt = (insn>>16)&127;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two<<1);               
-                float[] x = cpu.loadVs(vsize, vs);
-                float[] y = cpu.loadVt(vsize, vt);
-                for (int i = 0; i < vsize; ++i) {
-                    x[i] /= y[i];
-                }
-                cpu.saveVd(vsize, vd, x);
+                processor.cpu.doVDIV(1 + one + (two<<1), vd, vs, vt);
             
 }
 @Override
@@ -4459,14 +4451,7 @@ public void interpret(Processor processor, int insn) {
 	int vt = (insn>>16)&127;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two<<1);               
-                float[] x = cpu.loadVs(vsize, vs);
-                float[] y = cpu.loadVt(vsize, vt);
-                for (int i = 0; i < vsize; ++i) {
-                    x[i] *= y[i];
-                }
-                cpu.saveVd(vsize, vd, x);
+                processor.cpu.doVMUL(1 + one + (two<<1), vd, vs, vt);
             
 }
 @Override
@@ -4500,17 +4485,7 @@ public void interpret(Processor processor, int insn) {
 	int vt = (insn>>16)&127;
 
 
-                if ((one | two) == 1) {
-                    CpuState cpu = processor.cpu;
-                    int vsize = 1 + one + (two<<1);               
-                    float[] x = cpu.loadVs(vsize, vs);
-                    float[] y = cpu.loadVt(vsize, vt);
-                    float[] z = new float[1];
-                    for (int i = 0; i < vsize; ++i) {
-                        z[0] += x[i] * y[i];
-                    }
-                    cpu.saveVd(1, vd, z);
-                }
+                processor.cpu.doVDOT(1 + one + (two<<1), vd, vs, vt);
             
 }
 @Override
@@ -4544,16 +4519,7 @@ public void interpret(Processor processor, int insn) {
 	int vt = (insn>>16)&127;
 
 
-                if ((one | two) == 1) {
-                    CpuState cpu = processor.cpu;
-                    int vsize = 1 + one + (two<<1);               
-                    float[] x = cpu.loadVs(vsize, vs);
-                    float[] y = cpu.loadVt(1, vt);
-                    for (int i = 0; i < vsize; ++i) {
-                        x[i] *= y[0];
-                    }
-                    cpu.saveVd(vsize, vd, x);
-                }
+                processor.cpu.doVSCL(1 + one + (two<<1), vd, vs, vt);               
             
 }
 @Override
@@ -4587,18 +4553,7 @@ public void interpret(Processor processor, int insn) {
 	int vt = (insn>>16)&127;
 
 
-                if ((one | two) == 1) {
-                    CpuState cpu = processor.cpu;
-                    int vsize = 1 + one + (two<<1);               
-                    float[] x = cpu.loadVs(vsize - 1, vs);
-                    float[] y = cpu.loadVt(vsize, vt);
-                    float[] z = new float[1];
-                    z[0] = y[vsize - 1];
-                    for (int i = 0; i < vsize - 1; ++i) {
-                        z[0] += x[i] * y[i];
-                    }
-                    cpu.saveVd(1, vd, z);
-                }
+                processor.cpu.doVHDP(1 + one + (two<<1), vd, vs, vt);
             
 }
 @Override
@@ -4632,14 +4587,7 @@ public void interpret(Processor processor, int insn) {
 	int vt = (insn>>16)&127;
 
 
-                if ((one == 1) && (two == 0)) {
-                    CpuState cpu = processor.cpu;
-                    float[] x = cpu.loadVs(2, vs);
-                    float[] y = cpu.loadVt(2, vt);
-                    float[] z = new float[1];
-                    z[0] = x[0] * y[1] - x[1] * y[0];
-                    cpu.saveVd(1, vd, z);
-                }
+                processor.cpu.doVDET(1 + one + (two<<1), vd, vs, vt);
             
 }
 @Override
@@ -4673,16 +4621,7 @@ public void interpret(Processor processor, int insn) {
 	int vt = (insn>>16)&127;
 
 
-                if ((one == 0) && (two == 1)) {
-                    CpuState cpu = processor.cpu;
-                    float[] x = cpu.loadVs(3, vs);
-                    float[] y = cpu.loadVt(3, vt);
-                    float[] z = new float[3];
-                    z[0] = x[1] * y[2];
-                    z[1] = x[2] * y[0];
-                    z[2] = x[0] * y[1];
-                    cpu.saveVd(3, vd, z);
-                }
+                processor.cpu.doVCRS(1 + one + (two<<1), vd, vs, vt);
             
 }
 @Override
@@ -4713,6 +4652,7 @@ public void interpret(Processor processor, int insn) {
 	int rt = (insn>>16)&31;
 
 
+                processor.cpu.doMFV(rt, imm7);
             
 }
 @Override
@@ -4740,6 +4680,7 @@ public void interpret(Processor processor, int insn) {
 	int rt = (insn>>16)&31;
 
 
+                processor.cpu.doMFVC(rt, imm7);
             
 }
 @Override
@@ -4767,6 +4708,7 @@ public void interpret(Processor processor, int insn) {
 	int rt = (insn>>16)&31;
 
 
+                processor.cpu.doMTV(rt, imm7);
             
 }
 @Override
@@ -4794,6 +4736,7 @@ public void interpret(Processor processor, int insn) {
 	int rt = (insn>>16)&31;
 
 
+                processor.cpu.doMTVC(rt, imm7);
             
 }
 @Override
@@ -4824,65 +4767,7 @@ public void interpret(Processor processor, int insn) {
 	int vt = (insn>>16)&127;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two << 1);
-
-                boolean ccOr = false;
-                boolean ccAnd = true;
-
-                if ((imm3 & 8) == 0) {
-                    boolean ccNot = ((imm3 & 4) == 4);
-
-                    boolean cc = false;
-
-                    float[] x = cpu.loadVs(vsize, vs);
-                    float[] y = cpu.loadVt(vsize, vt);
-
-                    for (int i = 0; i < vsize; ++i) {
-                        switch (imm3 & 3) {
-                            case 0:
-                                cc = ccNot;
-                                break;
-
-                            case 1:
-                                cc = ccNot ? (x[i] != y[i]) : (x[i] == y[i]);
-                                break;
-
-                            case 2:
-                                cc = ccNot ? (x[i] >= y[i]) : (x[i] < y[i]);
-                                break;
-
-                            case 3:
-                                cc = ccNot ? (x[i] > y[i]) : (x[i] <= y[i]);
-                                break;
-                        }
-
-                        cpu.vcr.cc[i] = cc;
-                        ccOr = ccOr || cc;
-                        ccAnd = ccAnd && cc;
-                    }
-
-                } else {
-                    float[] x = cpu.loadVs(vsize, vs);
-
-                    for (int i = 0; i < vsize; ++i) {
-                        boolean cc;
-                        if ((imm3 & 3) == 0) {
-                            cc = ((imm3 & 4) == 0) ? (x[i] == 0.0f) : (x[i] != 0.0f);
-                        } else {
-                            cc = (((imm3 & 1) == 1) && Float.isNaN(x[i])) ||
-                                 (((imm3 & 2) == 2) && Float.isInfinite(x[i]));
-                            if ((imm3 & 4) == 4) {
-                                cc = !cc;
-                            }
-                        }
-                        cpu.vcr.cc[i] = cc;
-                        ccOr = ccOr || cc;
-                        ccAnd = ccAnd && cc;
-                    }
-                }
-                cpu.vcr.cc[4] = ccOr;
-                cpu.vcr.cc[5] = ccAnd;
+                processor.cpu.doVCMP(1+one+(two<<1), vs, vt, imm3);
             
 }
 @Override
@@ -4916,14 +4801,7 @@ public void interpret(Processor processor, int insn) {
 	int vt = (insn>>16)&127;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two<<1);               
-                float[] x = cpu.loadVs(vsize, vs);
-                float[] y = cpu.loadVt(vsize, vt);
-                for (int i = 0; i < vsize; ++i) {
-                    x[i] = Math.min(x[i], y[i]);
-                }
-                cpu.saveVd(vsize, vd, x);
+                processor.cpu.doVMIN(1+one+(two<<1), vd, vs, vt);
             
 }
 @Override
@@ -4957,14 +4835,7 @@ public void interpret(Processor processor, int insn) {
 	int vt = (insn>>16)&127;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two<<1);               
-                float[] x = cpu.loadVs(vsize, vs);
-                float[] y = cpu.loadVt(vsize, vt);
-                for (int i = 0; i < vsize; ++i) {
-                    x[i] = Math.max(x[i], y[i]);
-                }
-                cpu.saveVd(vsize, vd, x);
+                processor.cpu.doVMAX(1+one+(two<<1), vd, vs, vt);
             
 }
 @Override
@@ -4998,14 +4869,7 @@ public void interpret(Processor processor, int insn) {
 	int vt = (insn>>16)&127;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two<<1);               
-                float[] x = cpu.loadVs(vsize, vs);
-                float[] y = cpu.loadVt(vsize, vt);
-                for (int i = 0; i < vsize; ++i) {
-                    x[i] = Math.signum(x[i] + (0.0f - y[i]));
-                }
-                cpu.saveVd(vsize, vd, x);
+                processor.cpu.doVSCMP(1+one+(two<<1), vd, vs, vt);
             
 }
 @Override
@@ -5039,14 +4903,7 @@ public void interpret(Processor processor, int insn) {
 	int vt = (insn>>16)&127;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two<<1);               
-                float[] x = cpu.loadVs(vsize, vs);
-                float[] y = cpu.loadVt(vsize, vt);
-                for (int i = 0; i < vsize; ++i) {
-                    x[i] = (x[i] >= y[i]) ? 1.0f : 0.0f;
-                }
-                cpu.saveVd(vsize, vd, x);
+                processor.cpu.doVSGE(1+one+(two<<1), vd, vs, vt);
             
 }
 @Override
@@ -5080,14 +4937,7 @@ public void interpret(Processor processor, int insn) {
 	int vt = (insn>>16)&127;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two<<1);               
-                float[] x = cpu.loadVs(vsize, vs);
-                float[] y = cpu.loadVt(vsize, vt);
-                for (int i = 0; i < vsize; ++i) {
-                    x[i] = (x[i] < y[i]) ? 1.0f : 0.0f;
-                }
-                cpu.saveVd(vsize, vd, x);
+                processor.cpu.doVSLT(1+one+(two<<1), vd, vs, vt);
             
 }
 @Override
@@ -5120,10 +4970,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two<<1);               
-                float[] x = cpu.loadVs(vsize, vs);
-                cpu.saveVd(vsize, vd, x);
+                processor.cpu.doVMOV(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -5155,13 +5002,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two<<1);               
-                float[] x = cpu.loadVs(vsize, vs);
-                for (int i = 0; i < vsize; ++i) {
-                    x[i] = Math.abs(x[i]);
-                }
-                cpu.saveVd(vsize, vd, x);
+                processor.cpu.doVABS(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -5193,13 +5034,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two<<1);               
-                float[] x = cpu.loadVs(vsize, vs);
-                for (int i = 0; i < vsize; ++i) {
-                    x[i] = 0.0f - x[i];
-                }
-                cpu.saveVd(vsize, vd, x);
+                processor.cpu.doVNEG(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -5230,18 +5065,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
-                if (one == 1) {
-                    CpuState cpu = processor.cpu;
-                    int vsize = 1 + one + (two<<1);               
-                    float[] x = new float[vsize];
-                    int id = vd & 3;
-                    for (int i = 0; i < vsize; ++i) {
-                        if (id == i) {
-                            x[i] =  1.0f;
-                        }
-                    }
-                    cpu.saveVd(vsize, vd, x);
-                }
+                processor.cpu.doVIDT(1+one+(two<<1), vd);
             
 }
 @Override
@@ -5272,13 +5096,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two<<1);               
-                float[] x = cpu.loadVs(vsize, vs);
-                for (int i = 0; i < vsize; ++i) {
-                    x[i] = Math.min(Math.max(0.0f, x[i]), 1.0f);
-                }
-                cpu.saveVd(vsize, vd, x);
+                processor.cpu.doVSAT0(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -5310,13 +5128,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two<<1);               
-                float[] x = cpu.loadVs(vsize, vs);
-                for (int i = 0; i < vsize; ++i) {
-                    x[i] = Math.min(Math.max(-1.0f, x[i]), 1.0f);
-                }
-                cpu.saveVd(vsize, vd, x);
+                processor.cpu.doVSAT1(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -5347,9 +5159,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two<<1);               
-                cpu.saveVd(vsize, vd, new float[vsize]);
+                processor.cpu.doVZERO(1+one+(two<<1), vd);
             
 }
 @Override
@@ -5379,13 +5189,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two<<1);
-                float[] x = new float[vsize];
-                for (int i = 0; i < vsize; ++i) {
-                    x[i] = 1.0f;
-                }
-                cpu.saveVd(vsize, vd, new float[vsize]);
+                processor.cpu.doVONE(1+one+(two<<1), vd);
             
 }
 @Override
@@ -5416,13 +5220,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two<<1);               
-                float[] x = cpu.loadVs(vsize, vs);
-                for (int i = 0; i < vsize; ++i) {
-                    x[i] = 1.0f / x[i];
-                }
-                cpu.saveVd(vsize, vd, x);
+                processor.cpu.doVRCP(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -5454,13 +5252,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two<<1);               
-                float[] x = cpu.loadVs(vsize, vs);
-                for (int i = 0; i < vsize; ++i) {
-                    x[i] = (float)(1.0 / Math.sqrt(x[i]));
-                }
-                cpu.saveVd(vsize, vd, x);
+                processor.cpu.doVRSQ(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -5492,13 +5284,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two<<1);               
-                float[] x = cpu.loadVs(vsize, vs);
-                for (int i = 0; i < vsize; ++i) {
-                    x[i] = (float)Math.sin(2.0 * Math.PI * x[i]);
-                }
-                cpu.saveVd(vsize, vd, x);
+                processor.cpu.doVSIN(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -5530,13 +5316,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two<<1);               
-                float[] x = cpu.loadVs(vsize, vs);
-                for (int i = 0; i < vsize; ++i) {
-                    x[i] = (float)Math.cos(2.0 * Math.PI * x[i]);
-                }
-                cpu.saveVd(vsize, vd, x);
+                processor.cpu.doVCOS(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -5568,13 +5348,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two<<1);               
-                float[] x = cpu.loadVs(vsize, vs);
-                for (int i = 0; i < vsize; ++i) {
-                    x[i] = (float)Math.pow(2.0, x[i]);
-                }
-                cpu.saveVd(vsize, vd, x);
+                processor.cpu.doVEXP2(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -5606,13 +5380,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two<<1);               
-                float[] x = cpu.loadVs(vsize, vs);
-                for (int i = 0; i < vsize; ++i) {
-                    x[i] = (float)(Math.log(x[i]) / Math.log(2.0));
-                }
-                cpu.saveVd(vsize, vd, x);
+                processor.cpu.doVLOG2(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -5644,13 +5412,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two<<1);               
-                float[] x = cpu.loadVs(vsize, vs);
-                for (int i = 0; i < vsize; ++i) {
-                    x[i] = (float)(Math.sqrt(x[i]));
-                }
-                cpu.saveVd(vsize, vd, x);
+                processor.cpu.doVSQRT(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -5682,13 +5444,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two<<1);               
-                float[] x = cpu.loadVs(vsize, vs);
-                for (int i = 0; i < vsize; ++i) {
-                    x[i] = (float)(Math.asin(x[i]) * 0.5 / Math.PI);
-                }
-                cpu.saveVd(vsize, vd, x);
+                processor.cpu.doVASIN(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -5720,13 +5476,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two<<1);               
-                float[] x = cpu.loadVs(vsize, vs);
-                for (int i = 0; i < vsize; ++i) {
-                    x[i] = 0.0f - (1.0f / x[i]);
-                }
-                cpu.saveVd(vsize, vd, x);
+                processor.cpu.doVNRCP(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -5758,13 +5508,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two<<1);               
-                float[] x = cpu.loadVs(vsize, vs);
-                for (int i = 0; i < vsize; ++i) {
-                    x[i] = 0.0f - (float)Math.sin(2.0 * Math.PI * x[i]);
-                }
-                cpu.saveVd(vsize, vd, x);
+                processor.cpu.doVNSIN(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -5796,13 +5540,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
-                CpuState cpu = processor.cpu;
-                int vsize = 1 + one + (two<<1);               
-                float[] x = cpu.loadVs(vsize, vs);
-                for (int i = 0; i < vsize; ++i) {
-                    x[i] = (float)(1.0 / Math.pow(2.0, x[i]));
-                }
-                cpu.saveVd(vsize, vd, x);
+                processor.cpu.doVREXP2(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -5833,6 +5571,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVRNDS(1+one+(two<<1), vs);
             
 }
 @Override
@@ -5862,6 +5601,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVRNDI(1+one+(two<<1), vd);
             
 }
 @Override
@@ -5891,6 +5631,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVRNDF1(1+one+(two<<1), vd);
             
 }
 @Override
@@ -5920,6 +5661,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVRNDF2(1+one+(two<<1), vd);
             
 }
 @Override
@@ -5950,6 +5692,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVF2H(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -5981,6 +5724,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVH2F(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -6012,6 +5756,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVSBZ(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -6043,6 +5788,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVLGB(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -6074,6 +5820,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVUC2I(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -6105,6 +5852,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVC2I(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -6136,6 +5884,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVUS2I(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -6167,6 +5916,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVS2I(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -6198,6 +5948,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVI2UC(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -6229,6 +5980,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVI2C(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -6260,6 +6012,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVI2US(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -6291,6 +6044,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVI2S(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -6322,6 +6076,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVSRT1(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -6353,6 +6108,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVSRT2(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -6384,6 +6140,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVBFY1(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -6415,6 +6172,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVBFY2(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -6446,6 +6204,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVOCP(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -6477,6 +6236,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVSOCP(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -6508,6 +6268,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVFAD(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -6539,6 +6300,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVAVG(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -6570,6 +6332,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVSRT3(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -6601,6 +6364,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVSRT4(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -6627,9 +6391,10 @@ public final String category() { return "VFPU"; }
 @Override
 public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
-	int imm8 = (insn>>8)&255;
+	int imm7 = (insn>>8)&127;
 
 
+                processor.cpu.doVMFVC(vd, imm7);
             
 }
 @Override
@@ -6638,7 +6403,7 @@ public void compile(Processor processor, int insn) {
 @Override
 public String disasm(int address, int insn) {
 	int vd = (insn>>0)&127;
-	int imm8 = (insn>>8)&255;
+	int imm7 = (insn>>8)&127;
 
 return "Unimplemented VMFVC";
 }
@@ -6653,10 +6418,11 @@ public final String category() { return "VFPU"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	int imm8 = (insn>>0)&255;
+	int imm7 = (insn>>0)&127;
 	int vs = (insn>>8)&127;
 
 
+                processor.cpu.doVMTVC(vs, imm7);
             
 }
 @Override
@@ -6664,7 +6430,7 @@ public void compile(Processor processor, int insn) {
 }
 @Override
 public String disasm(int address, int insn) {
-	int imm8 = (insn>>0)&255;
+	int imm7 = (insn>>0)&127;
 	int vs = (insn>>8)&127;
 
 return "Unimplemented VMTVC";
@@ -6686,6 +6452,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVT4444(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -6717,6 +6484,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVT5551(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -6748,6 +6516,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVT5650(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -6776,8 +6545,10 @@ public void interpret(Processor processor, int insn) {
 	int vd = (insn>>0)&127;
 	int one = (insn>>7)&1;
 	int two = (insn>>15)&1;
+	int imm5 = (insn>>16)&31;
 
 
+                processor.cpu.doVCST(1+one+(two<<1), vd, imm5);
             
 }
 @Override
@@ -6788,6 +6559,7 @@ public String disasm(int address, int insn) {
 	int vd = (insn>>0)&127;
 	int one = (insn>>7)&1;
 	int two = (insn>>15)&1;
+	int imm5 = (insn>>16)&31;
 
 return "Unimplemented VCST";
 }
@@ -6806,8 +6578,10 @@ public void interpret(Processor processor, int insn) {
 	int one = (insn>>7)&1;
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
+	int imm5 = (insn>>16)&31;
 
 
+                processor.cpu.doVF2IN(1+one+(two<<1), vd, vs, imm5);
             
 }
 @Override
@@ -6819,6 +6593,7 @@ public String disasm(int address, int insn) {
 	int one = (insn>>7)&1;
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
+	int imm5 = (insn>>16)&31;
 
 return "Unimplemented VF2IN";
 }
@@ -6837,8 +6612,10 @@ public void interpret(Processor processor, int insn) {
 	int one = (insn>>7)&1;
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
+	int imm5 = (insn>>16)&31;
 
 
+                processor.cpu.doVF2IZ(1+one+(two<<1), vd, vs, imm5);
             
 }
 @Override
@@ -6850,6 +6627,7 @@ public String disasm(int address, int insn) {
 	int one = (insn>>7)&1;
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
+	int imm5 = (insn>>16)&31;
 
 return "Unimplemented VF2IZ";
 }
@@ -6868,8 +6646,10 @@ public void interpret(Processor processor, int insn) {
 	int one = (insn>>7)&1;
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
+	int imm5 = (insn>>16)&31;
 
 
+                processor.cpu.doVF2IU(1+one+(two<<1), vd, vs, imm5);
             
 }
 @Override
@@ -6881,6 +6661,7 @@ public String disasm(int address, int insn) {
 	int one = (insn>>7)&1;
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
+	int imm5 = (insn>>16)&31;
 
 return "Unimplemented VF2IU";
 }
@@ -6899,8 +6680,10 @@ public void interpret(Processor processor, int insn) {
 	int one = (insn>>7)&1;
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
+	int imm5 = (insn>>16)&31;
 
 
+                processor.cpu.doVF2ID(1+one+(two<<1), vd, vs, imm5);
             
 }
 @Override
@@ -6912,6 +6695,7 @@ public String disasm(int address, int insn) {
 	int one = (insn>>7)&1;
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
+	int imm5 = (insn>>16)&31;
 
 return "Unimplemented VF2ID";
 }
@@ -6930,8 +6714,10 @@ public void interpret(Processor processor, int insn) {
 	int one = (insn>>7)&1;
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
+	int imm5 = (insn>>16)&31;
 
 
+                processor.cpu.doVI2F(1+one+(two<<1), vd, vs, imm5);
             
 }
 @Override
@@ -6943,6 +6729,7 @@ public String disasm(int address, int insn) {
 	int one = (insn>>7)&1;
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
+	int imm5 = (insn>>16)&31;
 
 return "Unimplemented VI2F";
 }
@@ -6964,6 +6751,7 @@ public void interpret(Processor processor, int insn) {
 	int imm3 = (insn>>16)&7;
 
 
+                processor.cpu.doVCMOVT(1+one+(two<<1), imm3, vd, vs);
             
 }
 @Override
@@ -6997,6 +6785,7 @@ public void interpret(Processor processor, int insn) {
 	int imm3 = (insn>>16)&7;
 
 
+                processor.cpu.doVCMOVF(1+one+(two<<1), imm3, vd, vs);
             
 }
 @Override
@@ -7030,6 +6819,7 @@ public void interpret(Processor processor, int insn) {
 	int imm8 = (insn>>16)&255;
 
 
+                processor.cpu.doVWBN(1+one+(two<<1), vd, vs, imm8);
             
 }
 @Override
@@ -7074,6 +6864,12 @@ public void interpret(Processor processor, int insn) {
 	int negw = (insn>>19)&1;
 
 
+                processor.cpu.doVPFXS(
+                    negw, negz, negy, negx,
+                    cstw, cstz, csty, cstx, 
+                    absw, absz, absy, absx, 
+                    swzw, swzz, swzy, swzx
+                );
             
 }
 @Override
@@ -7129,6 +6925,12 @@ public void interpret(Processor processor, int insn) {
 	int negw = (insn>>19)&1;
 
 
+                processor.cpu.doVPFXT(
+                    negw, negz, negy, negx,
+                    cstw, cstz, csty, cstx, 
+                    absw, absz, absy, absx, 
+                    swzw, swzz, swzy, swzx
+                );
             
 }
 @Override
@@ -7176,6 +6978,10 @@ public void interpret(Processor processor, int insn) {
 	int mskw = (insn>>11)&1;
 
 
+                processor.cpu.doVPFXD(
+                    mskw, mskz, msky, mskx,
+                    satw, satz, saty, satx
+                );
             
 }
 @Override
@@ -7209,6 +7015,7 @@ public void interpret(Processor processor, int insn) {
 	int vd = (insn>>16)&127;
 
 
+                processor.cpu.doVIIM(vd, imm16);
             
 }
 @Override
@@ -7236,6 +7043,7 @@ public void interpret(Processor processor, int insn) {
 	int vd = (insn>>16)&127;
 
 
+                processor.cpu.doVFIM(vd, imm16);
             
 }
 @Override
@@ -7266,6 +7074,7 @@ public void interpret(Processor processor, int insn) {
 	int vt = (insn>>16)&127;
 
 
+                processor.cpu.doVMMUL(1+one+(two<<1), vd, vs, vt);
             
 }
 @Override
@@ -7297,6 +7106,7 @@ public void interpret(Processor processor, int insn) {
 	int vt = (insn>>16)&127;
 
 
+                processor.cpu.doVHTFM2(vd, vs, vt);
             
 }
 @Override
@@ -7326,6 +7136,7 @@ public void interpret(Processor processor, int insn) {
 	int vt = (insn>>16)&127;
 
 
+                processor.cpu.doVTFM2(vd, vs, vt);
             
 }
 @Override
@@ -7355,6 +7166,7 @@ public void interpret(Processor processor, int insn) {
 	int vt = (insn>>16)&127;
 
 
+                processor.cpu.doVHTFM3(vd, vs, vt);
             
 }
 @Override
@@ -7384,6 +7196,7 @@ public void interpret(Processor processor, int insn) {
 	int vt = (insn>>16)&127;
 
 
+                processor.cpu.doVTFM3(vd, vs, vt);
             
 }
 @Override
@@ -7413,6 +7226,7 @@ public void interpret(Processor processor, int insn) {
 	int vt = (insn>>16)&127;
 
 
+                processor.cpu.doVHTFM4(vd, vs, vt);
             
 }
 @Override
@@ -7442,6 +7256,7 @@ public void interpret(Processor processor, int insn) {
 	int vt = (insn>>16)&127;
 
 
+                processor.cpu.doVTFM4(vd, vs, vt);
             
 }
 @Override
@@ -7473,6 +7288,7 @@ public void interpret(Processor processor, int insn) {
 	int vt = (insn>>16)&127;
 
 
+                processor.cpu.doVMSCL(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -7504,6 +7320,7 @@ public void interpret(Processor processor, int insn) {
 	int vt = (insn>>16)&127;
 
 
+                processor.cpu.doVQMUL(vd, vs, vt);
             
 }
 @Override
@@ -7534,6 +7351,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVMMOV(1+one+(two<<1), vd, vs);
             
 }
 @Override
@@ -7564,6 +7382,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVMIDT(1+one+(two<<1), vd);
             
 }
 @Override
@@ -7593,6 +7412,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVMZERO(1+one+(two<<1), vd);
             
 }
 @Override
@@ -7622,6 +7442,7 @@ public void interpret(Processor processor, int insn) {
 	int two = (insn>>15)&1;
 
 
+                processor.cpu.doVMONE(1+one+(two<<1), vd);
             
 }
 @Override
@@ -7653,6 +7474,7 @@ public void interpret(Processor processor, int insn) {
 	int imm5 = (insn>>16)&31;
 
 
+                processor.cpu.doVROT(1+one+(two<<1), vd, vs, imm5);
             
 }
 @Override

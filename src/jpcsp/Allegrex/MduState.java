@@ -15,7 +15,7 @@ public class MduState extends GprState {
     public long hilo;
 
     public void setHi(int value) {
-        hilo = (hilo & 0xffffffffL) | ((long) value << 32);
+        hilo = (hilo & 0xffffffffL) | (((long) value) << 32);
     }
 
     public int getHi() {
@@ -56,11 +56,11 @@ public class MduState extends GprState {
     }
     
     public static final long signedDivMod(int x, int y) {
-        return ((long) (x % y)) << 32 | (((long) (x / y)) & 0xffffffffL);
+        return (((long) (x % y)) << 32) | (((long) (x / y)) & 0xffffffffL);
     }
 
     public static final long unsignedDivMod(long x, long y) {
-        return ((x % y)) << 32 | ((x / y) & 0xffffffffL);
+        return ((x % y) << 32) | ((x / y) & 0xffffffffL);
     }
 
     public final void doMFHI(int rd) {
@@ -96,15 +96,13 @@ public class MduState extends GprState {
     public final void doDIV(int rs, int rt) {
         int lo = gpr[rs] / gpr[rt];
         int hi = gpr[rs] % gpr[rt];
-        hilo = ((long) hi) << 32 | (((long) lo) & 0xffffffffL);
+        hilo = (((long) hi) << 32) | (((long) lo) & 0xffffffffL);
     }
 
     public final void doDIVU(int rs, int rt) {
         long x = ((long) gpr[rs]) & 0xffffffffL;
         long y = ((long) gpr[rt]) & 0xffffffffL;
-        int lo = (int) (x / y);
-        int hi = (int) (x % y);
-        hilo = ((long) hi) << 32 | (((long) lo) & 0xffffffffL);
+        hilo = ((x % y) << 32) | ((x / y) & 0xffffffffL);
     }   
 
     public final void doMADD(int rs, int rt) {
