@@ -925,6 +925,7 @@ public class ThreadMan {
 
         Emulator.getProcessor().cpu.gpr[2] = sema.uid;
     }
+
     public void ThreadMan_sceKernelWaitSema(int semaid , int signal , int timeoutptr , int timeout)
     {
           Modules.log.debug("sceKernelWaitSema id= " + semaid + " signal= " + signal + " timeout = " + timeout);
@@ -946,11 +947,16 @@ public class ThreadMan {
                     Emulator.getProcessor().cpu.gpr[2] = 0;
                     blockCurrentThread();
                 }
-
             }
-
-
     }
+
+    public void ThreadMan_sceKernelWaitSemaCB(int semaid , int signal , int timeoutptr , int timeout)
+    {
+        // TODO handle callbacks
+        Modules.log.debug("sceKernelWaitSemaCB redirecting to sceKernelWaitSema");
+        ThreadMan_sceKernelWaitSema(semaid, signal, timeoutptr, timeout);
+    }
+
     public void ThreadMan_sceKernelSignalSema(int semaid , int signal)
     {
         Modules.log.debug("sceKernelSignalSema id =" + semaid + " signal =" + signal);

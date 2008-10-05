@@ -178,9 +178,10 @@ public class VideoEngine {
 
         log("executeList id " + list.id);
 
+        Memory mem = Memory.getInstance();
         while (!listHasEnded && !listHasFinished &&
             actualList.pc != actualList.stallAddress && !Emulator.pause) {
-            int ins = Emulator.getMemory().read32(actualList.pc);
+            int ins = mem.read32(actualList.pc);
             actualList.pc += 4;
             executeCommand(ins);
         }
@@ -396,7 +397,7 @@ public class VideoEngine {
             case ALC0: {
             	float [] color = new float[4];
 
-            	
+
             	color[0] = ((normalArgument      ) & 255) / 255.f;
             	color[1] = ((normalArgument >>  8) & 255) / 255.f;
             	color[2] = ((normalArgument >> 16) & 255) / 255.f;
@@ -861,16 +862,24 @@ public class VideoEngine {
 
             	// Extract texture information with the minor conversion possible
             	// TODO: Get rid of information copying, and implement all the available formats
-            	Memory 	mem = Emulator.getMemory();
+            	Memory 	mem = Memory.getInstance();
             	Buffer 	final_buffer = null;
             	int 	texture_type = 0;
 
+                final int[] texturetype_mapping = {
+                    GL.GL_UNSIGNED_SHORT_5_6_5_REV,
+                    GL.GL_UNSIGNED_SHORT_1_5_5_5_REV,
+                    GL.GL_UNSIGNED_SHORT_4_4_4_4_REV,
+                    GL.GL_UNSIGNED_BYTE,
+                };
+
             	switch (texture_storage) {
             		case TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED: {
-            			// TODO: Refactor this to avoid code duplication
             			switch (tex_clut_mode) {
-            				case CMODE_FORMAT_16BIT_BGR5650: {
-            					texture_type = GL.GL_UNSIGNED_SHORT_5_6_5_REV;
+            				case CMODE_FORMAT_16BIT_BGR5650:
+            				case CMODE_FORMAT_16BIT_ABGR5551:
+            				case CMODE_FORMAT_16BIT_ABGR4444: {
+            					texture_type = texturetype_mapping[tex_clut_mode];
 
 	            				for (int i = 0, j = 0; i < texture_width0*texture_height0; i += 2, j++) {
 
@@ -906,7 +915,7 @@ public class VideoEngine {
 	            			}
 
 	                		default: {
-	                			VideoEngine.log.error("Unhandled clut texture mode " + texture_storage + "/" + tex_clut_mode);
+	                			VideoEngine.log.error("Unhandled clut4 texture mode " + tex_clut_mode);
                                 Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
 	                            break;
 	                		}
@@ -916,10 +925,11 @@ public class VideoEngine {
             		}
             		case TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED: {
 
-            			// TODO: Refactor this to avoid code duplication
             			switch (tex_clut_mode) {
-            				case CMODE_FORMAT_16BIT_BGR5650: {
-            					texture_type = GL.GL_UNSIGNED_SHORT_5_6_5_REV;
+            				case CMODE_FORMAT_16BIT_BGR5650:
+            				case CMODE_FORMAT_16BIT_ABGR5551:
+            				case CMODE_FORMAT_16BIT_ABGR4444: {
+            					texture_type = texturetype_mapping[tex_clut_mode];
 
 	            				for (int i = 0; i < texture_width0*texture_height0; i++) {
 	            					int clut = mem.read8(texture_base_pointer0+i);
@@ -945,7 +955,7 @@ public class VideoEngine {
 	            			}
 
 	                		default: {
-	                			VideoEngine.log.error("Unhandled clut texture mode " + texture_storage + "/" + tex_clut_mode);
+	                			VideoEngine.log.error("Unhandled clut8 texture mode " + tex_clut_mode);
 	                            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
 	                            break;
 	                		}
@@ -954,32 +964,10 @@ public class VideoEngine {
             			break;
             		}
 
-            		case TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650: {
-            			texture_type = GL.GL_UNSIGNED_SHORT_5_6_5_REV;
-
-                    	for (int i = 0; i < texture_width0*texture_height0; i++) {
-                    		int pixel = mem.read16(texture_base_pointer0+i*2);
-                    		tmp_texture_buffer16[i] = (short)pixel;
-                    	}
-
-                    	final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
-            			break;
-            		}
-
-            		case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551: {
-            			texture_type = GL.GL_UNSIGNED_SHORT_1_5_5_5_REV;
-
-                    	for (int i = 0; i < texture_width0*texture_height0; i++) {
-                    		int pixel = mem.read16(texture_base_pointer0+i*2);
-                    		tmp_texture_buffer16[i] = (short)pixel;
-                    	}
-
-                    	final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
-            			break;
-            		}
-
-            		case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444: {
-            			texture_type = GL.GL_UNSIGNED_SHORT_4_4_4_4_REV;
+                    case TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650:
+                    case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551:
+                    case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444: {
+                        texture_type = texturetype_mapping[texture_storage];
 
                     	for (int i = 0; i < texture_width0*texture_height0; i++) {
                     		int pixel = mem.read16(texture_base_pointer0+i*2);
@@ -1213,25 +1201,25 @@ public class VideoEngine {
                 // Logging
                 switch (type) {
                     case PRIM_POINT:
-                        log(helper.getCommandString(PRIM) + " point");
+                        log(helper.getCommandString(PRIM) + " point " + numberOfVertex + "x");
                         break;
                     case PRIM_LINE:
-                        log(helper.getCommandString(PRIM) + " line");
+                        log(helper.getCommandString(PRIM) + " line " + (numberOfVertex / 2) + "x");
                         break;
                     case PRIM_LINES_STRIPS:
-                        log(helper.getCommandString(PRIM) + " lines_strips");
+                        log(helper.getCommandString(PRIM) + " lines_strips " + (numberOfVertex - 1) + "x");
                         break;
                     case PRIM_TRIANGLE:
-                        log(helper.getCommandString(PRIM) + " triangle");
+                        log(helper.getCommandString(PRIM) + " triangle " + (numberOfVertex / 3) + "x");
                         break;
                     case PRIM_TRIANGLE_STRIPS:
-                        log(helper.getCommandString(PRIM) + " triangle_strips");
+                        log(helper.getCommandString(PRIM) + " triangle_strips " + (numberOfVertex - 2) + "x");
                         break;
                     case PRIM_TRIANGLE_FANS:
-                        log(helper.getCommandString(PRIM) + " triangle_fans");
+                        log(helper.getCommandString(PRIM) + " triangle_fans " + (numberOfVertex - 2) + "x");
                         break;
                     case PRIM_SPRITES:
-                        log(helper.getCommandString(PRIM) + " sprites");
+                        log(helper.getCommandString(PRIM) + " sprites " + (numberOfVertex / 2) + "x");
                         break;
                 }
 
@@ -1269,13 +1257,13 @@ public class VideoEngine {
 	                	gl.glTexGeni(GL.GL_T, GL.GL_TEXTURE_GEN_MODE, GL.GL_SPHERE_MAP);
 	                	gl.glEnable (GL.GL_TEXTURE_GEN_T);
 
-	                	// Setup also textura matrix
+	                	// Setup also texture matrix
 	                	gl.glMultMatrixf (tex_envmap_matrix, 0);
 	                	break;
 	                }
 
 	                default:
-	                	log ("Unhandled textura matrix mode " + tex_map_mode);
+	                	log ("Unhandled texture matrix mode " + tex_map_mode);
                 }
 
                 /*
@@ -1299,12 +1287,13 @@ public class VideoEngine {
                 // Apply model matrix
                 if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
                 	gl.glMultMatrixf(model_uploaded_matrix, 0);
-                
+
                 // HACK: If we don't have a material set up, and have colors per vertex, this will
                 // override materials, so at least we'll see something, otherwise it would be black
                 if (vinfo.color != 0)
                 	gl.glEnable(GL.GL_COLOR_MATERIAL);
-                
+
+                Memory mem = Memory.getInstance();
                 switch (type) {
                     case PRIM_POINT:
                     case PRIM_LINE:
@@ -1314,8 +1303,8 @@ public class VideoEngine {
                     case PRIM_TRIANGLE_FANS:
                         gl.glBegin(mapping[type]);
                             for (int i = 0; i < numberOfVertex; i++) {
-                                int addr = vinfo.getAddress(i);
-                                VertexState v = vinfo.readVertex(Emulator.getMemory(), addr);
+                                int addr = vinfo.getAddress(mem, i);
+                                VertexState v = vinfo.readVertex(mem, addr);
                                 if (vinfo.texture  != 0) gl.glTexCoord2f(v.u, v.v);
                                 if (vinfo.color    != 0) gl.glColor4f(v.r, v.g, v.b, v.a);
                                 if (vinfo.normal   != 0) gl.glNormal3f(v.nx, v.ny, v.nz);
@@ -1333,10 +1322,10 @@ public class VideoEngine {
                         gl.glDisable(GL.GL_CULL_FACE);
                         gl.glBegin(GL.GL_QUADS);
                             for (int i = 0; i < numberOfVertex; i += 2) {
-                                int addr1 = vinfo.getAddress(i);
-                                int addr2 = vinfo.getAddress(i + 1);
-                                VertexState v1 = vinfo.readVertex(Emulator.getMemory(), addr1);
-                                VertexState v2 = vinfo.readVertex(Emulator.getMemory(), addr2);
+                                int addr1 = vinfo.getAddress(mem, i);
+                                int addr2 = vinfo.getAddress(mem, i + 1);
+                                VertexState v1 = vinfo.readVertex(mem, addr1);
+                                VertexState v2 = vinfo.readVertex(mem, addr2);
 
                                 // V1
                                 if (vinfo.normal   != 0) gl.glNormal3f(v1.nx, v1.ny, v1.nz);
@@ -1371,7 +1360,7 @@ public class VideoEngine {
 		            	break;
 		            }
 		        }
-                
+
                 if (vinfo.color != 0)
                 	gl.glDisable	(GL.GL_COLOR_MATERIAL);
 
@@ -1618,15 +1607,15 @@ public class VideoEngine {
              */
             case BOFS: {
             	log("bone matrix offset", normalArgument);
-            	
+
             	if(normalArgument % 12 != 0)
             		VideoEngine.log.warn("bone matrix offset " + normalArgument + " isn't a multiple of 12");
-            	
+
             	bone_matrix_offset = normalArgument / (4*3);
             	bone_upload_start = true;
             	break;
             }
-            	
+
             case BONE: {
             	if (bone_upload_start) {
             		bone_upload_x = 0;
@@ -1676,31 +1665,31 @@ public class VideoEngine {
     	float nx = 0, ny = 0, nz = 0;
 		for(int i = 0; i < vinfo.skinningWeightCount; ++i) {
 			if(v.boneWeights[i] != 0.f) {
-				
+
 				x += (	v.px * 	bone_uploaded_matrix[i][0]
 				     + 	v.py * 	bone_uploaded_matrix[i][3]
 				     + 	v.pz * 	bone_uploaded_matrix[i][6]
 				     + 			bone_uploaded_matrix[i][9]) * v.boneWeights[i];
-				
+
 				y += (	v.px * 	bone_uploaded_matrix[i][1]
 				     + 	v.py * 	bone_uploaded_matrix[i][4]
 				     + 	v.pz * 	bone_uploaded_matrix[i][7]
 				     + 			bone_uploaded_matrix[i][10]) * v.boneWeights[i];
-				
+
 				z += (	v.px * 	bone_uploaded_matrix[i][2]
 				     + 	v.py * 	bone_uploaded_matrix[i][5]
 				     + 	v.pz * 	bone_uploaded_matrix[i][8]
 				     + 			bone_uploaded_matrix[i][11]) * v.boneWeights[i];
-				
+
 				// Normals shouldn't be translated :)
 				nx += (	v.nx * bone_uploaded_matrix[i][0]
 				   + 	v.ny * bone_uploaded_matrix[i][3]
 				   +	v.nz * bone_uploaded_matrix[i][6]) * v.boneWeights[i];
-				
+
 				ny += (	v.nx * bone_uploaded_matrix[i][1]
 				   + 	v.ny * bone_uploaded_matrix[i][4]
 				   + 	v.nz * bone_uploaded_matrix[i][7]) * v.boneWeights[i];
-				
+
 				nz += (	v.nx * bone_uploaded_matrix[i][2]
 				   + 	v.ny * bone_uploaded_matrix[i][5]
 				   + 	v.nz * bone_uploaded_matrix[i][8]) * v.boneWeights[i];
@@ -1708,21 +1697,21 @@ public class VideoEngine {
 		}
 
 		v.px = x;	v.py = y;	v.pz = z;
-		
+
 		/*
 		// TODO: I doubt psp hardware normalizes normals after skinning,
 		// but if it does, this should be uncommented :)
 		float length = nx*nx + ny*ny + nz*nz;
-		
+
 		if (length > 0.f) {
 			length = 1.f / (float)Math.sqrt(length);
-			
+
 			nx *= length;
 			ny *= length;
 			nz *= length;
 		}
 		*/
-		
+
 		v.nx = nx;	v.ny = ny;	v.nz = nz;
 	}
 

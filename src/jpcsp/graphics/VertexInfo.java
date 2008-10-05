@@ -16,12 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics;
 
-import jpcsp.Emulator;
 import jpcsp.Memory;
 
 // Based on soywiz/pspemulator
 public class VertexInfo {
     // vtype
+    private int transform2D; // for logging purposes (got moved into VideoEngine.java)
     public int skinningWeightCount;
     public int morphingVertexCount;
     public int texture;
@@ -72,6 +72,7 @@ public class VertexInfo {
         index               = (param >> 11) & 0x3;
         skinningWeightCount = ((param >> 14) & 0x7) + 1;
         morphingVertexCount = ((param >> 18) & 0x7) + 1;
+        transform2D         = (param >> 23) & 0x1;
 
         vertexSize = 0;
         vertexSize += size_mapping[weight] * skinningWeightCount;
@@ -79,15 +80,19 @@ public class VertexInfo {
         vertexSize += size_mapping[texture] * 2;
         vertexSize += size_mapping[position] * 3;
         vertexSize += size_mapping[normal] * 3;
+
+        // 32-bit align
+        // messes up lines.pbp demo
+        //vertexSize = (vertexSize + 3) & ~3;
     }
 
-    public int getAddress(int i) {
+    public int getAddress(Memory mem, int i) {
         if (ptr_index != 0) {
             int addr = ptr_index + i * index;
             switch(index) {
-                case 1: i = Emulator.getMemory().read8(addr); break;
-                case 2: i = Emulator.getMemory().read16(addr); break;
-                case 4: i = Emulator.getMemory().read32(addr); break;
+                case 1: i = mem.read8(addr); break;
+                case 2: i = mem.read16(addr); break;
+                case 4: i = mem.read32(addr); break;
             }
         }
 
@@ -100,10 +105,10 @@ public class VertexInfo {
 		for (int i = 0; i < skinningWeightCount; ++i) {
 			switch (weight) {
 			case 1:
-				v.boneWeights[i] = Emulator.getMemory().read8(addr); addr += 1;
+				v.boneWeights[i] = mem.read8(addr); addr += 1;
 				break;
 			case 2:
-				v.boneWeights[i] = Emulator.getMemory().read16(addr); addr += 2;
+				v.boneWeights[i] = mem.read16(addr); addr += 2;
 				break;
 			case 3:
 				v.boneWeights[i] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
@@ -111,15 +116,17 @@ public class VertexInfo {
 			}
 			//System.err.println(String.format("Weight %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f", v.boneWeights[0], v.boneWeights[1], v.boneWeights[2], v.boneWeights[3], v.boneWeights[4], v.boneWeights[5], v.boneWeights[6], v.boneWeights[7]));
 		}
-        
+
         switch(texture) {
             case 1:
-                v.u = Emulator.getMemory().read8(addr); addr += 1;
-                v.v = Emulator.getMemory().read8(addr); addr += 1;
+                v.u = mem.read8(addr); addr += 1;
+                v.v = mem.read8(addr); addr += 1;
+                VideoEngine.log.warn("texture type 1 " + v.u + ", " + v.v + "");
                 break;
             case 2:
-                v.u = Emulator.getMemory().read16(addr); addr += 2;
-                v.v = Emulator.getMemory().read16(addr); addr += 2;
+                v.u = mem.read16(addr); addr += 2;
+                v.v = mem.read16(addr); addr += 2;
+                VideoEngine.log.warn("texture type 2 " + v.u + ", " + v.v + "");
                 break;
             case 3:
                 v.u = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
@@ -128,8 +135,19 @@ public class VertexInfo {
         }
 
         switch(color) {
-            case 1: case 2: case 3: VideoEngine.log.warn("unimplemented color type"); addr += 1; break;
-            case 4: case 5: case 6: VideoEngine.log.warn("unimplemented color type"); addr += 2; break;
+            case 1: case 2: case 3: VideoEngine.log.warn("unimplemented color type " + color); addr += 1; break;
+            case 4: case 5: VideoEngine.log.warn("unimplemented color type " + color); addr += 2; break;
+
+            case 6: { // GU_COLOR_4444
+                int packed = mem.read16(addr); addr += 2;
+                v.r = (float)((packed      ) & 0xf) / 15;
+                v.g = (float)((packed >>  4) & 0xf) / 15;
+                v.b = (float)((packed >>  8) & 0xf) / 15;
+                v.a = (float)((packed >> 12) & 0xf) / 15;
+                VideoEngine.log.warn("color type " + color);
+                break;
+            }
+
             case 7: { // GU_COLOR_8888
                 int packed = mem.read32(addr); addr += 4;
                 v.r = (float)((packed      ) & 0xff) / 255;
@@ -142,14 +160,16 @@ public class VertexInfo {
 
         switch(normal) {
             case 1:
-                v.nx = Emulator.getMemory().read8(addr); addr += 1;
-                v.ny = Emulator.getMemory().read8(addr); addr += 1;
-                v.nz = Emulator.getMemory().read8(addr); addr += 1;
+                v.nx = mem.read8(addr); addr += 1;
+                v.ny = mem.read8(addr); addr += 1;
+                v.nz = mem.read8(addr); addr += 1;
+                VideoEngine.log.warn("normal type 1 " + v.nx + ", " + v.ny + ", " + v.nz + "");
                 break;
             case 2:
-                v.nx = Emulator.getMemory().read16(addr); addr += 2;
-                v.ny = Emulator.getMemory().read16(addr); addr += 2;
-                v.nz = Emulator.getMemory().read16(addr); addr += 2;
+                v.nx = mem.read16(addr); addr += 2;
+                v.ny = mem.read16(addr); addr += 2;
+                v.nz = mem.read16(addr); addr += 2;
+                VideoEngine.log.warn("normal type 2 " + v.nx + ", " + v.ny + ", " + v.nz + "");
                 break;
             case 3:
                 v.nx = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
@@ -160,14 +180,16 @@ public class VertexInfo {
 
 		switch (position) {
 			case 1:
-				v.px = Emulator.getMemory().read8(addr); addr += 1;
-				v.py = Emulator.getMemory().read8(addr); addr += 1;
-				v.pz = Emulator.getMemory().read8(addr); addr += 1;
+				v.px = mem.read8(addr); addr += 1;
+				v.py = mem.read8(addr); addr += 1;
+				v.pz = mem.read8(addr); addr += 1;
+                VideoEngine.log.warn("vertex type 1 " + v.px + ", " + v.py + ", " + v.pz + "");
 				break;
 			case 2:
-				v.px = Emulator.getMemory().read16(addr); addr += 2;
-				v.py = Emulator.getMemory().read16(addr); addr += 2;
-				v.pz = Emulator.getMemory().read16(addr); addr += 2;
+				v.px = mem.read16(addr); addr += 2;
+				v.py = mem.read16(addr); addr += 2;
+				v.pz = mem.read16(addr); addr += 2;
+                VideoEngine.log.warn("vertex type 2 " + v.px + ", " + v.py + ", " + v.pz + "");
 				break;
 			case 3: // GU_VERTEX_32BITF
 				v.px = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
@@ -178,7 +200,7 @@ public class VertexInfo {
 
         return v;
     }
-    
+
     @Override
     public String toString() {
         StringBuffer sb = new StringBuffer();
@@ -195,6 +217,8 @@ public class VertexInfo {
             sb.append(weight_info[weight] + "|");
         if (index_info[index] != null)
             sb.append(index_info[index] + "|");
+        if (transform_info[transform2D] != null)
+            sb.append(transform_info[transform2D]);
 
         sb.append(" size=" + vertexSize);
         return sb.toString();

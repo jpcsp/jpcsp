@@ -60,6 +60,8 @@ public class StepLogger {
 
     public static void flush() {
         if (status == Emulator.EMU_STATUS_OK) {
+            clear();
+            status = Emulator.EMU_STATUS_UNKNOWN;
             return;
         }
 
@@ -91,6 +93,7 @@ public class StepLogger {
             e.printStackTrace();
         }
 
+        clear();
         status = Emulator.EMU_STATUS_UNKNOWN;
     }
 

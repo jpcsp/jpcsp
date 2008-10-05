@@ -20,6 +20,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
+import java.util.Iterator;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
@@ -151,17 +152,40 @@ public class pspge {
 
     // TODO handle sync type
     public void sceGeDrawSync(int syncType) {
-        VideoEngine.log.debug("sceGeDrawSync syncType=" + syncType);
+        if (syncType == 0 || syncType == 1) {
+            VideoEngine.log.debug("sceGeDrawSync syncType=" + syncType);
+        } else {
+            VideoEngine.log.warn("sceGeDrawSync syncType=" + syncType); // unhandled
+        }
+
         Emulator.getProcessor().cpu.gpr[2] = 0;
+
         if (!pspdisplay.get_instance().disableGE) {
             if (syncType == DisplayList.QUEUED) {
                 // We always queue straight away so I guess we can return straight away? (fiveofhearts)
                 ThreadMan.get_instance().yieldCurrentThread();
             } else {
-                waitingForSync = true;
-                syncThreadId = ThreadMan.get_instance().getCurrentThreadID();
-                ThreadMan.get_instance().blockCurrentThread();
+                int count = 0;
+                DisplayList.Lock();
+                for (Iterator<DisplayList> it = DisplayList.iterator(); it.hasNext();) {
+                    DisplayList list = it.next();
+                    if (list.status == DisplayList.QUEUED)
+                        count++;
+                }
+                DisplayList.Unlock();
+
+                // Don't block if there's nothing to block on
+                if (true || count > 0) {
+                    waitingForSync = true;
+                    syncThreadId = ThreadMan.get_instance().getCurrentThreadID();
+                    ThreadMan.get_instance().blockCurrentThread();
+                } else {
+                    VideoEngine.log.debug("sceGeDrawSync no queued lists, ignoring");
+                    ThreadMan.get_instance().yieldCurrentThread();
+                }
             }
+        } else {
+            ThreadMan.get_instance().yieldCurrentThread();
         }
     }
 

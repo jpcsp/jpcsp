@@ -17,8 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.HashMap;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
@@ -59,7 +58,7 @@ public class sceUmdUser implements HLEModule {
 
         }
 
-        UMDCallBackList = new LinkedList<Integer>();
+        UMDCallBackList = new HashMap<Integer, Integer>();
     }
 
     @Override
@@ -92,7 +91,7 @@ public class sceUmdUser implements HLEModule {
     protected final int PSP_UMD_READY = 0x20;
 
     protected UmdIsoReader iso;
-    protected List<Integer> UMDCallBackList;
+    protected HashMap<Integer, Integer> UMDCallBackList;
 
     // HLE helper functions
 
@@ -272,7 +271,7 @@ public class sceUmdUser implements HLEModule {
         Modules.log.warn("UNIMPLEMENTED:sceUmdRegisterUMDCallBack SceUID=" + Integer.toHexString(uid));
 
         if (SceUIDMan.get_instance().checkUidPurpose(uid, "ThreadMan-callback", false)) {
-            UMDCallBackList.add(uid);
+            UMDCallBackList.put(uid, uid);
             cpu.gpr[2] = 0;
         } else {
             Modules.log.warn("sceUmdRegisterUMDCallBack not a callback uid");
