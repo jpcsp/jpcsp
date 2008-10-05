@@ -157,18 +157,18 @@ public class sceUmdUser implements HLEModule {
     public void sceUmdWaitDriveStatWithTimer(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
+        int stat = cpu.gpr[4];
+        int timeout = cpu.gpr[5];
+        Modules.log.debug("sceUmdWaitDriveStatWithTimer = 0x" + Integer.toHexString(stat) + " timeout = " + timeout);
+        cpu.gpr[2] = 0;
 
-        /* put your own code here instead */
-
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-        System.out.println("Unimplemented NID function sceUmdWaitDriveStatWithTimer [0x56202973]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        if (iso != null || stat == PSP_UMD_NOT_PRESENT) {
+            jpcsp.HLE.ThreadMan.get_instance().yieldCurrentThread();
+        } else {
+            // UMD not mounted and never will be since we don't emulate
+            // inserting/removing a disc so block forever.
+            jpcsp.HLE.ThreadMan.get_instance().blockCurrentThread();
+        }
     }
 
     /** wait until drive stat reaches a0 */

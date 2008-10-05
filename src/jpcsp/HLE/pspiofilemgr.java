@@ -557,19 +557,21 @@ public class pspiofilemgr {
 
         String pcfilename = getDeviceFilePath(dirname);
         if (pcfilename != null) {
-            if (debug) Modules.log.debug("sceIoDopen - pcfilename = " + pcfilename);
+
             if (isUmdPath(pcfilename)) {
+                // Files in our iso virtual file system
+                String isofilename = trimUmdPrefix(pcfilename);
+                if (debug) Modules.log.debug("sceIoDopen - isofilename = " + isofilename);
                 // check umd is mounted
                 if (iso == null) {
                     Modules.log.error("sceIoDopen - no umd mounted");
                     Emulator.getProcessor().cpu.gpr[2] = -1;
                 } else {
-                    String isofilename = trimUmdPrefix(pcfilename);
                     if (debug) Modules.log.debug("sceIoDopen - isofilename = " + isofilename);
                     try {
                         if (iso.isDirectory(isofilename)) {
                             String[] filenames = iso.listDirectory(isofilename);
-                            if (debug) Modules.log.debug("sceIoDopen on umd, " + filenames.length + " files");
+                            //if (debug) Modules.log.debug("sceIoDopen on umd, " + filenames.length + " files");
                             IoDirInfo info = new IoDirInfo(pcfilename, filenames);
                             Emulator.getProcessor().cpu.gpr[2] = info.uid;
                         } else {
@@ -584,7 +586,14 @@ public class pspiofilemgr {
                         Emulator.getProcessor().cpu.gpr[2] = -1;
                     }
                 }
+            } else if (dirname.startsWith("/") && dirname.indexOf(":") != -1) {
+                // Detect paths outside of our emulated mstick dir and show a helpful message
+                // It is unsafe to try and support this, as an app could access any part of your computer instead of being limited to the ms0 dir
+                Modules.log.warn("sceIoDopen apps running outside of ms0 dir are not fully supported, relative child paths should still work");
+                Emulator.getProcessor().cpu.gpr[2] = -1;
             } else {
+                // Regular apps inside mstick dir
+                if (debug) Modules.log.debug("sceIoDopen - pcfilename = " + pcfilename);
                 File f = new File(pcfilename);
                 if (f.isDirectory()) {
                     IoDirInfo info = new IoDirInfo(pcfilename, f.list());

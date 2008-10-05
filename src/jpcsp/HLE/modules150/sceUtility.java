@@ -144,7 +144,9 @@ public class sceUtility implements HLEModule {
     public static final int PSP_NETPARAM_ERROR_BAD_PARAM = 0x80110604;
 
     /* save-load error codes */
-    public static final int SCE_UTILITY_SAVEDATA_ERROR_TYPE=0x80110300;
+    public static final int SCE_UTILITY_SAVEDATA_ERROR_TYPE = 0x80110300;
+
+    public static final int SCE_UTILITY_SAVEDATA_ERROR_NOT_INITED = 0x80110005; // might not be correct name
 
     public static final int SCE_UTILITY_SAVEDATA_ERROR_LOAD_NO_MS = 0x80110301;
     public static final int SCE_UTILITY_SAVEDATA_ERROR_LOAD_EJECT_MS = 0x80110302;
@@ -460,7 +462,8 @@ public class sceUtility implements HLEModule {
 
 		System.out.println("Unimplemented NID function sceUtilitySavedataGetStatus [0x8874DBE0]");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		//cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = SCE_UTILITY_SAVEDATA_ERROR_NOT_INITED;
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
