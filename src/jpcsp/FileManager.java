@@ -260,7 +260,12 @@ public class FileManager {
             // Find the shstrtab
             if (shdr.getSh_type() == ShType.STRTAB.getValue() && shstrtab == null) // 0x00000003
             {
-                shstrtab = shdr;
+                 // Some programs have 2 STRTAB headers,
+                // the header with size 1 has to be ignored.
+                if (shdr.getSh_size() > 1)
+                {
+                   shstrtab = shdr;
+                }
             }
 
             // Load some sections into memory
