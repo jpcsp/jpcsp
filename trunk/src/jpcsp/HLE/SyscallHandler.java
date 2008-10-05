@@ -563,6 +563,9 @@ public class SyscallHandler {
 		// sceDisplayIsForeground(0x2141),
 		// sceDisplayGetBrightness(0x2142),
 		// sceDisplayGetVcount(0x2143),
+                case 0x2143:
+                    pspdisplay.get_instance().sceDisplayGetVcount();
+                    break;
 		// sceDisplayIsVblank(0x2144),
                 case 0x2145:
                     pspdisplay.get_instance().sceDisplayWaitVblank();
