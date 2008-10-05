@@ -70,7 +70,7 @@ public class GprState {
     }
 
     public static final int unsignedCompare(long i, long j) {
-        return (int)(((i & 0xFFFFFFFFL) - (j & 0xFFFFFFFFL)) >>> 63);
+        return (int)(((i & 0xffffffffL) - (j & 0xffffffffL)) >>> 63);
     }
 
     public final void doSLL(int rd, int rt, int sa) {
@@ -159,19 +159,19 @@ public class GprState {
 
     public final void doADDIU(int rt, int rs, int simm16) {
         if (rt != 0) {
-            gpr[rt] = gpr[rs] + (int) (short) simm16;
+            gpr[rt] = gpr[rs] + simm16;
         }
     }
 
     public final void doSLTI(int rt, int rs, int simm16) {
         if (rt != 0) {
-            gpr[rt] = signedCompare(gpr[rs], (int) (short) simm16);
+            gpr[rt] = signedCompare(gpr[rs], simm16);
         }
     }
 
     public final void doSLTIU(int rt, int rs, int simm16) {
         if (rt != 0) {
-            gpr[rt] = unsignedCompare(gpr[rs], (int) (short) simm16);
+            gpr[rt] = unsignedCompare(gpr[rs], simm16);
         }
     }
 
@@ -274,7 +274,7 @@ public class GprState {
 
     public final void doSEB(int rd, int rt) {
         if (rd != 0) {
-            gpr[rd] = (gpr[rt] << 24) >> 24;
+            gpr[rd] = (int)(byte)gpr[rt];
         }
     }
 
@@ -286,7 +286,7 @@ public class GprState {
 
     public final void doSEH(int rd, int rt) {
         if (rd != 0) {
-            gpr[rd] = (gpr[rt] << 16) >> 16;
+            gpr[rd] = (int)(short)gpr[rt];
         }
     }
 }
