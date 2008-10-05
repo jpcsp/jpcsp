@@ -623,7 +623,11 @@ public class VfpuState extends FpuState {
 
     // VFPU2:MFV
     public void doMFV(int rt, int imm7) {
-        doUNK("Unimplemented MFV");
+        int r = (imm7 >> 5) & 3;
+        int m = (imm7 >> 2) & 7;
+        int c = (imm7 >> 0) & 3;
+
+        gpr[rt] = Float.floatToRawIntBits(vpr[m][r][c]);
     }
     // VFPU2:MFVC
     public void doMFVC(int rt, int imm7) {
@@ -631,8 +635,13 @@ public class VfpuState extends FpuState {
     }
     // VFPU2:MTV
     public void doMTV(int rt, int imm7) {
-        doUNK("Unimplemented MTV");
+        int r = (imm7 >> 5) & 3;
+        int m = (imm7 >> 2) & 7;
+        int c = (imm7 >> 0) & 3;
+
+        vpr[m][c][r] = Float.intBitsToFloat(gpr[rt]);
     }
+
     // VFPU2:MTVC
     public void doMTVC(int rt, int imm7) {
         doUNK("Unimplemented MTVC");
