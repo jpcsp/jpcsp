@@ -254,9 +254,9 @@ public class GprState {
         }
     }
 
-    public final void doINS(int rt, int rs, int rd, int sa) {
+    public final void doINS(int rt, int rs, int lsb, int msb) {
         if (rt != 0) {
-            gpr[rt] = insertBits(gpr[rt], gpr[rs], sa, rd);
+            gpr[rt] = insertBits(gpr[rt], gpr[rs], lsb, msb);
         }
     }
 
