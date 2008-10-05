@@ -176,7 +176,7 @@ public class Decoder {
 
             @Override
             public Instruction instance(int insn) {
-                return table_12[(insn >> 16) & 0x0000003f].instance(insn);
+                return table_12[(insn >> 18) & 0x0000001f].instance(insn);
             }
         },
         new STUB() {
@@ -592,19 +592,429 @@ public class Decoder {
 
             @Override
             public Instruction instance(int insn) {
-                if ((insn & 0x02000000) == 0x00000000) {
-                    if ((insn & 0x00400000) == 0x00000000) {
+                if ((insn & 0x02010000) == 0x00000000) {
+                    if ((insn & 0x00020000) == 0x00000000) {
                         return jpcsp.Allegrex.Instructions.VMOV;
                     } else {
-                        return jpcsp.Allegrex.Instructions.VSRT1;
+                        return jpcsp.Allegrex.Instructions.VNEG;
                     }
                 } else {
-                    if ((insn & 0x01400000) == 0x00000000) {
-                        if ((insn & 0x00800000) == 0x00000000) {
+                    if ((insn & 0x02020000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VABS;
+                    } else {
+                        if ((insn & 0x02000000) == 0x00000000) {
+                            return jpcsp.Allegrex.Instructions.VIDT;
+                        } else {
+                            if ((insn & 0x01800000) == 0x00000000) {
+                                return jpcsp.Allegrex.Instructions.VF2IN;
+                            } else {
+                                if ((insn & 0x01000000) == 0x00000000) {
+                                    return jpcsp.Allegrex.Instructions.VI2F;
+                                } else {
+                                    return jpcsp.Allegrex.Instructions.VWBN;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        new STUB() {
+
+            @Override
+            public Instruction instance(int insn) {
+                if ((insn & 0x02010000) == 0x00000000) {
+                    if ((insn & 0x00020000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VSAT0;
+                    } else {
+                        return jpcsp.Allegrex.Instructions.VZERO;
+                    }
+                } else {
+                    if ((insn & 0x02020000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VSAT1;
+                    } else {
+                        if ((insn & 0x02000000) == 0x00000000) {
+                            return jpcsp.Allegrex.Instructions.VONE;
+                        } else {
+                            if ((insn & 0x01800000) == 0x00000000) {
+                                return jpcsp.Allegrex.Instructions.VF2IN;
+                            } else {
+                                if ((insn & 0x01000000) == 0x00000000) {
+                                    return jpcsp.Allegrex.Instructions.VI2F;
+                                } else {
+                                    return jpcsp.Allegrex.Instructions.VWBN;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        new STUB() {
+
+            @Override
+            public Instruction instance(int insn) {
+                if ((insn & 0x01800000) == 0x00000000) {
+                    return jpcsp.Allegrex.Instructions.VF2IN;
+                } else {
+                    if ((insn & 0x01000000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VI2F;
+                    } else {
+                        return jpcsp.Allegrex.Instructions.VWBN;
+                    }
+                }
+            }
+        },
+        new STUB() {
+
+            @Override
+            public Instruction instance(int insn) {
+                if ((insn & 0x01800000) == 0x00000000) {
+                    return jpcsp.Allegrex.Instructions.VF2IN;
+                } else {
+                    if ((insn & 0x01000000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VI2F;
+                    } else {
+                        return jpcsp.Allegrex.Instructions.VWBN;
+                    }
+                }
+            }
+        },
+        new STUB() {
+
+            @Override
+            public Instruction instance(int insn) {
+                if ((insn & 0x02010000) == 0x00000000) {
+                    if ((insn & 0x00020000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VRCP;
+                    } else {
+                        return jpcsp.Allegrex.Instructions.VSIN;
+                    }
+                } else {
+                    if ((insn & 0x02020000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VRSQ;
+                    } else {
+                        if ((insn & 0x02000000) == 0x00000000) {
+                            return jpcsp.Allegrex.Instructions.VCOS;
+                        } else {
+                            if ((insn & 0x01800000) == 0x00000000) {
+                                return jpcsp.Allegrex.Instructions.VF2IN;
+                            } else {
+                                if ((insn & 0x01000000) == 0x00000000) {
+                                    return jpcsp.Allegrex.Instructions.VI2F;
+                                } else {
+                                    return jpcsp.Allegrex.Instructions.VWBN;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        new STUB() {
+
+            @Override
+            public Instruction instance(int insn) {
+                if ((insn & 0x02010000) == 0x00000000) {
+                    if ((insn & 0x00020000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VEXP2;
+                    } else {
+                        return jpcsp.Allegrex.Instructions.VSQRT;
+                    }
+                } else {
+                    if ((insn & 0x02020000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VLOG2;
+                    } else {
+                        if ((insn & 0x02000000) == 0x00000000) {
+                            return jpcsp.Allegrex.Instructions.VASIN;
+                        } else {
+                            if ((insn & 0x01800000) == 0x00000000) {
+                                return jpcsp.Allegrex.Instructions.VF2IN;
+                            } else {
+                                if ((insn & 0x01000000) == 0x00000000) {
+                                    return jpcsp.Allegrex.Instructions.VI2F;
+                                } else {
+                                    return jpcsp.Allegrex.Instructions.VWBN;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        new STUB() {
+
+            @Override
+            public Instruction instance(int insn) {
+                if ((insn & 0x02020000) == 0x00000000) {
+                    return jpcsp.Allegrex.Instructions.VNRCP;
+                } else {
+                    if ((insn & 0x02000000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VNSIN;
+                    } else {
+                        if ((insn & 0x01800000) == 0x00000000) {
                             return jpcsp.Allegrex.Instructions.VF2IN;
                         } else {
-                            return jpcsp.Allegrex.Instructions.VI2F;
+                            if ((insn & 0x01000000) == 0x00000000) {
+                                return jpcsp.Allegrex.Instructions.VI2F;
+                            } else {
+                                return jpcsp.Allegrex.Instructions.VWBN;
+                            }
                         }
+                    }
+                }
+            }
+        },
+        new STUB() {
+
+            @Override
+            public Instruction instance(int insn) {
+                if ((insn & 0x02000000) == 0x00000000) {
+                    return jpcsp.Allegrex.Instructions.VREXP2;
+                } else {
+                    if ((insn & 0x01800000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VF2IN;
+                    } else {
+                        if ((insn & 0x01000000) == 0x00000000) {
+                            return jpcsp.Allegrex.Instructions.VI2F;
+                        } else {
+                            return jpcsp.Allegrex.Instructions.VWBN;
+                        }
+                    }
+                }
+            }
+        },
+        new STUB() {
+
+            @Override
+            public Instruction instance(int insn) {
+                if ((insn & 0x02010000) == 0x00000000) {
+                    if ((insn & 0x00020000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VRNDS;
+                    } else {
+                        return jpcsp.Allegrex.Instructions.VRNDF1;
+                    }
+                } else {
+                    if ((insn & 0x02020000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VRNDI;
+                    } else {
+                        if ((insn & 0x02000000) == 0x00000000) {
+                            return jpcsp.Allegrex.Instructions.VRNDF2;
+                        } else {
+                            if ((insn & 0x01800000) == 0x00800000) {
+                                return jpcsp.Allegrex.Instructions.VCMOVT;
+                            } else {
+                                if ((insn & 0x01000000) == 0x00000000) {
+                                    return jpcsp.Allegrex.Instructions.VF2IZ;
+                                } else {
+                                    return jpcsp.Allegrex.Instructions.VWBN;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        new STUB() {
+
+            @Override
+            public Instruction instance(int insn) {
+                if ((insn & 0x01800000) == 0x00800000) {
+                    return jpcsp.Allegrex.Instructions.VCMOVT;
+                } else {
+                    if ((insn & 0x01000000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VF2IZ;
+                    } else {
+                        return jpcsp.Allegrex.Instructions.VWBN;
+                    }
+                }
+            }
+        },
+        new STUB() {
+
+            @Override
+            public Instruction instance(int insn) {
+                if ((insn & 0x01800000) == 0x00800000) {
+                    return jpcsp.Allegrex.Instructions.VCMOVF;
+                } else {
+                    if ((insn & 0x01000000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VF2IZ;
+                    } else {
+                        return jpcsp.Allegrex.Instructions.VWBN;
+                    }
+                }
+            }
+        },
+        new STUB() {
+
+            @Override
+            public Instruction instance(int insn) {
+                if ((insn & 0x01800000) == 0x00800000) {
+                    return jpcsp.Allegrex.Instructions.VCMOVF;
+                } else {
+                    if ((insn & 0x01000000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VF2IZ;
+                    } else {
+                        return jpcsp.Allegrex.Instructions.VWBN;
+                    }
+                }
+            }
+        },
+        new STUB() {
+
+            @Override
+            public Instruction instance(int insn) {
+                if ((insn & 0x02010000) == 0x00000000) {
+                    return jpcsp.Allegrex.Instructions.VF2H;
+                } else {
+                    if ((insn & 0x02000000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VH2F;
+                    } else {
+                        if ((insn & 0x01000000) == 0x00000000) {
+                            return jpcsp.Allegrex.Instructions.VF2IZ;
+                        } else {
+                            return jpcsp.Allegrex.Instructions.VWBN;
+                        }
+                    }
+                }
+            }
+        },
+        new STUB() {
+
+            @Override
+            public Instruction instance(int insn) {
+                if ((insn & 0x02010000) == 0x00000000) {
+                    return jpcsp.Allegrex.Instructions.VSBZ;
+                } else {
+                    if ((insn & 0x02000000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VLGB;
+                    } else {
+                        if ((insn & 0x01000000) == 0x00000000) {
+                            return jpcsp.Allegrex.Instructions.VF2IZ;
+                        } else {
+                            return jpcsp.Allegrex.Instructions.VWBN;
+                        }
+                    }
+                }
+            }
+        },
+        new STUB() {
+
+            @Override
+            public Instruction instance(int insn) {
+                if ((insn & 0x02010000) == 0x00000000) {
+                    if ((insn & 0x00020000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VUC2I;
+                    } else {
+                        return jpcsp.Allegrex.Instructions.VUS2I;
+                    }
+                } else {
+                    if ((insn & 0x02020000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VC2I;
+                    } else {
+                        if ((insn & 0x02000000) == 0x00000000) {
+                            return jpcsp.Allegrex.Instructions.VS2I;
+                        } else {
+                            if ((insn & 0x01000000) == 0x00000000) {
+                                return jpcsp.Allegrex.Instructions.VF2IZ;
+                            } else {
+                                return jpcsp.Allegrex.Instructions.VWBN;
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        new STUB() {
+
+            @Override
+            public Instruction instance(int insn) {
+                if ((insn & 0x02010000) == 0x00000000) {
+                    if ((insn & 0x00020000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VI2UC;
+                    } else {
+                        return jpcsp.Allegrex.Instructions.VI2US;
+                    }
+                } else {
+                    if ((insn & 0x02020000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VI2C;
+                    } else {
+                        if ((insn & 0x02000000) == 0x00000000) {
+                            return jpcsp.Allegrex.Instructions.VI2S;
+                        } else {
+                            if ((insn & 0x01000000) == 0x00000000) {
+                                return jpcsp.Allegrex.Instructions.VF2IZ;
+                            } else {
+                                return jpcsp.Allegrex.Instructions.VWBN;
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        new STUB() {
+
+            @Override
+            public Instruction instance(int insn) {
+                if ((insn & 0x02010000) == 0x00000000) {
+                    if ((insn & 0x00020000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VSRT1;
+                    } else {
+                        return jpcsp.Allegrex.Instructions.VBFY1;
+                    }
+                } else {
+                    if ((insn & 0x02020000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VSRT2;
+                    } else {
+                        if ((insn & 0x02000000) == 0x00000000) {
+                            return jpcsp.Allegrex.Instructions.VBFY2;
+                        } else {
+                            if ((insn & 0x01000000) == 0x00000000) {
+                                return jpcsp.Allegrex.Instructions.VF2IU;
+                            } else {
+                                return jpcsp.Allegrex.Instructions.VWBN;
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        new STUB() {
+
+            @Override
+            public Instruction instance(int insn) {
+                if ((insn & 0x02010000) == 0x00000000) {
+                    if ((insn & 0x00020000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VOCP;
+                    } else {
+                        return jpcsp.Allegrex.Instructions.VFAD;
+                    }
+                } else {
+                    if ((insn & 0x02020000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VSOCP;
+                    } else {
+                        if ((insn & 0x02000000) == 0x00000000) {
+                            return jpcsp.Allegrex.Instructions.VAVG;
+                        } else {
+                            if ((insn & 0x01000000) == 0x00000000) {
+                                return jpcsp.Allegrex.Instructions.VF2IU;
+                            } else {
+                                return jpcsp.Allegrex.Instructions.VWBN;
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        new STUB() {
+
+            @Override
+            public Instruction instance(int insn) {
+                if ((insn & 0x02010000) == 0x00000000) {
+                    return jpcsp.Allegrex.Instructions.VSRT3;
+                } else {
+                    if ((insn & 0x02000000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VSRT4;
                     } else {
                         if ((insn & 0x01000000) == 0x00000000) {
                             return jpcsp.Allegrex.Instructions.VF2IU;
@@ -619,113 +1029,8 @@ public class Decoder {
 
             @Override
             public Instruction instance(int insn) {
-                if ((insn & 0x01400000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VABS;
-                } else {
-                    if ((insn & 0x01000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VSRT2;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VWBN;
-                    }
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01400000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VNEG;
-                } else {
-                    if ((insn & 0x01000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VBFY1;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VWBN;
-                    }
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01400000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VIDT;
-                } else {
-                    if ((insn & 0x01000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VBFY2;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VWBN;
-                    }
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01400000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VSAT0;
-                } else {
-                    if ((insn & 0x01000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VOCP;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VWBN;
-                    }
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01400000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VSAT1;
-                } else {
-                    if ((insn & 0x01000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VSOCP;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VWBN;
-                    }
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01400000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VZERO;
-                } else {
-                    if ((insn & 0x01000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VFAD;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VWBN;
-                    }
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01400000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VONE;
-                } else {
-                    if ((insn & 0x01000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VAVG;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VWBN;
-                    }
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
                 if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VSRT3;
+                    return jpcsp.Allegrex.Instructions.VF2IU;
                 } else {
                     return jpcsp.Allegrex.Instructions.VWBN;
                 }
@@ -735,199 +1040,16 @@ public class Decoder {
 
             @Override
             public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VSRT4;
+                if ((insn & 0x02000080) == 0x00000000) {
+                    return jpcsp.Allegrex.Instructions.VMFVC;
                 } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        jpcsp.Allegrex.Instructions.VWBN,
-        jpcsp.Allegrex.Instructions.VWBN,
-        jpcsp.Allegrex.Instructions.VWBN,
-        jpcsp.Allegrex.Instructions.VWBN,
-        jpcsp.Allegrex.Instructions.VWBN,
-        jpcsp.Allegrex.Instructions.VWBN,
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01400000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VRCP;
-                } else {
-                    if ((insn & 0x01000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VMFVC;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VWBN;
-                    }
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01400000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VRSQ;
-                } else {
-                    if ((insn & 0x01000000) == 0x00000000) {
+                    if ((insn & 0x02000000) == 0x00000000) {
                         return jpcsp.Allegrex.Instructions.VMTVC;
                     } else {
-                        return jpcsp.Allegrex.Instructions.VWBN;
-                    }
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VSIN;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VCOS;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VEXP2;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VLOG2;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VSQRT;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VASIN;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VNRCP;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VT4444;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01400000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VNSIN;
-                } else {
-                    if ((insn & 0x01000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VT5551;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VWBN;
-                    }
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VT5650;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VREXP2;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        jpcsp.Allegrex.Instructions.VWBN,
-        jpcsp.Allegrex.Instructions.VWBN,
-        jpcsp.Allegrex.Instructions.VWBN,
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x02000000) == 0x00000000) {
-                    if ((insn & 0x00400000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VRNDS;
-                    } else {
-                        return jpcsp.Allegrex.Instructions.VCST;
-                    }
-                } else {
-                    if ((insn & 0x01400000) == 0x00400000) {
-                        return jpcsp.Allegrex.Instructions.VF2ID;
-                    } else {
-                        if ((insn & 0x01800000) == 0x00000000) {
-                            return jpcsp.Allegrex.Instructions.VF2IZ;
+                        if ((insn & 0x01000000) == 0x00000000) {
+                            return jpcsp.Allegrex.Instructions.VF2IU;
                         } else {
-                            if ((insn & 0x01000000) == 0x00000000) {
-                                return jpcsp.Allegrex.Instructions.VCMOVT;
-                            } else {
-                                return jpcsp.Allegrex.Instructions.VWBN;
-                            }
+                            return jpcsp.Allegrex.Instructions.VWBN;
                         }
                     }
                 }
@@ -937,11 +1059,56 @@ public class Decoder {
 
             @Override
             public Instruction instance(int insn) {
+                if ((insn & 0x01000000) == 0x00000000) {
+                    return jpcsp.Allegrex.Instructions.VF2IU;
+                } else {
+                    return jpcsp.Allegrex.Instructions.VWBN;
+                }
+            }
+        },
+        new STUB() {
+
+            @Override
+            public Instruction instance(int insn) {
+                if ((insn & 0x02010000) == 0x00010000) {
+                    if ((insn & 0x00020000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VT4444;
+                    } else {
+                        return jpcsp.Allegrex.Instructions.VT5650;
+                    }
+                } else {
+                    if ((insn & 0x02000000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VT5551;
+                    } else {
+                        if ((insn & 0x01000000) == 0x00000000) {
+                            return jpcsp.Allegrex.Instructions.VF2IU;
+                        } else {
+                            return jpcsp.Allegrex.Instructions.VWBN;
+                        }
+                    }
+                }
+            }
+        },
+        new STUB() {
+
+            @Override
+            public Instruction instance(int insn) {
+                if ((insn & 0x01000000) == 0x00000000) {
+                    return jpcsp.Allegrex.Instructions.VF2IU;
+                } else {
+                    return jpcsp.Allegrex.Instructions.VWBN;
+                }
+            }
+        },
+        new STUB() {
+
+            @Override
+            public Instruction instance(int insn) {
                 if ((insn & 0x02000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VRNDI;
+                    return jpcsp.Allegrex.Instructions.VCST;
                 } else {
                     if ((insn & 0x01000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VCMOVT;
+                        return jpcsp.Allegrex.Instructions.VF2ID;
                     } else {
                         return jpcsp.Allegrex.Instructions.VWBN;
                     }
@@ -953,10 +1120,10 @@ public class Decoder {
             @Override
             public Instruction instance(int insn) {
                 if ((insn & 0x02000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VRNDF1;
+                    return jpcsp.Allegrex.Instructions.VCST;
                 } else {
                     if ((insn & 0x01000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VCMOVT;
+                        return jpcsp.Allegrex.Instructions.VF2ID;
                     } else {
                         return jpcsp.Allegrex.Instructions.VWBN;
                     }
@@ -968,10 +1135,10 @@ public class Decoder {
             @Override
             public Instruction instance(int insn) {
                 if ((insn & 0x02000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VRNDF2;
+                    return jpcsp.Allegrex.Instructions.VCST;
                 } else {
                     if ((insn & 0x01000000) == 0x00000000) {
-                        return jpcsp.Allegrex.Instructions.VCMOVT;
+                        return jpcsp.Allegrex.Instructions.VF2ID;
                     } else {
                         return jpcsp.Allegrex.Instructions.VWBN;
                     }
@@ -982,10 +1149,14 @@ public class Decoder {
 
             @Override
             public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VCMOVT;
+                if ((insn & 0x02000000) == 0x00000000) {
+                    return jpcsp.Allegrex.Instructions.VCST;
                 } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
+                    if ((insn & 0x01000000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VF2ID;
+                    } else {
+                        return jpcsp.Allegrex.Instructions.VWBN;
+                    }
                 }
             }
         },
@@ -993,10 +1164,14 @@ public class Decoder {
 
             @Override
             public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VCMOVT;
+                if ((insn & 0x02000000) == 0x00000000) {
+                    return jpcsp.Allegrex.Instructions.VCST;
                 } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
+                    if ((insn & 0x01000000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VF2ID;
+                    } else {
+                        return jpcsp.Allegrex.Instructions.VWBN;
+                    }
                 }
             }
         },
@@ -1004,10 +1179,14 @@ public class Decoder {
 
             @Override
             public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VCMOVT;
+                if ((insn & 0x02000000) == 0x00000000) {
+                    return jpcsp.Allegrex.Instructions.VCST;
                 } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
+                    if ((insn & 0x01000000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VF2ID;
+                    } else {
+                        return jpcsp.Allegrex.Instructions.VWBN;
+                    }
                 }
             }
         },
@@ -1015,10 +1194,14 @@ public class Decoder {
 
             @Override
             public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VCMOVT;
+                if ((insn & 0x02000000) == 0x00000000) {
+                    return jpcsp.Allegrex.Instructions.VCST;
                 } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
+                    if ((insn & 0x01000000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VF2ID;
+                    } else {
+                        return jpcsp.Allegrex.Instructions.VWBN;
+                    }
                 }
             }
         },
@@ -1026,223 +1209,14 @@ public class Decoder {
 
             @Override
             public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VCMOVF;
+                if ((insn & 0x02000000) == 0x00000000) {
+                    return jpcsp.Allegrex.Instructions.VCST;
                 } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VCMOVF;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VCMOVF;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VCMOVF;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VCMOVF;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VCMOVF;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VCMOVF;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VCMOVF;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        jpcsp.Allegrex.Instructions.VWBN,
-        jpcsp.Allegrex.Instructions.VWBN,
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VF2H;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VH2F;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        jpcsp.Allegrex.Instructions.VWBN,
-        jpcsp.Allegrex.Instructions.VWBN,
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VSBZ;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VLGB;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VUC2I;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VC2I;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VUS2I;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VS2I;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VI2UC;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VI2C;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VI2US;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
-                }
-            }
-        },
-        new STUB() {
-
-            @Override
-            public Instruction instance(int insn) {
-                if ((insn & 0x01000000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VI2S;
-                } else {
-                    return jpcsp.Allegrex.Instructions.VWBN;
+                    if ((insn & 0x01000000) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.VF2ID;
+                    } else {
+                        return jpcsp.Allegrex.Instructions.VWBN;
+                    }
                 }
             }
         },
