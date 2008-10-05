@@ -238,6 +238,9 @@ public class SyscallHandler {
 		// sceIoGetAsyncStat(0x208a),
 		// sceIoChangeAsyncPriority(0x208b),
 		// sceIoSetAsyncCallback(0x208c),
+                case 0x2089:
+                    pspiofilemgr.get_instance().sceIoWaitAsyncCB(gpr[4], gpr[5]);
+                    break;
                 case 0x208d:
                     pspiofilemgr.get_instance().sceIoClose(gpr[4]);
                     break;
