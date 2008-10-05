@@ -305,7 +305,6 @@ public class pspiofilemgr {
     public void sceIoOpenAsync(int filename_addr, int flags, int permissions) {
         if (debug) Modules.log.debug("sceIoOpenAsync redirecting to sceIoOpen");
         sceIoOpen(filename_addr, flags, permissions);
-        Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
     public void sceIoClose(int uid) {
