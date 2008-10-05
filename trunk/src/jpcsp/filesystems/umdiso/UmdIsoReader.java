@@ -280,7 +280,10 @@ public class UmdIsoReader {
 
     public int getFileProperties(String filePath) throws IOException, FileNotFoundException
     {
-        Iso9660Directory dir = null;
+        if(filePath=="")
+        {
+            return 2;
+        }
 
         Iso9660File info = getFileEntry(filePath);
         
