@@ -47,5 +47,11 @@ public class Iso9660Handler extends Iso9660Directory {
     {
         return internalDir.getFileIndex(fileName);
     }
-    
+ 
+    @Override
+    public String[] getFileList() throws FileNotFoundException
+    {
+        return internalDir.getFileList();
+    }
+     
 }
