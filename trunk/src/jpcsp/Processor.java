@@ -23,7 +23,7 @@ import org.apache.log4j.Logger;
 
 public class Processor {
 
-    public static final boolean ENABLE_STEP_TRACE = false;
+    public static boolean ENABLE_STEP_TRACE = false;
 
     public CpuState cpu = new CpuState();
 

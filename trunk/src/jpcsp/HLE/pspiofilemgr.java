@@ -148,6 +148,12 @@ public class pspiofilemgr {
         return deviceFilePath.toLowerCase().startsWith("disc0/");
     }
 
+    public void sceIoSync(int device_addr, int unknown) {
+        String device = readStringZ(Memory.getInstance().mainmemory, (device_addr & 0x3fffffff) - MemoryMap.START_RAM);
+        if (debug) Modules.log.debug("IGNORING:sceIoSync(device='" + device + "',unknown=0x" + Integer.toHexString(unknown) + ")");
+        Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
+    }
+
     public void sceIoWaitAsync(int uid, int res_addr) {
         if (debug) Modules.log.debug("sceIoWaitAsync - uid " + Integer.toHexString(uid) + " res:0x" + Integer.toHexString(res_addr));
 
@@ -167,6 +173,12 @@ public class pspiofilemgr {
         }
 
         ThreadMan.get_instance().yieldCurrentThread();
+    }
+
+    public void sceIoWaitAsyncCB(int uid, int res_addr) {
+        // TODO check callbacks
+        if (debug) Modules.log.debug("sceIoWaitAsyncCB redirecting to sceIoWaitAsync");
+        sceIoWaitAsync(uid, res_addr);
     }
 
     public void sceIoOpen(int filename_addr, int flags, int permissions) {
@@ -590,6 +602,30 @@ public class pspiofilemgr {
             SceUIDMan.get_instance().releaseUid(info.uid, "IOFileManager-Directory");
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
+    }
+
+    public void sceIoDevctl(int device_addr, int cmd, int indata_addr, int inlen, int outdata_addr, int outlen) {
+        String device = readStringZ(Memory.getInstance().mainmemory, (device_addr & 0x3fffffff) - MemoryMap.START_RAM);
+        if (debug) {
+            Modules.log.debug("sceIoDevctl(device='" + device
+                + "',cmd=0x" + Integer.toHexString(cmd)
+                + ",indata=0x" + Integer.toHexString(indata_addr)
+                + ",inlen=" + inlen
+                + ",outdata=0x" + Integer.toHexString(outdata_addr)
+                + ",outlen=" + outlen + ")");
+        }
+
+        switch(cmd) {
+            case 0x2415821:
+                Modules.log.debug("UNIMPLEMENTED: sceIoDevctl register ms eject callback");
+                break;
+            default:
+                Modules.log.warn("sceIoDevctl unknown command " + String.format("0x%08X", cmd));
+                break;
+        }
+
+        // Just fail for now
+        Emulator.getProcessor().cpu.gpr[2] = -1;
     }
 
     /** @param pcfilename can be null for convenience

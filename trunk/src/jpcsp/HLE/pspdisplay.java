@@ -81,6 +81,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     private int pixelformatFb;
     private int sync;
     private boolean setGeBufCalledAtLeastOnce;
+    public boolean gotBadGeBufParams;
 
     // additional variables
     private int bottomaddrFb;
@@ -145,6 +146,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         bottomaddrGe  = bottomaddrFb;
         pixelsGe = getPixels(topaddrGe, bottomaddrGe);
         setGeBufCalledAtLeastOnce = false;
+        gotBadGeBufParams = false;
     }
 
     public void step() {
@@ -197,17 +199,26 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
             // First time is usually initializing GE, so we can ignore it
             if (setGeBufCalledAtLeastOnce)
+            {
                 Modules.log.warn(msg);
+                gotBadGeBufParams = true;
+            }
             else
+            {
                 Modules.log.debug(msg);
+                setGeBufCalledAtLeastOnce = true;
+            }
 
-            setGeBufCalledAtLeastOnce = true;
             return;
         } else {
-//            Modules.log.debug("hleDisplaySetGeBuf ok ("
-//                + Integer.toHexString(topaddr)
-//                + "," + bufferwidth
-//                + "," + pixelformat + ")");
+            if (gotBadGeBufParams) {
+                // print when we get good params after bad params
+                gotBadGeBufParams = false;
+                Modules.log.info("hleDisplaySetGeBuf ok ("
+                    + Integer.toHexString(topaddr)
+                    + "," + bufferwidth
+                    + "," + pixelformat + ")");
+            }
 
             this.topaddrGe     = topaddr;
             this.bufferwidthGe = bufferwidth;

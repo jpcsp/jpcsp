@@ -100,7 +100,9 @@ public class SyscallHandler {
                 case 0x2023:
                     ThreadMan.get_instance().ThreadMan_sceKernelWaitSema(gpr[4],gpr[5], gpr[6], gpr[7]);
                     break;
-		 //sceKernelWaitSemaCB(0x2024),
+                case 0x2024:
+                    ThreadMan.get_instance().ThreadMan_sceKernelWaitSemaCB(gpr[4],gpr[5], gpr[6], gpr[7]);
+                    break;
 		// sceKernelPollSema(0x2025),
 		 //sceKernelCancelSema(0x2026),
 		 //sceKernelReferSemaStatus(0x2027),
@@ -290,7 +292,7 @@ public class SyscallHandler {
 		// sceIoIoctl(0x2099),
 		// sceIoIoctlAsync(0x209a),
 
-            case 0x209b://sceIoDopen
+            case 0x209b:
                     pspiofilemgr.get_instance().sceIoDopen(gpr[4]);
                     break;
             case 0x209c:
@@ -304,16 +306,20 @@ public class SyscallHandler {
                     pspiofilemgr.get_instance().sceIoMkdir(gpr[4], gpr[5]);
                     break;
 		// sceIoRmdir(0x20a0),
-                case 0x20a1: //sceChDir
+                case 0x20a1:
                     pspiofilemgr.get_instance().sceIoChdir(gpr[4]);
                     break;
-		// sceIoSync(0x20a2),
+                case 0x20a2:
+                    pspiofilemgr.get_instance().sceIoSync(gpr[4], gpr[5]);
+                    break;
                 case 0x20a3:
                     pspiofilemgr.get_instance().sceIoGetstat(gpr[4], gpr[5]);
                     break;
 		// sceIoChstat(0x20a4),
 		// sceIoRename(0x20a5),
-		// sceIoDevctl(0x20a6),
+                case 0x20a6:
+                    pspiofilemgr.get_instance().sceIoDevctl(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8], gpr[9]);
+                    break;
 		// sceIoGetDevType(0x20a7),
 		// sceIoAssign(0x20a8),
 		// sceIoUnassign(0x20a9),

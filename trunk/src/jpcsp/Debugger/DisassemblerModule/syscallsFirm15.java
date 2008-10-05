@@ -804,13 +804,13 @@ public class syscallsFirm15 {
 
 
                  /* FAKE MAPPING!! for Final Fantasy checks*/
-                 Unknown_8f2df740(0x3000,0x8f2df740),
+                 ModuleMgrForUser_8F2DF740(0x3000,0x8f2df740), // fw 3.52
                  sceKernelSetCompiledSdkVersion(0x3001,0x7591c7db), // fw 2.5
                  sceKernelSetCompilerVersion(0x3002,0xf77d77cb), // fw 2.5
-                 Unknown_eca32a99(0x3003,0xeca32a99),
-                 Unknown_2a2b3de0(0x3004,0x2a2b3de0),
-                 Unknown_4928bd96(0x3005,0x4928bd96),
-                 Unknown_e49bfe92(0x3006,0xe49bfe92),
+                 sceAtracIsSecondBufferNeeded(0x3003,0xeca32a99), // fw 2.5
+                 sceUtilityLoadModule(0x3004,0x2a2b3de0), // fw 3.52
+                 sceUtilityMsgDialogAbort(0x3005,0x4928bd96), // fw 3.52
+                 sceUtilityUnloadModule(0x3006,0xe49bfe92), // fw 3.52
                  /* more fake mapping */
                  sceUmd_87533940(0x3007,0x87533940),//umd function 2.00 +
                  sceNetAdhocMatching_8f58bedf(0x3008,0x8f58bedf), //2.50+
@@ -830,8 +830,8 @@ public class syscallsFirm15 {
                  ThreadManForUser_6b30100f(0x3016,0x6b30100f),//2.70+
                  ThreadManForUser_b011b11f(0x3017,0xb011b11f),//2.70+
                  ThreadManForUser_b7d098c6(0x3017,0xb7d098c6);//2.70+
-                 
-                 
+
+
 
             //implement syscall
             private int syscall;
