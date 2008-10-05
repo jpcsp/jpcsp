@@ -112,6 +112,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     private long reportCount = 0;
     private double averageFPS = 0.0;
 
+    private int vcount=0;
+    
     private pspdisplay (GLCapabilities capabilities) {
     	super (capabilities);
 
@@ -608,12 +610,13 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     }
 
     public void sceDisplayGetVcount() {
-        // TODO: implement sceDisplayGetVcount
-        Emulator.getProcessor().cpu.gpr[2] = 0;
+        vcount++;
+        Emulator.getProcessor().cpu.gpr[2] = vcount;
     }
 
     public void sceDisplayWaitVblankStart() {
         // TODO: implement sceDisplayWaitVblankStart
+        vcount++;
         Emulator.getProcessor().cpu.gpr[2] = 0;
         ThreadMan.get_instance().yieldCurrentThread();
     }
