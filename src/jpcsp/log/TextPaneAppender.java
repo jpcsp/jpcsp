@@ -169,6 +169,12 @@ public class TextPaneAppender extends AppenderSkeleton {
 					textpane.setEditable(false);
 				}
 				doc.insertString(doc.getLength(), text + trace, attributes.get(event.getLevel()));
+                
+                int l=doc.getLength();
+                if(l>30000)
+                {
+                    doc.remove(0, l-30000);
+                }
 			}
 		} catch (BadLocationException badex) {
 			System.err.println(badex);
