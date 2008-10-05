@@ -200,11 +200,16 @@ public class UmdIsoReader {
         String[] path = filePath.split("[\\/]");
 
         Iso9660File info = null;
+        
         // walk through path
         for(int i=0;i<path.length;)
         {
             if(path[i].compareToIgnoreCase(".")==0)
             {
+                if(i==(path.length-1))
+                {
+                    break;
+                }
                 //do nothing
             }
             else if(path[i].compareToIgnoreCase("..")==0)
@@ -250,17 +255,24 @@ public class UmdIsoReader {
     public String[] listDirectory(String filePath) throws IOException, FileNotFoundException
     {
         Iso9660Directory dir = null;
-
-        Iso9660File info = getFileEntry(filePath);
         
-        if(info!=null)
+        if(filePath == "")
         {
-            if((info.getProperties()&2)==2) // if it's a directory
+            dir = new Iso9660Handler(this);
+        }
+        else
+        {
+            Iso9660File info = getFileEntry(filePath);
+
+            if(info!=null)
             {
-                dir  = new Iso9660Directory(this, info.getLBA(), info.getSize());
+                if((info.getProperties()&2)==2) // if it's a directory
+                {
+                    dir  = new Iso9660Directory(this, info.getLBA(), info.getSize());
+                }
             }
         }
-
+        
         if(dir==null) throw new FileNotFoundException("File '" + filePath + "' not found or not a directory.");
         
         return dir.getFileList();
@@ -272,7 +284,7 @@ public class UmdIsoReader {
 
         Iso9660File info = getFileEntry(filePath);
         
-        if(info==null) throw new FileNotFoundException("File '" + filePath + "' not found or not a directory.");
+        if(info==null) throw new FileNotFoundException("File '" + filePath + "' not found.");
 
         return info.getProperties();
     }   
