@@ -248,9 +248,9 @@ public class GprState {
         }
     }
 
-    public final void doEXT(int rt, int rs, int rd, int sa) {
+    public final void doEXT(int rt, int rs, int lsb, int msbd) {
         if (rt != 0) {
-            gpr[rt] = extractBits(gpr[rs], sa, (rd + 1)); 
+            gpr[rt] = extractBits(gpr[rs], lsb, (msbd + 1));
         }
     }
 
