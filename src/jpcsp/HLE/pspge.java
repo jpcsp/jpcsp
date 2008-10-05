@@ -175,7 +175,7 @@ public class pspge {
                 DisplayList.Unlock();
 
                 // Don't block if there's nothing to block on
-                if (true || count > 0) {
+                if (count > 0) {
                     waitingForSync = true;
                     syncThreadId = ThreadMan.get_instance().getCurrentThreadID();
                     ThreadMan.get_instance().blockCurrentThread();
