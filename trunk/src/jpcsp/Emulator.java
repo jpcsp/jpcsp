@@ -232,15 +232,32 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                                 for (Iterator<Integer> it = deferredHi16.iterator(); it.hasNext();) {
                                     int data_addr2 = it.next();
                                     int data2 = Memory.getInstance().read32(data_addr2);
+ 
+                                    result = ((data2 & 0x0000FFFF) << 16) + A + S;
+                                    // The low order 16 bits are always treated as a signed
+                                    // value. Therefore, a negative value in the low order bits
+                                    // requires an adjustment in the high order bits. We need
+                                     // to make this adjustment in two ways: once for the bits we
+                                    // took from the data, and once for the bits we are putting
+                                     // back in to the data.
+                                    if ((A & 0x8000) != 0)
+                                    {
+                                         result -= 0x10000;
+                                    }
+                                    if ((result & 0x8000) != 0)
+                                    {
+                                         result += 0x10000;
+                                    }
                                     data2 &= ~0x0000FFFF;
                                     data2 |= (result >> 16) & 0x0000FFFF; // truncate
 
-                                    Memory.getInstance().write32(data_addr2, data2);
+                                    
                                     if (logRelocations)  {
                                         Memory.log.debug("R_MIPS_HILO16 addr=" + String.format("%08x", data_addr2)
                                             + " data2 before=" + Integer.toHexString(Memory.getInstance().read32(data_addr2))
                                             + " after=" + Integer.toHexString(data2));
                                     }
+                                    Memory.getInstance().write32(data_addr2, data2);
                                     it.remove();
                                 }
 
