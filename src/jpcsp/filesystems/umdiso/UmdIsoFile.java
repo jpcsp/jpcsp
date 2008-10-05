@@ -212,8 +212,19 @@ public class UmdIsoFile extends SeekableInputStream {
         if(currentOffset>=maxOffset)
             throw new EOFException();
         
-        DataInputStream s = new DataInputStream(this);
-        return s.readLine();
+        String s = "";
+        char c=0;
+        do {
+            c = this.readChar();
+
+            if((c=='\n')||(c!='\r'))
+            {
+                break;
+            }
+            s+=c;
+        } while(true);
+        
+        return s;
     }
     
     @Override

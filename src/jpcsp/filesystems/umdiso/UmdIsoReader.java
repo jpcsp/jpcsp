@@ -193,7 +193,7 @@ public class UmdIsoReader {
         throw new IOException("Unsupported file format or corrupt file.");
     }
 
-    public UmdIsoFile getFile(String filePath) throws IOException, FileNotFoundException
+    private Iso9660File getFileEntry(String filePath) throws IOException, FileNotFoundException
     {
         Iso9660Directory dir = new Iso9660Handler(this);
 
@@ -220,9 +220,22 @@ public class UmdIsoReader {
                 if((info.getProperties()&2)==2) // if it's a directory
                 {
                     dir  = new Iso9660Directory(this, info.getLBA(), info.getSize());
-                    info = null;
                 }
                 i++;
+            }
+        }
+
+        return info;
+    }
+
+    public UmdIsoFile getFile(String filePath) throws IOException, FileNotFoundException
+    {
+        Iso9660File info = getFileEntry(filePath);
+        if(info!=null)
+        {
+            if((info.getProperties()&2)==2) // if it's a directory
+            {
+                info=null;
             }
         }
 
@@ -233,7 +246,42 @@ public class UmdIsoReader {
 
         return new UmdIsoFile(this, fileStart, fileLength);
     }
+ 
+    public String[] listDirectory(String filePath) throws IOException, FileNotFoundException
+    {
+        Iso9660Directory dir = null;
 
+        Iso9660File info = getFileEntry(filePath);
+        
+        if(info!=null)
+        {
+            if((info.getProperties()&2)==2) // if it's a directory
+            {
+                dir  = new Iso9660Directory(this, info.getLBA(), info.getSize());
+            }
+        }
+
+        if(dir==null) throw new FileNotFoundException("File '" + filePath + "' not found or not a directory.");
+        
+        return dir.getFileList();
+    }   
+
+    public int getFileProperties(String filePath) throws IOException, FileNotFoundException
+    {
+        Iso9660Directory dir = null;
+
+        Iso9660File info = getFileEntry(filePath);
+        
+        if(info==null) throw new FileNotFoundException("File '" + filePath + "' not found or not a directory.");
+
+        return info.getProperties();
+    }   
+    
+    public boolean isDirectory(String filePath) throws IOException, FileNotFoundException
+    {
+        return (getFileProperties(filePath)&2)==2;
+    }   
+    
     public String getFilename()
     {
         return fileName;
