@@ -29,6 +29,7 @@ public class Modules {
     public static sceRtc sceRtcModule = new sceRtc();
     public static Kernel_Library Kernel_LibraryModule = new Kernel_Library();
     public static ModuleMgrForUser ModuleMgrForUserModule = new ModuleMgrForUser();
+    public static sceMpeg sceMpegModule = new sceMpeg();
 
     public static Logger log = Logger.getLogger("hle");
 

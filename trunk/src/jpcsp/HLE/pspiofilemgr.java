@@ -42,17 +42,17 @@ public class pspiofilemgr {
     private static pspiofilemgr  instance;
     private final boolean debug = true; //enable/disable debug
 
-    public final static int PSP_O_RDONLY  = 0x0001;
-    public final static int PSP_O_WRONLY  = 0x0002;
-    public final static int PSP_O_RDWR    = (PSP_O_RDONLY | PSP_O_WRONLY);
-    public final static int PSP_O_NBLOCK  = 0x0004;
-    public final static int PSP_O_DIROPEN = 0x0008; // Internal use for dopen
-    public final static int PSP_O_APPEND  = 0x0100;
-    public final static int PSP_O_CREAT   = 0x0200;
-    public final static int PSP_O_TRUNC   = 0x0400;
-    public final static int PSP_O_EXCL    = 0x0800;
-    public final static int PSP_O_NOWAIT  = 0x8000;
-    public final static int PSP_O_UNKNOWN1  = 0xf0000; // seen on Wipeout Pure
+    public final static int PSP_O_RDONLY   = 0x0001;
+    public final static int PSP_O_WRONLY   = 0x0002;
+    public final static int PSP_O_RDWR     = (PSP_O_RDONLY | PSP_O_WRONLY);
+    public final static int PSP_O_NBLOCK   = 0x0004;
+    public final static int PSP_O_DIROPEN  = 0x0008; // Internal use for dopen
+    public final static int PSP_O_APPEND   = 0x0100;
+    public final static int PSP_O_CREAT    = 0x0200;
+    public final static int PSP_O_TRUNC    = 0x0400;
+    public final static int PSP_O_EXCL     = 0x0800;
+    public final static int PSP_O_NOWAIT   = 0x8000;
+    public final static int PSP_O_UNKNOWN1 = 0xf0000; // seen on Wipeout Pure
 
     public final static int PSP_SEEK_SET  = 0;
     public final static int PSP_SEEK_CUR  = 1;
@@ -62,6 +62,8 @@ public class pspiofilemgr {
     public final static int PSP_ERROR_TOO_MANY_OPEN_FILES = 0x80020320;
     public final static int PSP_ERROR_BAD_FILE_DESCRIPTOR = 0x80020323;
     public final static int PSP_ERROR_FILENAME_TOO_LONG   = 0x8002032d;
+    public final static int PSP_ERROR_ASYNC_BUSY          = 0x80020329;
+
 
     private HashMap<Integer, IoInfo> filelist;
     private HashMap<Integer, IoDirInfo> dirlist;
@@ -303,6 +305,7 @@ public class pspiofilemgr {
     public void sceIoOpenAsync(int filename_addr, int flags, int permissions) {
         if (debug) Modules.log.debug("sceIoOpenAsync redirecting to sceIoOpen");
         sceIoOpen(filename_addr, flags, permissions);
+        Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
     public void sceIoClose(int uid) {
@@ -331,6 +334,7 @@ public class pspiofilemgr {
     public void sceIoCloseAsync(int uid) {
         if (debug) Modules.log.debug("sceIoCloseAsync redirecting to sceIoClose");
         sceIoClose(uid);
+        Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
     public void sceIoWrite(int uid, int data_addr, int size) {
@@ -382,6 +386,7 @@ public class pspiofilemgr {
     public void sceIoWriteAsync(int uid, int data_addr, int size) {
         if (debug) Modules.log.debug("sceIoWriteAsync redirecting to sceIoWrite");
         sceIoWrite(uid, data_addr, size);
+        Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
     public void sceIoRead(int uid, int data_addr, int size) {
@@ -430,6 +435,7 @@ public class pspiofilemgr {
     public void sceIoReadAsync(int uid, int data_addr, int size) {
         if (debug) Modules.log.debug("sceIoReadAsync redirecting to sceIoRead");
         sceIoRead(uid, data_addr, size);
+        Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
     // TODO sceIoLseek with 64-bit return value
@@ -441,6 +447,7 @@ public class pspiofilemgr {
     public void sceIoLseekAsync(int uid, long offset, int whence) {
         if (debug) Modules.log.debug("sceIoLseekAsync - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Long.toHexString(offset) + ") whence " + getWhenceName(whence));
         seek(uid, offset, whence, true);
+        Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
     public void sceIoLseek32(int uid, int offset, int whence) {
@@ -451,6 +458,7 @@ public class pspiofilemgr {
     public void sceIoLseek32Async(int uid, int offset, int whence) {
         if (debug) System.out.println("sceIoLseek32Async - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
         seek(uid, ((long)offset & 0xFFFFFFFFL), whence, false);
+        Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
     private String getWhenceName(int whence) {
