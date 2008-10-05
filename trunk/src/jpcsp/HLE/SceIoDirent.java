@@ -34,8 +34,8 @@ public class SceIoDirent {
         stat.write(mem, address);
 
         len = filename.length();
-        if (len > 256)
-            len = 256;
+        if (len > 255)
+            len = 255;
 
         for (i = 0; i < len; i++)
             mem.write8(address + SceIoStat.sizeof() + i, (byte)filename.charAt(i));
