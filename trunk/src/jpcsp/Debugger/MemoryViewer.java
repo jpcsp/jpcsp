@@ -254,7 +254,7 @@ private void GoToSPActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:
 }//GEN-LAST:event_GoToSPActionPerformed
 
 private void DumpRawRamActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DumpRawRamActionPerformed
-   File f = new File("ramdump.raw");
+   File f = new File("ramdump.bin");
    BufferedWriter out = null;
    try
    {
@@ -269,6 +269,20 @@ private void DumpRawRamActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
    {
        
    }
+   finally
+  {
+       if( out!=null )
+        {
+           try
+          {
+              out.close();
+          }
+          catch(IOException ex)
+          {
+             ex.printStackTrace();
+           }
+          }
+     }
 
    
 }//GEN-LAST:event_DumpRawRamActionPerformed
