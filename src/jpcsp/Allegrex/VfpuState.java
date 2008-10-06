@@ -1220,7 +1220,7 @@ public class VfpuState extends FpuState {
                 // rows by columns? columns by rows? rows by rows? what?
                 for(int t=0;t<vsize;t++)
                 {
-                    v+=vpr[sb][sr+t][sc+i]*vpr[sb][sr+j][sc+t];
+                    v+=vpr[sb][sr+j][sc+t]*vpr[tb][tr+t][tc+i];
                 }
                 vpr[db][dr+j][dc+i]=0;
             }
