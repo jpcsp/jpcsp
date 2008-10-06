@@ -1199,6 +1199,33 @@ public class VfpuState extends FpuState {
     // VFPU6:VMMUL
     public void doVMMUL(int vsize, int vd, int vs, int vt) {
         doUNK("Unimplemented VMMUL instruction");
+       
+        //disabled for now, I don't have a clue if anything in here is right :P
+        /*
+        int db = (vd >> 2) & 7;
+        int dc = (vd >> 0) & 3;
+        int dr = (vd >> 5) & 3;
+        int sb = (vs >> 2) & 7;
+        int sc = (vs >> 0) & 3;
+        int sr = (vs >> 5) & 3;
+        int tb = (vt >> 2) & 7;
+        int tc = (vt >> 0) & 3;
+        int tr = (vt >> 5) & 3;
+        
+        for(int j=0;j<vsize;j++)
+        {
+            for(int i=0;i<vsize;i++)
+            {
+                float v = 0;
+                // rows by columns? columns by rows? rows by rows? what?
+                for(int t=0;t<vsize;t++)
+                {
+                    v+=vpr[sb][sr+t][sc+i]*vpr[sb][sr+j][sc+t];
+                }
+                vpr[db][dr+j][dc+i]=0;
+            }
+        }
+        */
     }
 
     // VFPU6:VHTFM2
@@ -1243,22 +1270,65 @@ public class VfpuState extends FpuState {
 
     // VFPU6:VMMOV
     public void doVMMOV(int vsize, int vd, int vs) {
-        doUNK("Unimplemented VMMOV instruction");
+        int db = (vd >> 2) & 7;
+        int dc = (vd >> 0) & 3;
+        int dr = (vd >> 5) & 3;
+        int sb = (vs >> 2) & 7;
+        int sc = (vs >> 0) & 3;
+        int sr = (vs >> 5) & 3;
+        
+        for(int j=0;j<vsize;j++)
+        {
+            for(int i=0;i<vsize;i++)
+            {
+                vpr[db][dr+j][dc+i]=vpr[sb][sr+j][sc+i];
+            }
+        }
     }
 
     // VFPU6:VMIDT
     public void doVMIDT(int vsize, int vd) {
-        doUNK("Unimplemented VMIDT instruction");
+        int b = (vd >> 2) & 7;
+        int c = (vd >> 0) & 3;
+        int r = (vd >> 5) & 3;
+        
+        for(int j=0;j<vsize;j++)
+        {
+            for(int i=0;i<vsize;i++)
+            {
+                vpr[b][r+i][c+j]=(i==j)?1:0;
+            }
+        }
     }
 
     // VFPU6:VMZERO
     public void doVMZERO(int vsize, int vd) {
-        doUNK("Unimplemented VMZERO instruction");
+        int b = (vd >> 2) & 7;
+        int c = (vd >> 0) & 3;
+        int r = (vd >> 5) & 3;
+        
+        for(int j=0;j<vsize;j++)
+        {
+            for(int i=0;i<vsize;i++)
+            {
+                vpr[b][r+i][c+j]=0;
+            }
+        }
     }
 
     // VFPU7:VMONE
     public void doVMONE(int vsize, int vd) {
-        doUNK("Unimplemented VMONE instruction");
+        int b = (vd >> 2) & 7;
+        int c = (vd >> 0) & 3;
+        int r = (vd >> 5) & 3;
+        
+        for(int j=0;j<vsize;j++)
+        {
+            for(int i=0;i<vsize;i++)
+            {
+                vpr[b][r+i][c+j]=1;
+            }
+        }
     }
 
     // VFPU6:VROT
