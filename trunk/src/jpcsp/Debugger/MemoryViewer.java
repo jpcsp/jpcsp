@@ -17,6 +17,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.Debugger;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import javax.swing.JOptionPane;
 import jpcsp.Emulator;
 import jpcsp.Memory;
@@ -103,6 +107,7 @@ public class MemoryViewer extends javax.swing.JFrame {
         AddressField = new javax.swing.JTextField();
         GoToButton = new javax.swing.JButton();
         GoToSP = new javax.swing.JButton();
+        DumpRawRam = new javax.swing.JButton();
 
         setTitle("Memory Viewer");
         setResizable(false);
@@ -142,6 +147,13 @@ public class MemoryViewer extends javax.swing.JFrame {
             }
         });
 
+        DumpRawRam.setText("Dump Raw Ram Memory");
+        DumpRawRam.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                DumpRawRamActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -154,7 +166,9 @@ public class MemoryViewer extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(GoToButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(GoToSP))
+                        .addComponent(GoToSP)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 93, Short.MAX_VALUE)
+                        .addComponent(DumpRawRam))
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 646, Short.MAX_VALUE))
                 .addContainerGap())
         );
@@ -165,7 +179,8 @@ public class MemoryViewer extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(AddressField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(GoToButton)
-                    .addComponent(GoToSP))
+                    .addComponent(GoToSP)
+                    .addComponent(DumpRawRam))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 314, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
@@ -233,22 +248,36 @@ private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:
 }//GEN-LAST:event_formWindowDeactivated
 
 private void GoToSPActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_GoToSPActionPerformed
-         /*String gettext = AddressField.getText();
-         int value;
-         try {
-            value = Integer.parseInt(gettext, 16);
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "The Number you enter is not correct");
-            return;
-        }*/
+
          startaddress = Emulator.getProcessor().cpu.gpr[29];
          RefreshMemory();
 }//GEN-LAST:event_GoToSPActionPerformed
+
+private void DumpRawRamActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DumpRawRamActionPerformed
+   File f = new File("ramdump.raw");
+   BufferedWriter out = null;
+   try
+   {
+       out = new BufferedWriter( new FileWriter(f) );
+       for(int i = 0x08000000; i<=0x09ffffff; i++ )
+       {
+          out.write((byte)safeRead8(i));   
+       }
+                     
+   }
+   catch(IOException e)
+   {
+       
+   }
+
+   
+}//GEN-LAST:event_DumpRawRamActionPerformed
 
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTextField AddressField;
+    private javax.swing.JButton DumpRawRam;
     private javax.swing.JButton GoToButton;
     private javax.swing.JButton GoToSP;
     private javax.swing.JScrollPane jScrollPane1;
