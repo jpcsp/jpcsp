@@ -34,6 +34,8 @@
                       <Component id="GoToButton" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="GoToSP" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace pref="93" max="32767" attributes="0"/>
+                      <Component id="DumpRawRam" min="-2" max="-2" attributes="0"/>
                   </Group>
                   <Component id="jScrollPane1" alignment="0" pref="646" max="32767" attributes="0"/>
               </Group>
@@ -49,6 +51,7 @@
                   <Component id="AddressField" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="GoToButton" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="GoToSP" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="DumpRawRam" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace type="unrelated" max="-2" attributes="0"/>
               <Component id="jScrollPane1" min="-2" pref="314" max="-2" attributes="0"/>
@@ -97,6 +100,14 @@
       </Properties>
       <Events>
         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="GoToSPActionPerformed"/>
+      </Events>
+    </Component>
+    <Component class="javax.swing.JButton" name="DumpRawRam">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Dump Raw Ram Memory"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="DumpRawRamActionPerformed"/>
       </Events>
     </Component>
   </SubComponents>
