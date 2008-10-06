@@ -7288,7 +7288,7 @@ public void interpret(Processor processor, int insn) {
 	int vt = (insn>>16)&127;
 
 
-                processor.cpu.doVMSCL(1+one+(two<<1), vd, vs);
+                processor.cpu.doVMSCL(1+one+(two<<1), vd, vs, vt);
             
 }
 @Override

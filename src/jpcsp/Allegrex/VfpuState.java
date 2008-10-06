@@ -15,7 +15,7 @@ import java.util.Arrays;
  */
 public class VfpuState extends FpuState {
 
-    public float[][][] vpr;
+    public float[][][] vpr; // mtx, fsl, idx
 
     public class Vcr {
 
@@ -206,15 +206,15 @@ public class VfpuState extends FpuState {
     }
 
     public void loadVs(int vsize, int vs) {
-        int m, r, c;
+        int m, s, i;
 
         m = (vs >> 2) & 7;
-        c = (vs >> 0) & 3;
+        i = (vs >> 0) & 3;
 
         switch (vsize) {
             case 1:
-                r = (vs >> 5) & 3;
-                v1[0] = vpr[m][c][r];
+                s = (vs >> 5) & 3;
+                v1[0] = vpr[m][i][s];
                 if (vcr.pfxs.enabled) {
                     v1[0] = applyPrefixVs(0, v1);
                     vcr.pfxs.enabled = false;
@@ -222,13 +222,13 @@ public class VfpuState extends FpuState {
                 return;
 
             case 2:
-                r = (vs & 64) >> 5;
+                s = (vs & 64) >> 5;
                 if ((vs & 32) != 0) {
-                    v1[0] = vpr[m][r + 0][c];
-                    v1[1] = vpr[m][r + 1][c];
+                    v1[0] = vpr[m][s + 0][i];
+                    v1[1] = vpr[m][s + 1][i];
                 } else {
-                    v1[0] = vpr[m][c][r + 0];
-                    v1[1] = vpr[m][c][r + 1];
+                    v1[0] = vpr[m][i][s + 0];
+                    v1[1] = vpr[m][i][s + 1];
                 }
                 if (vcr.pfxs.enabled) {
                     v1[0] = applyPrefixVs(0, v1);
@@ -238,15 +238,15 @@ public class VfpuState extends FpuState {
                 return;
 
             case 3:
-                r = (vs & 64) >> 6;
+                s = (vs & 64) >> 6;
                 if ((vs & 32) != 0) {
-                    v1[0] = vpr[m][r + 0][c];
-                    v1[1] = vpr[m][r + 1][c];
-                    v1[2] = vpr[m][r + 2][c];
+                    v1[0] = vpr[m][s + 0][i];
+                    v1[1] = vpr[m][s + 1][i];
+                    v1[2] = vpr[m][s + 2][i];
                 } else {
-                    v1[0] = vpr[m][c][r + 0];
-                    v1[1] = vpr[m][c][r + 1];
-                    v1[2] = vpr[m][c][r + 2];
+                    v1[0] = vpr[m][i][s + 0];
+                    v1[1] = vpr[m][i][s + 1];
+                    v1[2] = vpr[m][i][s + 2];
                 }
                 if (vcr.pfxs.enabled) {
                     v1[0] = applyPrefixVs(0, v1);
@@ -258,15 +258,15 @@ public class VfpuState extends FpuState {
 
             case 4:
                 if ((vs & 32) != 0) {
-                    v1[0] = vpr[m][0][c];
-                    v1[1] = vpr[m][1][c];
-                    v1[2] = vpr[m][2][c];
-                    v1[3] = vpr[m][3][c];
+                    v1[0] = vpr[m][0][i];
+                    v1[1] = vpr[m][1][i];
+                    v1[2] = vpr[m][2][i];
+                    v1[3] = vpr[m][3][i];
                 } else {
-                    v1[0] = vpr[m][c][0];
-                    v1[1] = vpr[m][c][1];
-                    v1[2] = vpr[m][c][2];
-                    v1[3] = vpr[m][c][3];
+                    v1[0] = vpr[m][i][0];
+                    v1[1] = vpr[m][i][1];
+                    v1[2] = vpr[m][i][2];
+                    v1[3] = vpr[m][i][3];
                 }
                 if (vcr.pfxs.enabled) {
                     v1[0] = applyPrefixVs(0, v1);
@@ -280,15 +280,15 @@ public class VfpuState extends FpuState {
     }
 
     public void loadVt(int vsize, int vt) {
-        int m, r, c;
+        int m, s, i;
 
         m = (vt >> 2) & 7;
-        c = (vt >> 0) & 3;
+        i = (vt >> 0) & 3;
 
         switch (vsize) {
             case 1:
-                r = (vt >> 5) & 3;
-                v2[0] = vpr[m][c][r];
+                s = (vt >> 5) & 3;
+                v2[0] = vpr[m][i][s];
                 if (vcr.pfxt.enabled) {
                     v2[0] = applyPrefixVt(0, v2);
                     vcr.pfxt.enabled = false;
@@ -296,13 +296,13 @@ public class VfpuState extends FpuState {
                 return;
 
             case 2:
-                r = (vt & 64) >> 5;
+                s = (vt & 64) >> 5;
                 if ((vt & 32) != 0) {
-                    v2[0] = vpr[m][r + 0][c];
-                    v2[1] = vpr[m][r + 1][c];
+                    v2[0] = vpr[m][s + 0][i];
+                    v2[1] = vpr[m][s + 1][i];
                 } else {
-                    v2[0] = vpr[m][c][r + 0];
-                    v2[1] = vpr[m][c][r + 1];
+                    v2[0] = vpr[m][i][s + 0];
+                    v2[1] = vpr[m][i][s + 1];
                 }
                 if (vcr.pfxt.enabled) {
                     v2[0] = applyPrefixVt(0, v2);
@@ -312,15 +312,15 @@ public class VfpuState extends FpuState {
                 return;
 
             case 3:
-                r = (vt & 64) >> 6;
+                s = (vt & 64) >> 6;
                 if ((vt & 32) != 0) {
-                    v2[0] = vpr[m][r + 0][c];
-                    v2[1] = vpr[m][r + 1][c];
-                    v2[2] = vpr[m][r + 2][c];
+                    v2[0] = vpr[m][s + 0][i];
+                    v2[1] = vpr[m][s + 1][i];
+                    v2[2] = vpr[m][s + 2][i];
                 } else {
-                    v2[0] = vpr[m][c][r + 0];
-                    v2[1] = vpr[m][c][r + 1];
-                    v2[2] = vpr[m][c][r + 2];
+                    v2[0] = vpr[m][i][s + 0];
+                    v2[1] = vpr[m][i][s + 1];
+                    v2[2] = vpr[m][i][s + 2];
                 }
                 if (vcr.pfxt.enabled) {
                     v2[0] = applyPrefixVt(0, v2);
@@ -332,15 +332,15 @@ public class VfpuState extends FpuState {
 
             case 4:
                 if ((vt & 32) != 0) {
-                    v2[0] = vpr[m][0][c];
-                    v2[1] = vpr[m][1][c];
-                    v2[2] = vpr[m][2][c];
-                    v2[3] = vpr[m][3][c];
+                    v2[0] = vpr[m][0][i];
+                    v2[1] = vpr[m][1][i];
+                    v2[2] = vpr[m][2][i];
+                    v2[3] = vpr[m][3][i];
                 } else {
-                    v2[0] = vpr[m][c][0];
-                    v2[1] = vpr[m][c][1];
-                    v2[2] = vpr[m][c][2];
-                    v2[3] = vpr[m][c][3];
+                    v2[0] = vpr[m][i][0];
+                    v2[1] = vpr[m][i][1];
+                    v2[2] = vpr[m][i][2];
+                    v2[3] = vpr[m][i][3];
                 }
                 if (vcr.pfxt.enabled) {
                     v2[0] = applyPrefixVt(0, v2);
@@ -354,79 +354,79 @@ public class VfpuState extends FpuState {
     }
 
     public void saveVd(int vsize, int vd, float[] vr) {
-        int m, r, c;
+        int m, s, i;
 
         m = (vd >> 2) & 7;
-        c = (vd >> 0) & 3;
+        i = (vd >> 0) & 3;
 
         switch (vsize) {
             case 1:
-                r = (vd >> 5) & 3;
+                s = (vd >> 5) & 3;
                 if (vcr.pfxd.enabled) {
                     if (!vcr.pfxd.msk[0]) {
-                        vpr[m][c][r] = applyPrefixVd(0, vr[0]);
+                        vpr[m][i][s] = applyPrefixVd(0, vr[0]);
                     }
                     vcr.pfxd.enabled = false;
                 } else {
-                    vpr[m][c][r] = vr[0];
+                    vpr[m][i][s] = vr[0];
                 }
                 break;
 
             case 2:
-                r = (vd & 64) >> 5;
+                s = (vd & 64) >> 5;
                 if (vcr.pfxd.enabled) {
                     if ((vd & 32) != 0) {
-                        for (int i = 0; i < 2; ++i) {
-                            if (!vcr.pfxd.msk[i]) {
-                                vpr[m][r + i][c] = applyPrefixVd(i, vr[i]);
+                        for (int j = 0; j < 2; ++j) {
+                            if (!vcr.pfxd.msk[j]) {
+                                vpr[m][s + j][j] = applyPrefixVd(j, vr[j]);
                             }
                         }
                     } else {
-                        for (int i = 0; i < 2; ++i) {
-                            if (!vcr.pfxd.msk[i]) {
-                                vpr[m][c][r + i] = applyPrefixVd(i, vr[i]);
+                        for (int j = 0; j < 2; ++j) {
+                            if (!vcr.pfxd.msk[j]) {
+                                vpr[m][j][s + j] = applyPrefixVd(j, vr[j]);
                             }
                         }
                     }
                     vcr.pfxd.enabled = false;
                 } else {
                     if ((vd & 32) != 0) {
-                        for (int i = 0; i < 2; ++i) {
-                            vpr[m][r + i][c] = vr[i];
+                        for (int j = 0; j < 2; ++j) {
+                            vpr[m][s + j][j] = vr[j];
                         }
                     } else {
-                        for (int i = 0; i < 2; ++i) {
-                            vpr[m][c][r + i] = vr[i];
+                        for (int j = 0; j < 2; ++j) {
+                            vpr[m][j][s + j] = vr[j];
                         }
                     }
                 }
                 break;
 
             case 3:
-                r = (vd & 64) >> 6;
+                s = (vd & 64) >> 6;
                 if (vcr.pfxd.enabled) {
                     if ((vd & 32) != 0) {
-                        for (int i = 0; i < 3; ++i) {
-                            if (!vcr.pfxd.msk[i]) {
-                                vpr[m][r + i][c] = applyPrefixVd(i, vr[i]);
+                        for (int j = 0; j < 3; ++j) {
+                            if (!vcr.pfxd.msk[j]) {
+                                vpr[m][s + j][j] = applyPrefixVd(j, vr[j]);
                             }
                         }
                     } else {
-                        for (int i = 0; i < 3; ++i) {
-                            if (!vcr.pfxd.msk[i]) {
-                                vpr[m][c][r + i] = applyPrefixVd(i, vr[i]);
+                        for (int j = 0; j < 3; ++j) {
+                            if (!vcr.pfxd.msk[j]) {
+                                vpr[m][j][s + j] = applyPrefixVd(j, vr[j]);
                             }
                         }
                     }
                     vcr.pfxd.enabled = false;
                 } else {
                     if ((vd & 32) != 0) {
-                        for (int i = 0; i < 3; ++i) {
-                            vpr[m][r + i][c] = vr[i];
+                        for (int j = 0; j < 3; ++j) {
+                            vpr[m][s + j][j] = vr[j];
                         }
                     } else {
-                        for (int i = 0; i < 3; ++i) {
-                            vpr[m][c][r + i] = vr[i];
+                        for (int j = 0; j < 3; ++j) {
+                            vpr[m][j][s + j] = vr[j];
                         }
                     }
                 }
@@ -435,27 +435,27 @@ public class VfpuState extends FpuState {
             case 4:
                 if (vcr.pfxd.enabled) {
                     if ((vd & 32) != 0) {
-                        for (int i = 0; i < 4; ++i) {
-                            if (!vcr.pfxd.msk[i]) {
-                                vpr[m][i][c] = applyPrefixVd(i, vr[i]);
+                        for (int j = 0; j < 4; ++j) {
+                            if (!vcr.pfxd.msk[j]) {
+                                vpr[m][j][j] = applyPrefixVd(j, vr[j]);
                             }
                         }
                     } else {
-                        for (int i = 0; i < 4; ++i) {
-                            if (!vcr.pfxd.msk[i]) {
-                                vpr[m][c][i] = applyPrefixVd(i, vr[i]);
+                        for (int j = 0; j < 4; ++j) {
+                            if (!vcr.pfxd.msk[j]) {
+                                vpr[m][j][j] = applyPrefixVd(j, vr[j]);
                             }
                         }
                     }
                     vcr.pfxd.enabled = false;
                 } else {
                     if ((vd & 32) != 0) {
-                        for (int i = 0; i < 4; ++i) {
-                            vpr[m][i][c] = vr[i];
+                        for (int j = 0; j < 4; ++j) {
+                            vpr[m][j][j] = vr[j];
                         }
                     } else {
-                        for (int i = 0; i < 4; ++i) {
-                            vpr[m][c][i] = vr[i];
+                        for (int j = 0; j < 4; ++j) {
+                            vpr[m][j][j] = vr[j];
                         }
                     }
                 }
@@ -1198,34 +1198,21 @@ public class VfpuState extends FpuState {
     // group VFPU6   
     // VFPU6:VMMUL
     public void doVMMUL(int vsize, int vd, int vs, int vt) {
-        doUNK("Unimplemented VMMUL instruction");
-       
-        //disabled for now, I don't have a clue if anything in here is right :P
-        /*
-        int db = (vd >> 2) & 7;
-        int dc = (vd >> 0) & 3;
-        int dr = (vd >> 5) & 3;
-        int sb = (vs >> 2) & 7;
-        int sc = (vs >> 0) & 3;
-        int sr = (vs >> 5) & 3;
-        int tb = (vt >> 2) & 7;
-        int tc = (vt >> 0) & 3;
-        int tr = (vt >> 5) & 3;
-        
-        for(int j=0;j<vsize;j++)
-        {
-            for(int i=0;i<vsize;i++)
-            {
-                float v = 0;
-                // rows by columns? columns by rows? rows by rows? what?
-                for(int t=0;t<vsize;t++)
-                {
-                    v+=vpr[sb][sr+j][sc+t]*vpr[tb][tr+t][tc+i];
+        vs = vs ^ 32;
+
+        // not sure :(
+        for (int i = 0; i < vsize; ++i) {
+            loadVt(vsize, vt + i);
+            for (int j = 0; j < vsize; ++j) {
+                loadVs(vsize, vs + j);
+                float dot = v1[0] * v2[0];
+                for (int k = 1; k < vsize; ++k) {
+                    dot += v1[k] * v2[k];
                 }
-                vpr[db][dr+j][dc+i]=0;
+                v3[j] = dot;
             }
+            saveVd(vsize, vd + i, v3);
         }
-        */
     }
 
     // VFPU6:VHTFM2
@@ -1259,8 +1246,10 @@ public class VfpuState extends FpuState {
     }
 
     // VFPU6:VMSCL
-    public void doVMSCL(int vsize, int vd, int vs) {
-        doUNK("Unimplemented VMSCL instruction");
+    public void doVMSCL(int vsize, int vd, int vs, int vt) {
+        for (int i = 0; i < vsize; ++i) {
+            this.doVSCL(vsize, vd + i, vs + i, vt);
+        }
     }
 
     // VFPU6:VQMUL
@@ -1270,64 +1259,29 @@ public class VfpuState extends FpuState {
 
     // VFPU6:VMMOV
     public void doVMMOV(int vsize, int vd, int vs) {
-        int db = (vd >> 2) & 7;
-        int dc = (vd >> 0) & 3;
-        int dr = (vd >> 5) & 3;
-        int sb = (vs >> 2) & 7;
-        int sc = (vs >> 0) & 3;
-        int sr = (vs >> 5) & 3;
-        
-        for(int j=0;j<vsize;j++)
-        {
-            for(int i=0;i<vsize;i++)
-            {
-                vpr[db][dr+j][dc+i]=vpr[sb][sr+j][sc+i];
-            }
+        for (int i = 0; i < vsize; ++i) {
+            this.doVMOV(vsize, vd + i, vs + i);
         }
     }
 
     // VFPU6:VMIDT
     public void doVMIDT(int vsize, int vd) {
-        int b = (vd >> 2) & 7;
-        int c = (vd >> 0) & 3;
-        int r = (vd >> 5) & 3;
-        
-        for(int j=0;j<vsize;j++)
-        {
-            for(int i=0;i<vsize;i++)
-            {
-                vpr[b][r+i][c+j]=(i==j)?1:0;
-            }
+        for (int i = 0; i < vsize; ++i) {
+            this.doVIDT(vsize, vd + i);
         }
     }
 
     // VFPU6:VMZERO
     public void doVMZERO(int vsize, int vd) {
-        int b = (vd >> 2) & 7;
-        int c = (vd >> 0) & 3;
-        int r = (vd >> 5) & 3;
-        
-        for(int j=0;j<vsize;j++)
-        {
-            for(int i=0;i<vsize;i++)
-            {
-                vpr[b][r+i][c+j]=0;
-            }
+        for (int i = 0; i < vsize; ++i) {
+            this.doVZERO(vsize, vd + i);
         }
     }
 
     // VFPU7:VMONE
     public void doVMONE(int vsize, int vd) {
-        int b = (vd >> 2) & 7;
-        int c = (vd >> 0) & 3;
-        int r = (vd >> 5) & 3;
-        
-        for(int j=0;j<vsize;j++)
-        {
-            for(int i=0;i<vsize;i++)
-            {
-                vpr[b][r+i][c+j]=1;
-            }
+        for (int i = 0; i < vsize; ++i) {
+            this.doVONE(vsize, vd + i);
         }
     }
 
@@ -1377,25 +1331,68 @@ public class VfpuState extends FpuState {
 
         if ((vt & 32) != 0) {
             for (int i = 0; i < 4; ++i) {
-                vpr[m][i][c] = Float.intBitsToFloat(memory.read32(address + i));
+                vpr[m][i][c] = Float.intBitsToFloat(memory.read32(address + i*4));
             }
         } else {
             for (int i = 0; i < 4; ++i) {
-                vpr[m][c][i] = Float.intBitsToFloat(memory.read32(address + i));
+                vpr[m][c][i] = Float.intBitsToFloat(memory.read32(address + i*4));
             }
         }
     }
 
     // LSU:LVLQ
     public void doLVLQ(int vt, int rs, int simm14_a16) {
+        int m = (vt >> 2) & 7;
+        int c = (vt >> 0) & 3;
+
         int address = gpr[rs] + simm14_a16;
-        Memory.log.error(String.format("Forbidden LVL.Q unaligned addr:0x%08x pc:0x%08x", address, pc));
+        Memory.log.error("Forbidden LVL.Q");
+
+        if (CHECK_ALIGNMENT) {
+            if ((address & 3) != 0) {
+                Memory.log.error(String.format("LVL.Q unaligned addr:0x%08x pc:0x%08x", address, pc));
+            }
+        }
+
+        int offset = (address >> 2) & 3;
+        int j = (3 ^ offset);
+
+        if ((vt & 32) != 0) {
+            for (int i = 0; i <= offset; ++i) {
+                vpr[m][j + i][c] = Float.intBitsToFloat(memory.read32(address + i*4));
+            }
+        } else {
+            for (int i = 0; i <= offset; ++i) {
+                vpr[m][c][j + i] = Float.intBitsToFloat(memory.read32(address + i*4));
+            }
+        }
     }
 
     // LSU:LVRQ
     public void doLVRQ(int vt, int rs, int simm14_a16) {
+        int m = (vt >> 2) & 7;
+        int c = (vt >> 0) & 3;
+
         int address = gpr[rs] + simm14_a16;
-        Memory.log.error(String.format("Forbidden LVR.Q unaligned addr:0x%08x pc:0x%08x", address, pc));
+        Memory.log.error("Forbidden LVR.Q");
+
+        if (CHECK_ALIGNMENT) {
+            if ((address & 3) != 0) {
+                Memory.log.error(String.format("LVR.Q unaligned addr:0x%08x pc:0x%08x", address, pc));
+            }
+        }
+
+        int offset = (address >> 2) & 3;
+
+        if ((vt & 32) != 0) {
+            for (int i = offset; i < 4; ++i) {
+                vpr[m][i][c] = Float.intBitsToFloat(memory.read32(address + (i - offset)*4));
+            }
+        } else {
+            for (int i = offset; i < 4; ++i) {
+                vpr[m][c][i] = Float.intBitsToFloat(memory.read32(address + (i - offset)*4));
+            }
+        }
     }
     // LSU:SVQ
     public void doSVQ(int vt, int rs, int simm14_a16) {
@@ -1412,11 +1409,11 @@ public class VfpuState extends FpuState {
 
         if ((vt & 32) != 0) {
             for (int i = 0; i < 4; ++i) {
-                memory.write32((address + i), Float.floatToRawIntBits(vpr[m][i][c]));
+                memory.write32((address + i*4), Float.floatToRawIntBits(vpr[m][i][c]));
             }
         } else {
             for (int i = 0; i < 4; ++i) {
-                memory.write32((address + i), Float.floatToRawIntBits(vpr[m][c][i]));
+                memory.write32((address + i*4), Float.floatToRawIntBits(vpr[m][c][i]));
             }
         }
     }
@@ -1464,11 +1461,11 @@ public class VfpuState extends FpuState {
         int offset = address & 0x15;
 
         if ((vt & 32) != 0) {
-            for (int i = offset; i <= 4; ++i) {
+            for (int i = offset; i < 4; ++i) {
                 memory.write32((address + i - offset), Float.floatToRawIntBits(vpr[m][i][c]));
             }
         } else {
-            for (int i = offset; i <= 4; ++i) {
+            for (int i = offset; i < 4; ++i) {
                 memory.write32((address + i - offset), Float.floatToRawIntBits(vpr[m][c][i]));
             }
         }
