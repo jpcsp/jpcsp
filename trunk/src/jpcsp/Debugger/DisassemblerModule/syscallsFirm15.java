@@ -829,9 +829,59 @@ public class syscallsFirm15 {
                  sceKernelDeleteMutex(0x3015,0xf8170fbe),//2.70+
                  sceKernelUnlockMutex(0x3016,0x6b30100f),//2.70+
                  sceKernelLockMutex(0x3017,0xb011b11f),//2.70+
-                 sceKernelCreateMutex(0x3017,0xb7d098c6);//2.70+
-
-
+                 sceKernelCreateMutex(0x3017,0xb7d098c6),//2.70+
+                 /*found in wipeout pure */
+                 sceKernelIsCpuIntrEnable(0x3018,0xb55249d2),//1.00+
+                 sceNetResolverInit(0x3019,0xf3370e61),//1.00+
+                 sceNetResolverTerm(0x301a,0x6138194a),//1.00+
+                 sceNetApctlInit(0x301b,0xe2f91f9b),//1.00+
+                 sceNetApctlTerm(0x301c,0xb3edd0ec),//1.00+
+                 sceNetApctlGetInfo(0x301d,0x2befdf23),//1.00+
+                 sceNetApctlAddHandler(0x301e,0x8abadd51),//1.00+
+                 sceNetApctlDelHandler(0x301f,0x5963991b),//1.00+
+                 sceNetApctlDisconnect(0x3020,0x24fe91a1),//1.00+
+                 sceNetApctlGetState(0x3021,0x5deac81b),//1.00+
+                 sceHttpInit(0x3022,0xab1abe07),//1.00+
+                 sceHttpEnd(0x3023,0xd1c8945e),//1.00+
+                 sceHttpCreateTemplate(0x3024,0x9b1f1f36),//1.00+
+                 sceHttpDeleteTemplate(0x3025,0xfcf8c055),//1.00+
+                 sceHttpCreateConnectionWithURL(0x3026,0xcdf8ecb9),//1.00+
+                 sceHttpDeleteConnection(0x3027,0x5152773b),//1.00+
+                 sceHttpCreateRequestWithURL(0x3028,0xb509b09e),//1.00+
+                 sceHttpDeleteRequest(0x3028,0xa5512e01),//1.00+
+                 sceHttpEnableKeepAlive(0x3029,0x78a0d3ec),//1.00+
+                 sceHttpDisableRedirect(0x302a,0x1a0ebb69),//1.00+
+                 sceHttpDisableAuth(0x302b,0xae948fee),//1.00+
+                 sceHttpDisableCookie(0x302c,0x0b12abfb),//1.00+
+                 sceHttpInitCache(0x302d,0xa6800c34),//1.00+
+                 sceHttpEndCache(0x302e,0x78b54c09),//1.00+
+                 sceHttpDisableCache(0x302f,0xccbd167a),//1.00+
+                 sceHttpSendRequest(0x3030,0xbb70706f),//1.00+
+                 sceHttpAbortRequest(0x3031,0xc10b6bd9),//1.00+
+                 sceHttpGetStatusCode(0x3032,0x4cc7d78f),//1.00+
+                 sceHttpGetAllHeader(0x3033,0xdb266ccf),//1.00+
+                 sceHttpReadData(0x3034,0xedeeb999),//1.00+
+                 sceHttpSetAuthInfoCB(0x3035,0x2a6c3296),//1.00+
+                 sceHttpDeleteHeader(0x3036,0x15540184),//1.00+
+                 sceHttpAddExtraHeader(0x3037,0x3eaba285),//1.00+
+                 sceHttpGetNetworkErrno(0x3038,0xd081ec8f),//1.00+
+                 sceHttpsInitWithPath(0x3039,0x68ab0f86),//1.00+
+                 sceHttpsLoadDefaultCert(0x303a,0x87797bdd),//1.00+
+                 sceHttpsEnd(0x303b,0xf9d8eb63),//1.00+
+                 sceParseHttpStatusLine(0x303c,0x8077a433),//1.00+
+                 sceUriParse(0x303d,0x568518c9),//1.00+
+                 sceSslInit(0x303e,0x957ecbe2),//1.00+
+                 sceSslEnd(0x303f,0x191cdeff),//1.00+
+                 /*world championship poker 2 */
+                 sceNetResolverCreate(0x3040,0x244172af), //1.00+
+                 sceNetResolverDelete(0x3041,0x94523e09),//1.00+
+                 sceNetResolverStartNtoA(0x3042,0x224c5f44),//1.00+
+                 /*vampire chronicles */
+                 sceFontGetNumFontList(0x3043,0x27f6e642),//1.00+
+                 sceFontGetFontList(0x3044,0xbc75d85b);//1.00+
+                 
+                 
+                 
 
             //implement syscall
             private int syscall;
