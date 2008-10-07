@@ -254,16 +254,26 @@ public class HTMLLayout extends Layout {
     sbuf.append("    e = allElements[i];" + Layout.LINE_SEP);
     sbuf.append("    if (e.getAttribute(\"title\") == \"Message\") {" + Layout.LINE_SEP);
     sbuf.append("      var m = isIE ? e.innerHTML.toLowerCase() : e.textContent.toLowerCase();" + Layout.LINE_SEP);
+    
+
+        	
+    
     sbuf.append("      if ((m.indexOf(\"unimplement\") == -1" + Layout.LINE_SEP);
     sbuf.append("          && m.indexOf(\"unsupport\") == -1)" + Layout.LINE_SEP);
     sbuf.append("          || recorded[m] != null)" + Layout.LINE_SEP);
     sbuf.append("        e.parentNode.style.display = \"none\";" + Layout.LINE_SEP);
     sbuf.append("      else {" + Layout.LINE_SEP);
-    sbuf.append("        recorded[m] = true;" + Layout.LINE_SEP);
-    sbuf.append("        e.parentNode.style.display = isIE ? \"block\" : \"table-row\";" + Layout.LINE_SEP);
-    sbuf.append("      }" + Layout.LINE_SEP);
-    sbuf.append("    }" + Layout.LINE_SEP);
-    sbuf.append("  }" + Layout.LINE_SEP);
+    sbuf.append("        if(m.indexOf(\"unsupported syscall\") != 1)" + Layout.LINE_SEP);
+	sbuf.append("          m = m.substr(0, m.length - 27);" + Layout.LINE_SEP);
+	sbuf.append("        if(recorded[m] != null)" + Layout.LINE_SEP);
+	sbuf.append("          e.parentNode.style.display = \"none\";" + Layout.LINE_SEP);
+	sbuf.append("        else {   " + Layout.LINE_SEP);
+	sbuf.append("          recorded[m] = true;" + Layout.LINE_SEP);
+	sbuf.append("          e.parentNode.style.display = isIE ? \"block\" : \"table-row\";" + Layout.LINE_SEP);
+	sbuf.append("        }" + Layout.LINE_SEP);
+	sbuf.append("      }" + Layout.LINE_SEP);
+	sbuf.append("    }" + Layout.LINE_SEP);
+	sbuf.append("  }" + Layout.LINE_SEP);
     sbuf.append("}" + Layout.LINE_SEP);
     sbuf.append("</script>" + Layout.LINE_SEP);
     sbuf.append("</head>" + Layout.LINE_SEP);
