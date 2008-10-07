@@ -120,10 +120,10 @@ public class pspiofilemgr {
         }
 
         if (path.startsWith("/")) {
-            if (path.length() > 1) {
-                filename = device + path;
-            } else {
+            if (path.length() == 1) {
                 filename = device;
+            } else {
+                filename = device + path;
             }
         } else {
             filename = device + "/" + path;
@@ -148,6 +148,7 @@ public class pspiofilemgr {
     }
 
     private boolean isUmdPath(String deviceFilePath) {
+        //return deviceFilePath.toLowerCase().startsWith("disc0/"); // old
         return deviceFilePath.toLowerCase().startsWith("disc0");
     }
 
@@ -163,15 +164,16 @@ public class pspiofilemgr {
         String device = readStringZ(Memory.getInstance().mainmemory, (device_addr & 0x3fffffff) - MemoryMap.START_RAM);
         if (debug) Modules.log.debug("IGNORING:sceIoSync(device='" + device + "',unknown=0x" + Integer.toHexString(unknown) + ")");
         Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
+        // TODO "block"/yield?
     }
 
-    public void sceIoWaitAsync(int uid, int res_addr) {
-        if (debug) Modules.log.debug("sceIoWaitAsync - uid " + Integer.toHexString(uid) + " res:0x" + Integer.toHexString(res_addr));
+    public void sceIoPollAsync(int uid, int res_addr) {
+        if (debug) Modules.log.debug("sceIoPollAsync - uid " + Integer.toHexString(uid) + " res:0x" + Integer.toHexString(res_addr));
 
         SceUIDMan.get_instance().checkUidPurpose(uid, "IOFileManager-File", true);
         IoInfo info = filelist.get(uid);
         if (info == null) {
-            Modules.log.warn("sceIoClose - unknown uid " + Integer.toHexString(uid));
+            Modules.log.warn("sceIoPollAsync - unknown uid " + Integer.toHexString(uid));
             Emulator.getProcessor().cpu.gpr[2] = -1;
         } else {
             Memory mem = Memory.getInstance();
@@ -182,14 +184,23 @@ public class pspiofilemgr {
 
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
+    }
 
+    public void sceIoWaitAsync(int uid, int res_addr) {
+        if (debug) Modules.log.debug("sceIoWaitAsync redirecting to sceIoPollAsync");
+        sceIoPollAsync(uid, res_addr);
+
+        // wait = block, we currently load files immediately so emulate a yield instead
         ThreadMan.get_instance().yieldCurrentThread();
     }
 
     public void sceIoWaitAsyncCB(int uid, int res_addr) {
+        if (debug) Modules.log.debug("sceIoWaitAsyncCB redirecting to sceIoPollAsync");
+        sceIoPollAsync(uid, res_addr);
+
+        // wait = block, we currently load files immediately so emulate a yield instead
         // TODO check callbacks
-        if (debug) Modules.log.debug("sceIoWaitAsyncCB redirecting to sceIoWaitAsync");
-        sceIoWaitAsync(uid, res_addr);
+        ThreadMan.get_instance().yieldCurrentThread();
     }
 
     public void sceIoOpen(int filename_addr, int flags, int permissions) {
@@ -262,6 +273,7 @@ public class pspiofilemgr {
                             IoInfo info = new IoInfo(file, mode, flags, permissions);
                             info.result = info.uid;
                             Emulator.getProcessor().cpu.gpr[2] = info.uid;
+                            if (debug) Modules.log.debug("sceIoOpen assigned uid = " + info.uid);
                         } catch(FileNotFoundException e) {
                             if (debug) Modules.log.debug("sceIoOpen - umd file not found (ok to ignore this message, debug purpose only)");
                             Emulator.getProcessor().cpu.gpr[2] = -1;
@@ -290,6 +302,7 @@ public class pspiofilemgr {
                         IoInfo info = new IoInfo(raf, mode, flags, permissions);
                         info.result = info.uid;
                         Emulator.getProcessor().cpu.gpr[2] = info.uid;
+                        if (debug) Modules.log.debug("sceIoOpen assigned uid = " + info.uid);
                     }
                 }
             } else {
@@ -574,7 +587,6 @@ public class pspiofilemgr {
                     Modules.log.error("sceIoDopen - no umd mounted");
                     Emulator.getProcessor().cpu.gpr[2] = -1;
                 } else {
-                    if (debug) Modules.log.debug("sceIoDopen - isofilename = " + isofilename);
                     try {
                         if (iso.isDirectory(isofilename)) {
                             String[] filenames = iso.listDirectory(isofilename);

@@ -177,7 +177,7 @@ public class sceMpeg implements HLEModule {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		// Processor cpu = processor; // Old-Style Processor
 
-		Modules.log.debug("sceMpegInit");
+		Modules.log.debug("IGNORING:sceMpegInit");
 
 		cpu.gpr[2] = 0;
 	}

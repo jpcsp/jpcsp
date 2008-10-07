@@ -113,6 +113,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     private double averageFPS = 0.0;
 
     private int vcount;
+    private float accumulatedHcount;
+    private float currentHcount;
 
     private pspdisplay (GLCapabilities capabilities) {
     	super (capabilities);
@@ -151,6 +153,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         gotBadGeBufParams = false;
 
         vcount = 0;
+        accumulatedHcount = 0.0f;
+        currentHcount = 0.0f;
     }
 
     public void step() {
@@ -161,6 +165,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                 refreshRequired = false;
             }
             vcount++;
+            accumulatedHcount += 286.15f;
+            currentHcount += 0.15f;
             lastUpdate = now;
         }
     }
@@ -638,5 +644,13 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         // TODO: implement sceDisplayWaitVblankCB
         Emulator.getProcessor().cpu.gpr[2] = 0;
         ThreadMan.get_instance().yieldCurrentThread();
+    }
+
+    public void sceDisplayGetCurrentHcount() {
+        Emulator.getProcessor().cpu.gpr[2] = (int)currentHcount;
+    }
+
+    public void sceDisplayGetAccumulatedHcount() {
+        Emulator.getProcessor().cpu.gpr[2] = (int)accumulatedHcount;
     }
 }

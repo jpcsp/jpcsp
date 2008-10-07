@@ -232,7 +232,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                                 for (Iterator<Integer> it = deferredHi16.iterator(); it.hasNext();) {
                                     int data_addr2 = it.next();
                                     int data2 = Memory.getInstance().read32(data_addr2);
- 
+
                                     result = ((data2 & 0x0000FFFF) << 16) + A + S;
                                     // The low order 16 bits are always treated as a signed
                                     // value. Therefore, a negative value in the low order bits
@@ -251,7 +251,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                                     data2 &= ~0x0000FFFF;
                                     data2 |= (result >> 16) & 0x0000FFFF; // truncate
 
-                                    
+
                                     if (logRelocations)  {
                                         Memory.log.debug("R_MIPS_HILO16 addr=" + String.format("%08x", data_addr2)
                                             + " data2 before=" + Integer.toHexString(Memory.getInstance().read32(data_addr2))
@@ -400,6 +400,14 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                                 deferred.add(new DeferredStub(stubHeader.getModuleNamez(), importAddress, nid));
                                 Modules.log.warn("Failed to map NID " + Integer.toHexString(nid) + " (load time)");
                                 numberoffailedNIDS++;
+
+                                // Add a 0xfffff syscall so we can detect if an unresolved import is called
+                                int instruction = // syscall <code>
+                                    ((jpcsp.AllegrexOpcodes.SPECIAL & 0x3f) << 26)
+                                    | (jpcsp.AllegrexOpcodes.SYSCALL & 0x3f)
+                                    | ((0xfffff & 0x000fffff) << 6);
+
+                                mem.write32(importAddress + 4, instruction);
                             }
                         }
                     }

@@ -25,8 +25,8 @@ public class LsuState extends MduState {
     @Override
     public void resetAll() {
         super.resetAll();
-    }   
-    
+    }
+
     public LsuState() {
     }
 
@@ -124,7 +124,7 @@ public class LsuState extends MduState {
             gpr[rt] = (data >>> lwrShift[offset]) | (value & lwrMask[offset]);
         }
     }
-    
+
     public void doSB(int rt, int rs, int simm16) {
         memory.write8(gpr[rs] + simm16, (byte) (gpr[rt] & 0xFF));
     }

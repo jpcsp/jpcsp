@@ -725,13 +725,18 @@ public class sceUtility implements HLEModule {
             cpu.gpr[2] = 0;
             switch(id) {
                 case PSP_SYSTEMPARAM_ID_INT_TIMEZONE:
-                    // TODO probably minutes west or east of UTC, also need to check data size, int?
+                    // TODO probably minutes west or east of UTC
                     mem.write32(value_addr, 0);
                     break;
 
                 case PSP_SYSTEMPARAM_ID_INT_LANGUAGE:
                     // TODO add an option to SettingsGUI to allow users to set the prefered language
                     mem.write32(value_addr, PSP_SYSTEMPARAM_LANGUAGE_ENGLISH);
+                    break;
+
+                case PSP_SYSTEMPARAM_ID_INT_UNKNOWN:
+                    // TODO add an option to SettingsGUI to allow users to set the prefered accept button (cross/circle)
+                    mem.write32(value_addr, 0);
                     break;
 
                 default:
