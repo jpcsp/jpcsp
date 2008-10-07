@@ -1350,18 +1350,18 @@ public class VfpuState extends FpuState {
     // group VLSU     
     // LSU:LVS
     public void doLVS(int vt, int rs, int simm14_a16) {
-        int r = (vt >> 5) & 3;
+        int s = (vt >> 5) & 3;
         int m = (vt >> 2) & 7;
-        int c = (vt >> 0) & 3;
+        int i = (vt >> 0) & 3;
 
-        vpr[m][c][r] = Float.intBitsToFloat(memory.read32(gpr[rs] + simm14_a16));
+        vpr[m][i][s] = Float.intBitsToFloat(memory.read32(gpr[rs] + simm14_a16));
     }
 
     // LSU:SVS
     public void doSVS(int vt, int rs, int simm14_a16) {
-        int r = (vt >> 5) & 3;
+        int s = (vt >> 5) & 3;
         int m = (vt >> 2) & 7;
-        int c = (vt >> 0) & 3;
+        int i = (vt >> 0) & 3;
 
         if (CHECK_ALIGNMENT) {
             int address = gpr[rs] + simm14_a16;
@@ -1370,13 +1370,13 @@ public class VfpuState extends FpuState {
             }
         }
 
-        memory.write32(gpr[rs] + simm14_a16, Float.floatToRawIntBits(vpr[m][r][c]));
+        memory.write32(gpr[rs] + simm14_a16, Float.floatToRawIntBits(vpr[m][s][i]));
     }
 
     // LSU:LVQ
     public void doLVQ(int vt, int rs, int simm14_a16) {
         int m = (vt >> 2) & 7;
-        int c = (vt >> 0) & 3;
+        int i = (vt >> 0) & 3;
 
         int address = gpr[rs] + simm14_a16;
 
@@ -1387,12 +1387,12 @@ public class VfpuState extends FpuState {
         }
 
         if ((vt & 32) != 0) {
-            for (int i = 0; i < 4; ++i) {
-                vpr[m][i][c] = Float.intBitsToFloat(memory.read32(address + i*4));
+            for (int j = 0; j < 4; ++j) {
+                vpr[m][j][i] = Float.intBitsToFloat(memory.read32(address + j*4));
             }
         } else {
-            for (int i = 0; i < 4; ++i) {
-                vpr[m][c][i] = Float.intBitsToFloat(memory.read32(address + i*4));
+            for (int j = 0; j < 4; ++j) {
+                vpr[m][i][j] = Float.intBitsToFloat(memory.read32(address + j*4));
             }
         }
     }
@@ -1400,10 +1400,10 @@ public class VfpuState extends FpuState {
     // LSU:LVLQ
     public void doLVLQ(int vt, int rs, int simm14_a16) {
         int m = (vt >> 2) & 7;
-        int c = (vt >> 0) & 3;
+        int i = (vt >> 0) & 3;
 
         int address = gpr[rs] + simm14_a16;
-        Memory.log.error("Forbidden LVL.Q");
+        //Memory.log.error("Forbidden LVL.Q");
 
         if (CHECK_ALIGNMENT) {
             if ((address & 3) != 0) {
@@ -1411,16 +1411,31 @@ public class VfpuState extends FpuState {
             }
         }
 
-        int offset = (address >> 2) & 3;
-        int j = (3 ^ offset);
+	/* I assume it should be something like that :
+            Mem = 4321
+            Reg = wzyx
+
+            0   1 z y x 
+            1   2 1 y x
+            2   3 2 1 x
+            3   4 3 2 1
+        */
+        
+        int k = 3 - ((address >> 2) & 3);
 
         if ((vt & 32) != 0) {
-            for (int i = 0; i <= offset; ++i) {
-                vpr[m][j + i][c] = Float.intBitsToFloat(memory.read32(address + i*4));
+            for (int j = 0; j < 4; ++j) {
+                if (k <= j) {
+                    vpr[m][j][i] = Float.intBitsToFloat(memory.read32(address));
+                    address += 4;
+                }
             }
         } else {
-            for (int i = 0; i <= offset; ++i) {
-                vpr[m][c][j + i] = Float.intBitsToFloat(memory.read32(address + i*4));
+            for (int j = 0; j < 4; ++j) {
+                if (k <= j) {
+                    vpr[m][i][j] = Float.intBitsToFloat(memory.read32(address));
+                    address += 4;
+                }
             }
         }
     }
@@ -1428,10 +1443,10 @@ public class VfpuState extends FpuState {
     // LSU:LVRQ
     public void doLVRQ(int vt, int rs, int simm14_a16) {
         int m = (vt >> 2) & 7;
-        int c = (vt >> 0) & 3;
+        int i = (vt >> 0) & 3;
 
         int address = gpr[rs] + simm14_a16;
-        Memory.log.error("Forbidden LVR.Q");
+        //Memory.log.error("Forbidden LVR.Q");
 
         if (CHECK_ALIGNMENT) {
             if ((address & 3) != 0) {
@@ -1439,22 +1454,38 @@ public class VfpuState extends FpuState {
             }
         }
 
-        int offset = (address >> 2) & 3;
+	/* I assume it should be something like that :
+            Mem = 4321
+            Reg = wzyx
+
+            0   4 3 2 1 
+            1   w 4 3 2
+            2   w z 4 3
+            3   w z y 4
+	*/
+        
+        int k = (address >> 2) & 3;
 
         if ((vt & 32) != 0) {
-            for (int i = offset; i < 4; ++i) {
-                vpr[m][i][c] = Float.intBitsToFloat(memory.read32(address + (i - offset)*4));
+            for (int j = 0; j < 4; ++j) {
+                if (k <= j) {
+                    vpr[m][j][i] = Float.intBitsToFloat(memory.read32(address));
+                }
+                address += 4;
             }
         } else {
-            for (int i = offset; i < 4; ++i) {
-                vpr[m][c][i] = Float.intBitsToFloat(memory.read32(address + (i - offset)*4));
+            for (int j = k; j < 4; ++j) {
+                if (k <= j) {
+                    vpr[m][i][j] = Float.intBitsToFloat(memory.read32(address));
+                }
+                address += 4;
             }
         }
     }
     // LSU:SVQ
     public void doSVQ(int vt, int rs, int simm14_a16) {
         int m = (vt >> 2) & 7;
-        int c = (vt >> 0) & 3;
+        int i = (vt >> 0) & 3;
 
         int address = gpr[rs] + simm14_a16;
 
@@ -1465,12 +1496,12 @@ public class VfpuState extends FpuState {
         }
 
         if ((vt & 32) != 0) {
-            for (int i = 0; i < 4; ++i) {
-                memory.write32((address + i*4), Float.floatToRawIntBits(vpr[m][i][c]));
+            for (int j = 0; j < 4; ++j) {
+                memory.write32((address + j*4), Float.floatToRawIntBits(vpr[m][j][i]));
             }
         } else {
-            for (int i = 0; i < 4; ++i) {
-                memory.write32((address + i*4), Float.floatToRawIntBits(vpr[m][c][i]));
+            for (int j = 0; j < 4; ++j) {
+                memory.write32((address + j*4), Float.floatToRawIntBits(vpr[m][i][j]));
             }
         }
     }
@@ -1478,7 +1509,7 @@ public class VfpuState extends FpuState {
     // LSU:SVLQ
     public void doSVLQ(int vt, int rs, int simm14_a16) {
         int m = (vt >> 2) & 7;
-        int c = (vt >> 0) & 3;
+        int i = (vt >> 0) & 3;
 
         int address = gpr[rs] + simm14_a16;
 
@@ -1489,15 +1520,15 @@ public class VfpuState extends FpuState {
         }
 
         int offset = address & 0x15;
-        int j = (3 ^ offset);
+        int k = (3 ^ offset);
 
         if ((vt & 32) != 0) {
-            for (int i = 0; i <= offset; ++i) {
-                memory.write32((address + i), Float.floatToRawIntBits(vpr[m][j + i][c]));
+            for (int j = 0; j <= offset; ++j) {
+                memory.write32((address + j), Float.floatToRawIntBits(vpr[m][k + j][i]));
             }
         } else {
-            for (int i = 0; i <= offset; ++i) {
-                memory.write32((address + i), Float.floatToRawIntBits(vpr[m][c][j + i]));
+            for (int j = 0; j <= offset; ++j) {
+                memory.write32((address + j), Float.floatToRawIntBits(vpr[m][i][k + j]));
             }
         }
     }
@@ -1505,7 +1536,7 @@ public class VfpuState extends FpuState {
     // LSU:SVRQ
     public void doSVRQ(int vt, int rs, int simm14_a16) {
         int m = (vt >> 2) & 7;
-        int c = (vt >> 0) & 3;
+        int i = (vt >> 0) & 3;
 
         int address = gpr[rs] + simm14_a16;
 
@@ -1518,12 +1549,12 @@ public class VfpuState extends FpuState {
         int offset = address & 0x15;
 
         if ((vt & 32) != 0) {
-            for (int i = offset; i < 4; ++i) {
-                memory.write32((address + i - offset), Float.floatToRawIntBits(vpr[m][i][c]));
+            for (int j = offset; j < 4; ++j) {
+                memory.write32((address + j - offset), Float.floatToRawIntBits(vpr[m][j][i]));
             }
         } else {
-            for (int i = offset; i < 4; ++i) {
-                memory.write32((address + i - offset), Float.floatToRawIntBits(vpr[m][c][i]));
+            for (int j = offset; j < 4; ++j) {
+                memory.write32((address + j - offset), Float.floatToRawIntBits(vpr[m][i][j]));
             }
         }
     }
