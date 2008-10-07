@@ -141,13 +141,16 @@ public class LsuState extends MduState {
         memory.write16(gpr[rs] + simm16, (short) (gpr[rt] & 0xFFFF));
     }
 
+    private static final int[] swlMask = { 0xffffff00, 0xffff0000, 0xff000000, 0 };
+    private static final int[] swlShift = { 24, 16, 8, 0 };
+
     public void doSWL(int rt, int rs, int simm16) {
         int address = gpr[rs] + simm16;
         int offset = address & 0x3;
         int value = gpr[rt];
         int data = memory.read32(address & 0xfffffffc);
 
-        data = (value >>> lwlShift[offset]) | (data & lwlMask[offset]);
+        data = (value >>> swlShift[offset]) | (data & swlMask[offset]);
 
         memory.write32(address & 0xfffffffc, data);
     }
@@ -164,13 +167,16 @@ public class LsuState extends MduState {
         memory.write32(gpr[rs] + simm16, gpr[rt]);
     }
 
+    private static final int[] swrMask = { 0, 0xff, 0xffff, 0xffffff };
+    private static final int[] swrShift = { 0, 8, 16, 24 };
+
     public void doSWR(int rt, int rs, int simm16) {
         int address = gpr[rs] + simm16;
         int offset = address & 0x3;
         int value = gpr[rt];
         int data = memory.read32(address & 0xfffffffc);
 
-        data = (value << lwrShift[offset]) | (data & lwrMask[offset]);
+        data = (value << swrShift[offset]) | (data & swrMask[offset]);
 
         memory.write32(address & 0xfffffffc, data);
     }
