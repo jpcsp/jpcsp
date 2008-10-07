@@ -75,6 +75,23 @@ public class ThreadMan {
     public final static int PSP_ERROR_THREAD_IS_NOT_SUSPEND          = 0x800201a5;
     public final static int PSP_ERROR_THREAD_IS_NOT_WAIT             = 0x800201a6;
 
+    // see sceKernelGetThreadmanIdList
+    public final static int SCE_KERNEL_TMID_Thread             = 1;
+    public final static int SCE_KERNEL_TMID_Semaphore          = 2;
+    public final static int SCE_KERNEL_TMID_EventFlag          = 3;
+    public final static int SCE_KERNEL_TMID_Mbox               = 4;
+    public final static int SCE_KERNEL_TMID_Vpl                = 5;
+    public final static int SCE_KERNEL_TMID_Fpl                = 6;
+    public final static int SCE_KERNEL_TMID_Mpipe              = 7;
+    public final static int SCE_KERNEL_TMID_Callback           = 8;
+    public final static int SCE_KERNEL_TMID_ThreadEventHandler = 9;
+    public final static int SCE_KERNEL_TMID_Alarm              = 10;
+    public final static int SCE_KERNEL_TMID_VTimer             = 11;
+    public final static int SCE_KERNEL_TMID_SleepThread        = 64;
+    public final static int SCE_KERNEL_TMID_DelayThread        = 65;
+    public final static int SCE_KERNEL_TMID_SuspendThread      = 66;
+    public final static int SCE_KERNEL_TMID_DormantThread      = 67;
+
     //private static int stackAllocated;
 
     public static ThreadMan get_instance() {
@@ -597,6 +614,24 @@ public class ThreadMan {
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
+    public void ThreadMan_sceKernelGetThreadmanIdList(int type,
+        int readbuf_addr, int readbufsize, int idcount_addr) {
+        Memory mem = Memory.getInstance();
+
+        Modules.log.warn("UNIMPLEMENTED:sceKernelGetThreadmanIdList type=" + type
+            + " readbuf:0x" + Integer.toHexString(readbuf_addr)
+            + " readbufsize:" + readbufsize
+            + " idcount:0x" + Integer.toHexString(idcount_addr));
+
+        // TODO type=SCE_KERNEL_TMID_Thread, don't show the idle threads!
+
+        // Fake success - 0 entries written
+        if (mem.isAddressGood(idcount_addr)) {
+            idcount_addr = 0;
+        }
+        Emulator.getProcessor().cpu.gpr[2] = 0;
+    }
+
     public void ThreadMan_sceKernelChangeThreadPriority(int uid, int priority) {
         if (uid == 0) uid = getCurrentThreadID();
         SceUIDMan.get_instance().checkUidPurpose(uid, "ThreadMan-thread", true);
@@ -638,16 +673,16 @@ public class ThreadMan {
     }
 
     public void ThreadMan_sceKernelWakeupThread(int uid) {
-        Modules.log.debug("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid));
         SceUIDMan.get_instance().checkUidPurpose(uid, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadlist.get(uid);
         if (thread == null) {
-            Modules.log.warn("sceKernelWakeupThread unknown thread");
+            Modules.log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " unknown thread");
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_THREAD;
         } else if (thread.status != PspThreadStatus.PSP_THREAD_SUSPEND) {
-            Modules.log.warn("sceKernelWakeupThread thread not suspended (status=" + thread.status + ")");
+            Modules.log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " not suspended (status=" + thread.status + ")");
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_THREAD_IS_NOT_SUSPEND;
         } else {
+            Modules.log.debug("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "'");
             thread.status = PspThreadStatus.PSP_THREAD_READY;
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
