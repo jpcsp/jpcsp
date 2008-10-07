@@ -55,11 +55,9 @@ public class LogWindow extends JFrame {
 		JScrollPane scrollPane = new JScrollPane(textPane);
 
 		TextPaneAppender textPaneAppender = (TextPaneAppender)Logger.getRootLogger().getAppender("JpcspAppender");
-		if (textPaneAppender == null) {
-			System.err.println("There is a problem with LogSettings.xml");
-			System.exit(1);
-		}
-		textPaneAppender.setTextPane(textPane);
+		if (textPaneAppender != null) {
+			textPaneAppender.setTextPane(textPane);
+		}		
 
 		JButton clearButton = new JButton("Clear");
 		clearButton.addActionListener(new ActionListener() {
