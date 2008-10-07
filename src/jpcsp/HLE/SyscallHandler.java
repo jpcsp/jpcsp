@@ -226,11 +226,15 @@ public class SyscallHandler {
                     break;
                 // sceKernelReferThreadRunStatus(0x2081),
 		// sceKernelReferSystemStatus(0x2082),
-		// sceKernelGetThreadmanIdList(0x2083),
+                case 0x2083:
+                    ThreadMan.get_instance().ThreadMan_sceKernelGetThreadmanIdList(gpr[4], gpr[5], gpr[6], gpr[7]);
+                    break;
 		// sceKernelGetThreadmanIdType(0x2084),
 		// sceKernelReferThreadProfiler(0x2085),
 		// sceKernelReferGlobalProfiler(0x2086),
-		// sceIoPollAsync(0x2087),
+                case 0x2087:
+                    pspiofilemgr.get_instance().sceIoPollAsync(gpr[4], gpr[5]);
+                    break;
                 case 0x2088:
                     pspiofilemgr.get_instance().sceIoWaitAsync(gpr[4], gpr[5]);
                     break;
@@ -579,8 +583,12 @@ public class SyscallHandler {
                 case 0x2148:
                     pspdisplay.get_instance().sceDisplayWaitVblankStartCB();
                     break;
-		// sceDisplayGetCurrentHcount(0x2149),
-		// sceDisplayGetAccumulatedHcount(0x214a),
+                case 0x2149:
+                    pspdisplay.get_instance().sceDisplayGetCurrentHcount();
+                    break;
+                case 0x214a:
+                    pspdisplay.get_instance().sceDisplayGetAccumulatedHcount();
+                    break;
 		// sceDisplay_A83EF139(0x214b),
                 case 0x214c:
                     pspctrl.get_instance().sceCtrlSetSamplingCycle(gpr[4]);
@@ -799,6 +807,10 @@ public class SyscallHandler {
 		 //sceUtilityDeleteNetParam(0x220e),
 		 //sceUtilityCopyNetParam(0x220f),
 		// sceUtilitySetNetParam(0x2210);
+                case 0xfffff: // special code for unmapped imports
+                    Modules.log.error("Unmapped import @ 0x" + Integer.toHexString(Emulator.getProcessor().cpu.pc));
+                    Emulator.PauseEmu();
+                    break;
                 default:
                 {
                     // Try and handle as an HLE module export
