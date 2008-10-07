@@ -17,30 +17,7 @@ public class VfpuState extends FpuState {
 
     public float[][][] vpr; // mtx, fsl, idx
 
-	private static final float floatConstants[] =
-			{ 0.0f
-			, Float.MAX_VALUE
-			, (float) Math.sqrt(2.0f)
-			, (float) Math.sqrt(0.5f)
-			, 2.0f / (float) Math.sqrt(Math.PI)
-			, 2.0f / (float) Math.PI
-			, 1.0f / (float) Math.PI
-			, (float) Math.PI / 4.0f
-			, (float) Math.PI / 2.0f
-			, (float) Math.PI
-			, (float) Math.E
-			, (float) (Math.log(Math.E) / Math.log(2.0))	// log2(E) = log(E) / log(2)
-			, (float) Math.log10(Math.E)
-			, (float) Math.log(2.0)
-			, (float) Math.log(10.0)
-			, (float) Math.PI * 2.0f
-			, (float) Math.PI / 6.0f
-			, (float) Math.log10(2.0)
-			, (float) (Math.log(10.0) / Math.log(2.0))		// log2(10) = log(10) / log(2)
-			, (float) Math.sqrt(3.0) / 2.0f
-			};
-
-	public class Vcr {
+    public class Vcr {
 
         public class PfxSrc /* $128, $129 */ {
 
@@ -902,7 +879,7 @@ public class VfpuState extends FpuState {
     public void doVSIN(int vsize, int vd, int vs) {
         loadVs(vsize, vs);
         for (int i = 0; i < vsize; ++i) {
-            v3[i] = (float) Math.sin(2.0 * Math.PI * v1[i]);
+            v3[i] = (float) Math.sin(0.5 * Math.PI * v1[i]);
         }
         saveVd(vsize, vd, v3);
     }
@@ -910,7 +887,7 @@ public class VfpuState extends FpuState {
     public void doVCOS(int vsize, int vd, int vs) {
         loadVs(vsize, vs);
         for (int i = 0; i < vsize; ++i) {
-            v3[i] = (float) Math.cos(2.0 * Math.PI * v1[i]);
+            v3[i] = (float) Math.cos(0.5 * Math.PI * v1[i]);
         }
         saveVd(vsize, vd, v3);
     }
@@ -944,7 +921,7 @@ public class VfpuState extends FpuState {
     public void doVASIN(int vsize, int vd, int vs) {
         loadVs(vsize, vs);
         for (int i = 0; i < vsize; ++i) {
-            v3[i] = (float) (Math.asin(v1[i]) * 0.5 / Math.PI);
+            v3[i] = (float) (Math.asin(v1[i]) * 2.0 / Math.PI);
         }
         saveVd(vsize, vd, v3);
     }
@@ -962,7 +939,7 @@ public class VfpuState extends FpuState {
     public void doVNSIN(int vsize, int vd, int vs) {
         loadVs(vsize, vs);
         for (int i = 0; i < vsize; ++i) {
-            v3[i] = 0.0f - (float) Math.sin(2.0 * Math.PI * v1[i]);
+            v3[i] = 0.0f - (float) Math.sin(0.5 * Math.PI * v1[i]);
         }
         saveVd(vsize, vd, v3);
     }
@@ -1100,16 +1077,7 @@ public class VfpuState extends FpuState {
     }
     // VFPU4:VCST
     public void doVCST(int vsize, int vd, int imm5) {
-    	float constant = 0.0f;
-    	if (imm5 >= 0 && imm5 < floatConstants.length) {
-    		constant = floatConstants[imm5];
-    	}
-
-    	for (int i = 0; i < vsize; ++i) {
-        	v3[i] = constant;
-        }
-
-        saveVd(vsize, vd, v3);
+        doUNK("Unimplemented VCST");
     }
     // VFPU4:VF2IN
     public void doVF2IN(int vsize, int vd, int vs, int imm5) {
@@ -1318,24 +1286,31 @@ public class VfpuState extends FpuState {
     }
 
     // VFPU6:VROT
-    public void doVROT(int vsize, int vd, int rs, int imm5) {
-    	float angle = gpr[rs];
-    	boolean negativeSine = (imm5 & 0x10) != 0;
-    	float sine = (float) Math.sin(angle * Math.PI / 2.0f);
-    	if (negativeSine) {
-    		sine = -sine;
-    	}
-    	float cosine = (float) Math.cos(angle * Math.PI / 2.0f);
-    	float initValue = 0.0f;
-    	if (((imm5 >> 2) & 3) == (imm5 & 3)) {
-    		initValue = sine;
-    	}
-		for (int i = 0; i < vsize; ++i) {
-			v3[i] = initValue;
-		}
-		v3[(imm5 >> 2) & 3] = sine;
-		v3[imm5 & 3] = cosine;
+    public void doVROT(int vsize, int vd, int vs, int imm5) {
+        loadVs(1, vs);
 
+        double a = 0.5 * Math.PI * v1[0];
+        double ca = Math.cos(a);
+        double sa = Math.sin(a);
+        
+        int i;
+        int si = (imm5 >>> 2) & 3;
+        int ci = (imm5 >>> 0) & 3;       
+        
+        if ((imm5 & 16) == 1) {
+            sa = 0.0 - sa; 
+        }
+
+        if (si == ci) {
+            for (i = 0; i < vsize; ++i) {
+                v3[i] = (ci == i) ? (float)ca : (float)sa;
+            }
+        } else {
+            for (i = 0; i < vsize; ++i) {
+                v3[i] = (ci == i) ? (float)ca : ((si == i) ? (float)sa : 0.0f);
+            }
+        }
+        
         saveVd(vsize, vd, v3);
     }
 
