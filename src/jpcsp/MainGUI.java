@@ -22,6 +22,7 @@ import jpcsp.GUI.MemStickBrowser;
 import java.awt.Dimension;
 import java.awt.Insets;
 import java.awt.Point;
+import java.awt.event.ActionEvent;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
@@ -44,6 +45,7 @@ import org.apache.log4j.xml.DOMConfigurator;
 
 import jpcsp.Debugger.ConsoleWindow;
 import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
+import jpcsp.Debugger.DisassemblerModule.VfpuFrame;
 import jpcsp.Debugger.ElfHeaderInfo;
 import jpcsp.Debugger.InstructionCounter;
 import jpcsp.Debugger.MemoryViewer;
@@ -149,6 +151,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         ToggleConsole = new javax.swing.JMenuItem();
         ElfHeaderViewer = new javax.swing.JMenuItem();
         InstructionCounter = new javax.swing.JMenuItem();
+        VfpuRegisters = new javax.swing.JMenuItem();
         HelpMenu = new javax.swing.JMenu();
         About = new javax.swing.JMenuItem();
 
@@ -297,6 +300,16 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         DebugMenu.add(EnterMemoryViewer);
+        
+        VfpuRegisters.setText("VFPU registers");
+        VfpuRegisters.addActionListener(new java.awt.event.ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				VfpuFrame.getInstance().setVisible(true);
+			}        	
+        });
+        DebugMenu.add(VfpuRegisters);
+        
 
         ToggleConsole.setText("Toggle Console");
         ToggleConsole.addActionListener(new java.awt.event.ActionListener() {
@@ -761,6 +774,7 @@ public void setMainTitle(String message)
     private javax.swing.JMenuItem ToggleConsole;
     private javax.swing.JToolBar jToolBar1;
     private javax.swing.JMenuItem openUmd;
+    private javax.swing.JMenuItem VfpuRegisters;
     // End of variables declaration//GEN-END:variables
     private boolean userChooseSomething(int returnVal) {
         return returnVal == JFileChooser.APPROVE_OPTION;

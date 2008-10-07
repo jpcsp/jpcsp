@@ -26,6 +26,10 @@
         <x>329</x>
         <y>585</y>
       </logwindow>
+      <vfpuregisters>
+        <x>342</x>
+        <y>451</y>
+      </vfpuregisters>
     </windowspos>
 
     <windowsize>
@@ -37,11 +41,15 @@
         <x>780</x>
         <y>305</y>
       </logwindow>
+      <vfpuregisters>
+        <x>463</x>
+        <y>484</y>
+      </vfpuregisters>
     </windowsize>
 
     <saveWindowPos>1</saveWindowPos>
     <openLogwindow>1</openLogwindow>
-    <snapLogwindow>0</snapLogwindow>
+    <snapLogwindow>1</snapLogwindow>
   </guisettings>
 
   <emuoptions>
