@@ -151,6 +151,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         for (int i = 0; i < 32; i++) {
             jTable3.setValueAt(cpu.fpr[i], i, 1);
         }
+        VfpuFrame.getInstance().updateRegisters(cpu);
     }
     /** This method is called from within the constructor to
      * initialize the form.
