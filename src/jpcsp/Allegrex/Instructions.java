@@ -6893,8 +6893,31 @@ public String disasm(int address, int insn) {
 	int negy = (insn>>17)&1;
 	int negz = (insn>>18)&1;
 	int negw = (insn>>19)&1;
+	
+	int[] swz = new int[4];
+	boolean[] abs, cst, neg;
+	abs = new boolean[4];
+	cst = new boolean[4];
+	neg = new boolean[4];
+	
+	swz[0] = swzx;
+    swz[1] = swzy;
+    swz[2] = swzz;
+    swz[3] = swzw;
+    abs[0] = absx != 0;
+    abs[1] = absy != 0;
+    abs[2] = absz != 0;
+    abs[3] = absw != 0;
+    cst[0] = cstx != 0;
+    cst[1] = csty != 0;
+    cst[2] = cstz != 0;
+    cst[3] = cstw != 0;
+    neg[0] = negx != 0;
+    neg[1] = negy != 0;
+    neg[2] = negz != 0;
+    neg[3] = negw != 0;
 
-return "Unimplemented VPFXS";
+return Common.disasmVPFX("VPFXS", swz, abs, cst, neg);
 }
 };
 public static final Instruction VPFXT = new Instruction(229) {
@@ -6955,7 +6978,30 @@ public String disasm(int address, int insn) {
 	int negz = (insn>>18)&1;
 	int negw = (insn>>19)&1;
 
-return "Unimplemented VPFXT";
+	int[] swz = new int[4];
+	boolean[] abs, cst, neg;
+	abs = new boolean[4];
+	cst = new boolean[4];
+	neg = new boolean[4];
+	
+	swz[0] = swzx;
+    swz[1] = swzy;
+    swz[2] = swzz;
+    swz[3] = swzw;
+    abs[0] = absx != 0;
+    abs[1] = absy != 0;
+    abs[2] = absz != 0;
+    abs[3] = absw != 0;
+    cst[0] = cstx != 0;
+    cst[1] = csty != 0;
+    cst[2] = cstz != 0;
+    cst[3] = cstw != 0;
+    neg[0] = negx != 0;
+    neg[1] = negy != 0;
+    neg[2] = negz != 0;
+    neg[3] = negw != 0;
+
+return Common.disasmVPFX("VPFXT", swz, abs, cst, neg);
 }
 };
 public static final Instruction VPFXD = new Instruction(230) {
@@ -6989,16 +7035,19 @@ public void compile(Processor processor, int insn) {
 }
 @Override
 public String disasm(int address, int insn) {
-	int satx = (insn>>0)&3;
-	int saty = (insn>>2)&3;
-	int satz = (insn>>4)&3;
-	int satw = (insn>>6)&3;
-	int mskx = (insn>>8)&1;
-	int msky = (insn>>9)&1;
-	int mskz = (insn>>10)&1;
-	int mskw = (insn>>11)&1;
+	int[] sat, msk;
+	sat = new int[4];
+	msk = new int[4];
+	sat[0] = (insn>>0)&3;
+	sat[1] = (insn>>2)&3;
+	sat[2] = (insn>>4)&3;
+	sat[3] = (insn>>6)&3;
+	msk[0] = (insn>>8)&1;
+	msk[1] = (insn>>9)&1;
+	msk[2] = (insn>>10)&1;
+	msk[3] = (insn>>11)&1;
 
-return "Unimplemented VPFXD";
+return Common.disasmVPFXD("VPFXD", sat, msk);
 }
 };
 public static final Instruction VIIM = new Instruction(231) {

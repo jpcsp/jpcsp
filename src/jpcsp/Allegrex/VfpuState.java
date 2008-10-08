@@ -192,13 +192,13 @@ public class VfpuState extends FpuState {
                     value = abs ? 3.0f : 0.0f;
                     break;
                 case 1:
-                    value = abs ? 1.0f : (1.0f / 3.0f);
+                    value = abs ? (1.0f / 3.0f) : 1.0f;
                     break;
                 case 2:
-                    value = abs ? 2.0f : (1.0f / 4.0f);
+                    value = abs ? (1.0f / 4.0f) : 2.0f;
                     break;
                 case 3:
-                    value = abs ? 0.5f : (1.0f / 6.0f);
+                    value = abs ? (1.0f / 6.0f) : 0.5f;
                     break;
             }
         } else {
@@ -1218,14 +1218,14 @@ public class VfpuState extends FpuState {
     public void doVPFXD(
             int mskw, int mskz, int msky, int mskx,
             int satw, int satz, int saty, int satx) {
-        vcr.pfxd.sat[0] = satw;
-        vcr.pfxd.sat[1] = satz;
-        vcr.pfxd.sat[2] = saty;
-        vcr.pfxd.sat[3] = satx;
-        vcr.pfxd.msk[0] = mskw != 0;
-        vcr.pfxd.msk[1] = mskz != 0;
-        vcr.pfxd.msk[2] = msky != 0;
-        vcr.pfxd.msk[3] = mskx != 0;
+        vcr.pfxd.sat[0] = satx;
+        vcr.pfxd.sat[1] = saty;
+        vcr.pfxd.sat[2] = satz;
+        vcr.pfxd.sat[3] = satw;
+        vcr.pfxd.msk[0] = mskx != 0;
+        vcr.pfxd.msk[1] = msky != 0;
+        vcr.pfxd.msk[2] = mskz != 0;
+        vcr.pfxd.msk[3] = mskw != 0;
         vcr.pfxd.enabled = true;
     }
 
