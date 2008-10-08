@@ -388,6 +388,12 @@ public class Common {
         ".t",
         ".q"
     };
+    public static String[] vpfxNames = {
+    	"x",
+    	"y",
+    	"z",
+    	"w"
+    };
     public static final String ccondsNames[] = {
         "c.f.s",
         "c.un.s",
@@ -695,10 +701,50 @@ public class Common {
 		return String.format("%1$-10s %2$s, %3$s", opname + vsuffix[0], gprNames[rt], vprNames[0][vd]);
 	}
 	
+	public static String disasmVPFX(String opname, int[] swz, boolean[] abs, boolean[] cst, boolean[] neg) {
+		String[] values = new String[4];
+		for (int i = 0; i < 4; ++i) {
+			if (cst[i]) {
+				switch (swz[i]) {
+				case 0:
+					values[i] = abs[i] ? "3" : "0";
+					break;
+				case 1:
+					values[i] = abs[i] ? "1/3" : "1";
+					break;
+				case 2:
+					values[i] = abs[i] ? "1/4" : "2";
+					break;
+				case 3:
+					values[i] = abs[i] ? "1/6" : "1/2";
+					break;
+				}
+			} else {
+				values[i] = abs[i] ? "|" + vpfxNames[swz[i]] + "|"
+						: vpfxNames[swz[i]];
+			}
+
+			if (neg[i])
+				values[i] = "-" + values[i];
+		}
+		
+		return String.format("%1$-10s [%2$s, %3$s, %4$s, %5$s]", opname, values[0], values[1], values[2], values[3]);
+	}
+
+	public static String disasmVPFXD(String opname, int[] sat, int[] msk) {
+		String[] values = new String[4];
+		for (int i = 0; i < 4; ++i) {
+			if(msk[i] == 0) {
+				values[i] = sat[i] == 1 ? "0:1" : "-1:1";
+			} else
+				values[i] = "M";
+		}
+		return String.format("%1$-10s [%2$s, %3$s, %4$s, %5$s]", opname, values[0], values[1], values[2], values[3]);
+	}
+	
 	protected static Instruction[] m_instances = new Instruction[250];
 
     public static final Instruction[] instructions() {
         return m_instances;
     }
-
 }
