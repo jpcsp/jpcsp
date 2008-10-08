@@ -4,6 +4,7 @@
  */
 package jpcsp.Allegrex;
 
+import jpcsp.Emulator;
 import jpcsp.Memory;
 
 import java.util.Arrays;
@@ -460,13 +461,13 @@ public class VfpuState extends FpuState {
                     if ((vd & 32) != 0) {
                         for (int j = 0; j < 4; ++j) {
                             if (!vcr.pfxd.msk[j]) {
-                                vpr[m][j][j] = applyPrefixVd(j, vr[j]);
+                                vpr[m][j][i] = applyPrefixVd(j, vr[j]);
                             }
                         }
                     } else {
                         for (int j = 0; j < 4; ++j) {
                             if (!vcr.pfxd.msk[j]) {
-                                vpr[m][j][j] = applyPrefixVd(j, vr[j]);
+                                vpr[m][i][j] = applyPrefixVd(j, vr[j]);
                             }
                         }
                     }
@@ -474,11 +475,11 @@ public class VfpuState extends FpuState {
                 } else {
                     if ((vd & 32) != 0) {
                         for (int j = 0; j < 4; ++j) {
-                            vpr[m][j][j] = vr[j];
+                            vpr[m][j][i] = vr[j];
                         }
                     } else {
                         for (int j = 0; j < 4; ++j) {
-                            vpr[m][j][j] = vr[j];
+                            vpr[m][i][j] = vr[j];
                         }
                     }
                 }
@@ -579,7 +580,7 @@ public class VfpuState extends FpuState {
         }
 
         loadVs(vsize, vs);
-        loadVt(vsize, vt);
+        loadVt(1, vt);
 
         float scale = v2[0];
 
@@ -587,7 +588,7 @@ public class VfpuState extends FpuState {
             v1[i] *= scale;
         }
 
-        saveVd(1, vd, v1);
+        saveVd(vsize, vd, v1);
     }
 
     // VFPU1:VHDP
@@ -1223,7 +1224,7 @@ public class VfpuState extends FpuState {
         int e = ((imm16 >> 10) & 0x1f);
         int m = (e == 0) ? ((imm16 & 0x3ff) << 1) : ((imm16 & 0x3ff) | 0x400);
 
-        v3[0] = s * ((float) m) * ((float) (1 << e)) / ((float) (1 << 41));
+        v3[0] = s * ((float) m) / ((float) (1 << e)) / ((float) (1 << 41));
         
         saveVd(1, vd, v3);
     }
