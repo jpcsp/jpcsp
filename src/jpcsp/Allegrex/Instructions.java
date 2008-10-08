@@ -4719,7 +4719,7 @@ public String disasm(int address, int insn) {
 	int imm7 = (insn>>0)&127;
 	int rt = (insn>>16)&31;
 
-return "Unimplemented MTV";
+return Common.disasmVDRS("MTV", imm7, rt);
 }
 };
 public static final Instruction MTVC = new Instruction(162) {
