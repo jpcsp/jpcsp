@@ -691,9 +691,14 @@ public class Common {
 		return String.format("%1$-10s %2$s, %3$s, %4$s", opname + vsuffix[vsize - 1], vprMatNames[vsize - 1][vd], vprMatNames[vsize - 1][vs], vprMatNames[vsize - 1][vt]);
 	}
 	
-    protected static Instruction[] m_instances = new Instruction[250];
+	public static String disasmVDRS(String opname, int vd, int rt) {
+		return String.format("%1$-10s %2$s, %3$s", opname + vsuffix[0], gprNames[rt], vprNames[0][vd]);
+	}
+	
+	protected static Instruction[] m_instances = new Instruction[250];
 
     public static final Instruction[] instructions() {
         return m_instances;
     }
+
 }

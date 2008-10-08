@@ -189,7 +189,7 @@ public class VfpuState extends FpuState {
         if (cst) {
             switch (swz) {
                 case 0:
-                    value = abs ? 0.0f : 3.0f;
+                    value = abs ? 3.0f : 0.0f;
                     break;
                 case 1:
                     value = abs ? 1.0f : (1.0f / 3.0f);
@@ -255,8 +255,10 @@ public class VfpuState extends FpuState {
                     v1[1] = vpr[m][i][s + 1];
                 }
                 if (vcr.pfxs.enabled) {
-                    v1[0] = applyPrefixVs(0, v1);
-                    v1[1] = applyPrefixVs(1, v1);
+                    v3[0] = applyPrefixVs(0, v1);
+                    v3[1] = applyPrefixVs(1, v1);
+                    v1[0] = v3[0];
+                    v1[1] = v3[1];
                     vcr.pfxs.enabled = false;
                 }
                 return;
@@ -273,9 +275,12 @@ public class VfpuState extends FpuState {
                     v1[2] = vpr[m][i][s + 2];
                 }
                 if (vcr.pfxs.enabled) {
-                    v1[0] = applyPrefixVs(0, v1);
-                    v1[1] = applyPrefixVs(1, v1);
-                    v1[2] = applyPrefixVs(2, v1);
+                    v3[0] = applyPrefixVs(0, v1);
+                    v3[1] = applyPrefixVs(1, v1);
+                    v3[2] = applyPrefixVs(2, v1);
+                    v1[0] = v3[0];
+                    v1[1] = v3[1];
+                    v1[2] = v3[2];
                     vcr.pfxs.enabled = false;
                 }
                 return;
@@ -293,10 +298,14 @@ public class VfpuState extends FpuState {
                     v1[3] = vpr[m][i][3];
                 }
                 if (vcr.pfxs.enabled) {
-                    v1[0] = applyPrefixVs(0, v1);
-                    v1[1] = applyPrefixVs(1, v1);
-                    v1[2] = applyPrefixVs(2, v1);
-                    v1[3] = applyPrefixVs(3, v1);
+                    v3[0] = applyPrefixVs(0, v1);
+                    v3[1] = applyPrefixVs(1, v1);
+                    v3[2] = applyPrefixVs(2, v1);
+                    v3[3] = applyPrefixVs(3, v1);
+                    v1[0] = v3[0];
+                    v1[1] = v3[1];
+                    v1[2] = v3[2];
+                    v1[3] = v3[3];
                     vcr.pfxs.enabled = false;
                 }
             default:
@@ -329,8 +338,10 @@ public class VfpuState extends FpuState {
                     v2[1] = vpr[m][i][s + 1];
                 }
                 if (vcr.pfxt.enabled) {
-                    v2[0] = applyPrefixVt(0, v2);
-                    v2[1] = applyPrefixVt(1, v2);
+                    v3[0] = applyPrefixVt(0, v2);
+                    v3[1] = applyPrefixVt(1, v2);
+                    v2[0] = v3[0];
+                    v2[1] = v3[1];
                     vcr.pfxt.enabled = false;
                 }
                 return;
@@ -347,9 +358,12 @@ public class VfpuState extends FpuState {
                     v2[2] = vpr[m][i][s + 2];
                 }
                 if (vcr.pfxt.enabled) {
-                    v2[0] = applyPrefixVt(0, v2);
-                    v2[1] = applyPrefixVt(1, v2);
-                    v2[2] = applyPrefixVt(2, v2);
+                    v3[0] = applyPrefixVt(0, v2);
+                    v3[1] = applyPrefixVt(1, v2);
+                    v3[2] = applyPrefixVt(2, v2);
+                    v2[0] = v3[0];
+                    v2[1] = v3[1];
+                    v2[2] = v3[2];
                     vcr.pfxt.enabled = false;
                 }
                 return;
@@ -367,10 +381,14 @@ public class VfpuState extends FpuState {
                     v2[3] = vpr[m][i][3];
                 }
                 if (vcr.pfxt.enabled) {
-                    v2[0] = applyPrefixVt(0, v2);
-                    v2[1] = applyPrefixVt(1, v2);
-                    v2[2] = applyPrefixVt(2, v2);
-                    v2[3] = applyPrefixVt(3, v2);
+                    v3[0] = applyPrefixVt(0, v2);
+                    v3[1] = applyPrefixVt(1, v2);
+                    v3[2] = applyPrefixVt(2, v2);
+                    v3[3] = applyPrefixVt(3, v2);
+                    v2[0] = v3[0];
+                    v2[1] = v3[1];
+                    v2[2] = v3[2];
+                    v2[3] = v3[3];
                     vcr.pfxt.enabled = false;
                 }
             default:
@@ -402,13 +420,13 @@ public class VfpuState extends FpuState {
                     if ((vd & 32) != 0) {
                         for (int j = 0; j < 2; ++j) {
                             if (!vcr.pfxd.msk[j]) {
-                                vpr[m][s + j][j] = applyPrefixVd(j, vr[j]);
+                                vpr[m][s + j][i] = applyPrefixVd(j, vr[j]);
                             }
                         }
                     } else {
                         for (int j = 0; j < 2; ++j) {
                             if (!vcr.pfxd.msk[j]) {
-                                vpr[m][j][s + j] = applyPrefixVd(j, vr[j]);
+                                vpr[m][i][s + j] = applyPrefixVd(j, vr[j]);
                             }
                         }
                     }
@@ -416,11 +434,11 @@ public class VfpuState extends FpuState {
                 } else {
                     if ((vd & 32) != 0) {
                         for (int j = 0; j < 2; ++j) {
-                            vpr[m][s + j][j] = vr[j];
+                            vpr[m][s + j][i] = vr[j];
                         }
                     } else {
                         for (int j = 0; j < 2; ++j) {
-                            vpr[m][j][s + j] = vr[j];
+                            vpr[m][i][s + j] = vr[j];
                         }
                     }
                 }
@@ -432,13 +450,13 @@ public class VfpuState extends FpuState {
                     if ((vd & 32) != 0) {
                         for (int j = 0; j < 3; ++j) {
                             if (!vcr.pfxd.msk[j]) {
-                                vpr[m][s + j][j] = applyPrefixVd(j, vr[j]);
+                                vpr[m][s + j][i] = applyPrefixVd(j, vr[j]);
                             }
                         }
                     } else {
                         for (int j = 0; j < 3; ++j) {
                             if (!vcr.pfxd.msk[j]) {
-                                vpr[m][j][s + j] = applyPrefixVd(j, vr[j]);
+                                vpr[m][i][s + j] = applyPrefixVd(j, vr[j]);
                             }
                         }
                     }
@@ -446,11 +464,11 @@ public class VfpuState extends FpuState {
                 } else {
                     if ((vd & 32) != 0) {
                         for (int j = 0; j < 3; ++j) {
-                            vpr[m][s + j][j] = vr[j];
+                            vpr[m][s + j][i] = vr[j];
                         }
                     } else {
                         for (int j = 0; j < 3; ++j) {
-                            vpr[m][j][s + j] = vr[j];
+                            vpr[m][i][s + j] = vr[j];
                         }
                     }
                 }
