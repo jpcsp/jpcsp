@@ -272,6 +272,104 @@ public class Common {
             "", "", "", ""
         }
     };
+    public static String[][] vprMatNames = {
+        {
+        },
+        {
+            "M000.p", "", "M020.p", "",
+            "M100.p", "", "M120.p", "",
+            "M200.p", "", "M220.p", "",
+            "M300.p", "", "M320.p", "",
+            "M400.p", "", "M420.p", "",
+            "M500.p", "", "M520.p", "",
+            "M600.p", "", "M620.p", "",
+            "M700.p", "", "M720.p", "",
+            "E000.p", "", "E002.p", "",
+            "E100.p", "", "E102.p", "",
+            "E200.p", "", "E202.p", "",
+            "E300.p", "", "E302.p", "",
+            "E400.p", "", "E402.p", "",
+            "E500.p", "", "E502.p", "",
+            "E600.p", "", "E602.p", "",
+            "E700.p", "", "E702.p", "",
+            "M002.p", "", "M022.p", "",
+            "M102.p", "", "M122.p", "",
+            "M202.p", "", "M222.p", "",
+            "M302.p", "", "M322.p", "",
+            "M402.p", "", "M422.p", "",
+            "M502.p", "", "M522.p", "",
+            "M602.p", "", "M622.p", "",
+            "M702.p", "", "M722.p", "",
+            "E020.p", "", "E022.p", "",
+            "E120.p", "", "E122.p", "",
+            "E220.p", "", "E222.p", "",
+            "E320.p", "", "E322.p", "",
+            "E420.p", "", "E422.p", "",
+            "E520.p", "", "E522.p", "",
+            "E620.p", "", "E622.p", "",
+            "E720.p", "", "E722.p", ""
+        },
+        {
+            "M000.t", "M010.t", "", "",
+            "M100.t", "M110.t", "", "",
+            "M200.t", "M210.t", "", "",
+            "M300.t", "M310.t", "", "",
+            "M400.t", "M410.t", "", "",
+            "M500.t", "M510.t", "", "",
+            "M600.t", "M610.t", "", "",
+            "M700.t", "M710.t", "", "",
+            "E000.t", "E001.t", "", "",
+            "E100.t", "E101.t", "", "",
+            "E200.t", "E201.t", "", "",
+            "E300.t", "E301.t", "", "",
+            "E400.t", "E401.t", "", "",
+            "E500.t", "E501.t", "", "",
+            "E600.t", "E601.t", "", "",
+            "E700.t", "E701.t", "", "",
+            "M001.t", "M011.t", "", "",
+            "M101.t", "M111.t", "", "",
+            "M201.t", "M211.t", "", "",
+            "M301.t", "M311.t", "", "",
+            "M401.t", "M411.t", "", "",
+            "M501.t", "M511.t", "", "",
+            "M601.t", "M611.t", "", "",
+            "M701.t", "M711.t", "", "",
+            "E010.t", "E011.t", "", "",
+            "E110.t", "E111.t", "", "",
+            "E210.t", "E211.t", "", "",
+            "E310.t", "E311.t", "", "",
+            "E410.t", "E411.t", "", "",
+            "E510.t", "E511.t", "", "",
+            "E610.t", "E611.t", "", "",
+            "E710.t", "E711.t", "", ""
+        }, {
+            "M000.q", "", "", "",
+            "M100.q", "", "", "",
+            "M200.q", "", "", "",
+            "M300.q", "", "", "",
+            "M400.q", "", "", "",
+            "M500.q", "", "", "",
+            "M600.q", "", "", "",
+            "M700.q", "", "", "",
+            "E000.q", "", "", "",
+            "E100.q", "", "", "",
+            "E200.q", "", "", "",
+            "E300.q", "", "", "",
+            "E400.q", "", "", "",
+            "E500.q", "", "", "",
+            "E600.q", "", "", "",
+            "E700.q", "", "", ""
+        }
+    };
+    private static final String vfpuConstants[] = {
+        "", "VFPU_HUGE", "VFPU_SQRT2", "VFPU_SQRT1_2",
+        "VFPU_2_SQRTPI", "VFPU_2_PI", "VFPU_1_PI", "VFPU_PI_4",
+        "VFPU_PI_2", "VFPU_PI", "VFPU_E", "VFPU_LOG2E",
+        "VFPU_LOG10E", "VFPU_LN2", "VFPU_LN10", "VFPU_2PI",
+        "VFPU_PI_6", "VFPU_LOG10TWO", "VFPU_LOG2TEN", "VFPU_SQRT3_2"
+        
+    };
+    
     public static String[] fcrNames = {
         "$fcsr0", "$fcsr1", "$fcsr2", "$fcsr3", "$fcsr4", "$fcsr5", "$fcsr6", "$fcsr7",
         "$fcsr8", "$fcsr9", "$fcsr10", "$fcsr11", "$fcsr12", "$fcsr13", "$fcsr14", "$fcsr15",
@@ -530,6 +628,69 @@ public class Common {
     public static String disasmVD1VSVT(String opname, int vsize, int vd, int vs, int vt) {
         return String.format("%1$-10s %2$s, %3$s, %4$s", opname + vsuffix[vsize - 1], vprNames[0][vd], vprNames[vsize - 1][vs], vprNames[0][vt]);
     }
+    
+    public static String disasmVROT(String opname, int vsize, int vd, int vs, int vt) {
+        int i;
+        int si = (vt >>> 2) & 3;
+        int ci = (vt >>> 0) & 3;       
+        String ca = " c", sa = " s";
+        String codes[] = new String[4];
+        if ((vt & 16) == 1) {
+            sa = "-s"; 
+        }
+
+        if (si == ci) {
+            for (i = 0; i < vsize; ++i) {
+            	codes[i] = (ci == i) ? ca : sa;
+            }
+        } else {
+            for (i = 0; i < vsize; ++i) {
+            	codes[i] = (ci == i) ? ca : ((si == i) ? sa : " 0");
+            }
+        }
+
+    	String rot = "[";
+    	
+    	i = 0;
+    	for(;;) {
+    		rot += codes[i++];
+    		if(i >= vsize)
+    			break;
+    		rot += ",";
+    	}
+    	rot += "]";
+        return String.format("%1$-10s %2$s, %3$s, %4$s", opname + vsuffix[vsize - 1], vprNames[vsize - 1][vd], vprNames[0][vs], rot);
+    }
+    
+    public static String disasmVDM(String opname, int vsize, int vd) {
+        return String.format("%1$-10s %2$s", opname + vsuffix[vsize - 1], vprMatNames[vsize - 1][vd]);
+    }
+    
+	public static String disasmVDMVSM(String opname, int vsize, int vd, int vs) {
+		return String.format("%1$-10s %2$s, %3$s", opname + vsuffix[vsize - 1], vprMatNames[vsize - 1][vd], vprMatNames[vsize - 1][vs]);
+	}
+
+	public static String disasmVDCST(String opname, int vsize, int vd, int cst) {
+		return String.format("%1$-10s %2$s, %3$s", opname + vsuffix[vsize - 1], vprNames[vsize - 1][vd], vfpuConstants[cst]);
+	}
+
+	public static String disasmVDIIM(String opcode, int vsize, int vd, int imm16) {
+		return String.format("%1$-10s %2$s, 0x%3$04X", opcode + vsuffix[vsize - 1], vprNames[0][vd], imm16);
+	}
+
+	public static String disasmVDFIM(String opcode, int vsize, int vd, int imm16) {
+		float s = ((imm16 >> 15) == 0) ? 1.0f : -1.0f;
+        int e = ((imm16 >> 10) & 0x1f);
+        int m = (e == 0) ? ((imm16 & 0x3ff) << 1) : ((imm16 & 0x3ff) | 0x400);
+
+        s = s * ((float) m) * ((float) (1 << e)) / ((float) (1 << 41));
+        return String.format("%1$-10s %2$s, %3$1.8f", opcode + vsuffix[vsize - 1], vprNames[0][vd], s);
+	}
+
+	public static String disasmVDMVSMVTM(String opname, int vsize, int vd, int vs, int vt) {
+		return String.format("%1$-10s %2$s, %3$s, %4$s", opname + vsuffix[vsize - 1], vprMatNames[vsize - 1][vd], vprMatNames[vsize - 1][vs], vprMatNames[vsize - 1][vt]);
+	}
+	
     protected static Instruction[] m_instances = new Instruction[250];
 
     public static final Instruction[] instructions() {
