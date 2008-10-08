@@ -6561,7 +6561,7 @@ public String disasm(int address, int insn) {
 	int two = (insn>>15)&1;
 	int imm5 = (insn>>16)&31;
 
-return "Unimplemented VCST";
+return Common.disasmVDCST("VCST", 1+one+(two<<1), vd, imm5);
 }
 };
 public static final Instruction VF2IN = new Instruction(220) {
@@ -7026,7 +7026,7 @@ public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int vd = (insn>>16)&127;
 
-return "Unimplemented VIIM";
+return Common.disasmVDIIM("VIIM", 1, vd, imm16);
 }
 };
 public static final Instruction VFIM = new Instruction(232) {
@@ -7054,7 +7054,7 @@ public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int vd = (insn>>16)&127;
 
-return "Unimplemented VFIM";
+return Common.disasmVDFIM("VFIM", 1, vd, imm16);
 }
 };
 public static final Instruction VMMUL = new Instruction(233) {
@@ -7088,7 +7088,7 @@ public String disasm(int address, int insn) {
 	int two = (insn>>15)&1;
 	int vt = (insn>>16)&127;
 
-return "Unimplemented VMMUL";
+return Common.disasmVDMVSMVTM("VMMUL", 1+one+(two<<1), vd, vs, vt);
 }
 };
 public static final Instruction VHTFM2 = new Instruction(234) {
@@ -7364,7 +7364,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 
-return "Unimplemented VMMOV";
+return Common.disasmVDMVSM("VMMOV", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VMIDT = new Instruction(243) {
@@ -7394,7 +7394,7 @@ public String disasm(int address, int insn) {
 	int one = (insn>>7)&1;
 	int two = (insn>>15)&1;
 
-return "Unimplemented VMIDT";
+	return Common.disasmVDM("VMIDT", 1+one+(two<<1), vd);
 }
 };
 public static final Instruction VMZERO = new Instruction(244) {
@@ -7424,7 +7424,7 @@ public String disasm(int address, int insn) {
 	int one = (insn>>7)&1;
 	int two = (insn>>15)&1;
 
-return "Unimplemented VMZERO";
+return Common.disasmVDM("VMZERO", 1+one+(two<<1), vd);
 }
 };
 public static final Instruction VMONE = new Instruction(245) {
@@ -7454,7 +7454,7 @@ public String disasm(int address, int insn) {
 	int one = (insn>>7)&1;
 	int two = (insn>>15)&1;
 
-return "Unimplemented VMONE";
+return Common.disasmVDM("VMONE", 1+one+(two<<1), vd);
 }
 };
 public static final Instruction VROT = new Instruction(246) {
@@ -7488,7 +7488,7 @@ public String disasm(int address, int insn) {
 	int two = (insn>>15)&1;
 	int imm5 = (insn>>16)&31;
 
-return "Unimplemented VROT";
+return Common.disasmVROT("VROT", 1+one+(two<<1), vd, vs, imm5);
 }
 };
 public static final Instruction VNOP = new Instruction(247) {
