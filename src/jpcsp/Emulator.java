@@ -556,8 +556,10 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
 
             gui.RefreshButtons();
 
-            if (debugger != null)
+            if (debugger != null) {
                 debugger.RefreshButtons();
+                debugger.RefreshDebugger();
+            }
 
             if (memview != null)
                 memview.RefreshMemory();
@@ -586,8 +588,10 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
 
             gui.RefreshButtons();
 
-            if (debugger != null)
+            if (debugger != null) {
                 debugger.RefreshButtons();
+                debugger.RefreshDebugger();
+            }
 
             if (memview != null)
                 memview.RefreshMemory();
