@@ -102,8 +102,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
            label.addStyleRange(new StyleRange(find, -1, Font.PLAIN, Color.GRAY));  
         }
     }
-    
-    
+
     public void setMemoryViewer(MemoryViewer memview) {
         this.memview = memview;
     }
@@ -634,7 +633,7 @@ private void JumpToAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     }
     int value=0;
          try {
-            value = Integer.parseInt(input, 16);
+            value = Utilities.parseAddress(input);
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "The Number you enter is not correct");
             return;
@@ -661,8 +660,8 @@ private void DumpCodeToTextActionPerformed(java.awt.event.ActionEvent evt) {//GE
             //Start writing to the output stream
             bufferedWriter.write("-------JPCSP DISASM-----------");
             bufferedWriter.newLine();
-            int Start = Integer.parseInt(opt.getInput()[0],16);
-            int End = Integer.parseInt(opt.getInput()[1],16);
+            int Start = Utilities.parseAddress(opt.getInput()[0]);
+            int End = Utilities.parseAddress(opt.getInput()[1]);
             for(int i =Start; i<=End; i+=4)
             {
                 if (Memory.getInstance().isAddressGood(i)) {
@@ -767,7 +766,7 @@ private void AddBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     if (value != null) {
         try {
             String address = value.substring(3, 11);
-            int addr = Integer.parseInt(address, 16);
+            int addr = Utilities.parseAddress(address);
             if(!breakpoints.contains(addr))
             	breakpoints.add(addr);
             RefreshDebugger();
@@ -799,7 +798,7 @@ private void DeleteBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//
             if(breakpointexists)
             {
               String address = value.substring(3, 11);
-              int addr = Integer.parseInt(address,16);
+              int addr = Utilities.parseAddress(address);
               int b = breakpoints.indexOf(addr);
               breakpoints.remove(b);
               RefreshDebugger();
