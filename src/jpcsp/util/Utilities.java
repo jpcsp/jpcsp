@@ -167,4 +167,22 @@ public class Utilities {
     {
         return (getUnsignedByte(buf) | (getUnsignedByte(buf) << 8 ) | (getUnsignedByte(buf) << 16 ) | (getUnsignedByte(buf) << 24));
     }
+
+    public static int parseAddress(String value)
+    {
+    	int address = 0;
+
+    	if (value == null) {
+    		return address;
+    	}
+
+    	if (Integer.SIZE == 32 && value.length() == 8 && value.startsWith("8")) {
+    		address = Integer.parseInt(value.substring(1), 16);
+    		address |= 0x80000000;
+    	} else {
+    		address = Integer.parseInt(value, 16);
+    	}
+
+    	return address;
+    }
 }

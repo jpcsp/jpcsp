@@ -25,6 +25,7 @@ import javax.swing.JOptionPane;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Settings;
+import jpcsp.util.Utilities;
 
 /**
  *
@@ -218,7 +219,7 @@ private void GoToButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
          String gettext = AddressField.getText();
          int value;
          try {
-            value = Integer.parseInt(gettext, 16);
+            value = Utilities.parseAddress(gettext);
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "The Number you enter is not correct");
             return;
