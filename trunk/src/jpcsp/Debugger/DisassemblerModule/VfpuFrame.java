@@ -134,6 +134,8 @@ public class VfpuFrame extends JFrame {
 				);
 		int[] size = Settings.getInstance().readWindowSize("vfpuregisters");
 		setSize(size[0], size[1]);
+		size = Settings.getInstance().readWindowPos("vfpuregisters");
+		setLocation(size[0], size[1]);
 	}
 	
 	public void updateRegisters(CpuState cpu) {
