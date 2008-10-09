@@ -33,14 +33,12 @@ public class VfpuFrame extends JFrame {
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowDeactivated(WindowEvent e) {
-				if (Settings.get_instance().readBoolOptions("guisettings/saveWindowPos")) {
-					Settings.get_instance().writeWindowPos("vfpuregisters", getLocation());
+				if (Settings.getInstance().readBool("gui.saveWindowPos")) {
+					Settings.getInstance().writeWindowPos("vfpuregisters", getLocation());
 
 					/* save window size */
-					String[] windowSize = new String[2];
-					windowSize[0] = Integer.toString(getWidth());
-					windowSize[1] = Integer.toString(getHeight());
-					Settings.get_instance().writeWindowSize("vfpuregisters", windowSize);
+					Settings.getInstance().writeWindowSize("vfpuregisters",
+							new int[] { getWidth(), getHeight()});
 				}
 			}});
 		
@@ -134,7 +132,8 @@ public class VfpuFrame extends JFrame {
 						.addComponent(panels[5])
 						.addComponent(panels[7]))		
 				);
-		setSize(Settings.get_instance().readWindowSize("vfpuregisters")[0], Settings.get_instance().readWindowSize("vfpuregisters")[1]);
+		int[] size = Settings.getInstance().readWindowSize("vfpuregisters");
+		setSize(size[0], size[1]);
 	}
 	
 	public void updateRegisters(CpuState cpu) {

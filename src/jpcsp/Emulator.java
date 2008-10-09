@@ -63,7 +63,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
         Emulator.gui = gui;
         processor = new Processor();
 
-        if (Settings.get_instance().readBoolOptions("emuoptions/recompiler"))
+        if (Settings.getInstance().readBool("emu.recompiler"))
             recompiler = new Recompiler();
         else
             recompiler = null;

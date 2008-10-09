@@ -183,13 +183,13 @@ public class VertexInfo {
 				v.px = mem.read8(addr); addr += 1;
 				v.py = mem.read8(addr); addr += 1;
 				v.pz = mem.read8(addr); addr += 1;
-                VideoEngine.log.warn("vertex type 1 " + v.px + ", " + v.py + ", " + v.pz + "");
+                VideoEngine.log.trace("vertex type 1 " + v.px + ", " + v.py + ", " + v.pz + "");
 				break;
 			case 2:
 				v.px = mem.read16(addr); addr += 2;
 				v.py = mem.read16(addr); addr += 2;
 				v.pz = mem.read16(addr); addr += 2;
-                VideoEngine.log.warn("vertex type 2 " + v.px + ", " + v.py + ", " + v.pz + "");
+                VideoEngine.log.trace("vertex type 2 " + v.px + ", " + v.py + ", " + v.pz + "");
 				break;
 			case 3: // GU_VERTEX_32BITF
 				v.px = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
