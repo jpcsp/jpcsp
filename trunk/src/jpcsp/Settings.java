@@ -292,5 +292,19 @@ public class Settings {
 			return keyList.elements();
 		}
 	}
+	
+	public void readRecent(String cat, Vector<String> recent) {
+		for(int i = 0;; ++i) {
+    		String r = loadedSettings.getProperty("gui.recent." + cat + "." + i);    		
+    		if(r == null) break;
+    		recent.add(r);
+    	}
+	}
+
+	public void writeRecent(String cat, Vector<String> recent) {
+		for(int i = 0; i < recent.size(); ++i)
+			loadedSettings.setProperty("gui.recent." + cat + "." + i, recent.get(i));
+		writeSettings();
+	}
 
 }

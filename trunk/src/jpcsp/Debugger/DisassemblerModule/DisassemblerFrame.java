@@ -856,6 +856,7 @@ private void PauseDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 // Called from Emulator
 public void RefreshButtons() {
     RunDebugger.setSelected(emu.run && !emu.pause);
+    PauseDebugger.setSelected(emu.run && emu.pause);
 }
 
 private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowDeactivated
