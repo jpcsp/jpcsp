@@ -17,12 +17,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp;
 
-import jpcsp.GUI.SettingsGUI;
-import jpcsp.GUI.MemStickBrowser;
 import java.awt.Dimension;
 import java.awt.Insets;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
@@ -33,31 +32,37 @@ import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Vector;
+
 import javax.swing.JFileChooser;
+import javax.swing.JMenu;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.ToolTipManager;
 import javax.swing.UIManager;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.xml.DOMConfigurator;
-
-import jpcsp.Debugger.ConsoleWindow;
-import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
-import jpcsp.Debugger.DisassemblerModule.VfpuFrame;
 import jpcsp.Debugger.ElfHeaderInfo;
 import jpcsp.Debugger.InstructionCounter;
 import jpcsp.Debugger.MemoryViewer;
+import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
+import jpcsp.Debugger.DisassemblerModule.VfpuFrame;
+import jpcsp.GUI.MemStickBrowser;
+import jpcsp.GUI.SettingsGUI;
 import jpcsp.GUI.UmdBrowser;
 import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.pspiofilemgr;
-import jpcsp.util.JpcspDialogManager;
-import jpcsp.util.MetaInformation;
-import jpcsp.filesystems.umdiso.*;
+import jpcsp.filesystems.umdiso.UmdIsoFile;
+import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PSF;
 import jpcsp.log.LogWindow;
 import jpcsp.log.LoggingOutputStream;
+import jpcsp.util.JpcspDialogManager;
+import jpcsp.util.MetaInformation;
+
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+import org.apache.log4j.xml.DOMConfigurator;
 
 /**
  *
@@ -65,6 +70,7 @@ import jpcsp.log.LoggingOutputStream;
  */
 public class MainGUI extends javax.swing.JFrame implements KeyListener, ComponentListener {
     final String version = MetaInformation.FULL_NAME;
+    public static final int MAX_RECENT = 4;
     LogWindow consolewin;
     DisassemblerFrame disasm;
     ElfHeaderInfo elfheader;
@@ -78,6 +84,9 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     boolean umdLoaded;
     private Point mainwindowPos; // stores the last known window position
     private boolean snapConsole = true;
+	private JMenu RecentMenu;
+	private Vector<String> recentUMD = new Vector<String>();
+	private Vector<String> recentFile = new Vector<String>();
 
     /** Creates new form MainGUI */
     public MainGUI() {
@@ -154,6 +163,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         VfpuRegisters = new javax.swing.JMenuItem();
         HelpMenu = new javax.swing.JMenu();
         About = new javax.swing.JMenuItem();
+        RecentMenu = new javax.swing.JMenu();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setMinimumSize(new java.awt.Dimension(480, 272));
@@ -232,6 +242,10 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         FileMenu.add(OpenMemStick);
+        
+        RecentMenu.setText("Load Recent");
+        populateRecentMenu();
+        FileMenu.add(RecentMenu);
 
         ExitEmu.setText("Exit");
         ExitEmu.addActionListener(new java.awt.event.ActionListener() {
@@ -354,6 +368,49 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    private void populateRecentMenu() {
+    	RecentMenu.removeAll();
+    	recentUMD.clear();
+    	recentFile.clear();    	
+    	
+    	Settings.getInstance().readRecent("umd", recentUMD);
+    	Settings.getInstance().readRecent("file", recentFile);
+    	
+    	if(recentUMD.size() > 0) {
+    		for(int i = 0; i < recentUMD.size(); ++i) {
+    			JMenuItem item = new JMenuItem(recentUMD.get(i));
+    			item.addActionListener(new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						File file = new File(((JMenuItem)e.getSource()).getText());
+						if(file.exists())
+							loadUMD(file);
+					}
+    				
+    			});
+    			RecentMenu.add(item);
+    		}
+    		if(recentFile.size() > 0)
+    			RecentMenu.addSeparator();
+    	}
+    	
+    	if(recentFile.size() > 0) {
+    		for(int i = 0; i < recentFile.size(); ++i) {
+    			JMenuItem item = new JMenuItem(recentFile.get(i));
+    			item.addActionListener(new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						File file = new File(((JMenuItem)e.getSource()).getText());
+						if(file.exists())
+							loadFile(file);
+					}
+    				
+    			});
+    			RecentMenu.add(item);
+    		}
+    	}
+	}
+
 private void ToggleConsoleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ToggleConsoleActionPerformed
     if (!consolewin.isVisible() && snapConsole) {
         mainwindowPos = this.getLocation();
@@ -424,6 +481,8 @@ public void loadFile(File file) {
         if (consolewin != null)
             consolewin.clearScreenMessages();
         this.setTitle(version + " - " + file.getName());
+        
+        addRecentFile(file);
 
         umdLoaded = false;
         loadedFile = file;
@@ -451,6 +510,38 @@ public void loadFile(File file) {
         JpcspDialogManager.showError(this, "Critical Error : " + ex.getMessage());
     }
     }
+
+private void addRecentFile(File file) {
+	try {
+		String s = file.getCanonicalPath();
+		int pos;
+		if((pos = recentFile.indexOf(s)) != -1) 
+			recentFile.remove(pos);
+		recentFile.insertElementAt(s, 0);
+		while(recentFile.size() > MAX_RECENT)
+			recentFile.remove(MAX_RECENT);
+		Settings.getInstance().writeRecent("file", recentFile);
+		populateRecentMenu();
+	} catch (IOException e) {
+		e.printStackTrace();
+	}	
+}
+
+private void addRecentUMD(File file) {
+	try {
+		String s = file.getCanonicalPath();
+		int pos;
+		if((pos = recentUMD.indexOf(s)) != -1) 
+			recentUMD.remove(pos);
+		recentUMD.insertElementAt(s, 0);
+		while(recentUMD.size() > MAX_RECENT)
+			recentUMD.remove(MAX_RECENT);
+		Settings.getInstance().writeRecent("umd", recentUMD);
+		populateRecentMenu();
+	} catch (IOException e) {
+		e.printStackTrace();
+	}	
+}
 
 private void PauseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PauseButtonActionPerformed
     TogglePauseEmu();
@@ -596,6 +687,8 @@ public void loadUMD(File file) {
 
         umdLoaded = true;
         loadedFile = file;
+        
+        addRecentUMD(file);
 
         UmdIsoReader iso = new UmdIsoReader(file.getPath());
         UmdIsoFile paramSfo = iso.getFile("PSP_GAME/param.sfo");
