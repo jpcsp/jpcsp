@@ -22,6 +22,7 @@ import com.jidesoft.swing.StyleRange;
 import com.jidesoft.swing.StyledLabel;
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.Graphics;
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.ClipboardOwner;
@@ -53,12 +54,13 @@ import jpcsp.util.*;
  * @author  shadow
  */
 public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOwner{
-    private int DebuggerPC;
+	private int DebuggerPC;
     private Emulator emu;
     private DefaultListModel listmodel = new DefaultListModel();
     private int opcode_address; // store the address of the opcode used for offsetdecode
     private ArrayList<Integer> breakpoints = new ArrayList<Integer>();
     private MemoryViewer memview;
+	private boolean wantStep;
 
     /** Creates new form DisassemblerFrame */
     public DisassemblerFrame(Emulator emu) {
@@ -122,22 +124,24 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             DebuggerPC = cpu.pc;
         }
         ViewTooltips.unregister(disasmList);
-        listmodel.clear();
-
-        for (pc = DebuggerPC , cnt = 0; pc < (DebuggerPC + 0x00000094); pc += 0x00000004, cnt++) {
-            if (Memory.getInstance().isAddressGood(pc)) {
-                int opcode = Memory.getInstance().read32(pc);
-
-                Instruction insn = Decoder.instruction(opcode);
-
-                if(breakpoints.indexOf(pc)!=-1) {
-                    listmodel.addElement(String.format("<*>%08X:[%08X]: %s", pc, opcode, insn.disasm(pc, opcode)));
-                } else {
-                    listmodel.addElement(String.format("   %08X:[%08X]: %s", pc, opcode, insn.disasm(pc, opcode)));
-                }
-            } else {
-                listmodel.addElement(String.format("   %08x: invalid address", pc));
-            }
+        synchronized(listmodel) {
+	        listmodel.clear();
+	
+	        for (pc = DebuggerPC , cnt = 0; pc < (DebuggerPC + 0x00000094); pc += 0x00000004, cnt++) {
+	            if (Memory.getInstance().isAddressGood(pc)) {
+	                int opcode = Memory.getInstance().read32(pc);
+	
+	                Instruction insn = Decoder.instruction(opcode);
+	
+	                if(breakpoints.indexOf(pc)!=-1) {
+	                    listmodel.addElement(String.format("<*>%08X:[%08X]: %s", pc, opcode, insn.disasm(pc, opcode)));
+	                } else {
+	                    listmodel.addElement(String.format("   %08X:[%08X]: %s", pc, opcode, insn.disasm(pc, opcode)));
+	                }
+	            } else {
+	                listmodel.addElement(String.format("   %08x: invalid address", pc));
+	            }
+	        }
         }
         ViewTooltips.register(disasmList);
     //refreshregisters
@@ -167,7 +171,15 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         BranchOrJump = new javax.swing.JMenuItem();
         RegMenu = new javax.swing.JPopupMenu();
         CopyValue = new javax.swing.JMenuItem();
-        disasmList = new javax.swing.JList(listmodel);
+        disasmList = new javax.swing.JList(listmodel) {
+			@Override
+			protected void paintComponent(Graphics arg0) {
+				synchronized(listmodel) {
+					super.paintComponent(arg0);
+				}
+			}
+        	
+        };
         DisasmToolbar = new javax.swing.JToolBar();
         RunDebugger = new javax.swing.JToggleButton();
         PauseDebugger = new javax.swing.JButton();
@@ -811,15 +823,8 @@ private void DeleteBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//
 }//GEN-LAST:event_DeleteBreakpointActionPerformed
 
 private void StepIntoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_StepIntoActionPerformed
-    Emulator.getProcessor().step();
-    jpcsp.HLE.ThreadMan.get_instance().step();
-    jpcsp.HLE.pspdisplay.get_instance().step();
-    Emulator.getController().checkControllerState();
-
-    DebuggerPC = 0;
-    RefreshDebugger();
-    if (memview != null)
-        memview.RefreshMemory();
+    wantStep = true;
+    emu.RunEmu();
 }//GEN-LAST:event_StepIntoActionPerformed
 
 private void RunDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RunDebuggerActionPerformed
@@ -829,12 +834,15 @@ private void RunDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
 // Called from Emulator
 public void step() {
     //check if there is a breakpoint
-    if (breakpoints.size() > 0 &&
-        breakpoints.indexOf(Emulator.getProcessor().cpu.pc) != -1) {
+    if (wantStep || (breakpoints.size() > 0 && breakpoints.indexOf(Emulator.getProcessor().cpu.pc) != -1)) {
+    	wantStep = false;
         Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_BREAKPOINT);
 
         DebuggerPC = 0;
         RefreshDebugger();
+        RefreshButtons();
+        if (memview != null)
+            memview.RefreshMemory();
     }
 }
 
