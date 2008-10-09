@@ -1421,7 +1421,7 @@ public class VfpuState extends FpuState {
         int m = (vt >> 2) & 7;
         int i = (vt >> 0) & 3;
 
-        int address = gpr[rs] + simm14_a16;
+        int address = gpr[rs] + simm14_a16 - 12;
         //Memory.log.error("Forbidden LVL.Q");
 
         if (CHECK_ALIGNMENT) {
@@ -1440,21 +1440,17 @@ public class VfpuState extends FpuState {
             3   4 3 2 1
         */
         
-        int k = 3 - ((address >> 2) & 3);
+        int k = 4 - ((address >> 2) & 3);
 
         if ((vt & 32) != 0) {
-            for (int j = 0; j < 4; ++j) {
-                if (k <= j) {
+            for (int j = 0; j < k; ++j) {
                     vpr[m][j][i] = Float.intBitsToFloat(memory.read32(address));
                     address += 4;
-                }
             }
         } else {
-            for (int j = 0; j < 4; ++j) {
-                if (k <= j) {
+            for (int j = 0; j < k; ++j) {
                     vpr[m][i][j] = Float.intBitsToFloat(memory.read32(address));
                     address += 4;
-                }
             }
         }
     }
@@ -1484,19 +1480,15 @@ public class VfpuState extends FpuState {
 	*/
         
         int k = (address >> 2) & 3;
-
+        address += (4 - k) << 2;
         if ((vt & 32) != 0) {
-            for (int j = 0; j < 4; ++j) {
-                if (k <= j) {
-                    vpr[m][j][i] = Float.intBitsToFloat(memory.read32(address));
-                }
+            for (int j = 4 - k; j < 4; ++j) {
+                vpr[m][j][i] = Float.intBitsToFloat(memory.read32(address));
                 address += 4;
             }
         } else {
-            for (int j = k; j < 4; ++j) {
-                if (k <= j) {
-                    vpr[m][i][j] = Float.intBitsToFloat(memory.read32(address));
-                }
+            for (int j = 4 - k; j < 4; ++j) {
+                vpr[m][i][j] = Float.intBitsToFloat(memory.read32(address));
                 address += 4;
             }
         }

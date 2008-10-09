@@ -3361,7 +3361,7 @@ public String disasm(int address, int insn) {
 	int vt5 = (insn>>16)&31;
 	int rs = (insn>>21)&31;
 
-return Common.disasmVTIMMRS("lvl", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));
+return Common.disasmVTIMMRS("lvl", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2) - 12);
 }
 };
 public static final Instruction LVRQ = new Instruction(117) {
