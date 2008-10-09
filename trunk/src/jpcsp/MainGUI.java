@@ -93,7 +93,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         //end of
 
         initComponents();
-        int pos[] = Settings.get_instance().readWindowPos("mainwindow");
+        int pos[] = Settings.getInstance().readWindowPos("mainwindow");
         setLocation(pos[0], pos[1]);
         setTitle(version);
 
@@ -110,12 +110,12 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         this.setMinimumSize(minSize);
 
         //logging console window stuff
-        snapConsole = Settings.get_instance().readBoolOptions("guisettings/snapLogwindow");
+        snapConsole = Settings.getInstance().readBool("gui.snapLogwindow");
         if (snapConsole) {
             mainwindowPos = getLocation();
             consolewin.setLocation(mainwindowPos.x, mainwindowPos.y + getHeight());
         } else {
-            pos = Settings.get_instance().readWindowPos("logwindow");
+            pos = Settings.getInstance().readWindowPos("logwindow");
             consolewin.setLocation(pos[0], pos[1]);
         }
     }
@@ -363,13 +363,13 @@ private void ToggleConsoleActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 }//GEN-LAST:event_ToggleConsoleActionPerformed
 
 private void EnterDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterDebuggerActionPerformed
-    if (Settings.get_instance().readBoolOptions("emuoptions/recompiler"))
+    if (Settings.getInstance().readBool("emu.recompiler"))
         return;
     if(disasm==null)
     {
         PauseEmu();
         disasm = new DisassemblerFrame(emulator);
-        int pos[] = Settings.get_instance().readWindowPos("disassembler");
+        int pos[] = Settings.getInstance().readWindowPos("disassembler");
         disasm.setLocation(pos[0], pos[1]);
         disasm.setVisible(true);
         emulator.setDebugger(disasm);
@@ -461,7 +461,7 @@ private void ElfHeaderViewerActionPerformed(java.awt.event.ActionEvent evt) {//G
      {
 
       elfheader = new ElfHeaderInfo();
-      int pos[] = Settings.get_instance().readWindowPos("elfheader");
+      int pos[] = Settings.getInstance().readWindowPos("elfheader");
       elfheader.setLocation(pos[0], pos[1]);
       elfheader.setVisible(true);
      }
@@ -477,7 +477,7 @@ private void EnterMemoryViewerActionPerformed(java.awt.event.ActionEvent evt) {/
     if(memoryview==null)
     {
         memoryview = new MemoryViewer();
-        int pos[] = Settings.get_instance().readWindowPos("memoryview");
+        int pos[] = Settings.getInstance().readWindowPos("memoryview");
         memoryview.setLocation(pos[0], pos[1]);
         memoryview.setVisible(true);
         emulator.setMemoryViewer(memoryview);
@@ -559,11 +559,11 @@ private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:even
 private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openUmdActionPerformed
     PauseEmu();//GEN-LAST:event_openUmdActionPerformed
 
-    if (Settings.get_instance().readBoolOptions("emuoptions/umdbrowser"))
+    if (Settings.getInstance().readBool("emu.umdbrowser"))
     {
         if(umdbrowser==null)
         {
-            umdbrowser = new UmdBrowser(this, new File(Settings.get_instance().readStringOptions("emuoptions/umdpath") + "/"));
+            umdbrowser = new UmdBrowser(this, new File(Settings.getInstance().readString("emu.umdpath") + "/"));
             Point mainwindow = this.getLocation();
             umdbrowser.setLocation(mainwindow.x+100, mainwindow.y+50);
             umdbrowser.setVisible(true);
@@ -669,8 +669,8 @@ private void InstructionCounterActionPerformed(java.awt.event.ActionEvent evt) {
 }//GEN-LAST:event_InstructionCounterActionPerformed
 
 private void exitEmu() {
-    if (Settings.get_instance().readBoolOptions("guisettings/saveWindowPos"))
-        Settings.get_instance().writeWindowPos("mainwindow", getLocation());
+    if (Settings.getInstance().readBool("gui.saveWindowPos"))
+        Settings.getInstance().writeWindowPos("mainwindow", getLocation());
 
     System.exit(0);
 }
@@ -743,7 +743,7 @@ public void setMainTitle(String message)
                 Thread.currentThread().setName("GUI");
                 MainGUI maingui = new MainGUI();
                 maingui.setVisible(true);
-                if (Settings.get_instance().readBoolOptions("guisettings/openLogwindow"))
+                if (Settings.getInstance().readBool("gui.openLogwindow"))
                     maingui.consolewin.setVisible(true);
             }
         });

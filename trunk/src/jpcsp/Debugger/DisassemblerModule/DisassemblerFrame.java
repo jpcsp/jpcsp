@@ -852,8 +852,8 @@ public void RefreshButtons() {
 
 private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowDeactivated
     //Called when the mainWindow is closed
-    if (Settings.get_instance().readBoolOptions("guisettings/saveWindowPos"))
-        Settings.get_instance().writeWindowPos("disassembler", getLocation());
+    if (Settings.getInstance().readBool("gui.saveWindowPos"))
+        Settings.getInstance().writeWindowPos("disassembler", getLocation());
 }//GEN-LAST:event_formWindowDeactivated
 private boolean isCellChecked(JTable table)
 {

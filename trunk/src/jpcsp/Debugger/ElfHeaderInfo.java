@@ -82,8 +82,8 @@ public class ElfHeaderInfo extends javax.swing.JFrame {
 
 private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowDeactivated
     //Called when the mainWindow is closed
-    if (Settings.get_instance().readBoolOptions("guisettings/saveWindowPos"))
-        Settings.get_instance().writeWindowPos("elfheader", getLocation());
+    if (Settings.getInstance().readBool("gui.saveWindowPos"))
+        Settings.getInstance().writeWindowPos("elfheader", getLocation());
 }//GEN-LAST:event_formWindowDeactivated
 
 

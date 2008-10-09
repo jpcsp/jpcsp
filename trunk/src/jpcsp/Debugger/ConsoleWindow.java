@@ -182,8 +182,8 @@ private void SaveMessageToFileButtonActionPerformed(java.awt.event.ActionEvent e
 
 private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowDeactivated
     //Called when the mainWindow is closed
-    if (Settings.get_instance().readBoolOptions("guisettings/saveWindowPos"))
-        Settings.get_instance().writeWindowPos("logwindow", getLocation());
+    if (Settings.getInstance().readBool("gui.saveWindowPos"))
+        Settings.getInstance().writeWindowPos("logwindow", getLocation());
 }//GEN-LAST:event_formWindowDeactivated
     /**
      * Clears only the messages that are displayed in the textarea.

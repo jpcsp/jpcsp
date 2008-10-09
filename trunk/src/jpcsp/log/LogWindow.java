@@ -40,14 +40,12 @@ public class LogWindow extends JFrame {
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowDeactivated(WindowEvent e) {
-				if (Settings.get_instance().readBoolOptions("guisettings/saveWindowPos")) {
-					Settings.get_instance().writeWindowPos("logwindow", getLocation());
+				if (Settings.getInstance().readBool("gui.saveWindowPos")) {
+					Settings.getInstance().writeWindowPos("logwindow", getLocation());
 
 					/* save window size */
-					String[] windowSize = new String[2];
-					windowSize[0] = Integer.toString(getWidth());
-					windowSize[1] = Integer.toString(getHeight());
-					Settings.get_instance().writeWindowSize("logwindow", windowSize);
+					Settings.getInstance().writeWindowSize("logwindow",
+							new int[] { getWidth(), getHeight()});
 				}
 			}});
 
@@ -128,7 +126,8 @@ public class LogWindow extends JFrame {
 						.addComponent(saveButton)
 						.addComponent(clearButton)));
 
-		setSize(Settings.get_instance().readWindowSize("logwindow")[0], Settings.get_instance().readWindowSize("logwindow")[1]);
+		int[] size = Settings.getInstance().readWindowSize("logwindow");
+		setSize(size[0], size[1]);
 		if (getHeight() <= 200 || getWidth() <= 200)
 			setSize(500, 300);
 		getRootPane().setLayout(layout);

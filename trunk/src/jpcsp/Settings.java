@@ -13,355 +13,284 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 package jpcsp;
 
 import java.awt.Point;
 import java.awt.event.KeyEvent;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathFactory;
+import java.util.Properties;
+import java.util.Vector;
 
 import jpcsp.Controller.keyCode;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.xml.sax.SAXException;
-
 /**
-*
-* @author spip2001
-*/
+ * 
+ * @author spip2001
+ */
 public class Settings {
-   
-   private final static String SETTINGS_FILE_NAME = "Settings.xml";
-   private final static String DEFAULT_SETTINGS_FILE_NAME = "/jpcsp/DefaultSettings.xml";
 
-    private static Settings instance = null;
+	private final static String SETTINGS_FILE_NAME = "Settings.properties";
+	private final static String DEFAULT_SETTINGS_FILE_NAME = "/jpcsp/DefaultSettings.properties";
 
-	private Document doc;
+	private static Settings instance = null;
 
-    public static Settings get_instance() {
-        if (instance == null) {
-            instance = new Settings();
-        }
-        return instance;
-    }
+	private Properties defaultSettings;
+	private SortedProperties loadedSettings;
 
-    public void NullSettings() {
-        instance = null;
-    }
-   
-    /**
-     * Reads a setting from the xml file and
-     * returns it as a string.
-     * @param path Path of the wanted value
-     * @return
-     */
-    private String readXmlSetting(String path) {
-       try {
-          XPathFactory xpathFactory = XPathFactory.newInstance();
-          XPath xpath = xpathFactory.newXPath();
-          String value = xpath.evaluate(path, getSettingsDocument());
-          
-          // System.out.println(path + " = " + value);
-          
-          return value;
-       } catch (Exception e) {
-          e.printStackTrace();
-          return null;
-       }
-    }
-   
-    /**
-     * Gets the xml document containing settings
-     * @return
-     * @throws ParserConfigurationException 
-     * @throws ParserConfigurationException
-     * @throws IOException
-     * @throws SAXException
-     */
-    private Document getSettingsDocument() throws ParserConfigurationException {
-    	if (doc == null) {
-    		DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-			DocumentBuilder builder = dbFactory.newDocumentBuilder();			
-			try {
-				
-				doc = builder.parse(new File(SETTINGS_FILE_NAME));
-				
-			} catch (Exception e) {
-				Emulator.log.warn("Error while loading existing settings. Restoring default settings.");
-				e.printStackTrace();
-				try {
-					doc = builder.parse(getClass().getResourceAsStream(DEFAULT_SETTINGS_FILE_NAME));
-					Emulator.log.info("Default settings loaded successfully");
-				} catch (Exception e1) {
-					e1.printStackTrace();
-					Emulator.log.error("Unable to load default settings");
-				}
-			}
-
-			
+	public static Settings getInstance() {
+		if (instance == null) {
+			instance = new Settings();
 		}
-		return doc;
-    }
-   
-    /**
-     * Write settings in file
-     * @param doc Settings as XML document
-     */
-    private void writeSettings() {
-       try {
-            FileOutputStream fileOutputStream = new FileOutputStream(SETTINGS_FILE_NAME);
-            TransformerFactory tFactory = TransformerFactory.newInstance();
-            Transformer transformer = tFactory.newTransformer();
-            transformer.transform(new DOMSource(doc), new StreamResult(fileOutputStream));
-            fileOutputStream.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (TransformerConfigurationException e) {
-         e.printStackTrace();
-      } catch (TransformerException e) {
-         e.printStackTrace();
-      }
-    }
+		return instance;
+	}
 
-    public int[] readWindowPos(String windowname) {
-        int[] coord = new int[2];
-        try {
-           String x = readXmlSetting("//guisettings/windowspos/" + windowname + "/x");
-           String y = readXmlSetting("//guisettings/windowspos/" + windowname + "/y");
-            coord[0] = x != null ? Integer.parseInt(x) : 0 ;
-            coord[1] = y != null ? Integer.parseInt(y) : 0 ;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return coord;
-    }
-   
-   public int[] readWindowSize(String windowname) {
-        int[] dimension = new int[2];
-        try {
-           String x = readXmlSetting("//guisettings/windowsize/" + windowname + "/x");
-           String y = readXmlSetting("//guisettings/windowsize/" + windowname + "/y");
-           dimension[0] = x != null ? Integer.parseInt(x) : 0 ;
-           dimension[1] = y != null ? Integer.parseInt(y) : 0 ;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return dimension;
-    }
+	public void NullSettings() {
+		instance = null;
+	}
 
-    public void writeWindowPos(String windowname, Point pos) {
-        String[] coord = new String[2];
-        coord[0]=Integer.toString(pos.x);
-        coord[1]=Integer.toString(pos.y);
-        
-        try {
-            XPathFactory xpathFactory = XPathFactory.newInstance();
-            XPath xpath = xpathFactory.newXPath();
-          
-            Element posX = (Element) xpath.evaluate("//guisettings/windowspos/" + windowname + "/x", doc, XPathConstants.NODE);
-            Element posY = (Element) xpath.evaluate("//guisettings/windowspos/" + windowname + "/y", doc, XPathConstants.NODE);
-           
-            posX.replaceChild(doc.createTextNode(coord[0]), posX.getFirstChild());
-            posY.replaceChild(doc.createTextNode(coord[1]), posY.getFirstChild());
-           
-            writeSettings();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-   
-   public void writeWindowSize(String windowname, String[] dimension) {
-      try {
-			XPathFactory xpathFactory = XPathFactory.newInstance();
-			XPath xpath = xpathFactory.newXPath();
-
-			Element dimX = (Element) xpath.evaluate("//guisettings/windowsize/" + windowname + "/x", doc, XPathConstants.NODE);
-			Element dimY = (Element) xpath.evaluate("//guisettings/windowsize/" + windowname + "/y", doc, XPathConstants.NODE);
-
-			dimX.replaceChild(doc.createTextNode(dimension[0]), dimX.getFirstChild());
-			dimY.replaceChild(doc.createTextNode(dimension[1]), dimY.getFirstChild());
-
-			writeSettings();
-		} catch (Exception e) {
+	private Settings() {
+		defaultSettings = new Properties();
+		try {
+			defaultSettings.load(getClass().getResourceAsStream(DEFAULT_SETTINGS_FILE_NAME));
+			loadedSettings = new SortedProperties(defaultSettings);
+			File settingsFile = new File(SETTINGS_FILE_NAME);
+			settingsFile.createNewFile();
+			loadedSettings.load(new BufferedInputStream(new FileInputStream(settingsFile)));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
-    }
-   
-    public boolean readBoolOptions(String option)
-    {
-        int value=0;
-        try {
-            String v = readXmlSetting("//" + option);
-            value = v != null ? Integer.parseInt(v) : 0;
-           
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return value == 1;
-    }
-   
-    public void writeBoolOptions(String option, boolean value) {
+
+	}
+
+	/**
+	 * Write settings in file
+	 * 
+	 * @param doc
+	 *            Settings as XML document
+	 */
+	private void writeSettings() {
+		try {
+			loadedSettings.store(new BufferedOutputStream(
+					new FileOutputStream(SETTINGS_FILE_NAME)), null);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public int[] readWindowPos(String windowname) {
+		int[] dimension = new int[2];
+		String x = loadedSettings.getProperty("gui.windows." + windowname + ".x");
+		String y = loadedSettings.getProperty("gui.windows." + windowname + ".y");
+		dimension[0] = x != null ? Integer.parseInt(x) : 0;
+		dimension[1] = y != null ? Integer.parseInt(y) : 0;
+		return dimension;
+	}
+
+	public int[] readWindowSize(String windowname) {
+		int[] dimension = new int[2];
+		String x = loadedSettings.getProperty("gui.windows." + windowname + ".w");
+		String y = loadedSettings.getProperty("gui.windows." + windowname + ".h");
+		dimension[0] = x != null ? Integer.parseInt(x) : 100;
+		dimension[1] = y != null ? Integer.parseInt(y) : 100;
+		return dimension;
+	}
+
+	public void writeWindowPos(String windowname, Point pos) {
+		loadedSettings.setProperty("gui.windows." + windowname + ".x", Integer.toString(pos.x));
+		loadedSettings.setProperty("gui.windows." + windowname + ".y", Integer.toString(pos.y));
+		writeSettings();
+	}
+
+	public void writeWindowSize(String windowname, int[] dimension) {
+		loadedSettings.setProperty("gui.windows." + windowname + ".w", Integer.toString(dimension[0]));
+		loadedSettings.setProperty("gui.windows." + windowname + ".h", Integer.toString(dimension[1]));
+		writeSettings();
+	}
+
+	public boolean readBool(String option) {
+		String bool = loadedSettings.getProperty(option);
+		if(bool == null)
+			return false;
+		
+		return Integer.parseInt(bool) != 0;
+	}
+
+	public void writeBool(String option, boolean value) {
 		String state = value ? "1" : "0";
-
-		try {
-			XPathFactory xpathFactory = XPathFactory.newInstance();
-			XPath xpath = xpathFactory.newXPath();
-
-			Element emuOption = (Element) xpath.evaluate("//" + option, doc, XPathConstants.NODE);
-
-			emuOption.replaceChild(doc.createTextNode(state), emuOption.getFirstChild());
-
-			writeSettings();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
+		loadedSettings.setProperty(option, state);
+		writeSettings();
 	}
-    public String readStringOptions(String option)
-    {
-        String v="";
-        try {
-            v = readXmlSetting("//" + option);
-            
-           
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return v;
-    }
-        public void writeStringOptions(String option,String value) {
-		String state = value;
 
-		try {
-			XPathFactory xpathFactory = XPathFactory.newInstance();
-			XPath xpath = xpathFactory.newXPath();
-
-			Element emuOption = (Element) xpath.evaluate("//" + option, doc, XPathConstants.NODE);
-
-			emuOption.replaceChild(doc.createTextNode(state), emuOption.getFirstChild());
-
-			writeSettings();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
+	public String readString(String option) {
+		String str = loadedSettings.getProperty(option);
+		if(str == null)
+			return "";
+		return str;
 	}
-    public HashMap<Integer, keyCode> loadKeys() {
-        HashMap<Integer, keyCode> m = new HashMap<Integer, keyCode>(22);
-       
-        m.put(readKeyOption("up"), keyCode.UP);
-        m.put(readKeyOption("down"), keyCode.DOWN);
-        m.put(readKeyOption("left"), keyCode.LEFT);
-        m.put(readKeyOption("right"), keyCode.RIGHT);
-        m.put(readKeyOption("analogUp"), keyCode.ANUP);
-        m.put(readKeyOption("analogDown"), keyCode.ANDOWN);
-        m.put(readKeyOption("analogLeft"), keyCode.ANLEFT);
-        m.put(readKeyOption("analogRight"), keyCode.ANRIGHT);
-        m.put(readKeyOption("start"), keyCode.START);
-        m.put(readKeyOption("select"), keyCode.SELECT);
-        m.put(readKeyOption("triangle"), keyCode.TRIANGLE);
-        m.put(readKeyOption("square"), keyCode.SQUARE);
-        m.put(readKeyOption("circle"), keyCode.CIRCLE);
-        m.put(readKeyOption("cross"), keyCode.CROSS);
-        m.put(readKeyOption("lTrigger"), keyCode.L1);
-        m.put(readKeyOption("rTrigger"), keyCode.R1);
-        m.put(readKeyOption("home"), keyCode.HOME);
-        m.put(readKeyOption("hold"), keyCode.HOLD);
-        m.put(readKeyOption("volPlus"), keyCode.VOLPLUS);
-        m.put(readKeyOption("volMin"), keyCode.VOLMIN);
-        m.put(readKeyOption("screen"), keyCode.SCREEN);
-        m.put(readKeyOption("music"), keyCode.MUSIC);
-       
-        return m;
-    }
-   
-    @SuppressWarnings("unchecked")
-   public void writeKeys(HashMap<Integer, keyCode> keys) {
-        Iterator iter = keys.entrySet().iterator();
-        while(iter.hasNext()) {
-            Map.Entry<Integer, keyCode> entry = (Map.Entry)iter.next();
-            keyCode key = (keyCode)entry.getValue();
-            int value = (Integer)entry.getKey();
-           
-            switch (key) {
-                case DOWN:      writeKeyOption("down", value); break;
-                case UP:        writeKeyOption("up", value); break;
-                case LEFT:      writeKeyOption("left", value); break;
-                case RIGHT:     writeKeyOption("right", value); break;
-                case ANDOWN:    writeKeyOption("analogDown", value); break;
-                case ANUP:      writeKeyOption("analogUp", value); break;
-                case ANLEFT:    writeKeyOption("analogLeft", value); break;
-                case ANRIGHT:   writeKeyOption("analogRight", value); break;
-           
-                case TRIANGLE:  writeKeyOption("triangle", value); break;
-                case SQUARE:    writeKeyOption("square", value); break;
-                case CIRCLE:    writeKeyOption("circle", value); break;
-                case CROSS:     writeKeyOption("cross", value); break;
-                case L1:        writeKeyOption("lTrigger", value); break;
-                case R1:        writeKeyOption("rTrigger", value); break;
-                case START:     writeKeyOption("start", value); break;
-                case SELECT:    writeKeyOption("select", value); break;
-               
-                case HOME:      writeKeyOption("home", value); break;
-                case HOLD:      writeKeyOption("hold", value); break;
-                case VOLMIN:    writeKeyOption("volMin", value); break;
-                case VOLPLUS:   writeKeyOption("volPlus", value); break;
-                case SCREEN:    writeKeyOption("screen", value); break;
-                case MUSIC:     writeKeyOption("music", value); break;
-                       
-                default: break;
-            }
-        }
-    }
-   
-    private int readKeyOption(String keyName) {
-        int r = KeyEvent.VK_UNDEFINED;
-       
-        try {
-            String rS = readXmlSetting("//emuoptions/keys/" + keyName);
-            r = rS != null ? Integer.parseInt(rS) : null;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-       
-        return r;
-    }
-   
-    public void writeKeyOption(String keyName, int key) {
-        try {
-			XPathFactory xpathFactory = XPathFactory.newInstance();
-			XPath xpath = xpathFactory.newXPath();
+	
+	public void writeString(String option, String value) {
+		loadedSettings.setProperty(option, value);
+		writeSettings();
+	}
 
-			Element keyNameEl = (Element) xpath.evaluate("//emuoptions/keys/" + keyName, doc, XPathConstants.NODE);
+	public HashMap<Integer, keyCode> loadKeys() {
+		HashMap<Integer, keyCode> m = new HashMap<Integer, keyCode>(22);
 
-			keyNameEl.replaceChild(doc.createTextNode(String.valueOf(key)), keyNameEl.getFirstChild());
+		m.put(readKey("up"), keyCode.UP);
+		m.put(readKey("down"), keyCode.DOWN);
+		m.put(readKey("left"), keyCode.LEFT);
+		m.put(readKey("right"), keyCode.RIGHT);
+		m.put(readKey("analogUp"), keyCode.ANUP);
+		m.put(readKey("analogDown"), keyCode.ANDOWN);
+		m.put(readKey("analogLeft"), keyCode.ANLEFT);
+		m.put(readKey("analogRight"), keyCode.ANRIGHT);
+		m.put(readKey("start"), keyCode.START);
+		m.put(readKey("select"), keyCode.SELECT);
+		m.put(readKey("triangle"), keyCode.TRIANGLE);
+		m.put(readKey("square"), keyCode.SQUARE);
+		m.put(readKey("circle"), keyCode.CIRCLE);
+		m.put(readKey("cross"), keyCode.CROSS);
+		m.put(readKey("lTrigger"), keyCode.L1);
+		m.put(readKey("rTrigger"), keyCode.R1);
+		m.put(readKey("home"), keyCode.HOME);
+		m.put(readKey("hold"), keyCode.HOLD);
+		m.put(readKey("volPlus"), keyCode.VOLPLUS);
+		m.put(readKey("volMin"), keyCode.VOLMIN);
+		m.put(readKey("screen"), keyCode.SCREEN);
+		m.put(readKey("music"), keyCode.MUSIC);
 
-			writeSettings();
-		} catch (Exception e) {
-			e.printStackTrace();
+		return m;
+	}
+
+	public void writeKeys(HashMap<Integer, keyCode> keys) {
+		Iterator<Map.Entry<Integer, keyCode>> iter = keys.entrySet().iterator();
+		while (iter.hasNext()) {
+			Map.Entry<Integer, keyCode> entry = iter.next();
+			keyCode key = entry.getValue();
+			int value = entry.getKey();
+
+			switch (key) {
+			case DOWN:
+				writeKey("down", value);
+				break;
+			case UP:
+				writeKey("up", value);
+				break;
+			case LEFT:
+				writeKey("left", value);
+				break;
+			case RIGHT:
+				writeKey("right", value);
+				break;
+			case ANDOWN:
+				writeKey("analogDown", value);
+				break;
+			case ANUP:
+				writeKey("analogUp", value);
+				break;
+			case ANLEFT:
+				writeKey("analogLeft", value);
+				break;
+			case ANRIGHT:
+				writeKey("analogRight", value);
+				break;
+
+			case TRIANGLE:
+				writeKey("triangle", value);
+				break;
+			case SQUARE:
+				writeKey("square", value);
+				break;
+			case CIRCLE:
+				writeKey("circle", value);
+				break;
+			case CROSS:
+				writeKey("cross", value);
+				break;
+			case L1:
+				writeKey("lTrigger", value);
+				break;
+			case R1:
+				writeKey("rTrigger", value);
+				break;
+			case START:
+				writeKey("start", value);
+				break;
+			case SELECT:
+				writeKey("select", value);
+				break;
+
+			case HOME:
+				writeKey("home", value);
+				break;
+			case HOLD:
+				writeKey("hold", value);
+				break;
+			case VOLMIN:
+				writeKey("volMin", value);
+				break;
+			case VOLPLUS:
+				writeKey("volPlus", value);
+				break;
+			case SCREEN:
+				writeKey("screen", value);
+				break;
+			case MUSIC:
+				writeKey("music", value);
+				break;
+
+			default:
+				break;
+			}
 		}
-    }
-   
+		writeSettings();
+	}
+
+	private int readKey(String keyName) {
+		String str = loadedSettings.getProperty("keys." + keyName);
+		if(str == null)
+			return KeyEvent.VK_UNDEFINED;
+		return Integer.parseInt(str);
+	}
+
+	private void writeKey(String keyName, int key) {
+		loadedSettings.setProperty("keys." + keyName, Integer.toString(key));
+	}
+
+	private class SortedProperties extends Properties {
+
+		private static final long serialVersionUID = -8127868945637348944L;
+
+		public SortedProperties(Properties defaultSettings) {
+			super(defaultSettings);
+		}
+
+		@SuppressWarnings("unchecked")
+		public synchronized Enumeration keys() {
+			Enumeration<?> keysEnum = super.keys();
+			Vector keyList = new Vector();
+			while (keysEnum.hasMoreElements()) {
+				keyList.add(keysEnum.nextElement());
+			}
+			Collections.sort(keyList);
+			return keyList.elements();
+		}
+	}
+
 }

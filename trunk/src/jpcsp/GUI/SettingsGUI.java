@@ -44,25 +44,25 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
     /** Creates new form SettingsGUI */
     public SettingsGUI() {
         initComponents();
-        boolean enabled = Settings.get_instance().readBoolOptions("emuoptions/pbpunpack");
+        boolean enabled = Settings.getInstance().readBool("emu.pbpunpack");
         pbpunpackcheck.setSelected(enabled);
-        enabled = Settings.get_instance().readBoolOptions("guisettings/saveWindowPos");
+        enabled = Settings.getInstance().readBool("gui.saveWindowPos");
         saveWindowPosCheck.setSelected(enabled);
-        enabled = Settings.get_instance().readBoolOptions("guisettings/openLogwindow");
+        enabled = Settings.getInstance().readBool("gui.openLogwindow");
         openLogwindowCheck.setSelected(enabled);
-        enabled = Settings.get_instance().readBoolOptions("guisettings/snapLogwindow");
+        enabled = Settings.getInstance().readBool("gui.snapLogwindow");
         snapConsoleCheck.setSelected(enabled);
-        enabled = Settings.get_instance().readBoolOptions("emuoptions/recompiler");
+        enabled = Settings.getInstance().readBool("emu.recompiler");
         recompilerCheck.setSelected(enabled);
-        enabled = Settings.get_instance().readBoolOptions("emuoptions/disablege");
+        enabled = Settings.getInstance().readBool("emu.disablege");
         disableGECheck.setSelected(enabled);
-        enabled = Settings.get_instance().readBoolOptions("emuoptions/umdbrowser");
+        enabled = Settings.getInstance().readBool("emu.umdbrowser");
         if(enabled)
             umdBrowser.setSelected(true);
         else
             ClassicOpenDialogumd.setSelected(true);
         
-        umdpath.setText(Settings.get_instance().readStringOptions("emuoptions/umdpath"));
+        umdpath.setText(Settings.getInstance().readString("emu.umdpath"));
         /* load current config and set the config */
         loadKeys();
         
@@ -92,7 +92,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
     }
     
     private void loadKeys() {
-        currentKeys = Settings.get_instance().loadKeys();
+        currentKeys = Settings.getInstance().loadKeys();
         revertKeys = new HashMap<keyCode, Integer>(22);
         
         Iterator iter = currentKeys.entrySet().iterator();
@@ -778,7 +778,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
 public void RefreshWindow()
 {
     /* (not needed?)
-    boolean pbpunpack = Settings.get_instance().readBoolEmuoptions("emuoptions/pbpunpack");
+    boolean pbpunpack = Settings.getInstance().readBool("emu.pbpunpack");
     if (pbpunpack) pbpunpackcheck.setSelected(true);
     */
 }
@@ -787,18 +787,18 @@ private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 }//GEN-LAST:event_jButtonCancelActionPerformed
 
 private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
-   Settings.get_instance().writeBoolOptions("emuoptions/pbpunpack", pbpunpackcheck.isSelected());
-   Settings.get_instance().writeBoolOptions("guisettings/saveWindowPos", saveWindowPosCheck.isSelected());
-   Settings.get_instance().writeBoolOptions("guisettings/openLogwindow", openLogwindowCheck.isSelected());
-   Settings.get_instance().writeBoolOptions("guisettings/snapLogwindow", snapConsoleCheck.isSelected());
-   Settings.get_instance().writeBoolOptions("emuoptions/recompiler", recompilerCheck.isSelected());
-   Settings.get_instance().writeBoolOptions("emuoptions/disablege", disableGECheck.isSelected());
+   Settings.getInstance().writeBool("emu.pbpunpack", pbpunpackcheck.isSelected());
+   Settings.getInstance().writeBool("gui.saveWindowPos", saveWindowPosCheck.isSelected());
+   Settings.getInstance().writeBool("gui.openLogwindow", openLogwindowCheck.isSelected());
+   Settings.getInstance().writeBool("gui.snapLogwindow", snapConsoleCheck.isSelected());
+   Settings.getInstance().writeBool("emu.recompiler", recompilerCheck.isSelected());
+   Settings.getInstance().writeBool("emu.disablege", disableGECheck.isSelected());
    if(umdBrowser.isSelected())
-      Settings.get_instance().writeBoolOptions("emuoptions/umdbrowser", true);
+      Settings.getInstance().writeBool("emu.umdbrowser", true);
    else
-      Settings.get_instance().writeBoolOptions("emuoptions/umdbrowser", false);
-   Settings.get_instance().writeStringOptions("emuoptions/umdpath", umdpath.getText());
-   Settings.get_instance().writeKeys(currentKeys);
+      Settings.getInstance().writeBool("emu.umdbrowser", false);
+   Settings.getInstance().writeString("emu.umdpath", umdpath.getText());
+   Settings.getInstance().writeKeys(currentKeys);
    
    if (controller != null)
        controller.loadKeyConfig(currentKeys);

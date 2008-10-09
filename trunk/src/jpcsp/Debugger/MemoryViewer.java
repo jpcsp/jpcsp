@@ -244,8 +244,8 @@ private void memoryviewMouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GE
 
 private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowDeactivated
     //Called when the mainWindow is closed
-    if (Settings.get_instance().readBoolOptions("guisettings/saveWindowPos"))
-        Settings.get_instance().writeWindowPos("memoryview", getLocation());
+    if (Settings.getInstance().readBool("gui.saveWindowPos"))
+        Settings.getInstance().writeWindowPos("memoryview", getLocation());
 }//GEN-LAST:event_formWindowDeactivated
 
 private void GoToSPActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_GoToSPActionPerformed

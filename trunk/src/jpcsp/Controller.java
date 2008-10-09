@@ -44,7 +44,7 @@ public class Controller {
 
     public void loadKeyConfig() {
         keys.clear();
-        keys.putAll(Settings.get_instance().loadKeys());
+        keys.putAll(Settings.getInstance().loadKeys());
     }
 
     public void loadKeyConfig(HashMap<Integer, keyCode> newLayout) {

@@ -140,7 +140,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         createTex = true;
 
         disableGE =
-            Settings.get_instance().readBoolOptions("emuoptions/disablege");
+            Settings.getInstance().readBool("emu.disablege");
 
         pixelsFb = getPixels(topaddrFb, bottomaddrFb);
 
