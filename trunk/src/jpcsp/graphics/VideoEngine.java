@@ -943,7 +943,7 @@ public class VideoEngine {
 		            					tmp_texture_buffer16[i+1] 	= (short)mem.read16(texclut + (clut&0xF));
 		            				}
 	        					} else {
-	        						VideoEngine.log.error("Unhandled swizzling on clut textures");
+	        						VideoEngine.log.error("Unhandled swizzling on clut4/16 textures");
 		                            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
 		                            break;
 	        					}
@@ -967,7 +967,7 @@ public class VideoEngine {
 		            					tmp_texture_buffer32[i+1] 	= mem.read32(texclut + (clut&0xF));
 		            				}
             					} else {
-            						VideoEngine.log.error("Unhandled swizzling on clut textures");
+            						VideoEngine.log.error("Unhandled swizzling on clut4/32 textures");
     	                            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
     	                            break;
             					}
@@ -1000,7 +1000,7 @@ public class VideoEngine {
 		            					tmp_texture_buffer16[i] 	= (short)mem.read16(texclut + clut*2);
 		            				}
             					} else {
-            						VideoEngine.log.error("Unhandled swizzling on clut textures");
+            						VideoEngine.log.error("Unhandled swizzling on clut8/16 textures");
     	                            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
     	                            break;
             					}
@@ -1019,7 +1019,7 @@ public class VideoEngine {
 		            					tmp_texture_buffer32[i] = mem.read32(texclut + clut*4);
 		            				}
 	            				} else {
-	            					VideoEngine.log.error("Unhandled swizzling on clut textures");
+	            					VideoEngine.log.error("Unhandled swizzling on clut8/32 textures");
 	    	                        Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
 	    	                        break;
 	            				}
