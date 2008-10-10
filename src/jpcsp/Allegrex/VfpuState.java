@@ -1444,13 +1444,13 @@ public class VfpuState extends FpuState {
 
         if ((vt & 32) != 0) {
             for (int j = 0; j < k; ++j) {
-                    vpr[m][j][i] = Float.intBitsToFloat(memory.read32(address));
-                    address += 4;
+                vpr[m][j][i] = Float.intBitsToFloat(memory.read32(address));
+                address += 4;
             }
         } else {
             for (int j = 0; j < k; ++j) {
-                    vpr[m][i][j] = Float.intBitsToFloat(memory.read32(address));
-                    address += 4;
+                vpr[m][i][j] = Float.intBitsToFloat(memory.read32(address));
+                address += 4;
             }
         }
     }
@@ -1522,24 +1522,25 @@ public class VfpuState extends FpuState {
         int m = (vt >> 2) & 7;
         int i = (vt >> 0) & 3;
 
-        int address = gpr[rs] + simm14_a16;
+        int address = gpr[rs] + simm14_a16 - 12;
 
         if (CHECK_ALIGNMENT) {
             if ((address & 3) != 0) {
                 Memory.log.error(String.format("SVL.Q unaligned addr:0x%08x pc:0x%08x", address, pc));
             }
         }
-
-        int offset = address & 0x15;
-        int k = (3 ^ offset);
+        
+        int k = 4 - ((address >> 2) & 3);
 
         if ((vt & 32) != 0) {
-            for (int j = 0; j <= offset; ++j) {
-                memory.write32((address + j), Float.floatToRawIntBits(vpr[m][k + j][i]));
+            for (int j = 0; j < k; ++j) {
+            	memory.write32((address), Float.floatToRawIntBits(vpr[m][j][i]));
+                address += 4;
             }
         } else {
-            for (int j = 0; j <= offset; ++j) {
-                memory.write32((address + j), Float.floatToRawIntBits(vpr[m][i][k + j]));
+            for (int j = 0; j < k; ++j) {
+            	memory.write32((address), Float.floatToRawIntBits(vpr[m][i][j]));
+                address += 4;
             }
         }
     }
@@ -1557,15 +1558,17 @@ public class VfpuState extends FpuState {
             }
         }
 
-        int offset = address & 0x15;
-
+        int k = (address >> 2) & 3;
+        address += (4 - k) << 2;
         if ((vt & 32) != 0) {
-            for (int j = offset; j < 4; ++j) {
-                memory.write32((address + j - offset), Float.floatToRawIntBits(vpr[m][j][i]));
+            for (int j = 4 - k; j < 4; ++j) {
+            	memory.write32((address), Float.floatToRawIntBits(vpr[m][j][i]));
+                address += 4;
             }
         } else {
-            for (int j = offset; j < 4; ++j) {
-                memory.write32((address + j - offset), Float.floatToRawIntBits(vpr[m][i][j]));
+            for (int j = 4 - k; j < 4; ++j) {
+            	memory.write32((address), Float.floatToRawIntBits(vpr[m][i][j]));
+                address += 4;
             }
         }
     }
