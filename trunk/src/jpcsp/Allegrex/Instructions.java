@@ -3549,7 +3549,7 @@ public String disasm(int address, int insn) {
 	int vt5 = (insn>>16)&31;
 	int rs = (insn>>21)&31;
 
-return Common.disasmVTIMMRS("svl", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));
+return Common.disasmVTIMMRS("svl", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2) - 12);
 }
 };
 public static final Instruction SVRQ = new Instruction(123) {
@@ -3613,7 +3613,7 @@ public String disasm(int address, int insn) {
 	int vt5 = (insn>>16)&31;
 	int rs = (insn>>21)&31;
 
-return Common.disasmVTIMMRS("lv", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));
+return Common.disasmVTIMMRS("sv", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));
 }
 };
 public static final Instruction SWB = new Instruction(125) {
