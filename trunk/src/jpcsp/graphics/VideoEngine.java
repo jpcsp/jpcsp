@@ -930,6 +930,9 @@ public class VideoEngine {
             				case CMODE_FORMAT_16BIT_BGR5650:
             				case CMODE_FORMAT_16BIT_ABGR5551:
             				case CMODE_FORMAT_16BIT_ABGR4444: {
+            					if (texclut == 0)
+            						break;
+            					
             					texture_type = texturetype_mapping[tex_clut_mode];
 
             					if (!texture_swizzle) {
@@ -992,6 +995,9 @@ public class VideoEngine {
             				case CMODE_FORMAT_16BIT_BGR5650:
             				case CMODE_FORMAT_16BIT_ABGR5551:
             				case CMODE_FORMAT_16BIT_ABGR4444: {
+            					if (texclut == 0)
+            						break;
+            					
             					texture_type = texturetype_mapping[tex_clut_mode];
             					
             					if (!texture_swizzle) {
@@ -1042,6 +1048,9 @@ public class VideoEngine {
                     case TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650:
                     case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551:
                     case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444: {
+                    	if (texclut == 0)
+    						break;
+                    	
                         texture_type = texturetype_mapping[texture_storage];
 
                         if (!texture_swizzle) {
