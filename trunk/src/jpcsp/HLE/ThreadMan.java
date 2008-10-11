@@ -41,6 +41,8 @@ import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import static jpcsp.util.Utilities.*;
 
+import jpcsp.HLE.kernel.types.*;
+import jpcsp.HLE.kernel.managers.*;
 
 public class ThreadMan {
     private static ThreadMan instance;
@@ -265,7 +267,7 @@ public class ThreadMan {
                     //threadlist.remove(thread.uid);
                     it.remove();
 
-                    SceUIDMan.get_instance().releaseUid(thread.uid, "ThreadMan-thread");
+                    SceUidManager.releaseUid(thread.uid, "ThreadMan-thread");
                 }
             }
         }
@@ -370,7 +372,7 @@ public class ThreadMan {
 
     public void unblockThread(int uid)
     {
-        if (SceUIDMan.get_instance().checkUidPurpose(uid, "ThreadMan-thread", false)) {
+        if (SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", false)) {
             SceKernelThreadInfo thread = threadlist.get(uid);
             thread.status = PspThreadStatus.PSP_THREAD_READY;
         }
@@ -447,7 +449,7 @@ public class ThreadMan {
 
     /** terminate thread a0 */
     public void ThreadMan_sceKernelTerminateThread(int a0) {
-        SceUIDMan.get_instance().checkUidPurpose(a0, "ThreadMan-thread", true);
+        SceUidManager.checkUidPurpose(a0, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadlist.get(a0);
         if (thread == null) {
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_THREAD;
@@ -463,7 +465,7 @@ public class ThreadMan {
 
     /** delete thread a0 */
     public void ThreadMan_sceKernelDeleteThread(int a0) {
-        SceUIDMan.get_instance().checkUidPurpose(a0, "ThreadMan-thread", true);
+        SceUidManager.checkUidPurpose(a0, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadlist.get(a0);
         if (thread == null) {
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_THREAD;
@@ -478,7 +480,7 @@ public class ThreadMan {
     }
 
     public void ThreadMan_sceKernelStartThread(int uid, int len, int data_addr) {
-        SceUIDMan.get_instance().checkUidPurpose(uid, "ThreadMan-thread", true);
+        SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadlist.get(uid);
         if (thread == null) {
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_THREAD;
@@ -658,7 +660,7 @@ public class ThreadMan {
 
     public void ThreadMan_sceKernelChangeThreadPriority(int uid, int priority) {
         if (uid == 0) uid = getCurrentThreadID();
-        SceUIDMan.get_instance().checkUidPurpose(uid, "ThreadMan-thread", true);
+        SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadlist.get(uid);
         if (thread == null) {
             Modules.log.warn("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid)
@@ -697,7 +699,7 @@ public class ThreadMan {
     }
 
     public void ThreadMan_sceKernelWakeupThread(int uid) {
-        SceUIDMan.get_instance().checkUidPurpose(uid, "ThreadMan-thread", true);
+        SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadlist.get(uid);
         if (thread == null) {
             Modules.log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " unknown thread");
@@ -714,7 +716,7 @@ public class ThreadMan {
 
     public void ThreadMan_sceKernelWaitThreadEnd(int uid, int micros) {
         Modules.log.debug("sceKernelWaitThreadEnd SceUID=" + Integer.toHexString(uid) + " timeout=" + micros);
-        SceUIDMan.get_instance().checkUidPurpose(uid, "ThreadMan-thread", true);
+        SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadlist.get(uid);
         if (thread == null) {
             Modules.log.warn("sceKernelWaitThreadEnd unknown thread");
@@ -802,7 +804,7 @@ public class ThreadMan {
             notifyArg = 0; // ?
 
             // internal state
-            uid = SceUIDMan.get_instance().getNewUid("ThreadMan-callback");
+            uid = SceUidManager.getNewUid("ThreadMan-callback");
 
             // TODO add to list of callbacks
         }
@@ -920,7 +922,7 @@ public class ThreadMan {
             releaseCount = 0;
 
             // internal state
-            uid = SceUIDMan.get_instance().getNewUid("ThreadMan-thread");
+            uid = SceUidManager.getNewUid("ThreadMan-thread");
             threadlist.put(uid, this);
 
             // Inherit context
@@ -988,7 +990,7 @@ public class ThreadMan {
     public void ThreadMan_sceKernelWaitSema(int semaid , int signal , int timeoutptr , int timeout)
     {
           Modules.log.debug("sceKernelWaitSema id= " + semaid + " signal= " + signal + " timeout = " + timeout);
-            SceUIDMan.get_instance().checkUidPurpose(semaid, "ThreadMan-sema", true);
+            SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
             SceKernelSemaphoreInfo sema = semalist.get(semaid);
             if (sema == null) {
                     Modules.log.warn("sceKernelWaitSema - unknown uid " + Integer.toHexString(semaid));
@@ -1019,7 +1021,7 @@ public class ThreadMan {
     public void ThreadMan_sceKernelSignalSema(int semaid , int signal)
     {
         Modules.log.debug("sceKernelSignalSema id =" + semaid + " signal =" + signal);
-            SceUIDMan.get_instance().checkUidPurpose(semaid, "ThreadMan-sema", true);
+            SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
             SceKernelSemaphoreInfo sema = semalist.get(semaid);
             if (sema == null) {
                     Modules.log.warn("sceKernelSignalSema - unknown uid " + Integer.toHexString(semaid));
@@ -1052,7 +1054,7 @@ public class ThreadMan {
              this.initCount=initCount;
              this.currentCount=currentCount;
              this.maxCount=maxCount;
-             uid = SceUIDMan.get_instance().getNewUid("ThreadMan-sema");
+             uid = SceUidManager.getNewUid("ThreadMan-sema");
              semalist.put(uid, this);
          }
     }
@@ -1085,7 +1087,7 @@ public class ThreadMan {
         this.attr=attr;
         this.initPattern=initPattern;
         this.currentPattern=currentPattern;
-        uid = SceUIDMan.get_instance().getNewUid("ThreadMan-eventflag");
+        uid = SceUidManager.getNewUid("ThreadMan-eventflag");
         eventlist.put(uid, this);
 
       }

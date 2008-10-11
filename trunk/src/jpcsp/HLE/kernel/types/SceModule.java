@@ -15,15 +15,26 @@ You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package jpcsp.HLE.kernel;
+package jpcsp.HLE.kernel.types;
+
+import jpcsp.HLE.kernel.managers.*;
 
 public class SceModule extends SceUid {
+    
     private String name;
     private int startAddr;
     private int attr;
     public static final int flashModuleUid = 0;
 
     public SceModule() {
+        super("SceModule", SceUidManager.getNewUid("SceModule"));
+    }
+
+    public SceModule(String name, int startAddr, int attr) {
+        super("SceModule", SceUidManager.getNewUid("SceModule"));
+        setName(name);
+        setStartAddr(startAddr);
+        setAttr(attr);
     }
 
     public String getName(){
