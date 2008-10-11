@@ -965,7 +965,7 @@ public class VideoEngine {
             				case CMODE_FORMAT_16BIT_ABGR5551:
             				case CMODE_FORMAT_16BIT_ABGR4444: {
             					if (texclut == 0)
-            						break;
+            						return;
             					
             					texture_type = texturetype_mapping[tex_clut_mode];
 
@@ -976,8 +976,8 @@ public class VideoEngine {
 	
 		            					// TODO:  I don't know if it's correct, or should read the 4bits in
 		            					//       reverse order
-		            					tmp_texture_buffer16[i] 	= (short)mem.read16(texclut + ((clut>>4)&0xF));
-		            					tmp_texture_buffer16[i+1] 	= (short)mem.read16(texclut + (clut&0xF));
+		            					tmp_texture_buffer16[i] 	= (short)mem.read16(texclut + ((clut>>4)&0xF)*2);
+		            					tmp_texture_buffer16[i+1] 	= (short)mem.read16(texclut + (clut&0xF)*2);
 		            				}
 	        					} else {
 	        						VideoEngine.log.error("Unhandled swizzling on clut4/16 textures");
@@ -991,6 +991,9 @@ public class VideoEngine {
 	            			}
 
 	            			case CMODE_FORMAT_32BIT_ABGR8888: {
+	            				if (texclut == 0)
+            						return;
+	            				
 	            				texture_type = GL.GL_UNSIGNED_BYTE;
 
 	            				if (!texture_swizzle) {
@@ -1000,14 +1003,14 @@ public class VideoEngine {
 	
 		            					// TODO:  I don't know if it's correct, or should read the 4bits in
 		            					//       reverse order
-		            					tmp_texture_buffer32[i] 	= mem.read32(texclut + ((clut>>4)&0xF));
-		            					tmp_texture_buffer32[i+1] 	= mem.read32(texclut + (clut&0xF));
+		            					tmp_texture_buffer32[i] 	= mem.read32(texclut + ((clut>>4)&0xF)*4);
+		            					tmp_texture_buffer32[i+1] 	= mem.read32(texclut + (clut&0xF)*4);
 		            				}
-            					} else {
+	            				} else {
             						VideoEngine.log.error("Unhandled swizzling on clut4/32 textures");
-    	                            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
-    	                            break;
-            					}
+		                            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
+		                            break;
+	        					}
 	            				
 	            				final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
 
@@ -1030,7 +1033,7 @@ public class VideoEngine {
             				case CMODE_FORMAT_16BIT_ABGR5551:
             				case CMODE_FORMAT_16BIT_ABGR4444: {
             					if (texclut == 0)
-            						break;
+            						return;
             					
             					texture_type = texturetype_mapping[tex_clut_mode];
             					
@@ -1051,6 +1054,9 @@ public class VideoEngine {
 	            			}
 
 	            			case CMODE_FORMAT_32BIT_ABGR8888: {
+	            				if (texclut == 0)
+            						return;
+	            				
 	            				texture_type = GL.GL_UNSIGNED_BYTE;
 
 	            				if (!texture_swizzle) {
@@ -1081,10 +1087,7 @@ public class VideoEngine {
 
                     case TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650:
                     case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551:
-                    case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444: {
-                    	if (texclut == 0)
-    						break;
-                    	
+                    case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444: {                    	
                         texture_type = texturetype_mapping[texture_storage];
 
                         if (!texture_swizzle) {
@@ -1092,38 +1095,41 @@ public class VideoEngine {
 	                    		int pixel = mem.read16(texaddr+i*2);
 	                    		tmp_texture_buffer16[i] = (short)pixel;
 	                    	}
+	                    	
+	                    	final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
                         } else {
-             				// UnSwizzling based on pspplayer
- 	        				int rowWidth = texture_width0 * 2;
- 	        				int pitch = ( rowWidth - 16 ) / 4;
- 	        				int bxc = rowWidth / 16;
- 	        				int byc = texture_height0 / 8;
- 	        				
- 	        				int src = texaddr, ydest = 0;
- 	        				  
- 	        				for( int by = 0; by < byc; by++ )
- 	        				{
- 	        					int xdest = ydest;
- 	        				    for( int bx = 0; bx < bxc; bx++ )
- 	        				    {
-         				    		int dest = xdest;
- 					                for( int n = 0; n < 8; n++ )
- 					                {
- 					                	tmp_texture_buffer16[dest] 		= (short)mem.read16(src);
- 					                	tmp_texture_buffer16[dest+1] 	= (short)mem.read16(src+2);
- 					                	tmp_texture_buffer16[dest+2] 	= (short)mem.read16(src+4);
- 					                	tmp_texture_buffer16[dest+3] 	= (short)mem.read16(src+6);
- 					                    
- 					                	src		+= 4*2;
- 					                	dest 	+= pitch+4;
- 					                }
- 					                xdest += (16/2);
- 						        }
- 						        ydest += (rowWidth * 8)/2;
- 	        				}
+                        	// UnSwizzling based on pspplayer
+	        				int rowWidth = texture_width0 * 2;
+	        				int pitch = ( rowWidth - 16 ) / 4;
+	        				int bxc = rowWidth / 16;
+	        				int byc = texture_height0 / 8;
+	        				
+	        				int src = texaddr, ydest = 0;
+	        				  
+	        				for( int by = 0; by < byc; by++ )
+	        				{
+	        					int xdest = ydest;
+	        				    for( int bx = 0; bx < bxc; bx++ )
+	        				    {
+        				    		int dest = xdest;
+					                for( int n = 0; n < 8; n++ )
+					                {
+					                	tmp_texture_buffer32[dest] = mem.read32(src);
+					                	tmp_texture_buffer32[dest+1] = mem.read32(src+4);
+					                	tmp_texture_buffer32[dest+2] = mem.read32(src+8);
+					                	tmp_texture_buffer32[dest+3] = mem.read32(src+12);
+					                    
+					                	src		+= 4*4;
+					                	dest 	+= pitch+4;
+					                }
+					                xdest += (16/4);
+						        }
+						        ydest += (rowWidth * 8)/4;
+	        				}
+	        				
+	        				final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
              			}
-
-                    	final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
+                        
             			break;
             		}
 
@@ -1182,13 +1188,15 @@ public class VideoEngine {
             	gl.glBindTexture  (GL.GL_TEXTURE_2D, gl_texture_id[0]);
             	gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, tex_min_filter);
             	gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_mag_filter);
+            	
+            	int texture_format = texture_type == GL.GL_UNSIGNED_SHORT_5_6_5_REV ? GL.GL_RGB : GL.GL_RGBA;
 
             	gl.glTexImage2D  (	GL.GL_TEXTURE_2D,
             						0,
-            						GL.GL_RGBA,
+            						texture_format,
             						texture_width0, texture_height0,
             						0,
-            						GL.GL_RGBA,
+            						texture_format,
             						texture_type,
             						final_buffer);
             	break;
@@ -1314,7 +1322,7 @@ public class VideoEngine {
             	}
             	break;
             }
-            
+
             case TFUNC:
            		gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE,
            				(normalArgument & 0x10000) == 0 ? 1.0f : 2.0f);
