@@ -328,7 +328,16 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
         }
 
         // Imports
-        // ... and code section finder, for instruction counter (should not be here! should go in FileManager.secondStep())
+        // ... and code section finder, for instruction counter (should not be
+        // here! should go in FileManager.secondStep())
+
+        // TODO recode in 2 passes:
+        // 1) add all imports of this module as deferred.
+        // 2) try and resolve all deferred imports for all loaded modules.
+        // this should handle previously loaded modules as well as the current
+        // module and should be compatible with ModuleMgrForUser or any other
+        // class that tries to load a module.
+
         int numberoffailedNIDS=0;
         int numberofmappedNIDS=0;
         boolean foundStubSection = false;

@@ -216,7 +216,10 @@ public class pspSysMem {
 
         if (!found)
         {
-            Modules.log.error("failed to map addr:0x" + Integer.toHexString(addr) + " to SysMemInfo, possibly bad/missing cleanup or double free in HLE");
+            // TODO add a SysMemInfo when calling malloc outside of sceKernelAllocPartitionMemory
+            // heh was lazy and never got round to writing it, you can also see this bug in hellojpcsp.pbp (fiveofhearts)
+            Modules.log.error("UNIMPLEMENT:failed to free addr:0x" + Integer.toHexString(addr));
+            //Modules.log.error("failed to map addr:0x" + Integer.toHexString(addr) + " to SysMemInfo, possibly bad/missing cleanup or double free in HLE");
         }
     }
 

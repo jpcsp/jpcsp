@@ -20,7 +20,7 @@ package jpcsp.HLE.kernel.types;
 import jpcsp.HLE.kernel.managers.*;
 
 public class SceModule extends SceUid {
-    
+
     private String name;
     private int startAddr;
     private int attr;
@@ -35,6 +35,7 @@ public class SceModule extends SceUid {
         setName(name);
         setStartAddr(startAddr);
         setAttr(attr);
+        // TODO allocate some mem, write ourself to it, add getAddress() function (for use by sceKernelFindModuleBy*)
     }
 
     public String getName(){

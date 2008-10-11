@@ -59,7 +59,7 @@ public class HLEModuleManager {
         Modules.sceUtilityModule,
         Modules.sceRtcModule,
         Modules.Kernel_LibraryModule,
-        //Modules.ModuleMgrForUserModule,
+        Modules.ModuleMgrForUserModule,
         Modules.sceMpegModule,
         Modules.LoadCoreForKernelModule,
         Modules.sceAttrac3plusModule,

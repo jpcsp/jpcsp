@@ -112,7 +112,7 @@ public class ModuleMgrForUser implements HLEModule {
         int flags = cpu.gpr[5];
         int option_addr = cpu.gpr[6] & 0x3fffffff;
         String name = Utilities.readStringZ(mem.mainmemory, path_addr - MemoryMap.START_RAM);
-        Modules.log.warn("UNIMPLEMENTED:sceKernelLoadModule(path='" + name
+        Modules.log.warn("PARTIAL:sceKernelLoadModule(path='" + name
             + "',flags=0x" + Integer.toHexString(flags)
             + ",option=0x" + Integer.toHexString(option_addr) + ")");
 
@@ -131,16 +131,22 @@ public class ModuleMgrForUser implements HLEModule {
     	        ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
     	        int loadBase = pspSysMem.get_instance().malloc(2, pspSysMem.PSP_SMEM_Low, moduleBytes.length, 0);
     	        FileManager moduleFileManager = new FileManager(moduleBuffer, loadBase);
-    	        Emulator.initRamBy(moduleFileManager, moduleFileManager.getElf32());
+                if (moduleFileManager.getType() == FileManager.FORMAT_ELF) {
+                    Emulator.initRamBy(moduleFileManager, moduleFileManager.getElf32());
+
+                    SceModule sceModule = new SceModule();
+                    sceModule.setName(name);
+                    sceModule.setAttr(moduleFileManager.getPSPModuleInfo().getM_attr());
+                    sceModule.setStartAddr((int) (moduleFileManager.getBaseoffset() + moduleFileManager.getElf32().getHeader().getE_entry()));
+                    HLEModuleManager.getInstance().addSceModule(sceModule);
+
+                    cpu.gpr[2] = sceModule.getUid();
+                } else {
+                    pspSysMem.get_instance().free(loadBase);
+                    cpu.gpr[2] = -1;
+                }
+
     	        moduleInput.close();
-
-    	        SceModule sceModule = new SceModule();
-    	        sceModule.setName(name);
-    	        sceModule.setAttr(moduleFileManager.getPSPModuleInfo().getM_attr());
-    	        sceModule.setStartAddr((int) (moduleFileManager.getBaseoffset() + moduleFileManager.getElf32().getHeader().getE_entry()));
-    	        HLEModuleManager.getInstance().addSceModule(sceModule);
-
-    			cpu.gpr[2] = sceModule.getUid();
             }
         } catch (IOException e) {
         	Modules.log.error("sceKernelLoadModule - Error while loading module " + name + ": " + e.getMessage());

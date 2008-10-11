@@ -18,23 +18,26 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
 import jpcsp.Memory;
+import jpcsp.MemoryMap;
 import jpcsp.Processor;
+import jpcsp.util.Utilities;
 
 import jpcsp.Allegrex.CpuState; // New-Style Processor
 
 public class LoadCoreForKernel implements HLEModule {
 	@Override
 	public String getName() { return "LoadCoreForKernel"; }
-	
+
 	@Override
 	public void installModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
-		
+
 			mm.addFunction(sceKernelCheckPspConfigFunction, 0xACE23476);
 			mm.addFunction(sceKernelCheckExecFileFunction, 0x7BE1421C);
 			mm.addFunction(sceKernelProbeExecutableObjectFunction, 0xBF983EF2);
@@ -64,14 +67,14 @@ public class LoadCoreForKernel implements HLEModule {
 			mm.addFunction(sceKernelFindModuleByUIDFunction, 0xCCE4A157);
 			mm.addFunction(sceKernelGetModuleListWithAllocFunction, 0x929B5C69);
 			mm.addFunction(sceKernelGetModuleIdListForKernelFunction, 0x05D915DB);
-			
+
 		}
 	}
-	
+
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
-		
+
 			mm.removeFunction(sceKernelCheckPspConfigFunction);
 			mm.removeFunction(sceKernelCheckExecFileFunction);
 			mm.removeFunction(sceKernelProbeExecutableObjectFunction);
@@ -101,16 +104,16 @@ public class LoadCoreForKernel implements HLEModule {
 			mm.removeFunction(sceKernelFindModuleByUIDFunction);
 			mm.removeFunction(sceKernelGetModuleListWithAllocFunction);
 			mm.removeFunction(sceKernelGetModuleIdListForKernelFunction);
-			
+
 		}
 	}
-	
-	
+
+
 	public void sceKernelCheckPspConfig(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -122,12 +125,12 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelCheckExecFile(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -139,12 +142,12 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelProbeExecutableObject(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -156,12 +159,12 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelLoadExecutableObject(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -173,12 +176,12 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelApplyElfRelSection(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -190,12 +193,12 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelApplyPspRelSection(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -207,12 +210,12 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelDcacheWBinvAll(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -224,12 +227,12 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelIcacheClearAll(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -241,12 +244,12 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelRegisterLibrary(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -258,12 +261,12 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelRegisterLibraryForUser(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -275,12 +278,12 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelReleaseLibrary(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -292,12 +295,12 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelCanReleaseLibrary(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -309,12 +312,12 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelLinkLibraryEntries(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -326,12 +329,12 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelLinkLibraryEntriesForUser(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -343,12 +346,12 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelUnLinkLibraryEntries(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -360,12 +363,12 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelQueryLoadCoreCB(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -377,12 +380,12 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelSetBootCallbackLevel(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -394,12 +397,12 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelGetModuleFromUID(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -411,12 +414,12 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelCreateModule(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -428,12 +431,12 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelDeleteModule(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -445,12 +448,12 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelAssignModule(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -462,12 +465,12 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelCreateAssignModule(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -479,12 +482,12 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelRegisterModule(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -496,12 +499,12 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelReleaseModule(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -513,29 +516,30 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelFindModuleByName(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+		int modulename_addr = cpu.gpr[4];
+        String name = Utilities.readStringZ(mem.mainmemory, (modulename_addr & 0x3fffffff) - MemoryMap.START_RAM);
 
-		System.out.println("Unimplemented NID function sceKernelFindModuleByName [0xCF8A41B1]");
+		Modules.log.warn("IGNORING:sceKernelFindModuleByName name='" + name + "'");
 
+        // TODO this should return the address of a SceModule struct
 		cpu.gpr[2] = 0;
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelFindModuleByAddress(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -547,12 +551,12 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelFindModuleByUID(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -564,12 +568,12 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelGetModuleListWithAlloc(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -581,12 +585,12 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public void sceKernelGetModuleIdListForKernel(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
@@ -598,7 +602,7 @@ public class LoadCoreForKernel implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-    
+
 	public final HLEModuleFunction sceKernelCheckPspConfigFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelCheckPspConfig") {
 		@Override
 		public final void execute(Processor processor) {
@@ -609,7 +613,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelCheckPspConfig(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelCheckExecFileFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelCheckExecFile") {
 		@Override
 		public final void execute(Processor processor) {
@@ -620,7 +624,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelCheckExecFile(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelProbeExecutableObjectFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelProbeExecutableObject") {
 		@Override
 		public final void execute(Processor processor) {
@@ -631,7 +635,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelProbeExecutableObject(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelLoadExecutableObjectFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelLoadExecutableObject") {
 		@Override
 		public final void execute(Processor processor) {
@@ -642,7 +646,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelLoadExecutableObject(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelApplyElfRelSectionFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelApplyElfRelSection") {
 		@Override
 		public final void execute(Processor processor) {
@@ -653,7 +657,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelApplyElfRelSection(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelApplyPspRelSectionFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelApplyPspRelSection") {
 		@Override
 		public final void execute(Processor processor) {
@@ -664,7 +668,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelApplyPspRelSection(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelDcacheWBinvAllFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelDcacheWBinvAll") {
 		@Override
 		public final void execute(Processor processor) {
@@ -675,7 +679,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelDcacheWBinvAll(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelIcacheClearAllFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelIcacheClearAll") {
 		@Override
 		public final void execute(Processor processor) {
@@ -686,7 +690,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelIcacheClearAll(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelRegisterLibraryFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelRegisterLibrary") {
 		@Override
 		public final void execute(Processor processor) {
@@ -697,7 +701,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelRegisterLibrary(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelRegisterLibraryForUserFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelRegisterLibraryForUser") {
 		@Override
 		public final void execute(Processor processor) {
@@ -708,7 +712,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelRegisterLibraryForUser(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelReleaseLibraryFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelReleaseLibrary") {
 		@Override
 		public final void execute(Processor processor) {
@@ -719,7 +723,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelReleaseLibrary(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelCanReleaseLibraryFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelCanReleaseLibrary") {
 		@Override
 		public final void execute(Processor processor) {
@@ -730,7 +734,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelCanReleaseLibrary(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelLinkLibraryEntriesFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelLinkLibraryEntries") {
 		@Override
 		public final void execute(Processor processor) {
@@ -741,7 +745,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelLinkLibraryEntries(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelLinkLibraryEntriesForUserFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelLinkLibraryEntriesForUser") {
 		@Override
 		public final void execute(Processor processor) {
@@ -752,7 +756,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelLinkLibraryEntriesForUser(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelUnLinkLibraryEntriesFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelUnLinkLibraryEntries") {
 		@Override
 		public final void execute(Processor processor) {
@@ -763,7 +767,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelUnLinkLibraryEntries(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelQueryLoadCoreCBFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelQueryLoadCoreCB") {
 		@Override
 		public final void execute(Processor processor) {
@@ -774,7 +778,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelQueryLoadCoreCB(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelSetBootCallbackLevelFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelSetBootCallbackLevel") {
 		@Override
 		public final void execute(Processor processor) {
@@ -785,7 +789,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelSetBootCallbackLevel(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelGetModuleFromUIDFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelGetModuleFromUID") {
 		@Override
 		public final void execute(Processor processor) {
@@ -796,7 +800,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelGetModuleFromUID(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelCreateModuleFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelCreateModule") {
 		@Override
 		public final void execute(Processor processor) {
@@ -807,7 +811,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelCreateModule(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelDeleteModuleFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelDeleteModule") {
 		@Override
 		public final void execute(Processor processor) {
@@ -818,7 +822,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelDeleteModule(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelAssignModuleFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelAssignModule") {
 		@Override
 		public final void execute(Processor processor) {
@@ -829,7 +833,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelAssignModule(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelCreateAssignModuleFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelCreateAssignModule") {
 		@Override
 		public final void execute(Processor processor) {
@@ -840,7 +844,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelCreateAssignModule(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelRegisterModuleFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelRegisterModule") {
 		@Override
 		public final void execute(Processor processor) {
@@ -851,7 +855,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelRegisterModule(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelReleaseModuleFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelReleaseModule") {
 		@Override
 		public final void execute(Processor processor) {
@@ -862,7 +866,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelReleaseModule(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelFindModuleByNameFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelFindModuleByName") {
 		@Override
 		public final void execute(Processor processor) {
@@ -873,7 +877,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelFindModuleByName(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelFindModuleByAddressFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelFindModuleByAddress") {
 		@Override
 		public final void execute(Processor processor) {
@@ -884,7 +888,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelFindModuleByAddress(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelFindModuleByUIDFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelFindModuleByUID") {
 		@Override
 		public final void execute(Processor processor) {
@@ -895,7 +899,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelFindModuleByUID(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelGetModuleListWithAllocFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelGetModuleListWithAlloc") {
 		@Override
 		public final void execute(Processor processor) {
@@ -906,7 +910,7 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelGetModuleListWithAlloc(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceKernelGetModuleIdListForKernelFunction = new HLEModuleFunction("LoadCoreForKernel", "sceKernelGetModuleIdListForKernel") {
 		@Override
 		public final void execute(Processor processor) {
@@ -917,5 +921,5 @@ public class LoadCoreForKernel implements HLEModule {
 			return "jpcsp.HLE.Modules.LoadCoreForKernelModule.sceKernelGetModuleIdListForKernel(processor);";
 		}
 	};
-    
+
 };
