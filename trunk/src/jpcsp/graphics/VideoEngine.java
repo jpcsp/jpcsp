@@ -102,6 +102,7 @@ public class VideoEngine {
 
     float tex_translate_x = 0.f, tex_translate_y = 0.f;
     float tex_scale_x = 1.f, tex_scale_y = 1.f;
+    float[] tex_env_color = new float[4];
 
     private int tex_clut_addr_high, tex_clut_addr_low, tex_clut_mode, tex_clut_mask, tex_clut_num_blocks;
 
@@ -1324,13 +1325,7 @@ public class VideoEngine {
             }
 
             case TFUNC:
-           		gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE,
-           				(normalArgument & 0x10000) == 0 ? 1.0f : 2.0f);
-           		/*000 	Modulate
-           		001 	Decal
-           		010 	Blend
-           		011 	Replace
-           		100 	Add*/
+           		gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, (normalArgument & 0x10000) != 0 ? 1.0f : 2.0f);
            		int env_mode = GL.GL_MODULATE;
            		switch(normalArgument & 7) {
 	           		case 0: env_mode = GL.GL_MODULATE; break;
@@ -1340,9 +1335,19 @@ public class VideoEngine {
 	           		case 4: env_mode = GL.GL_ADD; break;           			 
            			default: VideoEngine.log.warn("Unimplemented tfunc mode");
            		}
-           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, env_mode);
-           		if((normalArgument & 0x100) == 0)
-           			VideoEngine.log("tfunc : unsupported alpha channel ignore");
+           		// TODO : fix this !
+           		//gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, env_mode);
+           		//gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, (normalArgument & 0x100) != 0 ? GL.GL_PREVIOUS : GL.GL_TEXTURE);
+           		log("tfunc");
+            	break;
+            	
+            case TEC:
+            	tex_env_color[0] = ((normalArgument      ) & 255) / 255.f;
+            	tex_env_color[1] = ((normalArgument >>  8) & 255) / 255.f;
+            	tex_env_color[2] = ((normalArgument >> 16) & 255) / 255.f;
+            	tex_env_color[3] = 1.f;
+            	gl.glTexEnvfv(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_COLOR, tex_env_color, 0);
+            	log("tec");
             	break;
 
             /*
