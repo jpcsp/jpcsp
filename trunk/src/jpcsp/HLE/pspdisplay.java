@@ -82,6 +82,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     private int sync;
     private boolean setGeBufCalledAtLeastOnce;
     public boolean gotBadGeBufParams;
+    public boolean gotBadFbBufParams;
 
     // additional variables
     private int bottomaddrFb;
@@ -149,8 +150,10 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         pixelformatGe = pixelformatFb;
         bottomaddrGe  = bottomaddrFb;
         pixelsGe = getPixels(topaddrGe, bottomaddrGe);
+
         setGeBufCalledAtLeastOnce = false;
         gotBadGeBufParams = false;
+        gotBadFbBufParams = false;
 
         vcount = 0;
         accumulatedHcount = 0.0f;
@@ -421,7 +424,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
             gl.glTexImage2D(
                 GL.GL_TEXTURE_2D, 0,
-                GL.GL_RGBA,
+                GL.GL_RGB, // GL.GL_RGBA
                 bufferwidthFb, makePow2(height), 0,
                 GL.GL_RGBA,
                 getPixelFormatGL(pixelformatFb), null);
@@ -570,8 +573,18 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                 ",bufferwidth=" + bufferwidth +
                 ",pixelformat=" + pixelformat +
                 ",sync=" + sync + ") bad params");
+            gotBadFbBufParams = true;
             Emulator.getProcessor().cpu.gpr[2] = -1;
         } else {
+            if (gotBadFbBufParams) {
+                gotBadFbBufParams = false;
+                Modules.log.info(
+                    "sceDisplaySetFrameBuf(topaddr=0x" + Integer.toHexString(topaddr) +
+                    ",bufferwidth=" + bufferwidth +
+                    ",pixelformat=" + pixelformat +
+                    ",sync=" + sync + ") ok");
+            }
+
             if (pixelformatFb != this.pixelformatFb ||
                 bufferwidthFb != this.bufferwidthFb ||
                 makePow2(height) != makePow2(this.height))
