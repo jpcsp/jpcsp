@@ -32,7 +32,8 @@ public class Modules {
     public static ModuleMgrForUser ModuleMgrForUserModule = new ModuleMgrForUser();
     public static sceMpeg sceMpegModule = new sceMpeg();
     public static LoadCoreForKernel LoadCoreForKernelModule = new LoadCoreForKernel();
-
+    public static sceAtrac3plus sceAttrac3plusModule = new sceAtrac3plus();
+    
     public static Logger log = Logger.getLogger("hle");
 
     public void step() {
