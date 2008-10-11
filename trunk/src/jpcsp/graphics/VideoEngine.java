@@ -52,7 +52,7 @@ public class VideoEngine {
     private int proj_upload_y;
     private float[] proj_matrix = new float[4 * 4];
     private float[] proj_uploaded_matrix = new float[4 * 4];
-    
+
     private boolean texture_upload_start;
     private int texture_upload_x;
     private int texture_upload_y;
@@ -60,8 +60,8 @@ public class VideoEngine {
     private float[] texture_uploaded_matrix = new float[4 * 4];
 
     private boolean model_upload_start;
-    private int 	model_upload_x;
-    private int 	model_upload_y;
+    private int     model_upload_x;
+    private int     model_upload_y;
     private float[] model_matrix = new float[4 * 4];
     private float[] model_uploaded_matrix = new float[4 * 4];
 
@@ -96,7 +96,7 @@ public class VideoEngine {
     int texture_storage, texture_num_mip_maps;
     boolean texture_swizzle;
     int texture_base_pointer0, texture_width0, texture_height0;
-    int texture_base_width0;
+    int texture_buffer_width0;
     int tex_min_filter = GL.GL_NEAREST;
     int tex_mag_filter = GL.GL_NEAREST;
 
@@ -104,7 +104,9 @@ public class VideoEngine {
     float tex_scale_x = 1.f, tex_scale_y = 1.f;
     float[] tex_env_color = new float[4];
 
-    private int tex_clut_addr_high, tex_clut_addr_low, tex_clut_mode, tex_clut_mask, tex_clut_num_blocks;
+    private int tex_clut_addr;
+    private int tex_clut_num_blocks;
+    private int tex_clut_mode, tex_clut_shift, tex_clut_mask, tex_clut_start;
 
     private int transform_mode;
 
@@ -279,12 +281,82 @@ public class VideoEngine {
 		    	return GL.GL_ONE_MINUS_DST_ALPHA;
     	}
 
-
-    	log ("Unsupported alpha blend op used" + pspOP);
+    	VideoEngine.log.error("Unhandled alpha blend op used " + pspOP);
+        Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
     	return GL.GL_ONE;
     }
 
+    private int getClutIndex(int index) {
+        return ((tex_clut_start + index) >> tex_clut_shift) & tex_clut_mask;
+    }
 
+    // UnSwizzling based on pspplayer
+    // This won't work if you can't unswizzle inplace!
+    private Buffer unswizzleTexture32() {
+        int rowWidth = texture_width0 * 4;
+        int pitch = ( rowWidth - 16 ) / 4;
+        int bxc = rowWidth / 16;
+        int byc = texture_height0 / 8;
+
+        int src = 0, ydest = 0;
+
+        for( int by = 0; by < byc; by++ )
+        {
+            int xdest = ydest;
+            for( int bx = 0; bx < bxc; bx++ )
+            {
+                int dest = xdest;
+                for( int n = 0; n < 8; n++ )
+                {
+                    tmp_texture_buffer32[dest] = tmp_texture_buffer32[src];
+                    tmp_texture_buffer32[dest+1] = tmp_texture_buffer32[src + 1];
+                    tmp_texture_buffer32[dest+2] = tmp_texture_buffer32[src + 2];
+                    tmp_texture_buffer32[dest+3] = tmp_texture_buffer32[src + 3];
+
+                    src     += 4;
+                    dest    += pitch+4;
+                }
+                xdest += (16/4);
+            }
+            ydest += (rowWidth * 8)/4;
+        }
+
+        return IntBuffer.wrap(tmp_texture_buffer32);
+    }
+
+    // UnSwizzling based on pspplayer
+    private Buffer unswizzleTextureFromMemory(int texaddr, int bytesPerPixel) {
+        Memory mem = Memory.getInstance();
+        int rowWidth = texture_width0 * bytesPerPixel;
+        int pitch = ( rowWidth - 16 ) / 4;
+        int bxc = rowWidth / 16;
+        int byc = texture_height0 / 8;
+
+        int src = texaddr, ydest = 0;
+
+        for( int by = 0; by < byc; by++ )
+        {
+            int xdest = ydest;
+            for( int bx = 0; bx < bxc; bx++ )
+            {
+                int dest = xdest;
+                for( int n = 0; n < 8; n++ )
+                {
+                    tmp_texture_buffer32[dest] = mem.read32(src);
+                    tmp_texture_buffer32[dest+1] = mem.read32(src + 4);
+                    tmp_texture_buffer32[dest+2] = mem.read32(src + 8);
+                    tmp_texture_buffer32[dest+3] = mem.read32(src + 12);
+
+                    src     += 4*4;
+                    dest    += pitch+4;
+                }
+                xdest += (16/4);
+            }
+            ydest += (rowWidth * 8)/4;
+        }
+
+        return IntBuffer.wrap(tmp_texture_buffer32);
+    }
 
     public void executeCommand(int instruction) {
         int normalArgument = intArgument(instruction);
@@ -771,22 +843,23 @@ public class VideoEngine {
             	mat_flags = normalArgument & 7;
             	log("cmat");
             	break;
-                
+
             case AMA:
             	mat_ambient[3] = ((normalArgument      ) & 255) / 255.f;
             	if((mat_flags & 1) != 0)
             		gl.glMaterialfv(GL.GL_FRONT, GL.GL_AMBIENT, mat_ambient, 0);
             	break;
-            	
+
             case AMC:
             	mat_ambient[0] = ((normalArgument	   ) & 255) / 255.f;
             	mat_ambient[1] = ((normalArgument >>  8) & 255) / 255.f;
             	mat_ambient[2] = ((normalArgument >> 16) & 255) / 255.f;
             	if((mat_flags & 1) != 0)
             		gl.glMaterialfv(GL.GL_FRONT, GL.GL_AMBIENT, mat_ambient, 0);
-            	log("sceGuAmbient");
+            	log("sceGuAmbient " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
+                        mat_ambient[0], mat_ambient[1], mat_ambient[2], normalArgument));
             	break;
-            	
+
             case DMC:
             	mat_diffuse[0] = ((normalArgument      ) & 255) / 255.f;
             	mat_diffuse[1] = ((normalArgument >>  8) & 255) / 255.f;
@@ -794,9 +867,10 @@ public class VideoEngine {
             	mat_diffuse[3] = 1.f;
             	if((mat_flags & 2) != 0)
             		gl.glMaterialfv(GL.GL_FRONT, GL.GL_DIFFUSE, mat_diffuse, 0);
-            	log("sceGuColor");
+            	log("sceGuColor " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
+                        mat_diffuse[0], mat_diffuse[1], mat_diffuse[2], normalArgument));
             	break;
-            	
+
             case EMC:
             	mat_emissive[0] = ((normalArgument      ) & 255) / 255.f;
             	mat_emissive[1] = ((normalArgument >>  8) & 255) / 255.f;
@@ -805,7 +879,7 @@ public class VideoEngine {
             	gl.glMaterialfv(GL.GL_FRONT, GL.GL_EMISSION, mat_emissive, 0);
             	log("material emission");
             	break;
-            	
+
             case SMC:
             	mat_specular[0] = ((normalArgument      ) & 255) / 255.f;
             	mat_specular[1] = ((normalArgument >>  8) & 255) / 255.f;
@@ -815,17 +889,17 @@ public class VideoEngine {
             		gl.glMaterialfv(GL.GL_FRONT, GL.GL_SPECULAR, mat_specular, 0);
             	log("material specular");
             	break;
-            	
+
             case SPOW:
             	gl.glMaterialf(GL.GL_FRONT, GL.GL_SHININESS, floatArgument);
             	log("material shininess");
             	break;
-            	
+
             case TMS:
             	texture_upload_start = true;
             	log("sceGumMatrixMode GU_TEXTURE");
                 break;
-                
+
             case TMATRIX:
                 if (texture_upload_start) {
                 	texture_upload_x = 0;
@@ -850,7 +924,7 @@ public class VideoEngine {
                     }
                 }
                 break;
-                
+
             case PMS:
                 proj_upload_start = true;
                 log("sceGumMatrixMode GU_PROJECTION");
@@ -885,19 +959,20 @@ public class VideoEngine {
              *
              */
             case TBW0:
-            	texture_base_width0 = normalArgument;
-            	log ("sceGuTexImage(X,X,X,texWidth,X)");
-            	break;
-            	
+                texture_base_pointer0 = (texture_base_pointer0 & 0x00ffffff) | ((normalArgument << 8) & 0xff000000);
+                texture_buffer_width0 = normalArgument & 0xffff;
+                log ("sceGuTexImage(X,X,X,texWidth=" + texture_buffer_width0 + ",hi(pointer=0x" + Integer.toHexString(texture_base_pointer0) + "))");
+                break;
+
             case TBP0:
-            	texture_base_pointer0 = normalArgument;
-            	log ("sceGuTexImage(X,X,X,X,pointer)");
-            	break;
+                texture_base_pointer0 = normalArgument;
+                log ("sceGuTexImage(X,X,X,X,lo(pointer=0x" + Integer.toHexString(texture_base_pointer0) + "))");
+                break;
 
             case TSIZE0:
             	texture_height0 = 1 << ((normalArgument>>8) & 0xFF);
             	texture_width0  = 1 << ((normalArgument   ) & 0xFF);
-            	log ("sceGuTexImage(X,width,height,X,0)");
+            	log ("sceGuTexImage(X,width=" + texture_width0 + ",height=" + texture_height0 + ",X,0)");
             	break;
 
             case TMODE:
@@ -909,27 +984,31 @@ public class VideoEngine {
             	texture_storage = normalArgument;
             	break;
 
-            case CBPH: {
-            	tex_clut_addr_high = normalArgument;            	
-            	break;
-            }
             case CBP: {
-            	log ("sceGuClutLoad(X, cbp)");
-            	tex_clut_addr_low = normalArgument;
-            	break;
+                tex_clut_addr = (tex_clut_addr & 0xff000000) | normalArgument;
+                log ("sceGuClutLoad(X, lo(cbp=0x" + Integer.toHexString(tex_clut_addr) + "))");
+                break;
+            }
+
+            case CBPH: {
+                tex_clut_addr = (tex_clut_addr & 0x00ffffff) | ((normalArgument << 8) & 0x0f000000);
+                log ("sceGuClutLoad(X, hi(cbp=0x" + Integer.toHexString(tex_clut_addr) + "))");
+                break;
             }
 
             case CLOAD: {
-            	log ("sceGuClutLoad(num_blocks, X)");
             	tex_clut_num_blocks = normalArgument;
+            	log ("sceGuClutLoad(num_blocks=" + tex_clut_num_blocks + ", X)");
             	break;
             }
 
             case CMODE: {
-            	log ("sceGuClutMode(cpsm, shift, mask, X)");
-            	tex_clut_mode =  normalArgument     & 0x03;
-            	tex_clut_mask = (normalArgument>>8) & 0xFF;
-            	break;
+                tex_clut_mode   =  normalArgument       & 0x03;
+                tex_clut_shift  = (normalArgument >> 2) & 0x3F;
+                tex_clut_mask   = (normalArgument >> 8) & 0xFF;
+                tex_clut_start  = (normalArgument >> 16) & 0xFF;
+                log ("sceGuClutMode(cpsm=" + tex_clut_mode + ", shift=" + tex_clut_shift + ", mask=" + tex_clut_mask + ", start=" + tex_clut_start + ")");
+                break;
             }
 
             case TFLUSH:
@@ -948,8 +1027,8 @@ public class VideoEngine {
             	Memory 	mem = Memory.getInstance();
             	Buffer 	final_buffer = null;
             	int 	texture_type = 0;
-            	int		texclut =  ((tex_clut_addr_high&0xFF0000)<<8) | tex_clut_addr_low;
-            	int 	texaddr = (texture_base_pointer0 & 0xFFFFF0) | ((texture_base_width0<<8) & 0xFF000000);
+            	int		texclut = tex_clut_addr;
+            	int 	texaddr = texture_base_pointer0;
             	texaddr &= 0xFFFFFFF;
 
                 final int[] texturetype_mapping = {
@@ -967,26 +1046,25 @@ public class VideoEngine {
             				case CMODE_FORMAT_16BIT_ABGR4444: {
             					if (texclut == 0)
             						return;
-            					
+
             					texture_type = texturetype_mapping[tex_clut_mode];
 
             					if (!texture_swizzle) {
 		            				for (int i = 0, j = 0; i < texture_width0*texture_height0; i += 2, j++) {
-	
-		            					int clut = mem.read8(texaddr+j);
-	
+
+		            					int index = mem.read8(texaddr+j);
+
 		            					// TODO:  I don't know if it's correct, or should read the 4bits in
 		            					//       reverse order
-		            					tmp_texture_buffer16[i] 	= (short)mem.read16(texclut + ((clut>>4)&0xF)*2);
-		            					tmp_texture_buffer16[i+1] 	= (short)mem.read16(texclut + (clut&0xF)*2);
+		            					tmp_texture_buffer16[i] 	= (short)mem.read16(texclut + getClutIndex((index >> 4) & 0xF) * 2);
+		            					tmp_texture_buffer16[i+1] 	= (short)mem.read16(texclut + getClutIndex( index       & 0xF) * 2);
 		            				}
+                                    final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
 	        					} else {
 	        						VideoEngine.log.error("Unhandled swizzling on clut4/16 textures");
 		                            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
 		                            break;
 	        					}
-
-	            				final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
 
 	            				break;
 	            			}
@@ -994,26 +1072,26 @@ public class VideoEngine {
 	            			case CMODE_FORMAT_32BIT_ABGR8888: {
 	            				if (texclut == 0)
             						return;
-	            				
+
 	            				texture_type = GL.GL_UNSIGNED_BYTE;
 
 	            				if (!texture_swizzle) {
 		            				for (int i = 0, j = 0; i < texture_width0*texture_height0; i += 2, j++) {
-	
-		            					int clut = mem.read8(texaddr+j);
-	
+
+		            					int index = mem.read8(texaddr+j);
+
 		            					// TODO:  I don't know if it's correct, or should read the 4bits in
 		            					//       reverse order
-		            					tmp_texture_buffer32[i] 	= mem.read32(texclut + ((clut>>4)&0xF)*4);
-		            					tmp_texture_buffer32[i+1] 	= mem.read32(texclut + (clut&0xF)*4);
+		            					tmp_texture_buffer32[i] 	= mem.read32(texclut + getClutIndex((index >> 4) & 0xF) * 4);
+		            					tmp_texture_buffer32[i+1] 	= mem.read32(texclut + getClutIndex( index       & 0xF) * 4);
 		            				}
+                                    final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
 	            				} else {
-            						VideoEngine.log.error("Unhandled swizzling on clut4/32 textures");
-		                            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
+            						//VideoEngine.log.error("Unhandled swizzling on clut4/32 textures");
+		                            //Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
+                                    final_buffer = unswizzleTexture32();
 		                            break;
 	        					}
-	            				
-	            				final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
 
 	            				break;
 	            			}
@@ -1035,21 +1113,20 @@ public class VideoEngine {
             				case CMODE_FORMAT_16BIT_ABGR4444: {
             					if (texclut == 0)
             						return;
-            					
+
             					texture_type = texturetype_mapping[tex_clut_mode];
-            					
+
             					if (!texture_swizzle) {
 		            				for (int i = 0; i < texture_width0*texture_height0; i++) {
-		            					int clut = mem.read8(texaddr+i);
-		            					tmp_texture_buffer16[i] 	= (short)mem.read16(texclut + clut*2);
+		            					int index = mem.read8(texaddr+i);
+		            					tmp_texture_buffer16[i] 	= (short)mem.read16(texclut + getClutIndex(index) * 2);
 		            				}
+                                    final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
             					} else {
             						VideoEngine.log.error("Unhandled swizzling on clut8/16 textures");
     	                            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
     	                            break;
             					}
-
-	            				final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
 
 	            				break;
 	            			}
@@ -1057,22 +1134,22 @@ public class VideoEngine {
 	            			case CMODE_FORMAT_32BIT_ABGR8888: {
 	            				if (texclut == 0)
             						return;
-	            				
+
 	            				texture_type = GL.GL_UNSIGNED_BYTE;
 
 	            				if (!texture_swizzle) {
 		            				for (int i = 0; i < texture_width0*texture_height0; i++) {
-		            					int clut = mem.read8(texaddr+i);
-		            					tmp_texture_buffer32[i] = mem.read32(texclut + clut*4);
+		            					int index = mem.read8(texaddr+i);
+		            					tmp_texture_buffer32[i] = mem.read32(texclut + getClutIndex(index) * 4);
 		            				}
+                                    final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
 	            				} else {
-	            					VideoEngine.log.error("Unhandled swizzling on clut8/32 textures");
-	    	                        Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
+	            					//VideoEngine.log.error("Unhandled swizzling on clut8/32 textures");
+	    	                        //Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
+                                    final_buffer = unswizzleTexture32();
 	    	                        break;
 	            				}
 
-	            				final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
-	            				
 	            				break;
 	            			}
 
@@ -1088,49 +1165,32 @@ public class VideoEngine {
 
                     case TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650:
                     case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551:
-                    case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444: {                    	
+                    case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444: {
                         texture_type = texturetype_mapping[texture_storage];
 
                         if (!texture_swizzle) {
+                            /* TODO replace the loop with 1 line to ShortBuffer.wrap
+                             * but be careful of vram/mainram addresses
+                            final_buffer = ShortBuffer.wrap(
+                                memory.videoram.array(),
+                                texaddr - MemoryMap.START_VRAM + memory.videoram.arrayOffset(),
+                                texture_width0 * texture_height0).slice();
+                            final_buffer = ShortBuffer.wrap(
+                                memory.mainmemory.array(),
+                                texaddr - MemoryMap.START_RAM + memory.mainmemory.arrayOffset(),
+                                texture_width0 * texture_height0).slice();
+                            */
+
 	                    	for (int i = 0; i < texture_width0*texture_height0; i++) {
 	                    		int pixel = mem.read16(texaddr+i*2);
 	                    		tmp_texture_buffer16[i] = (short)pixel;
 	                    	}
-	                    	
+
 	                    	final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
                         } else {
-                        	// UnSwizzling based on pspplayer
-	        				int rowWidth = texture_width0 * 2;
-	        				int pitch = ( rowWidth - 16 ) / 4;
-	        				int bxc = rowWidth / 16;
-	        				int byc = texture_height0 / 8;
-	        				
-	        				int src = texaddr, ydest = 0;
-	        				  
-	        				for( int by = 0; by < byc; by++ )
-	        				{
-	        					int xdest = ydest;
-	        				    for( int bx = 0; bx < bxc; bx++ )
-	        				    {
-        				    		int dest = xdest;
-					                for( int n = 0; n < 8; n++ )
-					                {
-					                	tmp_texture_buffer32[dest] = mem.read32(src);
-					                	tmp_texture_buffer32[dest+1] = mem.read32(src+4);
-					                	tmp_texture_buffer32[dest+2] = mem.read32(src+8);
-					                	tmp_texture_buffer32[dest+3] = mem.read32(src+12);
-					                    
-					                	src		+= 4*4;
-					                	dest 	+= pitch+4;
-					                }
-					                xdest += (16/4);
-						        }
-						        ydest += (rowWidth * 8)/4;
-	        				}
-	        				
-	        				final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
+                            final_buffer = unswizzleTextureFromMemory(texaddr, 2);
              			}
-                        
+
             			break;
             		}
 
@@ -1138,42 +1198,26 @@ public class VideoEngine {
             			texture_type = GL.GL_UNSIGNED_INT_8_8_8_8_REV;
 
             			if (!texture_swizzle) {
+                            /* TODO replace the loop with 1 line to IntBuffer.wrap
+                             * but be careful of vram/mainram addresses
+                            final_buffer = IntBuffer.wrap(
+                                memory.videoram.array(),
+                                texaddr - MemoryMap.START_VRAM + memory.videoram.arrayOffset(),
+                                texture_width0 * texture_height0).slice();
+                            final_buffer = IntBuffer.wrap(
+                                memory.mainmemory.array(),
+                                texaddr - MemoryMap.START_RAM + memory.mainmemory.arrayOffset(),
+                                texture_width0 * texture_height0).slice();
+                            */
+
 	                    	for (int i = 0; i < texture_width0*texture_height0; i++) {
 	                    		tmp_texture_buffer32[i] = mem.read32(texaddr+i*4);
 	                    	}
-            			} else {
-            				// UnSwizzling based on pspplayer
-	        				int rowWidth = texture_width0 * 4;
-	        				int pitch = ( rowWidth - 16 ) / 4;
-	        				int bxc = rowWidth / 16;
-	        				int byc = texture_height0 / 8;
-	        				
-	        				int src = texaddr, ydest = 0;
-	        				  
-	        				for( int by = 0; by < byc; by++ )
-	        				{
-	        					int xdest = ydest;
-	        				    for( int bx = 0; bx < bxc; bx++ )
-	        				    {
-        				    		int dest = xdest;
-					                for( int n = 0; n < 8; n++ )
-					                {
-					                	tmp_texture_buffer32[dest] = mem.read32(src);
-					                	tmp_texture_buffer32[dest+1] = mem.read32(src+4);
-					                	tmp_texture_buffer32[dest+2] = mem.read32(src+8);
-					                	tmp_texture_buffer32[dest+3] = mem.read32(src+12);
-					                    
-					                	src		+= 4*4;
-					                	dest 	+= pitch+4;
-					                }
-					                xdest += (16/4);
-						        }
-						        ydest += (rowWidth * 8)/4;
-	        				}
-            			}
-            				
 
-                    	final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
+                            final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
+            			} else {
+                            final_buffer = unswizzleTextureFromMemory(texaddr, 4);
+            			}
             			break;
             		}
 
@@ -1189,7 +1233,7 @@ public class VideoEngine {
             	gl.glBindTexture  (GL.GL_TEXTURE_2D, gl_texture_id[0]);
             	gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, tex_min_filter);
             	gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_mag_filter);
-            	
+
             	int texture_format = texture_type == GL.GL_UNSIGNED_SHORT_5_6_5_REV ? GL.GL_RGB : GL.GL_RGBA;
 
             	gl.glTexImage2D  (	GL.GL_TEXTURE_2D,
@@ -1304,7 +1348,7 @@ public class VideoEngine {
             }
 
             case TMAP: {
-            	log ("sceGuTexMapMode(mode, X, X)");            	
+            	log ("sceGuTexMapMode(mode, X, X)");
             	tex_map_mode = normalArgument & 3;
             	break;
             }
@@ -1332,7 +1376,7 @@ public class VideoEngine {
 	           		case 1: env_mode = GL.GL_DECAL; break;
 	           		case 2: env_mode = GL.GL_BLEND; break;
 	           		case 3: env_mode = GL.GL_REPLACE; break;
-	           		case 4: env_mode = GL.GL_ADD; break;           			 
+	           		case 4: env_mode = GL.GL_ADD; break;
            			default: VideoEngine.log.warn("Unimplemented tfunc mode");
            		}
            		// TODO : fix this !
@@ -1340,7 +1384,7 @@ public class VideoEngine {
            		//gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, (normalArgument & 0x100) != 0 ? GL.GL_PREVIOUS : GL.GL_TEXTURE);
            		log("tfunc");
             	break;
-            	
+
             case TEC:
             	tex_env_color[0] = ((normalArgument      ) & 255) / 255.f;
             	tex_env_color[1] = ((normalArgument >>  8) & 255) / 255.f;
@@ -1462,7 +1506,7 @@ public class VideoEngine {
                 switch (tex_map_mode) {
 	                case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV:
 	                	break;
-	                	
+
 	                case TMAP_TEXTURE_MAP_MODE_TEXTURE_MATRIX:
 	                	gl.glMultMatrixf (texture_uploaded_matrix, 0);
 	                	break;
@@ -1511,7 +1555,7 @@ public class VideoEngine {
                 // override materials, so at least we'll see something, otherwise it would be black
                 if (vinfo.color != 0)
                 	gl.glEnable(GL.GL_COLOR_MATERIAL);
-                
+
                 Memory mem = Memory.getInstance();
                 switch (type) {
                     case PRIM_POINT:
@@ -1545,10 +1589,10 @@ public class VideoEngine {
                                 int addr2 = vinfo.getAddress(mem, i + 1);
                                 VertexState v1 = vinfo.readVertex(mem, addr1);
                                 VertexState v2 = vinfo.readVertex(mem, addr2);
-                                
+
                                 // V1
                                 if (vinfo.normal   != 0) gl.glNormal3f(v1.nx, v1.ny, v1.nz);
-                                if (vinfo.color    != 0) gl.glColor4f(v1.r, v1.g, v1.b, v1.a);
+                                if (vinfo.color    != 0) gl.glColor4f(v2.r, v2.g, v2.b, v2.a); // color from v2 not v1
 
                                 if (vinfo.texture  != 0) gl.glTexCoord2f(v1.u, v1.v);
                                 if (vinfo.position != 0) gl.glVertex3f(v1.px, v1.py, v1.pz);
@@ -1565,7 +1609,6 @@ public class VideoEngine {
 
                                 if (vinfo.texture  != 0) gl.glTexCoord2f(v1.u, v2.v);
                                 if (vinfo.position != 0) gl.glVertex3f(v1.px, v2.py, v1.pz);
-
                             }
                         gl.glEnd();
                         gl.glPopAttrib();
@@ -1595,10 +1638,12 @@ public class VideoEngine {
 
             case ALPHA: {
 
-            	int blend_mode = GL.GL_FUNC_ADD;
-            	int src = getBlendOp(normalArgument&0xF), dst = getBlendOp((normalArgument>>4)&0xF);
+                int blend_mode = GL.GL_FUNC_ADD;
+                int src = getBlendOp( normalArgument        & 0xF);
+                int dst = getBlendOp((normalArgument >> 4 ) & 0xF);
+                int op  =            (normalArgument >> 8 ) & 0xF;
 
-            	switch ((normalArgument>>8)&0xF) {
+            	switch (op) {
 	            	case ALPHA_SOURCE_BLEND_OPERATION_ADD:
 	            		blend_mode = GL.GL_FUNC_ADD;
 	            		break;
@@ -1620,7 +1665,9 @@ public class VideoEngine {
 	            		break;
 
 	                case ALPHA_SOURCE_BLEND_OPERATION_ABSOLUTE_VALUE:
-	                	log ("Unhandled blend mode ");
+                    default:
+	                	VideoEngine.log.error("Unhandled blend mode " + op);
+                        Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
 	                	break;
             	}
 
@@ -1807,6 +1854,8 @@ public class VideoEngine {
 
             case CLEAR:
                 if ((normalArgument & 0x1)==0) {
+                    // set clear color, actarus/sam
+                    //gl.glClearColor(vinfo.lastVertex.r, vinfo.lastVertex.g, vinfo.lastVertex.b, vinfo.lastVertex.a);
                 	gl.glClear(clearFlags);
 		            log("guclear");
 				} else {
