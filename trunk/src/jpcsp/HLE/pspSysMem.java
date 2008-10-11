@@ -325,7 +325,7 @@ public class pspSysMem {
     {
         // Return 1.5 for now
         int version = PSP_FIRMWARE_150;
-        Modules.log.debug("sceKernelDevkitVersion 0x" + Integer.toHexString(version));
+        Modules.log.debug("sceKernelDevkitVersion return:0x" + Integer.toHexString(version));
         Emulator.getProcessor().cpu.gpr[2] = version;
     }
 

@@ -121,7 +121,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
             case FileManager.FORMAT_PSP:
                 break;
             default:
-                throw new IOException("Is not an acceptable format, please choose the rigth file.");
+                throw new IOException("Is not an acceptable format, please choose the right file.");
         }
     }
 

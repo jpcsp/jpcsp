@@ -149,7 +149,7 @@ public class Memory {
             int page = indexFromAddr(address);
             return (int)buf.getShort(page + (address & PAGE_MASK)) & 0xFFFF;
         } catch (Exception e) {
-        	Memory.log.error("read16 - " + e.getMessage());
+            Memory.log.error("read16 - " + e.getMessage());
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_READ);
             return 0;
         }
@@ -189,7 +189,7 @@ public class Memory {
             //          {
             //              u32 *addr;
             //              int i;
-            //          
+            //
             //              addr = (u32*) (0x80000000 | ((sceKernelProbeExecutableObject & 0x03FFFFFF) << 2));
             //              //printf("sceKernelProbeExecutableObject %p\n", addr);
             //              for(i = 0; i < 100; i++)
@@ -200,7 +200,7 @@ public class Memory {
             //                      addr[i] = (LOAD_EXEC_PLAIN_PATCH | (addr[i] & ~0xFFE0FFFF));
             //                  }
             //              }
-            //          
+            //
             //              addr = (u32*) (0x80000000 | ((sceKernelCheckPspConfig & 0x03FFFFFF) << 2));
             //              //printf("sceCheckPspConfig %p\n", addr);
             //              for(i = 0; i < 100; i++)
@@ -211,17 +211,18 @@ public class Memory {
             //                      addr[i] = (LOAD_EXEC_PLAIN_PATCH | (addr[i] & ~0xFFE0FFFF));
             //                  }
             //              }
-            //          
+            //
             //              sceKernelDcacheWritebackAll();
-            //          
+            //
             //              return 0;
             //          }
             //
-        	if (address >= 0x8f800020 && address <= 0x8f8001ac) {
-        		return 0;
-        	}
+            if (address >= 0x8f800020 && address <= 0x8f8001ac) {
+                Memory.log.debug("read32 - ignoring pspSdkInstallNoPlainModuleCheckPatch");
+                return 0;
+            }
 
-        	Memory.log.error("read32 - " + e.getMessage());
+            Memory.log.error("read32 - " + e.getMessage());
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_READ);
             return 0;
         }
@@ -233,7 +234,7 @@ public class Memory {
             int page = indexFromAddr(address);
             return buf.getInt(page + (address & PAGE_MASK));
         } catch (Exception e) {
-        	Memory.log.error("read32 - " + e.getMessage());
+            Memory.log.error("read32 - " + e.getMessage());
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_READ);
             return 0;
         }
@@ -244,7 +245,7 @@ public class Memory {
         try {
             return buf.getInt(page + (address & PAGE_MASK));
         } catch (Exception e) {
-        	Memory.log.error("read32 - " + e.getMessage());
+            Memory.log.error("read32 - " + e.getMessage());
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_READ);
             return 0;
         }
@@ -256,7 +257,7 @@ public class Memory {
             buf.put(page + (address & PAGE_MASK), data);
             pspdisplay.get_instance().write8(address, data);
         } catch (Exception e) {
-        	Memory.log.error("write8 - " + e.getMessage());
+            Memory.log.error("write8 - " + e.getMessage());
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_WRITE);
         }
     }
@@ -266,7 +267,7 @@ public class Memory {
             buf.put(page + (address & PAGE_MASK), data);
             pspdisplay.get_instance().write8(address, data);
         } catch (Exception e) {
-        	Memory.log.error("write8 - " + e.getMessage());
+            Memory.log.error("write8 - " + e.getMessage());
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_WRITE);
         }
     }
@@ -277,7 +278,7 @@ public class Memory {
             buf.putShort(page + (address & PAGE_MASK), data);
             pspdisplay.get_instance().write16(address, data);
         } catch (Exception e) {
-        	Memory.log.error("write16 - " + e.getMessage());
+            Memory.log.error("write16 - " + e.getMessage());
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_WRITE);
         }
     }
@@ -288,7 +289,7 @@ public class Memory {
             buf.putInt(page + (address & PAGE_MASK), data);
             pspdisplay.get_instance().write32(address, data);
         } catch (Exception e) {
-        	Memory.log.error("write32 - " + e.getMessage());
+            Memory.log.error("write32 - " + e.getMessage());
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_WRITE);
         }
     }
@@ -298,7 +299,7 @@ public class Memory {
             buf.putInt(page + (address & PAGE_MASK), data);
             pspdisplay.get_instance().write32(address, data);
         } catch (Exception e) {
-        	Memory.log.error("write32 - " + e.getMessage());
+            Memory.log.error("write32 - " + e.getMessage());
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_WRITE);
         }
     }
@@ -309,7 +310,7 @@ public class Memory {
             buf.putLong(page + (address & PAGE_MASK), data);
             //pspdisplay.get_instance().write64(address, data);
         } catch (Exception e) {
-        	Memory.log.error("write64 - " + e.getMessage());
+            Memory.log.error("write64 - " + e.getMessage());
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_WRITE);
         }
     }
