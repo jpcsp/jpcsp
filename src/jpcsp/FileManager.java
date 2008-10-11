@@ -53,6 +53,7 @@ public class FileManager {
     private int loadAddressLow, loadAddressHigh; // The space consumed by the program image
     private List<DeferredStub> deferredImports;
 
+
     public FileManager(ByteBuffer f) throws FileNotFoundException, IOException {
         loadAndDefine(f, 0x08800000);
     }
@@ -118,6 +119,13 @@ public class FileManager {
             /*try xxxx format*/
             /*try xxxx format*/
 
+            Emulator.log.info("unrecognized file format");
+            f.position(0);
+            byte m0 = f.get();
+            byte m1 = f.get();
+            byte m2 = f.get();
+            byte m3 = f.get();
+            Emulator.log.info(String.format("File magic %02X %02X %02X %02X", m0, m1, m2, m3));
 
             //NONE FORMAT SELECTED OR DETECTED :(
         } finally {
@@ -138,7 +146,6 @@ public class FileManager {
         } else {
             Emulator.log.error("NOT AN ELF FILE");
         }
-
     }
 
     private void readElf32Header(long relocationBaseoffset) {
@@ -159,7 +166,6 @@ public class FileManager {
     }
 
     private void processPbp(long relocationBaseoffset) throws IOException {
-
         if (getPBP().isValid()) {
 
             if (Settings.getInstance().readBool("emu.pbpunpack")) {
