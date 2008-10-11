@@ -15,15 +15,13 @@ You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package jpcsp.HLE.modules;
+package jpcsp.HLE.kernel;
 
-public class SceModule {
+public class SceModule extends SceUid {
     private String name;
     private int startAddr;
     private int attr;
-    private int uid;
     public static final int flashModuleUid = 0;
-    private static int currentUid = 100;
 
     public SceModule() {
     }
@@ -50,17 +48,5 @@ public class SceModule {
 
     public void setAttr(int attr) {
         this.attr = attr;
-    }
-
-    public int getUid() {
-        return uid;
-    }
-
-    public void setUid(int uid) {
-        this.uid = uid;
-    }
-
-    public int nextUid() {
-        return currentUid++;
     }
 }

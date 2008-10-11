@@ -28,7 +28,7 @@ import jpcsp.HLE.pspiofilemgr;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
-import jpcsp.HLE.modules.SceModule;
+import jpcsp.HLE.kernel.SceModule;
 
 import jpcsp.Emulator;
 import jpcsp.FileManager;
