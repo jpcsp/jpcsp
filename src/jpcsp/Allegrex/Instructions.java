@@ -3361,7 +3361,7 @@ public String disasm(int address, int insn) {
 	int vt5 = (insn>>16)&31;
 	int rs = (insn>>21)&31;
 
-return Common.disasmVTIMMRS("lvl", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2) - 12);
+return Common.disasmVTIMMRS("lvl", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));
 }
 };
 public static final Instruction LVRQ = new Instruction(117) {
@@ -3549,7 +3549,7 @@ public String disasm(int address, int insn) {
 	int vt5 = (insn>>16)&31;
 	int rs = (insn>>21)&31;
 
-return Common.disasmVTIMMRS("svl", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2) - 12);
+return Common.disasmVTIMMRS("svl", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));
 }
 };
 public static final Instruction SVRQ = new Instruction(123) {
@@ -7035,17 +7035,26 @@ public void compile(Processor processor, int insn) {
 }
 @Override
 public String disasm(int address, int insn) {
+	int satx = (insn>>0)&3;
+	int saty = (insn>>2)&3;
+	int satz = (insn>>4)&3;
+	int satw = (insn>>6)&3;
+	int mskx = (insn>>8)&1;
+	int msky = (insn>>9)&1;
+	int mskz = (insn>>10)&1;
+	int mskw = (insn>>11)&1;
+	
 	int[] sat, msk;
 	sat = new int[4];
 	msk = new int[4];
-	sat[0] = (insn>>0)&3;
-	sat[1] = (insn>>2)&3;
-	sat[2] = (insn>>4)&3;
-	sat[3] = (insn>>6)&3;
-	msk[0] = (insn>>8)&1;
-	msk[1] = (insn>>9)&1;
-	msk[2] = (insn>>10)&1;
-	msk[3] = (insn>>11)&1;
+	sat[0] = satx;
+	sat[1] = saty;
+	sat[2] = satz;
+	sat[3] = satw;
+	msk[0] = mskx;
+	msk[1] = msky;
+	msk[2] = mskz;
+	msk[3] = mskw;
 
 return Common.disasmVPFXD("VPFXD", sat, msk);
 }

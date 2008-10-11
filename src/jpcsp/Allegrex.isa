@@ -2972,7 +2972,7 @@ group root
             compile = `
             `
 
-            disasm = `return Common.disasmVTIMMRS("lv", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));`
+            disasm = `return Common.disasmVTIMMRS("sv", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));`
         }
 
         op SWB(111110:rs:vt5:imm14:1:vt1)
@@ -3854,7 +3854,7 @@ group root
             compile = `
             `
 
-            disasm = `return "Unimplemented MTV";`
+            disasm = `return Common.disasmVDRS("MTV", imm7, rt);`
         }
  
         op MTVC(010010:00:111:rt:0:0000000:1:imm7)
@@ -4789,7 +4789,7 @@ group root
             compile = `
             `
 
-            disasm = `return "Unimplemented VCST";`
+            disasm = `return Common.disasmVDCST("VCST", 1+one+(two<<1), vd, imm5);`
         }
  
         op VF2IN(110100:10:000:imm5:two:vs:one:vd)
@@ -4942,7 +4942,31 @@ group root
             compile = `
             `
 
-            disasm = `return "Unimplemented VPFXS";`
+            disasm = `
+            int[] swz = new int[4];
+			boolean[] abs, cst, neg;
+			abs = new boolean[4];
+			cst = new boolean[4];
+			neg = new boolean[4];
+			
+			swz[0] = swzx;
+		    swz[1] = swzy;
+		    swz[2] = swzz;
+		    swz[3] = swzw;
+		    abs[0] = absx != 0;
+		    abs[1] = absy != 0;
+		    abs[2] = absz != 0;
+		    abs[3] = absw != 0;
+		    cst[0] = cstx != 0;
+		    cst[1] = csty != 0;
+		    cst[2] = cstz != 0;
+		    cst[3] = cstw != 0;
+		    neg[0] = negx != 0;
+		    neg[1] = negy != 0;
+		    neg[2] = negz != 0;
+		    neg[3] = negw != 0;
+		
+			return Common.disasmVPFX("VPFXS", swz, abs, cst, neg);`
         }
 
         op VPFXT(110111:01:----:negw:negz:negy:negx:cstw:cstz:csty:cstx:absw:absz:absy:absx:swzw:swzz:swzy:swzx)
@@ -4963,7 +4987,31 @@ group root
             compile = `
             `
 
-            disasm = `return "Unimplemented VPFXT";`
+            disasm = `
+            int[] swz = new int[4];
+	boolean[] abs, cst, neg;
+	abs = new boolean[4];
+	cst = new boolean[4];
+	neg = new boolean[4];
+	
+	swz[0] = swzx;
+    swz[1] = swzy;
+    swz[2] = swzz;
+    swz[3] = swzw;
+    abs[0] = absx != 0;
+    abs[1] = absy != 0;
+    abs[2] = absz != 0;
+    abs[3] = absw != 0;
+    cst[0] = cstx != 0;
+    cst[1] = csty != 0;
+    cst[2] = cstz != 0;
+    cst[3] = cstw != 0;
+    neg[0] = negx != 0;
+    neg[1] = negy != 0;
+    neg[2] = negz != 0;
+    neg[3] = negw != 0;
+
+return Common.disasmVPFX("VPFXT", swz, abs, cst, neg);`
         }
 
         op VPFXD(110111:10:------------:mskw:mskz:msky:mskx:satw:satz:saty:satx)
@@ -4982,7 +5030,20 @@ group root
             compile = `
             `
 
-            disasm = `return "Unimplemented VPFXD";`
+            disasm = `
+            	int[] sat, msk;
+				sat = new int[4];
+				msk = new int[4];
+				sat[0] = satx;
+				sat[1] = saty;
+				sat[2] = satz;
+				sat[3] = satw;
+				msk[0] = mskx;
+				msk[1] = msky;
+				msk[2] = mskz;
+				msk[3] = mskw;
+			
+				return Common.disasmVPFXD("VPFXD", sat, msk);`
         }
 
         op VIIM(110111:11:0:vd:imm16)
@@ -4998,7 +5059,7 @@ group root
             compile = `
             `
 
-            disasm = `return "Unimplemented VIIM";`
+            disasm = `return Common.disasmVDIIM("VIIM", 1, vd, imm16);`
         }
  
         op VFIM(110111:11:1:vd:imm16)
@@ -5014,7 +5075,7 @@ group root
             compile = `
             `
 
-            disasm = `return "Unimplemented VFIM";`
+            disasm = `return Common.disasmVDFIM("VFIM", 1, vd, imm16);`
         }
     }
 
@@ -5033,7 +5094,7 @@ group root
             compile = `
             `
 
-            disasm = `return "Unimplemented VMMUL";`
+            disasm = `return Common.disasmVDMVSMVTM("VMMUL", 1+one+(two<<1), vd, vs, vt);`
         }
 
         op VHTFM2(111100:001:vt:0:vs:0:vd)
@@ -5177,7 +5238,7 @@ group root
             compile = `
             `
 
-            disasm = `return "Unimplemented VMMOV";`
+            disasm = `return Common.disasmVDMVSM("VMMOV", 1+one+(two<<1), vd, vs);`
         }
 
         op VMIDT(111100:111:00:00011:two:0000000:one:vd)
@@ -5193,7 +5254,7 @@ group root
             compile = `
             `
 
-            disasm = `return "Unimplemented VMIDT";`
+            disasm = `return Common.disasmVDM("VMIDT", 1+one+(two<<1), vd);`
         }
 
         op VMZERO(111100:111:00:00110:two:0000000:one:vd)
@@ -5209,7 +5270,7 @@ group root
             compile = `
             `
 
-            disasm = `return "Unimplemented VMZERO";`
+            disasm = `return Common.disasmVDM("VMZERO", 1+one+(two<<1), vd);`
         }
 
         op VMONE(111100:111:00:00111:two:0000000:one:vd)
@@ -5225,7 +5286,7 @@ group root
             compile = `
             `
 
-            disasm = `return "Unimplemented VMONE";`
+            disasm = `return Common.disasmVDM("VMONE", 1+one+(two<<1), vd);`
         }
 
         op VROT(111100:111:01:imm5:two:vs:one:vd)
@@ -5241,7 +5302,7 @@ group root
             compile = `
             `
 
-            disasm = `return "Unimplemented VROT";`
+            disasm = `return Common.disasmVROT("VROT", 1+one+(two<<1), vd, vs, imm5);`
         }
 
     }
