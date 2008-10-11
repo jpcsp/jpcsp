@@ -5139,7 +5139,7 @@ group root
             category=`VFPU`
 
             interpret = `
-                processor.cpu.doVMSCL(1+one+(two<<1), vd, vs);
+                processor.cpu.doVMSCL(1+one+(two<<1), vd, vs, vt);
             `
 
             compile = `

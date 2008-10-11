@@ -6,7 +6,6 @@
 package jpcsp.HLE;
 
 import jpcsp.HLE.modules.*;
-import jpcsp.HLE.modules150.LoadCoreForKernel;
 
 import java.nio.ByteBuffer;
 
