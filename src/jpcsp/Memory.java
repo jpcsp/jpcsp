@@ -160,6 +160,67 @@ public class Memory {
             int page = indexFromAddr(address);
             return buf.getInt(page + (address & PAGE_MASK));
         } catch (Exception e) {
+            //
+            // Ugly hack for programs using pspsdk :-(
+            //
+            // The function pspSdkInstallNoPlainModuleCheckPatch()
+            // is trying to patch 2 psp modules and is expecting to have
+            // the module stub implemented as a Jump instruction,
+            // something like:
+            //          [08XXXXXX]: j YYYYYYYY        // YYYYYYYY = XXXXXX << 2
+            //          [00000000]: nop
+            //
+            // Jpcsp is however based on the following code sequence, e.g.:
+            //          [03E00008]: jr $ra
+            //          [00081B4C]: syscall 0x0206D
+            //
+            // The function pspSdkInstallNoPlainModuleCheckPatch()
+            // is retrieving the address of the Jump instruction and reading
+            // from it in kernel mode.
+            // On jpcsp, it is thus trying to read at the following address
+            //          0x8f800020 = (0x03E00008 << 2) || 0x80000000
+            // up to    0x8f8001ac
+            //
+            // The hack here is to allow these memory reads and returns 0.
+            //
+            // Here is the C code from pspsdk:
+            //
+            //          int pspSdkInstallNoPlainModuleCheckPatch(void)
+            //          {
+            //              u32 *addr;
+            //              int i;
+            //          
+            //              addr = (u32*) (0x80000000 | ((sceKernelProbeExecutableObject & 0x03FFFFFF) << 2));
+            //              //printf("sceKernelProbeExecutableObject %p\n", addr);
+            //              for(i = 0; i < 100; i++)
+            //              {
+            //                  if((addr[i] & 0xFFE0FFFF) == LOAD_EXEC_PLAIN_CHECK)
+            //                  {
+            //                      //printf("Found instruction %p\n", &addr[i]);
+            //                      addr[i] = (LOAD_EXEC_PLAIN_PATCH | (addr[i] & ~0xFFE0FFFF));
+            //                  }
+            //              }
+            //          
+            //              addr = (u32*) (0x80000000 | ((sceKernelCheckPspConfig & 0x03FFFFFF) << 2));
+            //              //printf("sceCheckPspConfig %p\n", addr);
+            //              for(i = 0; i < 100; i++)
+            //              {
+            //                  if((addr[i] & 0xFFE0FFFF) == LOAD_EXEC_PLAIN_CHECK)
+            //                  {
+            //                      //printf("Found instruction %p\n", &addr[i]);
+            //                      addr[i] = (LOAD_EXEC_PLAIN_PATCH | (addr[i] & ~0xFFE0FFFF));
+            //                  }
+            //              }
+            //          
+            //              sceKernelDcacheWritebackAll();
+            //          
+            //              return 0;
+            //          }
+            //
+        	if (address >= 0x8f800020 && address <= 0x8f8001ac) {
+        		return 0;
+        	}
+
         	Memory.log.error("read32 - " + e.getMessage());
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_READ);
             return 0;
