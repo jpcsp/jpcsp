@@ -387,6 +387,30 @@ public class ThreadMan {
         }
     }
 
+    public int createThread(String name, int entry_addr, int initPriority, int stackSize, int attr, int option_addr, boolean startImmediately, int userDataLength, int userDataAddr) {
+        SceKernelThreadInfo thread = new SceKernelThreadInfo(name, entry_addr, initPriority, stackSize, attr);
+
+        if (startImmediately) {
+            // Copy user data to the new thread's stack, since we are not
+            // starting the thread immediately, only marking it as ready,
+            // the data needs to be saved somewhere safe.
+            int alignlen = (userDataLength + 3) & ~3; // 4 byte align
+            Memory mem = Memory.getInstance();
+            for (int i = 0; i < userDataLength; i++)
+                mem.write8((thread.stack_addr - alignlen) + i, (byte)mem.read8(userDataAddr + i));
+            for (int i = userDataLength; i < alignlen; i++)
+                mem.write8((thread.stack_addr - alignlen) + i, (byte)0);
+            thread.cpuContext.gpr[29] -= alignlen; // Adjust sp for size of user data
+            // TODO test on real psp if userDataLength is not 32-bit aligned will the psp align it?
+            thread.cpuContext.gpr[4] = userDataLength; // a0 = userDataLength
+            thread.cpuContext.gpr[5] = thread.cpuContext.gpr[29]; // a1 = pointer to copy of data at data_addr
+
+            thread.status = PspThreadStatus.PSP_THREAD_READY;
+        	contextSwitch(thread);
+        }
+
+        return thread.uid;
+    }
 
     public void ThreadMan_sceKernelCreateThread(int name_addr, int entry_addr,
         int initPriority, int stackSize, int attr, int option_addr) {

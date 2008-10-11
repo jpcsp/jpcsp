@@ -27,6 +27,7 @@ import jpcsp.filesystems.umdiso.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.HashMap;
 import java.util.Iterator;
 import jpcsp.Emulator;
@@ -203,6 +204,79 @@ public class pspiofilemgr {
         ThreadMan.get_instance().yieldCurrentThread();
     }
 
+    public SeekableDataInput getFile(String filename, int flags) {
+    	SeekableDataInput resultFile = null;
+
+    	String pcfilename = getDeviceFilePath(filename);
+        if (pcfilename != null) {
+            if (isUmdPath(pcfilename)) {
+                // check umd is mounted
+                if (iso == null) {
+                    Modules.log.error("getFile - no umd mounted");
+                    return resultFile;
+                // check flags are valid
+                } else if ((flags & PSP_O_WRONLY) == PSP_O_WRONLY ||
+                    (flags & PSP_O_CREAT) == PSP_O_CREAT ||
+                    (flags & PSP_O_TRUNC) == PSP_O_TRUNC) {
+                    // should we refuse (return -1) or just ignore?
+                    Modules.log.error("getFile - refusing to open umd media for write");
+                    return resultFile;
+                } else {
+                    // open file
+                    try {
+                        UmdIsoFile file = iso.getFile(trimUmdPrefix(pcfilename));
+                        resultFile = file;
+                    } catch(FileNotFoundException e) {
+                        if (debug) Modules.log.debug("getFile - umd file not found (ok to ignore this message, debug purpose only)");
+                    } catch(IOException e) {
+                        Modules.log.error("getFile - error opening umd media: " + e.getMessage());
+                    }
+                }
+            } else {
+                // First check if the file already exists
+                File file = new File(pcfilename);
+                if (file.exists() &&
+                    (flags & PSP_O_CREAT) == PSP_O_CREAT &&
+                    (flags & PSP_O_EXCL) == PSP_O_EXCL) {
+                    // PSP_O_CREAT + PSP_O_EXCL + file already exists = error
+                    if (debug) Modules.log.debug("getFile - file already exists (PSP_O_CREAT + PSP_O_EXCL)");
+                } else {
+                    if (file.exists() &&
+                        (flags & PSP_O_TRUNC) == PSP_O_TRUNC) {
+                        if (debug) Modules.log.warn("getFile - file already exists, deleting UNIMPLEMENT (PSP_O_TRUNC)");
+                        //file.delete();
+                    }
+                    String mode = getMode(flags);
+
+					try {
+						SeekableRandomFile raf = new SeekableRandomFile(pcfilename, mode);
+	                    resultFile = raf;
+					} catch (FileNotFoundException e) {
+                        Modules.log.error("getFile - error opening file: " + e.getMessage());
+					}
+                }
+            }
+        }
+
+        return resultFile;
+    }
+
+    private String getMode(int flags) {
+    	String mode = null;
+
+    	// PSP_O_RDWR check must come before the individual PSP_O_RDONLY and PSP_O_WRONLY checks
+        if ((flags & PSP_O_RDWR) == PSP_O_RDWR) {
+            mode = "rw";
+        } else if ((flags & PSP_O_RDONLY) == PSP_O_RDONLY || flags == 0) {
+            mode = "r";
+        } else if ((flags & PSP_O_WRONLY) == PSP_O_WRONLY) {
+            // SeekableRandomFile doesn't support write only
+            mode = "rw";
+        }
+
+        return mode;
+    }
+
     public void sceIoOpen(int filename_addr, int flags, int permissions) {
         String filename = readStringZ(Memory.getInstance().mainmemory, (filename_addr & 0x3fffffff) - MemoryMap.START_RAM);
         if (debug) Modules.log.debug("sceIoOpen filename = " + filename + " flags = " + Integer.toHexString(flags) + " permissions = " + Integer.toOctalString(permissions));
@@ -219,17 +293,9 @@ public class pspiofilemgr {
             if ((flags & PSP_O_NOWAIT) == PSP_O_NOWAIT) Modules.log.debug("PSP_O_NOWAIT");
         }
 
-        String mode;
+        String mode = getMode(flags);
 
-        // PSP_O_RDWR check must come before the individual PSP_O_RDONLY and PSP_O_WRONLY checks
-        if ((flags & PSP_O_RDWR) == PSP_O_RDWR) {
-            mode = "rw";
-        } else if ((flags & PSP_O_RDONLY) == PSP_O_RDONLY) {
-            mode = "r";
-        } else if ((flags & PSP_O_WRONLY) == PSP_O_WRONLY) {
-            // SeekableRandomFile doesn't support write only
-            mode = "rw";
-        } else {
+        if (mode == null) {
             Modules.log.error("sceIoOpen - unhandled flags " + Integer.toHexString(flags));
             Emulator.getProcessor().cpu.gpr[2] = -1;
             return;

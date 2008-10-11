@@ -6,6 +6,8 @@
 package jpcsp.HLE;
 
 import jpcsp.HLE.modules.*;
+import jpcsp.HLE.modules150.LoadCoreForKernel;
+
 import java.nio.ByteBuffer;
 
 import org.apache.log4j.Logger;
@@ -30,6 +32,7 @@ public class Modules {
     public static Kernel_Library Kernel_LibraryModule = new Kernel_Library();
     public static ModuleMgrForUser ModuleMgrForUserModule = new ModuleMgrForUser();
     public static sceMpeg sceMpegModule = new sceMpeg();
+    public static LoadCoreForKernel LoadCoreForKernelModule = new LoadCoreForKernel();
 
     public static Logger log = Logger.getLogger("hle");
 
