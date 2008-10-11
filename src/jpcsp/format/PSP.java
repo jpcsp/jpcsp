@@ -26,9 +26,11 @@ import static jpcsp.util.Utilities.*;
  * @author shadow
  */
 public class PSP {  /* format ~PSP */
-    private long e_magic; 
-    
+    private long e_magic;
+
     private void read(ByteBuffer f) throws IOException {
+        if (f.capacity() == 0)
+            return;
         e_magic = readUWord(f);
     }
     public PSP(ByteBuffer f) throws IOException {

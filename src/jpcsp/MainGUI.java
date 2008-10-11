@@ -84,9 +84,9 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     boolean umdLoaded;
     private Point mainwindowPos; // stores the last known window position
     private boolean snapConsole = true;
-	private JMenu RecentMenu;
-	private Vector<String> recentUMD = new Vector<String>();
-	private Vector<String> recentFile = new Vector<String>();
+    private JMenu RecentMenu;
+    private Vector<String> recentUMD = new Vector<String>();
+    private Vector<String> recentFile = new Vector<String>();
 
     /** Creates new form MainGUI */
     public MainGUI() {
@@ -242,7 +242,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         FileMenu.add(OpenMemStick);
-        
+
         RecentMenu.setText("Load Recent");
         populateRecentMenu();
         FileMenu.add(RecentMenu);
@@ -314,16 +314,16 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         DebugMenu.add(EnterMemoryViewer);
-        
+
         VfpuRegisters.setText("VFPU registers");
         VfpuRegisters.addActionListener(new java.awt.event.ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				VfpuFrame.getInstance().setVisible(true);
-			}        	
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                VfpuFrame.getInstance().setVisible(true);
+            }
         });
         DebugMenu.add(VfpuRegisters);
-        
+
 
         ToggleConsole.setText("Toggle Console");
         ToggleConsole.addActionListener(new java.awt.event.ActionListener() {
@@ -369,47 +369,47 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     }// </editor-fold>//GEN-END:initComponents
 
     private void populateRecentMenu() {
-    	RecentMenu.removeAll();
-    	recentUMD.clear();
-    	recentFile.clear();    	
-    	
-    	Settings.getInstance().readRecent("umd", recentUMD);
-    	Settings.getInstance().readRecent("file", recentFile);
-    	
-    	if(recentUMD.size() > 0) {
-    		for(int i = 0; i < recentUMD.size(); ++i) {
-    			JMenuItem item = new JMenuItem(recentUMD.get(i));
-    			item.addActionListener(new ActionListener() {
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						File file = new File(((JMenuItem)e.getSource()).getText());
-						if(file.exists())
-							loadUMD(file);
-					}
-    				
-    			});
-    			RecentMenu.add(item);
-    		}
-    		if(recentFile.size() > 0)
-    			RecentMenu.addSeparator();
-    	}
-    	
-    	if(recentFile.size() > 0) {
-    		for(int i = 0; i < recentFile.size(); ++i) {
-    			JMenuItem item = new JMenuItem(recentFile.get(i));
-    			item.addActionListener(new ActionListener() {
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						File file = new File(((JMenuItem)e.getSource()).getText());
-						if(file.exists())
-							loadFile(file);
-					}
-    				
-    			});
-    			RecentMenu.add(item);
-    		}
-    	}
-	}
+        RecentMenu.removeAll();
+        recentUMD.clear();
+        recentFile.clear();
+
+        Settings.getInstance().readRecent("umd", recentUMD);
+        Settings.getInstance().readRecent("file", recentFile);
+
+        if(recentUMD.size() > 0) {
+            for(int i = 0; i < recentUMD.size(); ++i) {
+                JMenuItem item = new JMenuItem(recentUMD.get(i));
+                item.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        File file = new File(((JMenuItem)e.getSource()).getText());
+                        if(file.exists())
+                            loadUMD(file);
+                    }
+
+                });
+                RecentMenu.add(item);
+            }
+            if(recentFile.size() > 0)
+                RecentMenu.addSeparator();
+        }
+
+        if(recentFile.size() > 0) {
+            for(int i = 0; i < recentFile.size(); ++i) {
+                JMenuItem item = new JMenuItem(recentFile.get(i));
+                item.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        File file = new File(((JMenuItem)e.getSource()).getText());
+                        if(file.exists())
+                            loadFile(file);
+                    }
+
+                });
+                RecentMenu.add(item);
+            }
+        }
+    }
 
 private void ToggleConsoleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ToggleConsoleActionPerformed
     if (!consolewin.isVisible() && snapConsole) {
@@ -481,7 +481,7 @@ public void loadFile(File file) {
         if (consolewin != null)
             consolewin.clearScreenMessages();
         this.setTitle(version + " - " + file.getName());
-        
+
         addRecentFile(file);
 
         umdLoaded = false;
@@ -502,6 +502,8 @@ public void loadFile(File file) {
             instructioncounter.RefreshWindow();
         StepLogger.clear();
         StepLogger.setName(file.getPath());
+    } catch (GeneralJpcspException e) {
+        JpcspDialogManager.showError(this, "General Error : " + e.getMessage());
     } catch (IOException e) {
         e.printStackTrace();
         JpcspDialogManager.showError(this, "IO Error : " + e.getMessage());
@@ -512,35 +514,35 @@ public void loadFile(File file) {
     }
 
 private void addRecentFile(File file) {
-	try {
-		String s = file.getCanonicalPath();
-		int pos;
-		if((pos = recentFile.indexOf(s)) != -1) 
-			recentFile.remove(pos);
-		recentFile.insertElementAt(s, 0);
-		while(recentFile.size() > MAX_RECENT)
-			recentFile.remove(MAX_RECENT);
-		Settings.getInstance().writeRecent("file", recentFile);
-		populateRecentMenu();
-	} catch (IOException e) {
-		e.printStackTrace();
-	}	
+    //try {
+        String s = file.getPath(); //file.getCanonicalPath();
+        int pos;
+        if((pos = recentFile.indexOf(s)) != -1)
+            recentFile.remove(pos);
+        recentFile.insertElementAt(s, 0);
+        while(recentFile.size() > MAX_RECENT)
+            recentFile.remove(MAX_RECENT);
+        Settings.getInstance().writeRecent("file", recentFile);
+        populateRecentMenu();
+    //} catch (IOException e) {
+    //    e.printStackTrace();
+    //}
 }
 
 private void addRecentUMD(File file) {
-	try {
-		String s = file.getCanonicalPath();
-		int pos;
-		if((pos = recentUMD.indexOf(s)) != -1) 
-			recentUMD.remove(pos);
-		recentUMD.insertElementAt(s, 0);
-		while(recentUMD.size() > MAX_RECENT)
-			recentUMD.remove(MAX_RECENT);
-		Settings.getInstance().writeRecent("umd", recentUMD);
-		populateRecentMenu();
-	} catch (IOException e) {
-		e.printStackTrace();
-	}	
+    try {
+        String s = file.getCanonicalPath();
+        int pos;
+        if((pos = recentUMD.indexOf(s)) != -1)
+            recentUMD.remove(pos);
+        recentUMD.insertElementAt(s, 0);
+        while(recentUMD.size() > MAX_RECENT)
+            recentUMD.remove(MAX_RECENT);
+        Settings.getInstance().writeRecent("umd", recentUMD);
+        populateRecentMenu();
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
 }
 
 private void PauseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PauseButtonActionPerformed
@@ -687,7 +689,7 @@ public void loadUMD(File file) {
 
         umdLoaded = true;
         loadedFile = file;
-        
+
         addRecentUMD(file);
 
         UmdIsoReader iso = new UmdIsoReader(file.getPath());
@@ -703,10 +705,18 @@ public void loadUMD(File file) {
         setTitle(version + " - " + params.getString("TITLE"));
 
         UmdIsoFile bootBin = iso.getFile("PSP_GAME/SYSDIR/BOOT.BIN");
-        byte[] bootfile = new byte[(int)bootBin.length()];
-        bootBin.read(bootfile);
-        ByteBuffer buf1 = ByteBuffer.wrap(bootfile);
-        emulator.load("disc0:/PSP_GAME/SYSDIR/BOOT.BIN", buf1);
+        if (bootBin.length() != 0) {
+            byte[] bootfile = new byte[(int)bootBin.length()];
+            bootBin.read(bootfile);
+            ByteBuffer buf1 = ByteBuffer.wrap(bootfile);
+            emulator.load("disc0:/PSP_GAME/SYSDIR/BOOT.BIN", buf1);
+        } else {
+            bootBin = iso.getFile("PSP_GAME/SYSDIR/EBOOT.BIN");
+            byte[] bootfile = new byte[(int)bootBin.length()];
+            bootBin.read(bootfile);
+            ByteBuffer buf1 = ByteBuffer.wrap(bootfile);
+            emulator.load("disc0:/PSP_GAME/SYSDIR/EBOOT.BIN", buf1);
+        }
 
         pspiofilemgr.get_instance().setfilepath("disc0/");
         //pspiofilemgr.get_instance().setfilepath("disc0/PSP_GAME/SYSDIR");
@@ -717,6 +727,8 @@ public void loadUMD(File file) {
             instructioncounter.RefreshWindow();
         StepLogger.clear();
         StepLogger.setName(file.getPath());
+    } catch (GeneralJpcspException e) {
+        JpcspDialogManager.showError(this, "General Error : " + e.getMessage());
     } catch (IOException e) {
         e.printStackTrace();
         JpcspDialogManager.showError(this, "IO Error : " + e.getMessage());

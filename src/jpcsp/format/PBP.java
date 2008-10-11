@@ -53,7 +53,7 @@ public class PBP {
     private PSF psf;
 
     public boolean isValid() {
-        return ((p_magic & 0xFFFFFFFFL) == PBP_MAGIC);
+        return (size_pbp != 0 && (p_magic & 0xFFFFFFFFL) == PBP_MAGIC);
     }
 
     public void setElf32(Elf32 elf) {
@@ -78,6 +78,8 @@ public class PBP {
 
     public PBP(ByteBuffer f) throws IOException {
         size_pbp = (int)f.capacity();
+        if (size_pbp == 0)
+            return;
         p_magic = readUWord(f);
         if (isValid())
         {
@@ -193,7 +195,7 @@ public class PBP {
         if (!pbp.isValid())
         {
             return;
-       }
+        }
         File dir = new File(PBP_UNPACK_PATH_PREFIX);
         deleteDir(dir);//delete all files and directory
         dir.mkdir();

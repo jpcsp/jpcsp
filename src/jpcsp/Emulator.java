@@ -88,13 +88,13 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
     }
     */
 
-    public void load(String pspfilename, ByteBuffer f) throws IOException {
+    public void load(String pspfilename, ByteBuffer f) throws IOException, GeneralJpcspException {
         this.pspfilename = pspfilename;
 
         //  here load fileName, iso or etc...
         processLoading(f);
         if (!mediaImplemented) {
-            throw new IOException("This kind of file format still not supported.");
+            throw new GeneralJpcspException("This kind of file format still not supported.");
         }
 
         // Delete breakpoints and reset to PC
