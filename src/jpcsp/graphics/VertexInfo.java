@@ -99,33 +99,56 @@ public class VertexInfo {
         return ptr_vertex + i * vertexSize;
     }
 
+    public VertexState lastVertex = new VertexState();
     public VertexState readVertex(Memory mem, int addr) {
         VertexState v = new VertexState();
 
-		for (int i = 0; i < skinningWeightCount; ++i) {
-			switch (weight) {
-			case 1:
-				v.boneWeights[i] = mem.read8(addr); addr += 1;
-				break;
-			case 2:
-				v.boneWeights[i] = mem.read16(addr); addr += 2;
-				break;
-			case 3:
-				v.boneWeights[i] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-				break;
-			}
-			//System.err.println(String.format("Weight %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f", v.boneWeights[0], v.boneWeights[1], v.boneWeights[2], v.boneWeights[3], v.boneWeights[4], v.boneWeights[5], v.boneWeights[6], v.boneWeights[7]));
-		}
+        // testing
+        if (false) {
+            int u0 = mem.read8(addr);
+            int u1 = mem.read8(addr + 1);
+            int u2 = mem.read8(addr + 2);
+            int u3 = mem.read8(addr + 3);
+            int u4 = mem.read8(addr + 4);
+            int u5 = mem.read8(addr + 5);
+            int u6 = mem.read8(addr + 6);
+            int u7 = mem.read8(addr + 7);
+            int u8 = mem.read8(addr + 8);
+            int u9 = mem.read8(addr + 9);
+            int u10 = mem.read8(addr + 10);
+            int u11 = mem.read8(addr + 11);
+            int u12 = mem.read8(addr + 12);
+            VideoEngine.log.debug("vertex "
+                + String.format("%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x ",
+                    u0, u1, u2, u3, u4, u5, u6, u7, u8, u9, u10, u11, u12));
+        }
 
+        //VideoEngine.log.debug("skinning " + String.format("0x%08x", addr));
+        for (int i = 0; i < skinningWeightCount; ++i) {
+            switch (weight) {
+            case 1:
+                v.boneWeights[i] = mem.read8(addr); addr += 1;
+                break;
+            case 2:
+                v.boneWeights[i] = mem.read16(addr); addr += 2;
+                break;
+            case 3:
+                v.boneWeights[i] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+                break;
+            }
+            //System.err.println(String.format("Weight %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f", v.boneWeights[0], v.boneWeights[1], v.boneWeights[2], v.boneWeights[3], v.boneWeights[4], v.boneWeights[5], v.boneWeights[6], v.boneWeights[7]));
+        }
+
+        //VideoEngine.log.debug("texture " + String.format("0x%08x", addr));
         switch(texture) {
             case 1:
-                v.u = mem.read8(addr); addr += 1;
-                v.v = mem.read8(addr); addr += 1;
+                v.u = (byte)mem.read8(addr); addr += 1;
+                v.v = (byte)mem.read8(addr); addr += 1;
                 VideoEngine.log.warn("texture type 1 " + v.u + ", " + v.v + "");
                 break;
             case 2:
-                v.u = mem.read16(addr); addr += 2;
-                v.v = mem.read16(addr); addr += 2;
+                v.u = (short)mem.read16(addr); addr += 2;
+                v.v = (short)mem.read16(addr); addr += 2;
                 VideoEngine.log.warn("texture type 2 " + v.u + ", " + v.v + "");
                 break;
             case 3:
@@ -134,41 +157,46 @@ public class VertexInfo {
                 break;
         }
 
+        //VideoEngine.log.debug("color " + String.format("0x%08x", addr));
         switch(color) {
             case 1: case 2: case 3: VideoEngine.log.warn("unimplemented color type " + color); addr += 1; break;
             case 4: case 5: VideoEngine.log.warn("unimplemented color type " + color); addr += 2; break;
 
             case 6: { // GU_COLOR_4444
                 int packed = mem.read16(addr); addr += 2;
-                v.r = (float)((packed      ) & 0xf) / 15;
-                v.g = (float)((packed >>  4) & 0xf) / 15;
-                v.b = (float)((packed >>  8) & 0xf) / 15;
-                v.a = (float)((packed >> 12) & 0xf) / 15;
+                v.r = ((packed      ) & 0xf) / 15.0f;
+                v.g = ((packed >>  4) & 0xf) / 15.0f;
+                v.b = ((packed >>  8) & 0xf) / 15.0f;
+                v.a = ((packed >> 12) & 0xf) / 15.0f;
                 VideoEngine.log.warn("color type " + color);
                 break;
             }
 
             case 7: { // GU_COLOR_8888
+                // 32-bit align here instead of on vertexSize, from actarus/sam
+                //addr = (addr + 3) & ~3;
                 int packed = mem.read32(addr); addr += 4;
-                v.r = (float)((packed      ) & 0xff) / 255;
-                v.g = (float)((packed >>  8) & 0xff) / 255;
-                v.b = (float)((packed >> 16) & 0xff) / 255;
-                v.a = (float)((packed >> 24) & 0xff) / 255;
+                v.r = ((packed      ) & 0xff) / 255.0f;
+                v.g = ((packed >>  8) & 0xff) / 255.0f;
+                v.b = ((packed >> 16) & 0xff) / 255.0f;
+                v.a = ((packed >> 24) & 0xff) / 255.0f;
+            	//VideoEngine.log.debug("color type 7 " + String.format("r=%.1f g=%.1f b=%.1f (%08X)", v.r, v.g, v.b, packed));
                 break;
             }
         }
 
+        //VideoEngine.log.debug("normal " + String.format("0x%08x", addr));
         switch(normal) {
             case 1:
-                v.nx = mem.read8(addr); addr += 1;
-                v.ny = mem.read8(addr); addr += 1;
-                v.nz = mem.read8(addr); addr += 1;
+                v.nx = (byte)mem.read8(addr); addr += 1;
+                v.ny = (byte)mem.read8(addr); addr += 1;
+                v.nz = (byte)mem.read8(addr); addr += 1;
                 VideoEngine.log.warn("normal type 1 " + v.nx + ", " + v.ny + ", " + v.nz + "");
                 break;
             case 2:
-                v.nx = mem.read16(addr); addr += 2;
-                v.ny = mem.read16(addr); addr += 2;
-                v.nz = mem.read16(addr); addr += 2;
+                v.nx = (short)mem.read16(addr); addr += 2;
+                v.ny = (short)mem.read16(addr); addr += 2;
+                v.nz = (short)mem.read16(addr); addr += 2;
                 VideoEngine.log.warn("normal type 2 " + v.nx + ", " + v.ny + ", " + v.nz + "");
                 break;
             case 3:
@@ -176,28 +204,32 @@ public class VertexInfo {
                 v.ny = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
                 v.nz = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
                 break;
-		}
+        }
 
-		switch (position) {
-			case 1:
-				v.px = mem.read8(addr); addr += 1;
-				v.py = mem.read8(addr); addr += 1;
-				v.pz = mem.read8(addr); addr += 1;
+        //VideoEngine.log.debug("position " + String.format("0x%08x", addr));
+        switch (position) {
+            case 1:
+                v.px = (byte)mem.read8(addr); addr += 1;
+                v.py = (byte)mem.read8(addr); addr += 1;
+                v.pz = (byte)mem.read8(addr); addr += 1;
                 VideoEngine.log.trace("vertex type 1 " + v.px + ", " + v.py + ", " + v.pz + "");
-				break;
-			case 2:
-				v.px = mem.read16(addr); addr += 2;
-				v.py = mem.read16(addr); addr += 2;
-				v.pz = mem.read16(addr); addr += 2;
+                break;
+            case 2:
+                v.px = (short)mem.read16(addr); addr += 2;
+                v.py = (short)mem.read16(addr); addr += 2;
+                v.pz = (short)mem.read16(addr); addr += 2;
                 VideoEngine.log.trace("vertex type 2 " + v.px + ", " + v.py + ", " + v.pz + "");
-				break;
-			case 3: // GU_VERTEX_32BITF
-				v.px = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-				v.py = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-				v.pz = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-				break;
-		}
+                break;
+            case 3: // GU_VERTEX_32BITF
+                v.px = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+                v.py = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+                v.pz = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+                break;
+        }
 
+        //VideoEngine.log.debug("end " + String.format("0x%08x", addr) + " size=" + vertexSize);
+
+        lastVertex = v;
         return v;
     }
 
