@@ -23,6 +23,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
+import jpcsp.HLE.kernel.types.SceUid;
 import java.util.HashMap;
 import java.util.Iterator;
 import jpcsp.Emulator;
@@ -30,6 +31,9 @@ import jpcsp.GeneralJpcspException;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import static jpcsp.util.Utilities.*;
+
+import jpcsp.HLE.kernel.types.*;
+import jpcsp.HLE.kernel.managers.*;
 
 /**
  *
@@ -292,7 +296,7 @@ public class pspSysMem {
 
     public void sceKernelFreePartitionMemory(int uid) throws GeneralJpcspException
     {
-        SceUIDMan.get_instance().checkUidPurpose(uid, "SysMem", true);
+        SceUidManager.checkUidPurpose(uid, "SysMem", true);
         SysMemInfo info = blockList.remove(uid);
         if (info == null) {
             Modules.log.warn("sceKernelFreePartitionMemory unknown SceUID=" + Integer.toHexString(uid));
@@ -306,7 +310,7 @@ public class pspSysMem {
 
     public void sceKernelGetBlockHeadAddr(int uid) throws GeneralJpcspException
     {
-        SceUIDMan.get_instance().checkUidPurpose(uid, "SysMem", true);
+        SceUidManager.checkUidPurpose(uid, "SysMem", true);
         SysMemInfo info = blockList.get(uid);
         if (info == null) {
             Modules.log.warn("sceKernelGetBlockHeadAddr unknown SceUID=" + Integer.toHexString(uid));
@@ -341,7 +345,7 @@ public class pspSysMem {
             this.size = size;
             this.addr = addr;
 
-            uid = SceUIDMan.get_instance().getNewUid("SysMem");
+            uid = SceUidManager.getNewUid("SysMem");
             blockList.put(uid, this);
         }
 

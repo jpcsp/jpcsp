@@ -22,6 +22,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE;
 
+import jpcsp.HLE.kernel.types.SceUid;
 import jpcsp.filesystems.*;
 import jpcsp.filesystems.umdiso.*;
 import java.io.File;
@@ -34,6 +35,9 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import static jpcsp.util.Utilities.*;
+
+import jpcsp.HLE.kernel.types.*;
+import jpcsp.HLE.kernel.managers.*;
 
 /**
  *
@@ -171,7 +175,7 @@ public class pspiofilemgr {
     public void sceIoPollAsync(int uid, int res_addr) {
         if (debug) Modules.log.debug("sceIoPollAsync - uid " + Integer.toHexString(uid) + " res:0x" + Integer.toHexString(res_addr));
 
-        SceUIDMan.get_instance().checkUidPurpose(uid, "IOFileManager-File", true);
+        SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
         IoInfo info = filelist.get(uid);
         if (info == null) {
             Modules.log.warn("sceIoPollAsync - unknown uid " + Integer.toHexString(uid));
@@ -390,7 +394,7 @@ public class pspiofilemgr {
         if (debug) Modules.log.debug("sceIoClose - uid " + Integer.toHexString(uid));
 
         try {
-            SceUIDMan.get_instance().checkUidPurpose(uid, "IOFileManager-File", true);
+            SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
             IoInfo info = filelist.remove(uid);
             if (info == null) {
                 if (uid != 1 && uid != 2) // stdin and stderr
@@ -398,7 +402,7 @@ public class pspiofilemgr {
                 Emulator.getProcessor().cpu.gpr[2] = -1;
             } else {
                 info.readOnlyFile.close();
-                SceUIDMan.get_instance().releaseUid(info.uid, "IOFileManager-File");
+                SceUidManager.releaseUid(info.uid, "IOFileManager-File");
                 info.result = 0;
                 Emulator.getProcessor().cpu.gpr[2] = 0;
             }
@@ -431,7 +435,7 @@ public class pspiofilemgr {
             if (debug) Modules.log.debug("sceIoWrite - uid " + Integer.toHexString(uid) + " data " + Integer.toHexString(data_addr) + " size " + size);
 
             try {
-                SceUIDMan.get_instance().checkUidPurpose(uid, "IOFileManager-File", true);
+                SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
                 IoInfo info = filelist.get(uid);
                 if (info == null) {
                     Modules.log.warn("sceIoWrite - unknown uid " + Integer.toHexString(uid));
@@ -476,7 +480,7 @@ public class pspiofilemgr {
             Emulator.getProcessor().cpu.gpr[2] = 0;
         } else {
             try {
-                SceUIDMan.get_instance().checkUidPurpose(uid, "IOFileManager-File", true);
+                SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
                 IoInfo info = filelist.get(uid);
                 if (info == null) {
                     Modules.log.warn("sceIoRead - unknown uid " + Integer.toHexString(uid));
@@ -558,7 +562,7 @@ public class pspiofilemgr {
                 Emulator.getProcessor().cpu.gpr[3] = -1;
         } else {
             try {
-                SceUIDMan.get_instance().checkUidPurpose(uid, "IOFileManager-File", true);
+                SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
                 IoInfo info = filelist.get(uid);
                 if (info == null) {
                     Modules.log.warn("seek - unknown uid " + Integer.toHexString(uid));
@@ -696,7 +700,7 @@ public class pspiofilemgr {
     public void sceIoDread(int uid, int dirent_addr) {
         if (debug) Modules.log.debug("sceIoDread - uid = " + Integer.toHexString(uid) + " dirent = " + Integer.toHexString(dirent_addr));
 
-        SceUIDMan.get_instance().checkUidPurpose(uid, "IOFileManager-Directory", true);
+        SceUidManager.checkUidPurpose(uid, "IOFileManager-Directory", true);
         IoDirInfo info = dirlist.get(uid);
         if (info == null) {
             Modules.log.warn("sceIoDread - unknown uid " + Integer.toHexString(uid));
@@ -723,13 +727,13 @@ public class pspiofilemgr {
     public void sceIoDclose(int uid) {
         if (debug) Modules.log.debug("sceIoDclose - uid = " + Integer.toHexString(uid));
 
-        SceUIDMan.get_instance().checkUidPurpose(uid, "IOFileManager-Directory", true);
+        SceUidManager.checkUidPurpose(uid, "IOFileManager-Directory", true);
         IoDirInfo info = dirlist.remove(uid);
         if (info == null) {
             Modules.log.warn("sceIoDclose - unknown uid " + Integer.toHexString(uid));
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
         } else {
-            SceUIDMan.get_instance().releaseUid(info.uid, "IOFileManager-Directory");
+            SceUidManager.releaseUid(info.uid, "IOFileManager-Directory");
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
     }
@@ -890,7 +894,7 @@ public class pspiofilemgr {
             this.mode = mode;
             this.flags = flags;
             this.permissions = permissions;
-            uid = SceUIDMan.get_instance().getNewUid("IOFileManager-File");
+            uid = SceUidManager.getNewUid("IOFileManager-File");
             filelist.put(uid, this);
         }
 
@@ -900,7 +904,7 @@ public class pspiofilemgr {
             this.mode = mode;
             this.flags = flags;
             this.permissions = permissions;
-            uid = SceUIDMan.get_instance().getNewUid("IOFileManager-File");
+            uid = SceUidManager.getNewUid("IOFileManager-File");
             filelist.put(uid, this);
         }
     }
@@ -928,7 +932,7 @@ public class pspiofilemgr {
             if (filenames.length > position && filenames[position].equals("\01"))
                 position++;
 
-            uid = SceUIDMan.get_instance().getNewUid("IOFileManager-Directory");
+            uid = SceUidManager.getNewUid("IOFileManager-Directory");
             dirlist.put(uid, this);
         }
 

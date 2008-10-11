@@ -29,8 +29,10 @@ import jpcsp.Processor;
 import static jpcsp.util.Utilities.*;
 
 import jpcsp.Allegrex.CpuState; // New-Style Processor
-import jpcsp.HLE.SceUIDMan;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
+
+import jpcsp.HLE.kernel.types.*;
+import jpcsp.HLE.kernel.managers.*;
 
 public class sceUmdUser implements HLEModule {
 
@@ -270,7 +272,7 @@ public class sceUmdUser implements HLEModule {
         int uid = cpu.gpr[4];
         Modules.log.warn("UNIMPLEMENTED:sceUmdRegisterUMDCallBack SceUID=" + Integer.toHexString(uid));
 
-        if (SceUIDMan.get_instance().checkUidPurpose(uid, "ThreadMan-callback", false)) {
+        if (SceUidManager.checkUidPurpose(uid, "ThreadMan-callback", false)) {
             UMDCallBackList.put(uid, uid);
             cpu.gpr[2] = 0;
         } else {
@@ -286,7 +288,7 @@ public class sceUmdUser implements HLEModule {
         int uid = cpu.gpr[4];
         Modules.log.debug("sceUmdUnRegisterUMDCallBack SceUID=" + Integer.toHexString(uid));
 
-        if (!SceUIDMan.get_instance().checkUidPurpose(uid, "ThreadMan-callback", false)) {
+        if (!SceUidManager.checkUidPurpose(uid, "ThreadMan-callback", false)) {
             Modules.log.warn("sceUmdUnRegisterUMDCallBack not a callback uid");
             cpu.gpr[2] = -1;
         } else {

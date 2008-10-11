@@ -17,7 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules;
 
-import jpcsp.HLE.kernel.SceModule;
+import jpcsp.HLE.kernel.types.SceModule;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;

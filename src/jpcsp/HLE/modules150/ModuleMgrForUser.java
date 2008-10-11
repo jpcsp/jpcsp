@@ -28,7 +28,7 @@ import jpcsp.HLE.pspiofilemgr;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
-import jpcsp.HLE.kernel.SceModule;
+import jpcsp.HLE.kernel.types.SceModule;
 
 import jpcsp.Emulator;
 import jpcsp.FileManager;
@@ -135,7 +135,6 @@ public class ModuleMgrForUser implements HLEModule {
     	        moduleInput.close();
 
     	        SceModule sceModule = new SceModule();
-    	        sceModule.setUid(sceModule.nextUid());
     	        sceModule.setName(name);
     	        sceModule.setAttr(moduleFileManager.getPSPModuleInfo().getM_attr());
     	        sceModule.setStartAddr((int) (moduleFileManager.getBaseoffset() + moduleFileManager.getElf32().getHeader().getE_entry()));
