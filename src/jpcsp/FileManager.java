@@ -97,9 +97,9 @@ public class FileManager {
             //makes sense put the more used first...
 
             /*try pbp format*/
-            pbp = new PBP(getActualFile());
+            pbp = new PBP(f);
             if (pbp.getOffsetParam() > 0) {
-                Emulator.log.info("PBP meta data :\n" + pbp.readPSF(getActualFile()));
+                Emulator.log.info("PBP meta data :\n" + pbp.readPSF(f));
             }
             processPbp(relocationBaseoffset);
             if (getType() == FORMAT_PBP) {
@@ -107,18 +107,28 @@ public class FileManager {
             }
             /*end try pbp format*/
 
+            /*try encrypted format*/
+            f.position(0);
+            PSP psp = new PSP(f);
+            if (psp.isValid()) {
+                Emulator.log.warn("Encrypted file not supported!");
+                type = FORMAT_PSP;
+                return;
+            }
+
             /*try elf32 format*/
-            elf = new Elf32(getActualFile());
+            f.position(0);
+            elf = new Elf32(f);
             processElf(relocationBaseoffset);
             if (getType() == FORMAT_ELF) {
                 return;
             }
             /*end try elf32 format*/
 
-
             /*try xxxx format*/
             /*try xxxx format*/
 
+            //NONE FORMAT SELECTED OR DETECTED :(
             Emulator.log.info("unrecognized file format");
             f.position(0);
             byte m0 = f.get();
@@ -126,8 +136,6 @@ public class FileManager {
             byte m2 = f.get();
             byte m3 = f.get();
             Emulator.log.info(String.format("File magic %02X %02X %02X %02X", m0, m1, m2, m3));
-
-            //NONE FORMAT SELECTED OR DETECTED :(
         } finally {
             // f.close(); // close or let it open...
         }
