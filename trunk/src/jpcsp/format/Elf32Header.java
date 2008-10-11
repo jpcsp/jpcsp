@@ -45,6 +45,8 @@ public class Elf32Header {
     private int e_shstrndx;
 
     private void read(ByteBuffer f) throws IOException {
+        if (f.capacity() == 0)
+            return;
         e_magic = readUWord(f);
         e_class = readUByte(f);
         e_data = readUByte(f);

@@ -129,13 +129,18 @@ public class FileManager {
             /*try xxxx format*/
 
             //NONE FORMAT SELECTED OR DETECTED :(
-            Emulator.log.info("unrecognized file format");
-            f.position(0);
-            byte m0 = f.get();
-            byte m1 = f.get();
-            byte m2 = f.get();
-            byte m3 = f.get();
-            Emulator.log.info(String.format("File magic %02X %02X %02X %02X", m0, m1, m2, m3));
+            if (f.capacity() == 0) {
+                Emulator.log.info("File is empty");
+            } else {
+                Emulator.log.info("Unrecognized file format");
+                f.position(0);
+
+                byte m0 = f.get();
+                byte m1 = f.get();
+                byte m2 = f.get();
+                byte m3 = f.get();
+                Emulator.log.info(String.format("File magic %02X %02X %02X %02X", m0, m1, m2, m3));
+            }
         } finally {
             // f.close(); // close or let it open...
         }
@@ -152,7 +157,7 @@ public class FileManager {
             readElfProgramHeaders();
             readElfSectionHeaders();
         } else {
-            Emulator.log.error("NOT AN ELF FILE");
+            Emulator.log.debug("NOT AN ELF FILE");
         }
     }
 
