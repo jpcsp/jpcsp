@@ -86,9 +86,12 @@ public class VideoEngine {
 
     int[] light_type = new int[4];
 
+
+	int mat_flags = 0;
     float[] mat_ambient = new float[4];
     float[] mat_diffuse = new float[4];
-    float[] spc_diffuse = new float[4];
+    float[] mat_specular = new float[4];
+	float[] mat_emissive = new float[4];
 
     int texture_storage, texture_num_mip_maps;
     boolean texture_swizzle;
@@ -763,27 +766,58 @@ public class VideoEngine {
             /*
              * Material setup
              */
+            case CMAT:
+            	mat_flags = normalArgument & 7;
+            	log("cmat");
+            	break;
+                
             case AMA:
             	mat_ambient[3] = ((normalArgument      ) & 255) / 255.f;
-            	gl.glMaterialfv(GL.GL_FRONT, GL.GL_AMBIENT, mat_ambient, 0);
-
+            	if((mat_flags & 1) != 0)
+            		gl.glMaterialfv(GL.GL_FRONT, GL.GL_AMBIENT, mat_ambient, 0);
             	break;
+            	
             case AMC:
             	mat_ambient[0] = ((normalArgument	   ) & 255) / 255.f;
             	mat_ambient[1] = ((normalArgument >>  8) & 255) / 255.f;
             	mat_ambient[2] = ((normalArgument >> 16) & 255) / 255.f;
-            	gl.glMaterialfv(GL.GL_FRONT, GL.GL_AMBIENT, mat_ambient, 0);
-
+            	if((mat_flags & 1) != 0)
+            		gl.glMaterialfv(GL.GL_FRONT, GL.GL_AMBIENT, mat_ambient, 0);
             	log("sceGuAmbient");
             	break;
+            	
             case DMC:
             	mat_diffuse[0] = ((normalArgument      ) & 255) / 255.f;
             	mat_diffuse[1] = ((normalArgument >>  8) & 255) / 255.f;
             	mat_diffuse[2] = ((normalArgument >> 16) & 255) / 255.f;
             	mat_diffuse[3] = 1.f;
-            	gl.glMaterialfv(GL.GL_FRONT, GL.GL_DIFFUSE, mat_diffuse, 0);
-
+            	if((mat_flags & 2) != 0)
+            		gl.glMaterialfv(GL.GL_FRONT, GL.GL_DIFFUSE, mat_diffuse, 0);
             	log("sceGuColor");
+            	break;
+            	
+            case EMC:
+            	mat_emissive[0] = ((normalArgument      ) & 255) / 255.f;
+            	mat_emissive[1] = ((normalArgument >>  8) & 255) / 255.f;
+            	mat_emissive[2] = ((normalArgument >> 16) & 255) / 255.f;
+            	mat_emissive[3] = 1.f;
+            	gl.glMaterialfv(GL.GL_FRONT, GL.GL_EMISSION, mat_emissive, 0);
+            	log("material emission");
+            	break;
+            	
+            case SMC:
+            	mat_specular[0] = ((normalArgument      ) & 255) / 255.f;
+            	mat_specular[1] = ((normalArgument >>  8) & 255) / 255.f;
+            	mat_specular[2] = ((normalArgument >> 16) & 255) / 255.f;
+            	mat_specular[3] = 1.f;
+            	if((mat_flags & 4) != 0)
+            		gl.glMaterialfv(GL.GL_FRONT, GL.GL_SPECULAR, mat_specular, 0);
+            	log("material specular");
+            	break;
+            	
+            case SPOW:
+            	gl.glMaterialf(GL.GL_FRONT, GL.GL_SHININESS, floatArgument);
+            	log("material shininess");
             	break;
             	
             case TMS:
@@ -1280,6 +1314,28 @@ public class VideoEngine {
             	}
             	break;
             }
+            
+            case TFUNC:
+           		gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE,
+           				(normalArgument & 0x10000) == 0 ? 1.0f : 2.0f);
+           		/*000 	Modulate
+           		001 	Decal
+           		010 	Blend
+           		011 	Replace
+           		100 	Add*/
+           		int env_mode = GL.GL_MODULATE;
+           		switch(normalArgument & 7) {
+	           		case 0: env_mode = GL.GL_MODULATE; break;
+	           		case 1: env_mode = GL.GL_DECAL; break;
+	           		case 2: env_mode = GL.GL_BLEND; break;
+	           		case 3: env_mode = GL.GL_REPLACE; break;
+	           		case 4: env_mode = GL.GL_ADD; break;           			 
+           			default: VideoEngine.log.warn("Unimplemented tfunc mode");
+           		}
+           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, env_mode);
+           		if((normalArgument & 0x100) == 0)
+           			VideoEngine.log("tfunc : unsupported alpha channel ignore");
+            	break;
 
             /*
              *
@@ -1442,7 +1498,7 @@ public class VideoEngine {
                 // override materials, so at least we'll see something, otherwise it would be black
                 if (vinfo.color != 0)
                 	gl.glEnable(GL.GL_COLOR_MATERIAL);
-
+                
                 Memory mem = Memory.getInstance();
                 switch (type) {
                     case PRIM_POINT:
