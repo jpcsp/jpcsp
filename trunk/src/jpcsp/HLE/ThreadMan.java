@@ -58,7 +58,7 @@ public class ThreadMan {
 
     // TODO figure out a decent number of cycles to wait
     private final int WDT_THREAD_IDLE_CYCLES = 1000000;
-    private final int WDT_THREAD_HOG_CYCLES = 10000000;
+    private final int WDT_THREAD_HOG_CYCLES = 12500000;
 
     public final static int PSP_ERROR_NOT_FOUND_THREAD               = 0x80020198;
     public final static int PSP_ERROR_NOT_FOUND_SEMAPHORE            = 0x80020199;
@@ -392,23 +392,22 @@ public class ThreadMan {
     public int createThread(String name, int entry_addr, int initPriority, int stackSize, int attr, int option_addr, boolean startImmediately, int userDataLength, int userDataAddr) {
         SceKernelThreadInfo thread = new SceKernelThreadInfo(name, entry_addr, initPriority, stackSize, attr);
 
-        if (startImmediately) {
-            // Copy user data to the new thread's stack, since we are not
-            // starting the thread immediately, only marking it as ready,
-            // the data needs to be saved somewhere safe.
-            int alignlen = (userDataLength + 3) & ~3; // 4 byte align
-            Memory mem = Memory.getInstance();
-            for (int i = 0; i < userDataLength; i++)
-                mem.write8((thread.stack_addr - alignlen) + i, (byte)mem.read8(userDataAddr + i));
-            for (int i = userDataLength; i < alignlen; i++)
-                mem.write8((thread.stack_addr - alignlen) + i, (byte)0);
-            thread.cpuContext.gpr[29] -= alignlen; // Adjust sp for size of user data
-            // TODO test on real psp if userDataLength is not 32-bit aligned will the psp align it?
-            thread.cpuContext.gpr[4] = userDataLength; // a0 = userDataLength
-            thread.cpuContext.gpr[5] = thread.cpuContext.gpr[29]; // a1 = pointer to copy of data at data_addr
+        // Copy user data to the new thread's stack, since we are not
+        // starting the thread immediately, only marking it as ready,
+        // the data needs to be saved somewhere safe.
+        int alignlen = (userDataLength + 3) & ~3; // 4 byte align
+        Memory mem = Memory.getInstance();
+        for (int i = 0; i < userDataLength; i++)
+            mem.write8((thread.stack_addr - alignlen) + i, (byte)mem.read8(userDataAddr + i));
+        for (int i = userDataLength; i < alignlen; i++)
+            mem.write8((thread.stack_addr - alignlen) + i, (byte)0);
+        thread.cpuContext.gpr[29] -= alignlen; // Adjust sp for size of user data
+        thread.cpuContext.gpr[4] = userDataLength; // a0 = userDataLength
+        thread.cpuContext.gpr[5] = thread.cpuContext.gpr[29]; // a1 = pointer to copy of data at data_addr
 
+        if (startImmediately) {
             thread.status = PspThreadStatus.PSP_THREAD_READY;
-        	contextSwitch(thread);
+            contextSwitch(thread);
         }
 
         return thread.uid;
@@ -497,7 +496,6 @@ public class ThreadMan {
             for (int i = len; i < alignlen; i++)
                 mem.write8((thread.stack_addr - alignlen) + i, (byte)0);
             thread.cpuContext.gpr[29] -= alignlen; // Adjust sp for size of user data
-            // TODO test on real psp if len is not 32-bit aligned will the psp align it?
             thread.cpuContext.gpr[4] = len; // a0 = len
             thread.cpuContext.gpr[5] = thread.cpuContext.gpr[29]; // a1 = pointer to copy of data at data_addr
             thread.status = PspThreadStatus.PSP_THREAD_READY;
@@ -505,6 +503,8 @@ public class ThreadMan {
             Emulator.getProcessor().cpu.gpr[2] = 0;
 
             // TODO does start thread defer start or really start?
+            // threadstatus.pbp on real PSP shows the callback thread prints
+            // before the main thread, so it starts immediately.
             contextSwitch(thread);
         }
     }

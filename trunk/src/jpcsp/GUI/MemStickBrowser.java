@@ -348,9 +348,9 @@ public class MemStickBrowser extends JDialog {
 		File selectedFile = programs[table.getSelectedRow()];
 			((MainGUI) getParent()).loadFile(selectedFile);
 
-        // Not needed anymore, moved into Emulator.java so we catch regular load file as well as load from mstick browser
-		//((Frame) getParent()).setTitle(MetaInformation.FULL_NAME + " - "
-		//		+ table.getModel().getValueAt(table.getSelectedRow(), 1));
+        // Even though Emulator.java tries to set a title, we're going to do it again because we handle kxploit
+		((Frame) getParent()).setTitle(MetaInformation.FULL_NAME + " - "
+				+ table.getModel().getValueAt(table.getSelectedRow(), 1));
 		setVisible(false);
 		dispose();
 	}
