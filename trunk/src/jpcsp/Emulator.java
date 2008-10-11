@@ -127,13 +127,13 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
 
     private void initElf32() throws IOException {
         mediaImplemented = true;
-        initRamBy(romManager.getElf32());
+        initRamBy(romManager, romManager.getElf32());
         initCpuBy(romManager.getElf32());
     }
 
     private void initPbp() throws IOException {
         mediaImplemented = true;
-        initRamBy(romManager.getPBP().getElf32());
+        initRamBy(romManager, romManager.getPBP().getElf32());
         initCpuBy(romManager.getPBP().getElf32());
 
         // Set gui title from param.sfo
@@ -144,7 +144,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
         }
     }
 
-    private void initRamBy(Elf32 elf) throws IOException {
+    public static void initRamBy(FileManager romManager, Elf32 elf) throws IOException {
         // Relocation
         final boolean logRelocations = false;
         //boolean logRelocations = true;
@@ -398,7 +398,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
                             {
                                 // Save nid for deferred fixup
                                 deferred.add(new DeferredStub(stubHeader.getModuleNamez(), importAddress, nid));
-                                Modules.log.warn("Failed to map NID " + Integer.toHexString(nid) + " (load time)");
+                                Modules.log.warn("Failed to map NID " + Integer.toHexString(nid) + " at 0x" + Integer.toHexString(importAddress + 8) + " (load time)");
                                 numberoffailedNIDS++;
 
                                 // Add a 0xfffff syscall so we can detect if an unresolved import is called

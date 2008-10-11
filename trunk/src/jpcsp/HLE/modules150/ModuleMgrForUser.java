@@ -18,15 +18,24 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.ThreadMan;
+import jpcsp.HLE.pspSysMem;
+import jpcsp.HLE.pspiofilemgr;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.modules.SceModule;
 
 import jpcsp.Emulator;
+import jpcsp.FileManager;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Processor;
+import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.util.Utilities;
 
 import jpcsp.Allegrex.CpuState; // New-Style Processor
@@ -107,10 +116,36 @@ public class ModuleMgrForUser implements HLEModule {
             + "',flags=0x" + Integer.toHexString(flags)
             + ",option=0x" + Integer.toHexString(option_addr) + ")");
 
-        // TODO call HLEModuleManager with the prx name to load
-        // TODO actually load the module into memory and fixup deferred imports
-        // Just return > 0 so it thinks we loaded the module
-		cpu.gpr[2] = 1;
+        if (name.startsWith("flash0:")) {
+        	// Simulate a successful loading
+    		cpu.gpr[2] = SceModule.flashModuleUid;
+    		return;
+        }
+
+        cpu.gpr[2] = -1;
+        try {
+            SeekableDataInput moduleInput = pspiofilemgr.get_instance().getFile(name, flags);
+            if (moduleInput != null) {
+    	        byte[] moduleBytes = new byte[(int) moduleInput.length()];
+    	        moduleInput.readFully(moduleBytes);
+    	        ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
+    	        int loadBase = pspSysMem.get_instance().malloc(2, pspSysMem.PSP_SMEM_Low, moduleBytes.length, 0);
+    	        FileManager moduleFileManager = new FileManager(moduleBuffer, loadBase);
+    	        Emulator.initRamBy(moduleFileManager, moduleFileManager.getElf32());
+    	        moduleInput.close();
+
+    	        SceModule sceModule = new SceModule();
+    	        sceModule.setUid(sceModule.nextUid());
+    	        sceModule.setName(name);
+    	        sceModule.setAttr(moduleFileManager.getPSPModuleInfo().getM_attr());
+    	        sceModule.setStartAddr((int) (moduleFileManager.getBaseoffset() + moduleFileManager.getElf32().getHeader().getE_entry()));
+    	        HLEModuleManager.getInstance().addSceModule(sceModule);
+
+    			cpu.gpr[2] = sceModule.getUid();
+            }
+        } catch (IOException e) {
+        	Modules.log.error("sceKernelLoadModule - Error while loading module " + name + ": " + e.getMessage());
+        }
 	}
 
 	public void sceKernelLoadModuleMs(Processor processor) {
@@ -164,9 +199,23 @@ public class ModuleMgrForUser implements HLEModule {
             + ",status=0x" + Integer.toHexString(status_addr)
             + ",option=0x" + Integer.toHexString(option_addr) + ")");
 
-        // TODO write 0 to status addr?
-        // Just return 0 so it thinks we started the module
-		cpu.gpr[2] = 0;
+        if (uid == SceModule.flashModuleUid) {
+        	// Trying to start a module loaded from flash0:
+        	// Do nothing...
+    		cpu.gpr[2] = 0;
+        	return;
+        }
+
+        SceModule sceModule = HLEModuleManager.getInstance().getSceModuleByUid(uid);
+        if (sceModule == null) {
+            cpu.gpr[2] = -1;
+            Modules.log.error("sceKernelStartModule - unknown module UID " + uid);
+            return;
+        }
+
+        ThreadMan.get_instance().createThread("module" + Integer.toHexString(uid), sceModule.getStartAddr(), 0, 0x4000, sceModule.getAttr(), option_addr, true, argsize, argp_addr);
+
+        cpu.gpr[2] = 0;
 	}
 
 	public void sceKernelStopModule(Processor processor) {

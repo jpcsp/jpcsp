@@ -47,6 +47,7 @@ public class HLEModuleManager {
     private int syscallCodeAllocator;
 
     private List<HLEThread> hleThreadList;
+    private List<SceModule> sceModuleList;
 
     // TODO add more modules here
     private HLEModule[] defaultModules = new HLEModule[] {
@@ -59,6 +60,7 @@ public class HLEModuleManager {
         Modules.Kernel_LibraryModule,
         Modules.ModuleMgrForUserModule,
         Modules.sceMpegModule,
+        Modules.LoadCoreForKernelModule,
     };
 
     public static HLEModuleManager getInstance() {
@@ -76,6 +78,7 @@ public class HLEModuleManager {
         syscallCodeAllocator = 0x4000;
 
         hleThreadList = new LinkedList<HLEThread>();
+        sceModuleList = new LinkedList<SceModule>();
 
         installDefaultModules(pspSysMem.PSP_FIRMWARE_150);
     }
@@ -162,5 +165,20 @@ public class HLEModuleManager {
         } else {
             return false;
         }
+    }
+
+    public void addSceModule(SceModule sceModule) {
+        sceModuleList.add(sceModule);
+    }
+
+    public SceModule getSceModuleByUid(int uid) {
+        for (Iterator<SceModule> it = sceModuleList.iterator(); it.hasNext();) {
+            SceModule sceModule = it.next();
+            if (sceModule.getUid() == uid) {
+                return sceModule;
+            }
+        }
+
+        return null;
     }
 }

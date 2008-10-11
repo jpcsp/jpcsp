@@ -878,8 +878,36 @@ public class syscallsFirm15 {
                  sceNetResolverStartNtoA(0x3042,0x224c5f44),//1.00+
                  /*vampire chronicles */
                  sceFontGetNumFontList(0x3043,0x27f6e642),//1.00+
-                 sceFontGetFontList(0x3044,0xbc75d85b);//1.00+
-                 
+                 sceFontGetFontList(0x3044,0xbc75d85b),//1.00+
+		         sceKernelCheckPspConfigFunction(0x3045, 0xACE23476),
+		         sceKernelCheckExecFileFunction(0x3046, 0x7BE1421C),
+ 		         sceKernelProbeExecutableObjectFunction(0x3047, 0xBF983EF2),
+		         sceKernelLoadExecutableObjectFunction(0x3048, 0x7068E6BA),
+		         sceKernelApplyElfRelSectionFunction(0x3049, 0xB4D6FECC),
+		         sceKernelApplyPspRelSectionFunction(0x3050, 0x54AB2675),
+		         sceKernelDcacheWBinvAllFunction(0x3051, 0x2952F5AC),
+		         sceKernelIcacheClearAllFunction(0x3052, 0xD8779AC6),
+		         sceKernelRegisterLibraryFunction(0x3053, 0x99A695F0),
+		         sceKernelRegisterLibraryForUserFunction(0x3054, 0x5873A31F),
+		         sceKernelReleaseLibraryFunction(0x3055, 0x0B464512),
+		         sceKernelCanReleaseLibraryFunction(0x3056, 0x9BAF90F6),
+		         sceKernelLinkLibraryEntriesFunction(0x3057, 0x0E760DBA),
+		         sceKernelLinkLibraryEntriesForUserFunction(0x3058, 0x0DE1F600),
+		         sceKernelUnLinkLibraryEntriesFunction(0x3059, 0xDA1B09AA),
+		         sceKernelQueryLoadCoreCBFunction(0x3060, 0xC99DD47A),
+		         sceKernelSetBootCallbackLevelFunction(0x3061, 0x616FCCCD),
+		         sceKernelGetModuleFromUIDFunction(0x3062, 0x52A86C21),
+		         sceKernelCreateModuleFunction(0x3063, 0xCD0F3BAC),
+		         sceKernelDeleteModuleFunction(0x3064, 0x6B2371C2),
+		         sceKernelAssignModuleFunction(0x3065, 0x8D8A8ACE),
+		         sceKernelCreateAssignModuleFunction(0x3066, 0xAFF947D4),
+		         sceKernelRegisterModuleFunction(0x3067, 0xAE7C6E76),
+		         sceKernelReleaseModuleFunction(0x3068, 0x74CF001A),
+		         sceKernelFindModuleByNameFunction(0x3069, 0xCF8A41B1),
+		         sceKernelFindModuleByAddressFunction(0x3070, 0xFB8AE27D),
+		         sceKernelFindModuleByUIDFunction(0x3071, 0xCCE4A157),
+		         sceKernelGetModuleListWithAllocFunction(0x3072, 0x929B5C69),
+		         sceKernelGetModuleIdListForKernelFunction(0x3073, 0x05D915DB);
                  
                  
 
