@@ -40,23 +40,22 @@ public class CallbackManager {
     }
     
     public void sceKernelCreateCallback(Processor processor) {
-        CpuState cpu = processor.cpu;
+        int[] gpr = processor.cpu.gpr;
         Memory mem = Processor.memory;
         
-        int name_addr = cpu.gpr[4];
-        int threadId = cpu.gpr[5];
-        int callback_addr = cpu.gpr[6];
-        int callback_arg_addr = cpu.gpr[7];
+        int name_addr = gpr[4];
+        int callback_addr = gpr[5];
+        int callback_arg_addr = gpr[6];
         
         String name = readStringZ(mem.mainmemory,
             (name_addr & 0x3fffffff) - MemoryMap.START_RAM);
 
         // initPattern and currentPattern should be the same at init
-        SceKernelCallbackInfo callback = new SceKernelCallbackInfo(name, threadId, callback_addr, callback_arg_addr);
+        SceKernelCallbackInfo callback = new SceKernelCallbackInfo(name, callback_addr, callback_arg_addr);
 
         int uid = callback.getUid();
         
-        cpu.gpr[2] = uid;
+        gpr[2] = uid;
         
         if (0 < uid) {
             callbackMap.put(uid, callback);
@@ -64,9 +63,9 @@ public class CallbackManager {
     }
     
     public void sceKernelDeleteCallback(Processor processor) {
-        CpuState cpu = processor.cpu;
+        int[] gpr = processor.cpu.gpr;
 
-        int uid = cpu.gpr[4];
+        int uid = gpr[4];
         
         if (-1 < uid) {
             SceKernelCallbackInfo event = callbackMap.get(uid);
@@ -76,9 +75,9 @@ public class CallbackManager {
     }
     
     public void sceKernelNotifyCallback(Processor processor) {
-        CpuState cpu = processor.cpu;
+        int[] gpr = processor.cpu.gpr;
 
-        int uid = cpu.gpr[4];
+        int uid = gpr[4];
         
         if (-1 < uid) {
             SceKernelCallbackInfo event = callbackMap.get(uid);
@@ -88,9 +87,9 @@ public class CallbackManager {
     }
     
     public void sceKernelCancelCallback(Processor processor) {
-        CpuState cpu = processor.cpu;
+        int[] gpr = processor.cpu.gpr;
 
-        int uid = cpu.gpr[4];
+        int uid = gpr[4];
         
         if (-1 < uid) {
             SceKernelCallbackInfo event = callbackMap.get(uid);
@@ -100,9 +99,9 @@ public class CallbackManager {
     }
     
     public void sceKernelGetCallbackCount(Processor processor) {
-        CpuState cpu = processor.cpu;
+        int[] gpr = processor.cpu.gpr;
 
-        int uid = cpu.gpr[4];
+        int uid = gpr[4];
         
         if (-1 < uid) {
             SceKernelCallbackInfo event = callbackMap.get(uid);
@@ -112,15 +111,18 @@ public class CallbackManager {
     }
     
     public void sceKernelCheckCallback(Processor processor) {
-        CpuState cpu = processor.cpu;
+        int[] gpr = processor.cpu.gpr;
 
-        int uid = cpu.gpr[4];
+        Modules.log.debug("sceKernelCheckCallback PARTIALLY implemented");
+
+        int ret = 0;
+
+        //if (Managers.threads.currentThread.callbackNotify != 0)
+        //{
+        //    ret = (dispatchCallbacks() > 0) ? 1 : 0;
+        //}
         
-        if (-1 < uid) {
-            SceKernelCallbackInfo event = callbackMap.get(uid);
-        
-            event.sceKernelCheckCallback(processor);
-        }
+        gpr[2] = ret;
     }
     
     public void sceKernelReferCallbackStatus(Processor processor) {

@@ -47,8 +47,7 @@ public class SceKernelSemaphoreInfo extends SceKernelUid {
     }
 
     public void sceKernelSignalSema(Processor processor) {
-        CpuState cpu = processor.cpu;
-        int[] gpr = cpu.gpr;
+        int[] gpr = processor.cpu.gpr;
 
         int id = gpr[4];
         int count = gpr[5];
@@ -61,8 +60,7 @@ public class SceKernelSemaphoreInfo extends SceKernelUid {
     }
 
     public void sceKernelWaitSema(Processor processor) {
-        CpuState cpu = processor.cpu;
-        int[] gpr = cpu.gpr;
+        int[] gpr = processor.cpu.gpr;
 
         int id = gpr[4];
         int count = gpr[5];
