@@ -19,6 +19,7 @@ package jpcsp.HLE.kernel.types;
 
 import jpcsp.HLE.kernel.managers.*;
 
+@Deprecated
 public class SceModule extends SceUid {
 
     private String name;
