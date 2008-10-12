@@ -8,6 +8,7 @@ package jpcsp.HLE.kernel.types;
  *
  * @author hli
  */
+@Deprecated
 public class SceUid {
 
     private Object purpose;
