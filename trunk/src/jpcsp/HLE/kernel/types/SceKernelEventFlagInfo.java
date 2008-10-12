@@ -37,7 +37,7 @@ public class SceKernelEventFlagInfo extends SceKernelUid {
 
     public SceKernelEventFlagInfo(String name, int attr, int initPattern, int currentPattern) {
         super(name, attr);
-        if (0 < this.getUid()) { 
+        if (-1 < this.getUid()) { 
             this.name = name;
             this.attr = attr;
             this.initPattern = initPattern;
