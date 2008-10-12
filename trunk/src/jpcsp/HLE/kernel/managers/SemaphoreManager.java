@@ -40,14 +40,14 @@ public class SemaphoreManager {
     }
 
     public void sceKernelCreateSema(Processor processor) {
-        CpuState cpu = processor.cpu;
+        int[] gpr = processor.cpu.gpr;
         Memory mem = Processor.memory;
 
-        int name_addr = cpu.gpr[4];
-        int attr = cpu.gpr[5];
-        int initCount = cpu.gpr[6];
-        int maxCount = cpu.gpr[7];
-        int option_addr = cpu.gpr[8];
+        int name_addr = gpr[4];
+        int attr = gpr[5];
+        int initCount = gpr[6];
+        int maxCount = gpr[7];
+        int option_addr = gpr[8];
 
         String name = readStringZ(mem.mainmemory,
                 (name_addr & 0x3fffffff) - MemoryMap.START_RAM);
@@ -61,7 +61,7 @@ public class SemaphoreManager {
 
         int uid = sema.uid;
 
-        cpu.gpr[2] = uid;
+        gpr[2] = uid;
 
         if (-1 < uid) {
             semaMap.put(uid, sema);
@@ -69,9 +69,9 @@ public class SemaphoreManager {
     }
 
     public void sceKernelDeleteSema(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int uid = cpu.gpr[4];
+        int[] gpr = processor.cpu.gpr;
+        
+        int uid = gpr[4];
 
         SceKernelSemaphoreInfo semaphore = semaMap.get(uid);
 
@@ -79,14 +79,14 @@ public class SemaphoreManager {
             semaphore.sceKernelDeleteSema(processor);
         } else {
             Modules.log.warn("sceKernelDeleteSema - invalid semaphore id " + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
+            gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
         }
     }
 
     public void sceKernelSignalSema(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int uid = cpu.gpr[4];
+        int[] gpr = processor.cpu.gpr;
+        
+        int uid = gpr[4];
 
         SceKernelSemaphoreInfo semaphore = semaMap.get(uid);
 
@@ -94,14 +94,14 @@ public class SemaphoreManager {
             semaphore.sceKernelSignalSema(processor);
         } else {
             Modules.log.warn("sceKernelSignalSema - invalid semaphore id " + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
+            gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
         }
     }
 
     public void sceKernelWaitSema(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        int uid = cpu.gpr[4];
+        int[] gpr = processor.cpu.gpr;
+        
+        int uid = gpr[4];
 
         SceKernelSemaphoreInfo semaphore = semaMap.get(uid);
 
@@ -109,14 +109,14 @@ public class SemaphoreManager {
             semaphore.sceKernelWaitSema(processor);
         } else {
             Modules.log.warn("sceKernelWaitSema - invalid semaphore id " + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
+            gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
         }
     }
 
     public void sceKernelWaitSemaCB(Processor processor) {
-        CpuState cpu = processor.cpu;
+        int[] gpr = processor.cpu.gpr;
 
-        int uid = cpu.gpr[4];
+        int uid = gpr[4];
 
         SceKernelSemaphoreInfo semaphore = semaMap.get(uid);
 
@@ -124,14 +124,14 @@ public class SemaphoreManager {
             semaphore.sceKernelWaitSemaCB(processor);
         } else {
             Modules.log.warn("sceKernelWaitSemaCB - invalid semaphore id " + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
+            gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
         }
     }
 
     public void sceKernelPollSema(Processor processor) {
-        CpuState cpu = processor.cpu;
+        int[] gpr = processor.cpu.gpr;
 
-        int uid = cpu.gpr[4];
+        int uid = gpr[4];
 
         SceKernelSemaphoreInfo semaphore = semaMap.get(uid);
 
@@ -139,14 +139,14 @@ public class SemaphoreManager {
             semaphore.sceKernelDeleteSema(processor);
         } else {
             Modules.log.warn("sceKernelPollSema - invalid semaphore id " + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
+            gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
         }
     }
 
     public void sceKernelCancelSema(Processor processor) {
-        CpuState cpu = processor.cpu;
+        int[] gpr = processor.cpu.gpr;
 
-        int uid = cpu.gpr[4];
+        int uid = gpr[4];
 
         SceKernelSemaphoreInfo semaphore = semaMap.get(uid);
 
@@ -154,14 +154,14 @@ public class SemaphoreManager {
             semaphore.sceKernelCancelSema(processor);
         } else {
             Modules.log.warn("sceKernelCancelSema - invalid semaphore id " + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
+            gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
         }
     }
 
     public void sceKernelReferSemaStatus(Processor processor) {
-        CpuState cpu = processor.cpu;
+        int[] gpr = processor.cpu.gpr;
 
-        int uid = cpu.gpr[4];
+        int uid = gpr[4];
 
         SceKernelSemaphoreInfo semaphore = semaMap.get(uid);
 
@@ -169,7 +169,7 @@ public class SemaphoreManager {
             semaphore.sceKernelReferSemaStatus(processor);
         } else {
             Modules.log.warn("sceKernelReferSemaStatus - invalid semaphore id " + Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
+            gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
         }
     }
 

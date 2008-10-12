@@ -23,6 +23,7 @@ import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import static jpcsp.util.Utilities.*;
 
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
 
 /**
@@ -31,48 +32,106 @@ import jpcsp.HLE.kernel.Managers;
  */
 public class SceKernelCallbackInfo extends SceKernelUid {
 
-    public int threadId;
+    public SceKernelThreadInfo thread;
     public int callback_addr;
     public int callback_arg_addr;
     public int notifyCount;
     public int notifyArg;
+    public int gpreg;
 
-    public SceKernelCallbackInfo(String name, int threadId, int callback_addr, int callback_arg_addr) {
+    public SceKernelCallbackInfo(String name, int callback_addr, int callback_arg_addr) {
         super(name, 0);
         if (-1 < this.getUid()) {
-            this.threadId = threadId;
+            this.thread = Managers.threads.currentThread;
             this.callback_addr = callback_addr;
             this.callback_arg_addr = callback_arg_addr;
-            
-            notifyCount = 0; // ?
-            notifyArg = 0; // ?
+            this.notifyCount = 0;
+            this.notifyArg = 0;
+
+            // TODO
+            //SceModule *mod = sceKernelFindModuleByAddress(callback_addr);
+            //this.gpreg = (mod == 0) ? gpr[GP] : mod->unk_68;
         }
     }
 
     public void sceKernelDeleteCallback(Processor processor) {
-        CpuState cpu = processor.cpu;
-        
+        Modules.log.debug("sceKernelDeleteCallback id=" + processor.cpu.gpr[4]);
         release();
     }
     
     public void sceKernelNotifyCallback(Processor processor) {
-        CpuState cpu = processor.cpu;
+        int[] gpr = processor.cpu.gpr;
+        
+        //this.thread.callbackNotify = true;
+        this.notifyArg = gpr[5];
+        this.notifyCount++;
+
+        Modules.log.debug(String.format("sceKernelNotifyCallback PARTIALLY implemented id=%s arg=0x%08x", gpr[4], notifyArg));
+
+        //if (this.thread.isCallback)
+        //{
+        //  if (this.thread.status == THREAD_WAITING || this.thread.status == (THREAD_WAITING | THREAD_SUSPEND))
+        //  {
+        //    int s0 = sub_0000022C(this.thread);
+        //
+        //    this.thread.callbackStatus = KERNEL_ERROR_NOTIFY_CALLBACK;
+        //    if (this.thread.waitType != 0)
+        //    {
+        //      s0 += sub_000005F4(thread.thread.waitType);
+        //    }
+        //    if (s0 != 0)
+        //    {
+        //      gInfo.nextThread = 0;
+        //      _ReleaseWaitThread(0);
+        //    }
+        //  }
+        //}
+        //return KERNEL_ERROR_OK;
+        
+        processor.cpu.gpr[2] = 0;
     }
     
     public void sceKernelCancelCallback(Processor processor) {
-        CpuState cpu = processor.cpu;
+        int[] gpr = processor.cpu.gpr;
+        
+        Modules.log.debug("sceKernelCancelCallback id=" + gpr[4]);
+        
+        this.notifyArg = 0;
+        this.callback_arg_addr = 0;
+
+        gpr[2] = 0;
     }
     
     public void sceKernelGetCallbackCount(Processor processor) {
-        CpuState cpu = processor.cpu;
+        int[] gpr = processor.cpu.gpr;
+        
+        Modules.log.debug("sceKernelGetCallbackCount id=" + gpr[4]);
+
+        gpr[2] = this.notifyCount;
     }
-    
-    public void sceKernelCheckCallback(Processor processor) {
-        CpuState cpu = processor.cpu;
-    }
-    
+        
     public void sceKernelReferCallbackStatus(Processor processor) {
-        CpuState cpu = processor.cpu;
+        int[] gpr = processor.cpu.gpr;
+        Memory mem = Processor.memory;
+        
+        Modules.log.debug("sceKernelReferCallbackStatus id=" + gpr[4]);
+        
+        int addr = gpr[5];
+        
+        int i, len = Math.min(this.name.length(), 31);
+
+        mem.write32(addr, 1*4+32*1+5*4); //struct size
+        for (addr += 4, i = 0; i < len; i++)
+            mem.write8(addr++, (byte)this.name.charAt(i));
+        for (; i < 32; i++)
+            mem.write8(addr++, (byte)0);
+        mem.write32(addr + 0 + 0 + 0 + 0, this.thread.uid);
+        mem.write32(addr + 4 + 0 + 0 + 0, this.callback_addr);
+        mem.write32(addr + 4 + 4 + 0 + 0, this.callback_arg_addr);
+        mem.write32(addr + 4 + 4 + 4 + 0, this.notifyCount);
+        mem.write32(addr + 4 + 4 + 4 + 4, this.notifyArg);
+        
+        gpr[2] = 0;
     }
     
     @Override
