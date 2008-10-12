@@ -25,6 +25,8 @@ import static jpcsp.util.Utilities.*;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.*;
+
+import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 
 import jpcsp.HLE.pspSysMem;
@@ -35,32 +37,18 @@ import jpcsp.HLE.pspSysMem;
  */
 public class ThreadManager {
 
-    private static HashMap<Integer, SceKernelThreadInfo> threadMap;
-    private static HashMap<Integer, Integer> waitThreadEndMap; // <thread to wait on, thread to wakeup>
-    private ArrayList<Integer> waitingThreads;
-    private SceKernelThreadInfo currentThread;
-    private SceKernelThreadInfo idle0,  idle1;
-    private int continuousIdleCycles; // watch dog timer - number of continuous cycles in any idle thread
-    private int syscallFreeCycles; // watch dog timer - number of cycles since last syscall
+    public static HashMap<Integer, SceKernelThreadInfo> threadMap;
+    public static HashMap<Integer, Integer> waitThreadEndMap; // <thread to wait on, thread to wakeup>
+    public ArrayList<Integer> waitingThreads;
+    public SceKernelThreadInfo currentThread;
+    public SceKernelThreadInfo idle0,  idle1;
+    public int continuousIdleCycles; // watch dog timer - number of continuous cycles in any idle thread
+    public int syscallFreeCycles; // watch dog timer - number of cycles since last syscall
 
     // TODO figure out a decent number of cycles to wait
     private final int WDT_THREAD_IDLE_CYCLES = 1000000;
     private final int WDT_THREAD_HOG_CYCLES = 12500000;
-    public final static int ERROR_NOT_FOUND_THREAD = 0x80020198;
-    public final static int ERROR_NOT_FOUND_SEMAPHORE = 0x80020199;
-    public final static int ERROR_NOT_FOUND_EVENT_FLAG = 0x8002019a;
-    public final static int ERROR_NOT_FOUND_MESSAGE_BOX = 0x8002019b;
-    public final static int ERROR_NOT_FOUND_VPOOL = 0x8002019c;
-    public final static int ERROR_NOT_FOUND_FPOOL = 0x8002019d;
-    public final static int ERROR_NOT_FOUND_MESSAGE_PIPE = 0x8002019e;
-    public final static int ERROR_NOT_FOUND_ALARM = 0x8002019f;
-    public final static int ERROR_NOT_FOUND_THREAD_EVENT_HANDLER = 0x800201a0;
-    public final static int ERROR_NOT_FOUND_CALLBACK = 0x800201a1;
-    public final static int ERROR_THREAD_ALREADY_DORMANT = 0x800201a2;
-    public final static int ERROR_THREAD_ALREADY_SUSPEND = 0x800201a3;
-    public final static int ERROR_THREAD_IS_NOT_DORMANT = 0x800201a4;
-    public final static int ERROR_THREAD_IS_NOT_SUSPEND = 0x800201a5;
-    public final static int ERROR_THREAD_IS_NOT_WAIT = 0x800201a6;    // see sceKernelGetThreadmanIdList
+
     public final static int SCE_KERNEL_TMID_Thread = 1;
     public final static int SCE_KERNEL_TMID_Semaphore = 2;
     public final static int SCE_KERNEL_TMID_EventFlag = 3;
@@ -132,7 +120,7 @@ public class ThreadManager {
         syscallFreeCycles = 0;
     }
 
-    private void installIdleThreads() {
+    public void installIdleThreads() {
         // Generate 2 idle threads which can toggle between each other when there are no ready threads
         int instruction_addiu = // addiu a0, zr, 0
                 ((jpcsp.Allegrex.Opcodes.ADDIU & 0x3f) << 26) | ((0 & 0x1f) << 21) | ((4 & 0x1f) << 16);
@@ -319,6 +307,11 @@ public class ThreadManager {
         } else {
             return thread.name;
         }
+    }
+    
+    public void setCurrentThreadWaiting() {
+        this.waitingThreads.add(getCurrentThreadID());
+        blockCurrentThread();
     }
 
     public void yieldCurrentThread() {

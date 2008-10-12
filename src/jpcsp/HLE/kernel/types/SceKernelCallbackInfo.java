@@ -39,7 +39,7 @@ public class SceKernelCallbackInfo extends SceKernelUid {
 
     public SceKernelCallbackInfo(String name, int threadId, int callback_addr, int callback_arg_addr) {
         super(name, 0);
-        if (0 < this.getUid()) {
+        if (-1 < this.getUid()) {
             this.threadId = threadId;
             this.callback_addr = callback_addr;
             this.callback_arg_addr = callback_arg_addr;
