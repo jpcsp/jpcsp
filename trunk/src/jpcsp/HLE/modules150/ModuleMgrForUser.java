@@ -40,7 +40,19 @@ import jpcsp.util.Utilities;
 
 import jpcsp.Allegrex.CpuState; // New-Style Processor
 
+
+
 public class ModuleMgrForUser implements HLEModule {
+   // String[] banlist = {};
+    enum banlist {
+        LIBFONT,  /*ace combat */
+        sc_sascore,
+        audiocodec,
+        libatrac3plus,
+        videocodec,
+        mpegbase,
+        mpeg
+    }
 	@Override
 	public String getName() { return "ModuleMgrForUser"; }
 
@@ -121,7 +133,19 @@ public class ModuleMgrForUser implements HLEModule {
     		cpu.gpr[2] = SceModule.flashModuleUid;
     		return;
         }
-
+        int findprx = name.lastIndexOf("/");        
+        int endprx = name.indexOf(".PRX");
+        if(endprx==-1) endprx=name.indexOf(".prx");
+        String prxname = name.substring(findprx+1,endprx);
+        for(banlist a : banlist.values())
+        {
+          if(a.name().matches(prxname))
+          {
+              cpu.gpr[2]=0;
+              return;          
+          }
+        }
+        
         cpu.gpr[2] = -1;
         try {
             SeekableDataInput moduleInput = pspiofilemgr.get_instance().getFile(name, flags);
@@ -210,7 +234,6 @@ public class ModuleMgrForUser implements HLEModule {
     		cpu.gpr[2] = 0;
         	return;
         }
-
         SceModule sceModule = HLEModuleManager.getInstance().getSceModuleByUid(uid);
         if (sceModule == null) {
             cpu.gpr[2] = -1;
