@@ -54,10 +54,6 @@ public class SceKernelUid {
         return attr;
     }
     
-    public boolean release() {
-        return Managers.uids.removeObject(this);
-    }
-    
     protected void memset(int address, byte c, int length) {
         Memory mem = Emulator.getMemory();
         byte[] all = mem.mainmemory.array();

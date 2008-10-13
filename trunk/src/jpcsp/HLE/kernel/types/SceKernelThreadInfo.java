@@ -170,6 +170,10 @@ public class SceKernelThreadInfo extends SceKernelUid implements Comparator<SceK
         Emulator.getProcessor().cpu = cpuContext;
     }
 
+    public void release() {
+        Managers.threads.releaseObject(this);
+    }
+    
     /** For use in the scheduler */
     @Override
     public int compare(SceKernelThreadInfo o1, SceKernelThreadInfo o2) {

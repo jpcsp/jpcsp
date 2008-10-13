@@ -4,7 +4,6 @@
  */
 package jpcsp.HLE.kernel.managers;
 
-import jpcsp.Emulator;
 import java.util.HashMap;
 
 import jpcsp.HLE.kernel.types.SceKernelUid;
@@ -34,22 +33,7 @@ public class UidManager {
         uidMap.remove(uid);
         return true;
     }    
-    
-    /** classes should call releaseUid when they are finished with a SceUID
-     * @return true on success. */
-    public boolean releaseUid(int uid, Object purpose) {
-        SceKernelUid found = uidMap.get(uid);
-
-        if (found == null) {
-            Emulator.log.warn("Attempt to release unknown SceUID (purpose='" + purpose.toString() + "')");
-            return false;
-        }
-
-        uidMap.remove(found);
-
-        return true;
-    }
-    
+        
     public void reset() {
         uidMap = new HashMap<Integer, SceKernelUid>();
         uidNext = 0x1000;

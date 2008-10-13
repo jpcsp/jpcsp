@@ -37,7 +37,7 @@ public class SceKernelEventFlagInfo extends SceKernelUid {
 
     public SceKernelEventFlagInfo(String name, int attr, int initPattern, int currentPattern) {
         super(name, attr);
-        if (-1 < this.getUid()) { 
+        if (-1 < this.uid) { 
             this.name = name;
             this.attr = attr;
             this.initPattern = initPattern;
@@ -45,46 +45,8 @@ public class SceKernelEventFlagInfo extends SceKernelUid {
         }
     }
     
-    @Override
-    public boolean release() {
-        return Managers.eventsFlags.releaseObject(this);
-    }
-    
-    public void sceKernelDeleteEventFlag(Processor processor) {
-        CpuState cpu = processor.cpu;
-    }
-
-    public void sceKernelSetEventFlag(Processor processor) {
-        CpuState cpu = processor.cpu;
-    }
-    
-    public void sceKernelClearEventFlag(Processor processor) {
-        CpuState cpu = processor.cpu;
-    }
-    
-    public void sceKernelWaitEventFlag(Processor processor) {
-        CpuState cpu = processor.cpu;
-        int bitPattern, waitMode, resPattern_addr, timeout_addr;
-    }
-    
-    public void sceKernelWaitEventFlagCB(Processor processor) {
-        CpuState cpu = processor.cpu;
-        int bitPattern, waitMode, resPattern_addr, timeout_addr;
-    }
-
-    public void sceKernelPollEventFlag(Processor processor) {
-        CpuState cpu = processor.cpu;
-        int bitPattern, waitMode, resPattern_addr, timeout_addr;
-    }
-
-    public void sceKernelCancelEventFlag(Processor processor) {
-        CpuState cpu = processor.cpu;
-        int setPattern, numWaitedThreads_addr;
-    }
-    
-    public void sceKernelReferEventFlagStatus(Processor processor) {
-        CpuState cpu = processor.cpu;
-        int info_addr;
-    }
+    public void release() {
+        Managers.eventsFlags.releaseObject(this);
+    }        
 }
     
