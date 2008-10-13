@@ -25,6 +25,7 @@ import static jpcsp.util.Utilities.*;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.*;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 
 /**
  *
@@ -54,7 +55,7 @@ public class EventFlagManager {
         Modules.log.debug("sceKernelCreateEventFlag name=" + name + " attr= " + attr + " initPattern= " + initPattern+ " option= " + option);
 
         if (option != 0) {
-            Modules.log.warn("sceKernelCreateEventFlag: UNSUPPORTED Option Value");
+            Modules.log.warn("sceKernelCreateEventFlag - UNSUPPORTED Option Value");
         }
         
         // initPattern and currentPattern should be the same at init
@@ -70,98 +71,139 @@ public class EventFlagManager {
     }
 
     public void sceKernelDeleteEventFlag(Processor processor) {
-        CpuState cpu = processor.cpu;
+        int[] gpr = processor.cpu.gpr;
 
-        int uid = cpu.gpr[4];
+        int uid = gpr[4];
+       
+        SceKernelEventFlagInfo event = eventFlagMap.get(uid);
+
+        Modules.log.debug("sceKernelDeleteEventFlag id=" + uid);
         
-        if (-1 < uid) {
-            SceKernelEventFlagInfo event = eventFlagMap.get(uid);
-        
-            event.sceKernelDeleteEventFlag(processor);
+        if (event != null) {
+            event.release();
+            gpr[2] = 0;
+        } else {
+            Modules.log.warn("sceKernelDeleteEventFlag - invalid id=" + uid);
+            gpr[2] = ERROR_NOT_FOUND_CALLBACK;
         }
     }
 
     public void sceKernelSetEventFlag(Processor processor) {
-        CpuState cpu = processor.cpu;
+        int[] gpr = processor.cpu.gpr;
 
-        int uid = cpu.gpr[4];
+        int uid = gpr[4];
+       
+        Modules.log.debug("sceKernelSetEventFlag id=" + uid);
         
-        if (-1 < uid) {
-            SceKernelEventFlagInfo event = eventFlagMap.get(uid);
-        
-            event.sceKernelSetEventFlag(processor);
+        SceKernelEventFlagInfo event = eventFlagMap.get(uid);
+       
+        if (event != null) {
+            Modules.log.warn("sceKernelSetEventFlag - Not implemented");
+        } else {
+            Modules.log.warn("sceKernelSetEventFlag - invalid id=" + uid);
+            gpr[2] = ERROR_NOT_FOUND_CALLBACK;
         }
     }
     
     public void sceKernelClearEventFlag(Processor processor) {
-        CpuState cpu = processor.cpu;
+        int[] gpr = processor.cpu.gpr;
 
-        int uid = cpu.gpr[4];
+        int uid = gpr[4];
+       
+        Modules.log.debug("sceKernelClearEventFlag id=" + uid);
         
-        if (-1 < uid) {
-            SceKernelEventFlagInfo event = eventFlagMap.get(uid);
-        
-            event.sceKernelClearEventFlag(processor);
+        SceKernelEventFlagInfo event = eventFlagMap.get(uid);
+       
+        if (event != null) {
+            Modules.log.warn("sceKernelClearEventFlag - Not implemented");
+        } else {
+            Modules.log.warn("sceKernelClearEventFlag - invalid id=" + uid);
+            gpr[2] = ERROR_NOT_FOUND_CALLBACK;
         }
     }
     
     public void sceKernelWaitEventFlag(Processor processor) {
-        CpuState cpu = processor.cpu;
+        int[] gpr = processor.cpu.gpr;
 
-        int uid = cpu.gpr[4];
+        int uid = gpr[4];
+       
+        Modules.log.debug("sceKernelWaitEventFlag id=" + uid);
         
-        if (-1 < uid) {
-            SceKernelEventFlagInfo event = eventFlagMap.get(uid);
-        
-            event.sceKernelWaitEventFlag(processor);
+        SceKernelEventFlagInfo event = eventFlagMap.get(uid);
+       
+        if (event != null) {
+            Modules.log.warn("sceKernelWaitEventFlag - Not implemented");
+        } else {
+            Modules.log.warn("sceKernelWaitEventFlag - invalid id=" + uid);
+            gpr[2] = ERROR_NOT_FOUND_CALLBACK;
         }
     }
     
     public void sceKernelWaitEventFlagCB(Processor processor) {
-        CpuState cpu = processor.cpu;
+        int[] gpr = processor.cpu.gpr;
 
-        int uid = cpu.gpr[4];
+        int uid = gpr[4];
+       
+        Modules.log.debug("sceKernelWaitEventFlagCB id=" + uid);
         
-        if (-1 < uid) {
-            SceKernelEventFlagInfo event = eventFlagMap.get(uid);
-        
-            event.sceKernelWaitEventFlagCB(processor);
+        SceKernelEventFlagInfo event = eventFlagMap.get(uid);
+       
+        if (event != null) {
+            Modules.log.warn("sceKernelWaitEventFlagCB - Not implemented");
+        } else {
+            Modules.log.warn("sceKernelWaitEventFlagCB - invalid id=" + uid);
+            gpr[2] = ERROR_NOT_FOUND_CALLBACK;
         }
     }
 
     public void sceKernelPollEventFlag(Processor processor) {
-        CpuState cpu = processor.cpu;
+        int[] gpr = processor.cpu.gpr;
 
-        int uid = cpu.gpr[4];
+        int uid = gpr[4];
+       
+        Modules.log.debug("sceKernelPollEventFlag id=" + uid);
         
-        if (-1 < uid) {
-            SceKernelEventFlagInfo event = eventFlagMap.get(uid);
-        
-            event.sceKernelPollEventFlag(processor);
+        SceKernelEventFlagInfo event = eventFlagMap.get(uid);
+       
+        if (event != null) {
+            Modules.log.warn("sceKernelPollEventFlag - Not implemented");
+        } else {
+            Modules.log.warn("sceKernelPollEventFlag - invalid id=" + uid);
+            gpr[2] = ERROR_NOT_FOUND_CALLBACK;
         }
     }
 
     public void sceKernelCancelEventFlag(Processor processor) {
-        CpuState cpu = processor.cpu;
+        int[] gpr = processor.cpu.gpr;
 
-        int uid = cpu.gpr[4];
+        int uid = gpr[4];
+       
+        SceKernelEventFlagInfo event = eventFlagMap.get(uid);
+       
+        Modules.log.debug("sceKernelCancelEventFlag id=" + uid);
         
-        if (-1 < uid) {
-            SceKernelEventFlagInfo event = eventFlagMap.get(uid);
-        
-            event.sceKernelCancelEventFlag(processor);
+        if (event != null) {
+            Modules.log.warn("sceKernelCancelEventFlag - Not implemented");
+        } else {
+            Modules.log.warn("sceKernelCancelEventFlag - invalid id=" + uid);
+            gpr[2] = ERROR_NOT_FOUND_CALLBACK;
         }
     }
     
     public void sceKernelReferEventFlagStatus(Processor processor) {
-        CpuState cpu = processor.cpu;
+        int[] gpr = processor.cpu.gpr;
 
-        int uid = cpu.gpr[4];
+        int uid = gpr[4];
+       
+        SceKernelEventFlagInfo event = eventFlagMap.get(uid);
+
+        Modules.log.debug("sceKernelReferEventFlagStatus id=" + uid);
         
-        if (-1 < uid) {
-            SceKernelEventFlagInfo event = eventFlagMap.get(uid);
-        
-            event.sceKernelReferEventFlagStatus(processor);
+        if (event != null) {
+            Modules.log.warn("sceKernelReferEventFlagStatus - Not implemented");
+        } else {
+            Modules.log.warn("sceKernelReferEventFlagStatus - invalid id=" + uid);
+            gpr[2] = ERROR_NOT_FOUND_CALLBACK;
         }
     }
     

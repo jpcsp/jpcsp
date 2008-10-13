@@ -31,7 +31,7 @@ public class SceKernelModuleInfo extends SceKernelUid {
 
     public SceKernelModuleInfo(String name, int start_addr, int attr) {
         super(name, attr);
-        if (-1 < this.getUid()) {
+        if (-1 < this.uid) {
             this.start_addr = start_addr;
         }
     }
@@ -40,4 +40,6 @@ public class SceKernelModuleInfo extends SceKernelUid {
         return start_addr;
     }
 
+    public void release() {
+    }        
 }

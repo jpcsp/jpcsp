@@ -34,68 +34,15 @@ public class SceKernelSemaphoreInfo extends SceKernelUid {
 
     public SceKernelSemaphoreInfo(String name, int attr, int initCount, int currentCount, int maxCount) {
         super(name, attr);
-        if (-1 < this.getUid()) {
+        if (-1 < this.uid) {
             this.initCount = initCount;
             this.currentCount = currentCount;
             this.maxCount = maxCount;
         }
     }
+    
+    public void release() {
+        Managers.sempahores.releaseObject(this);
+    }    
 
-    public void sceKernelDeleteSema(Processor processor) {
-        Modules.log.debug("sceKernelDeleteSema id=" + processor.cpu.gpr[4]);
-        release();
-    }
-
-    public void sceKernelSignalSema(Processor processor) {
-        int[] gpr = processor.cpu.gpr;
-
-        int id = gpr[4];
-        int count = gpr[5];
-
-        Modules.log.debug("sceKernelSignalSema id=" + id + " count=" + count);
-        
-        currentCount += count;
-
-        gpr[2] = 0;
-    }
-
-    public void sceKernelWaitSema(Processor processor) {
-        int[] gpr = processor.cpu.gpr;
-
-        int id = gpr[4];
-        int count = gpr[5];
-        int timeout_addr = gpr[6];
-
-        Modules.log.debug(String.format("sceKernelWaitSema id=%d count=%d timeout_addr=0x%08x", id, count, timeout_addr));
-
-        gpr[2] = 0;
-        if (currentCount >= count) {
-            currentCount -= count;
-        } else {
-            Modules.log.debug(Managers.threads.getCurrentThreadID());
-            Managers.threads.setCurrentThreadWaiting();
-        }
-    }
-
-    public void sceKernelWaitSemaCB(Processor processor) {
-        Modules.log.debug("sceKernelWaitSemaCB redirecting to sceKernelWaitSema");
-        sceKernelWaitSema(processor);
-    }
-
-    public void sceKernelPollSema(Processor processor) {
-        Modules.log.debug("sceKernelPollSema not implemented");
-    }
-
-    public void sceKernelCancelSema(Processor processor) {
-        Modules.log.debug("sceKernelCancelSema not implemented");
-    }
-
-    public void sceKernelReferSemaStatus(Processor processor) {
-        Modules.log.debug("sceKernelReferSemaStatus not implemented");
-    }
-
-    @Override
-    public boolean release() {
-        return Managers.sempahores.releaseObject(this);
-    }
 }

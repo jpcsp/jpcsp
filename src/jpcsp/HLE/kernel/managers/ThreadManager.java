@@ -120,7 +120,7 @@ public class ThreadManager {
         syscallFreeCycles = 0;
     }
 
-    public void installIdleThreads() {
+    private void installIdleThreads() {
         // Generate 2 idle threads which can toggle between each other when there are no ready threads
         int instruction_addiu = // addiu a0, zr, 0
                 ((jpcsp.Allegrex.Opcodes.ADDIU & 0x3f) << 26) | ((0 & 0x1f) << 21) | ((4 & 0x1f) << 16);
