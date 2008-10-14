@@ -1495,7 +1495,7 @@ public class VideoEngine {
                 if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
                 	gl.glLoadMatrixf(proj_uploaded_matrix, 0);
                 else
-                	gl.glOrtho(0.0, 480, 0.0, 272, -1.0, 1.0);
+                	gl.glOrtho(0.0, 480, 272, 0, -1.0, 1.0);
 
                 /*
                  * Apply texture transforms
