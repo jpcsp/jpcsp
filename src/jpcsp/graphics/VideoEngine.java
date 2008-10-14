@@ -1379,10 +1379,13 @@ public class VideoEngine {
 	           		case 4: env_mode = GL.GL_ADD; break;
            			default: VideoEngine.log.warn("Unimplemented tfunc mode");
            		}
-           		// TODO : fix this !
-           		//gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, env_mode);
-           		//gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, (normalArgument & 0x100) != 0 ? GL.GL_PREVIOUS : GL.GL_TEXTURE);
-           		log("tfunc");
+           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, env_mode);
+           		// TODO : check this
+           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, (normalArgument & 0x100) == 0 ? GL.GL_PREVIOUS : GL.GL_TEXTURE);
+           		log("sceGuTexFunc");
+           		/*log(String.format("sceGuTexFunc mode %08X", normalArgument)
+           				+ (((normalArgument & 0x10000) != 0) ? " SCALE" : "")
+           				+ (((normalArgument & 0x100) != 0) ? " ALPHA" : ""));*/
             	break;
 
             case TEC:
@@ -1568,7 +1571,11 @@ public class VideoEngine {
                             for (int i = 0; i < numberOfVertex; i++) {
                                 int addr = vinfo.getAddress(mem, i);
                                 VertexState v = vinfo.readVertex(mem, addr);
-                                if (vinfo.texture  != 0) gl.glTexCoord2f(v.u, v.v);
+                                if (vinfo.texture  != 0)
+                                	if(transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD)
+                                		gl.glTexCoord2f(v.u / texture_width0, v.v / texture_height0);
+                                	else
+                                		gl.glTexCoord2f(v.u, v.v);
                                 if (vinfo.color    != 0) gl.glColor4f(v.r, v.g, v.b, v.a);
                                 if (vinfo.normal   != 0) gl.glNormal3f(v.nx, v.ny, v.nz);
                                 if (vinfo.position != 0) {
@@ -1594,20 +1601,36 @@ public class VideoEngine {
                                 if (vinfo.normal   != 0) gl.glNormal3f(v1.nx, v1.ny, v1.nz);
                                 if (vinfo.color    != 0) gl.glColor4f(v2.r, v2.g, v2.b, v2.a); // color from v2 not v1
 
-                                if (vinfo.texture  != 0) gl.glTexCoord2f(v1.u, v1.v);
+                                if (vinfo.texture  != 0) 
+                                	if(transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD)
+                                		gl.glTexCoord2f(v1.u / texture_width0, v1.v / texture_height0);
+                                	else
+                                		gl.glTexCoord2f(v1.u, v1.v);
                                 if (vinfo.position != 0) gl.glVertex3f(v1.px, v1.py, v1.pz);
 
-                                if (vinfo.texture  != 0) gl.glTexCoord2f(v2.u, v1.v);
+                                if (vinfo.texture  != 0) 
+                                	if(transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD)
+                                		gl.glTexCoord2f(v2.u / texture_width0, v1.v / texture_height0);
+                                	else
+                                		gl.glTexCoord2f(v2.u, v1.v);
                                 if (vinfo.position != 0) gl.glVertex3f(v2.px, v1.py, v1.pz);
 
                                 // V2
                                 if (vinfo.normal   != 0) gl.glNormal3f(v2.nx, v2.ny, v2.nz);
                                 if (vinfo.color    != 0) gl.glColor4f(v2.r, v2.g, v2.b, v2.a);
 
-                                if (vinfo.texture  != 0) gl.glTexCoord2f(v2.u, v2.v);
+                                if (vinfo.texture  != 0) 
+                                	if(transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD)
+                                		gl.glTexCoord2f(v2.u / texture_width0, v2.v / texture_height0);
+                                	else
+                                		gl.glTexCoord2f(v2.u, v2.v);
                                 if (vinfo.position != 0) gl.glVertex3f(v2.px, v2.py, v1.pz);
 
-                                if (vinfo.texture  != 0) gl.glTexCoord2f(v1.u, v2.v);
+                                if (vinfo.texture  != 0) 
+                                	if(transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD)
+                                		gl.glTexCoord2f(v1.u / texture_width0, v2.v / texture_height0);
+                                	else
+                                		gl.glTexCoord2f(v1.u, v2.v);
                                 if (vinfo.position != 0) gl.glVertex3f(v1.px, v2.py, v1.pz);
                             }
                         gl.glEnd();
@@ -1622,6 +1645,10 @@ public class VideoEngine {
 		            	break;
 		            }
 		        }
+                
+                gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, 1.0f);
+                gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_MODULATE);
+           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, GL.GL_TEXTURE);
 
                 if (vinfo.color != 0)
                 	gl.glDisable	(GL.GL_COLOR_MATERIAL);
@@ -1855,9 +1882,9 @@ public class VideoEngine {
             case CLEAR:
                 if ((normalArgument & 0x1)==0) {
                     // set clear color, actarus/sam
-                    //gl.glClearColor(vinfo.lastVertex.r, vinfo.lastVertex.g, vinfo.lastVertex.b, vinfo.lastVertex.a);
+                    gl.glClearColor(vinfo.lastVertex.r, vinfo.lastVertex.g, vinfo.lastVertex.b, vinfo.lastVertex.a);
                 	gl.glClear(clearFlags);
-		            log("guclear");
+		            log(String.format("guclear r=%.1f g=%.1f b=%.1f a=%.1f", vinfo.lastVertex.r, vinfo.lastVertex.g, vinfo.lastVertex.b, vinfo.lastVertex.a));
 				} else {
 				     clearFlags = 0;
 				     if ((normalArgument & 0x100)!=0) clearFlags |= GL.GL_COLOR_BUFFER_BIT; // target
