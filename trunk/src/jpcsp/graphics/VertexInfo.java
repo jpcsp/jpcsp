@@ -174,7 +174,7 @@ public class VertexInfo {
 
             case 7: { // GU_COLOR_8888
                 // 32-bit align here instead of on vertexSize, from actarus/sam
-                //addr = (addr + 3) & ~3;
+                addr = (addr + 3) & ~3;
                 int packed = mem.read32(addr); addr += 4;
                 v.r = ((packed      ) & 0xff) / 255.0f;
                 v.g = ((packed >>  8) & 0xff) / 255.0f;
