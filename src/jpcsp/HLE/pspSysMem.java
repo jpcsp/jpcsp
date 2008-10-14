@@ -195,6 +195,13 @@ public class pspSysMem {
         return allocatedAddress;
     }
 
+    public int addSysMemInfo(int partitionid, String name, int type, int size, int addr)
+    {
+        SysMemInfo info = new SysMemInfo(partitionid, name, type, size, addr);
+
+        return info.uid;
+    }
+
     // For internal use, example: ThreadMan allocating stack space
     // Also removes the associated SysMemInfo (if found) from blockList
     public void free(int addr)

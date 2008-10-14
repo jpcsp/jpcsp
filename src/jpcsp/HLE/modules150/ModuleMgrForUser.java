@@ -130,6 +130,7 @@ public class ModuleMgrForUser implements HLEModule {
 
         if (name.startsWith("flash0:")) {
         	// Simulate a successful loading
+            Modules.log.warn("IGNORED:sceKernelLoadModule(path='" + name + "'): module from flash0 not loaded");
     		cpu.gpr[2] = SceModule.flashModuleUid;
     		return;
         }
@@ -141,7 +142,8 @@ public class ModuleMgrForUser implements HLEModule {
         {
           if(a.name().matches(prxname))
           {
-              cpu.gpr[2]=0;
+              Modules.log.warn("IGNORED:sceKernelLoadModule(path='" + name + "'): module from banlist not loaded");
+              cpu.gpr[2] = SceModule.flashModuleUid;
               return;          
           }
         }
@@ -153,9 +155,21 @@ public class ModuleMgrForUser implements HLEModule {
     	        byte[] moduleBytes = new byte[(int) moduleInput.length()];
     	        moduleInput.readFully(moduleBytes);
     	        ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
-    	        int loadBase = pspSysMem.get_instance().malloc(2, pspSysMem.PSP_SMEM_Low, moduleBytes.length, 0);
+    	        int loadSize = moduleBytes.length;
+    	        int loadBase = pspSysMem.get_instance().malloc(2, pspSysMem.PSP_SMEM_Low, loadSize, 0);
     	        FileManager moduleFileManager = new FileManager(moduleBuffer, loadBase);
-                if (moduleFileManager.getType() == FileManager.FORMAT_ELF) {
+
+    	        // The ELF sections (ShType.NOBITS) might have required additional memory
+    	        if (moduleFileManager.getLoadAddressHigh() > loadBase + loadSize) {
+    	        	int additionalSize = moduleFileManager.getLoadAddressHigh() - (loadBase + loadSize);
+    	        	int additionalBase = pspSysMem.get_instance().malloc(2, pspSysMem.PSP_SMEM_Low, additionalSize, 0);
+    	        	if (additionalBase != 0) {
+    	        		loadSize += additionalSize;
+    	        	}
+    	        }
+    	        pspSysMem.get_instance().addSysMemInfo(2, name, pspSysMem.PSP_SMEM_Low, loadSize, loadBase);
+
+    	        if (moduleFileManager.getType() == FileManager.FORMAT_ELF) {
                     Emulator.initRamBy(moduleFileManager, moduleFileManager.getElf32());
 
                     SceModule sceModule = new SceModule();
@@ -165,6 +179,10 @@ public class ModuleMgrForUser implements HLEModule {
                     HLEModuleManager.getInstance().addSceModule(sceModule);
 
                     cpu.gpr[2] = sceModule.getUid();
+                } else if (moduleFileManager.getType() == FileManager.FORMAT_PSP) {
+                	// Simulate a successful loading
+                    Modules.log.warn("IGNORED:sceKernelLoadModule(path='" + name + "'): module in PSP format not loaded");
+                	cpu.gpr[2] = SceModule.flashModuleUid;
                 } else {
                     pspSysMem.get_instance().free(loadBase);
                     cpu.gpr[2] = -1;
