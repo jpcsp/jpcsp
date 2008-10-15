@@ -39,6 +39,7 @@ public class VertexInfo {
     public int vertexSize;
 
     private static int[] size_mapping = new int[] { 0, 1, 2, 4 };
+    private static int[] size_padding = new int[] { 0, 0, 1, 3 };
 
     private static String[] texture_info = new String[] {
         null, "GU_TEXTURE_8BIT", "GU_TEXTURE_16BIT", "GU_TEXTURE_32BITF"
@@ -76,14 +77,21 @@ public class VertexInfo {
 
         vertexSize = 0;
         vertexSize += size_mapping[weight] * skinningWeightCount;
+        vertexSize = (vertexSize + ((color != 0) ? ((color == 7) ? 3 : 1) : 0)) & ~((color != 0) ? ((color == 7) ? 3 : 1) : 0);
         vertexSize += (color != 0) ? ((color == 7) ? 4 : 2) : 0;
+        vertexSize = (vertexSize + size_padding[texture]) & ~size_padding[texture];
         vertexSize += size_mapping[texture] * 2;
+        vertexSize = (vertexSize + size_padding[position]) & ~size_padding[position];
         vertexSize += size_mapping[position] * 3;
+        vertexSize = (vertexSize + size_padding[normal]) & ~size_padding[normal];
         vertexSize += size_mapping[normal] * 3;
+        int maxsize = Math.max(size_mapping[weight],
+        		Math.max((color != 0) ? ((color == 7) ? 4 : 2) : 0,
+        		Math.max(size_padding[normal],
+        		Math.max(size_padding[texture],
+        				size_padding[position]))));
 
-        // 32-bit align
-        // messes up lines.pbp demo
-        //vertexSize = (vertexSize + 3) & ~3;
+        vertexSize = (vertexSize + maxsize - 1) & ~(maxsize - 1);
     }
 
     public int getAddress(Memory mem, int i) {
@@ -130,9 +138,11 @@ public class VertexInfo {
                 v.boneWeights[i] = mem.read8(addr); addr += 1;
                 break;
             case 2:
+            	addr = (addr + 1) & ~1;
                 v.boneWeights[i] = mem.read16(addr); addr += 2;
                 break;
             case 3:
+            	addr = (addr + 3) & ~3;
                 v.boneWeights[i] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
                 break;
             }
@@ -147,11 +157,13 @@ public class VertexInfo {
                 VideoEngine.log.warn("texture type 1 " + v.u + ", " + v.v + "");
                 break;
             case 2:
+            	addr = (addr + 1) & ~1;
                 v.u = (short)mem.read16(addr); addr += 2;
                 v.v = (short)mem.read16(addr); addr += 2;
                 VideoEngine.log.warn("texture type 2 " + v.u + ", " + v.v + "");
                 break;
             case 3:
+            	addr = (addr + 3) & ~3;
                 v.u = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
                 v.v = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
                 break;
@@ -160,9 +172,13 @@ public class VertexInfo {
         //VideoEngine.log.debug("color " + String.format("0x%08x", addr));
         switch(color) {
             case 1: case 2: case 3: VideoEngine.log.warn("unimplemented color type " + color); addr += 1; break;
-            case 4: case 5: VideoEngine.log.warn("unimplemented color type " + color); addr += 2; break;
+            case 4: case 5: VideoEngine.log.warn("unimplemented color type " + color);
+            	addr = (addr + 1) & ~1;
+            	addr += 2;
+            	break;
 
             case 6: { // GU_COLOR_4444
+            	addr = (addr + 1) & ~1;
                 int packed = mem.read16(addr); addr += 2;
                 v.r = ((packed      ) & 0xf) / 15.0f;
                 v.g = ((packed >>  4) & 0xf) / 15.0f;
@@ -194,12 +210,14 @@ public class VertexInfo {
                 VideoEngine.log.warn("normal type 1 " + v.nx + ", " + v.ny + ", " + v.nz + "");
                 break;
             case 2:
+            	addr = (addr + 1) & ~1;
                 v.nx = (short)mem.read16(addr); addr += 2;
                 v.ny = (short)mem.read16(addr); addr += 2;
                 v.nz = (short)mem.read16(addr); addr += 2;
                 VideoEngine.log.warn("normal type 2 " + v.nx + ", " + v.ny + ", " + v.nz + "");
                 break;
             case 3:
+            	addr = (addr + 3) & ~3;
                 v.nx = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
                 v.ny = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
                 v.nz = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
@@ -215,15 +233,18 @@ public class VertexInfo {
                 VideoEngine.log.trace("vertex type 1 " + v.px + ", " + v.py + ", " + v.pz + "");
                 break;
             case 2:
+            	addr = (addr + 1) & ~1;
                 v.px = (short)mem.read16(addr); addr += 2;
                 v.py = (short)mem.read16(addr); addr += 2;
                 v.pz = (short)mem.read16(addr); addr += 2;
                 VideoEngine.log.trace("vertex type 2 " + v.px + ", " + v.py + ", " + v.pz + "");
                 break;
             case 3: // GU_VERTEX_32BITF
+            	addr = (addr + 3) & ~3;
                 v.px = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
                 v.py = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
                 v.pz = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+                VideoEngine.log.trace("vertex type 3 " + v.px + ", " + v.py + ", " + v.pz + "");
                 break;
         }
 
