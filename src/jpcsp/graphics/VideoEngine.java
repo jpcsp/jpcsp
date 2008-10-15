@@ -1588,7 +1588,7 @@ public class VideoEngine {
                         break;
 
                     case PRIM_SPRITES:
-                        gl.glPushAttrib(GL.GL_CULL_FACE);
+                        gl.glPushAttrib(GL.GL_ENABLE_BIT);
                         gl.glDisable(GL.GL_CULL_FACE);
                         gl.glBegin(GL.GL_QUADS);
                             for (int i = 0; i < numberOfVertex; i += 2) {
