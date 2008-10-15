@@ -389,7 +389,7 @@ public class ThreadMan {
         }
     }
 
-    public int createThread(String name, int entry_addr, int initPriority, int stackSize, int attr, int option_addr, boolean startImmediately, int userDataLength, int userDataAddr) {
+    public int createThread(String name, int entry_addr, int initPriority, int stackSize, int attr, int option_addr, boolean startImmediately, int userDataLength, int userDataAddr, int gp) {
         SceKernelThreadInfo thread = new SceKernelThreadInfo(name, entry_addr, initPriority, stackSize, attr);
 
         // Copy user data to the new thread's stack, since we are not
@@ -404,6 +404,7 @@ public class ThreadMan {
         thread.cpuContext.gpr[29] -= alignlen; // Adjust sp for size of user data
         thread.cpuContext.gpr[4] = userDataLength; // a0 = userDataLength
         thread.cpuContext.gpr[5] = thread.cpuContext.gpr[29]; // a1 = pointer to copy of data at data_addr
+        thread.cpuContext.gpr[28] = gp;
 
         if (startImmediately) {
             thread.status = PspThreadStatus.PSP_THREAD_READY;

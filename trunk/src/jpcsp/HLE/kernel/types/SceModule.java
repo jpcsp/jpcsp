@@ -25,6 +25,7 @@ public class SceModule extends SceUid {
     private String name;
     private int startAddr;
     private int attr;
+    private int gp;
     public static final int flashModuleUid = 0;
 
     public SceModule() {
@@ -62,4 +63,12 @@ public class SceModule extends SceUid {
     public void setAttr(int attr) {
         this.attr = attr;
     }
+
+	public int getGp() {
+		return gp;
+	}
+
+	public void setGp(int gp) {
+		this.gp = gp;
+	}
 }
