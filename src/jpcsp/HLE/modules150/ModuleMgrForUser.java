@@ -176,6 +176,7 @@ public class ModuleMgrForUser implements HLEModule {
                     sceModule.setName(name);
                     sceModule.setAttr(moduleFileManager.getPSPModuleInfo().getM_attr());
                     sceModule.setStartAddr((int) (moduleFileManager.getBaseoffset() + moduleFileManager.getElf32().getHeader().getE_entry()));
+                    sceModule.setGp((int) (moduleFileManager.getBaseoffset() + moduleFileManager.getPSPModuleInfo().getM_gp()));
                     HLEModuleManager.getInstance().addSceModule(sceModule);
 
                     cpu.gpr[2] = sceModule.getUid();
@@ -259,7 +260,7 @@ public class ModuleMgrForUser implements HLEModule {
             return;
         }
 
-        ThreadMan.get_instance().createThread("module" + Integer.toHexString(uid), sceModule.getStartAddr(), 0, 0x4000, sceModule.getAttr(), option_addr, true, argsize, argp_addr);
+        ThreadMan.get_instance().createThread("module" + Integer.toHexString(uid), sceModule.getStartAddr(), 0, 0x4000, sceModule.getAttr(), option_addr, true, argsize, argp_addr, sceModule.getGp());
 
         cpu.gpr[2] = 0;
 	}
