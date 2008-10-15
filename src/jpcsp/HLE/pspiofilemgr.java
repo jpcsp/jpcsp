@@ -154,14 +154,20 @@ public class pspiofilemgr {
 
     private boolean isUmdPath(String deviceFilePath) {
         //return deviceFilePath.toLowerCase().startsWith("disc0/"); // old
-        return deviceFilePath.toLowerCase().startsWith("disc0");
+        return deviceFilePath.toLowerCase().startsWith("disc0") ||
+            deviceFilePath.toLowerCase().startsWith("umd0");
     }
 
+    // TODO fix this slash thing properly, must be caused by poor handling in some other function
     private String trimUmdPrefix(String pcfilename) {
         if (pcfilename.toLowerCase().startsWith("disc0/"))
             return pcfilename.substring(6);
         if (pcfilename.toLowerCase().startsWith("disc0"))
             return pcfilename.substring(5);
+        if (pcfilename.toLowerCase().startsWith("umd0/"))
+            return pcfilename.substring(5);
+        if (pcfilename.toLowerCase().startsWith("umd0"))
+            return pcfilename.substring(4);
         return pcfilename;
     }
 
