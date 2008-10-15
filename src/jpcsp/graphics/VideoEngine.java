@@ -877,7 +877,8 @@ public class VideoEngine {
             	mat_emissive[2] = ((normalArgument >> 16) & 255) / 255.f;
             	mat_emissive[3] = 1.f;
             	gl.glMaterialfv(GL.GL_FRONT, GL.GL_EMISSION, mat_emissive, 0);
-            	log("material emission");
+            	log("material emission " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
+                        mat_emissive[0], mat_emissive[1], mat_emissive[2], normalArgument));
             	break;
 
             case SMC:
@@ -887,7 +888,8 @@ public class VideoEngine {
             	mat_specular[3] = 1.f;
             	if((mat_flags & 4) != 0)
             		gl.glMaterialfv(GL.GL_FRONT, GL.GL_SPECULAR, mat_specular, 0);
-            	log("material specular");
+            	log("material specular " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
+                        mat_specular[0], mat_specular[1], mat_specular[2], normalArgument));
             	break;
 
             case SPOW:
@@ -1007,7 +1009,7 @@ public class VideoEngine {
                 tex_clut_shift  = (normalArgument >> 2) & 0x3F;
                 tex_clut_mask   = (normalArgument >> 8) & 0xFF;
                 tex_clut_start  = (normalArgument >> 16) & 0xFF;
-                log ("sceGuClutMode(cpsm=" + tex_clut_mode + ", shift=" + tex_clut_shift + ", mask=" + tex_clut_mask + ", start=" + tex_clut_start + ")");
+                log ("sceGuClutMode(cpsm=" + tex_clut_mode + ", shift=" + tex_clut_shift + ", mask=0x" + Integer.toHexString(tex_clut_mask) + ", start=" + tex_clut_start + ")");
                 break;
             }
 
@@ -1601,14 +1603,14 @@ public class VideoEngine {
                                 if (vinfo.normal   != 0) gl.glNormal3f(v1.nx, v1.ny, v1.nz);
                                 if (vinfo.color    != 0) gl.glColor4f(v2.r, v2.g, v2.b, v2.a); // color from v2 not v1
 
-                                if (vinfo.texture  != 0) 
+                                if (vinfo.texture  != 0)
                                 	if(transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD)
                                 		gl.glTexCoord2f(v1.u / texture_width0, v1.v / texture_height0);
                                 	else
                                 		gl.glTexCoord2f(v1.u, v1.v);
                                 if (vinfo.position != 0) gl.glVertex3f(v1.px, v1.py, v1.pz);
 
-                                if (vinfo.texture  != 0) 
+                                if (vinfo.texture  != 0)
                                 	if(transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD)
                                 		gl.glTexCoord2f(v2.u / texture_width0, v1.v / texture_height0);
                                 	else
@@ -1619,14 +1621,14 @@ public class VideoEngine {
                                 if (vinfo.normal   != 0) gl.glNormal3f(v2.nx, v2.ny, v2.nz);
                                 if (vinfo.color    != 0) gl.glColor4f(v2.r, v2.g, v2.b, v2.a);
 
-                                if (vinfo.texture  != 0) 
+                                if (vinfo.texture  != 0)
                                 	if(transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD)
                                 		gl.glTexCoord2f(v2.u / texture_width0, v2.v / texture_height0);
                                 	else
                                 		gl.glTexCoord2f(v2.u, v2.v);
                                 if (vinfo.position != 0) gl.glVertex3f(v2.px, v2.py, v1.pz);
 
-                                if (vinfo.texture  != 0) 
+                                if (vinfo.texture  != 0)
                                 	if(transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD)
                                 		gl.glTexCoord2f(v1.u / texture_width0, v2.v / texture_height0);
                                 	else
@@ -1645,7 +1647,7 @@ public class VideoEngine {
 		            	break;
 		            }
 		        }
-                
+
                 gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, 1.0f);
                 gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_MODULATE);
            		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, GL.GL_TEXTURE);
@@ -1799,7 +1801,7 @@ public class VideoEngine {
             }
             case CALL:
             {
-                actualList.stack[actualList.stackIndex++] = actualList.pc + 4;
+                actualList.stack[actualList.stackIndex++] = actualList.pc;
                 int npc = (normalArgument | actualList.base) & 0xFFFFFFFC;
                 log(helper.getCommandString(CALL) + " old PC:" + String.format("%08x", actualList.pc)
                     + " new PC:" + String.format("%08x", npc));
