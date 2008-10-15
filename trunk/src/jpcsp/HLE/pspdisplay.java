@@ -331,14 +331,14 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
         gl.glColor3f(1.0f, 1.0f, 1.0f);
 
-        gl.glTexCoord2f(0.0f, 0.0f);
-        gl.glVertex2f(0.0f, 0.0f);
+        gl.glTexCoord2f(texS, texT);
+        gl.glVertex2f(width, height);
 
         gl.glTexCoord2f(0.0f, texT);
         gl.glVertex2f(0.0f, height);
 
-        gl.glTexCoord2f(texS, texT);
-        gl.glVertex2f(width, height);
+        gl.glTexCoord2f(0.0f, 0.0f);
+        gl.glVertex2f(0.0f, 0.0f);
 
         gl.glTexCoord2f(texS, 0.0f);
         gl.glVertex2f(width, 0.0f);
