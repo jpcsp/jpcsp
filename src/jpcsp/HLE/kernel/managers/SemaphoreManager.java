@@ -98,7 +98,12 @@ public class SemaphoreManager {
 
         if (semaphore != null) {
 
+            int oldCount = semaphore.currentCount;
             semaphore.currentCount += count;
+
+            for (int i : Managers.threads.waitingThreads) {
+                Modules.log.debug("UNNNNNNNNNNNNNNNN Wait threads = " + i);
+            }
             
             gpr[2] = 0;
         } else {
