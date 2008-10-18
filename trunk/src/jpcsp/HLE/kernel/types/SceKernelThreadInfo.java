@@ -160,14 +160,14 @@ public class SceKernelThreadInfo extends SceKernelUid implements Comparator<SceK
         }
     }
 
-    public void saveContext() {
-        cpuContext = Emulator.getProcessor().cpu;
+    public void saveContext(Processor processor) {
+        cpuContext = processor.cpu;
     }
 
-    public void restoreContext() {
+    public void restoreContext(Processor processor) {
         cpuContext.pc = cpuContext.npc;
 
-        Emulator.getProcessor().cpu = cpuContext;
+        processor.cpu = cpuContext;
     }
 
     public void release() {

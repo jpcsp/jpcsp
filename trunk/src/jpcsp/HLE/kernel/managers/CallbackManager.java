@@ -101,7 +101,7 @@ public class CallbackManager {
             //}
             //return KERNEL_ERROR_OK;
 
-            processor.cpu.gpr[2] = 0;
+            gpr[2] = 0;
         } else {
             Modules.log.warn("sceKernelNotifyCallback - invalid id=" + uid);
             gpr[2] = ERROR_NOT_FOUND_CALLBACK;
