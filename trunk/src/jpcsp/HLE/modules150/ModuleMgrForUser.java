@@ -258,7 +258,7 @@ public class ModuleMgrForUser implements HLEModule {
             return;
         }
 
-        ThreadMan.get_instance().createThread("module" + Integer.toHexString(uid), sceModule.getStartAddr(), 0, 0x4000, sceModule.getAttr(), option_addr, true, argsize, argp_addr, sceModule.getGp());
+        ThreadMan.get_instance().createThread(sceModule.getName(), sceModule.getStartAddr(), 0, 0x4000, sceModule.getAttr(), option_addr, true, argsize, argp_addr, sceModule.getGp());
 
         cpu.gpr[2] = 0;
 	}

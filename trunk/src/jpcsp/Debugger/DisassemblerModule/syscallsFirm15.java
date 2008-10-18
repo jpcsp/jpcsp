@@ -934,6 +934,13 @@ public class syscallsFirm15 {
                 sceAudiocodecGetEDRAM(0x307f,0x3A20A200), //1.50+
                 sceAudiocodecReleaseEDRAM(0x3080,0x29681260), //1.50+
 
+                // serial
+                sceHprmEnd(0x3081, 0x588845DA), //1.50+
+                sceSysconCtrlHRPower(0x3082, 0x44439604), //1.50+
+                sceSysregUartIoEnable(0x3083, 0x7FD7A631), //1.50+
+                sceKernelRegisterDebugPutchar(0x3084, 0xE146606D), //1.50+
+                sceKernelDipswAll(0x3085, 0xD636B827), //1.50+
+
                 hleDummy(0x5000,0xcdcdcdcd); // got bored of editing , and ; so leave this entry at the end of the enum
 
             //implement syscall
