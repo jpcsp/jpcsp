@@ -167,7 +167,16 @@ public class PSF {
                 break;
             sb.append(rawString.charAt(i));
         }
-        return sb.toString();
+        //return sb.toString();
+
+        try {
+            byte[] bytes = sb.toString().getBytes("UTF-8");
+            //return new String(bytes, "UTF-8"); // squares
+            return new String(bytes);
+        } catch(java.io.UnsupportedEncodingException e) {
+            System.out.println(e.getMessage());
+            return sb.toString();
+        }
     }
 
     public long getNumeric(String key) {
