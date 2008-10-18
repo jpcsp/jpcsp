@@ -212,7 +212,7 @@ public class MemStickBrowser extends JDialog {
 					return icons[rowIndex];
 				case 1:
 					String title;
-					if(psfs[rowIndex] == null || (title = psfs[rowIndex].getString("TITLE")) == null) {
+					if(psfs[rowIndex] == null || (title = psfs[rowIndex].getPrintableString("TITLE")) == null) {
 						// No PSF TITLE, get the parent directory name
 						title =  programs[rowIndex].getParentFile().getName();
 					}

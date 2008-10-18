@@ -907,9 +907,10 @@ public class syscallsFirm15 {
 		         sceKernelFindModuleByAddressFunction(0x3070, 0xFB8AE27D),
 		         sceKernelFindModuleByUIDFunction(0x3071, 0xCCE4A157),
 		         sceKernelGetModuleListWithAllocFunction(0x3072, 0x929B5C69),
-		         sceKernelGetModuleIdListForKernelFunction(0x3073, 0x05D915DB);
-                 
-                 
+		         sceKernelGetModuleIdListForKernelFunction(0x3073, 0x05D915DB),
+
+                 sceKernelSetCompiledSdkVersion380_390(0x3074,0x315AD3A0); //3.90+ or lower
+
 
             //implement syscall
             private int syscall;

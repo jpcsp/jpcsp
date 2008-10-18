@@ -139,7 +139,7 @@ public static String ElfInfo, ProgInfo, PbpInfo, SectInfo;
         // Set gui title from param.sfo
         PSF psf = romManager.getPBP().getPSF();
         if (psf != null) {
-            String title = psf.getString("TITLE");
+            String title = psf.getPrintableString("TITLE");
             gui.setTitle(jpcsp.util.MetaInformation.FULL_NAME + " - " + title);
         }
     }
