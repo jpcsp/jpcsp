@@ -25,16 +25,28 @@ public class Processor /* extends OldCpuState */ {
 
     public static boolean ENABLE_STEP_TRACE = false;
 
+    /** false=count how many times an insn appears in the code (static check).
+     * true=count how many times an insn is executed (dynamic check). */
+    public static boolean ENABLE_INSN_EXECUTE_COUNT = false;
+
+    /** cache mem reads and insn decodes */
+    private final static boolean ENABLE_INSN_CACHE = false;
+
+
     public CpuState cpu = new CpuState();
 
     public static final jpcsp.Memory memory = jpcsp.Memory.getInstance();
     public static Logger log = Logger.getLogger("cpu");
 
     Processor() {
+        insnCache = new CacheLine[INSN_CACHE_SIZE];
+        for (int i = 0; i < INSN_CACHE_SIZE; i++)
+            insnCache[i] = new CacheLine();
         reset();
     }
 
     public void reset() {
+        invalidateICache();
         cpu.reset();
     }
 
@@ -46,28 +58,99 @@ public class Processor /* extends OldCpuState */ {
 
     }
 
+    class CacheLine {
+        boolean valid;
+        int address;
+        int opcode;
+        Common.Instruction insn;
+    }
+
+    private final int INSN_CACHE_SIZE = 0x1000;
+    private final int INSN_CACHE_MASK = INSN_CACHE_SIZE - 1;
+    private CacheLine[] insnCache;
+    private long insnCacheHits, insnCacheMisses, insnCount;
+
+    public void invalidateICache() {
+        if (insnCount != 0) {
+            Processor.log.info("icache hits:" + insnCacheHits + " (" + (insnCacheHits * 100 / insnCount) + "%)"
+                + " misses:"  + insnCacheMisses + " (" + (insnCacheMisses * 100 / insnCount) + "%)");
+        }
+        for (CacheLine line : insnCache) line.valid = false;
+        insnCacheHits = insnCacheMisses = insnCount = 0;
+    }
+
+    /** replaces (BcuState)cpu.fetchOpcode()  */
+    private CacheLine fetchDecodedInstruction() {
+        CacheLine line = insnCache[cpu.pc & INSN_CACHE_MASK];
+        if (!line.valid || line.address != cpu.pc) {
+            line.valid = true;
+            line.address = cpu.pc;
+            line.opcode = memory.read32(cpu.pc);
+            line.insn = Decoder.instruction(line.opcode);
+            insnCacheMisses++;
+        } else {
+            insnCacheHits++;
+        }
+        insnCount++;
+        // by default, the next instruction to emulate is at the next address
+        cpu.pc = cpu.npc = cpu.pc + 4;
+        return line;
+    }
+
+    /** replaces (BcuState)cpu.nextOpcode()  */
+    private CacheLine nextDecodedInstruction() {
+        CacheLine line = insnCache[cpu.pc & INSN_CACHE_MASK];
+        if (!line.valid || line.address != cpu.pc) {
+            line.valid = true;
+            line.address = cpu.pc;
+            line.opcode = memory.read32(cpu.pc);
+            line.insn = Decoder.instruction(line.opcode);
+            insnCacheMisses++;
+        } else {
+            insnCacheHits++;
+        }
+        insnCount++;
+        // by default, the next instruction to emulate is at the next address
+        cpu.pc += 4;
+        return line;
+    }
+
     public void interpret() {
 
         if (ENABLE_STEP_TRACE) StepLogger.append(cpu);
 
-        int opcode = cpu.fetchOpcode();
+        if (ENABLE_INSN_CACHE) {
+            CacheLine line = fetchDecodedInstruction();
 
-        Common.Instruction insn = Decoder.instruction(opcode);
+            line.insn.interpret(this, line.opcode);
+            if (ENABLE_INSN_EXECUTE_COUNT) line.insn.increaseCount();
+        } else {
+            int opcode = cpu.fetchOpcode();
 
-        insn.interpret(this, opcode);
-        insn.increaseCount();
+            Common.Instruction insn = Decoder.instruction(opcode);
+
+            insn.interpret(this, opcode);
+            if (ENABLE_INSN_EXECUTE_COUNT) insn.increaseCount();
+        }
     }
 
     public void interpretDelayslot() {
 
         if (ENABLE_STEP_TRACE) StepLogger.append(cpu);
 
-        int opcode = cpu.nextOpcode();
+        if (ENABLE_INSN_CACHE) {
+            CacheLine line = nextDecodedInstruction();
 
-        Common.Instruction insn = Decoder.instruction(opcode);
+            line.insn.interpret(this, line.opcode);
+            if (ENABLE_INSN_EXECUTE_COUNT) line.insn.increaseCount();
+        } else {
+            int opcode = cpu.nextOpcode();
 
-        insn.interpret(this, opcode);
-        insn.increaseCount();
+            Common.Instruction insn = Decoder.instruction(opcode);
+
+            insn.interpret(this, opcode);
+            if (ENABLE_INSN_EXECUTE_COUNT) insn.increaseCount();
+        }
 
         cpu.nextPc();
     }

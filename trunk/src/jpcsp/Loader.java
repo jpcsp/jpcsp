@@ -686,6 +686,7 @@ public class Loader {
                 int exportAddress = mem.read32((int)(entHeader.getOffsetResident() + (j + functionCount) * 4));
 
                 switch(nid) {
+                // magic export nids from yapspd
                 case 0xd3744be0: // module_bootstart
                 case 0x2f064fa6: // module_reboot_before
                 case 0xadf12745: // module_reboot_phase

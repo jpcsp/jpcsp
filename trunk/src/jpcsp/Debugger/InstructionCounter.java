@@ -43,14 +43,19 @@ public class InstructionCounter extends javax.swing.JFrame implements PropertyCh
     /** Creates new form InstructionCounter */
     public InstructionCounter() {
         initComponents();
-        RefreshWindow();
+        // moved to setModule
+        //RefreshWindow();
     }
 
     public void setModule(ModuleContext module) {
         this.module = module;
+        RefreshWindow();
     }
 
     public void RefreshWindow() {
+        if (module == null)
+            return;
+
         resetcounts();
         areastatus.setText("");
 
@@ -226,7 +231,7 @@ public class InstructionCounter extends javax.swing.JFrame implements PropertyCh
 private void startbuttonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startbuttonActionPerformed
     // debug (fiveofhearts), we've been counting instructions as they excute,
     // so just update the gui and don't do a recount of how many instructions exist.
-    if (false) {
+    if (jpcsp.Processor.ENABLE_INSN_EXECUTE_COUNT) {
         refreshCounter();
         return;
     }
