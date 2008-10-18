@@ -23,6 +23,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.Image;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileNotFoundException;
@@ -217,6 +218,15 @@ public class MemStickBrowser extends JDialog {
                             icons[i] = new ImageIcon(icon0);
                         }
                         roChannel.close();
+                    }
+
+                    // Rescale over sized icons
+                    if (icons[i] != null) {
+                        Image image = icons[i].getImage();
+                        if (image.getWidth(null) > 144 || image.getHeight(null) > 80) {
+                            image = image.getScaledInstance(144, 80, Image.SCALE_SMOOTH);
+                            icons[i].setImage(image);
+                        }
                     }
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
