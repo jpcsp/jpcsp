@@ -63,118 +63,118 @@ import jpcsp.util.MetaInformation;
  */
 public class MemStickBrowser extends JDialog {
 
-	private final class MemStickTableColumnModel extends DefaultTableColumnModel {
-		private static final long serialVersionUID = -6321946514015824875L;
+    private final class MemStickTableColumnModel extends DefaultTableColumnModel {
+        private static final long serialVersionUID = -6321946514015824875L;
 
-		private final class CellRenderer extends DefaultTableCellRenderer {
-			private static final long serialVersionUID = 6767267483048658105L;
+        private final class CellRenderer extends DefaultTableCellRenderer {
+            private static final long serialVersionUID = 6767267483048658105L;
 
-			@Override
-			public Component getTableCellRendererComponent(JTable table,
-					Object obj, boolean isSelected, boolean hasFocus,
-					int row, int column) {
-				if(obj instanceof Icon) {
-					setText("");
-					setIcon((Icon) obj);
-					return this;
-				}
-				setIcon(null);
-				return super.getTableCellRendererComponent(table, obj, isSelected, hasFocus, row, column);
-			}
-		}
+            @Override
+            public Component getTableCellRendererComponent(JTable table,
+                    Object obj, boolean isSelected, boolean hasFocus,
+                    int row, int column) {
+                if(obj instanceof Icon) {
+                    setText("");
+                    setIcon((Icon) obj);
+                    return this;
+                }
+                setIcon(null);
+                return super.getTableCellRendererComponent(table, obj, isSelected, hasFocus, row, column);
+            }
+        }
 
-		public MemStickTableColumnModel() {
-			setColumnMargin(0);
-			CellRenderer cellRenderer = new CellRenderer();
-			TableColumn tableColumn = new TableColumn(0, 144, cellRenderer, null);
-			tableColumn.setHeaderValue("Icon");
-			tableColumn.setMaxWidth(154);
-			tableColumn.setMinWidth(144);
-			TableColumn tableColumn2 = new TableColumn(1, 100, cellRenderer, null);
-			tableColumn2.setHeaderValue("Title");
-			TableColumn tableColumn3 = new TableColumn(2, 200, cellRenderer, null);
-			tableColumn3.setHeaderValue("Path");
-			addColumn(tableColumn);
-			addColumn(tableColumn2);
-			addColumn(tableColumn3);
-		}
-	}
+        public MemStickTableColumnModel() {
+            setColumnMargin(0);
+            CellRenderer cellRenderer = new CellRenderer();
+            TableColumn tableColumn = new TableColumn(0, 144, cellRenderer, null);
+            tableColumn.setHeaderValue("Icon");
+            tableColumn.setMaxWidth(154);
+            tableColumn.setMinWidth(144);
+            TableColumn tableColumn2 = new TableColumn(1, 100, cellRenderer, null);
+            tableColumn2.setHeaderValue("Title");
+            TableColumn tableColumn3 = new TableColumn(2, 200, cellRenderer, null);
+            tableColumn3.setHeaderValue("Path");
+            addColumn(tableColumn);
+            addColumn(tableColumn2);
+            addColumn(tableColumn3);
+        }
+    }
 
-	private final class MemStickTableModel extends AbstractTableModel {
-		private static final long serialVersionUID = -1675488447176776560L;
+    private final class MemStickTableModel extends AbstractTableModel {
+        private static final long serialVersionUID = -1675488447176776560L;
 
 
 
-		public MemStickTableModel(File path) {
-			if(!path.isDirectory()) {
-				Emulator.log.error(path + " isn't a directory");
-				return;
-			}
-			programs = path.listFiles(new FileFilter() {
-				@Override
-				public boolean accept(File file) {
-					String lower = file.getName().toLowerCase();
-					if (lower.endsWith(".pbp"))
-						return true;
-					if (file.isDirectory()
-							&& !file.getName().startsWith("%")
-							&& !file.getName().endsWith("%")) {
-						File eboot[] = file.listFiles(new FileFilter() {
-							@Override
-							public boolean accept(File arg0) {
-								return arg0.getName().equalsIgnoreCase("eboot.pbp");
-							}
-						});
-						return eboot.length != 0;
-					}
-					return false;
-				}
-			});
+        public MemStickTableModel(File path) {
+            if(!path.isDirectory()) {
+                Emulator.log.error(path + " isn't a directory");
+                return;
+            }
+            programs = path.listFiles(new FileFilter() {
+                @Override
+                public boolean accept(File file) {
+                    String lower = file.getName().toLowerCase();
+                    if (lower.endsWith(".pbp"))
+                        return true;
+                    if (file.isDirectory()
+                            && !file.getName().startsWith("%")
+                            && !file.getName().endsWith("%")) {
+                        File eboot[] = file.listFiles(new FileFilter() {
+                            @Override
+                            public boolean accept(File arg0) {
+                                return arg0.getName().equalsIgnoreCase("eboot.pbp");
+                            }
+                        });
+                        return eboot.length != 0;
+                    }
+                    return false;
+                }
+            });
 
-			icons = new ImageIcon[programs.length];
-			pbps = new PBP[programs.length];
-			psfs = new PSF[programs.length];
+            icons = new ImageIcon[programs.length];
+            pbps = new PBP[programs.length];
+            psfs = new PSF[programs.length];
 
-			for (int i = 0; i < programs.length; ++i) {
-				try {
-					File metapbp = programs[i];
-					if(programs[i].isDirectory()) {
-						File eboot[] = programs[i].listFiles(new FileFilter() {
-							@Override
-							public boolean accept(File arg0) {
-								return arg0.getName().equalsIgnoreCase("eboot.pbp");
-							}
-						});
+            for (int i = 0; i < programs.length; ++i) {
+                try {
+                    File metapbp = programs[i];
+                    if(programs[i].isDirectory()) {
+                        File eboot[] = programs[i].listFiles(new FileFilter() {
+                            @Override
+                            public boolean accept(File arg0) {
+                                return arg0.getName().equalsIgnoreCase("eboot.pbp");
+                            }
+                        });
 
-						metapbp = programs[i] = eboot[0];
+                        metapbp = programs[i] = eboot[0];
 
                         // %__SCE__kxploit
-						File metadir = new File(programs[i].getParentFile().getParentFile().getPath()
-								+ File.separatorChar + "%" + programs[i].getParentFile().getName());
-						if(metadir.exists()) {
-							eboot = metadir.listFiles(new FileFilter() {
-								@Override
-								public boolean accept(File arg0) {
-									return arg0.getName().equalsIgnoreCase("eboot.pbp");
-								}
-							});
-							if(eboot.length > 0)
-								metapbp = eboot[0];
-						}
+                        File metadir = new File(programs[i].getParentFile().getParentFile().getPath()
+                                + File.separatorChar + "%" + programs[i].getParentFile().getName());
+                        if(metadir.exists()) {
+                            eboot = metadir.listFiles(new FileFilter() {
+                                @Override
+                                public boolean accept(File arg0) {
+                                    return arg0.getName().equalsIgnoreCase("eboot.pbp");
+                                }
+                            });
+                            if(eboot.length > 0)
+                                metapbp = eboot[0];
+                        }
 
                         // kxploit%
-						metadir = new File(programs[i].getParentFile().getParentFile().getPath()
-								+ File.separatorChar + programs[i].getParentFile().getName() + "%");
-						if(metadir.exists()) {
-							eboot = metadir.listFiles(new FileFilter() {
-								@Override
-								public boolean accept(File arg0) {
-									return arg0.getName().equalsIgnoreCase("eboot.pbp");
-								}
-							});
-							if(eboot.length > 0)
-								metapbp = eboot[0];
-						}
+                        metadir = new File(programs[i].getParentFile().getParentFile().getPath()
+                                + File.separatorChar + programs[i].getParentFile().getName() + "%");
+                        if(metadir.exists()) {
+                            eboot = metadir.listFiles(new FileFilter() {
+                                @Override
+                                public boolean accept(File arg0) {
+                                    return arg0.getName().equalsIgnoreCase("eboot.pbp");
+                                }
+                            });
+                            if(eboot.length > 0)
+                                metapbp = eboot[0];
+                        }
 
                         // Load unpacked icon
                         File[] icon0file = programs[i].getParentFile().listFiles(new FileFilter() {
@@ -201,205 +201,205 @@ public class MemStickBrowser extends JDialog {
                             psfs[i].read(readbuffer);
                             roChannel.close();
                         }
-					}
+                    }
                     if(programs[i].getName().toLowerCase().endsWith(".pbp")) {
                         // Load packed icon
-						FileChannel roChannel = new RandomAccessFile(metapbp, "r").getChannel();
-						ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
-						pbps[i] = new PBP(readbuffer);
+                        FileChannel roChannel = new RandomAccessFile(metapbp, "r").getChannel();
+                        ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
+                        pbps[i] = new PBP(readbuffer);
                         PSF psf = pbps[i].readPSF(readbuffer);
                         if (psf != null)
                             psfs[i] = psf;
-						if(pbps[i].getSizeIcon0() > 0) {
-							byte[] icon0 = new byte[pbps[i].getSizeIcon0()];
-							readbuffer.position((int) pbps[i].getOffsetIcon0());
-							readbuffer.get(icon0);
-							icons[i] = new ImageIcon(icon0);
-						}
+                        if(pbps[i].getSizeIcon0() > 0) {
+                            byte[] icon0 = new byte[pbps[i].getSizeIcon0()];
+                            readbuffer.position((int) pbps[i].getOffsetIcon0());
+                            readbuffer.get(icon0);
+                            icons[i] = new ImageIcon(icon0);
+                        }
                         roChannel.close();
-					}
-				} catch (FileNotFoundException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
+                    }
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
 
-		@Override
-		public int getColumnCount() {
-			return 3;
-		}
+        @Override
+        public int getColumnCount() {
+            return 3;
+        }
 
-		@Override
-		public int getRowCount() {
-			return programs.length;
-		}
+        @Override
+        public int getRowCount() {
+            return programs.length;
+        }
 
-		@Override
-		public Object getValueAt(int rowIndex, int columnIndex) {
-			try {
-				switch (columnIndex) {
-				case 0:
-					return icons[rowIndex];
-				case 1:
-					String title;
-					if(psfs[rowIndex] == null || (title = psfs[rowIndex].getPrintableString("TITLE")) == null) {
-						// No PSF TITLE, get the parent directory name
-						title =  programs[rowIndex].getParentFile().getName();
-					}
-					return title;
-				case 2:
-					String prgPath = programs[rowIndex].getCanonicalPath();
-					File cwd = new File(".");
-					if(prgPath.startsWith(cwd.getCanonicalPath()))
-						prgPath = prgPath.substring(cwd.getCanonicalPath().length() + 1);
-					return prgPath;
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			return null;
-		}
-	}
+        @Override
+        public Object getValueAt(int rowIndex, int columnIndex) {
+            try {
+                switch (columnIndex) {
+                case 0:
+                    return icons[rowIndex];
+                case 1:
+                    String title;
+                    if(psfs[rowIndex] == null || (title = psfs[rowIndex].getPrintableString("TITLE")) == null) {
+                        // No PSF TITLE, get the parent directory name
+                        title =  programs[rowIndex].getParentFile().getName();
+                    }
+                    return title;
+                case 2:
+                    String prgPath = programs[rowIndex].getCanonicalPath();
+                    File cwd = new File(".");
+                    if(prgPath.startsWith(cwd.getCanonicalPath()))
+                        prgPath = prgPath.substring(cwd.getCanonicalPath().length() + 1);
+                    return prgPath;
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+    }
 
-	/**
-	 *
-	 */
-	private static final long serialVersionUID = 7788144302296106541L;
-	private JButton loadButton;
-	private JTable table;
-	private File[] programs;
-	private ImageIcon[] icons;
-	private PBP[] pbps;
-	private PSF[] psfs;
-	private File path;
-	/**
-	 * @param arg0
-	 */
-	public MemStickBrowser(MainGUI arg0, File path) {
-		super(arg0);
+    /**
+     *
+     */
+    private static final long serialVersionUID = 7788144302296106541L;
+    private JButton loadButton;
+    private JTable table;
+    private File[] programs;
+    private ImageIcon[] icons;
+    private PBP[] pbps;
+    private PSF[] psfs;
+    private File path;
+    /**
+     * @param arg0
+     */
+    public MemStickBrowser(MainGUI arg0, File path) {
+        super(arg0);
 
-		this.path = path;
-		setModal(true);
+        this.path = path;
+        setModal(true);
 
-		setTitle("Memory Stick Browser");
-		setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-		table = new JTable(new MemStickTableModel(path), new MemStickTableColumnModel());
-		table.setFillsViewportHeight(true);
-		table.setRowHeight(80);
-		table.setAutoResizeMode(JTable.AUTO_RESIZE_NEXT_COLUMN);
-		table.setTableHeader(new JTableHeader(table.getColumnModel()));
-		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		table.setRowSelectionAllowed(true);
-		table.setColumnSelectionAllowed(false);
-		table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
-			@Override
-			public void valueChanged(ListSelectionEvent e) {
-				loadButton.setEnabled(!((ListSelectionModel)e.getSource()).isSelectionEmpty());
-			}});
-		table.addMouseListener(new MouseAdapter() {
+        setTitle("Memory Stick Browser");
+        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        table = new JTable(new MemStickTableModel(path), new MemStickTableColumnModel());
+        table.setFillsViewportHeight(true);
+        table.setRowHeight(80);
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_NEXT_COLUMN);
+        table.setTableHeader(new JTableHeader(table.getColumnModel()));
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setRowSelectionAllowed(true);
+        table.setColumnSelectionAllowed(false);
+        table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                loadButton.setEnabled(!((ListSelectionModel)e.getSource()).isSelectionEmpty());
+            }});
+        table.addMouseListener(new MouseAdapter() {
 
-			@Override
-			public void mouseClicked(MouseEvent arg0) {
-				if(arg0.getClickCount() == 2 && arg0.getButton() == MouseEvent.BUTTON1)
-					loadSelectedfile();
-			}
-		});
+            @Override
+            public void mouseClicked(MouseEvent arg0) {
+                if(arg0.getClickCount() == 2 && arg0.getButton() == MouseEvent.BUTTON1)
+                    loadSelectedfile();
+            }
+        });
 
-		for (int c = 0; c < table.getColumnCount() - 1; c++) {
-			DefaultTableColumnModel colModel = (DefaultTableColumnModel) table
-					.getColumnModel();
-			TableColumn col = colModel.getColumn(c);
-			int width = 0;
+        for (int c = 0; c < table.getColumnCount() - 1; c++) {
+            DefaultTableColumnModel colModel = (DefaultTableColumnModel) table
+                    .getColumnModel();
+            TableColumn col = colModel.getColumn(c);
+            int width = 0;
 
-			// Get width of column header
-			TableCellRenderer renderer = col.getHeaderRenderer();
-			if (renderer == null) {
-				renderer = table.getTableHeader().getDefaultRenderer();
-			}
-			Component comp = renderer.getTableCellRendererComponent(table, col
-					.getHeaderValue(), false, false, 0, 0);
-			width = comp.getPreferredSize().width;
+            // Get width of column header
+            TableCellRenderer renderer = col.getHeaderRenderer();
+            if (renderer == null) {
+                renderer = table.getTableHeader().getDefaultRenderer();
+            }
+            Component comp = renderer.getTableCellRendererComponent(table, col
+                    .getHeaderValue(), false, false, 0, 0);
+            width = comp.getPreferredSize().width;
 
-			// Get maximum width of column data
-			for (int r = 0; r < table.getRowCount(); r++) {
-				renderer = table.getCellRenderer(r, c);
-				comp = renderer.getTableCellRendererComponent(table, table
-						.getValueAt(r, c), false, false, r, c);
-				width = Math.max(width, comp.getPreferredSize().width);
-			}
+            // Get maximum width of column data
+            for (int r = 0; r < table.getRowCount(); r++) {
+                renderer = table.getCellRenderer(r, c);
+                comp = renderer.getTableCellRendererComponent(table, table
+                        .getValueAt(r, c), false, false, r, c);
+                width = Math.max(width, comp.getPreferredSize().width);
+            }
 
-			width += 2 * colModel.getColumnMargin();
-			col.setPreferredWidth(width);
-		}
+            width += 2 * colModel.getColumnMargin();
+            col.setPreferredWidth(width);
+        }
 
-		JScrollPane scrollPane = new JScrollPane(table);
+        JScrollPane scrollPane = new JScrollPane(table);
 
-		GroupLayout layout = new GroupLayout(getRootPane());
-		layout.setAutoCreateGaps(true);
-		layout.setAutoCreateContainerGaps(true);
+        GroupLayout layout = new GroupLayout(getRootPane());
+        layout.setAutoCreateGaps(true);
+        layout.setAutoCreateContainerGaps(true);
 
-		JButton cancelButton = new JButton("Cancel");
-		cancelButton.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				MemStickBrowser.this.setVisible(false);
-				MemStickBrowser.this.dispose();
-			}
-		});
-		loadButton = new JButton("Load");
-		loadButton.setEnabled(false);
-		loadButton.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				loadSelectedfile();
-			}
-		});
+        JButton cancelButton = new JButton("Cancel");
+        cancelButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                MemStickBrowser.this.setVisible(false);
+                MemStickBrowser.this.dispose();
+            }
+        });
+        loadButton = new JButton("Load");
+        loadButton.setEnabled(false);
+        loadButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                loadSelectedfile();
+            }
+        });
 
-		layout.setHorizontalGroup(layout.createParallelGroup(
-				GroupLayout.Alignment.TRAILING).addComponent(scrollPane)
-				.addGroup(
-						layout.createSequentialGroup().addComponent(loadButton)
-								.addComponent(cancelButton)));
+        layout.setHorizontalGroup(layout.createParallelGroup(
+                GroupLayout.Alignment.TRAILING).addComponent(scrollPane)
+                .addGroup(
+                        layout.createSequentialGroup().addComponent(loadButton)
+                                .addComponent(cancelButton)));
 
-		layout.setVerticalGroup(layout.createSequentialGroup().addComponent(
-				scrollPane).addGroup(
-				layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-						.addComponent(loadButton).addComponent(cancelButton)));
+        layout.setVerticalGroup(layout.createSequentialGroup().addComponent(
+                scrollPane).addGroup(
+                layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                        .addComponent(loadButton).addComponent(cancelButton)));
 
-		getRootPane().setLayout(layout);
-		setSize(600, 400);
-	}
+        getRootPane().setLayout(layout);
+        setSize(600, 400);
+    }
 
-	public void refreshFiles() {
-		table.setModel(new MemStickTableModel(path));
-	}
+    public void refreshFiles() {
+        table.setModel(new MemStickTableModel(path));
+    }
 
-	private void loadSelectedfile() {
-		File selectedFile = programs[table.getSelectedRow()];
-			((MainGUI) getParent()).loadFile(selectedFile);
+    private void loadSelectedfile() {
+        File selectedFile = programs[table.getSelectedRow()];
+            ((MainGUI) getParent()).loadFile(selectedFile);
 
         // Even though Emulator.java tries to set a title, we're going to do it again because we handle kxploit
-		((Frame) getParent()).setTitle(MetaInformation.FULL_NAME + " - "
-				+ table.getModel().getValueAt(table.getSelectedRow(), 1));
-		setVisible(false);
-		dispose();
-	}
+        ((Frame) getParent()).setTitle(MetaInformation.FULL_NAME + " - "
+                + table.getModel().getValueAt(table.getSelectedRow(), 1));
+        setVisible(false);
+        dispose();
+    }
 
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) {
-		try {
-			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		MemStickBrowser msb = new MemStickBrowser(null, new File("ms0/PSP/Game"));
-		msb.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-		msb.setVisible(true);
-	}
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        MemStickBrowser msb = new MemStickBrowser(null, new File("ms0/PSP/Game"));
+        msb.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        msb.setVisible(true);
+    }
 
 
 }
