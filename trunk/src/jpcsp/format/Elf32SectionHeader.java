@@ -128,46 +128,24 @@ public class Elf32SectionHeader {
         return sh_entsize;
     }
 
-    public enum ShFlags {
-        None(0),
-        Write(1),
-        Allocate(2),
-        Execute(4);
+    // Flags
+    public static final int SHF_NONE        = 0x00000000;
+    public static final int SHF_WRITE       = 0x00000001;
+    public static final int SHF_ALLOCATE    = 0x00000002;
+    public static final int SHF_EXECUTE     = 0x00000004;
 
-        private int value;
-        private ShFlags(int val)
-        {
-            value=val;
-        }
-        public int getValue()
-        {
-            return value;
-        }
-    }
-
-    public enum ShType {
-        NULL(0x00000000),
-        PROGBITS(0x00000001),
-        SYMTAB(0x00000002),
-        STRTAB(0x00000003),
-        RELA(0x00000004),
-        HASH(0x00000005),
-        DYNAMIC(0x00000006),
-        NOTE(0x00000007),
-        NOBITS(0x00000008),
-        REL(0x00000009),
-        SHLIB(0x0000000a),
-        DYNSYM(0x0000000b),
-        PRXREL(0x700000A0);
-
-        private int value;
-        private ShType(int val)
-        {
-            value=val;
-        }
-        public int getValue()
-        {
-            return value;
-        }
-    }
+    // Types
+    public static final int SHT_NULL        = 0x00000000;
+    public static final int SHT_PROGBITS    = 0x00000001;
+    public static final int SHT_SYMTAB      = 0x00000002;
+    public static final int SHT_STRTAB      = 0x00000003;
+    public static final int SHT_RELA        = 0x00000004;
+    public static final int SHT_HASH        = 0x00000005;
+    public static final int SHT_DYNAMIC     = 0x00000006;
+    public static final int SHT_NOTE        = 0x00000007;
+    public static final int SHT_NOBITS      = 0x00000008;
+    public static final int SHT_REL         = 0x00000009;
+    public static final int SHT_SHLIB       = 0x0000000A;
+    public static final int SHT_DYNSYM      = 0x0000000B;
+    public static final int SHT_PRXREL      = 0x700000A0;
 }

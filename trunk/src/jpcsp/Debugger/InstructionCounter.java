@@ -25,8 +25,8 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import javax.swing.JFileChooser;
-import jpcsp.Emulator;
 import jpcsp.Memory;
+import jpcsp.ModuleContext;
 import jpcsp.Allegrex.Instructions.*;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.Common.Instruction;
@@ -38,53 +38,56 @@ import jpcsp.Allegrex.Common.Instruction;
 public class InstructionCounter extends javax.swing.JFrame implements PropertyChangeListener {
 
     private Task task;
-    Emulator emu;
+    private ModuleContext module;
 
     /** Creates new form InstructionCounter */
-    public InstructionCounter(Emulator emu) {
-        this.emu = emu;
+    public InstructionCounter() {
         initComponents();
         RefreshWindow();
+    }
+
+    public void setModule(ModuleContext module) {
+        this.module = module;
     }
 
     public void RefreshWindow() {
         resetcounts();
         areastatus.setText("");
 
-        if (emu.textsection[0] == 0) {
+        if (module.textsection[0] == 0) {
             textcheck.setEnabled(false);
             textcheck.setSelected(false);
         } else {
             textcheck.setEnabled(true);
             textcheck.setSelected(true);
-            areastatus.append("Found .text section at " + Integer.toHexString(emu.textsection[0]) + " size " + emu.textsection[1] + "\n");
+            areastatus.append("Found .text section at " + Integer.toHexString(module.textsection[0]) + " size " + module.textsection[1] + "\n");
         }
 
-        if (emu.initsection[0] == 0) {
+        if (module.initsection[0] == 0) {
             initcheck.setEnabled(false);
             initcheck.setSelected(false);
         } else {
             initcheck.setEnabled(true);
             initcheck.setSelected(true);
-            areastatus.append("Found .init section at " + Integer.toHexString(emu.initsection[0]) + " size " + emu.initsection[1] + "\n");
+            areastatus.append("Found .init section at " + Integer.toHexString(module.initsection[0]) + " size " + module.initsection[1] + "\n");
         }
 
-        if (emu.finisection[0] == 0) {
+        if (module.finisection[0] == 0) {
             finicheck.setEnabled(false);
             finicheck.setSelected(false);
         } else {
             finicheck.setEnabled(true);
             finicheck.setSelected(true);
-            areastatus.append("Found .fini section at " + Integer.toHexString(emu.finisection[0]) + " size " + emu.finisection[1] + "\n");
+            areastatus.append("Found .fini section at " + Integer.toHexString(module.finisection[0]) + " size " + module.finisection[1] + "\n");
         }
 
-        if (emu.stubtextsection[0] == 0) {
+        if (module.stubtextsection[0] == 0) {
             stubtextcheck.setEnabled(false);
             stubtextcheck.setSelected(false);
         } else {
             stubtextcheck.setEnabled(true);
             stubtextcheck.setSelected(true);
-            areastatus.append("Found .sceStub.text at " + Integer.toHexString(emu.stubtextsection[0]) + " size " + emu.stubtextsection[1]);
+            areastatus.append("Found .sceStub.text at " + Integer.toHexString(module.stubtextsection[0]) + " size " + module.stubtextsection[1]);
         }
 
         pack();
@@ -221,6 +224,13 @@ public class InstructionCounter extends javax.swing.JFrame implements PropertyCh
     }// </editor-fold>//GEN-END:initComponents
 
 private void startbuttonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startbuttonActionPerformed
+    // debug (fiveofhearts), we've been counting instructions as they excute,
+    // so just update the gui and don't do a recount of how many instructions exist.
+    if (false) {
+        refreshCounter();
+        return;
+    }
+
     startbutton.setEnabled(false);
     setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
     //Instances of javax.swing.SwingWorker are not reusuable, so
@@ -287,33 +297,33 @@ private void SaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:ev
 
     public void findinitsections()
     {
-       for(int i =0; i< emu.initsection[1]; i+=4)
+       for(int i =0; i< module.initsection[1]; i+=4)
        {
-          int memread32 = Memory.getInstance().read32(emu.initsection[0]+i);
+          int memread32 = Memory.getInstance().read32(module.initsection[0]+i);
           jpcsp.Allegrex.Decoder.instruction(memread32).increaseCount();
        }
     }
     public void findfinisections()
     {
-       for(int i =0; i< emu.finisection[1]; i+=4)
+       for(int i =0; i< module.finisection[1]; i+=4)
        {
-          int memread32 = Memory.getInstance().read32(emu.finisection[0]+i);
+          int memread32 = Memory.getInstance().read32(module.finisection[0]+i);
           jpcsp.Allegrex.Decoder.instruction(memread32).increaseCount();
        }
     }
     public void findtextsections()
     {
-       for(int i =0; i< emu.textsection[1]; i+=4)
+       for(int i =0; i< module.textsection[1]; i+=4)
        {
-          int memread32 = Memory.getInstance().read32(emu.textsection[0]+i);
+          int memread32 = Memory.getInstance().read32(module.textsection[0]+i);
           jpcsp.Allegrex.Decoder.instruction(memread32).increaseCount();
        }
     }
     public void findstubtextsections()
     {
-        for(int i =0; i< emu.stubtextsection[1]; i+=4)
+        for(int i =0; i< module.stubtextsection[1]; i+=4)
        {
-          int memread32 = Memory.getInstance().read32(emu.stubtextsection[0]+i);
+          int memread32 = Memory.getInstance().read32(module.stubtextsection[0]+i);
           jpcsp.Allegrex.Decoder.instruction(memread32).increaseCount();
        }
 
@@ -370,7 +380,7 @@ private void SaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:ev
             }
         }
         for (Instruction insn : instructions.values()) {
-            if (insn != null) {
+            if (insn != null && insn.getCount() > 0) {
                 OpcodeTable.setValueAt(insn.name(), i, 0);
                 OpcodeTable.setValueAt(insn.category(), i, 1);
                 OpcodeTable.setValueAt(insn.getCount(), i, 2);
