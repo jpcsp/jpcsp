@@ -904,13 +904,37 @@ public class syscallsFirm15 {
 		         sceKernelRegisterModuleFunction(0x3067, 0xAE7C6E76),
 		         sceKernelReleaseModuleFunction(0x3068, 0x74CF001A),
 		         sceKernelFindModuleByNameFunction(0x3069, 0xCF8A41B1),
-		         sceKernelFindModuleByAddressFunction(0x3070, 0xFB8AE27D),
-		         sceKernelFindModuleByUIDFunction(0x3071, 0xCCE4A157),
-		         sceKernelGetModuleListWithAllocFunction(0x3072, 0x929B5C69),
-		         sceKernelGetModuleIdListForKernelFunction(0x3073, 0x05D915DB),
+		         sceKernelFindModuleByAddressFunction(0x306a, 0xFB8AE27D),
+		         sceKernelFindModuleByUIDFunction(0x306b, 0xCCE4A157),
+		         sceKernelGetModuleListWithAllocFunction(0x306c, 0x929B5C69),
+		         sceKernelGetModuleIdListForKernelFunction(0x306d, 0x05D915DB),
 
-                 sceKernelSetCompiledSdkVersion380_390(0x3074,0x315AD3A0); //3.90+ or lower
+                 sceKernelSetCompiledSdkVersion380_390(0x306e,0x315AD3A0), //3.90+ or lower
 
+
+                // TODO remove when we support exports, MPEG.PRX
+                sceVideocodecGetEDRAM(0x306f,0x2D31F5B1), //1.50+
+                sceVideocodecReleaseEDRAM(0x3070,0x4F160BF4), //1.50+
+                sceVideocodecOpen(0x3071,0xC01EC829), //1.50+
+                sceVideocodecInit(0x3072,0x17099F0A), //1.50+
+                sceVideocodecDecode(0x3073,0xDBA273FA), //1.50+
+                sceVideocodecStop(0x3074,0xA2F0564E), //1.50+
+                sceVideocodecDelete(0x3075,0x307E6E1C), //1.50+
+                sceVideocodecSetMemory(0x3076,0x745A7B7A), //1.50+
+                sceVideocodecScanHeader(0x3077,0x2F385E7F), //1.50+
+                sceVideocodecGetVersion(0x3078,0x26927D19), //1.50+
+
+                // TODO remove when we support exports, MPEG.PRX
+                sceAudiocodeCheckNeedMem(0x3079,0x9D3F790C), //1.50+
+                sceAudiocodecInit(0x307a,0x5B37EB1D), //1.50+
+                sceAudiocodecDecode(0x307b,0x70A703F8), //1.50+
+                sceAudiocodecGetInfo(0x307c,0x8ACA11D5), //1.50+
+                sceAudiocodec_6CD2A861(0x307d,0x6CD2A861), //1.50+
+                sceAudiocodec_59176A0F(0x307e,0x59176A0F), //1.50+
+                sceAudiocodecGetEDRAM(0x307f,0x3A20A200), //1.50+
+                sceAudiocodecReleaseEDRAM(0x3080,0x29681260), //1.50+
+
+                hleDummy(0x5000,0xcdcdcdcd); // got bored of editing , and ; so leave this entry at the end of the enum
 
             //implement syscall
             private int syscall;
