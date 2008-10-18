@@ -259,6 +259,7 @@ public class Emulator implements Runnable {
 
     public void setInstructionCounter(InstructionCounter instructionCounter) {
         this.instructionCounter = instructionCounter;
+        instructionCounter.setModule(module);
     }
 
     public void setMemoryViewer(MemoryViewer memview) {
