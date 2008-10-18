@@ -80,14 +80,12 @@ public class pspSysMem {
         return instance;
     }
 
-    public void Initialise(int programStartAddr, int programSize)
+    public void Initialise()
     {
         blockList = new HashMap<Integer, SysMemInfo>();
 
-        Modules.log.debug("pspSysMem reserving " + programSize + " bytes at "
-                + String.format("%08x", programStartAddr) + " for app");
-
-        heapBottom = programStartAddr + programSize;
+        // The loader should do the first malloc which will set the heapBottom corectly
+        heapBottom = MemoryMap.START_RAM; //0x08900000;
         heapTop = MemoryMap.END_RAM;
     }
 
@@ -188,8 +186,8 @@ public class pspSysMem {
         if (allocatedAddress != 0)
         {
             Modules.log.debug("malloc(size=0x" + Integer.toHexString(size)
-                + ") (heapBottom=0x" + Integer.toHexString(heapBottom)
-                + ",heapTop=0x" + Integer.toHexString(heapTop) + ")");
+                + ") new heapBottom=0x" + Integer.toHexString(heapBottom)
+                + ", new heapTop=0x" + Integer.toHexString(heapTop));
         }
 
         return allocatedAddress;

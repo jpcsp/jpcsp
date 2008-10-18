@@ -18,22 +18,132 @@ package jpcsp.format;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import jpcsp.Emulator;
+import jpcsp.util.Utilities;
 
 public class Elf32 {
 
+    // File offset
+    private int elfOffset;
+
+    // Headers
     private Elf32Header header;
+    private List<Elf32ProgramHeader> programHeaderList;
+    private List<Elf32SectionHeader> sectionHeaderList;
+    private HashMap<String, Elf32SectionHeader> sectionHeaderMap;
+    private Elf32SectionHeader shstrtab;
+
+    // Debug info
     private String ElfInfo; // ELF header
     private String ProgInfo; // ELF program headers
     private String SectInfo; // ELF section headers
-    private List<Elf32ProgramHeader> programheaders;
-    private List<Elf32SectionHeader> sectionheaders;
 
     public Elf32(ByteBuffer f) throws IOException {
+        elfOffset = f.position();
+        loadHeader(f);
+        if (header.isValid()) {
+            loadProgramHeaders(f);
+            loadSectionHeaders(f);
+        }
+    }
+
+    private void loadHeader(ByteBuffer f) throws IOException
+    {
         header = new Elf32Header(f);
         ElfInfo = header.toString();
-        ProgInfo = "";
-        SectInfo = "";
+    }
+
+    private void loadProgramHeaders(ByteBuffer f) throws IOException {
+        programHeaderList = new LinkedList<Elf32ProgramHeader>();
+        StringBuffer sb = new StringBuffer();
+
+        for (int i = 0; i < header.getE_phnum(); i++) {
+            f.position((int)(elfOffset + header.getE_phoff() + (i * header.getE_phentsize())));
+            Elf32ProgramHeader phdr = new Elf32ProgramHeader(f);
+
+            // Save loaded header
+            programHeaderList.add(phdr);
+
+            // Construct ELF program header info for debugger
+            sb.append("-----PROGRAM HEADER #" + i + "-----" + "\n");
+            sb.append(phdr.toString());
+
+            // yapspd: if the PRX file is a kernel module then the most significant
+            // bit must be set in the phsyical address of the first program header.
+            if (i == 0 && (phdr.getP_paddr() & 0x80000000L) == 0x80000000L) {
+                Emulator.log.debug("Kernel mode PRX detected");
+            }
+        }
+
+        ProgInfo = sb.toString();
+    }
+
+    private void loadSectionHeaders(ByteBuffer f) throws IOException {
+        sectionHeaderList = new LinkedList<Elf32SectionHeader>();
+        sectionHeaderMap = new HashMap<String, Elf32SectionHeader>();
+
+        // 1st pass
+        // - save headers
+        // - find .shstrtab
+        for (int i = 0; i < header.getE_shnum(); i++) {
+            f.position((int)(elfOffset + header.getE_shoff() + (i * header.getE_shentsize())));
+            Elf32SectionHeader shdr = new Elf32SectionHeader(f);
+
+            // Save loaded header
+            sectionHeaderList.add(shdr);
+
+            // Find the .shstrtab section
+            if (shdr.getSh_type() == Elf32SectionHeader.SHT_STRTAB && // 0x00000003
+                shstrtab == null &&
+                // Some programs have 2 STRTAB headers,
+                // the header with size 1 has to be ignored.
+                shdr.getSh_size() > 1) {
+                shstrtab = shdr;
+            }
+        }
+
+        if (shstrtab == null) {
+            Emulator.log.error(".shstrtab section not found");
+            return;
+        }
+
+        // 2nd pass
+        // - Construct ELF section header info for debugger
+        StringBuffer sb = new StringBuffer();
+        int SectionCounter = 0;
+        for (Elf32SectionHeader shdr : sectionHeaderList) {
+            int position = (int)(elfOffset + shstrtab.getSh_offset() + shdr.getSh_name());
+            f.position(position); // removed past end of file check (fiveofhearts 18/10/08)
+
+            // Number the section
+            sb.append("-----SECTION HEADER #" + SectionCounter + "-----" + "\n");
+
+            String SectionName = Utilities.readStringZ(f); // removed readStringZ exception check (fiveofhearts 18/10/08)
+            if (SectionName.length() > 0) {
+                shdr.setSh_namez(SectionName);
+                sb.append(SectionName + "\n");
+                sectionHeaderMap.put(SectionName, shdr);
+            } else {
+                //Emulator.log.debug("Section header #" + SectionCounter + " has no name");
+            }
+
+            // Add this section header's info
+            sb.append(shdr.toString());
+            SectionCounter++;
+        }
+
+        SectInfo = sb.toString();
+    }
+
+    /** @return The elf was loaded from some kind of file or buffer. The elf
+     * offset is an offset into this buffer where the elf actually starts. If
+     * the returned offset is non-zero this is typically due to the elf being
+     * embedded inside a pbp. */
+    public int getElfOffset() {
+        return elfOffset;
     }
 
     public Elf32Header getHeader() {
@@ -44,55 +154,35 @@ public class Elf32 {
         this.header = header;
     }
 
-    public void setListProgramHeader(List<Elf32ProgramHeader> programheaders) {
-        this.programheaders = programheaders;
-    }
-
     public List<Elf32ProgramHeader> getListProgramHeader() {
-        return programheaders;
+        return programHeaderList;
     }
 
     public Elf32ProgramHeader getProgramHeader(int index) {
-        if (programheaders != null)
-            return programheaders.get(index);
-        return null;
-    }
-
-    public void setListSectionHeader(List<Elf32SectionHeader> sectionheaders) {
-        this.sectionheaders = sectionheaders;
+        return programHeaderList.get(index);
     }
 
     public List<Elf32SectionHeader> getListSectionHeader() {
-        return sectionheaders;
+        return sectionHeaderList;
     }
 
     public Elf32SectionHeader getSectionHeader(int index) {
-        if (sectionheaders != null)
-            return sectionheaders.get(index);
-        return null;
+        return sectionHeaderList.get(index);
+    }
+
+    public Elf32SectionHeader getSectionHeader(String name) {
+        return sectionHeaderMap.get(name);
     }
 
     public String getElfInfo() {
         return ElfInfo;
     }
 
-    public void setElfInfo(String ElfInfo) {
-        this.ElfInfo = ElfInfo;
-    }
-
     public String getProgInfo() {
         return ProgInfo;
     }
 
-    public void setProgInfo(String ProgInfo) {
-        this.ProgInfo = ProgInfo;
-    }
-
     public String getSectInfo() {
         return SectInfo;
-    }
-
-    public void setSectInfo(String SectInfo) {
-        this.SectInfo = SectInfo;
     }
 }

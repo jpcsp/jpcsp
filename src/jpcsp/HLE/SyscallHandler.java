@@ -808,7 +808,7 @@ public class SyscallHandler {
 		 //sceUtilityCopyNetParam(0x220f),
 		// sceUtilitySetNetParam(0x2210);
                 case 0xfffff: // special code for unmapped imports
-                    Modules.log.error("Unmapped import @ 0x" + Integer.toHexString(Emulator.getProcessor().cpu.pc));
+                    Modules.log.error(String.format("Unmapped import @ 0x%08X", Emulator.getProcessor().cpu.pc));
                     Emulator.PauseEmu();
                     break;
                 default:

@@ -16,27 +16,34 @@
  */
 package jpcsp.Debugger;
 
-import jpcsp.*;
+import jpcsp.Settings;
 
 public class ElfHeaderInfo extends javax.swing.JFrame {
+
+    public static String PbpInfo;
+    public static String ElfInfo;
+    public static String ProgInfo;
+    public static String SectInfo;
 
     /** Creates new form ElfHeaderInfo */
     public ElfHeaderInfo() {
         initComponents();
-        ELFInfoArea.append(FileManager.PbpInfo);
-        ELFInfoArea.append(FileManager.ElfInfo);
-        ELFInfoArea.append(FileManager.ProgInfo);
-        ELFInfoArea.append(FileManager.SectInfo);
+        ELFInfoArea.append(PbpInfo);
+        ELFInfoArea.append(ElfInfo);
+        ELFInfoArea.append(ProgInfo);
+        ELFInfoArea.append(SectInfo);
 
     }
+
     public void RefreshWindow()
     {
-      ELFInfoArea.setText("");
-      ELFInfoArea.append(FileManager.PbpInfo);
-      ELFInfoArea.append(FileManager.ElfInfo);
-      ELFInfoArea.append(FileManager.ProgInfo);
-      ELFInfoArea.append(FileManager.SectInfo);
+        ELFInfoArea.setText("");
+        ELFInfoArea.append(PbpInfo);
+        ELFInfoArea.append(ElfInfo);
+        ELFInfoArea.append(ProgInfo);
+        ELFInfoArea.append(SectInfo);
     }
+
     /** This method is called from within the constructor to
      * initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is

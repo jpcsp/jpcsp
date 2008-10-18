@@ -31,9 +31,10 @@ import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.kernel.types.SceModule;
 
 import jpcsp.Emulator;
-import jpcsp.FileManager;
+import jpcsp.Loader;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.ModuleContext;
 import jpcsp.Processor;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.util.Utilities;
@@ -134,7 +135,7 @@ public class ModuleMgrForUser implements HLEModule {
     		cpu.gpr[2] = SceModule.flashModuleUid;
     		return;
         }
-        int findprx = name.lastIndexOf("/");        
+        int findprx = name.lastIndexOf("/");
         int endprx = name.indexOf(".PRX");
         if(endprx==-1) endprx=name.indexOf(".prx");
         String prxname = name.substring(findprx+1,endprx);
@@ -144,10 +145,10 @@ public class ModuleMgrForUser implements HLEModule {
           {
               Modules.log.warn("IGNORED:sceKernelLoadModule(path='" + name + "'): module from banlist not loaded");
               cpu.gpr[2] = SceModule.flashModuleUid;
-              return;          
+              return;
           }
         }
-        
+
         cpu.gpr[2] = -1;
         try {
             SeekableDataInput moduleInput = pspiofilemgr.get_instance().getFile(name, flags);
@@ -155,37 +156,34 @@ public class ModuleMgrForUser implements HLEModule {
     	        byte[] moduleBytes = new byte[(int) moduleInput.length()];
     	        moduleInput.readFully(moduleBytes);
     	        ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
-    	        int loadSize = moduleBytes.length;
-    	        int loadBase = pspSysMem.get_instance().malloc(2, pspSysMem.PSP_SMEM_Low, loadSize, 0);
-    	        FileManager moduleFileManager = new FileManager(moduleBuffer, loadBase);
 
-    	        // The ELF sections (ShType.NOBITS) might have required additional memory
-    	        if (moduleFileManager.getLoadAddressHigh() > loadBase + loadSize) {
-    	        	int additionalSize = moduleFileManager.getLoadAddressHigh() - (loadBase + loadSize);
-    	        	int additionalBase = pspSysMem.get_instance().malloc(2, pspSysMem.PSP_SMEM_Low, additionalSize, 0);
-    	        	if (additionalBase != 0) {
-    	        		loadSize += additionalSize;
-    	        	}
-    	        }
-    	        pspSysMem.get_instance().addSysMemInfo(2, name, pspSysMem.PSP_SMEM_Low, loadSize, loadBase);
+    	        // TODO
+                // We need to get a load address, we can either add getHeapBottom to pspsysmem, or we can malloc something small
+                // We're going to need to write a SceModule struct somewhere, so we could malloc that, and add the size of the struct to the address
+                // For now we'll just malloc 64 bytes :P (the loadBase needs to be aligned)
 
-    	        if (moduleFileManager.getType() == FileManager.FORMAT_ELF) {
-                    Emulator.initRamBy(moduleFileManager, moduleFileManager.getElf32());
+    	        int loadBase = pspSysMem.get_instance().malloc(2, pspSysMem.PSP_SMEM_Low, 64, 0) + 64;
+                ModuleContext module = Loader.getInstance().LoadModule(name, moduleBuffer, loadBase);
 
-                    SceModule sceModule = new SceModule();
-                    sceModule.setName(name);
-                    sceModule.setAttr(moduleFileManager.getPSPModuleInfo().getM_attr());
-                    sceModule.setStartAddr((int) (moduleFileManager.getBaseoffset() + moduleFileManager.getElf32().getHeader().getE_entry()));
-                    sceModule.setGp((int) (moduleFileManager.getBaseoffset() + moduleFileManager.getPSPModuleInfo().getM_gp()));
-                    HLEModuleManager.getInstance().addSceModule(sceModule);
-
-                    cpu.gpr[2] = sceModule.getUid();
-                } else if (moduleFileManager.getType() == FileManager.FORMAT_PSP) {
+                if ((module.fileFormat & Loader.FORMAT_PSP) == Loader.FORMAT_PSP) {
                 	// Simulate a successful loading
                     Modules.log.warn("IGNORED:sceKernelLoadModule(path='" + name + "'): module in PSP format not loaded");
                 	cpu.gpr[2] = SceModule.flashModuleUid;
+                }
+    	        else if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {
+
+                    // TODO merge SceModule and ModuleContext classes
+                    SceModule sceModule = new SceModule();
+                    sceModule.setName(name);
+                    sceModule.setAttr(module.moduleInfo.getM_attr());
+                    sceModule.setStartAddr(module.entryAddress);
+                    sceModule.setGp(module.baseAddress + (int)module.moduleInfo.getM_gp());
+                    HLEModuleManager.getInstance().addSceModule(sceModule);
+
+                    cpu.gpr[2] = sceModule.getUid();
                 } else {
-                    pspSysMem.get_instance().free(loadBase);
+                    // The Loader class now manages the module's memory footprint, it won't allocate if it failed to load
+                    //pspSysMem.get_instance().free(loadBase);
                     cpu.gpr[2] = -1;
                 }
 

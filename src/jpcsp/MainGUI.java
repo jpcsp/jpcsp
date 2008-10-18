@@ -769,7 +769,8 @@ private void InstructionCounterActionPerformed(java.awt.event.ActionEvent evt) {
     if (instructioncounter==null)
     {
         PauseEmu();
-        instructioncounter = new InstructionCounter(emulator);
+        instructioncounter = new InstructionCounter();
+        emulator.setInstructionCounter(instructioncounter);
         Point mainwindow = this.getLocation();
         instructioncounter.setLocation(mainwindow.x+100, mainwindow.y+50);
         instructioncounter.setVisible(true);
