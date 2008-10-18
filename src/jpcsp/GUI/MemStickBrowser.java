@@ -148,6 +148,7 @@ public class MemStickBrowser extends JDialog {
 
 						metapbp = programs[i] = eboot[0];
 
+                        // %__SCE__kxploit
 						File metadir = new File(programs[i].getParentFile().getParentFile().getPath()
 								+ File.separatorChar + "%" + programs[i].getParentFile().getName());
 						if(metadir.exists()) {
@@ -161,6 +162,7 @@ public class MemStickBrowser extends JDialog {
 								metapbp = eboot[0];
 						}
 
+                        // kxploit%
 						metadir = new File(programs[i].getParentFile().getParentFile().getPath()
 								+ File.separatorChar + programs[i].getParentFile().getName() + "%");
 						if(metadir.exists()) {
@@ -173,18 +175,48 @@ public class MemStickBrowser extends JDialog {
 							if(eboot.length > 0)
 								metapbp = eboot[0];
 						}
+
+                        // Load unpacked icon
+                        File[] icon0file = programs[i].getParentFile().listFiles(new FileFilter() {
+                            @Override
+                            public boolean accept(File arg0) {
+                                return arg0.getName().equalsIgnoreCase("icon0.png");
+                            }
+                        });
+                        if(icon0file.length > 0) {
+                            icons[i] = new ImageIcon(icon0file[0].getPath());
+                        }
+
+                        // Load unpacked PSF
+                        File[] psffile = programs[i].getParentFile().listFiles(new FileFilter() {
+                            @Override
+                            public boolean accept(File arg0) {
+                                return arg0.getName().equalsIgnoreCase("param.sfo");
+                            }
+                        });
+                        if(psffile.length > 0) {
+                            FileChannel roChannel = new RandomAccessFile(psffile[0], "r").getChannel();
+                            ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
+                            psfs[i] = new PSF(0);
+                            psfs[i].read(readbuffer);
+                            roChannel.close();
+                        }
 					}
-					if(programs[i].getName().toLowerCase().endsWith(".pbp")) {
+                    if(programs[i].getName().toLowerCase().endsWith(".pbp")) {
+                        // Load packed icon
 						FileChannel roChannel = new RandomAccessFile(metapbp, "r").getChannel();
 						ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
 						pbps[i] = new PBP(readbuffer);
-						psfs[i] = pbps[i].readPSF(readbuffer);
+                        PSF psf = pbps[i].readPSF(readbuffer);
+                        if (psf != null)
+                            psfs[i] = psf;
 						if(pbps[i].getSizeIcon0() > 0) {
 							byte[] icon0 = new byte[pbps[i].getSizeIcon0()];
 							readbuffer.position((int) pbps[i].getOffsetIcon0());
 							readbuffer.get(icon0);
 							icons[i] = new ImageIcon(icon0);
 						}
+                        roChannel.close();
 					}
 				} catch (FileNotFoundException e) {
 					e.printStackTrace();
