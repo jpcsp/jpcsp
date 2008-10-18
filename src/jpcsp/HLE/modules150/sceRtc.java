@@ -18,6 +18,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
@@ -31,11 +32,11 @@ import jpcsp.HLE.ScePspDateTime;
 public class sceRtc implements HLEModule {
 	@Override
 	public String getName() { return "sceRtc"; }
-	
+
 	@Override
 	public void installModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
-		
+
 			mm.addFunction(sceRtcGetTickResolutionFunction, 0xC41C2853);
 			mm.addFunction(sceRtcGetCurrentTickFunction, 0x3F7AD767);
 			mm.addFunction(sceRtcGetAccumulativeTimeFunction, 0x011F03C1);
@@ -72,14 +73,14 @@ public class sceRtc implements HLEModule {
 			mm.addFunction(sceRtcFormatRFC3339LocalTimeFunction, 0x27F98543);
 			mm.addFunction(sceRtcParseDateTimeFunction, 0xDFBC5F16);
 			mm.addFunction(sceRtcParseRFC3339Function, 0x28E1E988);
-			
+
 		}
 	}
-	
+
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
-		
+
 			mm.removeFunction(sceRtcGetTickResolutionFunction);
 			mm.removeFunction(sceRtcGetCurrentTickFunction);
 			mm.removeFunction(sceRtcGetAccumulativeTimeFunction);
@@ -116,603 +117,602 @@ public class sceRtc implements HLEModule {
 			mm.removeFunction(sceRtcFormatRFC3339LocalTimeFunction);
 			mm.removeFunction(sceRtcParseDateTimeFunction);
 			mm.removeFunction(sceRtcParseRFC3339Function);
-			
+
 		}
 	}
-	
-	
+
+
 	public void sceRtcGetTickResolution(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 
 		Memory mem = Processor.memory;
-		
-		cpu.gpr[2] = 1000;/* 1000 ticks a second */
-		
 
-		
+		cpu.gpr[2] = 1000; // 1000 ticks a second
 	}
-    
+
 	public void sceRtcGetCurrentTick(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
-                int a0 = cpu.gpr[4];
 		Memory mem = Processor.memory;
-                mem.write64(a0, System.currentTimeMillis());
-		cpu.gpr[2] = 0;
 
-		
+        int addr = cpu.gpr[4];
+        mem.write64(addr, System.currentTimeMillis());
+
+		cpu.gpr[2] = 0;
 	}
-    
+
 	public void sceRtcGetAccumulativeTime(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcGetAccumulativeTime [0x011F03C1]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtc_029CA3B3(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtc_029CA3B3 [0x029CA3B3]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcGetCurrentClock(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcGetCurrentClock [0x4CFA57B0]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcGetCurrentClockLocalTime(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
-		Memory mem = Processor.memory;		
-                int a0 = cpu.gpr[4];	
-                ScePspDateTime pspTime = new ScePspDateTime();
-                pspTime.write(mem, a0);
-		cpu.gpr[2] = 0;		
+		Memory mem = Processor.memory;
+
+        int addr = cpu.gpr[4];
+        ScePspDateTime pspTime = new ScePspDateTime();
+        pspTime.write(mem, addr);
+
+		cpu.gpr[2] = 0;
 	}
-    
+
 	public void sceRtcConvertUtcToLocalTime(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
 
-		
-		
+        int utc_addr = cpu.gpr[4];
+        int local_addr = cpu.gpr[5];
 
-		System.out.println("Unimplemented NID function sceRtcConvertUtcToLocalTime [0x34885E0D]");
+        Modules.log.debug("PARTIAL:sceRtcConvertUtcToLocalTime");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+        long utc = mem.read64(utc_addr);
+        long local = utc; // TODO
+        mem.write64(local_addr, local);
 
-		
+		cpu.gpr[2] = 0;
 	}
-    
+
 	public void sceRtcConvertLocalTimeToUTC(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
 
-		
-		
+        int local_addr = cpu.gpr[4];
+        int utc_addr = cpu.gpr[5];
 
-		System.out.println("Unimplemented NID function sceRtcConvertLocalTimeToUTC [0x779242A2]");
+        Modules.log.debug("PARTIAL:sceRtcConvertLocalTimeToUTC");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+        long local = mem.read64(local_addr);
+        long utc = local; // TODO
+        mem.write64(utc_addr, utc);
 
-		
+		cpu.gpr[2] = 0;
 	}
-    
+
 	public void sceRtcIsLeapYear(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcIsLeapYear [0x42307A17]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcGetDaysInMonth(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcGetDaysInMonth [0x05EF322C]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcGetDayOfWeek(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcGetDayOfWeek [0x57726BC1]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcCheckValid(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcCheckValid [0x4B1B5E82]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcSetTime_t(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcSetTime_t [0x3A807CC8]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcGetTime_t(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcGetTime_t [0x27C4594C]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcSetDosTime(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcSetDosTime [0xF006F264]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcGetDosTime(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcGetDosTime [0x36075567]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcSetWin32FileTime(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcSetWin32FileTime [0x7ACE4C04]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcGetWin32FileTime(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcGetWin32FileTime [0xCF561893]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcSetTick(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcSetTick [0x7ED29E40]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcGetTick(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcGetTick [0x6FF40ACC]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcCompareTick(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcCompareTick [0x9ED0AE87]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcTickAddTicks(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcTickAddTicks [0x44F45E05]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcTickAddMicroseconds(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcTickAddMicroseconds [0x26D25A5D]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcTickAddSeconds(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcTickAddSeconds [0xF2A4AFE5]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcTickAddMinutes(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcTickAddMinutes [0xE6605BCA]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcTickAddHours(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcTickAddHours [0x26D7A24A]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcTickAddDays(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcTickAddDays [0xE51B4B7A]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcTickAddWeeks(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcTickAddWeeks [0xCF3A2CA8]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcTickAddMonths(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcTickAddMonths [0xDBF74F1B]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcTickAddYears(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcTickAddYears [0x42842C77]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcFormatRFC2822(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcFormatRFC2822 [0xC663B3B9]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcFormatRFC2822LocalTime(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcFormatRFC2822LocalTime [0x7DE6711B]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcFormatRFC3339(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcFormatRFC3339 [0x0498FB3C]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcFormatRFC3339LocalTime(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcFormatRFC3339LocalTime [0x27F98543]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcParseDateTime(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcParseDateTime [0xDFBC5F16]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public void sceRtcParseRFC3339(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
-		
-		
+
+
 
 		System.out.println("Unimplemented NID function sceRtcParseRFC3339 [0x28E1E988]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public final HLEModuleFunction sceRtcGetTickResolutionFunction = new HLEModuleFunction("sceRtc", "sceRtcGetTickResolution") {
 		@Override
 		public final void execute(Processor processor) {
@@ -723,7 +723,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcGetTickResolution(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcGetCurrentTickFunction = new HLEModuleFunction("sceRtc", "sceRtcGetCurrentTick") {
 		@Override
 		public final void execute(Processor processor) {
@@ -734,7 +734,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcGetCurrentTick(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcGetAccumulativeTimeFunction = new HLEModuleFunction("sceRtc", "sceRtcGetAccumulativeTime") {
 		@Override
 		public final void execute(Processor processor) {
@@ -745,7 +745,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcGetAccumulativeTime(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtc_029CA3B3Function = new HLEModuleFunction("sceRtc", "sceRtc_029CA3B3") {
 		@Override
 		public final void execute(Processor processor) {
@@ -756,7 +756,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtc_029CA3B3(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcGetCurrentClockFunction = new HLEModuleFunction("sceRtc", "sceRtcGetCurrentClock") {
 		@Override
 		public final void execute(Processor processor) {
@@ -767,7 +767,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcGetCurrentClock(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcGetCurrentClockLocalTimeFunction = new HLEModuleFunction("sceRtc", "sceRtcGetCurrentClockLocalTime") {
 		@Override
 		public final void execute(Processor processor) {
@@ -778,7 +778,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcGetCurrentClockLocalTime(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcConvertUtcToLocalTimeFunction = new HLEModuleFunction("sceRtc", "sceRtcConvertUtcToLocalTime") {
 		@Override
 		public final void execute(Processor processor) {
@@ -789,7 +789,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcConvertUtcToLocalTime(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcConvertLocalTimeToUTCFunction = new HLEModuleFunction("sceRtc", "sceRtcConvertLocalTimeToUTC") {
 		@Override
 		public final void execute(Processor processor) {
@@ -800,7 +800,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcConvertLocalTimeToUTC(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcIsLeapYearFunction = new HLEModuleFunction("sceRtc", "sceRtcIsLeapYear") {
 		@Override
 		public final void execute(Processor processor) {
@@ -811,7 +811,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcIsLeapYear(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcGetDaysInMonthFunction = new HLEModuleFunction("sceRtc", "sceRtcGetDaysInMonth") {
 		@Override
 		public final void execute(Processor processor) {
@@ -822,7 +822,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcGetDaysInMonth(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcGetDayOfWeekFunction = new HLEModuleFunction("sceRtc", "sceRtcGetDayOfWeek") {
 		@Override
 		public final void execute(Processor processor) {
@@ -833,7 +833,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcGetDayOfWeek(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcCheckValidFunction = new HLEModuleFunction("sceRtc", "sceRtcCheckValid") {
 		@Override
 		public final void execute(Processor processor) {
@@ -844,7 +844,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcCheckValid(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcSetTime_tFunction = new HLEModuleFunction("sceRtc", "sceRtcSetTime_t") {
 		@Override
 		public final void execute(Processor processor) {
@@ -855,7 +855,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcSetTime_t(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcGetTime_tFunction = new HLEModuleFunction("sceRtc", "sceRtcGetTime_t") {
 		@Override
 		public final void execute(Processor processor) {
@@ -866,7 +866,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcGetTime_t(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcSetDosTimeFunction = new HLEModuleFunction("sceRtc", "sceRtcSetDosTime") {
 		@Override
 		public final void execute(Processor processor) {
@@ -877,7 +877,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcSetDosTime(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcGetDosTimeFunction = new HLEModuleFunction("sceRtc", "sceRtcGetDosTime") {
 		@Override
 		public final void execute(Processor processor) {
@@ -888,7 +888,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcGetDosTime(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcSetWin32FileTimeFunction = new HLEModuleFunction("sceRtc", "sceRtcSetWin32FileTime") {
 		@Override
 		public final void execute(Processor processor) {
@@ -899,7 +899,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcSetWin32FileTime(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcGetWin32FileTimeFunction = new HLEModuleFunction("sceRtc", "sceRtcGetWin32FileTime") {
 		@Override
 		public final void execute(Processor processor) {
@@ -910,7 +910,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcGetWin32FileTime(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcSetTickFunction = new HLEModuleFunction("sceRtc", "sceRtcSetTick") {
 		@Override
 		public final void execute(Processor processor) {
@@ -921,7 +921,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcSetTick(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcGetTickFunction = new HLEModuleFunction("sceRtc", "sceRtcGetTick") {
 		@Override
 		public final void execute(Processor processor) {
@@ -932,7 +932,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcGetTick(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcCompareTickFunction = new HLEModuleFunction("sceRtc", "sceRtcCompareTick") {
 		@Override
 		public final void execute(Processor processor) {
@@ -943,7 +943,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcCompareTick(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcTickAddTicksFunction = new HLEModuleFunction("sceRtc", "sceRtcTickAddTicks") {
 		@Override
 		public final void execute(Processor processor) {
@@ -954,7 +954,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcTickAddTicks(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcTickAddMicrosecondsFunction = new HLEModuleFunction("sceRtc", "sceRtcTickAddMicroseconds") {
 		@Override
 		public final void execute(Processor processor) {
@@ -965,7 +965,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcTickAddMicroseconds(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcTickAddSecondsFunction = new HLEModuleFunction("sceRtc", "sceRtcTickAddSeconds") {
 		@Override
 		public final void execute(Processor processor) {
@@ -976,7 +976,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcTickAddSeconds(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcTickAddMinutesFunction = new HLEModuleFunction("sceRtc", "sceRtcTickAddMinutes") {
 		@Override
 		public final void execute(Processor processor) {
@@ -987,7 +987,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcTickAddMinutes(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcTickAddHoursFunction = new HLEModuleFunction("sceRtc", "sceRtcTickAddHours") {
 		@Override
 		public final void execute(Processor processor) {
@@ -998,7 +998,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcTickAddHours(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcTickAddDaysFunction = new HLEModuleFunction("sceRtc", "sceRtcTickAddDays") {
 		@Override
 		public final void execute(Processor processor) {
@@ -1009,7 +1009,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcTickAddDays(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcTickAddWeeksFunction = new HLEModuleFunction("sceRtc", "sceRtcTickAddWeeks") {
 		@Override
 		public final void execute(Processor processor) {
@@ -1020,7 +1020,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcTickAddWeeks(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcTickAddMonthsFunction = new HLEModuleFunction("sceRtc", "sceRtcTickAddMonths") {
 		@Override
 		public final void execute(Processor processor) {
@@ -1031,7 +1031,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcTickAddMonths(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcTickAddYearsFunction = new HLEModuleFunction("sceRtc", "sceRtcTickAddYears") {
 		@Override
 		public final void execute(Processor processor) {
@@ -1042,7 +1042,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcTickAddYears(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcFormatRFC2822Function = new HLEModuleFunction("sceRtc", "sceRtcFormatRFC2822") {
 		@Override
 		public final void execute(Processor processor) {
@@ -1053,7 +1053,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcFormatRFC2822(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcFormatRFC2822LocalTimeFunction = new HLEModuleFunction("sceRtc", "sceRtcFormatRFC2822LocalTime") {
 		@Override
 		public final void execute(Processor processor) {
@@ -1064,7 +1064,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcFormatRFC2822LocalTime(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcFormatRFC3339Function = new HLEModuleFunction("sceRtc", "sceRtcFormatRFC3339") {
 		@Override
 		public final void execute(Processor processor) {
@@ -1075,7 +1075,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcFormatRFC3339(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcFormatRFC3339LocalTimeFunction = new HLEModuleFunction("sceRtc", "sceRtcFormatRFC3339LocalTime") {
 		@Override
 		public final void execute(Processor processor) {
@@ -1086,7 +1086,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcFormatRFC3339LocalTime(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcParseDateTimeFunction = new HLEModuleFunction("sceRtc", "sceRtcParseDateTime") {
 		@Override
 		public final void execute(Processor processor) {
@@ -1097,7 +1097,7 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcParseDateTime(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceRtcParseRFC3339Function = new HLEModuleFunction("sceRtc", "sceRtcParseRFC3339") {
 		@Override
 		public final void execute(Processor processor) {
@@ -1108,5 +1108,5 @@ public class sceRtc implements HLEModule {
 			return "jpcsp.HLE.Modules.sceRtcModule.sceRtcParseRFC3339(processor);";
 		}
 	};
-    
+
 };

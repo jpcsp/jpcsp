@@ -228,6 +228,17 @@ public class Memory {
         }
     }
 
+    public long read64(int address) {
+        try {
+            int page = indexFromAddr(address);
+            return buf.getLong(page + (address & PAGE_MASK));
+        } catch (Exception e) {
+            Memory.log.error("read64 - " + e.getMessage());
+            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_READ);
+            return 0;
+        }
+    }
+
     /*
     public float[] read128f(int address) {
         try {

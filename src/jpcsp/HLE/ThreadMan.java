@@ -841,6 +841,7 @@ public class ThreadMan {
 
             //int p = pspSysMem.get_instance().malloc(2, pspSysMem.PSP_SMEM_HighAligned, size, 0x1000);
             int p = pspSysMem.get_instance().malloc(2, pspSysMem.PSP_SMEM_High, size, 0);
+            pspSysMem.get_instance().addSysMemInfo(2, "ThreadMan-Stack", pspSysMem.PSP_SMEM_High, size, 0);
             p += size;
 
             return p;
