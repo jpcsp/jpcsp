@@ -567,7 +567,7 @@ public class ThreadMan {
     public void ThreadMan_sceKernelDelayThread(int micros) {
         current_thread.status = PspThreadStatus.PSP_THREAD_WAITING;
         //current_thread.delaysteps = micros * 200000000 / 1000000; // TODO delaysteps = micros * steprate
-        current_thread.delaysteps = micros; // test version
+        current_thread.delaysteps = (micros < WDT_THREAD_IDLE_CYCLES) ? micros : WDT_THREAD_IDLE_CYCLES - 1; // test version
         current_thread.do_callbacks = false;
         Emulator.getProcessor().cpu.gpr[2] = 0;
 
@@ -578,7 +578,7 @@ public class ThreadMan {
     public void ThreadMan_sceKernelDelayThreadCB(int micros) {
         current_thread.status = PspThreadStatus.PSP_THREAD_WAITING;
         //current_thread.delaysteps = micros * 200000000 / 1000000; // TODO delaysteps = micros * steprate
-        current_thread.delaysteps = micros; // test version
+        current_thread.delaysteps = (micros < WDT_THREAD_IDLE_CYCLES) ? micros : WDT_THREAD_IDLE_CYCLES - 1; // test version
         current_thread.do_callbacks = true;
         Emulator.getProcessor().cpu.gpr[2] = 0;
 
