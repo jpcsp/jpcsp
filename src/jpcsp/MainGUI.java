@@ -27,6 +27,7 @@ import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.RandomAccessFile;
@@ -682,6 +683,25 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
     }
 }
 
+private boolean loadUMD(UmdIsoReader iso, String bootPath) throws IOException, GeneralJpcspException {
+    boolean success = false;
+
+    try {
+        UmdIsoFile bootBin = iso.getFile(bootPath);
+        if (bootBin.length() != 0) {
+            byte[] bootfile = new byte[(int)bootBin.length()];
+            bootBin.read(bootfile);
+            ByteBuffer buf = ByteBuffer.wrap(bootfile);
+            emulator.load("disc0:/" + bootPath, buf);
+            success = true;
+        }
+    } catch (FileNotFoundException e) {
+        System.out.println(e.getMessage());
+    }
+
+    return success;
+}
+
 public void loadUMD(File file) {
     try {
         if (consolewin!=null)
@@ -704,29 +724,18 @@ public void loadUMD(File file) {
         Emulator.log.info("UMD param.sfo :\n" + params);
         setTitle(version + " - " + params.getString("TITLE"));
 
-        UmdIsoFile bootBin = iso.getFile("PSP_GAME/SYSDIR/BOOT.BIN");
-        if (bootBin.length() != 0) {
-            byte[] bootfile = new byte[(int)bootBin.length()];
-            bootBin.read(bootfile);
-            ByteBuffer buf1 = ByteBuffer.wrap(bootfile);
-            emulator.load("disc0:/PSP_GAME/SYSDIR/BOOT.BIN", buf1);
-        } else {
-            bootBin = iso.getFile("PSP_GAME/SYSDIR/EBOOT.BIN");
-            byte[] bootfile = new byte[(int)bootBin.length()];
-            bootBin.read(bootfile);
-            ByteBuffer buf1 = ByteBuffer.wrap(bootfile);
-            emulator.load("disc0:/PSP_GAME/SYSDIR/EBOOT.BIN", buf1);
+        if (loadUMD(iso, "PSP_GAME/SYSDIR/BOOT.BIN") ||
+            loadUMD(iso, "PSP_GAME/SYSDIR/EBOOT.BIN")) {
+            pspiofilemgr.get_instance().setfilepath("disc0/");
+            //pspiofilemgr.get_instance().setfilepath("disc0/PSP_GAME/SYSDIR");
+            pspiofilemgr.get_instance().setIsoReader(iso);
+            jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(iso);
+
+            if (instructioncounter != null)
+                instructioncounter.RefreshWindow();
+            StepLogger.clear();
+            StepLogger.setName(file.getPath());
         }
-
-        pspiofilemgr.get_instance().setfilepath("disc0/");
-        //pspiofilemgr.get_instance().setfilepath("disc0/PSP_GAME/SYSDIR");
-        pspiofilemgr.get_instance().setIsoReader(iso);
-        jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(iso);
-
-        if (instructioncounter != null)
-            instructioncounter.RefreshWindow();
-        StepLogger.clear();
-        StepLogger.setName(file.getPath());
     } catch (GeneralJpcspException e) {
         JpcspDialogManager.showError(this, "General Error : " + e.getMessage());
     } catch (IOException e) {
