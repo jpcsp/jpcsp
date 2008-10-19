@@ -17,6 +17,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.format;
 
+import static jpcsp.util.Utilities.readStringZ;
+import static jpcsp.util.Utilities.readUByte;
+import static jpcsp.util.Utilities.readUHalf;
+import static jpcsp.util.Utilities.readUWord;
+
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
@@ -24,8 +29,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import jpcsp.Emulator;
-
-import static jpcsp.util.Utilities.*;
 /**
  *
  * @author George
@@ -109,7 +112,9 @@ public class PSF {
             {
                 // String may not be in english!
                 f.position((int)(p_offset_param_sfo + offsetvaluetable+offset_data_value[i]));
-                String value = readStringZ(f);
+                byte[] s = new byte[(int) value_size[i]];
+                f.get(s);
+                String value = new String(s, "UTF-8");
                 map.put(Key, value);
                 //System.out.println(Key + " string = " + value);
             }
@@ -167,16 +172,8 @@ public class PSF {
                 break;
             sb.append(rawString.charAt(i));
         }
-        //return sb.toString();
-
-        try {
-            byte[] bytes = sb.toString().getBytes("UTF-8");
-            //return new String(bytes, "UTF-8"); // squares
-            return new String(bytes);
-        } catch(java.io.UnsupportedEncodingException e) {
-            System.out.println(e.getMessage());
-            return sb.toString();
-        }
+        		
+        return sb.toString();
     }
 
     public long getNumeric(String key) {
