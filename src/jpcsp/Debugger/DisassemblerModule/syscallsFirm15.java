@@ -941,7 +941,19 @@ public class syscallsFirm15 {
                 sceKernelRegisterDebugPutchar(0x3084, 0xE146606D), //1.50+
                 sceKernelDipswAll(0x3085, 0xD636B827), //1.50+
 
+                sceAudioOutput2Reserve(0x3086, 0x01562BA3), //2.50+ or lower
+                sceAudioOutput2Release(0x3087, 0x43196845), //2.50+ or lower
+                sceAudioOutput2OutputBlocking(0x3088, 0x2D53F36E), //2.50+ or lower
+                sceAudioOutput2ChangeLength(0x3089, 0x63F2889C), //2.50+ or lower
+                sceAudioOutput2GetRestSample(0x308a, 0x647CEF33), //2.50+ or lower
+
+                scePower_EBD177D6(0x308b, 0xEBD177D6), //3.52+ or lower
+                SysMemUserForUser_342061E5(0x308c, 0x342061E5), //3.72+ or lower
+                sceSasCore_07F58C24(0x308d, 0x07F58C24), //3.72+ or lower
+
+
                 hleDummy(0x5000,0xcdcdcdcd); // got bored of editing , and ; so leave this entry at the end of the enum
+
 
             //implement syscall
             private int syscall;
