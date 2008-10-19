@@ -114,7 +114,7 @@ public class PSF {
                 f.position((int)(p_offset_param_sfo + offsetvaluetable+offset_data_value[i]));
                 byte[] s = new byte[(int) value_size[i]];
                 f.get(s);
-                String value = new String(s, "UTF-8");
+                String value = new String(s, 0, s[s.length - 1] == '\0' ? s.length - 1 : s.length, "UTF-8");
                 map.put(Key, value);
                 //System.out.println(Key + " string = " + value);
             }
