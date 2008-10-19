@@ -95,8 +95,12 @@ public class pspSysMem {
     {
         int allocatedAddress = 0;
 
-        // TODO check when we are running out of mem!
-        if (type == PSP_SMEM_Low)
+        if (size > maxFreeMemSize())
+        {
+            // no mem left
+            Modules.log.warn("malloc failed (want=" + size + ",free=" + maxFreeMemSize() + ")");
+        }
+        else if (type == PSP_SMEM_Low)
         {
             allocatedAddress = heapBottom;
             allocatedAddress = (allocatedAddress + 63) & ~63;
@@ -233,9 +237,7 @@ public class pspSysMem {
         // TODO
     }
 
-    /** @return the size of the largest allocatable block */
-    public void sceKernelMaxFreeMemSize()
-    {
+    private int maxFreeMemSize() {
         // Since some apps try and allocate the value of sceKernelMaxFreeMemSize,
         // which will leave no space for stacks we're going to reserve 0x09f00000
         // to 0x09ffffff for stacks, but stacks are allowed to go below that
@@ -244,6 +246,18 @@ public class pspSysMem {
         if (heapTopGuard > 0x09f00000)
             heapTopGuard = 0x09f00000;
         int maxFree = heapTopGuard - heapBottom - 64; // don't forget our alignment padding!
+
+        // TODO Something not quite right here...
+        if (maxFree < 0)
+            maxFree = 0;
+
+        return maxFree;
+    }
+
+    /** @return the size of the largest allocatable block */
+    public void sceKernelMaxFreeMemSize()
+    {
+        int maxFree = maxFreeMemSize();
         Modules.log.debug("sceKernelMaxFreeMemSize " + maxFree
                 + " (hex=" + Integer.toHexString(maxFree) + ")");
         Emulator.getProcessor().cpu.gpr[2] = maxFree;

@@ -30,7 +30,7 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 
 import jpcsp.HLE.pspSysMem;
-        
+
 /**
  *
  * @author hli
@@ -47,7 +47,7 @@ public class ThreadManager {
 
     // TODO figure out a decent number of cycles to wait
     private final int WDT_THREAD_IDLE_CYCLES = 1000000;
-    private final int WDT_THREAD_HOG_CYCLES = 12500000;
+    private final int WDT_THREAD_HOG_CYCLES = 50000000;
 
     public final static int SCE_KERNEL_TMID_Thread = 1;
     public final static int SCE_KERNEL_TMID_Semaphore = 2;
@@ -229,7 +229,7 @@ public class ThreadManager {
 
     private void contextSwitch(SceKernelThreadInfo newThread) {
         Processor processor = Emulator.getProcessor();
-        
+
         if (currentThread != null) {
             // Switch out old thread
             if (currentThread.status == ThreadStatus.THREAD_RUNNING) {
@@ -310,7 +310,7 @@ public class ThreadManager {
             return thread.name;
         }
     }
-    
+
     public void setCurrentThreadWaiting() {
         this.waitingThreads.add(getCurrentThreadID());
         blockCurrentThread();
@@ -343,10 +343,10 @@ public class ThreadManager {
         }
     }
 
-    public int createThread(String name, int entry_addr, int initPriority, int stackSize, int attr, int option_addr, boolean startImmediately, int userDataLength, int userDataAddr) {
+    public int createThread(String name, int entry_addr, int initPriority, int stackSize, int attr, int option_addr, boolean startImmediately, int userDataLength, int userDataAddr, int gp) {
         SceKernelThreadInfo thread = new SceKernelThreadInfo(name, entry_addr, initPriority, stackSize, attr);
 
-        if (-1 < thread.uid) {
+        if (thread.uid >= 0) {
             // Copy user data to the new thread's stack, since we are not
             // starting the thread immediately, only marking it as ready,
             // the data needs to be saved somewhere safe.
@@ -361,6 +361,7 @@ public class ThreadManager {
             thread.cpuContext.gpr[29] -= alignlen; // Adjust sp for size of user data
             thread.cpuContext.gpr[4] = userDataLength; // a0 = userDataLength
             thread.cpuContext.gpr[5] = thread.cpuContext.gpr[29]; // a1 = pointer to copy of data at data_addr
+            thread.cpuContext.gpr[28] = thread.gpReg_addr = gp;
 
             if (startImmediately) {
                 thread.status = ThreadStatus.THREAD_READY;
@@ -408,7 +409,7 @@ public class ThreadManager {
             // Always remove kernel mode bit
             thread.attr &= ~THREAD_ATTR_KERNEL;
         }
-        
+
         int uid = thread.getUid();
 
         gpr[2] = uid;
@@ -421,11 +422,11 @@ public class ThreadManager {
     /** terminate thread id */
     public void sceKernelTerminateThread(Processor processor) {
         int[] gpr = processor.cpu.gpr;
-        
+
         int uid = gpr[4];
-        
+
         SceKernelThreadInfo thread = threadMap.get(uid);
-        
+
         if (thread == null) {
             gpr[2] = ERROR_NOT_FOUND_THREAD;
         } else {
@@ -434,7 +435,7 @@ public class ThreadManager {
             thread.status = ThreadStatus.THREAD_STOPPED; // PSP_THREAD_STOPPED or PSP_THREAD_KILLED ?
 
             gpr[2] = 0;
-            
+
             onThreadStopped(thread);
         }
     }
@@ -444,9 +445,9 @@ public class ThreadManager {
         int[] gpr = processor.cpu.gpr;
 
         int uid = gpr[4];
-        
+
         SceKernelThreadInfo thread = threadMap.get(uid);
-        
+
         if (thread == null) {
             gpr[2] = ERROR_NOT_FOUND_THREAD;
         } else {
@@ -462,13 +463,13 @@ public class ThreadManager {
     public void sceKernelStartThread(Processor processor) {
         int[] gpr = processor.cpu.gpr;
         Memory mem = Processor.memory;
-        
+
         int uid = gpr[4];
         int len = gpr[5];
         int data_addr = gpr[6];
-        
+
         SceKernelThreadInfo thread = threadMap.get(uid);
-        
+
         if (thread == null) {
             gpr[2] = ERROR_NOT_FOUND_THREAD;
         } else {
@@ -500,19 +501,19 @@ public class ThreadManager {
     public void sceKernelExitThread(Processor processor) {
         int[] gpr = processor.cpu.gpr;
         Memory mem = Processor.memory;
-        
+
         int exitStatus = gpr[4];
-        
+
         SceKernelThreadInfo thread = currentThread;
-        
+
         Modules.log.debug("sceKernelExitThread id:" + thread.uid
             + " name:'" + thread.name + "' exitStatus:" + exitStatus);
 
         thread.status = ThreadStatus.THREAD_STOPPED;
         thread.exitStatus = exitStatus;
-        
+
         gpr[2] = 0;
-        
+
         onThreadStopped(thread);
 
         contextSwitch(nextThread());
@@ -522,11 +523,11 @@ public class ThreadManager {
     public void sceKernelExitDeleteThread(Processor processor) {
         int[] gpr = processor.cpu.gpr;
         Memory mem = Processor.memory;
-        
+
         int exitStatus = gpr[4];
-        
+
         SceKernelThreadInfo thread = currentThread; // save a reference for post context switch operations
-        
+
         Modules.log.debug("sceKernelExitDeleteThread id:" + thread.uid
             + " name:'" + thread.name + "' exitStatus:" + exitStatus);
 
@@ -545,7 +546,7 @@ public class ThreadManager {
     /** sleep the current thread until a registered callback is triggered */
     public void sceKernelSleepThreadCB(Processor processor) {
         SceKernelThreadInfo thread = currentThread; // save a reference for post context switch operations
-        
+
         Modules.log.debug("sceKernelSleepThreadCB id:" + thread.uid + " name:'" + thread.name + "'");
 
         thread.status = ThreadStatus.THREAD_SUSPEND;
@@ -558,7 +559,7 @@ public class ThreadManager {
     /** sleep the current thread */
     public void sceKernelSleepThread(Processor processor) {
         SceKernelThreadInfo thread = currentThread; // save a reference for post context switch operations
-        
+
         Modules.log.debug("sceKernelSleepThread id:" + thread.uid + " name:'" + thread.name + "'");
 
         thread.status = ThreadStatus.THREAD_SUSPEND;
@@ -571,16 +572,16 @@ public class ThreadManager {
     /** sleep the current thread for a certain number of microseconds */
     public void sceKernelDelayThread(Processor processor) {
         int[] gpr = processor.cpu.gpr;
-        
+
         int micros = gpr[4];
-        
+
         SceKernelThreadInfo thread = currentThread;
-        
+
         thread.status = ThreadStatus.THREAD_WAITING;
         //thread.delaysteps = micros * 200000000 / 1000000; // TODO delaysteps = micros * steprate
-        thread.delaysteps = micros; // test version
+        thread.delaysteps = (micros < WDT_THREAD_IDLE_CYCLES) ? micros : WDT_THREAD_IDLE_CYCLES - 1; // test version
         thread.do_callbacks = false;
-        
+
         gpr[2] = 0;
 
         contextSwitch(nextThread());
@@ -589,21 +590,21 @@ public class ThreadManager {
     /** sleep the current thread for a certain number of microseconds */
     public void sceKernelDelayThreadCB(Processor processor) {
         int[] gpr = processor.cpu.gpr;
-        
+
         int micros = gpr[4];
-        
+
         SceKernelThreadInfo thread = currentThread;
-        
+
         thread.status = ThreadStatus.THREAD_WAITING;
         //thread.delaysteps = micros * 200000000 / 1000000; // TODO delaysteps = micros * steprate
-        thread.delaysteps = micros; // test version
+        thread.delaysteps = (micros < WDT_THREAD_IDLE_CYCLES) ? micros : WDT_THREAD_IDLE_CYCLES - 1; // test version
         thread.do_callbacks = true;
-        
+
         gpr[2] = 0;
 
         contextSwitch(nextThread());
     }
-    
+
     public void sceKernelGetThreadId(Processor processor) {
         //Get the current thread Id
         processor.cpu.gpr[2] = currentThread.uid;
@@ -612,13 +613,13 @@ public class ThreadManager {
     public void sceKernelReferThreadStatus(Processor processor) {
         int[] gpr = processor.cpu.gpr;
         Memory mem = Processor.memory;
-        
+
         int uid = gpr[4];
         int info_addr = gpr[5];
-        
+
         //Get the status information for the specified thread
         SceKernelThreadInfo thread = threadMap.get(uid);
-        
+
         if (thread == null) {
             gpr[2] = ERROR_NOT_FOUND_THREAD;
             return;
@@ -655,16 +656,16 @@ public class ThreadManager {
         gpr[2] = 0;
         }
     }
-    
+
     public void sceKernelGetThreadmanIdList(Processor processor) {
         int gpr[] = processor.cpu.gpr;
         Memory mem = Processor.memory;
-        
+
         int type = gpr[4];
         int readbuf_addr = gpr[5];
         int readbufsize = gpr[6];
-        int idcount_addr = gpr[7]; 
-        
+        int idcount_addr = gpr[7];
+
         Modules.log.warn("UNIMPLEMENTED:sceKernelGetThreadmanIdList type:" + type
             + " readbuf:0x" + Integer.toHexString(readbuf_addr)
             + " readbufsize:" + readbufsize
@@ -681,14 +682,14 @@ public class ThreadManager {
 
     public void sceKernelChangeThreadPriority(Processor processor) {
         int gpr[] = processor.cpu.gpr;
-        
+
         int uid = gpr[4];
         int priority = gpr[5];
-                
+
         if (uid == 0) uid = getCurrentThreadID();
-        
+
         SceKernelThreadInfo thread = threadMap.get(uid);
-        
+
         if (thread == null) {
             Modules.log.warn("sceKernelChangeThreadPriority id:" + Integer.toHexString(uid)
                     + " newPriority:0x" + Integer.toHexString(priority) + " unknown thread");
@@ -705,10 +706,10 @@ public class ThreadManager {
 
     public void sceKernelChangeCurrentThreadAttr(Processor processor) {
         int gpr[] = processor.cpu.gpr;
-        
+
         int clearAttr = gpr[4];
         int setAttr = gpr[5];
-        
+
         Modules.log.debug("sceKernelChangeCurrentThreadAttr"
                 + " clearAttr:0x" + Integer.toHexString(setAttr)
                 + " setAttr:0x" + Integer.toHexString(setAttr)
@@ -728,11 +729,11 @@ public class ThreadManager {
 
     public void sceKernelWakeupThread(Processor processor) {
         int gpr[] = processor.cpu.gpr;
-        
+
         int uid = gpr[4];
-        
+
         SceKernelThreadInfo thread = threadMap.get(uid);
-        
+
         if (thread == null) {
             Modules.log.warn("sceKernelWakeupThread id:" + uid + " unknown thread");
             gpr[2] = ERROR_NOT_FOUND_THREAD;
@@ -748,14 +749,14 @@ public class ThreadManager {
 
     public void sceKernelWaitThreadEnd(Processor processor) {
         int gpr[] = processor.cpu.gpr;
-        
+
         int uid = gpr[4];
         int micros = gpr[5];
-        
+
         Modules.log.debug("sceKernelWaitThreadEnd id:" + uid + " timeout:" + micros);
-        
+
         SceKernelThreadInfo thread = threadMap.get(uid);
-        
+
         if (thread == null) {
             Modules.log.warn("sceKernelWaitThreadEnd unknown thread");
             gpr[2] = ERROR_NOT_FOUND_THREAD;
@@ -764,7 +765,7 @@ public class ThreadManager {
             Modules.log.warn("UNIMPLEMENTED:sceKernelWaitThreadEnd another thread already waiting for the target thread to end");
             gpr[2] = -1;
         } else {
-            
+
             waitThreadEndMap.put(uid, currentThread.uid);
 
             if (micros > 0) {
@@ -790,11 +791,11 @@ public class ThreadManager {
     public void sceKernelGetSystemTime(Processor processor) {
         int gpr[] = processor.cpu.gpr;
         Memory mem = Processor.memory;
-        
+
         int time_addr = gpr[4];
-        
+
         Modules.log.debug("sceKernelGetSystemTime time_addr=0x" + Integer.toHexString(time_addr));
-        
+
         if (mem.isAddressGood(time_addr)) {
             long systemTime = System.nanoTime();
             int low = (int)(systemTime & 0xffffffffL);
@@ -810,11 +811,11 @@ public class ThreadManager {
 
     public void sceKernelGetSystemTimeWide(Processor processor) {
         int gpr[] = processor.cpu.gpr;
-        
+
         Modules.log.debug("sceKernelGetSystemTimeWide");
-        
+
         long systemTime = System.nanoTime();
-        
+
         gpr[2] = (int)(systemTime & 0xffffffffL);
         gpr[3] = (int)((systemTime >> 32) & 0xffffffffL);
     }
@@ -824,7 +825,7 @@ public class ThreadManager {
         long systemTime = System.nanoTime();
         processor.cpu.gpr[2] = (int)(systemTime & 0xffffffffL);
     }
-    
+
     public boolean releaseObject(SceKernelUid object) {
         if (Managers.uids.removeObject(object)) {
             int uid = object.uid;
@@ -833,14 +834,14 @@ public class ThreadManager {
             return true;
         }
         return false;
-    }      
+    }
 
 
     public static final ThreadManager singleton;
-    
+
     private ThreadManager() {
-    }   
-    
+    }
+
     static {
         singleton = new ThreadManager();
     }

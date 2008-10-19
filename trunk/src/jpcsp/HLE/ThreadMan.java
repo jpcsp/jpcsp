@@ -58,7 +58,7 @@ public class ThreadMan {
 
     // TODO figure out a decent number of cycles to wait
     private final int WDT_THREAD_IDLE_CYCLES = 1000000;
-    private final int WDT_THREAD_HOG_CYCLES = 12500000;
+    private final int WDT_THREAD_HOG_CYCLES = 50000000;
 
     public final static int PSP_ERROR_NOT_FOUND_THREAD               = 0x80020198;
     public final static int PSP_ERROR_NOT_FOUND_SEMAPHORE            = 0x80020199;
@@ -677,24 +677,25 @@ public class ThreadMan {
         }
     }
 
-    public void ThreadMan_sceKernelChangeCurrentThreadAttr(int unknown, int attr) {
+    public void ThreadMan_sceKernelChangeCurrentThreadAttr(int removeAttr, int addAttr) {
         Modules.log.debug("sceKernelChangeCurrentThreadAttr"
-                + " unknown:" + unknown
-                + " newAttr:0x" + Integer.toHexString(attr)
+                + " removeAttr:0x" + Integer.toHexString(removeAttr)
+                + " addAttr:0x" + Integer.toHexString(addAttr)
                 + " oldAttr:0x" + Integer.toHexString(current_thread.attr));
 
         // Probably meant to be sceKernelChangeThreadAttr unknown=uid
-        if (unknown != 0)
-            Modules.log.warn("sceKernelChangeCurrentThreadAttr unknown:" + unknown + " non-zero");
+        if (removeAttr != 0)
+            Modules.log.warn("sceKernelChangeCurrentThreadAttr removeAttr:0x" + Integer.toHexString(removeAttr) + " non-zero");
 
+        int newAttr = (current_thread.attr & ~removeAttr) | addAttr;
         // Don't allow switching into kernel mode!
         if ((current_thread.attr & PSP_THREAD_ATTR_USER) == PSP_THREAD_ATTR_USER &&
-            (attr & PSP_THREAD_ATTR_USER) != PSP_THREAD_ATTR_USER) {
+            (newAttr & PSP_THREAD_ATTR_USER) != PSP_THREAD_ATTR_USER) {
             Modules.log.debug("sceKernelChangeCurrentThreadAttr forcing user mode");
-            attr |= PSP_THREAD_ATTR_USER;
+            newAttr |= PSP_THREAD_ATTR_USER;
         }
 
-        current_thread.attr = attr;
+        current_thread.attr = newAttr;
 
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }

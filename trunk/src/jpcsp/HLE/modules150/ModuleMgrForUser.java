@@ -387,7 +387,7 @@ public class ModuleMgrForUser implements HLEModule {
 		CpuState cpu = processor.cpu; // New-Style Processor
 
         int addr = cpu.gpr[4];
-        Modules.log.debug("UNIMPLEMENTED:sceKernelGetModuleIdByAddress(addr=0x" + Integer.toHexString(addr) + ")");
+        Modules.log.warn("UNIMPLEMENTED:sceKernelGetModuleIdByAddress(addr=0x" + Integer.toHexString(addr) + ")");
 
         // Just return > 0 so it thinks we found the module
 		cpu.gpr[2] = 1;

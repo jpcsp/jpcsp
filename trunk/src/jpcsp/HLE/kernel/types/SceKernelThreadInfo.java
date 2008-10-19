@@ -83,6 +83,7 @@ public class SceKernelThreadInfo extends SceKernelUid implements Comparator<SceK
             return value;
         }
     }
+
     public static final int THREAD_ATTR_USER = 0x80000000;
     public static final int THREAD_ATTR_USBWLAN = 0xa0000000;
     public static final int THREAD_ATTR_VSH = 0xc0000000;
@@ -95,6 +96,7 @@ public class SceKernelThreadInfo extends SceKernelUid implements Comparator<SceK
     private int mallocStack(int size) {
         if (size > 0) {
             int p = pspSysMem.get_instance().malloc(2, pspSysMem.PSP_SMEM_High, size, 0);
+            pspSysMem.get_instance().addSysMemInfo(2, "ThreadMan-Stack", pspSysMem.PSP_SMEM_High, size, 0);
             p += size;
 
             return p;
@@ -173,7 +175,7 @@ public class SceKernelThreadInfo extends SceKernelUid implements Comparator<SceK
     public void release() {
         Managers.threads.releaseObject(this);
     }
-    
+
     /** For use in the scheduler */
     @Override
     public int compare(SceKernelThreadInfo o1, SceKernelThreadInfo o2) {

@@ -735,7 +735,8 @@ public class Loader {
             }
         }
 
-        Emulator.log.info("Found " + entCount + " exports");
+        if (entCount > 0)
+            Emulator.log.info("Found " + entCount + " exports");
     }
 
     private void LoadELFDebuggerInfo(ByteBuffer f, ModuleContext module, int baseAddress,
