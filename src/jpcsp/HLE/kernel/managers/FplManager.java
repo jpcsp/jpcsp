@@ -103,6 +103,9 @@ public class FplManager {
         if (info.freeBlocks == 0 || (block = info.findFreeBlock()) == -1) {
             Modules.log.warn("tryAllocateFpl no free blocks (numBlocks=" + info.numBlocks + ")");
             return 0;
+        } else if (info.blockSize > pspSysMem.get_instance().maxFreeMemSize()) {
+            Modules.log.warn("tryAllocateFpl no free mem (want=" + info.blockSize + ",free=" + pspSysMem.get_instance().maxFreeMemSize() + ")");
+            return 0;
         } else {
             addr = pspSysMem.get_instance().malloc(info.partitionid, pspSysMem.PSP_SMEM_Low, info.blockSize, 0);
             if (addr != 0) {
