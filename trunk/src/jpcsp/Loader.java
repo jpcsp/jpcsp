@@ -52,7 +52,9 @@ public class Loader {
     public final static int FORMAT_ELF      = 0x01;
     public final static int FORMAT_PRX      = 0x02;
     public final static int FORMAT_PBP      = 0x04;
-    public final static int FORMAT_PSP      = 0x08;
+    public final static int FORMAT_SCE      = 0x08;
+    public final static int FORMAT_PSP      = 0x10;
+
 
     public static Loader getInstance() {
         if (instance == null)
@@ -77,7 +79,9 @@ public class Loader {
      *                      xxx:/yyy/zzz.prx
      * @param baseAddress   should be at least 64-byte aligned,
      *                      or how ever much is the default alignment in pspsysmem.
-     * @return true         on success */
+     * @return              Always a ModuleContext object, you should check the
+     *                      fileFormat member against the FORMAT_* bits.
+     *                      Example: (fileFormat & FORMAT_ELF) == FORMAT_ELF */
     public ModuleContext LoadModule(String pspfilename, ByteBuffer f, int baseAddress) throws IOException {
         ModuleContext module = new ModuleContext();
 
@@ -97,6 +101,10 @@ public class Loader {
             f.position(currentOffset);
             if (LoadPBP(f, module, baseAddress))
                 currentOffset = f.position();
+
+            f.position(currentOffset);
+            if (LoadSCE(f, module, baseAddress))
+                break;
 
             f.position(currentOffset);
             if (LoadPSP(f, module, baseAddress))
@@ -144,11 +152,24 @@ public class Loader {
     }
 
     /** @return true on success */
+    private boolean LoadSCE(ByteBuffer f, ModuleContext module, int baseAddress) throws IOException {
+        long magic = Utilities.readUWord(f);
+        if (magic == 0x4543537EL) {
+            module.fileFormat |= FORMAT_SCE;
+            Emulator.log.warn("Encrypted file not supported! (~SCE)");
+            return true;
+        } else {
+            // Not a valid PSP
+            return false;
+        }
+    }
+
+    /** @return true on success */
     private boolean LoadPSP(ByteBuffer f, ModuleContext module, int baseAddress) throws IOException {
         PSP psp = new PSP(f);
         if (psp.isValid()) {
             module.fileFormat |= FORMAT_PSP;
-            Emulator.log.warn("Encrypted file not supported!");
+            Emulator.log.warn("Encrypted file not supported! (~PSP)");
             return true;
         } else {
             // Not a valid PSP
@@ -563,6 +584,13 @@ public class Loader {
                         importAddress, exportAddress, nid, module.importFixupAttempts));
                 }
 
+                // Ignore patched nids
+                else if (nid == 0)
+                {
+                    Emulator.log.debug(String.format("Ignoring import at 0x%08X [0x%08X] (attempt %d)",
+                        importAddress, nid, module.importFixupAttempts));
+                }
+
                 else
                 {
                     // Attempt to fixup stub to known syscalls
@@ -694,7 +722,7 @@ public class Loader {
                 case 0xcee8593c: // module_stop
                 case 0xf01d73a7: // module_stop
                 case 0x0f7c276c: // ?
-                    // Ignore magic imports
+                    // Ignore magic exports
                     break;
                 default:
                     // Save export
@@ -761,9 +789,14 @@ public class Loader {
         System.out.println(jpcsp.Allegrex.Instructions.ADDIU.getCount());
         */
 
-        // Set ELF info in the debugger
-        ElfHeaderInfo.ElfInfo = elf.getElfInfo();
-        ElfHeaderInfo.ProgInfo = elf.getProgInfo();
-        ElfHeaderInfo.SectInfo = elf.getSectInfo();
+        // Only do this for the app the user loads and not any prx's loaded
+        // later, otherwise the last loaded module overwrites previous saved info.
+        // TODO save debugger info for all loaded modules
+        if (!loadedFirstModule) {
+            // Set ELF info in the debugger
+            ElfHeaderInfo.ElfInfo = elf.getElfInfo();
+            ElfHeaderInfo.ProgInfo = elf.getProgInfo();
+            ElfHeaderInfo.SectInfo = elf.getSectInfo();
+        }
     }
 }

@@ -165,9 +165,10 @@ public class ModuleMgrForUser implements HLEModule {
     	        int loadBase = pspSysMem.get_instance().malloc(2, pspSysMem.PSP_SMEM_Low, 64, 0) + 64;
                 ModuleContext module = Loader.getInstance().LoadModule(name, moduleBuffer, loadBase);
 
-                if ((module.fileFormat & Loader.FORMAT_PSP) == Loader.FORMAT_PSP) {
+                if ((module.fileFormat & Loader.FORMAT_SCE) == Loader.FORMAT_SCE ||
+                    (module.fileFormat & Loader.FORMAT_PSP) == Loader.FORMAT_PSP) {
                 	// Simulate a successful loading
-                    Modules.log.warn("IGNORED:sceKernelLoadModule(path='" + name + "'): module in PSP format not loaded");
+                    Modules.log.warn("IGNORED:sceKernelLoadModule(path='" + name + "') encrypted module not loaded");
                 	cpu.gpr[2] = SceModule.flashModuleUid;
                 }
     	        else if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {

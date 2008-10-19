@@ -563,7 +563,9 @@ public class SyscallHandler {
                 case 0x213f:
                     pspdisplay.get_instance().sceDisplaySetFrameBuf(gpr[4], gpr[5], gpr[6], gpr[7]);
                     break;
-              //  sceDisplayGetFrameBuf(0x2140),
+                case 0x2140:
+                    pspdisplay.get_instance().sceDisplayGetFrameBuf(gpr[4], gpr[5], gpr[6], gpr[7]);
+                    break;
 		// sceDisplayIsForeground(0x2141),
 		// sceDisplayGetBrightness(0x2142),
 		// sceDisplayGetVcount(0x2143),

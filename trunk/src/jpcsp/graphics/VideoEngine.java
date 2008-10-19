@@ -1340,12 +1340,12 @@ public class VideoEngine {
 
             case USCALE: {
             	tex_scale_x = floatArgument;
-            	log ("sceGuTexScale(float u, X)");
+            	log (String.format("sceGuTexScale(u=%.2f, X)", tex_scale_x));
             	break;
             }
             case VSCALE: {
             	tex_scale_y = floatArgument;
-            	log ("sceGuTexScale(X, float v)");
+                log (String.format("sceGuTexScale(X, v=%.2f)", tex_scale_y));
             	break;
             }
 
@@ -1505,8 +1505,9 @@ public class VideoEngine {
                 gl.glMatrixMode(GL.GL_TEXTURE);
                 gl.glPushMatrix ();
                 gl.glLoadIdentity();
-                gl.glTranslatef (tex_translate_x, tex_translate_y, 0.f);
-                gl.glScalef		(tex_scale_x, tex_scale_y, 1.f);
+                gl.glTranslatef(tex_translate_x, tex_translate_y, 0.f);
+                if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
+                    gl.glScalef(tex_scale_x, tex_scale_y, 1.f);
 
                 switch (tex_map_mode) {
 	                case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV:
