@@ -95,12 +95,12 @@ public class pspSysMem {
     {
         int allocatedAddress = 0;
 
-        if (size > maxFreeMemSize())
+        /* if (size > maxFreeMemSize())
         {
             // no mem left
             Modules.log.warn("malloc failed (want=" + size + ",free=" + maxFreeMemSize() + ")");
         }
-        else if (type == PSP_SMEM_Low)
+        else */ if (type == PSP_SMEM_Low)
         {
             allocatedAddress = heapBottom;
             allocatedAddress = (allocatedAddress + 63) & ~63;
@@ -237,7 +237,7 @@ public class pspSysMem {
         // TODO
     }
 
-    private int maxFreeMemSize() {
+    public int maxFreeMemSize() {
         // Since some apps try and allocate the value of sceKernelMaxFreeMemSize,
         // which will leave no space for stacks we're going to reserve 0x09f00000
         // to 0x09ffffff for stacks, but stacks are allowed to go below that
