@@ -17,6 +17,7 @@ public class Managers {
     public static SemaphoreManager sempahores;
     public static EventFlagManager eventsFlags;
     public static ThreadManager threads;
+    public static FplManager fpl;
     //public static ModulesManager modules;
 
     static {
@@ -25,6 +26,7 @@ public class Managers {
         sempahores = SemaphoreManager.singleton;
         eventsFlags = EventFlagManager.singleton;
         threads = ThreadManager.singleton;
+        fpl = FplManager.singleton;
         //modules = ModuleManager.singleton;
     }
 }

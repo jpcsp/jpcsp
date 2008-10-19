@@ -628,22 +628,18 @@ private void ExitEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 
 private void OpenMemStickActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenMemStickActionPerformed
     PauseEmu();
-    if(consolewin!=null)
-          consolewin.clearScreenMessages();
     if(memstick==null)
-     {
-
-      memstick = new MemStickBrowser(this, new File("ms0/PSP/GAME"));
-      Point mainwindow = this.getLocation();
-      memstick.setLocation(mainwindow.x+100, mainwindow.y+50);
-      memstick.setVisible(true);
+    {
+        memstick = new MemStickBrowser(this, new File("ms0/PSP/GAME"));
+        Point mainwindow = this.getLocation();
+        memstick.setLocation(mainwindow.x+100, mainwindow.y+50);
+        memstick.setVisible(true);
     }
     else
     {
-      memstick.refreshFiles();
-      memstick.setVisible(true);
+        memstick.refreshFiles();
+        memstick.setVisible(true);
     }
-
 }//GEN-LAST:event_OpenMemStickActionPerformed
 
 private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing

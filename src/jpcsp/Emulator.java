@@ -105,6 +105,7 @@ public class Emulator implements Runnable {
         // All other registers are uninitialised/random values
 
         jpcsp.HLE.ThreadMan.get_instance().Initialise(cpu.pc, module.moduleInfo.getM_attr(), pspfilename);
+        jpcsp.HLE.kernel.Managers.fpl.initialize();
         jpcsp.HLE.psputils.get_instance().Initialise();
         jpcsp.HLE.pspge.get_instance().Initialise();
         jpcsp.HLE.pspdisplay.get_instance().Initialise();

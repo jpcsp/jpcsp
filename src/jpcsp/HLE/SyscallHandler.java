@@ -21,6 +21,7 @@ import jpcsp.Emulator;
 //import jpcsp.Processor;
 import jpcsp.GeneralJpcspException;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.kernel.Managers;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
@@ -144,14 +145,30 @@ public class SyscallHandler {
 		// sceKernelFreeVpl(0x2048),
 		// sceKernelCancelVpl(0x2049),
 		// sceKernelReferVplStatus(0x204a),
-		// sceKernelCreateFpl(0x204b),
-		// sceKernelDeleteFpl(0x204c),
-		// sceKernelAllocateFpl(0x204d),
-		// sceKernelAllocateFplCB(0x204e),
-		// sceKernelTryAllocateFpl(0x204f),
-		// sceKernelFreeFpl(0x2050),
-		// sceKernelCancelFpl(0x2051),
-		// sceKernelReferFplStatus(0x2052),
+                case 0x204b:
+                    Managers.fpl.sceKernelCreateFpl(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8], gpr[9]);
+                    break;
+                case 0x204c:
+                    Managers.fpl.sceKernelDeleteFpl(gpr[4]);
+                    break;
+                case 0x204d:
+                    Managers.fpl.sceKernelAllocateFpl(gpr[4], gpr[5], gpr[6]);
+                    break;
+                case 0x204e:
+                    Managers.fpl.sceKernelAllocateFplCB(gpr[4], gpr[5], gpr[6]);
+                    break;
+                case 0x204f:
+                    Managers.fpl.sceKernelTryAllocateFpl(gpr[4], gpr[5]);
+                    break;
+                case 0x2050:
+                    Managers.fpl.sceKernelFreeFpl(gpr[4], gpr[5]);
+                    break;
+                case 0x2051:
+                    Managers.fpl.sceKernelCancelFpl(gpr[4], gpr[5]);
+                    break;
+                case 0x2052:
+                    Managers.fpl.sceKernelReferFplStatus(gpr[4], gpr[5]);
+                    break;
 		// ThreadManForUser_0E927AED(0x2053),
 		// sceKernelUSec2SysClock(0x2054),
 		// sceKernelUSec2SysClockWide(0x2055),
