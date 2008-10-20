@@ -255,9 +255,14 @@ public class Emulator implements Runnable {
     }
 
     public void setDebugger(DisassemblerFrame debugger) {
-        this.debugger = debugger;
+        Emulator.debugger = debugger;
     }
 
+    // This is so bad... for GPIO
+    public static DisassemblerFrame getDebugger() {
+        return debugger;
+    }
+    
     public void setInstructionCounter(InstructionCounter instructionCounter) {
         this.instructionCounter = instructionCounter;
         instructionCounter.setModule(module);

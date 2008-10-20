@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.Debugger;
 
+import java.awt.event.KeyEvent;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -120,7 +121,7 @@ public class MemoryViewer extends javax.swing.JFrame {
 
         memoryview.setColumns(20);
         memoryview.setEditable(false);
-        memoryview.setFont(new java.awt.Font("Courier New", 0, 12));
+        memoryview.setFont(new java.awt.Font("Courier New", 0, 12)); // NOI18N
         memoryview.setRows(5);
         memoryview.addMouseWheelListener(new java.awt.event.MouseWheelListener() {
             public void mouseWheelMoved(java.awt.event.MouseWheelEvent evt) {
@@ -133,6 +134,12 @@ public class MemoryViewer extends javax.swing.JFrame {
             }
         });
         jScrollPane1.setViewportView(memoryview);
+
+        AddressField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                onKeyPressed(evt);
+            }
+        });
 
         GoToButton.setText("Go to Address");
         GoToButton.addActionListener(new java.awt.event.ActionListener() {
@@ -163,28 +170,28 @@ public class MemoryViewer extends javax.swing.JFrame {
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(AddressField, javax.swing.GroupLayout.PREFERRED_SIZE, 216, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(AddressField, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(GoToButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(GoToSP)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 93, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 209, Short.MAX_VALUE)
                         .addComponent(DumpRawRam))
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 646, Short.MAX_VALUE))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addContainerGap(32, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(DumpRawRam)
                     .addComponent(AddressField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(GoToButton)
-                    .addComponent(GoToSP)
-                    .addComponent(DumpRawRam))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                    .addComponent(GoToSP))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 314, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         pack();
@@ -216,17 +223,21 @@ private void memoryviewKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:even
 }//GEN-LAST:event_memoryviewKeyPressed
 
 private void GoToButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_GoToButtonActionPerformed
-         String gettext = AddressField.getText();
-         int value;
-         try {
-            value = Utilities.parseAddress(gettext);
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "The Number you enter is not correct");
-            return;
-        }
-         startaddress = value;
-         RefreshMemory();
+    GoToAddress();
 }//GEN-LAST:event_GoToButtonActionPerformed
+
+private void GoToAddress() {
+    String gettext = AddressField.getText();
+    int value;
+    try {
+        value = Utilities.parseAddress(gettext);
+    } catch (Exception e) {
+        JOptionPane.showMessageDialog(this, "The Number you enter is not correct");
+        return;
+    }
+    startaddress = value;
+    RefreshMemory();
+}
 
 private void memoryviewMouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GEN-FIRST:event_memoryviewMouseWheelMoved
 // TODO add your handling code here:
@@ -249,9 +260,8 @@ private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:
 }//GEN-LAST:event_formWindowDeactivated
 
 private void GoToSPActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_GoToSPActionPerformed
-
-         startaddress = Emulator.getProcessor().cpu.gpr[29];
-         RefreshMemory();
+    startaddress = Emulator.getProcessor().cpu.gpr[29];
+    RefreshMemory();
 }//GEN-LAST:event_GoToSPActionPerformed
 
 private void DumpRawRamActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DumpRawRamActionPerformed
@@ -287,6 +297,11 @@ private void DumpRawRamActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
 
    
 }//GEN-LAST:event_DumpRawRamActionPerformed
+
+private void onKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_onKeyPressed
+    if (evt.getKeyCode() == KeyEvent.VK_ENTER)
+        GoToAddress();
+}//GEN-LAST:event_onKeyPressed
 
 
 
