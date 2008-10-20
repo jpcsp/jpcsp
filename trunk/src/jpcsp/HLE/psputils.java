@@ -24,6 +24,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Random;
+import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 
@@ -157,12 +158,23 @@ public class psputils {
 
     /** a0 = address to write result to? */
     public void sceKernelGetGPI() {
-        Modules.log.warn("UNIMPLEMENTED:sceKernelGetGPI");
-        Emulator.getProcessor().cpu.gpr[2] = 0;
+        DisassemblerFrame debugger = Emulator.getDebugger();
+        if (debugger != null) {
+            int gpi = debugger.GetGPI();
+            Modules.log.info("sceKernelGetGPI 0x" + String.format("%02X", gpi));
+            Emulator.getProcessor().cpu.gpr[2] = gpi;
+        } else {
+            Modules.log.info("sceKernelGetGPI debugger not enabled");
+            Emulator.getProcessor().cpu.gpr[2] = 0;
+        }
     }
 
     public void sceKernelSetGPO(int value) {
-        Modules.log.warn("UNIMPLEMENTED:sceKernelSetGPO 0x" + Integer.toHexString(value));
+        Modules.log.info("sceKernelSetGPO 0x" + String.format("%02X", value));
+        DisassemblerFrame debugger = Emulator.getDebugger();
+        if (debugger != null) {
+            debugger.SetGPO(value);
+        }
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 }

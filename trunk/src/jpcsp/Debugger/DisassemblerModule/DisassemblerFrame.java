@@ -54,13 +54,15 @@ import jpcsp.util.*;
  * @author  shadow
  */
 public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOwner{
-	private int DebuggerPC;
+    private int DebuggerPC;
     private Emulator emu;
     private DefaultListModel listmodel = new DefaultListModel();
     private int opcode_address; // store the address of the opcode used for offsetdecode
     private ArrayList<Integer> breakpoints = new ArrayList<Integer>();
     private MemoryViewer memview;
-	private boolean wantStep;
+    private boolean wantStep;
+    private boolean haveFocus;
+    private int gpi, gpo;
 
     /** Creates new form DisassemblerFrame */
     public DisassemblerFrame(Emulator emu) {
@@ -171,15 +173,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         BranchOrJump = new javax.swing.JMenuItem();
         RegMenu = new javax.swing.JPopupMenu();
         CopyValue = new javax.swing.JMenuItem();
-        disasmList = new javax.swing.JList(listmodel) {
-			@Override
-			protected void paintComponent(Graphics arg0) {
-				synchronized(listmodel) {
-					super.paintComponent(arg0);
-				}
-			}
-        	
-        };
+        disasmList = new javax.swing.JList(listmodel);
         DisasmToolbar = new javax.swing.JToolBar();
         RunDebugger = new javax.swing.JToggleButton();
         PauseDebugger = new javax.swing.JButton();
@@ -200,6 +194,23 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         jTable1 = new javax.swing.JTable();
         jTable2 = new javax.swing.JTable();
         jTable3 = new javax.swing.JTable();
+        jPanel1 = new javax.swing.JPanel();
+        jToggleButton1 = new javax.swing.JToggleButton();
+        jToggleButton2 = new javax.swing.JToggleButton();
+        jToggleButton3 = new javax.swing.JToggleButton();
+        jToggleButton4 = new javax.swing.JToggleButton();
+        jToggleButton5 = new javax.swing.JToggleButton();
+        jToggleButton6 = new javax.swing.JToggleButton();
+        jToggleButton7 = new javax.swing.JToggleButton();
+        jToggleButton8 = new javax.swing.JToggleButton();
+        jLabel1 = new javax.swing.JLabel();
+        jLabel2 = new javax.swing.JLabel();
+        jLabel3 = new javax.swing.JLabel();
+        jLabel4 = new javax.swing.JLabel();
+        jLabel5 = new javax.swing.JLabel();
+        jLabel6 = new javax.swing.JLabel();
+        jLabel7 = new javax.swing.JLabel();
+        jLabel8 = new javax.swing.JLabel();
 
         CopyAddress.setText("Copy Address");
         CopyAddress.addActionListener(new java.awt.event.ActionListener() {
@@ -242,7 +253,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             }
         });
 
-        disasmList.setFont(new java.awt.Font("Courier New", 0, 11)); // NOI18N
+        disasmList.setFont(new java.awt.Font("Courier New", 0, 11));
         disasmList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         disasmList.setToolTipText("");
         disasmList.addMouseWheelListener(new java.awt.event.MouseWheelListener() {
@@ -558,6 +569,172 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             }
         });
         jTabbedPane1.addTab("COP1", jTable3);
+
+        jPanel1.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent evt) {
+                onFocusGained(evt);
+            }
+            public void focusLost(java.awt.event.FocusEvent evt) {
+                onFocusLost(evt);
+            }
+        });
+
+        jToggleButton1.setText("1");
+        jToggleButton1.setBorder(null);
+        jToggleButton1.setPreferredSize(new java.awt.Dimension(16, 16));
+        jToggleButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jToggleButton1ActionPerformed(evt);
+            }
+        });
+
+        jToggleButton2.setText("2");
+        jToggleButton2.setBorder(null);
+        jToggleButton2.setPreferredSize(new java.awt.Dimension(16, 16));
+        jToggleButton2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jToggleButton2ActionPerformed(evt);
+            }
+        });
+
+        jToggleButton3.setText("3");
+        jToggleButton3.setBorder(null);
+        jToggleButton3.setPreferredSize(new java.awt.Dimension(16, 16));
+        jToggleButton3.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jToggleButton3ActionPerformed(evt);
+            }
+        });
+
+        jToggleButton4.setText("4");
+        jToggleButton4.setBorder(null);
+        jToggleButton4.setPreferredSize(new java.awt.Dimension(16, 16));
+        jToggleButton4.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jToggleButton4ActionPerformed(evt);
+            }
+        });
+
+        jToggleButton5.setText("5");
+        jToggleButton5.setBorder(null);
+        jToggleButton5.setPreferredSize(new java.awt.Dimension(16, 16));
+        jToggleButton5.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jToggleButton5ActionPerformed(evt);
+            }
+        });
+
+        jToggleButton6.setText("6");
+        jToggleButton6.setBorder(null);
+        jToggleButton6.setPreferredSize(new java.awt.Dimension(16, 16));
+        jToggleButton6.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jToggleButton6ActionPerformed(evt);
+            }
+        });
+
+        jToggleButton7.setText("7");
+        jToggleButton7.setBorder(null);
+        jToggleButton7.setPreferredSize(new java.awt.Dimension(16, 16));
+        jToggleButton7.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jToggleButton7ActionPerformed(evt);
+            }
+        });
+
+        jToggleButton8.setText("8");
+        jToggleButton8.setBorder(null);
+        jToggleButton8.setPreferredSize(new java.awt.Dimension(16, 16));
+        jToggleButton8.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jToggleButton8ActionPerformed(evt);
+            }
+        });
+
+        jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif"))); // NOI18N
+
+        jLabel2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif"))); // NOI18N
+
+        jLabel3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif"))); // NOI18N
+
+        jLabel4.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif"))); // NOI18N
+
+        jLabel5.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif"))); // NOI18N
+
+        jLabel6.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif"))); // NOI18N
+
+        jLabel7.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif"))); // NOI18N
+
+        jLabel8.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif"))); // NOI18N
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addComponent(jLabel1)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel2)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel3)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel4)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel5)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel6)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel7)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jLabel8))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addComponent(jToggleButton1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jToggleButton2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jToggleButton3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jToggleButton4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jToggleButton5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jToggleButton6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jToggleButton7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jToggleButton8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(20, Short.MAX_VALUE))
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel1)
+                    .addComponent(jLabel8)
+                    .addComponent(jLabel2)
+                    .addComponent(jLabel3)
+                    .addComponent(jLabel4)
+                    .addComponent(jLabel5)
+                    .addComponent(jLabel6)
+                    .addComponent(jLabel7))
+                .addGap(11, 11, 11)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jToggleButton1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jToggleButton2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jToggleButton3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jToggleButton4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jToggleButton5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jToggleButton6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jToggleButton7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jToggleButton8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(505, Short.MAX_VALUE))
+        );
+
+        jTabbedPane1.addTab("GPIO", jPanel1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -903,8 +1080,92 @@ private void jTable1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:eve
    }
 }//GEN-LAST:event_jTable1MouseClicked
 
+public int GetGPI() {
+    return gpi;
+}
 
+public void SetGPO(int gpo) {
+    this.gpo = gpo;
+    if (haveFocus) {
+        // Refresh GPO
+        for(int i = 0; i < 8; i++)
+            SetGPO(i, (gpo & (1 << i)) != 0);
+    }
+}
 
+private void ToggleGPI(int index) {
+    gpi ^= 1 << index;
+
+    // Refresh GPI buttons
+    for(int i = 0; i < 8; i++)
+        SetGPI(i, (gpi & (1 << i)) != 0);
+}
+
+private void SetGPO(int index, boolean on) {
+    switch(index) {
+        case 0: jLabel1.setVisible(on); break;
+        case 1: jLabel2.setVisible(on); break;
+        case 2: jLabel3.setVisible(on); break;
+        case 3: jLabel4.setVisible(on); break;
+        case 4: jLabel5.setVisible(on); break;
+        case 5: jLabel6.setVisible(on); break;
+        case 6: jLabel7.setVisible(on); break;
+        case 7: jLabel8.setVisible(on); break;
+    }
+}
+
+private void SetGPI(int index, boolean on) {
+    switch(index) {
+        case 0: jToggleButton1.setSelected(on); break;
+        case 1: jToggleButton2.setSelected(on); break;
+        case 2: jToggleButton3.setSelected(on); break;
+        case 3: jToggleButton4.setSelected(on); break;
+        case 4: jToggleButton5.setSelected(on); break;
+        case 5: jToggleButton6.setSelected(on); break;
+        case 6: jToggleButton7.setSelected(on); break;
+        case 7: jToggleButton8.setSelected(on); break;
+    }
+}
+
+private void jToggleButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton1ActionPerformed
+    ToggleGPI(0);
+}//GEN-LAST:event_jToggleButton1ActionPerformed
+
+private void jToggleButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton2ActionPerformed
+    ToggleGPI(1);
+}//GEN-LAST:event_jToggleButton2ActionPerformed
+
+private void jToggleButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton3ActionPerformed
+    ToggleGPI(2);
+}//GEN-LAST:event_jToggleButton3ActionPerformed
+
+private void jToggleButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton4ActionPerformed
+    ToggleGPI(3);
+}//GEN-LAST:event_jToggleButton4ActionPerformed
+
+private void jToggleButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton5ActionPerformed
+    ToggleGPI(4);
+}//GEN-LAST:event_jToggleButton5ActionPerformed
+
+private void jToggleButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton6ActionPerformed
+    ToggleGPI(5);
+}//GEN-LAST:event_jToggleButton6ActionPerformed
+
+private void jToggleButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton7ActionPerformed
+    ToggleGPI(6);
+}//GEN-LAST:event_jToggleButton7ActionPerformed
+
+private void jToggleButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton8ActionPerformed
+    ToggleGPI(7);
+}//GEN-LAST:event_jToggleButton8ActionPerformed
+
+private void onFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_onFocusGained
+    haveFocus = true;
+}//GEN-LAST:event_onFocusGained
+
+private void onFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_onFocusLost
+    haveFocus = false;
+}//GEN-LAST:event_onFocusLost
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton AddBreakpoint;
@@ -926,6 +1187,15 @@ private void jTable1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:eve
     private javax.swing.JList disasmList;
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton3;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
+    private javax.swing.JLabel jLabel8;
+    private javax.swing.JPanel jPanel1;
     private javax.swing.JToolBar.Separator jSeparator1;
     private javax.swing.JToolBar.Separator jSeparator2;
     private javax.swing.JToolBar.Separator jSeparator3;
@@ -934,6 +1204,14 @@ private void jTable1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:eve
     private javax.swing.JTable jTable1;
     private javax.swing.JTable jTable2;
     private javax.swing.JTable jTable3;
+    private javax.swing.JToggleButton jToggleButton1;
+    private javax.swing.JToggleButton jToggleButton2;
+    private javax.swing.JToggleButton jToggleButton3;
+    private javax.swing.JToggleButton jToggleButton4;
+    private javax.swing.JToggleButton jToggleButton5;
+    private javax.swing.JToggleButton jToggleButton6;
+    private javax.swing.JToggleButton jToggleButton7;
+    private javax.swing.JToggleButton jToggleButton8;
     // End of variables declaration//GEN-END:variables
 
 }
