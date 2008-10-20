@@ -190,15 +190,18 @@ public class Emulator implements Runnable {
         {
             pause = true;
 
-            gui.RefreshButtons();
+            // TODO execute this stuff in the gui thread
+            {
+                gui.RefreshButtons();
 
-            if (debugger != null) {
-                debugger.RefreshButtons();
-                debugger.RefreshDebugger();
+                if (debugger != null) {
+                    debugger.RefreshButtons();
+                    debugger.RefreshDebugger();
+                }
+
+                if (memview != null)
+                    memview.RefreshMemory();
             }
-
-            if (memview != null)
-                memview.RefreshMemory();
 
             StepLogger.flush();
         }
@@ -221,16 +224,18 @@ public class Emulator implements Runnable {
         if (run && !pause)
         {
             pause = true;
+            // TODO execute this stuff in the gui thread
+            {
+                gui.RefreshButtons();
 
-            gui.RefreshButtons();
+                if (debugger != null) {
+                    debugger.RefreshButtons();
+                    debugger.RefreshDebugger();
+                }
 
-            if (debugger != null) {
-                debugger.RefreshButtons();
-                debugger.RefreshDebugger();
+                if (memview != null)
+                    memview.RefreshMemory();
             }
-
-            if (memview != null)
-                memview.RefreshMemory();
 
             StepLogger.setStatus(status);
             StepLogger.flush();

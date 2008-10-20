@@ -60,7 +60,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
     private int opcode_address; // store the address of the opcode used for offsetdecode
     private ArrayList<Integer> breakpoints = new ArrayList<Integer>();
     private MemoryViewer memview;
-    private boolean wantStep;
+    private volatile boolean wantStep;
     private boolean haveFocus;
     private int gpi, gpo;
 
@@ -253,7 +253,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             }
         });
 
-        disasmList.setFont(new java.awt.Font("Courier New", 0, 11));
+        disasmList.setFont(new java.awt.Font("Courier New", 0, 11)); // NOI18N
         disasmList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         disasmList.setToolTipText("");
         disasmList.addMouseWheelListener(new java.awt.event.MouseWheelListener() {
@@ -706,7 +706,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                         .addComponent(jToggleButton7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jToggleButton8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(20, Short.MAX_VALUE))
+                .addContainerGap(22, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1013,13 +1013,16 @@ public void step() {
     //check if there is a breakpoint
     if (wantStep || (breakpoints.size() > 0 && breakpoints.indexOf(Emulator.getProcessor().cpu.pc) != -1)) {
     	wantStep = false;
+        DebuggerPC = 0;
         Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_BREAKPOINT);
 
+        /* done by PauseEmu
         DebuggerPC = 0;
         RefreshDebugger();
         RefreshButtons();
         if (memview != null)
             memview.RefreshMemory();
+        */
     }
 }
 
