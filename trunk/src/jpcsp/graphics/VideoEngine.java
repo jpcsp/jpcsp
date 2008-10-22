@@ -27,6 +27,8 @@ import java.nio.ShortBuffer;
 import java.util.Iterator;
 
 import javax.media.opengl.GL;
+import javax.media.opengl.GLException;
+
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
@@ -1716,7 +1718,11 @@ public class VideoEngine {
 	                	break;
             	}
 
-        		gl.glBlendEquation(blend_mode);
+            	try {
+            		gl.glBlendEquation(blend_mode);
+            	} catch (GLException e) {
+            		log.warn("VideoEngine: " + e.getMessage());
+            	}
             	gl.glBlendFunc(src, dst);
 
             	log ("sceGuBlendFunc(int op, int src, int dest, X, X)");
