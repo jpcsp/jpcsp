@@ -136,17 +136,18 @@ public class ModuleMgrForUser implements HLEModule {
     		return;
         }
         int findprx = name.lastIndexOf("/");
-        int endprx = name.indexOf(".PRX");
-        if(endprx==-1) endprx=name.indexOf(".prx");
-        String prxname = name.substring(findprx+1,endprx);
-        for(banlist a : banlist.values())
-        {
-          if(a.name().matches(prxname))
-          {
-              Modules.log.warn("IGNORED:sceKernelLoadModule(path='" + name + "'): module from banlist not loaded");
-              cpu.gpr[2] = SceModule.flashModuleUid;
-              return;
-          }
+        int endprx = name.toLowerCase().indexOf(".prx");
+        if (endprx >= 0) {
+	        String prxname = name.substring(findprx+1,endprx);
+	        for(banlist a : banlist.values())
+	        {
+	          if(a.name().matches(prxname))
+	          {
+	              Modules.log.warn("IGNORED:sceKernelLoadModule(path='" + name + "'): module from banlist not loaded");
+	              cpu.gpr[2] = SceModule.flashModuleUid;
+	              return;
+	          }
+	        }
         }
 
         cpu.gpr[2] = -1;
