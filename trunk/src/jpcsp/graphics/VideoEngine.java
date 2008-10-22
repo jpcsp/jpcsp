@@ -21,14 +21,17 @@ package jpcsp.graphics;
 import static jpcsp.graphics.GeCommands.*;
 
 import java.nio.Buffer;
+import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.Iterator;
 
 import javax.media.opengl.GL;
-
 import jpcsp.Emulator;
 import jpcsp.Memory;
+import jpcsp.MemoryMap;
+import jpcsp.HLE.pspdisplay;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
@@ -109,6 +112,18 @@ public class VideoEngine {
     private int tex_clut_mode, tex_clut_shift, tex_clut_mask, tex_clut_start;
 
     private int transform_mode;
+
+    private int textureTx_sourceAddress;
+    private int textureTx_sourceLineWidth;
+    private int textureTx_destinationAddress;
+    private int textureTx_destinationLineWidth;
+    private int textureTx_width;
+    private int textureTx_height;
+    private int textureTx_sx;
+    private int textureTx_sy;
+    private int textureTx_dx;
+    private int textureTx_dy;
+    private int textureTx_pixelSize;
 
     // opengl needed information/buffers
     int[] gl_texture_id = new int[1];
@@ -1701,7 +1716,7 @@ public class VideoEngine {
 	                	break;
             	}
 
-            	gl.glBlendEquation(blend_mode);
+        		gl.glBlendEquation(blend_mode);
             	gl.glBlendFunc(src, dst);
 
             	log ("sceGuBlendFunc(int op, int src, int dest, X, X)");
@@ -1950,6 +1965,156 @@ public class VideoEngine {
             case MW7:
             	log("morph weight " + (command(instruction) - MW0), floatArgument);
             	morph_weight[command(instruction) - MW0] = floatArgument;
+            	break;
+
+            case TRXSBP:
+            	textureTx_sourceAddress = normalArgument;
+            	break;
+
+            case TRXSBW:
+            	textureTx_sourceAddress |= (normalArgument << 8) & 0xFF000000;
+            	textureTx_sourceLineWidth = normalArgument & 0x0000FFFF;
+            	break;
+
+            case TRXDBP:
+            	textureTx_destinationAddress = normalArgument;
+            	break;
+
+            case TRXDBW:
+            	textureTx_destinationAddress |= (normalArgument << 8) & 0xFF000000;
+            	textureTx_destinationLineWidth = normalArgument & 0x0000FFFF;
+            	break;
+
+            case TRXSIZE:
+            	textureTx_width = (normalArgument & 0x3FF) + 1;
+            	textureTx_height = ((normalArgument >> 10) & 0x1FF) + 1;
+            	break;
+
+            case TRXPOS:
+            	textureTx_sx = normalArgument & 0x1FF;
+            	textureTx_sy = (normalArgument >> 10) & 0x1FF;
+            	break;
+
+            case TRXDPOS:
+            	textureTx_dx = normalArgument & 0x1FF;
+            	textureTx_dy = (normalArgument >> 10) & 0x1FF;
+            	break;
+
+            case TRXKICK:
+            	textureTx_pixelSize = normalArgument & 0x1;
+
+                log(helper.getCommandString(TRXKICK) + " from 0x" + Integer.toHexString(textureTx_sourceAddress) + "(" + textureTx_sx + "," + textureTx_sy + ") to 0x" + Integer.toHexString(textureTx_destinationAddress) + "(" + textureTx_dx + "," + textureTx_dy + "), width=" + textureTx_width + ", height=" + textureTx_height);
+            	if (!pspdisplay.get_instance().isGeAddress(textureTx_destinationAddress)) {
+                    log(helper.getCommandString(TRXKICK) + " not in Ge Address space");
+                	int width = textureTx_width;
+                	int height = textureTx_height;
+                	int bpp = ( textureTx_pixelSize == TRXKICK_16BIT_TEXEL_SIZE ) ? 2 : 4;
+
+                	int srcAddress = textureTx_sourceAddress      + (textureTx_sy * textureTx_sourceLineWidth      + textureTx_sx) * bpp;
+            		int dstAddress = textureTx_destinationAddress + (textureTx_dy * textureTx_destinationLineWidth + textureTx_dx) * bpp;
+            		Memory memory = Memory.getInstance();
+            		for (int y = 0; y < height; y++) {
+            			for (int x = 0; x < width; x++) {
+            				memory.write32(dstAddress, memory.read32(srcAddress));
+            				srcAddress += bpp;
+            				dstAddress += bpp;
+            			}
+            			srcAddress += (textureTx_sourceLineWidth - width) * bpp;
+            			dstAddress += (textureTx_destinationLineWidth - width) * bpp;
+            		}
+            	} else {
+                    log(helper.getCommandString(TRXKICK) + " in Ge Address space");
+
+	            	if (textureTx_pixelSize == TRXKICK_16BIT_TEXEL_SIZE) {
+	                    log("Unsupported 16bit for video command [ " + helper.getCommandString(command(instruction)) + " ]");
+	            		break;
+	            	}
+
+	            	int width = textureTx_width;
+	            	int height = textureTx_height;
+	            	int dx = textureTx_dx;
+	            	int dy = textureTx_dy;
+	            	int lineWidth = textureTx_sourceLineWidth;
+	            	int bpp = (textureTx_pixelSize == TRXKICK_16BIT_TEXEL_SIZE) ? 2 : 4;
+
+	            	// Generate a texture id if we don't have one
+	            	if (gl_texture_id[0] == 0)
+	                	gl.glGenTextures(1, gl_texture_id, 0);
+	            	gl.glBindTexture(GL.GL_TEXTURE_2D, gl_texture_id[0]);
+
+                    gl.glPushAttrib(GL.GL_ENABLE_BIT);
+	            	gl.glDisable(GL.GL_DEPTH_TEST);
+	            	gl.glDisable(GL.GL_BLEND);
+
+	            	gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, bpp);
+	            	gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, lineWidth);
+
+	            	gl.glMatrixMode(GL.GL_PROJECTION);
+	            	gl.glPushMatrix();
+	            	gl.glLoadIdentity();
+	            	gl.glOrtho(0, 480, 272, 0, -1, 1);
+	                gl.glMatrixMode(GL.GL_MODELVIEW);
+	                gl.glPushMatrix ();
+	                gl.glLoadIdentity();
+
+                	ByteBuffer buffer = ByteBuffer.wrap(
+                            Memory.getInstance().mainmemory.array(),
+                            Memory.getInstance().mainmemory.arrayOffset() + textureTx_sourceAddress - MemoryMap.START_RAM,
+                            lineWidth * height * bpp).slice();
+
+	        		//
+	        		// glTexImage2D only supports
+	        		//		width = (1 << n)	for some integer n
+	        		//		height = (1 << m)	for some integer m
+	            	//
+	        		// This the reason why we are also using glTexSubImage2D.
+	            	//
+                	int bufferHeight = Utilities.makePow2(height);
+                    gl.glTexImage2D(
+                            GL.GL_TEXTURE_2D, 0,
+                            GL.GL_RGBA,
+                            lineWidth, bufferHeight, 0,
+                            GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, null);
+
+                	gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
+                	gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
+                    gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP);
+                    gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP);
+
+    	            gl.glTexSubImage2D(
+    		                GL.GL_TEXTURE_2D, 0,
+    		                textureTx_sx, textureTx_sy, width, height,
+    		                GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, buffer);
+
+    	            gl.glEnable(GL.GL_TEXTURE_2D);
+
+                    gl.glBegin(GL.GL_QUADS);
+    	            gl.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+    	            float texCoordX = width / (float) lineWidth;
+    	            float texCoordY = height / (float) bufferHeight;
+
+    	            gl.glTexCoord2f(0.0f, 0.0f);
+    	            gl.glVertex2i(dx, dy);
+
+    	            gl.glTexCoord2f(texCoordX, 0.0f);
+    	            gl.glVertex2i(dx + width, dy);
+
+    	            gl.glTexCoord2f(texCoordX, texCoordY);
+    	            gl.glVertex2i(dx + width, dy + height);
+
+    	            gl.glTexCoord2f(0.0f, texCoordY);
+    	            gl.glVertex2i(dx, dy + height);
+
+    	            gl.glEnd();
+
+    	            gl.glMatrixMode(GL.GL_MODELVIEW);
+	                gl.glPopMatrix();
+	                gl.glMatrixMode(GL.GL_PROJECTION);
+	                gl.glPopMatrix();
+
+	                gl.glPopAttrib();
+            	}
             	break;
 
             default:
