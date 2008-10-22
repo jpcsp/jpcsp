@@ -312,7 +312,10 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         gl.glDisable(GL.GL_DEPTH_TEST);
         gl.glDisable(GL.GL_LIGHTING);
 
-        gl.glMatrixMode(GL.GL_PROJECTION);
+        gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, getPixelFormatBytes(pixelformatFb));
+    	gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, bufferwidthFb);
+
+    	gl.glMatrixMode(GL.GL_PROJECTION);
         gl.glPushMatrix();
         gl.glLoadIdentity();
 
@@ -468,6 +471,19 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         } else {
             // Render GE
             gl.glViewport(0, 0, width, height);
+
+            // If the GE is not at the same address as the FrameBuffer,
+            // redisplay the GE so that the VideoEngine can update it
+            if (bottomaddrGe != bottomaddrFb) {
+	            pixelsGe.clear();
+	            gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
+	            gl.glTexSubImage2D(
+	                GL.GL_TEXTURE_2D, 0,
+	                0, 0, width, height,
+	                GL.GL_RGBA, getPixelFormatGL(pixelformatGe), pixelsGe);
+	            drawFrameBuffer(gl, false, true);
+            }
+
             if (VideoEngine.getEngine(gl, true, true).update()) {
                 // Update VRAM only if GE actually drew something
                 // Set texFb as the current texture
@@ -665,5 +681,23 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
     public void sceDisplayGetAccumulatedHcount() {
         Emulator.getProcessor().cpu.gpr[2] = (int)accumulatedHcount;
+    }
+
+    public boolean isGeAddress(int address) {
+        address &= 0x3FFFFFFF;
+        if (address >= topaddrGe && address < bottomaddrGe) {
+        	return true;
+        }
+
+        return false;
+    }
+
+    public boolean isFbAddress(int address) {
+        address &= 0x3FFFFFFF;
+        if (address >= topaddrFb && address < bottomaddrFb) {
+        	return true;
+        }
+
+        return false;
     }
 }
