@@ -32,6 +32,7 @@ import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Settings;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.util.Utilities;
 
 /**
  * @author shadow, aisesal
@@ -275,16 +276,6 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         return pixels;
     }
 
-    private int makePow2(int n) {
-        --n;
-        n = (n >>  1) | n;
-        n = (n >>  2) | n;
-        n = (n >>  4) | n;
-        n = (n >>  8) | n;
-        n = (n >> 16) | n;
-        return ++n;
-    }
-
     private void reportFPSStats() {
         frameCount++;
         long timeNow = System.nanoTime();
@@ -428,7 +419,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             gl.glTexImage2D(
                 GL.GL_TEXTURE_2D, 0,
                 GL.GL_RGB, // GL.GL_RGBA
-                bufferwidthFb, makePow2(height), 0,
+                bufferwidthFb, Utilities.makePow2(height), 0,
                 GL.GL_RGBA,
                 getPixelFormatGL(pixelformatFb), null);
             gl.glTexParameteri(
@@ -441,7 +432,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                 GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP);
 
             temp = ByteBuffer.allocate(
-                bufferwidthFb * makePow2(height) *
+                bufferwidthFb * Utilities.makePow2(height) *
                 getPixelFormatBytes(pixelformatFb));
             temp.order(ByteOrder.LITTLE_ENDIAN);
 
@@ -603,7 +594,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
             if (pixelformatFb != this.pixelformatFb ||
                 bufferwidthFb != this.bufferwidthFb ||
-                makePow2(height) != makePow2(this.height))
+                Utilities.makePow2(height) != Utilities.makePow2(this.height))
             {
                 createTex = true;
             }
@@ -619,7 +610,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             pixelsFb = getPixels(topaddrFb, bottomaddrFb);
 
             texS = (float)width / (float)bufferwidth;
-            texT = (float)height / (float)makePow2(height);
+            texT = (float)height / (float)Utilities.makePow2(height);
 
             refreshRequired = true;
             //display();
