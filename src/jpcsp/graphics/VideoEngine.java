@@ -90,6 +90,11 @@ public class VideoEngine {
     private float[][] light_pos = new float[4][4];
 
     int[] light_type = new int[4];
+    
+    float[] fog_color = new float[4];
+    float fog_far = 0.0f,fog_dist = 0.0f;
+    
+    private float nearZ = 0.0f,farZ = 0.0f;
 
 
 	int mat_flags = 0;
@@ -270,7 +275,53 @@ public class VideoEngine {
     	log ("UNKNOWN stencil op "+ pspOP);
     	return GL.GL_KEEP;
     }
+    
+    //hack based on pspplayer
+    private int getBlendSrc (int pspSrc)
+    {
+    	switch(pspSrc)
+    	{
+	    	case 0x0:
+	    		return GL.GL_DST_COLOR;
+    		
+	    	case 0x1:
+	    		return GL.GL_ONE_MINUS_DST_COLOR;
+	    		
+	    	case 0x2:
+	    		return GL.GL_SRC_ALPHA;
+	    		
+	    	case 0x3:
+	    		return GL.GL_ONE_MINUS_SRC_ALPHA;
+	    		
+	    	case 0x4:
+	    		return GL.GL_DST_ALPHA;
+	    		
+	    	case 0x5:
+	    		return GL.GL_ONE_MINUS_DST_ALPHA;
+	    		
+	    	case 0x6:
+	    		return GL.GL_SRC_ALPHA;
+	    		
+	    	case 0x7:
+	    		return GL.GL_ONE_MINUS_SRC_ALPHA;
+	    		
+	    	case 0x8:
+	    		return GL.GL_DST_ALPHA;
+	    		
+	    	case 0x9:
+	    		return GL.GL_ONE_MINUS_DST_ALPHA;
+	    		
+	    	case 0x10: 
+	    		return GL.GL_SRC_ALPHA;
+    	
+    	}
+    	
+    	VideoEngine.log.error("Unhandled alpha blend src used " + pspSrc);
+        Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
+    	return GL.GL_DST_COLOR;
+    }
 
+    //hack based on pspplayer
     private int getBlendOp (int pspOP) {
     	switch (pspOP) {
 		    case ALPHA_SOURCE_COLOR:
@@ -286,16 +337,25 @@ public class VideoEngine {
 	    		return GL.GL_ONE_MINUS_SRC_ALPHA;
 
 		    case ALPHA_DESTINATION_COLOR:
-		    	return GL.GL_DST_COLOR;
-
-		    case ALPHA_ONE_MINUS_DESTINATION_COLOR:
-		    	return GL.GL_ONE_MINUS_DST_COLOR;
-
-		    case ALPHA_DESTINATION_ALPHA:
 		    	return GL.GL_DST_ALPHA;
 
-		    case ALPHA_ONE_MINUS_DESTINATION_ALPHA:
+		    case ALPHA_ONE_MINUS_DESTINATION_COLOR:
 		    	return GL.GL_ONE_MINUS_DST_ALPHA;
+
+		    case ALPHA_DESTINATION_ALPHA:
+		    	return GL.GL_SRC_ALPHA;
+
+		    case ALPHA_ONE_MINUS_DESTINATION_ALPHA:
+		    	return GL.GL_ONE_MINUS_SRC_ALPHA;
+		    	
+		    case 0x8:
+		    	return GL.GL_DST_ALPHA;
+		    	
+		    case 0x9:
+ 		    	return GL.GL_ONE_MINUS_DST_ALPHA;
+		    	
+		    case 0x10:
+		    	return GL.GL_ONE_MINUS_SRC_ALPHA;
     	}
 
     	VideoEngine.log.error("Unhandled alpha blend op used " + pspOP);
@@ -1686,7 +1746,7 @@ public class VideoEngine {
             case ALPHA: {
 
                 int blend_mode = GL.GL_FUNC_ADD;
-                int src = getBlendOp( normalArgument        & 0xF);
+                int src = getBlendSrc( normalArgument        & 0xF);
                 int dst = getBlendOp((normalArgument >> 4 ) & 0xF);
                 int op  =            (normalArgument >> 8 ) & 0xF;
 
@@ -1712,6 +1772,9 @@ public class VideoEngine {
 	            		break;
 
 	                case ALPHA_SOURCE_BLEND_OPERATION_ABSOLUTE_VALUE:
+	                	blend_mode = GL.GL_FUNC_ADD;
+	                	break;
+	                	
                     default:
 	                	VideoEngine.log.error("Unhandled blend mode " + op);
                         Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
@@ -1742,7 +1805,18 @@ public class VideoEngine {
                 log(helper.getCommandString(FFACE) + " " + ((normalArgument != 0) ? "clockwise" : "counter-clockwise"));
                 break;
             }
-
+            case DTE:
+	        	if(normalArgument != 0)
+	        	{
+	        		gl.glEnable(GL.GL_DITHER);
+	                log("sceGuEnable(GL_DITHER)");
+	        	}
+	        	else
+	        	{
+	                gl.glDisable(GL.GL_DITHER);
+	                log("sceGuDisable(GL_DITHER)");
+	        	}
+	        	break;
             case BCE:
                 if(normalArgument != 0)
                 {
@@ -1770,6 +1844,27 @@ public class VideoEngine {
                     log("sceGuDisable(GL_FOG)");
                 }
                 break;
+            case FCOL:
+	            	fog_color[0] = ((normalArgument      ) & 255) / 255.f;
+	            	fog_color[1] = ((normalArgument >>  8) & 255) / 255.f;
+	            	fog_color[2] = ((normalArgument >> 16) & 255) / 255.f;
+	            	fog_color[3] = 1.f;
+	            	gl.glFogfv(GL.GL_FOG_COLOR, fog_color, 0);
+	            	log("FCOL");
+	            break;
+            case FFAR:
+            	fog_far = floatArgument;
+            	break;
+            case FDIST:
+            	fog_dist = floatArgument;
+            	if((fog_far != 0.0f) && (fog_dist != 0.0f))
+            	{
+            		float end = fog_far;
+            		float start = end - (1/floatArgument);
+            		gl.glFogf( GL.GL_FOG_START, start );
+            		gl.glFogf( GL.GL_FOG_END, end );
+            	}
+            	break;
             case ABE:
                 if(normalArgument != 0) {
                     gl.glEnable(GL.GL_BLEND);
@@ -1780,6 +1875,16 @@ public class VideoEngine {
                     log("sceGuDisable(GU_BLEND)");
                 }
                 break;
+             case ATE:
+	            	if(normalArgument != 0) {
+	            		gl.glEnable(GL.GL_ALPHA_TEST);
+	            		log("sceGuEnable(GL_ALPHA_TEST)");
+	            	}
+	            	else {
+	            		 gl.glDisable(GL.GL_ALPHA_TEST);
+	                     log("sceGuDisable(GL_ALPHA_TEST)");
+	            	}
+	            	break;
             case ZTE:
                 if(normalArgument != 0) {
                     gl.glEnable(GL.GL_DEPTH_TEST);
@@ -1800,6 +1905,18 @@ public class VideoEngine {
                     log("sceGuDisable(GU_STENCIL_TEST)");
                 }
                 break;
+            case AAE:
+	            	if(normalArgument != 0)
+	            	{
+	            		gl.glEnable(GL.GL_LINE_SMOOTH);
+	            		gl.glHint(GL.GL_LINE_SMOOTH_HINT, GL.GL_NICEST);
+	            		log("sceGuEnable(GL_LINE_SMOOTH)");
+	            	}else
+	            	{
+	            		gl.glDisable(GL.GL_LINE_SMOOTH);
+	            		log("sceGuDisable(GL_LINE_SMOOTH)");
+	            	}
+	            	break;
             case LOE:
                 if(normalArgument != 0)
                 {
@@ -1847,6 +1964,50 @@ public class VideoEngine {
             	log ("sceGuDepthMask(disableWrites)");
             	break;
             }
+            
+	        case ATST: {
+	            	
+	            	int func = GL.GL_ALWAYS;
+	            	
+	            	switch(normalArgument & 0xFF) {
+	            	case ATST_NEVER_PASS_PIXEL:
+	            		func = GL.GL_NEVER;
+	            		break;
+	            		
+	            	case ATST_ALWAYS_PASS_PIXEL:
+	            		func = GL.GL_ALWAYS;
+	            		break;
+	            		
+	            	case ATST_PASS_PIXEL_IF_MATCHES:
+	            		func = GL.GL_EQUAL;
+	            		break;
+	            		
+	            	case ATST_PASS_PIXEL_IF_DIFFERS:
+	            		func = GL.GL_NOTEQUAL;
+	            		break;
+	            		
+	            	case ATST_PASS_PIXEL_IF_LESS:
+	            		func = GL.GL_LESS;
+	            		break;
+	            		
+	            	case ATST_PASS_PIXEL_IF_LESS_OR_EQUAL:
+	            		func = GL.GL_LEQUAL;
+	            		break;
+	            	
+	            	case ATST_PASS_PIXEL_IF_GREATER:
+	            		func = GL.GL_GREATER;
+	            		break;
+	            		
+	            	case ATST_PASS_PIXEL_IF_GREATER_OR_EQUAL:
+	            		func = GL.GL_GEQUAL;
+	            		break;
+	            	}
+	            	
+	            	gl.glAlphaFunc(func,floatArgument);
+	            	log ("sceGuAlphaFunc(" + func + "," + floatArgument + ")");
+	            	
+	            	break;
+	            }
 
             case STST: {
 
@@ -1891,6 +2052,25 @@ public class VideoEngine {
             	log ("sceGuStencilFunc(func, ref, mask)");
             	break;
             }
+
+            case NEARZ : {
+	            	nearZ = ( float )( int )(  short )normalArgument;
+	            }
+	            break;
+	            
+	        case FARZ : {
+	            	if(nearZ > ( float )( int )(  short )normalArgument)
+	            	{
+	            		farZ = nearZ;
+	            		nearZ = ( float )( int )(  short )normalArgument;
+	            	}
+	            	else
+	            		farZ = ( float )( int )(  short )normalArgument;
+	            	
+	            	gl.glDepthRange(nearZ, farZ);
+	            	log ("sceGuDepthRange("+ nearZ + " ," + farZ + ")");
+	            }
+	            break;
 
             case SOP: {
 
