@@ -2043,10 +2043,10 @@ public class VideoEngine {
 	            	int lineWidth = textureTx_sourceLineWidth;
 	            	int bpp = (textureTx_pixelSize == TRXKICK_16BIT_TEXEL_SIZE) ? 2 : 4;
 
-	            	// Generate a texture id if we don't have one
-	            	if (gl_texture_id[0] == 0)
-	                	gl.glGenTextures(1, gl_texture_id, 0);
-	            	gl.glBindTexture(GL.GL_TEXTURE_2D, gl_texture_id[0]);
+	            	int[] textures = new int[1];
+                	gl.glGenTextures(1, textures, 0);
+                	int texture = textures[0];
+	            	gl.glBindTexture(GL.GL_TEXTURE_2D, texture);
 
                     gl.glPushAttrib(GL.GL_ENABLE_BIT);
 	            	gl.glDisable(GL.GL_DEPTH_TEST);
@@ -2120,6 +2120,8 @@ public class VideoEngine {
 	                gl.glPopMatrix();
 
 	                gl.glPopAttrib();
+
+	                gl.glDeleteTextures(1, textures, 0);
             	}
             	break;
 
