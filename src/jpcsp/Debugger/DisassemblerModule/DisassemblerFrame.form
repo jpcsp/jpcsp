@@ -41,6 +41,18 @@
             <AuxValue name="JavaCodeGenerator_InitCodePost" type="java.lang.String" value="BranchOrJump.setEnabled(false); //disable as default"/>
           </AuxValues>
         </MenuItem>
+        <MenuItem class="javax.swing.JMenuItem" name="SetPCToCursor">
+          <Properties>
+            <Property name="actionCommand" type="java.lang.String" value="Set PC To Cursor"/>
+            <Property name="label" type="java.lang.String" value="Set PC To Cursor"/>
+          </Properties>
+          <AccessibilityProperties>
+            <Property name="AccessibleContext.accessibleName" type="java.lang.String" value="Set PC To Cursor"/>
+          </AccessibilityProperties>
+          <Events>
+            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="SetPCToCursorActionPerformed"/>
+          </Events>
+        </MenuItem>
       </SubComponents>
     </Container>
     <Container class="javax.swing.JPopupMenu" name="RegMenu">
@@ -90,7 +102,7 @@
           </Group>
           <Group type="102" alignment="1" attributes="0">
               <EmptySpace max="-2" attributes="0"/>
-              <Component id="disasmList" pref="503" max="32767" attributes="0"/>
+              <Component id="disasmList" min="-2" pref="503" max="-2" attributes="0"/>
               <EmptySpace type="separate" max="-2" attributes="0"/>
               <Component id="jTabbedPane1" min="-2" pref="223" max="-2" attributes="0"/>
               <EmptySpace min="-2" pref="19" max="-2" attributes="0"/>

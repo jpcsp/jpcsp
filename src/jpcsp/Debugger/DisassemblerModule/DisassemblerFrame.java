@@ -88,16 +88,15 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
     private void customizeStyledLabel(StyledLabel label, String text) {
         if(text.contains("<*>"))//breakpoint!
         {
-            label.addStyleRange(new StyleRange(0, text.length(), Font.BOLD, Color.RED));     
+            label.addStyleRange(new StyleRange(0, 3, Font.BOLD, Color.RED));     
         }
-        if(text.startsWith("   0" + Integer.toHexString(Emulator.getProcessor().cpu.pc).toUpperCase()))
+        if(text.contains(String.format("%08X:", Emulator.getProcessor().cpu.pc)))
         {
-             
-             label.addStyleRange(new StyleRange(0, 12, Font.BOLD, Color.GREEN)); 
+             label.addStyleRange(new StyleRange(3, 9, Font.BOLD, Color.BLACK)); 
         }
-        if(text.contains("[sce"))
+        if(text.contains(" ["))
         {
-            int find = text.indexOf("[sce");
+            int find = text.indexOf(" [");
             label.addStyleRange(new StyleRange(find, -1, Font.PLAIN, Color.BLUE)); 
         }
         if(text.contains("<=>"))
@@ -171,6 +170,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         CopyAddress = new javax.swing.JMenuItem();
         CopyAll = new javax.swing.JMenuItem();
         BranchOrJump = new javax.swing.JMenuItem();
+        SetPCToCursor = new javax.swing.JMenuItem();
         RegMenu = new javax.swing.JPopupMenu();
         CopyValue = new javax.swing.JMenuItem();
         disasmList = new javax.swing.JList(listmodel);
@@ -236,6 +236,16 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             }
         });
         DisMenu.add(BranchOrJump);
+
+        SetPCToCursor.setActionCommand("Set PC To Cursor");
+        SetPCToCursor.setLabel("Set PC To Cursor");
+        SetPCToCursor.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                SetPCToCursorActionPerformed(evt);
+            }
+        });
+        DisMenu.add(SetPCToCursor);
+        SetPCToCursor.getAccessibleContext().setAccessibleName("Set PC To Cursor");
 
         CopyValue.setText("Copy value");
         CopyValue.addActionListener(new java.awt.event.ActionListener() {
@@ -751,7 +761,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 .addContainerGap())
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(disasmList, javax.swing.GroupLayout.DEFAULT_SIZE, 503, Short.MAX_VALUE)
+                .addComponent(disasmList, javax.swing.GroupLayout.PREFERRED_SIZE, 503, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
                 .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 223, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(19, 19, 19))
@@ -942,6 +952,7 @@ public void lostOwnership( Clipboard aClipboard, Transferable aContents) {
 private void disasmListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_disasmListMouseClicked
       
        BranchOrJump.setEnabled(false);
+       SetPCToCursor.setEnabled(false);
        if (SwingUtilities.isRightMouseButton(evt) && !disasmList.isSelectionEmpty() && disasmList.locationToIndex(evt.getPoint()) == disasmList.getSelectedIndex())
        {
            //check if we can enable branch or jump address copy
@@ -952,7 +963,14 @@ private void disasmListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:
            {
                BranchOrJump.setEnabled(true);
            }
-            DisMenu.show(disasmList, evt.getX(), evt.getY());
+           
+           //check if we should enable set pc to cursor
+           int addr = DebuggerPC + disasmList.getSelectedIndex() * 4;
+           if (Memory.getInstance().isAddressGood(addr)) {
+               SetPCToCursor.setEnabled(true);
+           }
+           
+           DisMenu.show(disasmList, evt.getX(), evt.getY());
        }
 }//GEN-LAST:event_disasmListMouseClicked
 
@@ -1176,6 +1194,19 @@ private void onFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_onFoc
     haveFocus = false;
 }//GEN-LAST:event_onFocusLost
 
+private void SetPCToCursorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SetPCToCursorActionPerformed
+    int index = disasmList.getSelectedIndex();
+    if (index != -1) {
+        System.out.println(Integer.toHexString(DebuggerPC));
+        System.out.println(Integer.toHexString(index));
+        System.out.println(Integer.toHexString(DebuggerPC + index * 4));
+        Emulator.getProcessor().cpu.pc = DebuggerPC + index * 4;
+        
+        DebuggerPC = 0;
+        RefreshDebugger();
+    }
+}//GEN-LAST:event_SetPCToCursorActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton AddBreakpoint;
     private javax.swing.JMenuItem BranchOrJump;
@@ -1192,6 +1223,7 @@ private void onFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_onFoc
     private javax.swing.JPopupMenu RegMenu;
     private javax.swing.JButton ResetToPCbutton;
     private javax.swing.JToggleButton RunDebugger;
+    private javax.swing.JMenuItem SetPCToCursor;
     private javax.swing.JButton StepInto;
     private javax.swing.JList disasmList;
     private javax.swing.JButton jButton2;
