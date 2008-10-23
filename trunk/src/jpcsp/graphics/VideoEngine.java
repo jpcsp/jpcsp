@@ -1101,6 +1101,7 @@ public class VideoEngine {
                 	gl.glGenTextures(1, gl_texture_id, 0);
 
 
+                log(helper.getCommandString(TFLUSH) + " 0x" + Integer.toHexString(texture_base_pointer0) + "(" + texture_width0 + "," + texture_height0 + ")");
             	// Extract texture information with the minor conversion possible
             	// TODO: Get rid of information copying, and implement all the available formats
             	Memory 	mem = Memory.getInstance();
@@ -1117,6 +1118,7 @@ public class VideoEngine {
                     GL.GL_UNSIGNED_BYTE,
                 };
 
+                int textureByteAlignment = 4;   // 32 bits
             	switch (texture_storage) {
             		case TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED: {
             			switch (tex_clut_mode) {
@@ -1127,6 +1129,7 @@ public class VideoEngine {
             						return;
 
             					texture_type = texturetype_mapping[tex_clut_mode];
+            					textureByteAlignment = 2;  // 16 bits
 
             					if (!texture_swizzle) {
 		            				for (int i = 0, j = 0; i < texture_width0*texture_height0; i += 2, j++) {
@@ -1194,6 +1197,7 @@ public class VideoEngine {
             						return;
 
             					texture_type = texturetype_mapping[tex_clut_mode];
+                                textureByteAlignment = 2;  // 16 bits
 
             					if (!texture_swizzle) {
 		            				for (int i = 0; i < texture_width0*texture_height0; i++) {
@@ -1246,6 +1250,7 @@ public class VideoEngine {
                     case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551:
                     case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444: {
                         texture_type = texturetype_mapping[texture_storage];
+                        textureByteAlignment = 2;  // 16 bits
 
                         if (!texture_swizzle) {
                             /* TODO replace the loop with 1 line to ShortBuffer.wrap
@@ -1312,6 +1317,8 @@ public class VideoEngine {
             	gl.glBindTexture  (GL.GL_TEXTURE_2D, gl_texture_id[0]);
             	gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, tex_min_filter);
             	gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_mag_filter);
+                gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, textureByteAlignment);
+                gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, 0);   // ROW_LENGTH = width
 
             	int texture_format = texture_type == GL.GL_UNSIGNED_SHORT_5_6_5_REV ? GL.GL_RGB : GL.GL_RGBA;
 
