@@ -44,8 +44,8 @@ import jpcsp.Allegrex.CpuState; // New-Style Processor
 
 
 public class ModuleMgrForUser implements HLEModule {
-   // String[] banlist = {};
-    enum banlist {
+   // String[] bannedModulesList = {};
+    enum bannedModulesList {
         LIBFONT,  /*ace combat */
         sc_sascore,
         audiocodec,
@@ -118,8 +118,8 @@ public class ModuleMgrForUser implements HLEModule {
 	}
 
 	public void sceKernelLoadModule(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		Memory mem = Processor.memory;
+        CpuState cpu = processor.cpu; // New-Style Processor
+        Memory mem = Processor.memory;
 
         int path_addr = cpu.gpr[4] & 0x3fffffff;
         int flags = cpu.gpr[5];
@@ -129,27 +129,33 @@ public class ModuleMgrForUser implements HLEModule {
             + "',flags=0x" + Integer.toHexString(flags)
             + ",option=0x" + Integer.toHexString(option_addr) + ")");
 
-        if (name.startsWith("flash0:")) {
-        	// Simulate a successful loading
-            Modules.log.warn("IGNORED:sceKernelLoadModule(path='" + name + "'): module from flash0 not loaded");
-    		cpu.gpr[2] = SceModule.flashModuleUid;
-    		return;
-        }
+        String prxname = "UNKNOWN";
         int findprx = name.lastIndexOf("/");
         int endprx = name.toLowerCase().indexOf(".prx");
-        if (endprx >= 0) {
-	        String prxname = name.substring(findprx+1,endprx);
-	        for(banlist a : banlist.values())
-	        {
-	          if(a.name().matches(prxname))
-	          {
-	              Modules.log.warn("IGNORED:sceKernelLoadModule(path='" + name + "'): module from banlist not loaded");
-	              cpu.gpr[2] = SceModule.flashModuleUid;
-	              return;
-	          }
-	        }
+        if (endprx >= 0)
+            prxname = name.substring(findprx+1, endprx);
+
+        // Load flash0 modules as Java HLE modules
+        if (name.startsWith("flash0:")) {
+            // Simulate a successful loading
+            Modules.log.warn("IGNORED:sceKernelLoadModule(path='" + name + "'): module from flash0 not loaded");
+            cpu.gpr[2] = SceModule.flashModuleUid;
+            // TODO cpu.gpr[2] = HLEModuleManager.getInstance().LoadFlash0Module(prxname);
+            return;
+        }
+        
+        // Ban some modules
+        for (bannedModulesList bannedModuleName : bannedModulesList.values())
+        {
+            if (bannedModuleName.name().matches(prxname))
+            {
+                Modules.log.warn("IGNORED:sceKernelLoadModule(path='" + name + "'): module from banlist not loaded");
+                cpu.gpr[2] = SceModule.flashModuleUid;
+                return;
+            }
         }
 
+        // Load module as ELF
         cpu.gpr[2] = -1;
         try {
             SeekableDataInput moduleInput = pspiofilemgr.getInstance().getFile(name, flags);

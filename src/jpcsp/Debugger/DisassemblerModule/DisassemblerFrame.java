@@ -70,8 +70,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         listmodel = new DefaultListModel();
         initComponents();
         ViewTooltips.register(disasmList);
-        DebuggerPC = 0;
-            disasmList.setCellRenderer(new StyledListCellRenderer() {
+        disasmList.setCellRenderer(new StyledListCellRenderer() {
             @Override
             protected void customizeStyledLabel(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 super.customizeStyledLabel(list, value, index, isSelected, cellHasFocus);
@@ -81,28 +80,27 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 DisassemblerFrame.this.customizeStyledLabel(this, text);
             }
         });
-        RefreshDebugger();
-        
-        
+        RefreshDebugger(true);
     }
+
     private void customizeStyledLabel(StyledLabel label, String text) {
         if(text.contains("<*>"))//breakpoint!
         {
-            label.addStyleRange(new StyleRange(0, 3, Font.BOLD, Color.RED));     
+            label.addStyleRange(new StyleRange(0, 3, Font.BOLD, Color.RED));
         }
         if(text.contains(String.format("%08X:", Emulator.getProcessor().cpu.pc)))
         {
-             label.addStyleRange(new StyleRange(3, 9, Font.BOLD, Color.BLACK)); 
+             label.addStyleRange(new StyleRange(3, 9, Font.BOLD, Color.BLACK));
         }
         if(text.contains(" ["))
         {
             int find = text.indexOf(" [");
-            label.addStyleRange(new StyleRange(find, -1, Font.PLAIN, Color.BLUE)); 
+            label.addStyleRange(new StyleRange(find, -1, Font.PLAIN, Color.BLUE));
         }
         if(text.contains("<=>"))
         {
            int find = text.indexOf("<=>");
-           label.addStyleRange(new StyleRange(find, -1, Font.PLAIN, Color.GRAY));  
+           label.addStyleRange(new StyleRange(find, -1, Font.PLAIN, Color.GRAY));
         }
     }
 
@@ -113,27 +111,26 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
     /** Delete breakpoints and reset to PC */
     public void resetDebugger() {
         DeleteAllBreakpoints();
-        DebuggerPC = 0;
-        RefreshDebugger();
+        RefreshDebugger(true);
     }
 
-    public void RefreshDebugger() {
+    public void RefreshDebugger(boolean moveToPC) {
         CpuState cpu = Emulator.getProcessor().cpu;
         int pc;
         int cnt;
-        if (DebuggerPC == 0) {
+        if (moveToPC) {
             DebuggerPC = cpu.pc;
         }
         ViewTooltips.unregister(disasmList);
         synchronized(listmodel) {
 	        listmodel.clear();
-	
+
 	        for (pc = DebuggerPC , cnt = 0; pc < (DebuggerPC + 0x00000094); pc += 0x00000004, cnt++) {
 	            if (Memory.getInstance().isAddressGood(pc)) {
 	                int opcode = Memory.getInstance().read32(pc);
-	
+
 	                Instruction insn = Decoder.instruction(opcode);
-	
+
 	                if(breakpoints.indexOf(pc)!=-1) {
 	                    listmodel.addElement(String.format("<*>%08X:[%08X]: %s", pc, opcode, insn.disasm(pc, opcode)));
 	                } else {
@@ -237,15 +234,13 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         });
         DisMenu.add(BranchOrJump);
 
-        SetPCToCursor.setActionCommand("Set PC To Cursor");
-        SetPCToCursor.setLabel("Set PC To Cursor");
+        SetPCToCursor.setText("Set PC to Cursor");
         SetPCToCursor.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 SetPCToCursorActionPerformed(evt);
             }
         });
         DisMenu.add(SetPCToCursor);
-        SetPCToCursor.getAccessibleContext().setAccessibleName("Set PC To Cursor");
 
         CopyValue.setText("Copy value");
         CopyValue.addActionListener(new java.awt.event.ActionListener() {
@@ -783,22 +778,22 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 private void disasmListKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_disasmListKeyPressed
     if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_DOWN && disasmList.getSelectedIndex() == disasmList.getLastVisibleIndex()) {
         DebuggerPC += 4;
-        RefreshDebugger();
+        RefreshDebugger(false);
         evt.consume();
         disasmList.setSelectedIndex(disasmList.getLastVisibleIndex());
     } else if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_UP && disasmList.getSelectedIndex() == 0) {
         DebuggerPC -= 4;
-        RefreshDebugger();
+        RefreshDebugger(false);
         evt.consume();
         disasmList.setSelectedIndex(0);
     } else if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_PAGE_UP && disasmList.getSelectedIndex() == 0) {
         DebuggerPC -= 0x00000094;
-        RefreshDebugger();
+        RefreshDebugger(false);
         evt.consume();
         disasmList.setSelectedIndex(0);
     } else if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_PAGE_DOWN && disasmList.getSelectedIndex() == disasmList.getLastVisibleIndex()) {
         DebuggerPC += 0x00000094;
-        RefreshDebugger();
+        RefreshDebugger(false);
         evt.consume();
         disasmList.setSelectedIndex(disasmList.getLastVisibleIndex());
     }
@@ -809,7 +804,7 @@ private void disasmListMouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GE
         evt.consume();
         if (disasmList.getSelectedIndex() == 0 || disasmList.getSelectedIndex() == -1) {
             DebuggerPC -= 4;
-            RefreshDebugger();
+            RefreshDebugger(false);
             disasmList.setSelectedIndex(0);
         } else {
             disasmList.setSelectedIndex(disasmList.getSelectedIndex() - 1);
@@ -818,7 +813,7 @@ private void disasmListMouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GE
         evt.consume();
         if (disasmList.getSelectedIndex() == disasmList.getLastVisibleIndex()) {
             DebuggerPC += 4;
-            RefreshDebugger();
+            RefreshDebugger(false);
             disasmList.setSelectedIndex(disasmList.getLastVisibleIndex());
         } else {
             disasmList.setSelectedIndex(disasmList.getSelectedIndex() + 1);
@@ -827,8 +822,7 @@ private void disasmListMouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GE
 }//GEN-LAST:event_disasmListMouseWheelMoved
 
 private void ResetToPCbuttonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetToPCbuttonActionPerformed
-    DebuggerPC = Emulator.getProcessor().cpu.pc;
-    RefreshDebugger();
+    RefreshDebugger(true);
 }//GEN-LAST:event_ResetToPCbuttonActionPerformed
 
 private void JumpToAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_JumpToAddressActionPerformed
@@ -844,7 +838,7 @@ private void JumpToAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN
             return;
         }
         DebuggerPC = value;
-        RefreshDebugger();
+        RefreshDebugger(false);
 
 }//GEN-LAST:event_JumpToAddressActionPerformed
 
@@ -950,7 +944,7 @@ public void lostOwnership( Clipboard aClipboard, Transferable aContents) {
      //do nothing
  }
 private void disasmListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_disasmListMouseClicked
-      
+
        BranchOrJump.setEnabled(false);
        SetPCToCursor.setEnabled(false);
        if (SwingUtilities.isRightMouseButton(evt) && !disasmList.isSelectionEmpty() && disasmList.locationToIndex(evt.getPoint()) == disasmList.getSelectedIndex())
@@ -963,13 +957,13 @@ private void disasmListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:
            {
                BranchOrJump.setEnabled(true);
            }
-           
+
            //check if we should enable set pc to cursor
            int addr = DebuggerPC + disasmList.getSelectedIndex() * 4;
            if (Memory.getInstance().isAddressGood(addr)) {
                SetPCToCursor.setEnabled(true);
            }
-           
+
            DisMenu.show(disasmList, evt.getX(), evt.getY());
        }
 }//GEN-LAST:event_disasmListMouseClicked
@@ -982,7 +976,7 @@ private void AddBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//GEN
             int addr = Utilities.parseAddress(address);
             if(!breakpoints.contains(addr))
             	breakpoints.add(addr);
-            RefreshDebugger();
+            RefreshDebugger(false);
         } catch(NumberFormatException e) {
             // Ignore it, probably already a breakpoint there
         }
@@ -995,7 +989,7 @@ private void DeleteAllBreakpointsActionPerformed(java.awt.event.ActionEvent evt)
     DeleteAllBreakpoints();
 
     // Move this call to DeleteAllBreakpoints()?
-    RefreshDebugger();
+    RefreshDebugger(false);
 }//GEN-LAST:event_DeleteAllBreakpointsActionPerformed
 
 public void DeleteAllBreakpoints() {
@@ -1014,7 +1008,7 @@ private void DeleteBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//
               int addr = Utilities.parseAddress(address);
               int b = breakpoints.indexOf(addr);
               breakpoints.remove(b);
-              RefreshDebugger();
+              RefreshDebugger(false);
             }
           }
           else
@@ -1037,12 +1031,10 @@ public void step() {
     //check if there is a breakpoint
     if (wantStep || (breakpoints.size() > 0 && breakpoints.indexOf(Emulator.getProcessor().cpu.pc) != -1)) {
     	wantStep = false;
-        DebuggerPC = 0;
         Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_BREAKPOINT);
 
         /* done by PauseEmu
-        DebuggerPC = 0;
-        RefreshDebugger();
+        RefreshDebugger(true);
         RefreshButtons();
         if (memview != null)
             memview.RefreshMemory();
@@ -1053,8 +1045,9 @@ public void step() {
 private void PauseDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PauseDebuggerActionPerformed
     Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_PAUSE);
 
-    DebuggerPC = 0;
-    RefreshDebugger();
+    /* done by PauseEmu
+    RefreshDebugger(true);
+    */
 }//GEN-LAST:event_PauseDebuggerActionPerformed
 
 // Called from Emulator
@@ -1197,13 +1190,12 @@ private void onFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_onFoc
 private void SetPCToCursorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SetPCToCursorActionPerformed
     int index = disasmList.getSelectedIndex();
     if (index != -1) {
-        System.out.println(Integer.toHexString(DebuggerPC));
-        System.out.println(Integer.toHexString(index));
-        System.out.println(Integer.toHexString(DebuggerPC + index * 4));
         Emulator.getProcessor().cpu.pc = DebuggerPC + index * 4;
-        
-        DebuggerPC = 0;
-        RefreshDebugger();
+        RefreshDebugger(true);
+    } else {
+        System.out.println("dpc: " + Integer.toHexString(DebuggerPC));
+        System.out.println("idx: " + Integer.toHexString(index));
+        System.out.println("npc: " + Integer.toHexString(DebuggerPC + index * 4));
     }
 }//GEN-LAST:event_SetPCToCursorActionPerformed
 
