@@ -304,7 +304,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         gl.glDisable(GL.GL_LIGHTING);
 
         gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, getPixelFormatBytes(pixelformatFb));
-    	gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, bufferwidthFb);
+        gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, bufferwidthFb);
 
     	gl.glMatrixMode(GL.GL_PROJECTION);
         gl.glPushMatrix();
