@@ -321,7 +321,6 @@ public class VideoEngine {
     	return GL.GL_DST_COLOR;
     }
 
-    //hack based on pspplayer
     private int getBlendOp (int pspOP) {
     	switch (pspOP) {
 		    case ALPHA_SOURCE_COLOR:
@@ -336,6 +335,7 @@ public class VideoEngine {
 		    case ALPHA_ONE_MINUS_SOURCE_ALPHA:
 	    		return GL.GL_ONE_MINUS_SRC_ALPHA;
 
+			// hacks based on pspplayer
 		    case ALPHA_DESTINATION_COLOR:
 		    	return GL.GL_DST_ALPHA;
 
