@@ -25,7 +25,7 @@ import jpcsp.Emulator;
 public class LoadExec {
     private static LoadExec instance;
 
-    public static LoadExec get_instance() {
+    public static LoadExec getInstance() {
         if (instance == null) {
             instance = new LoadExec();
         }

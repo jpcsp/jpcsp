@@ -96,7 +96,7 @@ public class ThreadMan {
 
     //private static int stackAllocated;
 
-    public static ThreadMan get_instance() {
+    public static ThreadMan getInstance() {
         if (instance == null) {
             instance = new ThreadMan();
         }
@@ -119,7 +119,7 @@ public class ThreadMan {
         waitingThreads= new ArrayList<Integer>();
 
         // Clear stack allocation info
-        //pspSysMem.get_instance().malloc(2, pspSysMem.PSP_SMEM_Addr, 0x000fffff, 0x09f00000);
+        //pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_Addr, 0x000fffff, 0x09f00000);
         //stackAllocated = 0;
 
         install_idle_threads();
@@ -179,7 +179,7 @@ public class ThreadMan {
             | ((0x201c & 0x000fffff) << 6);
 
         // TODO
-        //pspSysMem.get_instance().malloc(1, pspSysMem.PSP_SMEM_Addr, 16, MemoryMap.START_RAM);
+        //pspSysMem.getInstance().malloc(1, pspSysMem.PSP_SMEM_Addr, 16, MemoryMap.START_RAM);
 
         Memory.getInstance().write32(MemoryMap.START_RAM + 0, instruction_addiu);
         Memory.getInstance().write32(MemoryMap.START_RAM + 4, instruction_lui);
@@ -207,7 +207,7 @@ public class ThreadMan {
             if (cpu.pc == 0 && cpu.gpr[31] == 0) {
                 // Thread has exited
                 Modules.log.debug("Thread exit detected SceUID=" + Integer.toHexString(current_thread.uid)
-                    + " name:'" + current_thread.name + "' return:" + cpu.gpr[2]);
+                    + " name:'" + current_thread.name + "' return:0x" + Integer.toHexString(cpu.gpr[2]));
                 current_thread.exitStatus = cpu.gpr[2]; // v0
                 current_thread.status = PspThreadStatus.PSP_THREAD_STOPPED;
                 onThreadStopped(current_thread);
@@ -259,7 +259,7 @@ public class ThreadMan {
                 if (thread.do_delete) {
                     // cleanup thread - free the stack
                     if (thread.stack_addr != 0) {
-                        pspSysMem.get_instance().free(thread.stack_addr);
+                        pspSysMem.getInstance().free(thread.stack_addr);
                     }
                     // TODO remove from any internal lists? such as sema waiting lists
 
@@ -840,9 +840,9 @@ public class ThreadMan {
             //stackAllocated += size;
             //return p;
 
-            //int p = pspSysMem.get_instance().malloc(2, pspSysMem.PSP_SMEM_HighAligned, size, 0x1000);
-            int p = pspSysMem.get_instance().malloc(2, pspSysMem.PSP_SMEM_High, size, 0);
-            pspSysMem.get_instance().addSysMemInfo(2, "ThreadMan-Stack", pspSysMem.PSP_SMEM_High, size, 0);
+            //int p = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_HighAligned, size, 0x1000);
+            int p = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_High, size, 0);
+            pspSysMem.getInstance().addSysMemInfo(2, "ThreadMan-Stack", pspSysMem.PSP_SMEM_High, size, 0);
             p += size;
 
             return p;

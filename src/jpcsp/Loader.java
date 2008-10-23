@@ -320,7 +320,7 @@ public class Loader {
             + String.format("%08x", loadAddressLow)
             + " for module '" + module.pspfilename + "'");
 
-        pspSysMem SysMemUserForUserModule = pspSysMem.get_instance();
+        pspSysMem SysMemUserForUserModule = pspSysMem.getInstance();
         int addr = SysMemUserForUserModule.malloc(2, pspSysMem.PSP_SMEM_Addr, loadAddressHigh - loadAddressLow, loadAddressLow);
         if (addr != loadAddressLow) {
             Memory.log.warn("Failed to properly reserve memory consumed by module " + module.moduleInfo.getM_namez()
@@ -554,7 +554,7 @@ public class Loader {
 
     private void ProcessUnresolvedImports() {
         Memory mem = Memory.getInstance();
-        NIDMapper nidMapper = NIDMapper.get_instance();
+        NIDMapper nidMapper = NIDMapper.getInstance();
         int numberoffailedNIDS = 0;
         int numberofmappedNIDS = 0;
 
@@ -683,7 +683,7 @@ public class Loader {
             return;
         }
 
-        NIDMapper nidMapper = NIDMapper.get_instance();
+        NIDMapper nidMapper = NIDMapper.getInstance();
         Memory mem = Memory.getInstance();
         int entHeadersAddress = (int)(baseAddress + shdr.getSh_addr());
         int entHeadersCount = (int)(shdr.getSh_size() / Elf32EntHeader.sizeof());
@@ -780,7 +780,7 @@ public class Loader {
            System.out.println(Integer.toHexString(sectionAddress) + " size = " + shdr.getSh_size());
            for(int i =0; i< shdr.getSh_size(); i+=4)
            {
-             int memread32 = Memory.get_instance().read32(sectionAddress+i);
+             int memread32 = Memory.getInstance().read32(sectionAddress+i);
              //System.out.println(memread32);
              jpcsp.Allegrex.Decoder.instruction(memread32).increaseCount();
            }

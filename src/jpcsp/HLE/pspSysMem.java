@@ -73,7 +73,7 @@ public class pspSysMem {
 
     private pspSysMem() { }
 
-    public static pspSysMem get_instance() {
+    public static pspSysMem getInstance() {
         if (instance == null) {
             instance = new pspSysMem();
         }

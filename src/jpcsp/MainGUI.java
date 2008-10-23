@@ -108,8 +108,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         setTitle(version);
 
         /*add glcanvas to frame and pack frame to get the canvas size*/
-        getContentPane().add(pspdisplay.get_instance(), java.awt.BorderLayout.CENTER);
-        pspdisplay.get_instance().addKeyListener(this);
+        getContentPane().add(pspdisplay.getInstance(), java.awt.BorderLayout.CENTER);
+        pspdisplay.getInstance().addKeyListener(this);
         this.addComponentListener(this);
         pack();
 
@@ -495,8 +495,8 @@ public void loadFile(File file) {
         roChannel.close(); // doesn't seem to work properly :(
         String findpath = file.getParent();
         //System.out.println(findpath);
-        pspiofilemgr.get_instance().setfilepath(findpath);
-        pspiofilemgr.get_instance().setIsoReader(null);
+        pspiofilemgr.getInstance().setfilepath(findpath);
+        pspiofilemgr.getInstance().setIsoReader(null);
         jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(null);
 
         if (instructioncounter != null)
@@ -722,9 +722,9 @@ public void loadUMD(File file) {
 
         if (loadUMD(iso, "PSP_GAME/SYSDIR/BOOT.BIN") ||
             loadUMD(iso, "PSP_GAME/SYSDIR/EBOOT.BIN")) {
-            pspiofilemgr.get_instance().setfilepath("disc0/");
-            //pspiofilemgr.get_instance().setfilepath("disc0/PSP_GAME/SYSDIR");
-            pspiofilemgr.get_instance().setIsoReader(iso);
+            pspiofilemgr.getInstance().setfilepath("disc0/");
+            //pspiofilemgr.getInstance().setfilepath("disc0/PSP_GAME/SYSDIR");
+            pspiofilemgr.getInstance().setIsoReader(iso);
             jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(iso);
 
             if (instructioncounter != null)

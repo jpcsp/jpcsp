@@ -34,7 +34,7 @@ public class psputils {
     private int initialclocks;
     private HashMap<Integer, SceKernelUtilsMt19937Context> Mt19937List;
 
-    public static psputils get_instance() {
+    public static psputils getInstance() {
         if (instance == null) {
             instance = new psputils();
         }

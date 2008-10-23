@@ -84,7 +84,7 @@ public class FplManager {
                 for (int i = 0; i < info.numBlocks; i++) {
                     int addr = info.blockAddress[i];
                     if (addr != 0) {
-                        pspSysMem.get_instance().free(addr);
+                        pspSysMem.getInstance().free(addr);
                         info.blockAddress[i] = 0;
                         info.freeBlocks++;
                     }
@@ -103,13 +103,13 @@ public class FplManager {
         if (info.freeBlocks == 0 || (block = info.findFreeBlock()) == -1) {
             Modules.log.warn("tryAllocateFpl no free blocks (numBlocks=" + info.numBlocks + ")");
             return 0;
-        } else if (info.blockSize > pspSysMem.get_instance().maxFreeMemSize()) {
-            Modules.log.warn("tryAllocateFpl no free mem (want=" + info.blockSize + ",free=" + pspSysMem.get_instance().maxFreeMemSize() + ")");
+        } else if (info.blockSize > pspSysMem.getInstance().maxFreeMemSize()) {
+            Modules.log.warn("tryAllocateFpl no free mem (want=" + info.blockSize + ",free=" + pspSysMem.getInstance().maxFreeMemSize() + ")");
             return 0;
         } else {
-            addr = pspSysMem.get_instance().malloc(info.partitionid, pspSysMem.PSP_SMEM_Low, info.blockSize, 0);
+            addr = pspSysMem.getInstance().malloc(info.partitionid, pspSysMem.PSP_SMEM_Low, info.blockSize, 0);
             if (addr != 0) {
-                pspSysMem.get_instance().addSysMemInfo(info.partitionid, "ThreadMan-Fpl", pspSysMem.PSP_SMEM_Low, info.blockSize, 0);
+                pspSysMem.getInstance().addSysMemInfo(info.partitionid, "ThreadMan-Fpl", pspSysMem.PSP_SMEM_Low, info.blockSize, 0);
                 info.blockAddress[block] = addr;
                 info.freeBlocks--;
             }
@@ -268,7 +268,7 @@ public class FplManager {
                 Modules.log.warn("sceKernelFreeFpl unknown block=0x" + Integer.toHexString(data_addr));
                 cpu.gpr[2] = -1;
             } else {
-                pspSysMem.get_instance().free(data_addr);
+                pspSysMem.getInstance().free(data_addr);
                 info.blockAddress[block] = 0;
                 info.freeBlocks++;
                 cpu.gpr[2] = 0;

@@ -39,7 +39,7 @@ import jpcsp.util.Utilities;
  */
 public final class pspdisplay extends GLCanvas implements GLEventListener {
     private static pspdisplay instance;
-    public static pspdisplay get_instance() {
+    public static pspdisplay getInstance() {
         if (instance == null) {
 
             // We need to ask for stencil buffer
@@ -645,25 +645,25 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     public void sceDisplayWaitVblankStart() {
         // TODO: implement sceDisplayWaitVblankStart
         Emulator.getProcessor().cpu.gpr[2] = 0;
-        ThreadMan.get_instance().yieldCurrentThread();
+        ThreadMan.getInstance().yieldCurrentThread();
     }
 
     public void sceDisplayWaitVblankStartCB() {
         // TODO: implement sceDisplayWaitVblankStartCB
         Emulator.getProcessor().cpu.gpr[2] = 0;
-        ThreadMan.get_instance().yieldCurrentThread();
+        ThreadMan.getInstance().yieldCurrentThread();
     }
 
     public void sceDisplayWaitVblank() {
         // TODO: implement sceDisplayWaitVblank
         Emulator.getProcessor().cpu.gpr[2] = 0;
-        ThreadMan.get_instance().yieldCurrentThread();
+        ThreadMan.getInstance().yieldCurrentThread();
     }
 
     public void sceDisplayWaitVblankCB() {
         // TODO: implement sceDisplayWaitVblankCB
         Emulator.getProcessor().cpu.gpr[2] = 0;
-        ThreadMan.get_instance().yieldCurrentThread();
+        ThreadMan.getInstance().yieldCurrentThread();
     }
 
     public void sceDisplayGetCurrentHcount() {

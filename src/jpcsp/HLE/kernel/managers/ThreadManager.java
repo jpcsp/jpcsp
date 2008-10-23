@@ -132,7 +132,7 @@ public class ThreadManager {
                 ((jpcsp.Allegrex.Opcodes.SPECIAL & 0x3f) << 26) | (jpcsp.Allegrex.Opcodes.SYSCALL & 0x3f) | ((0x201c & 0x000fffff) << 6);
 
         // TODO
-        //pspSysMem.get_instance().malloc(1, pspSysMem.PSP_SMEM_Addr, 16, MemoryMap.START_RAM);
+        //pspSysMem.getInstance().malloc(1, pspSysMem.PSP_SMEM_Addr, 16, MemoryMap.START_RAM);
 
         Memory.getInstance().write32(MemoryMap.START_RAM + 0, instruction_addiu);
         Memory.getInstance().write32(MemoryMap.START_RAM + 4, instruction_lui);
@@ -159,7 +159,8 @@ public class ThreadManager {
             // Hook jr ra to 0 (thread function returned)
             if (cpu.pc == 0 && cpu.gpr[31] == 0) {
                 // Thread has exited
-                Modules.log.debug("Thread exit detected SceUid:" + Integer.toHexString(currentThread.uid) + " name:'" + currentThread.name + "' return:" + cpu.gpr[2]);
+                Modules.log.debug("Thread exit detected SceUid:" + Integer.toHexString(currentThread.uid)
+                    + " name:'" + currentThread.name + "' return:" + Integer.toHexString(cpu.gpr[2]));
                 currentThread.exitStatus = cpu.gpr[2]; // v0
                 currentThread.status = ThreadStatus.THREAD_STOPPED;
                 onThreadStopped(currentThread);
@@ -211,7 +212,7 @@ public class ThreadManager {
                 if (thread.do_delete) {
                     // cleanup thread - free the stack
                     if (thread.stack_addr != 0) {
-                        pspSysMem.get_instance().free(thread.stack_addr);
+                        pspSysMem.getInstance().free(thread.stack_addr);
                     }
                     // TODO remove from any internal lists? such as sema waiting lists
 

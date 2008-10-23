@@ -60,7 +60,7 @@ public class Controller {
             return;
         }
 
-        jpcsp.HLE.pspctrl.get_instance().setButtons(Lx, Ly, Buttons);
+        jpcsp.HLE.pspctrl.getInstance().setButtons(Lx, Ly, Buttons);
         lastUpdate = now;
     }
 
@@ -70,7 +70,7 @@ public class Controller {
             return;
 
         /* in digital mode, analoge keys behave as the digital keys (right?) */
-        if (jpcsp.HLE.pspctrl.get_instance().isModeDigital()) {
+        if (jpcsp.HLE.pspctrl.getInstance().isModeDigital()) {
             switch (key) {
                 case ANDOWN:    key = keyCode.DOWN; break;
                 case ANUP:      key = keyCode.UP; break;
@@ -116,7 +116,7 @@ public class Controller {
         if (key == null)
             return;
 
-        if (jpcsp.HLE.pspctrl.get_instance().isModeDigital()) {
+        if (jpcsp.HLE.pspctrl.getInstance().isModeDigital()) {
             switch (key) {
                 case ANDOWN:    key = keyCode.DOWN; break;
                 case ANUP:      key = keyCode.UP; break;

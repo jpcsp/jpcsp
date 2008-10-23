@@ -266,7 +266,7 @@ public class Memory {
         try {
             int page = indexFromAddr(address);
             buf.put(page + (address & PAGE_MASK), data);
-            pspdisplay.get_instance().write8(address, data);
+            pspdisplay.getInstance().write8(address, data);
         } catch (Exception e) {
             Memory.log.error("write8 - " + e.getMessage());
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_WRITE);
@@ -276,7 +276,7 @@ public class Memory {
     public void write8(int page, int address, byte data) {
         try {
             buf.put(page + (address & PAGE_MASK), data);
-            pspdisplay.get_instance().write8(address, data);
+            pspdisplay.getInstance().write8(address, data);
         } catch (Exception e) {
             Memory.log.error("write8 - " + e.getMessage());
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_WRITE);
@@ -287,7 +287,7 @@ public class Memory {
         try {
             int page = indexFromAddr(address);
             buf.putShort(page + (address & PAGE_MASK), data);
-            pspdisplay.get_instance().write16(address, data);
+            pspdisplay.getInstance().write16(address, data);
         } catch (Exception e) {
             Memory.log.error("write16 - " + e.getMessage());
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_WRITE);
@@ -298,7 +298,7 @@ public class Memory {
         try {
             int page = indexFromAddr(address);
             buf.putInt(page + (address & PAGE_MASK), data);
-            pspdisplay.get_instance().write32(address, data);
+            pspdisplay.getInstance().write32(address, data);
         } catch (Exception e) {
             Memory.log.error("write32 - " + e.getMessage());
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_WRITE);
@@ -308,7 +308,7 @@ public class Memory {
     public void write32(int page, int address, int data) {
         try {
             buf.putInt(page + (address & PAGE_MASK), data);
-            pspdisplay.get_instance().write32(address, data);
+            pspdisplay.getInstance().write32(address, data);
         } catch (Exception e) {
             Memory.log.error("write32 - " + e.getMessage());
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_WRITE);
@@ -319,7 +319,7 @@ public class Memory {
         try {
             int page = indexFromAddr(address);
             buf.putLong(page + (address & PAGE_MASK), data);
-            //pspdisplay.get_instance().write64(address, data);
+            //pspdisplay.getInstance().write64(address, data);
         } catch (Exception e) {
             Memory.log.error("write64 - " + e.getMessage());
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_WRITE);

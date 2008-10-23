@@ -104,12 +104,12 @@ public class Emulator implements Runnable {
         // Gets set in ThreadMan cpu.gpr[31] = 0x08000004; //ra, should this be 0?
         // All other registers are uninitialised/random values
 
-        jpcsp.HLE.ThreadMan.get_instance().Initialise(cpu.pc, module.moduleInfo.getM_attr(), pspfilename);
+        jpcsp.HLE.ThreadMan.getInstance().Initialise(cpu.pc, module.moduleInfo.getM_attr(), pspfilename);
         jpcsp.HLE.kernel.Managers.fpl.initialize();
-        jpcsp.HLE.psputils.get_instance().Initialise();
-        jpcsp.HLE.pspge.get_instance().Initialise();
-        jpcsp.HLE.pspdisplay.get_instance().Initialise();
-        jpcsp.HLE.pspiofilemgr.get_instance().Initialise();
+        jpcsp.HLE.psputils.getInstance().Initialise();
+        jpcsp.HLE.pspge.getInstance().Initialise();
+        jpcsp.HLE.pspdisplay.getInstance().Initialise();
+        jpcsp.HLE.pspiofilemgr.getInstance().Initialise();
 
         if (memview != null)
             memview.RefreshMemory();
@@ -121,11 +121,11 @@ public class Emulator implements Runnable {
         getProcessor().reset();
         Memory.getInstance().Initialise();
 
-        NIDMapper.get_instance().Initialise();
+        NIDMapper.getInstance().Initialise();
         Loader.getInstance().Initialise();
 
         jpcsp.HLE.modules.HLEModuleManager.getInstance().Initialise();
-        jpcsp.HLE.pspSysMem.get_instance().Initialise();
+        jpcsp.HLE.pspSysMem.getInstance().Initialise();
     }
 
     @Override
@@ -144,9 +144,9 @@ public class Emulator implements Runnable {
                 recompiler.run();
             } else {
                 processor.step();
-                jpcsp.HLE.pspge.get_instance().step();
-                jpcsp.HLE.ThreadMan.get_instance().step();
-                jpcsp.HLE.pspdisplay.get_instance().step();
+                jpcsp.HLE.pspge.getInstance().step();
+                jpcsp.HLE.ThreadMan.getInstance().step();
+                jpcsp.HLE.pspdisplay.getInstance().step();
                 jpcsp.HLE.modules.HLEModuleManager.getInstance().step();
                 controller.checkControllerState();
 
@@ -176,7 +176,7 @@ public class Emulator implements Runnable {
             mainThread.start();
         }
 
-        jpcsp.HLE.ThreadMan.get_instance().clearSyscallFreeCycles();
+        jpcsp.HLE.ThreadMan.getInstance().clearSyscallFreeCycles();
 
         gui.RefreshButtons();
         if (debugger != null)

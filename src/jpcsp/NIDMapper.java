@@ -23,7 +23,7 @@ public class NIDMapper {
     private HashMap<Integer, Integer> nidToSyscall;
     private HashMap<String, HashMap<Integer, Integer>> moduleToNidTable;
 
-    public static NIDMapper get_instance() {
+    public static NIDMapper getInstance() {
         if (instance == null) {
             instance = new NIDMapper();
         }

@@ -22,13 +22,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE;
 
-import jpcsp.HLE.kernel.types.SceUid;
+import jpcsp.HLE.kernel.types.ScePspDateTime;
+import jpcsp.HLE.kernel.types.SceIoStat;
+import jpcsp.HLE.kernel.types.SceIoDirent;
 import jpcsp.filesystems.*;
 import jpcsp.filesystems.umdiso.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.util.HashMap;
 import java.util.Iterator;
 import jpcsp.Emulator;
@@ -76,7 +77,7 @@ public class pspiofilemgr {
     private String filepath; // current working directory on PC
     private UmdIsoReader iso;
 
-    public static pspiofilemgr get_instance() {
+    public static pspiofilemgr getInstance() {
         if (instance == null) {
             instance = new pspiofilemgr();
         }
@@ -202,7 +203,7 @@ public class pspiofilemgr {
         sceIoPollAsync(uid, res_addr);
 
         // wait = block, we currently load files immediately so emulate a yield instead
-        ThreadMan.get_instance().yieldCurrentThread();
+        ThreadMan.getInstance().yieldCurrentThread();
     }
 
     public void sceIoWaitAsyncCB(int uid, int res_addr) {
@@ -211,7 +212,7 @@ public class pspiofilemgr {
 
         // wait = block, we currently load files immediately so emulate a yield instead
         // TODO check callbacks
-        ThreadMan.get_instance().yieldCurrentThread();
+        ThreadMan.getInstance().yieldCurrentThread();
     }
 
     public SeekableDataInput getFile(String filename, int flags) {
@@ -378,7 +379,7 @@ public class pspiofilemgr {
                         IoInfo info = new IoInfo(raf, mode, flags, permissions);
                         info.result = info.uid;
                         Emulator.getProcessor().cpu.gpr[2] = info.uid;
-                        if (debug) Modules.log.debug("sceIoOpen assigned uid = " + info.uid);
+                        if (debug) Modules.log.debug("sceIoOpen assigned uid = 0x" + Integer.toHexString(info.uid));
                     }
                 }
             } else {
