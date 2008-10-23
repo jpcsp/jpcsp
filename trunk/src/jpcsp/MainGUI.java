@@ -436,7 +436,7 @@ private void EnterDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     else
     {
         disasm.setVisible(true);
-        disasm.RefreshDebugger();
+        disasm.RefreshDebugger(false);
         disasm.setMemoryViewer(memoryview);
     }
 }//GEN-LAST:event_EnterDebuggerActionPerformed

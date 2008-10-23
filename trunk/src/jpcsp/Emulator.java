@@ -196,7 +196,7 @@ public class Emulator implements Runnable {
 
                 if (debugger != null) {
                     debugger.RefreshButtons();
-                    debugger.RefreshDebugger();
+                    debugger.RefreshDebugger(true);
                 }
 
                 if (memview != null)
@@ -230,7 +230,7 @@ public class Emulator implements Runnable {
 
                 if (debugger != null) {
                     debugger.RefreshButtons();
-                    debugger.RefreshDebugger();
+                    debugger.RefreshDebugger(true);
                 }
 
                 if (memview != null)

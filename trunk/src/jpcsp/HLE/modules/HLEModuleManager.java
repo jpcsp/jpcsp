@@ -50,9 +50,14 @@ public class HLEModuleManager {
     private List<HLEThread> hleThreadList;
     private List<SceModule> sceModuleList;
 
+    private HashMap<String, List<HLEModule>> flash0prxMap;
+
+    /** The current firmware version we are using */
+    private int firmwareVersion;
+
     // TODO add more modules here
     private HLEModule[] defaultModules = new HLEModule[] {
-        new Sample(),
+        new Sample(), // For testing purposes
         Modules.StdioForUserModule,
         Modules.sceUmdUserModule,
         Modules.scePowerModule,
@@ -82,15 +87,50 @@ public class HLEModuleManager {
         hleThreadList = new LinkedList<HLEThread>();
         sceModuleList = new LinkedList<SceModule>();
 
-        installDefaultModules(pspSysMem.PSP_FIRMWARE_150);
+        // TODO use fw version from PSF, unless it's a banned PSF (such as used by pspsdk)
+        firmwareVersion = pspSysMem.PSP_FIRMWARE_150;
+        installDefaultModules();
+        initialiseFlash0PRXMap();
     }
 
-    /** @param version The firmware version of the module to load.
-     * @see pspSysMem */
-    private void installDefaultModules(int version) {
+    private void installDefaultModules() {
         for (HLEModule module : defaultModules) {
-            module.installModule(this, version);
+            module.installModule(this, firmwareVersion);
         }
+    }
+
+    // TODO add here modules in flash that aren't loaded by default
+    // We could add all modules but I think we just need the unloaded ones (fiveofhearts)
+    private void initialiseFlash0PRXMap() {
+        flash0prxMap = new HashMap<String, List<HLEModule>>();
+        /* TODO
+        List<HLEModule> prx;
+
+        prx = new LinkedList<HLEModule>();
+        prx.add(Modules.sceNetIfhandleModule);
+        prx.add(Modules.sceNetIfhandle_libModule);
+        prx.add(Modules.sceNetIfhandle_driverModule);
+        flash0prxMap.put("ifhandle.prx", prx);
+
+        prx = new LinkedList<HLEModule>();
+        prx.add(Modules.sceNetModule);
+        prx.add(Modules.sceNet_libModule);
+        flash0prxMap.put("pspnet.prx", prx);
+        */
+    }
+
+    /** @return the UID assigned to the module or negative on error */
+    public int LoadFlash0Module(String prxname) {
+        int uid = -1;
+        List<HLEModule> prx = flash0prxMap.get(prxname);
+        if (prx != null) {
+            for (HLEModule module : prx) {
+                module.installModule(this, firmwareVersion);
+            }
+            // TODO assign a proper uid and SceModule struct
+            uid = SceModule.flashModuleUid;
+        }
+        return uid;
     }
 
     /** Instead use addFunction. */
