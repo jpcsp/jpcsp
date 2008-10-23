@@ -40,7 +40,7 @@ public class pspge {
     public volatile boolean waitingForSync;
     public volatile boolean syncDone;
 
-    public static pspge get_instance() {
+    public static pspge getInstance() {
         if (instance == null) {
             instance = new pspge();
         }
@@ -64,12 +64,12 @@ public class pspge {
         if (waitingForSync) {
             if (syncDone) {
                 VideoEngine.log.debug("syncDone");
-                ThreadMan.get_instance().unblockThread(syncThreadId);
+                ThreadMan.getInstance().unblockThread(syncThreadId);
                 waitingForSync = false;
                 syncDone = false;
             } else {
                 // I don't like this...
-                pspdisplay.get_instance().setDirty(true);
+                pspdisplay.getInstance().setDirty(true);
             }
         }
     }
@@ -102,7 +102,7 @@ public class pspge {
             VideoEngine.log.debug("New list " + displayList.toString());
 
             if (displayList.status == DisplayList.QUEUED)
-                pspdisplay.get_instance().setDirty(true);
+                pspdisplay.getInstance().setDirty(true);
 
             Emulator.getProcessor().cpu.gpr[2] = displayList.id;
         } else {
@@ -139,7 +139,7 @@ public class pspge {
             displayList.stallAddress = stallAddress;
             if (displayList.pc != displayList.stallAddress) {
                 displayList.status = DisplayList.QUEUED;
-                pspdisplay.get_instance().setDirty(true);
+                pspdisplay.getInstance().setDirty(true);
             }
 
             Emulator.getProcessor().cpu.gpr[2] = 0;
@@ -160,10 +160,10 @@ public class pspge {
 
         Emulator.getProcessor().cpu.gpr[2] = 0;
 
-        if (!pspdisplay.get_instance().disableGE) {
+        if (!pspdisplay.getInstance().disableGE) {
             if (syncType == DisplayList.QUEUED) {
                 // We always queue straight away so I guess we can return straight away? (fiveofhearts)
-                ThreadMan.get_instance().yieldCurrentThread();
+                ThreadMan.getInstance().yieldCurrentThread();
             } else {
                 int count = 0;
                 DisplayList.Lock();
@@ -177,15 +177,15 @@ public class pspge {
                 // Don't block if there's nothing to block on
                 if (count > 0) {
                     waitingForSync = true;
-                    syncThreadId = ThreadMan.get_instance().getCurrentThreadID();
-                    ThreadMan.get_instance().blockCurrentThread();
+                    syncThreadId = ThreadMan.getInstance().getCurrentThreadID();
+                    ThreadMan.getInstance().blockCurrentThread();
                 } else {
                     VideoEngine.log.debug("sceGeDrawSync no queued lists, ignoring");
-                    ThreadMan.get_instance().yieldCurrentThread();
+                    ThreadMan.getInstance().yieldCurrentThread();
                 }
             }
         } else {
-            ThreadMan.get_instance().yieldCurrentThread();
+            ThreadMan.getInstance().yieldCurrentThread();
         }
     }
 

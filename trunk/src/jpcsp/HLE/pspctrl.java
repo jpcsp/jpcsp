@@ -65,7 +65,7 @@ public class pspctrl {
     public final static int PSP_CTRL_MODE_DIGITAL = 0;
     public final static int PSP_CTRL_MODE_ANALOG = 1;
 
-    public static pspctrl get_instance() {
+    public static pspctrl getInstance() {
         if (instance == null) {
             instance = new pspctrl();
         }
@@ -185,7 +185,7 @@ public class pspctrl {
         }
 
         Emulator.getProcessor().cpu.gpr[2] = i;
-        ThreadMan.get_instance().yieldCurrentThread();
+        ThreadMan.getInstance().yieldCurrentThread();
     }
 
     public void sceCtrlReadBufferNegative(int a0, int a1)
@@ -202,7 +202,7 @@ public class pspctrl {
         }
 
         Emulator.getProcessor().cpu.gpr[2] = i;
-        ThreadMan.get_instance().yieldCurrentThread();
+        ThreadMan.getInstance().yieldCurrentThread();
     }
 
     public void sceCtrlPeekLatch(int a0) {
@@ -223,6 +223,6 @@ public class pspctrl {
         mem.write32(a0 +8, uiPress);
         mem.write32(a0 +12, uiRelease);
         Emulator.getProcessor().cpu.gpr[2] = 0;
-        ThreadMan.get_instance().yieldCurrentThread();
+        ThreadMan.getInstance().yieldCurrentThread();
     }
 }

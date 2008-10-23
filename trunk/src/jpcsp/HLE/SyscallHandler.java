@@ -31,7 +31,7 @@ public class SyscallHandler {
     // Change this to return the number of cycles used?
     public static void syscall(int code) {
         int gpr[] = Emulator.getProcessor().cpu.gpr;
-        ThreadMan.get_instance().clearSyscallFreeCycles();
+        ThreadMan.getInstance().clearSyscallFreeCycles();
 
         // Some syscalls implementation throw GeneralJpcspException,
         // and Processor isn't setup to catch exceptions so we'll do it
@@ -55,61 +55,61 @@ public class SyscallHandler {
 		//  case 0x200b: //sceKernelReleaseThreadEventHandler
 		//  case 0x200c: //sceKernelReferThreadEventHandlerStatus
                 case 0x200d:
-                    ThreadMan.get_instance().ThreadMan_sceKernelCreateCallback(gpr[4], gpr[5], gpr[6]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelCreateCallback(gpr[4], gpr[5], gpr[6]);
                     break;
                // case 0x200e: //sceKernelDeleteCallback
                // case 0x200f: //sceKernelNotifyCallback
               //  case 0x2010: //sceKernelCancelCallback
               //  case 0x2011: //sceKernelGetCallbackCount
                 case 0x2012:
-                    ThreadMan.get_instance().ThreadMan_sceKernelCheckCallback();
+                    ThreadMan.getInstance().ThreadMan_sceKernelCheckCallback();
                     break;
               //  case 0x2013: //sceKernelReferCallbackStatus
                 case 0x2014:
-                    ThreadMan.get_instance().ThreadMan_sceKernelSleepThread();
+                    ThreadMan.getInstance().ThreadMan_sceKernelSleepThread();
                     break;
                 case 0x2015:
-                    ThreadMan.get_instance().ThreadMan_sceKernelSleepThreadCB();
+                    ThreadMan.getInstance().ThreadMan_sceKernelSleepThreadCB();
                     break;
                 case 0x2016:
-                    ThreadMan.get_instance().ThreadMan_sceKernelWakeupThread(gpr[4]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelWakeupThread(gpr[4]);
                     break;
 		//case 0x2017: ///sceKernelCancelWakeupThread
 		//case 0x2018: //sceKernelSuspendThread
 		//case 0x2019: //sceKernelResumeThread
                 case 0x201a:
-                    ThreadMan.get_instance().ThreadMan_sceKernelWaitThreadEnd(gpr[4], gpr[5]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelWaitThreadEnd(gpr[4], gpr[5]);
                     break;
 		//case 0x201b: //sceKernelWaitThreadEndCB
                 case 0x201c:
-                    ThreadMan.get_instance().ThreadMan_sceKernelDelayThread(gpr[4]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelDelayThread(gpr[4]);
                     break;
                 case 0x201d:
-                    ThreadMan.get_instance().ThreadMan_sceKernelDelayThreadCB(gpr[4]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelDelayThreadCB(gpr[4]);
                     break;
 		 //sceKernelDelaySysClockThread(0x201e),
 		// sceKernelDelaySysClockThreadCB(0x201f),
 
                 case 0x2020:
-                    ThreadMan.get_instance().ThreadMan_sceKernelCreateSema(gpr[4],gpr[5],gpr[6],gpr[7],gpr[8]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelCreateSema(gpr[4],gpr[5],gpr[6],gpr[7],gpr[8]);
                     break;
 		// sceKernelDeleteSema(0x2021),
 		 //sceKernelSignalSema(0x2022),
                 case 0x2022:
-                    ThreadMan.get_instance().ThreadMan_sceKernelSignalSema(gpr[4],gpr[5]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelSignalSema(gpr[4],gpr[5]);
                     break;
                 case 0x2023:
-                    ThreadMan.get_instance().ThreadMan_sceKernelWaitSema(gpr[4],gpr[5], gpr[6], gpr[7]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelWaitSema(gpr[4],gpr[5], gpr[6], gpr[7]);
                     break;
                 case 0x2024:
-                    ThreadMan.get_instance().ThreadMan_sceKernelWaitSemaCB(gpr[4],gpr[5], gpr[6], gpr[7]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelWaitSemaCB(gpr[4],gpr[5], gpr[6], gpr[7]);
                     break;
 		// sceKernelPollSema(0x2025),
 		 //sceKernelCancelSema(0x2026),
 		 //sceKernelReferSemaStatus(0x2027),
 
                 case 0x2028:
-                    ThreadMan.get_instance().ThreadMan_sceKernelCreateEventFlag(gpr[4],gpr[5], gpr[6], gpr[7]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelCreateEventFlag(gpr[4],gpr[5], gpr[6], gpr[7]);
                     break;
 		// sceKernelDeleteEventFlag(0x2029),
 		// sceKernelSetEventFlag(0x202a),
@@ -175,13 +175,13 @@ public class SyscallHandler {
 		// sceKernelSysClock2USec(0x2056),
 		// sceKernelSysClock2USecWide(0x2057),
                 case 0x2058:
-                    ThreadMan.get_instance().ThreadMan_sceKernelGetSystemTime(gpr[4]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelGetSystemTime(gpr[4]);
                     break;
                 case 0x2059:
-                    ThreadMan.get_instance().ThreadMan_sceKernelGetSystemTimeWide();
+                    ThreadMan.getInstance().ThreadMan_sceKernelGetSystemTimeWide();
                     break;
                 case 0x205a:
-                    ThreadMan.get_instance().ThreadMan_sceKernelGetSystemTimeLow();
+                    ThreadMan.getInstance().ThreadMan_sceKernelGetSystemTimeLow();
                     break;
 		// sceKernelSetAlarm(0x205b),
 		// sceKernelSetSysClockAlarm(0x205c),
@@ -202,111 +202,111 @@ public class SyscallHandler {
 		// sceKernelCancelVTimerHandler(0x206b),
 		// sceKernelReferVTimerStatus(0x206c),
                 case 0x206d:
-                    ThreadMan.get_instance().ThreadMan_sceKernelCreateThread(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8], gpr[9]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelCreateThread(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8], gpr[9]);
                     break;
                 case 0x206e:
-                    ThreadMan.get_instance().ThreadMan_sceKernelDeleteThread(gpr[4]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelDeleteThread(gpr[4]);
                     break;
                 case 0x206f:
-                    ThreadMan.get_instance().ThreadMan_sceKernelStartThread(gpr[4], gpr[5], gpr[6]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelStartThread(gpr[4], gpr[5], gpr[6]);
                     break;
                 case 0x2070:
                 case 0x2071:
-                    ThreadMan.get_instance().ThreadMan_sceKernelExitThread(gpr[4]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelExitThread(gpr[4]);
                     break;
                 case 0x2072:
-                    ThreadMan.get_instance().ThreadMan_sceKernelExitDeleteThread(gpr[4]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelExitDeleteThread(gpr[4]);
                     break;
                 case 0x2073:
-                    ThreadMan.get_instance().ThreadMan_sceKernelTerminateThread(gpr[4]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelTerminateThread(gpr[4]);
                     break;
                  //sceKernelTerminateDeleteThread(0x2074),
 		// sceKernelSuspendDispatchThread(0x2075),
 		 //sceKernelResumeDispatchThread(0x2076),
                 case 0x2077:
-                    ThreadMan.get_instance().ThreadMan_sceKernelChangeCurrentThreadAttr(gpr[4], gpr[5]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelChangeCurrentThreadAttr(gpr[4], gpr[5]);
                     break;
                 case 0x2078:
-                    ThreadMan.get_instance().ThreadMan_sceKernelChangeThreadPriority(gpr[4], gpr[5]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelChangeThreadPriority(gpr[4], gpr[5]);
                     break;
 		// sceKernelRotateThreadReadyQueue(0x2079),
 		// sceKernelReleaseWaitThread(0x207a),
                 case 0x207b:
-                    ThreadMan.get_instance().ThreadMan_sceKernelGetThreadId();
+                    ThreadMan.getInstance().ThreadMan_sceKernelGetThreadId();
                     break;
                 // sceKernelGetThreadCurrentPriority(0x207c),
 		// sceKernelGetThreadExitStatus(0x207d),
 		// sceKernelCheckThreadStack(0x207e),
 		// sceKernelGetThreadStackFreeSize(0x207f),
                 case 0x2080:
-                    ThreadMan.get_instance().ThreadMan_sceKernelReferThreadStatus(gpr[4], gpr[5]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelReferThreadStatus(gpr[4], gpr[5]);
                     break;
                 // sceKernelReferThreadRunStatus(0x2081),
 		// sceKernelReferSystemStatus(0x2082),
                 case 0x2083:
-                    ThreadMan.get_instance().ThreadMan_sceKernelGetThreadmanIdList(gpr[4], gpr[5], gpr[6], gpr[7]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelGetThreadmanIdList(gpr[4], gpr[5], gpr[6], gpr[7]);
                     break;
 		// sceKernelGetThreadmanIdType(0x2084),
 		// sceKernelReferThreadProfiler(0x2085),
 		// sceKernelReferGlobalProfiler(0x2086),
                 case 0x2087:
-                    pspiofilemgr.get_instance().sceIoPollAsync(gpr[4], gpr[5]);
+                    pspiofilemgr.getInstance().sceIoPollAsync(gpr[4], gpr[5]);
                     break;
                 case 0x2088:
-                    pspiofilemgr.get_instance().sceIoWaitAsync(gpr[4], gpr[5]);
+                    pspiofilemgr.getInstance().sceIoWaitAsync(gpr[4], gpr[5]);
                     break;
                 case 0x2089:
-                    pspiofilemgr.get_instance().sceIoWaitAsyncCB(gpr[4], gpr[5]);
+                    pspiofilemgr.getInstance().sceIoWaitAsyncCB(gpr[4], gpr[5]);
                     break;
 		// sceIoGetAsyncStat(0x208a),
 		// sceIoChangeAsyncPriority(0x208b),
 		// sceIoSetAsyncCallback(0x208c),
                 case 0x208d:
-                    pspiofilemgr.get_instance().sceIoClose(gpr[4]);
+                    pspiofilemgr.getInstance().sceIoClose(gpr[4]);
                     break;
                 case 0x208e:
-                    pspiofilemgr.get_instance().sceIoCloseAsync(gpr[4]);
+                    pspiofilemgr.getInstance().sceIoCloseAsync(gpr[4]);
                     break;
                 case 0x208f:
-                    pspiofilemgr.get_instance().sceIoOpen(gpr[4], gpr[5], gpr[6]);
+                    pspiofilemgr.getInstance().sceIoOpen(gpr[4], gpr[5], gpr[6]);
                     break;
                 case 0x2090:
-                    pspiofilemgr.get_instance().sceIoOpenAsync(gpr[4], gpr[5], gpr[6]);
+                    pspiofilemgr.getInstance().sceIoOpenAsync(gpr[4], gpr[5], gpr[6]);
                     break;
                 case 0x2091:
-                    pspiofilemgr.get_instance().sceIoRead(gpr[4], gpr[5], gpr[6]);
+                    pspiofilemgr.getInstance().sceIoRead(gpr[4], gpr[5], gpr[6]);
                     break;
                 case 0x2092:
-                    pspiofilemgr.get_instance().sceIoReadAsync(gpr[4], gpr[5], gpr[6]);
+                    pspiofilemgr.getInstance().sceIoReadAsync(gpr[4], gpr[5], gpr[6]);
                     break;
                 case 0x2093:
-                    pspiofilemgr.get_instance().sceIoWrite(gpr[4], gpr[5], gpr[6]);
+                    pspiofilemgr.getInstance().sceIoWrite(gpr[4], gpr[5], gpr[6]);
                     break;
                 case 0x2094:
-                    pspiofilemgr.get_instance().sceIoWriteAsync(gpr[4], gpr[5], gpr[6]);
+                    pspiofilemgr.getInstance().sceIoWriteAsync(gpr[4], gpr[5], gpr[6]);
                     break;
 
                 case 0x2095:
-                    pspiofilemgr.get_instance().sceIoLseek(
+                    pspiofilemgr.getInstance().sceIoLseek(
                             gpr[4],
                             ((((long)gpr[6]) & 0xFFFFFFFFL) | (((long)gpr[7])<<32)),
                             gpr[8]);
                     break;
                 case 0x2096:
-                    pspiofilemgr.get_instance().sceIoLseekAsync(
+                    pspiofilemgr.getInstance().sceIoLseekAsync(
                             gpr[4],
                             ((((long)gpr[6]) & 0xFFFFFFFFL) | (((long)gpr[7])<<32)),
                             gpr[8]);
                     break;
 
                 case 0x2097:
-                    pspiofilemgr.get_instance().sceIoLseek32(
+                    pspiofilemgr.getInstance().sceIoLseek32(
                             gpr[4],
                             gpr[5],
                             gpr[6]);
                     break;
                 case 0x2098:
-                    pspiofilemgr.get_instance().sceIoLseek32Async(
+                    pspiofilemgr.getInstance().sceIoLseek32Async(
                             gpr[4],
                             gpr[5],
                             gpr[6]);
@@ -316,32 +316,32 @@ public class SyscallHandler {
 		// sceIoIoctlAsync(0x209a),
 
             case 0x209b:
-                    pspiofilemgr.get_instance().sceIoDopen(gpr[4]);
+                    pspiofilemgr.getInstance().sceIoDopen(gpr[4]);
                     break;
             case 0x209c:
-                    pspiofilemgr.get_instance().sceIoDread(gpr[4], gpr[5]);
+                    pspiofilemgr.getInstance().sceIoDread(gpr[4], gpr[5]);
                     break;
             case 0x209d:
-                    pspiofilemgr.get_instance().sceIoDclose(gpr[4]);
+                    pspiofilemgr.getInstance().sceIoDclose(gpr[4]);
                     break;
 		// sceIoRemove(0x209e),
             case 0x209f:
-                    pspiofilemgr.get_instance().sceIoMkdir(gpr[4], gpr[5]);
+                    pspiofilemgr.getInstance().sceIoMkdir(gpr[4], gpr[5]);
                     break;
 		// sceIoRmdir(0x20a0),
                 case 0x20a1:
-                    pspiofilemgr.get_instance().sceIoChdir(gpr[4]);
+                    pspiofilemgr.getInstance().sceIoChdir(gpr[4]);
                     break;
                 case 0x20a2:
-                    pspiofilemgr.get_instance().sceIoSync(gpr[4], gpr[5]);
+                    pspiofilemgr.getInstance().sceIoSync(gpr[4], gpr[5]);
                     break;
                 case 0x20a3:
-                    pspiofilemgr.get_instance().sceIoGetstat(gpr[4], gpr[5]);
+                    pspiofilemgr.getInstance().sceIoGetstat(gpr[4], gpr[5]);
                     break;
 		// sceIoChstat(0x20a4),
 		// sceIoRename(0x20a5),
                 case 0x20a6:
-                    pspiofilemgr.get_instance().sceIoDevctl(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8], gpr[9]);
+                    pspiofilemgr.getInstance().sceIoDevctl(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8], gpr[9]);
                     break;
 		// sceIoGetDevType(0x20a7),
 		// sceIoAssign(0x20a8),
@@ -354,17 +354,8 @@ public class SyscallHandler {
 		// sceKernelStdioWrite(0x20af),
 		// sceKernelStdioClose(0x20b0),
 		 //sceKernelStdioOpen(0x20b1),
-                case 0x20b2:
-                    pspstdio.get_instance().sceKernelStdin();
-                    break;
-                case 0x20b3:
-                    pspstdio.get_instance().sceKernelStdout();
-                    break;
-                case 0x20b4:
-                    pspstdio.get_instance().sceKernelStderr();
-                    break;
                 case 0x20b5:
-                    psputils.get_instance().sceKernelDcacheInvalidateRange(gpr[4], gpr[5]);
+                    psputils.getInstance().sceKernelDcacheInvalidateRange(gpr[4], gpr[5]);
                     break;
 		// sceKernelIcacheInvalidateRange(0x20b6),
 		// sceKernelUtilsMd5Digest(0x20b7),
@@ -376,37 +367,37 @@ public class SyscallHandler {
 		// sceKernelUtilsSha1BlockUpdate(0x20bd),
 		// sceKernelUtilsSha1BlockResult(0x20be),
                 case 0x20bf:
-                    psputils.get_instance().sceKernelUtilsMt19937Init(gpr[4], gpr[5]);
+                    psputils.getInstance().sceKernelUtilsMt19937Init(gpr[4], gpr[5]);
                     break;
                 case 0x20c0:
-                    psputils.get_instance().sceKernelUtilsMt19937UInt(gpr[4]);
+                    psputils.getInstance().sceKernelUtilsMt19937UInt(gpr[4]);
                     break;
                 case 0x20c1:
-                    psputils.get_instance().sceKernelGetGPI();
+                    psputils.getInstance().sceKernelGetGPI();
                     break;
                 case 0x20c2:
-                    psputils.get_instance().sceKernelSetGPO(gpr[4]);
+                    psputils.getInstance().sceKernelSetGPO(gpr[4]);
                     break;
                 case 0x20c3:
-                    psputils.get_instance().sceKernelLibcClock();
+                    psputils.getInstance().sceKernelLibcClock();
                     break;
                 case 0x20c4:
-                    psputils.get_instance().sceKernelLibcTime(gpr[4]);
+                    psputils.getInstance().sceKernelLibcTime(gpr[4]);
                     break;
                 case 0x20c5:
-                    psputils.get_instance().sceKernelLibcGettimeofday(gpr[4], gpr[5]);
+                    psputils.getInstance().sceKernelLibcGettimeofday(gpr[4], gpr[5]);
                     break;
                 case 0x20c6:
-                    psputils.get_instance().sceKernelDcacheWritebackAll();
+                    psputils.getInstance().sceKernelDcacheWritebackAll();
                     break;
                 case 0x20c7:
-                    psputils.get_instance().sceKernelDcacheWritebackInvalidateAll();
+                    psputils.getInstance().sceKernelDcacheWritebackInvalidateAll();
                     break;
                 case 0x20c8:
-                    psputils.get_instance().sceKernelDcacheWritebackRange(gpr[4], gpr[5]);
+                    psputils.getInstance().sceKernelDcacheWritebackRange(gpr[4], gpr[5]);
                     break;
                 case 0x20c9:
-                    psputils.get_instance().sceKernelDcacheWritebackInvalidateRange(gpr[4], gpr[5]);
+                    psputils.getInstance().sceKernelDcacheWritebackInvalidateRange(gpr[4], gpr[5]);
                     break;
 		// sceKernelDcacheProbe(0x20ca),
 		// sceKernelDcacheReadTag(0x20cb),
@@ -427,23 +418,23 @@ public class SyscallHandler {
 		// ModuleMgrForUser_F0A26395(0x20da),
 		// ModuleMgrForUser_D8B73127(0x20db),
                 case 0x20dc:
-                    pspSysMem.get_instance().sceKernelMaxFreeMemSize();
+                    pspSysMem.getInstance().sceKernelMaxFreeMemSize();
                     break;
                 case 0x20dd:
-                    pspSysMem.get_instance().sceKernelTotalFreeMemSize();
+                    pspSysMem.getInstance().sceKernelTotalFreeMemSize();
                     break;
                 case 0x20de:
-                    pspSysMem.get_instance().sceKernelAllocPartitionMemory(gpr[4], gpr[5], gpr[6], gpr[7],gpr[8]);
+                    pspSysMem.getInstance().sceKernelAllocPartitionMemory(gpr[4], gpr[5], gpr[6], gpr[7],gpr[8]);
                     break;
                 case 0x20df:
-                    pspSysMem.get_instance().sceKernelFreePartitionMemory(gpr[4]);
+                    pspSysMem.getInstance().sceKernelFreePartitionMemory(gpr[4]);
                     break;
                 case 0x20e0:
-                    pspSysMem.get_instance().sceKernelGetBlockHeadAddr(gpr[4]);
+                    pspSysMem.getInstance().sceKernelGetBlockHeadAddr(gpr[4]);
                     break;
 		// SysMemUserForUser_13A5ABEF(0x20e1),
                 case 0x20e2:
-                    pspSysMem.get_instance().sceKernelDevkitVersion();
+                    pspSysMem.getInstance().sceKernelDevkitVersion();
                     break;
 		// sceKernelPowerLock(0x20e3),
 		// sceKernelPowerUnlock(0x20e4),
@@ -454,18 +445,18 @@ public class SyscallHandler {
                 //sceKernelLoadExec(0x20e9),
 		// sceKernelExitGameWithStatus(0x20ea),
                 case 0x20eb:
-                    LoadExec.get_instance().sceKernelExitGame();
+                    LoadExec.getInstance().sceKernelExitGame();
                     break;
                 case 0x20ec:
-                    LoadExec.get_instance().sceKernelRegisterExitCallback(gpr[4]);
+                    LoadExec.getInstance().sceKernelRegisterExitCallback(gpr[4]);
                     break;
               // sceDmacMemcpy(0x20ed),
 		// sceDmacTryMemcpy(0x20ee),
                case 0x20ef:
-            	   pspge.get_instance().sceGeEdramGetSize();
+            	   pspge.getInstance().sceGeEdramGetSize();
                    break;
                case 0x20f0:
-                    pspge.get_instance().sceGeEdramGetAddr();
+                    pspge.getInstance().sceGeEdramGetAddr();
                     break;
                 //sceGeEdramSetAddrTranslation(0x20f1),
 		// sceGeGetCmd(0x20f2),
@@ -473,44 +464,44 @@ public class SyscallHandler {
 		// sceGeSaveContext(0x20f4),
 		// sceGeRestoreContext(0x20f5),
                 case 0x20f6:
-                    pspge.get_instance().sceGeListEnQueue(gpr[4], gpr[5], gpr[6], gpr[7]);
+                    pspge.getInstance().sceGeListEnQueue(gpr[4], gpr[5], gpr[6], gpr[7]);
                     break;
                // sceGeListEnQueueHead(0x20f7),
                 case 0x20f8:
-                    pspge.get_instance().sceGeListDeQueue(gpr[4]);
+                    pspge.getInstance().sceGeListDeQueue(gpr[4]);
                     break;
                 case 0x20f9:
-                    pspge.get_instance().sceGeListUpdateStallAddr(gpr[4], gpr[5]);
+                    pspge.getInstance().sceGeListUpdateStallAddr(gpr[4], gpr[5]);
                     break;
                 /* ge sync
                 case 0x20fa:
-                    pspge.get_instance().sceGeListSync(gpr[4], gpr[5]);
+                    pspge.getInstance().sceGeListSync(gpr[4], gpr[5]);
                     break;
                 */
                 case 0x20fb:
-                    pspge.get_instance().sceGeDrawSync(gpr[4]);
+                    pspge.getInstance().sceGeDrawSync(gpr[4]);
                     break;
 		// sceGeBreak(0x20fc),
 		// sceGeContinue(0x20fd),
                 /* ge callback
                 case 0x20fe:
-                    pspge.get_instance().sceGeSetCallback(gpr[4]);
+                    pspge.getInstance().sceGeSetCallback(gpr[4]);
                     break;
                 case 0x20ff:
-                    pspge.get_instance().sceGeUnsetCallback(gpr[4]);
+                    pspge.getInstance().sceGeUnsetCallback(gpr[4]);
                     break;
                 */
                /* case 0x2100:
-                    psprtc.get_instance().sceRtcGetTickResolution();
+                    psprtc.getInstance().sceRtcGetTickResolution();
                     break;
                 case 0x2101:
-                    psprtc.get_instance().sceRtcGetCurrentTick(gpr[4]);
+                    psprtc.getInstance().sceRtcGetCurrentTick(gpr[4]);
                     break;
 		// sceRtc_011F03C1(0x2102),
 		// sceRtc_029CA3B3(0x2103),
 		// sceRtcGetCurrentClock(0x2104),
                 case 0x2105:
-                    psprtc.get_instance().sceRtcGetCurrentClockLocalTime(gpr[4]);
+                    psprtc.getInstance().sceRtcGetCurrentClockLocalTime(gpr[4]);
                     break;*/
 		// sceRtcConvertUtcToLocalTime(0x2106),
 		// sceRtcConvertLocalTimeToUTC(0x2107),
@@ -542,102 +533,102 @@ public class SyscallHandler {
 		// sceRtcFormatRFC3339LocalTime(0x2121),
 		// sceRtcParseDateTime(0x2122),
 		// sceRtcParseRFC3339(0x2123),
-		case 0x2124: pspAudio.get_instance().sceAudioOutput(gpr[4], gpr[5], gpr[6]); break;
-		case 0x2125: pspAudio.get_instance().sceAudioOutputBlocking(gpr[4], gpr[5], gpr[6]); break;
-		case 0x2126: pspAudio.get_instance().sceAudioOutputPanned(gpr[4], gpr[5], gpr[6], gpr[7]); break;
+		case 0x2124: pspAudio.getInstance().sceAudioOutput(gpr[4], gpr[5], gpr[6]); break;
+		case 0x2125: pspAudio.getInstance().sceAudioOutputBlocking(gpr[4], gpr[5], gpr[6]); break;
+		case 0x2126: pspAudio.getInstance().sceAudioOutputPanned(gpr[4], gpr[5], gpr[6], gpr[7]); break;
                 case 0x2127:
-                    pspAudio.get_instance().sceAudioOutputPannedBlocking(gpr[4], gpr[5], gpr[6], gpr[7]);
+                    pspAudio.getInstance().sceAudioOutputPannedBlocking(gpr[4], gpr[5], gpr[6], gpr[7]);
                     break;
                 case 0x2128:
-                    pspAudio.get_instance().sceAudioChReserve(gpr[4], gpr[5], gpr[6]);
+                    pspAudio.getInstance().sceAudioChReserve(gpr[4], gpr[5], gpr[6]);
                     break;
-		//case 0x2129: pspAudio.get_instance().sceAudioOneshotOutput(); break;
-		case 0x212a: pspAudio.get_instance().sceAudioChRelease(gpr[4]); break;
-		//case 0x212b: pspAudio.get_instance().sceAudio_B011922F(); break;
-		case 0x212c: pspAudio.get_instance().sceAudioSetChannelDataLen(gpr[4], gpr[5]); break;
-		//case 0x212d: pspAudio.get_instance().sceAudioChangeChannelConfig(gpr[4], gpr[5]); break;
-		case 0x212e: pspAudio.get_instance().sceAudioChangeChannelVolume(gpr[4], gpr[5], gpr[6]); break;
-		//case 0x212f: pspAudio.get_instance().sceAudio_38553111(); break;
-		//case 0x2130: pspAudio.get_instance().sceAudio_5C37C0AE(); break;
-		//case 0x2131: pspAudio.get_instance().sceAudio_E0727056(); break;
-		//case 0x2132: pspAudio.get_instance().sceAudioInputBlocking(gpr[4], gpr[5], gpr[6]); break;
-		//case 0x2133: pspAudio.get_instance().sceAudioInput(gpr[4], gpr[5], gpr[6]); break;
-		//case 0x2134: pspAudio.get_instance().sceAudioGetInputLength(); break;
-		//case 0x2135: pspAudio.get_instance().sceAudioWaitInputEnd(); break;
-		//case 0x2136: pspAudio.get_instance().sceAudioInputInit(gpr[4], gpr[5], gpr[6]); break;
-		//case 0x2137: pspAudio.get_instance().sceAudio_E926D3FB(); break;
-		//case 0x2138: pspAudio.get_instance().sceAudio_A633048E(); break;
-		case 0x2139: pspAudio.get_instance().sceAudioGetChannelRestLen(gpr[4]); break;
+		//case 0x2129: pspAudio.getInstance().sceAudioOneshotOutput(); break;
+		case 0x212a: pspAudio.getInstance().sceAudioChRelease(gpr[4]); break;
+		//case 0x212b: pspAudio.getInstance().sceAudio_B011922F(); break;
+		case 0x212c: pspAudio.getInstance().sceAudioSetChannelDataLen(gpr[4], gpr[5]); break;
+		//case 0x212d: pspAudio.getInstance().sceAudioChangeChannelConfig(gpr[4], gpr[5]); break;
+		case 0x212e: pspAudio.getInstance().sceAudioChangeChannelVolume(gpr[4], gpr[5], gpr[6]); break;
+		//case 0x212f: pspAudio.getInstance().sceAudio_38553111(); break;
+		//case 0x2130: pspAudio.getInstance().sceAudio_5C37C0AE(); break;
+		//case 0x2131: pspAudio.getInstance().sceAudio_E0727056(); break;
+		//case 0x2132: pspAudio.getInstance().sceAudioInputBlocking(gpr[4], gpr[5], gpr[6]); break;
+		//case 0x2133: pspAudio.getInstance().sceAudioInput(gpr[4], gpr[5], gpr[6]); break;
+		//case 0x2134: pspAudio.getInstance().sceAudioGetInputLength(); break;
+		//case 0x2135: pspAudio.getInstance().sceAudioWaitInputEnd(); break;
+		//case 0x2136: pspAudio.getInstance().sceAudioInputInit(gpr[4], gpr[5], gpr[6]); break;
+		//case 0x2137: pspAudio.getInstance().sceAudio_E926D3FB(); break;
+		//case 0x2138: pspAudio.getInstance().sceAudio_A633048E(); break;
+		case 0x2139: pspAudio.getInstance().sceAudioGetChannelRestLen(gpr[4]); break;
 
 
                 case 0x213a:
-                    pspdisplay.get_instance().sceDisplaySetMode(gpr[4], gpr[5], gpr[6]);
+                    pspdisplay.getInstance().sceDisplaySetMode(gpr[4], gpr[5], gpr[6]);
                     break;
                //  sceDisplayGetMode(0x213b),
 		// sceDisplayGetFramePerSec(0x213c),
 		// sceDisplaySetHoldMode(0x213d),
 		// sceDisplaySetResumeMode(0x213e),
                 case 0x213f:
-                    pspdisplay.get_instance().sceDisplaySetFrameBuf(gpr[4], gpr[5], gpr[6], gpr[7]);
+                    pspdisplay.getInstance().sceDisplaySetFrameBuf(gpr[4], gpr[5], gpr[6], gpr[7]);
                     break;
                 case 0x2140:
-                    pspdisplay.get_instance().sceDisplayGetFrameBuf(gpr[4], gpr[5], gpr[6], gpr[7]);
+                    pspdisplay.getInstance().sceDisplayGetFrameBuf(gpr[4], gpr[5], gpr[6], gpr[7]);
                     break;
 		// sceDisplayIsForeground(0x2141),
 		// sceDisplayGetBrightness(0x2142),
 		// sceDisplayGetVcount(0x2143),
                 case 0x2143:
-                    pspdisplay.get_instance().sceDisplayGetVcount();
+                    pspdisplay.getInstance().sceDisplayGetVcount();
                     break;
 		// sceDisplayIsVblank(0x2144),
                 case 0x2145:
-                    pspdisplay.get_instance().sceDisplayWaitVblank();
+                    pspdisplay.getInstance().sceDisplayWaitVblank();
                     break;
                 case 0x2146:
-                    pspdisplay.get_instance().sceDisplayWaitVblankCB();
+                    pspdisplay.getInstance().sceDisplayWaitVblankCB();
                     break;
                 case 0x2147:
-                    pspdisplay.get_instance().sceDisplayWaitVblankStart();
+                    pspdisplay.getInstance().sceDisplayWaitVblankStart();
                     break;
                 case 0x2148:
-                    pspdisplay.get_instance().sceDisplayWaitVblankStartCB();
+                    pspdisplay.getInstance().sceDisplayWaitVblankStartCB();
                     break;
                 case 0x2149:
-                    pspdisplay.get_instance().sceDisplayGetCurrentHcount();
+                    pspdisplay.getInstance().sceDisplayGetCurrentHcount();
                     break;
                 case 0x214a:
-                    pspdisplay.get_instance().sceDisplayGetAccumulatedHcount();
+                    pspdisplay.getInstance().sceDisplayGetAccumulatedHcount();
                     break;
 		// sceDisplay_A83EF139(0x214b),
                 case 0x214c:
-                    pspctrl.get_instance().sceCtrlSetSamplingCycle(gpr[4]);
+                    pspctrl.getInstance().sceCtrlSetSamplingCycle(gpr[4]);
                     break;
                 case 0x214d:
-                    pspctrl.get_instance().sceCtrlGetSamplingCycle(gpr[4]);
+                    pspctrl.getInstance().sceCtrlGetSamplingCycle(gpr[4]);
                     break;
                 case 0x214e:
-                    pspctrl.get_instance().sceCtrlSetSamplingMode(gpr[4]);
+                    pspctrl.getInstance().sceCtrlSetSamplingMode(gpr[4]);
                     break;
                 case 0x214f:
-                    pspctrl.get_instance().sceCtrlGetSamplingMode(gpr[4]);
+                    pspctrl.getInstance().sceCtrlGetSamplingMode(gpr[4]);
                     break;
                 case 0x2150:
-                    pspctrl.get_instance().sceCtrlPeekBufferPositive(gpr[4], gpr[5]);
+                    pspctrl.getInstance().sceCtrlPeekBufferPositive(gpr[4], gpr[5]);
                     break;
                 case 0x2151:
-                    pspctrl.get_instance().sceCtrlPeekBufferNegative(gpr[4], gpr[5]);
+                    pspctrl.getInstance().sceCtrlPeekBufferNegative(gpr[4], gpr[5]);
                     break;
                 case 0x2152:
-                    pspctrl.get_instance().sceCtrlReadBufferPositive(gpr[4], gpr[5]);
+                    pspctrl.getInstance().sceCtrlReadBufferPositive(gpr[4], gpr[5]);
                     break;
                 case 0x2153:
-                    pspctrl.get_instance().sceCtrlReadBufferNegative(gpr[4], gpr[5]);
+                    pspctrl.getInstance().sceCtrlReadBufferNegative(gpr[4], gpr[5]);
                     break;
                 case 0x2154:
-                    pspctrl.get_instance().sceCtrlPeekLatch(gpr[4]);
+                    pspctrl.getInstance().sceCtrlPeekLatch(gpr[4]);
                     break;
                 case 0x2155:
-                    pspctrl.get_instance().sceCtrlReadLatch(gpr[4]);
+                    pspctrl.getInstance().sceCtrlReadLatch(gpr[4]);
                     break;
              //   sceCtrl_A7144800(0x2156),
 		// sceCtrl_687660FA(0x2157),

@@ -45,7 +45,7 @@ public class MemoryViewer extends javax.swing.JFrame {
     }
     private char converttochar(int character)
     {
-      //char newone = (char)Memory.get_instance().read8(address);
+      //char newone = (char)Memory.getInstance().read8(address);
       //if(newone <32 || newone >127)
       //    return (byte)32;
      // else

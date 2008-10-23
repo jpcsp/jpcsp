@@ -179,7 +179,7 @@ public class VideoEngine {
         //System.err.println("update start");
 
         // Don't draw anything until we get sync signal
-        if (!jpcsp.HLE.pspge.get_instance().waitingForSync)
+        if (!jpcsp.HLE.pspge.getInstance().waitingForSync)
             return false;
 
         boolean updated = false;
@@ -201,7 +201,7 @@ public class VideoEngine {
         DisplayList.Unlock();
 
         if (updated)
-            jpcsp.HLE.pspge.get_instance().syncDone = true;
+            jpcsp.HLE.pspge.getInstance().syncDone = true;
 
         //System.err.println("update done");
         return updated;
@@ -1521,7 +1521,7 @@ public class VideoEngine {
                 fbp |= (normalArgument << 8) & 0xff000000;
                 fbw = (normalArgument) & 0xffff;
                 log("fbp=" + Integer.toHexString(fbp) + ", fbw=" + fbw);
-                jpcsp.HLE.pspdisplay.get_instance().hleDisplaySetGeBuf(fbp, fbw, psm);
+                jpcsp.HLE.pspdisplay.getInstance().hleDisplaySetGeBuf(fbp, fbw, psm);
                 break;
 
             case ZBP:
@@ -2197,7 +2197,7 @@ public class VideoEngine {
             	textureTx_pixelSize = normalArgument & 0x1;
 
                 log(helper.getCommandString(TRXKICK) + " from 0x" + Integer.toHexString(textureTx_sourceAddress) + "(" + textureTx_sx + "," + textureTx_sy + ") to 0x" + Integer.toHexString(textureTx_destinationAddress) + "(" + textureTx_dx + "," + textureTx_dy + "), width=" + textureTx_width + ", height=" + textureTx_height);
-            	if (!pspdisplay.get_instance().isGeAddress(textureTx_destinationAddress)) {
+            	if (!pspdisplay.getInstance().isGeAddress(textureTx_destinationAddress)) {
                     log(helper.getCommandString(TRXKICK) + " not in Ge Address space");
                 	int width = textureTx_width;
                 	int height = textureTx_height;

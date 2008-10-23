@@ -54,7 +54,7 @@ public class pspAudio {
 
     private static pspAudio instance;
     
-    public static pspAudio get_instance() {
+    public static pspAudio getInstance() {
         if (instance == null) {
             instance = new pspAudio();
         }
@@ -271,7 +271,7 @@ public class pspAudio {
         }
 
         Emulator.getProcessor().cpu.gpr[2] = ret;
-        ThreadMan.get_instance().yieldCurrentThread();
+        ThreadMan.getInstance().yieldCurrentThread();
     }
 
     //Output panned audio of the specified channel.
@@ -291,7 +291,7 @@ public class pspAudio {
         ret = doAudioOutput(channel,pvoid_buf);
         if(ret>=0) ret=doAudioFlush(channel);
         Emulator.getProcessor().cpu.gpr[2] = ret;
-        ThreadMan.get_instance().yieldCurrentThread();
+        ThreadMan.getInstance().yieldCurrentThread();
     }
     
     //Get count of unplayed samples remaining.
@@ -384,7 +384,7 @@ public class pspAudio {
     public void sceAudioOutput2OutputBlocking (int vol, int pvoid_buf)
     {
         Emulator.getProcessor().cpu.gpr[2] = -1;
-        ThreadMan.get_instance().yieldCurrentThread();
+        ThreadMan.getInstance().yieldCurrentThread();
     }
     //Get count of unplayed samples remaining.
     public void sceAudioOutput2GetRestSample ()
@@ -405,7 +405,7 @@ public class pspAudio {
     public void sceAudioSRCOutputBlocking (int vol, int pvoid_buf)
     {
         Emulator.getProcessor().cpu.gpr[2] = -1;
-        ThreadMan.get_instance().yieldCurrentThread();
+        ThreadMan.getInstance().yieldCurrentThread();
     }
     //Init audio input.
     public void sceAudioInputInit (int unknown1, int gain, int unknown2)
@@ -421,7 +421,7 @@ public class pspAudio {
     public void sceAudioInputBlocking (int samplecount, int freq, int pvoid_buf)
     {
         Emulator.getProcessor().cpu.gpr[2] = -1;
-        ThreadMan.get_instance().yieldCurrentThread();
+        ThreadMan.getInstance().yieldCurrentThread();
     }
     //Perform audio input.
     public void sceAudioInput (int samplecount, int freq, int pvoid_buf)

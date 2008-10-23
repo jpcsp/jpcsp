@@ -147,11 +147,11 @@ public class sceUmdUser implements HLEModule {
         cpu.gpr[2] = 0;
 
         if (iso != null || stat == PSP_UMD_NOT_PRESENT) {
-            jpcsp.HLE.ThreadMan.get_instance().yieldCurrentThread();
+            jpcsp.HLE.ThreadMan.getInstance().yieldCurrentThread();
         } else {
             // UMD not mounted and never will be since we don't emulate
             // inserting/removing a disc so block forever.
-            jpcsp.HLE.ThreadMan.get_instance().blockCurrentThread();
+            jpcsp.HLE.ThreadMan.getInstance().blockCurrentThread();
         }
     }
 
@@ -165,11 +165,11 @@ public class sceUmdUser implements HLEModule {
         cpu.gpr[2] = 0;
 
         if (iso != null || stat == PSP_UMD_NOT_PRESENT) {
-            jpcsp.HLE.ThreadMan.get_instance().yieldCurrentThread();
+            jpcsp.HLE.ThreadMan.getInstance().yieldCurrentThread();
         } else {
             // UMD not mounted and never will be since we don't emulate
             // inserting/removing a disc so block forever.
-            jpcsp.HLE.ThreadMan.get_instance().blockCurrentThread();
+            jpcsp.HLE.ThreadMan.getInstance().blockCurrentThread();
         }
     }
 
@@ -188,11 +188,11 @@ public class sceUmdUser implements HLEModule {
             // and then call any registerd umd cb's?
             // Or are we supposed to "block" until psp finishes checking the
             // drive status? which would just emulate as a yield.
-            jpcsp.HLE.ThreadMan.get_instance().yieldCurrentThread();
+            jpcsp.HLE.ThreadMan.getInstance().yieldCurrentThread();
         } else {
             // UMD not mounted and never will be since we don't emulate
             // inserting/removing a disc so block forever.
-            jpcsp.HLE.ThreadMan.get_instance().blockCurrentThread();
+            jpcsp.HLE.ThreadMan.getInstance().blockCurrentThread();
         }
 
     }

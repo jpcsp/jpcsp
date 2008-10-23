@@ -109,12 +109,12 @@ public class HLEModuleManager {
         func.setNid(nid);
 
         // See if a known syscall code exists for this NID
-        int code = NIDMapper.get_instance().nidToSyscall(func.getNid());
+        int code = NIDMapper.getInstance().nidToSyscall(func.getNid());
         if (code == -1) {
             // Allocate an arbitrary syscall code to the function
             code = syscallCodeAllocator;
             // Add the new code to the NIDMapper
-            NIDMapper.get_instance().addSyscallNid(func.getNid(), syscallCodeAllocator);
+            NIDMapper.getInstance().addSyscallNid(func.getNid(), syscallCodeAllocator);
             syscallCodeAllocator++;
         }
 

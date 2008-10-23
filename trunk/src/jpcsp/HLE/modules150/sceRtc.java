@@ -27,7 +27,7 @@ import jpcsp.Memory;
 import jpcsp.Processor;
 
 import jpcsp.Allegrex.CpuState; // New-Style Processor
-import jpcsp.HLE.ScePspDateTime;
+import jpcsp.HLE.kernel.types.ScePspDateTime;
 
 public class sceRtc implements HLEModule {
 	@Override

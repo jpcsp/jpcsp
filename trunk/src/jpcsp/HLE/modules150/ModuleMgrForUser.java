@@ -152,7 +152,7 @@ public class ModuleMgrForUser implements HLEModule {
 
         cpu.gpr[2] = -1;
         try {
-            SeekableDataInput moduleInput = pspiofilemgr.get_instance().getFile(name, flags);
+            SeekableDataInput moduleInput = pspiofilemgr.getInstance().getFile(name, flags);
             if (moduleInput != null) {
     	        byte[] moduleBytes = new byte[(int) moduleInput.length()];
     	        moduleInput.readFully(moduleBytes);
@@ -163,7 +163,7 @@ public class ModuleMgrForUser implements HLEModule {
                 // We're going to need to write a SceModule struct somewhere, so we could malloc that, and add the size of the struct to the address
                 // For now we'll just malloc 64 bytes :P (the loadBase needs to be aligned)
 
-    	        int loadBase = pspSysMem.get_instance().malloc(2, pspSysMem.PSP_SMEM_Low, 64, 0) + 64;
+    	        int loadBase = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_Low, 64, 0) + 64;
                 ModuleContext module = Loader.getInstance().LoadModule(name, moduleBuffer, loadBase);
 
                 if ((module.fileFormat & Loader.FORMAT_SCE) == Loader.FORMAT_SCE ||
@@ -185,7 +185,7 @@ public class ModuleMgrForUser implements HLEModule {
                     cpu.gpr[2] = sceModule.getUid();
                 } else {
                     // The Loader class now manages the module's memory footprint, it won't allocate if it failed to load
-                    //pspSysMem.get_instance().free(loadBase);
+                    //pspSysMem.getInstance().free(loadBase);
                     cpu.gpr[2] = -1;
                 }
 
@@ -260,7 +260,7 @@ public class ModuleMgrForUser implements HLEModule {
             return;
         }
 
-        ThreadMan.get_instance().createThread(sceModule.getName(), sceModule.getStartAddr(), 0, 0x4000, sceModule.getAttr(), option_addr, true, argsize, argp_addr, sceModule.getGp());
+        ThreadMan.getInstance().createThread(sceModule.getName(), sceModule.getStartAddr(), 0, 0x4000, sceModule.getAttr(), option_addr, true, argsize, argp_addr, sceModule.getGp());
 
         cpu.gpr[2] = 0;
 	}

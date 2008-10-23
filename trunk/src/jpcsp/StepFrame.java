@@ -41,8 +41,8 @@ public class StepFrame {
     public StepFrame(CpuState cpu) {
         pc = cpu.pc;
         gpr = Arrays.copyOf(cpu.gpr, 32);
-        threadID = ThreadMan.get_instance().getCurrentThreadID();
-        threadName = ThreadMan.get_instance().getThreadName(threadID);
+        threadID = ThreadMan.getInstance().getCurrentThreadID();
+        threadName = ThreadMan.getInstance().getThreadName(threadID);
 
         if (cpu.memory.isAddressGood(cpu.pc)) {
             opcode = cpu.memory.read32(cpu.pc);

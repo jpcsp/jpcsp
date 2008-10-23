@@ -37,9 +37,12 @@ public class Modules {
     public static Logger log = Logger.getLogger("hle");
 
     public void step() {
-        //jpcsp.HLE.pspge.get_instance().step();
-        //jpcsp.HLE.ThreadMan.get_instance().step();
-        //jpcsp.HLE.pspdisplay.get_instance().step();
+        // These three to be phased out:
+        //jpcsp.HLE.pspge.getInstance().step();
+        //jpcsp.HLE.ThreadMan.getInstance().step();
+        //jpcsp.HLE.pspdisplay.getInstance().step();
+
+        // This is the new design, and it can co-exist with the old design
         //HLEModuleManager.getInstance().step();
     }
 
