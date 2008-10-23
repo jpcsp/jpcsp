@@ -311,7 +311,7 @@ public class VideoEngine {
 	    	case 0x9:
 	    		return GL.GL_ONE_MINUS_DST_ALPHA;
 	    		
-	    	case 0x10: 
+	    	case 0xa: 
 	    		return GL.GL_SRC_ALPHA;
     	
     	}
@@ -354,7 +354,7 @@ public class VideoEngine {
 		    case 0x9:
  		    	return GL.GL_ONE_MINUS_DST_ALPHA;
 		    	
-		    case 0x10:
+		    case 0xa:
 		    	return GL.GL_ONE_MINUS_SRC_ALPHA;
     	}
 
