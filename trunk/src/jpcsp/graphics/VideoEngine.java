@@ -2238,6 +2238,11 @@ public class VideoEngine {
                     gl.glPushAttrib(GL.GL_ENABLE_BIT);
 	            	gl.glDisable(GL.GL_DEPTH_TEST);
 	            	gl.glDisable(GL.GL_BLEND);
+                    gl.glDisable(GL.GL_ALPHA_TEST);
+                    gl.glDisable(GL.GL_FOG);
+                    gl.glDisable(GL.GL_LIGHTING);
+                    gl.glDisable(GL.GL_LOGIC_OP);
+                    gl.glDisable(GL.GL_STENCIL_TEST);
 
 	            	gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, bpp);
 	            	gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, lineWidth);
