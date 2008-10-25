@@ -28,16 +28,16 @@ import javax.sound.sampled.*;
  * @author shadow
  */
 public class pspAudio {
-    
+
     private class pspChannelInfo {
-        
+
         public boolean reserved;
         public int allocatedSamples;
         public int format;
         public int leftVolume;
         public int rightVolume;
         public SourceDataLine outputDataLine;
-        
+
         public pspChannelInfo()
         {
             reserved=false;
@@ -48,12 +48,12 @@ public class pspAudio {
             outputDataLine = null;
         }
     }
-    
+
     private pspChannelInfo[] pspchannels; // psp channels
     private int sampleRate;
 
     private static pspAudio instance;
-    
+
     public static pspAudio getInstance() {
         if (instance == null) {
             instance = new pspAudio();
@@ -70,7 +70,7 @@ public class pspAudio {
 
         sampleRate = 48000;
     }
-    
+
     final int PSP_AUDIO_VOLUME_MAX = 0x8000;
     final int PSP_AUDIO_CHANNEL_MAX = 8;
     final int PSP_AUDIO_NEXT_CHANNEL = (-1);
@@ -78,11 +78,11 @@ public class pspAudio {
     final int PSP_AUDIO_SAMPLE_MAX = 65472;
 
     final int PSP_AUDIO_FORMAT_STEREO = 0;
-    final int PSP_AUDIO_FORMAT_MONO = 0x10; 
-    
+    final int PSP_AUDIO_FORMAT_MONO = 0x10;
+
     final int PSP_AUDIO_FREQ_44K = 44100;
     final int PSP_AUDIO_FREQ_48K = 48000;
-    
+
     public void sceAudioSetFrequency (int frequency)
     {
         int ret = -1;
@@ -92,11 +92,12 @@ public class pspAudio {
             ret = 0;
         }
         Emulator.getProcessor().cpu.gpr[2] = ret; //just return the first channel
-    }    
-    
+    }
+
     //Allocate and initialize a hardware output channel.
     public void sceAudioChReserve (int channel, int samplecount, int format)
     {
+        //if(false)
         if(true)
         {
             System.out.println("IGNORED sceAudioChReserve channel= " + channel + " samplecount = " + samplecount + " format = " + format);
@@ -111,7 +112,7 @@ public class pspAudio {
                 if(pspchannels[channel].reserved)
                 {
                     channel = -1;
-                }        
+                }
             }
             else // find first free channel
             {
@@ -124,7 +125,7 @@ public class pspAudio {
                     }
                 }
 
-            }            
+            }
 
             if(channel!=-1) // if channel == -1 here, it means we couldn't use any.
             {
@@ -158,7 +159,7 @@ public class pspAudio {
     private int doAudioOutput (int channel, int pvoid_buf)
     {
         int ret = -1;
-        
+
         if(pspchannels[channel].reserved)
         {
             if(pspchannels[channel].outputDataLine == null) // if not yet initialized, do it now.
@@ -174,23 +175,23 @@ public class pspAudio {
                     channel=-1;
                 }
             }
-            
+
             if(pspchannels[channel].outputDataLine != null) // if we couldn't initialize the audio line, just ignore the audio output.
             {
                 int channels = ((pspchannels[channel].format&0x10)==0x10)?1:2;
                 int bytespersample = 4; //2*channels;
-                
+
                 int bytes = bytespersample * pspchannels[channel].allocatedSamples;
-                
+
                 byte[] data = new byte[bytes];
-                
+
                 /*
                 for(int i=0;i<bytes;i++)
                 {
                     data[i] = (byte)Emulator.getMemory().read8(pvoid_buf+i);
                 }
                  */
-                
+
                 // process audio volumes ourselves for now
                 if(channels == 1)
                 {
@@ -226,17 +227,17 @@ public class pspAudio {
                         data[i*4+3] = (byte)(rval>>8);
                     }
                 }
-                
+
                 pspchannels[channel].outputDataLine.write(data,0,data.length);
                 pspchannels[channel].outputDataLine.start();
 
                 ret = 0;
             }
         }
-        
+
         return ret; //just return the first channel
     }
-    
+
     private int doAudioFlush(int channel)
     {
         if(pspchannels[channel].outputDataLine != null)
@@ -246,7 +247,7 @@ public class pspAudio {
         }
         return -1;
     }
-    
+
     //Output audio of the specified channel.
     public void sceAudioOutput (int channel, int vol, int pvoid_buf)
     {
@@ -254,7 +255,7 @@ public class pspAudio {
 
         sceAudioChangeChannelVolume(channel, vol, vol);
         ret = doAudioOutput(channel, pvoid_buf);
-        
+
         Emulator.getProcessor().cpu.gpr[2] = ret; //just return the first channel
     }
 
@@ -293,7 +294,12 @@ public class pspAudio {
         Emulator.getProcessor().cpu.gpr[2] = ret;
         ThreadMan.getInstance().yieldCurrentThread();
     }
-    
+
+    public void sceAudioGetChannelRestLength (int channel)
+    {
+        sceAudioGetChannelRestLen(channel);
+    }
+
     //Get count of unplayed samples remaining.
     public void sceAudioGetChannelRestLen (int channel)
     {
@@ -301,12 +307,12 @@ public class pspAudio {
         if(pspchannels[channel].outputDataLine != null)
         {
             int bytespersample = 4;
-            
+
             if((pspchannels[channel].format&0x10)==0x10) bytespersample=2;
-            
+
             ret = pspchannels[channel].outputDataLine.available() / (bytespersample);
         }
-        
+
         Emulator.getProcessor().cpu.gpr[2] = ret;
     }
 
@@ -316,29 +322,29 @@ public class pspAudio {
         pspchannels[channel].allocatedSamples = samplecount;
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }
-    
+
     //Change the format of a channel.
     public void sceAudioChangeChannelConfig (int channel, int format)
     {
         pspchannels[channel].format = format;
         Emulator.getProcessor().cpu.gpr[2] = 0; //just return the first channel
-    }    
+    }
 
     //Change the volume of a channel.
     public void sceAudioChangeChannelVolume (int channel, int leftvol, int rightvol)
     {
         int ret = -1;
-    
+
         if(pspchannels[channel].reserved)
         {
             /* doing the audio processing myself on doAudioOutput for now
-             
+
             if(pspchannels[channel].outputDataLine != null)
             {
-                
+
                 FloatControl cvolume  = (FloatControl)pspchannels[channel].outputDataLine.getControl(FloatControl.Type.VOLUME);
                 FloatControl cpanning;
-                
+
                 if((pspchannels[channel].format&0x10)==0x10)
                      cpanning = (FloatControl)pspchannels[channel].outputDataLine.getControl(FloatControl.Type.PAN);
                 else
@@ -346,10 +352,10 @@ public class pspAudio {
 
                 float vvolume  = Math.max(leftvol,rightvol);
                 float balance = (rightvol-leftvol)/vvolume;
-                
+
                 cvolume.setValue(vvolume/32768.0f);
                 cpanning.setValue(balance);
-                
+
                 ret = 0;
             }
             else*/
@@ -361,10 +367,10 @@ public class pspAudio {
         }
         Emulator.getProcessor().cpu.gpr[2] = ret; //just return the first channel
     }
-    
+
     ////////////////////////////////////////////////////////////////////////////
     // Functions after this point are not yet implemented.
-    
+
     //Reserve the audio output and set the output sample count.
     public void sceAudioOutput2Reserve (int samplecount)
     {

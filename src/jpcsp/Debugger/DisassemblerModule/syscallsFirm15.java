@@ -951,6 +951,9 @@ public class syscallsFirm15 {
                 SysMemUserForUser_342061E5(0x308c, 0x342061E5), //3.72+ or lower
                 sceSasCore_07F58C24(0x308d, 0x07F58C24), //3.72+ or lower
 
+                sceKernelSetCompiledSdkVersion395(0x308e, 0xEBD5C3E6), // 3.95+ or lower
+                sceAtracReinit(0x308f, 0x132F1ECA), // 2.50+ or lower
+                sceAtrac3plus_2DD3E298(0x3090, 0x2DD3E298), // 2.50+ or lower
 
                 hleDummy(0x5000,0xcdcdcdcd); // got bored of editing , and ; so leave this entry at the end of the enum
 

@@ -99,7 +99,7 @@ public class Emulator implements Runnable {
         //cpu.gpr[6] = 0; //a2
         // Gets set in ThreadMan cpu.gpr[26] = 0x09F00000; //k0
         cpu.gpr[27] = 0; //k1 should probably be 0
-        cpu.gpr[28] = (int)(module.baseAddress + module.moduleInfo.getM_gp()); //gp reg    gp register should get the GlobalPointer!!!
+        cpu.gpr[28] = (int)module.moduleInfo.getM_gp(); //gp reg    gp register should get the GlobalPointer!!!
         // Gets set in ThreadMan cpu.gpr[29] = 0x09F00000; //sp
         // Gets set in ThreadMan cpu.gpr[31] = 0x08000004; //ra, should this be 0?
         // All other registers are uninitialised/random values
@@ -267,7 +267,7 @@ public class Emulator implements Runnable {
     public static DisassemblerFrame getDebugger() {
         return debugger;
     }
-    
+
     public void setInstructionCounter(InstructionCounter instructionCounter) {
         this.instructionCounter = instructionCounter;
         instructionCounter.setModule(module);

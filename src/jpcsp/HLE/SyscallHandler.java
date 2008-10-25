@@ -544,7 +544,7 @@ public class SyscallHandler {
                     break;
 		//case 0x2129: pspAudio.getInstance().sceAudioOneshotOutput(); break;
 		case 0x212a: pspAudio.getInstance().sceAudioChRelease(gpr[4]); break;
-		//case 0x212b: pspAudio.getInstance().sceAudio_B011922F(); break;
+		case 0x212b: pspAudio.getInstance().sceAudioGetChannelRestLength(gpr[4]); break;
 		case 0x212c: pspAudio.getInstance().sceAudioSetChannelDataLen(gpr[4], gpr[5]); break;
 		//case 0x212d: pspAudio.getInstance().sceAudioChangeChannelConfig(gpr[4], gpr[5]); break;
 		case 0x212e: pspAudio.getInstance().sceAudioChangeChannelVolume(gpr[4], gpr[5], gpr[6]); break;

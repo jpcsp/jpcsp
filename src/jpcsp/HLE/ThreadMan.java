@@ -249,6 +249,7 @@ public class ThreadMan {
                     // If this thread was doing sceKernelWaitThreadEnd then remove the wakeup callback
                     if (thread.do_waitThreadEnd) {
                         thread.do_waitThreadEnd = false;
+                        thread.cpuContext.gpr[2] = -1; // timeout occured before the thread ended, so fail
                         waitthreadendlist.remove(thread.waitThreadEndUid);
                     }
                 }
@@ -840,10 +841,12 @@ public class ThreadMan {
             //stackAllocated += size;
             //return p;
 
-            //int p = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_HighAligned, size, 0x1000);
+            //int p = pspSysMem.get_instance().malloc(2, pspSysMem.PSP_SMEM_HighAligned, size, 0x1000);
             int p = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_High, size, 0);
-            pspSysMem.getInstance().addSysMemInfo(2, "ThreadMan-Stack", pspSysMem.PSP_SMEM_High, size, 0);
-            p += size;
+            if (p != 0) {
+                pspSysMem.getInstance().addSysMemInfo(2, "ThreadMan-Stack", pspSysMem.PSP_SMEM_High, size, 0);
+                p += size;
+            }
 
             return p;
         } else {
@@ -911,8 +914,11 @@ public class ThreadMan {
 
             status = PspThreadStatus.PSP_THREAD_SUSPEND;
             stack_addr = mallocStack(stackSize);
-            if (stackSize > 0 && (attr & PSP_THREAD_ATTR_NO_FILLSTACK) != PSP_THREAD_ATTR_NO_FILLSTACK)
+            if (stack_addr != 0 &&
+                stackSize > 0 &&
+                (attr & PSP_THREAD_ATTR_NO_FILLSTACK) != PSP_THREAD_ATTR_NO_FILLSTACK) {
                 memset(stack_addr - stackSize, (byte)0xFF, stackSize);
+            }
             gpReg_addr = Emulator.getProcessor().cpu.gpr[28]; // inherit gpReg
             currentPriority = initPriority;
             waitType = 0; // ?
