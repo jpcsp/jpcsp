@@ -41,7 +41,6 @@ public class ModuleContext {
     public int[] stubtextsection;
 
     // .rodata.sceModuleInfo
-    // module info currently isn't relocated, so you might have to do gp = baseAddress + gp
     public PSPModuleInfo moduleInfo;
 
     public List<DeferredStub> unresolvedImports;

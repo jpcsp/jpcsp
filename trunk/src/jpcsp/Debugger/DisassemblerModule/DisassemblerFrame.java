@@ -80,17 +80,19 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 DisassemblerFrame.this.customizeStyledLabel(this, text);
             }
         });
+
         RefreshDebugger(true);
+        wantStep = false;
     }
 
     private void customizeStyledLabel(StyledLabel label, String text) {
-        if(text.contains("<*>"))//breakpoint!
+        if(text.startsWith("<*>"))//breakpoint!
         {
             label.addStyleRange(new StyleRange(0, 3, Font.BOLD, Color.RED));
         }
-        if(text.contains(String.format("%08X:", Emulator.getProcessor().cpu.pc)))
+        if(text.startsWith(String.format("   %08X", Emulator.getProcessor().cpu.pc)))
         {
-             label.addStyleRange(new StyleRange(3, 9, Font.BOLD, Color.BLACK));
+            label.addStyleRange(new StyleRange(0, -1, Font.BOLD, Color.BLACK));
         }
         if(text.contains(" ["))
         {

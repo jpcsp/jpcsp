@@ -41,7 +41,7 @@ public class ThreadManager {
     public static HashMap<Integer, Integer> waitThreadEndMap; // <thread to wait on, thread to wakeup>
     public ArrayList<Integer> waitingThreads;
     public SceKernelThreadInfo currentThread;
-    public SceKernelThreadInfo idle0,  idle1;
+    public SceKernelThreadInfo idle0, idle1;
     public int continuousIdleCycles; // watch dog timer - number of continuous cycles in any idle thread
     public int syscallFreeCycles; // watch dog timer - number of cycles since last syscall
 
@@ -202,6 +202,7 @@ public class ThreadManager {
                     // If this thread was doing sceKernelWaitThreadEnd then remove the wakeup callback
                     if (thread.do_waitThreadEnd) {
                         thread.do_waitThreadEnd = false;
+                        thread.cpuContext.gpr[2] = -1; // timeout occured before the thread ended, so fail
                         waitThreadEndMap.remove(thread.waitThreadEndUid);
                     }
                 }
@@ -712,18 +713,18 @@ public class ThreadManager {
         int setAttr = gpr[5];
 
         Modules.log.debug("sceKernelChangeCurrentThreadAttr"
-                + " clearAttr:0x" + Integer.toHexString(setAttr)
+                + " clearAttr:0x" + Integer.toHexString(clearAttr)
                 + " setAttr:0x" + Integer.toHexString(setAttr)
                 + " oldAttr:0x" + Integer.toHexString(currentThread.attr));
 
         // Don't allow switching into kernel mode!
         if ((currentThread.attr & THREAD_ATTR_USER) == THREAD_ATTR_USER &&
-            (setAttr & THREAD_ATTR_USER) != THREAD_ATTR_USER) {
+            (clearAttr & THREAD_ATTR_USER) == THREAD_ATTR_USER) {
             Modules.log.debug("sceKernelChangeCurrentThreadAttr forcing user mode");
-            setAttr |= THREAD_ATTR_USER;
+            clearAttr &= ~THREAD_ATTR_USER;
         }
 
-        currentThread.attr = (currentThread.attr & ~clearAttr)|setAttr;
+        currentThread.attr = (currentThread.attr & ~clearAttr) | setAttr;
 
         gpr[2] = 0;
     }

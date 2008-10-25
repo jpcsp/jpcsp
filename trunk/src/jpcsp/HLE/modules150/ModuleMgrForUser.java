@@ -143,7 +143,7 @@ public class ModuleMgrForUser implements HLEModule {
             // TODO cpu.gpr[2] = HLEModuleManager.getInstance().LoadFlash0Module(prxname);
             return;
         }
-        
+
         // Ban some modules
         for (bannedModulesList bannedModuleName : bannedModulesList.values())
         {
@@ -167,7 +167,7 @@ public class ModuleMgrForUser implements HLEModule {
     	        // TODO
                 // We need to get a load address, we can either add getHeapBottom to pspsysmem, or we can malloc something small
                 // We're going to need to write a SceModule struct somewhere, so we could malloc that, and add the size of the struct to the address
-                // For now we'll just malloc 64 bytes :P (the loadBase needs to be aligned)
+                // For now we'll just malloc 64 bytes :P (the loadBase needs to be aligned any)
 
     	        int loadBase = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_Low, 64, 0) + 64;
                 ModuleContext module = Loader.getInstance().LoadModule(name, moduleBuffer, loadBase);
@@ -185,7 +185,7 @@ public class ModuleMgrForUser implements HLEModule {
                     sceModule.setName(name);
                     sceModule.setAttr(module.moduleInfo.getM_attr());
                     sceModule.setStartAddr(module.entryAddress);
-                    sceModule.setGp(module.baseAddress + (int)module.moduleInfo.getM_gp());
+                    sceModule.setGp((int)module.moduleInfo.getM_gp());
                     HLEModuleManager.getInstance().addSceModule(sceModule);
 
                     cpu.gpr[2] = sceModule.getUid();

@@ -17,8 +17,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.format;
 
 import java.io.IOException;
-import  java.nio.ByteBuffer;
+import java.nio.ByteBuffer;
+import jpcsp.Memory;
 import static jpcsp.util.Utilities.*;
+
 public class PSPModuleInfo {
 
     private int m_attr;
@@ -31,17 +33,14 @@ public class PSPModuleInfo {
     private long m_imp_end;
     private String m_namez = ""; // String version of m_name
 
-
     public void read(ByteBuffer f) throws IOException {
         m_attr = readUHalf(f);
         m_version = readUHalf(f);
         f.get(m_name);
         m_gp = readUWord(f);
         m_exports = readUWord(f); // .lib.ent
-
         m_exp_end = readUWord(f);
         m_imports = readUWord(f); // .lib.stub
-
         m_imp_end = readUWord(f);
 
         // Convert the array of bytes used for the module name to a Java String
@@ -51,6 +50,25 @@ public class PSPModuleInfo {
         while (len < 28 && m_name[len] != 0)
             len++;
         m_namez = new String(m_name, 0, len);
+    }
+
+    public void read(Memory mem, int address) {
+        m_attr      = mem.read16(address);
+        m_version   = mem.read16(address + 2);
+
+        int i, len = 0;
+        for (i = 0; i < 28; i++) {
+            m_name[i] = (byte)mem.read8(address + 4 + i);
+            if (m_name[i] == (byte)0 && len == 0)
+                len = i;
+        }
+        m_namez = new String(m_name, 0, len);
+
+        m_gp        = mem.read32(address + 32);
+        m_exports   = mem.read32(address + 36); // .lib.ent
+        m_exp_end   = mem.read32(address + 40);
+        m_imports   = mem.read32(address + 44); // .lib.stub
+        m_imp_end   = mem.read32(address + 48);
     }
 
     public int getM_attr() {

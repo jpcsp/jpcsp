@@ -106,7 +106,7 @@ public class Elf32 {
         }
 
         if (shstrtab == null) {
-            Emulator.log.error(".shstrtab section not found");
+            Emulator.log.warn(".shstrtab section not found");
             return;
         }
 
@@ -154,7 +154,7 @@ public class Elf32 {
         this.header = header;
     }
 
-    public List<Elf32ProgramHeader> getListProgramHeader() {
+    public List<Elf32ProgramHeader> getProgramHeaderList() {
         return programHeaderList;
     }
 
@@ -162,7 +162,7 @@ public class Elf32 {
         return programHeaderList.get(index);
     }
 
-    public List<Elf32SectionHeader> getListSectionHeader() {
+    public List<Elf32SectionHeader> getSectionHeaderList() {
         return sectionHeaderList;
     }
 
