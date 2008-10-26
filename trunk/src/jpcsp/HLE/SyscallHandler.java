@@ -129,8 +129,12 @@ public class SyscallHandler {
                 case 0x202e:
                     ThreadMan.getInstance().ThreadMan_sceKernelPollEventFlag(gpr[4], gpr[5], gpr[6], gpr[7]);
                     break;
-		// sceKernelCancelEventFlag(0x202f), // not in pspsdk docs... probably 1 param, uid
-		// sceKernelReferEventFlagStatus(0x2030),
+                case 0x202f:
+                    ThreadMan.getInstance().ThreadMan_sceKernelCancelEventFlag(gpr[4], gpr[5], gpr[6]);
+                    break;
+                case 0x2030:
+                    ThreadMan.getInstance().ThreadMan_sceKernelReferEventFlagStatus(gpr[4], gpr[5]);
+                    break;
 		// sceKernelCreateMbx(0x2031),
 		// sceKernelDeleteMbx(0x2032),
 		// sceKernelSendMbx(0x2033),
