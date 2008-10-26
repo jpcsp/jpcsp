@@ -617,6 +617,7 @@ public class Loader {
                 f.position((int)(elfOffset + phdr.getP_offset()));
                 relocateFromBuffer(f, module, baseAddress, elf, RelCount);
                 // TODO now skip relocate from section headers?
+                return;
             }
             i++;
         }

@@ -43,9 +43,11 @@ int and_thread(SceSize args, void *argp)
         // 0x00FF00FF initPattern
         // 0x000000FF should work - ok
         // 0x00000FF0 should fail - ok
+        // 0x0000FF00 should fail - ok
 
         outBits = 0xbaadc0de;
         result = sceKernelWaitEventFlag(evid, AND_PATTERN, PSP_EVENT_WAITAND, &outBits, 0);
+        //result = sceKernelPollEventFlag(evid, AND_PATTERN, PSP_EVENT_WAITAND, &outBits);
         printf("thread '%-12s' result %08x outBits %08x\n", info.name, result, (int)outBits);
 
         sceKernelSleepThreadCB();
@@ -73,13 +75,42 @@ int or_thread(SceSize args, void *argp)
         // 0x0000FF00 should fail - ok
 
         outBits = 0xbaadc0de;
-        SceUInt timeout = 1000*1000*5;
-        result = sceKernelWaitEventFlag(evid, OR_PATTERN, PSP_EVENT_WAITOR, &outBits, &timeout);
+        volatile SceUInt timeout = 1000*1000*5;
+        //result = sceKernelWaitEventFlag(evid, OR_PATTERN, PSP_EVENT_WAITOR, &outBits, &timeout);
+        result = sceKernelWaitEventFlag(evid, OR_PATTERN, PSP_EVENT_WAITOR, &outBits, 0);
         printf("thread '%-12s' result %08x outBits %08x\n", info.name, result, (int)outBits);
 
         //if (timeout) timeout = *(int*)timeout;
         printf("timeout %d/%08x\n", (int)timeout, (int)timeout);
 
+
+        sceKernelSleepThreadCB();
+    }
+
+	return 0;
+}
+
+#define CLEAR_PATTERN 0x00000FF0
+int clear_thread(SceSize args, void *argp)
+{
+	int result;
+    u32 outBits;
+    SceKernelThreadInfo info;
+    info.size = sizeof(SceKernelThreadInfo);
+
+    sceKernelReferThreadStatus (0, &info);
+    printf("thread '%-12s' sp %p pattern %08x START\n", info.name, info.stack, CLEAR_PATTERN);
+
+    while(!done)
+    {
+        // 0x00FF00FF initPattern
+        // 0x000000FF should work - ok
+        // 0x00000FF0 should fail - ok
+        // 0x0000FF00 should fail - ok
+
+        outBits = 0xbaadc0de;
+        result = sceKernelWaitEventFlag(evid, CLEAR_PATTERN, PSP_EVENT_WAITCLEAR, &outBits, 0);
+        printf("thread '%-12s' result %08x outBits %08x\n", info.name, result, (int)outBits);
 
         sceKernelSleepThreadCB();
     }
@@ -114,7 +145,8 @@ int main(int argc, char *argv[])
     printf("Square - Set lower 16-bits\n");
     printf("Circle - Clear lower 16-bits\n");
     printf("Cross - Delay + refer status\n");
-    printf("R-Trigger - Cancel\n\n");
+    printf("R-Trigger - Cancel event flag\n\n");
+    printf("L-Trigger - Delete event flag\n\n");
 
 	SetupCallbacks();
 
@@ -128,12 +160,13 @@ int main(int argc, char *argv[])
     {
         createStartThread("and", and_thread);
         createStartThread("or", or_thread);
+        createStartThread("clear", clear_thread);
 
 #if 0
         // testing context switch timing
         sceKernelSetEventFlag(evid, 0x0000FFFF);
         //int buf[64]; for(;;) sceCtrlReadLatch(buf); // sceCtrlReadLatch does not context switch
-        for(;;) sceKernelDelayThread(0);
+        for(;;) sceKernelDelayThread(0); // does not wait forever
 #else
         while(!done)
         {
@@ -168,6 +201,14 @@ int main(int argc, char *argv[])
                 result = sceKernelCancelEventFlag(evid, INITIAL_PATTERN, 0);
                 printf("sceKernelCancelEventFlag result %08x\n", result);
                 printSceKernelEventFlagInfo(evid);
+            }
+
+            if (buttonDown & PSP_CTRL_LTRIGGER)
+            {
+                //result = sceKernelCancelEventFlag(evid, newPattern, addr);
+                result = sceKernelDeleteEventFlag(evid);
+                printf("sceKernelDeleteEventFlag result %08x\n", result);
+                evid = 0;
             }
 
             if (buttonDown & PSP_CTRL_TRIANGLE)

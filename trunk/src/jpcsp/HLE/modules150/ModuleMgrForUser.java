@@ -247,7 +247,7 @@ public class ModuleMgrForUser implements HLEModule {
         int status_addr = cpu.gpr[7];
         int option_addr = cpu.gpr[8]; // SceKernelSMOption
 
-        Modules.log.warn("UNIMPLEMENTED:sceKernelStartModule(uid=0x" + Integer.toHexString(uid)
+        Modules.log.debug("sceKernelStartModule(uid=0x" + Integer.toHexString(uid)
             + ",argsize=" + argsize
             + ",argp=0x" + Integer.toHexString(argp_addr)
             + ",status=0x" + Integer.toHexString(status_addr)

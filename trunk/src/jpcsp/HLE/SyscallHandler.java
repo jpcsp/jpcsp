@@ -93,20 +93,27 @@ public class SyscallHandler {
                 case 0x2020:
                     ThreadMan.getInstance().ThreadMan_sceKernelCreateSema(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
                     break;
-		// sceKernelDeleteSema(0x2021),
-		 //sceKernelSignalSema(0x2022),
+                case 0x2021:
+                    ThreadMan.getInstance().ThreadMan_sceKernelDeleteSema(gpr[4]);
+                    break;
                 case 0x2022:
                     ThreadMan.getInstance().ThreadMan_sceKernelSignalSema(gpr[4], gpr[5]);
                     break;
                 case 0x2023:
-                    ThreadMan.getInstance().ThreadMan_sceKernelWaitSema(gpr[4], gpr[5], gpr[6], gpr[7]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelWaitSema(gpr[4], gpr[5], gpr[6]);
                     break;
                 case 0x2024:
-                    ThreadMan.getInstance().ThreadMan_sceKernelWaitSemaCB(gpr[4], gpr[5], gpr[6], gpr[7]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelWaitSemaCB(gpr[4], gpr[5], gpr[6]);
                     break;
-		// sceKernelPollSema(0x2025),
-		 //sceKernelCancelSema(0x2026),
-		 //sceKernelReferSemaStatus(0x2027),
+                case 0x2025:
+                    ThreadMan.getInstance().ThreadMan_sceKernelPollSema(gpr[4], gpr[5]);
+                    break;
+                //case 0x2026:
+                //    ThreadMan.getInstance().ThreadMan_sceKernelCancelSema(gpr[4]); // not in pspsdk, unknown params
+                //    break;
+                //case 0x2027:
+                //    ThreadMan.getInstance().ThreadMan_sceKernelReferSemaStatus(gpr[4], gpr[5]);
+                //    break;
 
                 case 0x2028:
                     ThreadMan.getInstance().ThreadMan_sceKernelCreateEventFlag(gpr[4], gpr[5], gpr[6], gpr[7]);
@@ -130,7 +137,7 @@ public class SyscallHandler {
                     ThreadMan.getInstance().ThreadMan_sceKernelPollEventFlag(gpr[4], gpr[5], gpr[6], gpr[7]);
                     break;
                 case 0x202f:
-                    ThreadMan.getInstance().ThreadMan_sceKernelCancelEventFlag(gpr[4], gpr[5], gpr[6]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelCancelEventFlag(gpr[4], gpr[5], gpr[6]); // not in pspsdk, params guessed
                     break;
                 case 0x2030:
                     ThreadMan.getInstance().ThreadMan_sceKernelReferEventFlagStatus(gpr[4], gpr[5]);
