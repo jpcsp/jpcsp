@@ -91,33 +91,45 @@ public class SyscallHandler {
 		// sceKernelDelaySysClockThreadCB(0x201f),
 
                 case 0x2020:
-                    ThreadMan.getInstance().ThreadMan_sceKernelCreateSema(gpr[4],gpr[5],gpr[6],gpr[7],gpr[8]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelCreateSema(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
                     break;
 		// sceKernelDeleteSema(0x2021),
 		 //sceKernelSignalSema(0x2022),
                 case 0x2022:
-                    ThreadMan.getInstance().ThreadMan_sceKernelSignalSema(gpr[4],gpr[5]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelSignalSema(gpr[4], gpr[5]);
                     break;
                 case 0x2023:
-                    ThreadMan.getInstance().ThreadMan_sceKernelWaitSema(gpr[4],gpr[5], gpr[6], gpr[7]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelWaitSema(gpr[4], gpr[5], gpr[6], gpr[7]);
                     break;
                 case 0x2024:
-                    ThreadMan.getInstance().ThreadMan_sceKernelWaitSemaCB(gpr[4],gpr[5], gpr[6], gpr[7]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelWaitSemaCB(gpr[4], gpr[5], gpr[6], gpr[7]);
                     break;
 		// sceKernelPollSema(0x2025),
 		 //sceKernelCancelSema(0x2026),
 		 //sceKernelReferSemaStatus(0x2027),
 
                 case 0x2028:
-                    ThreadMan.getInstance().ThreadMan_sceKernelCreateEventFlag(gpr[4],gpr[5], gpr[6], gpr[7]);
+                    ThreadMan.getInstance().ThreadMan_sceKernelCreateEventFlag(gpr[4], gpr[5], gpr[6], gpr[7]);
                     break;
-		// sceKernelDeleteEventFlag(0x2029),
-		// sceKernelSetEventFlag(0x202a),
-		// sceKernelClearEventFlag(0x202b),
-		// sceKernelWaitEventFlag(0x202c),
-		// sceKernelWaitEventFlagCB(0x202d),
-		// sceKernelPollEventFlag(0x202e),
-		// sceKernelCancelEventFlag(0x202f),
+                case 0x2029:
+                    ThreadMan.getInstance().ThreadMan_sceKernelDeleteEventFlag(gpr[4]);
+                    break;
+                case 0x202a:
+                    ThreadMan.getInstance().ThreadMan_sceKernelSetEventFlag(gpr[4], gpr[5]);
+                    break;
+                case 0x202b:
+                    ThreadMan.getInstance().ThreadMan_sceKernelClearEventFlag(gpr[4], gpr[5]);
+                    break;
+                case 0x202c:
+                    ThreadMan.getInstance().ThreadMan_sceKernelWaitEventFlag(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
+                    break;
+                case 0x202d:
+                    ThreadMan.getInstance().ThreadMan_sceKernelWaitEventFlagCB(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
+                    break;
+                case 0x202e:
+                    ThreadMan.getInstance().ThreadMan_sceKernelPollEventFlag(gpr[4], gpr[5], gpr[6], gpr[7]);
+                    break;
+		// sceKernelCancelEventFlag(0x202f), // not in pspsdk docs... probably 1 param, uid
 		// sceKernelReferEventFlagStatus(0x2030),
 		// sceKernelCreateMbx(0x2031),
 		// sceKernelDeleteMbx(0x2032),
@@ -344,7 +356,9 @@ public class SyscallHandler {
                     pspiofilemgr.getInstance().sceIoDevctl(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8], gpr[9]);
                     break;
 		// sceIoGetDevType(0x20a7),
-		// sceIoAssign(0x20a8),
+                case 0x20a8:
+                    pspiofilemgr.getInstance().sceIoAssign(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8], gpr[9]);
+                    break;
 		// sceIoUnassign(0x20a9),
 		// sceIoCancel(0x20aa),
 		// IoFileMgrForUser_5C2BE2CC(0x20ab),

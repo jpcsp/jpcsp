@@ -779,6 +779,30 @@ public class pspiofilemgr {
         }
     }
 
+    public void sceIoAssign(int dev1_addr, int dev2_addr, int dev3_addr, int mode, int unk1, int unk2) {
+        String dev1 = readStringZ(Memory.getInstance().mainmemory, (dev1_addr & 0x3fffffff) - MemoryMap.START_RAM);
+        String dev2 = readStringZ(Memory.getInstance().mainmemory, (dev2_addr & 0x3fffffff) - MemoryMap.START_RAM);
+        String dev3 = readStringZ(Memory.getInstance().mainmemory, (dev3_addr & 0x3fffffff) - MemoryMap.START_RAM);
+        String perm;
+
+        // IoAssignPerms
+        switch(mode) {
+        case 0: perm = "IOASSIGN_RDWR"; break;
+        case 1: perm = "IOASSIGN_RDONLY"; break;
+        default: perm = "unhandled " + mode; break;
+        }
+
+        Modules.log.warn("UNIMPLEMENTED:sceIoAssign(dev1='" + dev1
+            + "',dev2='" + dev2
+            + "',dev3='" + dev3
+            + "',mode=" + perm
+            + ",unk1=0x" + Integer.toHexString(unk1)
+            + ",unk2=0x" + Integer.toHexString(unk2) + ")");
+
+        //Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
+        Emulator.getProcessor().cpu.gpr[2] = -1;
+    }
+
     /** @param pcfilename can be null for convenience
      * @returns null on error */
     private SceIoStat stat(String pcfilename) {

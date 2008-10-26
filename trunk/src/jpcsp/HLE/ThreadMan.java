@@ -774,10 +774,13 @@ public class ThreadMan {
         Emulator.getProcessor().cpu.gpr[3] = (int)((systemTime >> 32) & 0xffffffffL);
     }
 
+    //private int timeLow = 0;
     public void ThreadMan_sceKernelGetSystemTimeLow() {
-        Modules.log.debug("sceKernelGetSystemTimeLow");
         long systemTime = System.nanoTime();
-        Emulator.getProcessor().cpu.gpr[2] = (int)(systemTime & 0xffffffffL);
+        int low = (int)(systemTime & 0x7fffffffL); // check, don't use msb?
+        //int low = timeLow; timeLow += 10;
+        Modules.log.debug("sceKernelGetSystemTimeLow return:" + low);
+        Emulator.getProcessor().cpu.gpr[2] = low;
     }
 
     public void ThreadMan_sceKernelCheckCallback() {
@@ -841,7 +844,7 @@ public class ThreadMan {
             //stackAllocated += size;
             //return p;
 
-            //int p = pspSysMem.get_instance().malloc(2, pspSysMem.PSP_SMEM_HighAligned, size, 0x1000);
+            //int p = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_HighAligned, size, 0x1000);
             int p = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_High, size, 0);
             if (p != 0) {
                 pspSysMem.getInstance().addSysMemInfo(2, "ThreadMan-Stack", pspSysMem.PSP_SMEM_High, size, 0);
@@ -998,7 +1001,7 @@ public class ThreadMan {
 
     public void ThreadMan_sceKernelWaitSema(int semaid , int signal , int timeoutptr , int timeout)
     {
-          Modules.log.debug("sceKernelWaitSema id= " + semaid + " signal= " + signal + " timeout = " + timeout);
+          Modules.log.debug("sceKernelWaitSema id= " + semaid + " signal= " + signal + " timeout = 0x" + Integer.toHexString(timeout));
             SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
             SceKernelSemaphoreInfo sema = semalist.get(semaid);
             if (sema == null) {
@@ -1045,8 +1048,8 @@ public class ThreadMan {
                 }
             }
             Emulator.getProcessor().cpu.gpr[2] = 0;
-
     }
+
     private class SceKernelSemaphoreInfo
     {
          private String name;
@@ -1068,37 +1071,192 @@ public class ThreadMan {
          }
     }
 
+    private final static int PSP_EVENT_WAITMULTIPLE = 0x200;
+
+    private final static int PSP_EVENT_WAITAND = 0x00;
+    private final static int PSP_EVENT_WAITOR = 0x01;
+    private final static int PSP_EVENT_WAITCLEAR = 0x20;
+
     public void ThreadMan_sceKernelCreateEventFlag(int name_addr, int attr, int initPattern, int option)
     {
         String name = readStringZ(Memory.getInstance().mainmemory,
             (name_addr & 0x3fffffff) - MemoryMap.START_RAM);
 
-        Modules.log.debug("sceKernelCreateEventFlag name=" + name + " attr= " + attr + " initPattern= " + initPattern+ " option= " + option);
+        Modules.log.debug("sceKernelCreateEventFlag(name='" + name
+            + "',attr=0x" + Integer.toHexString(attr)
+            + ",initPattern=0x" + Integer.toHexString(initPattern)
+            + ",option=0x" + Integer.toHexString(option) + ")");
 
-        if(option !=0) Modules.log.warn("sceKernelCreateSema: UNSUPPORTED Option Value");
-        SceKernelEventFlagInfo event = new SceKernelEventFlagInfo(name,attr,initPattern,initPattern);//initPattern and currentPattern should be the same at init
+        if (option !=0) Modules.log.warn("sceKernelCreateEventFlag: UNSUPPORTED Option Value");
+        SceKernelEventFlagInfo event = new SceKernelEventFlagInfo(name, attr, initPattern, initPattern); //initPattern and currentPattern should be the same at init
 
+        Modules.log.debug("sceKernelCreateEventFlag assigned uid=0x" + Integer.toHexString(event.uid));
         Emulator.getProcessor().cpu.gpr[2] = event.uid;
     }
+
+    public void ThreadMan_sceKernelDeleteEventFlag(int uid)
+    {
+        Modules.log.debug("sceKernelDeleteEventFlag uid=0x" + Integer.toHexString(uid));
+        SceKernelEventFlagInfo event = eventlist.remove(uid);
+        if (event == null) {
+            Modules.log.warn("sceKernelDeleteEventFlag unknown uid=0x" + Integer.toHexString(uid));
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_EVENT_FLAG;
+        } else {
+            Emulator.getProcessor().cpu.gpr[2] = 0;
+        }
+    }
+
+    public void ThreadMan_sceKernelSetEventFlag(int uid, int bits)
+    {
+        Modules.log.debug("sceKernelSetEventFlag uid=0x" + Integer.toHexString(uid) + " bits=0x" + Integer.toHexString(bits));
+        SceKernelEventFlagInfo event = eventlist.get(uid);
+        if (event == null) {
+            Modules.log.warn("sceKernelSetEventFlag unknown uid=0x" + Integer.toHexString(uid));
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_EVENT_FLAG;
+        } else {
+            event.currentPattern |= bits;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
+        }
+    }
+
+    public void ThreadMan_sceKernelClearEventFlag(int uid, int bits)
+    {
+        Modules.log.debug("sceKernelClearEventFlag uid=0x" + Integer.toHexString(uid) + " bits=0x" + Integer.toHexString(bits));
+        SceKernelEventFlagInfo event = eventlist.get(uid);
+        if (event == null) {
+            Modules.log.warn("sceKernelClearEventFlag unknown uid=0x" + Integer.toHexString(uid));
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_EVENT_FLAG;
+        } else {
+            event.currentPattern &= ~bits;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
+        }
+    }
+
+    /** If there was a match we attempt to write to outBits_addr.
+     * @return true if there was a match. */
+    private boolean checkEventFlag(SceKernelEventFlagInfo event, int bits, int wait, int outBits_addr) {
+        boolean matched = false;
+
+        if (wait == PSP_EVENT_WAITAND &&
+            (event.currentPattern & bits) == bits) {
+            Modules.log.debug("checkEventFlag matched PSP_EVENT_WAITAND");
+            matched = true;
+        }
+
+        if ((wait & PSP_EVENT_WAITOR) == PSP_EVENT_WAITOR &&
+            (event.currentPattern & bits) != 0) {
+            Modules.log.debug("checkEventFlag matched PSP_EVENT_WAITOR");
+            matched = true;
+        }
+
+        if ((wait & PSP_EVENT_WAITCLEAR) == PSP_EVENT_WAITCLEAR &&
+            (event.currentPattern & bits) == 0) {
+            Modules.log.debug("checkEventFlag matched PSP_EVENT_WAITCLEAR");
+            matched = true;
+        }
+
+        if (matched) {
+            // TODO outbits are only the requested bits or all 32 bits?
+            Memory mem = Memory.getInstance();
+            if (mem.isAddressGood(outBits_addr)) {
+                mem.write32(outBits_addr, event.currentPattern);
+            }
+        }
+
+        return matched;
+    }
+
+    public void ThreadMan_sceKernelWaitEventFlag(int uid, int bits, int wait, int outBits_addr, int timeout_addr)
+    {
+        Modules.log.debug("sceKernelWaitEventFlag uid=0x" + Integer.toHexString(uid)
+            + " bits=0x" + Integer.toHexString(bits)
+            + " wait=0x" + Integer.toHexString(wait)
+            + " outBits=0x" + Integer.toHexString(outBits_addr)
+            + " timeout=0x" + Integer.toHexString(timeout_addr));
+
+        SceKernelEventFlagInfo event = eventlist.get(uid);
+        if (event == null) {
+            Modules.log.warn("sceKernelWaitEventFlag unknown uid=0x" + Integer.toHexString(uid));
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_EVENT_FLAG;
+        } else {
+            Modules.log.warn("UNIMPLEMENTED:sceKernelWaitEventFlag");
+
+            if (!checkEventFlag(event, bits, wait, outBits_addr)) {
+                // need to wait a little
+                // TODO use timeout and call checkEventFlag on each step
+                current_thread.do_callbacks = false;
+                yieldCurrentThread();
+            }
+
+            Emulator.getProcessor().cpu.gpr[2] = 0;
+        }
+    }
+
+    public void ThreadMan_sceKernelWaitEventFlagCB(int uid, int bits, int wait, int outBits_addr, int timeout_addr)
+    {
+        Modules.log.debug("sceKernelWaitEventFlagCB uid=0x" + Integer.toHexString(uid)
+            + " bits=0x" + Integer.toHexString(bits)
+            + " wait=0x" + Integer.toHexString(wait)
+            + " outBits=0x" + Integer.toHexString(outBits_addr)
+            + " timeout=0x" + Integer.toHexString(timeout_addr));
+
+        SceKernelEventFlagInfo event = eventlist.get(uid);
+        if (event == null) {
+            Modules.log.warn("sceKernelWaitEventFlagCB unknown uid=0x" + Integer.toHexString(uid));
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_EVENT_FLAG;
+        } else {
+            Modules.log.warn("UNIMPLEMENTED:sceKernelWaitEventFlagCB");
+
+            if (!checkEventFlag(event, bits, wait, outBits_addr)) {
+                // need to wait a little
+                // TODO use timeout and call checkEventFlag on each step
+                current_thread.do_callbacks = true;
+                yieldCurrentThread();
+            }
+
+            Emulator.getProcessor().cpu.gpr[2] = 0;
+        }
+    }
+
+    public void ThreadMan_sceKernelPollEventFlag(int uid, int bits, int wait, int outBits_addr)
+    {
+        Modules.log.debug("sceKernelPollEventFlag uid=0x" + Integer.toHexString(uid)
+            + " bits=0x" + Integer.toHexString(bits)
+            + " wait=0x" + Integer.toHexString(wait)
+            + " outBits=0x" + Integer.toHexString(outBits_addr));
+
+        SceKernelEventFlagInfo event = eventlist.get(uid);
+        if (event == null) {
+            Modules.log.warn("sceKernelPollEventFlag unknown uid=0x" + Integer.toHexString(uid));
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_EVENT_FLAG;
+        } else {
+            checkEventFlag(event, bits, wait, outBits_addr);
+
+            // TODO return error if pattern doesn't match?
+            Emulator.getProcessor().cpu.gpr[2] = 0;
+        }
+    }
+
+    // TODO cancel waiting event flag
+
     private class SceKernelEventFlagInfo
     {
-      private String name;
-      private int attr;
-      private int initPattern;
-      private int currentPattern;
-      private int numWaitThreads;//NOT sure if that should be here or merged with the semaphore waitthreads..
+        private final String name;
+        private final int attr;
+        private final int initPattern;
+        private int currentPattern;
+        private int numWaitThreads; //NOT sure if that should be here or merged with the semaphore waitthreads..
 
-      private int uid;
+        private final int uid;
 
-      public SceKernelEventFlagInfo(String name,int attr,int initPattern,int currentPattern)
-      {
-        this.name=name;
-        this.attr=attr;
-        this.initPattern=initPattern;
-        this.currentPattern=currentPattern;
-        uid = SceUidManager.getNewUid("ThreadMan-eventflag");
-        eventlist.put(uid, this);
-
-      }
+        public SceKernelEventFlagInfo(String name,int attr,int initPattern,int currentPattern)
+        {
+            this.name = name;
+            this.attr = attr;
+            this.initPattern = initPattern;
+            this.currentPattern = currentPattern;
+            uid = SceUidManager.getNewUid("ThreadMan-eventflag");
+            eventlist.put(uid, this);
+        }
     }
 }

@@ -167,7 +167,7 @@ public class ModuleMgrForUser implements HLEModule {
     	        // TODO
                 // We need to get a load address, we can either add getHeapBottom to pspsysmem, or we can malloc something small
                 // We're going to need to write a SceModule struct somewhere, so we could malloc that, and add the size of the struct to the address
-                // For now we'll just malloc 64 bytes :P (the loadBase needs to be aligned any)
+                // For now we'll just malloc 64 bytes :P (the loadBase needs to be aligned anyway)
 
     	        int loadBase = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_Low, 64, 0) + 64;
                 ModuleContext module = Loader.getInstance().LoadModule(name, moduleBuffer, loadBase);
