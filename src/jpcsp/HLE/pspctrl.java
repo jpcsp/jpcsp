@@ -223,6 +223,5 @@ public class pspctrl {
         mem.write32(a0 +8, uiPress);
         mem.write32(a0 +12, uiRelease);
         Emulator.getProcessor().cpu.gpr[2] = 0;
-        ThreadMan.getInstance().yieldCurrentThread();
     }
 }
