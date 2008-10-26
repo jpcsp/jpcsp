@@ -262,7 +262,7 @@ public class ModuleMgrForUser implements HLEModule {
         SceModule sceModule = HLEModuleManager.getInstance().getSceModuleByUid(uid);
         if (sceModule == null) {
             cpu.gpr[2] = -1;
-            Modules.log.error("sceKernelStartModule - unknown module UID " + uid);
+            Modules.log.error("sceKernelStartModule - unknown module UID 0x" + Integer.toHexString(uid));
             return;
         }
 
