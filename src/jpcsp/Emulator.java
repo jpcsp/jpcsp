@@ -219,6 +219,7 @@ public class Emulator implements Runnable {
     public static final int EMU_STATUS_BREAKPOINT = 0x10;
     public static final int EMU_STATUS_UNIMPLEMENTED = 0x20;
     public static final int EMU_STATUS_PAUSE = 0x40;
+    public static final int EMU_STATUS_JUMPSELF = 0x80;
     public static synchronized void PauseEmuWithStatus(int status)
     {
         if (run && !pause)

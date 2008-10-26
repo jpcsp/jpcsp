@@ -6,12 +6,14 @@
 package jpcsp.Allegrex;
 
 import jpcsp.Allegrex.*;
+import jpcsp.Emulator;
+import jpcsp.Processor;
 
 /**
  * Branch Control Unit, handles branching and jumping operations
- * 
+ *
  * @author hli
- * 
+ *
  */
 public class BcuState extends LsuState {
     public int pc;
@@ -28,8 +30,8 @@ public class BcuState extends LsuState {
         super.resetAll();
         pc = 0;
         npc = 0;
-    }       
-    
+    }
+
     public BcuState() {
         pc = 0;
         npc = 0;
@@ -46,7 +48,7 @@ public class BcuState extends LsuState {
         pc = that.pc;
         npc = that.npc;
     }
-    
+
     public static int branchTarget(int npc, int simm16) {
         return npc + (simm16 << 2);
     }
@@ -54,32 +56,32 @@ public class BcuState extends LsuState {
     public static int jumpTarget(int npc, int uimm26) {
         return (npc & 0xf0000000) | (uimm26 << 2);
     }
-    
+
     public int fetchOpcode() {
         npc = pc + 4;
-        
+
         int opcode = memory.read32(pc);
-        
+
         // by default, the next instruction to emulate is at the next address
         pc = npc;
 
         return opcode;
     }
-    
+
     public int nextOpcode() {
         int opcode = memory.read32(pc);
-        
+
         // by default, the next instruction to emulate is at the next address
         pc += 4;
 
         return opcode;
     }
-    
+
     public void nextPc() {
         pc = npc;
         npc = pc + 4;
     }
-    
+
     public boolean doJR(int rs) {
         npc = gpr[rs];
         return true;
@@ -163,6 +165,10 @@ public class BcuState extends LsuState {
 
     public boolean doJ(int uimm26) {
         npc = jumpTarget(pc, uimm26);
+        if (npc == pc - 4) {
+            Processor.log.info("Pausing emulator - jump to self (death loop)");
+            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_JUMPSELF);
+        }
         return true;
     }
 
@@ -232,6 +238,6 @@ public class BcuState extends LsuState {
         return false;
     }
 
-    
-    
+
+
 }
