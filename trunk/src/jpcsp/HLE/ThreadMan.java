@@ -197,10 +197,10 @@ public class ThreadMan {
         Memory.getInstance().write32(MemoryMap.START_RAM + 8, instruction_jr);
         Memory.getInstance().write32(MemoryMap.START_RAM + 12, instruction_syscall);
 
-        idle0 = new SceKernelThreadInfo("idle0", MemoryMap.START_RAM, 0x7f, 0x0, 0x0);
+        idle0 = new SceKernelThreadInfo("idle0", MemoryMap.START_RAM | 0x80000000, 0x7f, 0x0, PSP_THREAD_ATTR_KERNEL);
         idle0.status = PspThreadStatus.PSP_THREAD_READY;
 
-        idle1 = new SceKernelThreadInfo("idle1", MemoryMap.START_RAM, 0x7f, 0x0, 0x0);
+        idle1 = new SceKernelThreadInfo("idle1", MemoryMap.START_RAM | 0x80000000, 0x7f, 0x0, PSP_THREAD_ATTR_KERNEL);
         idle1.status = PspThreadStatus.PSP_THREAD_READY;
 
         continuousIdleCycles = 0;
@@ -672,64 +672,65 @@ public class ThreadMan {
         Emulator.getProcessor().cpu.gpr[2] = current_thread.uid;
     }
 
-    public void ThreadMan_sceKernelReferThreadStatus(int uid, int a1) {
+    public void ThreadMan_sceKernelReferThreadStatus(int uid, int addr) {
         //Get the status information for the specified thread
         if (uid == 0) uid = current_thread.uid;
         SceKernelThreadInfo thread = threadlist.get(uid);
         if (thread == null) {
+            Modules.log.warn("sceKernelReferThreadStatus unknown uid=0x" + Integer.toHexString(uid));
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_THREAD;
-            return;
+        } else  {
+            //Modules.log.debug("sceKernelReferThreadStatus uid=0x" + Integer.toHexString(uid));
+            thread.write(Memory.getInstance(), addr);
+            Emulator.getProcessor().cpu.gpr[2] = 0;
         }
-
-        //Modules.log.debug("sceKernelReferThreadStatus SceKernelThreadInfo=" + Integer.toHexString(a1));
-
-        int i, len;
-        Memory mem = Memory.getInstance();
-        mem.write32(a1, 106); //struct size
-
-        //thread name max 32bytes
-        len = thread.name.length();
-        if (len > 31) len = 31;
-        for (i=0; i < len; i++)
-            mem.write8(a1 +4 +i, (byte)thread.name.charAt(i));
-        mem.write8(a1 +4 +i, (byte)0);
-
-        mem.write32(a1 +36, thread.attr);
-        mem.write32(a1 +40, thread.status.getValue());
-        mem.write32(a1 +44, thread.entry_addr);
-        mem.write32(a1 +48, thread.stack_addr);
-        mem.write32(a1 +52, thread.stackSize);
-        mem.write32(a1 +56, thread.gpReg_addr);
-        mem.write32(a1 +60, thread.initPriority);
-        mem.write32(a1 +64, thread.currentPriority);
-        mem.write32(a1 +68, thread.waitType);
-        mem.write32(a1 +72, thread.waitId);
-        mem.write32(a1 +78, thread.wakeupCount);
-        mem.write32(a1 +82, thread.exitStatus);
-        mem.write64(a1 +86, thread.runClocks);
-        mem.write32(a1 +94, thread.intrPreemptCount);
-        mem.write32(a1 +98, thread.threadPreemptCount);
-        mem.write32(a1 +102, thread.releaseCount);
-
-        Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
+    /** Write uid's to buffer */
     public void ThreadMan_sceKernelGetThreadmanIdList(int type,
         int readbuf_addr, int readbufsize, int idcount_addr) {
         Memory mem = Memory.getInstance();
 
-        Modules.log.warn("UNIMPLEMENTED:sceKernelGetThreadmanIdList type=" + type
+        Modules.log.debug("sceKernelGetThreadmanIdList type=" + type
             + " readbuf:0x" + Integer.toHexString(readbuf_addr)
             + " readbufsize:" + readbufsize
             + " idcount:0x" + Integer.toHexString(idcount_addr));
 
         // TODO type=SCE_KERNEL_TMID_Thread, don't show the idle threads!
 
+        int count = 0;
+
+        switch(type) {
+            case SCE_KERNEL_TMID_Thread:
+                for (Iterator<SceKernelThreadInfo> it = threadlist.values().iterator(); it.hasNext() /*&& count < readbufsize*/; ) {
+                    SceKernelThreadInfo thread = it.next();
+
+                    // Hide kernel mode threads when called from a user mode thread
+                    if ((thread.attr & PSP_THREAD_ATTR_KERNEL) != PSP_THREAD_ATTR_KERNEL ||
+                        (current_thread.attr & PSP_THREAD_ATTR_KERNEL) == PSP_THREAD_ATTR_KERNEL) {
+
+                        if (count < readbufsize) {
+                            Modules.log.debug("sceKernelGetThreadmanIdList adding thread '" + thread.name + "'");
+                            mem.write32(readbuf_addr + count * 4, thread.uid);
+                            count++;
+                        } else {
+                            Modules.log.warn("sceKernelGetThreadmanIdList NOT adding thread '" + thread.name + "'");
+                        }
+                    }
+                }
+                break;
+
+            default:
+                Modules.log.warn("UNIMPLEMENTED:sceKernelGetThreadmanIdList type=" + type);
+                break;
+        }
+
         // Fake success - 0 entries written
         if (mem.isAddressGood(idcount_addr)) {
-            idcount_addr = 0;
+            idcount_addr = count;
         }
-        Emulator.getProcessor().cpu.gpr[2] = 0;
+
+        Emulator.getProcessor().cpu.gpr[2] = count; // TODO or idcount_addr?
     }
 
     public void ThreadMan_sceKernelChangeThreadPriority(int uid, int priority) {
@@ -1069,6 +1070,33 @@ public class ThreadMan {
         @Override
         public int compare(SceKernelThreadInfo o1, SceKernelThreadInfo o2) {
             return o1.currentPriority - o2.currentPriority;
+        }
+
+        public void write(Memory mem, int address) {
+            mem.write32(address, 106); // size
+
+            int i, len = name.length();
+            for (i = 0; i < 32 && i < len; i++)
+                mem.write8(address + 4 + i, (byte)name.charAt(i));
+            for (; i < 32; i++)
+                mem.write8(address + 4 + i, (byte)0);
+
+            mem.write32(address + 36, attr);
+            mem.write32(address + 40, status.getValue());
+            mem.write32(address + 44, entry_addr);
+            mem.write32(address + 48, stack_addr);
+            mem.write32(address + 52, stackSize);
+            mem.write32(address + 56, gpReg_addr);
+            mem.write32(address + 60, initPriority);
+            mem.write32(address + 64, currentPriority);
+            mem.write32(address + 68, waitType);
+            mem.write32(address + 72, waitId);
+            mem.write32(address + 78, wakeupCount);
+            mem.write32(address + 82, exitStatus);
+            mem.write64(address + 86, runClocks);
+            mem.write32(address + 94, intrPreemptCount);
+            mem.write32(address + 98, threadPreemptCount);
+            mem.write32(address + 102, releaseCount);
         }
     }
 
