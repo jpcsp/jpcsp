@@ -108,12 +108,12 @@ public class SyscallHandler {
                 case 0x2025:
                     ThreadMan.getInstance().ThreadMan_sceKernelPollSema(gpr[4], gpr[5]);
                     break;
-                //case 0x2026:
-                //    ThreadMan.getInstance().ThreadMan_sceKernelCancelSema(gpr[4]); // not in pspsdk, unknown params
-                //    break;
-                //case 0x2027:
-                //    ThreadMan.getInstance().ThreadMan_sceKernelReferSemaStatus(gpr[4], gpr[5]);
-                //    break;
+                case 0x2026:
+                    ThreadMan.getInstance().ThreadMan_sceKernelCancelSema(gpr[4]); // not in pspsdk, params guessed
+                    break;
+                case 0x2027:
+                    ThreadMan.getInstance().ThreadMan_sceKernelReferSemaStatus(gpr[4], gpr[5]);
+                    break;
 
                 case 0x2028:
                     ThreadMan.getInstance().ThreadMan_sceKernelCreateEventFlag(gpr[4], gpr[5], gpr[6], gpr[7]);
