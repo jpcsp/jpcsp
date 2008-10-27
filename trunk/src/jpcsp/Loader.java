@@ -675,8 +675,10 @@ public class Loader {
                 // Ignore patched nids
                 else if (nid == 0)
                 {
-                    Emulator.log.debug(String.format("Ignoring import at 0x%08X [0x%08X] (attempt %d)",
+                    Emulator.log.warn(String.format("Ignoring import at 0x%08X [0x%08X] (attempt %d)",
                         importAddress, nid, module.importFixupAttempts));
+
+                    mem.write32(importAddress + 4, 0); // write a nop over our "unmapped import detection special syscall"
                 }
 
                 else
