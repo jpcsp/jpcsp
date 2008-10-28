@@ -820,6 +820,7 @@ public class pspiofilemgr {
                         int mode = 4; // 4=readable
                         int attr = 0;
                         long size = 0;
+                        long timestamp = 0;
 
                         // Set attr (dir/file)
                         if (iso.isDirectory(isofilename)) {
@@ -829,6 +830,7 @@ public class pspiofilemgr {
                             attr |= 0x20;
                             UmdIsoFile file = iso.getFile(isofilename);
                             size = file.length();
+                            timestamp = file.getTimestamp().getTime();
                         }
 
                         // Octal extend into user and group
@@ -837,8 +839,8 @@ public class pspiofilemgr {
                         mode |= attr << 8;
 
                         stat = new SceIoStat(mode, attr, size,
-                            new ScePspDateTime(0), new ScePspDateTime(0),
-                            new ScePspDateTime(0));
+                            new ScePspDateTime(timestamp), new ScePspDateTime(0),
+                            new ScePspDateTime(timestamp));
                     } catch(FileNotFoundException e) {
                         Modules.log.warn("stat - umd file not found");
                     } catch(IOException e) {

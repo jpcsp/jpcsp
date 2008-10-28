@@ -6,6 +6,9 @@
 package jpcsp.filesystems.umdiso.iso9660;
 
 import java.io.*;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.TimeZone;
 
 /**
  *
@@ -19,7 +22,8 @@ public class Iso9660File {
     // padding: byte[3]
     private String fileName; //[128+1];
     //Iso9660Date date; // byte[7]
-    
+    private Date timestamp;
+
     private int Ubyte(byte b)
     {
         return ((int)b)&255;
@@ -46,6 +50,35 @@ public class Iso9660File {
 
         fileLBA = Ubyte(data[1]) | (Ubyte(data[2])<<8) | (Ubyte(data[3])<<16) | (data[4]<<24);
         fileSize = Ubyte(data[9]) | (Ubyte(data[10])<<8) | (Ubyte(data[11])<<16) | (data[12]<<24);
+        int year = Ubyte(data[17]);
+        int month = Ubyte(data[18]);
+        int day = Ubyte(data[19]);
+        int hour = Ubyte(data[20]);
+        int minute = Ubyte(data[21]);
+        int second = Ubyte(data[22]);
+        int gmtOffset = data[23]; // Offset from Greenwich Mean Time in number of 15 min intervals from -48 (West) to + 52 (East)
+
+        int gmtOffsetHours = gmtOffset / 4;
+        int gmtOffsetMinutes = (gmtOffset % 4) * 15;
+        // Build TimeZone name as e.g.
+        //   "GMT+1015", meaning GMT + 10 hours and 15 minutes
+        String timeZoneName = "GMT";
+        if (gmtOffset >= 0) {
+        	timeZoneName += "+";
+        }
+        timeZoneName += gmtOffsetHours;
+        if (gmtOffsetMinutes > 0) {
+        	if (gmtOffsetMinutes < 10) {
+        		timeZoneName += "0";
+        	}
+        	timeZoneName += gmtOffsetMinutes;
+        }
+        TimeZone timeZone = TimeZone.getTimeZone(timeZoneName);
+
+        Calendar timestampCalendar = Calendar.getInstance(timeZone);
+        timestampCalendar.set(1900 + year, month - 1, day, hour, minute, second);
+        timestamp = timestampCalendar.getTime();
+
         fileProperties = data[24];
         
         if((fileLBA<0)||(fileSize<0))
@@ -85,5 +118,10 @@ public class Iso9660File {
     public String getFileName()
     {
         return fileName;
+    }
+
+    public Date getTimestamp()
+    {
+    	return timestamp;
     }
 }
