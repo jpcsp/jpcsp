@@ -130,7 +130,7 @@ public class sceRtc implements HLEModule {
 
 		Memory mem = Processor.memory;
 
-		cpu.gpr[2] = 1000; // 1000 ticks a second
+		cpu.gpr[2] = 1000000;
 	}
 
 	public void sceRtcGetCurrentTick(Processor processor) {
@@ -139,7 +139,7 @@ public class sceRtc implements HLEModule {
 		Memory mem = Processor.memory;
 
         int addr = cpu.gpr[4];
-        mem.write64(addr, System.currentTimeMillis());
+        mem.write64(addr, System.currentTimeMillis() * 1000);
 
 		cpu.gpr[2] = 0;
 	}
@@ -245,9 +245,9 @@ public class sceRtc implements HLEModule {
 		//////Processor cpu = processor; // Old-Style Processor
 
 		Modules.log.debug("sceRtcIsLeapYear");
-		
+
 		int year = cpu.gpr[4];
-		
+
 		if(year % 4 == 0 )
 			cpu.gpr[2] = 1;
 		else
@@ -257,38 +257,35 @@ public class sceRtc implements HLEModule {
 	public void sceRtcGetDaysInMonth(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
-		
+
 		Modules.log.debug("sceRtcGetDaysInMonth");
-		
+
 		int year = cpu.gpr[4];
 		int month = cpu.gpr[5];
 
-		Calendar cal = new GregorianCalendar(year,month,1);
-		
+		Calendar cal = new GregorianCalendar(year, month - 1, 1);
+
 		int days = cal.getActualMaximum(Calendar.DAY_OF_MONTH);
 		cpu.gpr[2] = days;
 	}
 
+    // pspsdk says 0=monday but I tested and 0=sunday... (fiveofhearts)
 	public void sceRtcGetDayOfWeek(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
-		//////Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-		
+
 		Modules.log.debug("sceRtcGetDayOfWeek");
 
 		int year = cpu.gpr[4];
 		int month = cpu.gpr[5];
 		int day = cpu.gpr[6];
-		
+
 		Calendar cal = Calendar.getInstance();
-		cal.set(year,month,day);
-		
+		cal.set(year, month - 1, day);
+
 		int number = cal.get(Calendar.DAY_OF_WEEK);
-		
-		if(number != 1)
-			cpu.gpr[2] = number - 2;
-		else
-			cpu.gpr[2] = 6;
+        number = (number - 1 + 7) % 7;
+
+        cpu.gpr[2] = number;
 	}
 
 	public void sceRtcCheckValid(Processor processor) {
@@ -456,7 +453,7 @@ public class sceRtc implements HLEModule {
 
         long tick1 = mem.read64(first);
         long tick2 = mem.read64(second);
-        
+
         if (tick1 == tick2)
         	cpu.gpr[2] = 0;
         else if (tick1 < tick2)

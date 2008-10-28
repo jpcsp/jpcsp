@@ -152,7 +152,7 @@ public class scePower implements HLEModule {
 
     private int cpuClock = 222;
     private int busClock = 111;
-    
+
     //battery life time in minutes
     private int batteryLifeTime = (5 * 60);
     //some standard battery temperature 28 deg C
@@ -434,8 +434,8 @@ public class scePower implements HLEModule {
 	public void scePowerGetBatteryLifeTime(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		// Processor cpu = processor; // Old-Style Processor
-		
-		Modules.log.debug("scePowerGetBatteryLifeTime batteryLifeTime =" + batteryLifeTime);
+
+		Modules.log.debug("scePowerGetBatteryLifeTime batteryLifeTime=" + batteryLifeTime);
 
 		cpu.gpr[2] = batteryLifeTime;
 	}
@@ -443,8 +443,8 @@ public class scePower implements HLEModule {
 	public void scePowerGetBatteryTemp(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		// Processor cpu = processor; // Old-Style Processor
-		
-		Modules.log.debug("scePowerGetBatteryTemp batteryTemp =" + batteryTemp);
+
+		Modules.log.debug("scePowerGetBatteryTemp batteryTemp=" + batteryTemp);
 
 		cpu.gpr[2] = batteryTemp;
 	}
@@ -469,8 +469,8 @@ public class scePower implements HLEModule {
 	public void scePowerGetBatteryVolt(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		// Processor cpu = processor; // Old-Style Processor
-		
-		Modules.log.debug("scePowerGetBatteryVolt batteryVoltage =" + batteryVoltage);
+
+		Modules.log.debug("scePowerGetBatteryVolt batteryVoltage=" + batteryVoltage);
 
 		cpu.gpr[2] = batteryVoltage;
 	}
@@ -779,22 +779,22 @@ public class scePower implements HLEModule {
 	public void scePowerSetCpuClockFrequency(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		// Processor cpu = processor; // Old-Style Processor
-		
+
 		cpuClock = cpu.gpr[4];
-		
+
 		Modules.log.debug("scePowerSetCpuClockFrequency : " + cpuClock);
-		
+
 		cpu.gpr[2] = 0;
 	}
 
 	public void scePowerSetBusClockFrequency(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		// Processor cpu = processor; // Old-Style Processor
-		
+
 		busClock = cpu.gpr[4];
-		
+
 		Modules.log.debug("scePowerSetBusClockFrequency : " + busClock);
-		
+
 		cpu.gpr[2] = 0;
 	}
 
@@ -810,7 +810,7 @@ public class scePower implements HLEModule {
 	public void scePowerGetBusClockFrequency(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		// Processor cpu = processor; // Old-Style Processor
-		
+
 		Modules.log.debug("scePowerGetBusClockFrequency ret:" + busClock);
 
 		cpu.gpr[2] = busClock;
@@ -904,14 +904,14 @@ public class scePower implements HLEModule {
 
 	public void scePowerSetClockFrequency(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
-		
+
 		//valid from 19 - 333
 		int pplClock = cpu.gpr[4];
 		//valid from 1-333
 		cpuClock = cpu.gpr[5];
 		//valid from 1-167
 		busClock = cpu.gpr[6];
-		
+
 		Modules.log.debug("scePowerSetClockFrequency ppl:" + pplClock + " cpu:" + cpuClock + " bus:" + busClock);
 
 		cpu.gpr[2] = 0;
