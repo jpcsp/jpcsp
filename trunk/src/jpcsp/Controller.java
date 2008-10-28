@@ -17,9 +17,28 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp;
 
+import static jpcsp.HLE.Modules.sceCtrlModule;
+import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_CIRCLE;
+import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_CROSS;
+import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_DOWN;
+import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_HOLD;
+import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_HOME;
+import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_LEFT;
+import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_LTRIGGER;
+import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_NOTE;
+import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_RIGHT;
+import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_RTRIGGER;
+import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_SCREEN;
+import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_SELECT;
+import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_SQUARE;
+import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_START;
+import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_TRIANGLE;
+import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_UP;
+import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_VOLDOWN;
+import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_VOLUP;
+
 import java.awt.event.KeyEvent;
 import java.util.HashMap;
-
 
 public class Controller {
     private byte Lx = 127;
@@ -60,7 +79,7 @@ public class Controller {
             return;
         }
 
-        jpcsp.HLE.pspctrl.getInstance().setButtons(Lx, Ly, Buttons);
+        sceCtrlModule.setButtons(Lx, Ly, Buttons);
         lastUpdate = now;
     }
 
@@ -70,7 +89,7 @@ public class Controller {
             return;
 
         /* in digital mode, analoge keys behave as the digital keys (right?) */
-        if (jpcsp.HLE.pspctrl.getInstance().isModeDigital()) {
+        if (sceCtrlModule.isModeDigital()) {
             switch (key) {
                 case ANDOWN:    key = keyCode.DOWN; break;
                 case ANUP:      key = keyCode.UP; break;
@@ -80,30 +99,30 @@ public class Controller {
         }
 
         switch (key) {
-            case DOWN:      this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_DOWN; break;
-            case UP:        this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_UP; break;
-            case LEFT:      this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_LEFT; break;
-            case RIGHT:     this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_RIGHT; break;
+            case DOWN:      this.Buttons |= PSP_CTRL_DOWN; break;
+            case UP:        this.Buttons |= PSP_CTRL_UP; break;
+            case LEFT:      this.Buttons |= PSP_CTRL_LEFT; break;
+            case RIGHT:     this.Buttons |= PSP_CTRL_RIGHT; break;
             case ANDOWN:    this.Lx = 0; break;
             case ANUP:      this.Lx = (byte)255; break;
             case ANLEFT:    this.Ly = 0; break;
             case ANRIGHT:   this.Ly = (byte)255; break;
 
-            case TRIANGLE:  this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_TRIANGLE; break;
-            case SQUARE:    this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_SQUARE; break;
-            case CIRCLE:    this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_CIRCLE; break;
-            case CROSS:     this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_CROSS; break;
-            case L1:        this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_LTRIGGER; break;
-            case R1:        this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_RTRIGGER; break;
-            case START:     this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_START; break;
-            case SELECT:    this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_SELECT; break;
+            case TRIANGLE:  this.Buttons |= PSP_CTRL_TRIANGLE; break;
+            case SQUARE:    this.Buttons |= PSP_CTRL_SQUARE; break;
+            case CIRCLE:    this.Buttons |= PSP_CTRL_CIRCLE; break;
+            case CROSS:     this.Buttons |= PSP_CTRL_CROSS; break;
+            case L1:        this.Buttons |= PSP_CTRL_LTRIGGER; break;
+            case R1:        this.Buttons |= PSP_CTRL_RTRIGGER; break;
+            case START:     this.Buttons |= PSP_CTRL_START; break;
+            case SELECT:    this.Buttons |= PSP_CTRL_SELECT; break;
 
-            case HOME:      this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_HOME; break;
-            case HOLD:      this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_HOLD; break;
-            case VOLMIN:    this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_VOLDOWN; break;
-            case VOLPLUS:   this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_VOLUP; break;
-            case SCREEN:    this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_SCREEN; break;
-            case MUSIC:     this.Buttons |= jpcsp.HLE.pspctrl.PSP_CTRL_NOTE; break;
+            case HOME:      this.Buttons |= PSP_CTRL_HOME; break;
+            case HOLD:      this.Buttons |= PSP_CTRL_HOLD; break;
+            case VOLMIN:    this.Buttons |= PSP_CTRL_VOLDOWN; break;
+            case VOLPLUS:   this.Buttons |= PSP_CTRL_VOLUP; break;
+            case SCREEN:    this.Buttons |= PSP_CTRL_SCREEN; break;
+            case MUSIC:     this.Buttons |= PSP_CTRL_NOTE; break;
 
             default: return;
         }
@@ -116,7 +135,7 @@ public class Controller {
         if (key == null)
             return;
 
-        if (jpcsp.HLE.pspctrl.getInstance().isModeDigital()) {
+        if (sceCtrlModule.isModeDigital()) {
             switch (key) {
                 case ANDOWN:    key = keyCode.DOWN; break;
                 case ANUP:      key = keyCode.UP; break;
@@ -126,30 +145,30 @@ public class Controller {
         }
 
         switch (key) {
-            case DOWN:      this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_DOWN; break;
-            case UP:        this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_UP; break;
-            case LEFT:      this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_LEFT; break;
-            case RIGHT:     this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_RIGHT; break;
+            case DOWN:      this.Buttons &= ~PSP_CTRL_DOWN; break;
+            case UP:        this.Buttons &= ~PSP_CTRL_UP; break;
+            case LEFT:      this.Buttons &= ~PSP_CTRL_LEFT; break;
+            case RIGHT:     this.Buttons &= ~PSP_CTRL_RIGHT; break;
             case ANDOWN:    this.Lx = (byte)128; break;
             case ANUP:      this.Lx = (byte)128; break;
             case ANLEFT:    this.Ly = (byte)128; break;
             case ANRIGHT:   this.Ly = (byte)128; break;
 
-            case TRIANGLE:  this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_TRIANGLE; break;
-            case SQUARE:    this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_SQUARE; break;
-            case CIRCLE:    this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_CIRCLE; break;
-            case CROSS:     this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_CROSS; break;
-            case L1:        this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_LTRIGGER; break;
-            case R1:        this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_RTRIGGER; break;
-            case START:     this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_START; break;
-            case SELECT:    this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_SELECT; break;
+            case TRIANGLE:  this.Buttons &= ~PSP_CTRL_TRIANGLE; break;
+            case SQUARE:    this.Buttons &= ~PSP_CTRL_SQUARE; break;
+            case CIRCLE:    this.Buttons &= ~PSP_CTRL_CIRCLE; break;
+            case CROSS:     this.Buttons &= ~PSP_CTRL_CROSS; break;
+            case L1:        this.Buttons &= ~PSP_CTRL_LTRIGGER; break;
+            case R1:        this.Buttons &= ~PSP_CTRL_RTRIGGER; break;
+            case START:     this.Buttons &= ~PSP_CTRL_START; break;
+            case SELECT:    this.Buttons &= ~PSP_CTRL_SELECT; break;
 
-            case HOME:      this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_HOME; break;
-            case HOLD:      this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_HOLD; break;
-            case VOLMIN:    this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_VOLDOWN; break;
-            case VOLPLUS:   this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_VOLUP; break;
-            case SCREEN:    this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_SCREEN; break;
-            case MUSIC:     this.Buttons &= ~jpcsp.HLE.pspctrl.PSP_CTRL_NOTE; break;
+            case HOME:      this.Buttons &= ~PSP_CTRL_HOME; break;
+            case HOLD:      this.Buttons &= ~PSP_CTRL_HOLD; break;
+            case VOLMIN:    this.Buttons &= ~PSP_CTRL_VOLDOWN; break;
+            case VOLPLUS:   this.Buttons &= ~PSP_CTRL_VOLUP; break;
+            case SCREEN:    this.Buttons &= ~PSP_CTRL_SCREEN; break;
+            case MUSIC:     this.Buttons &= ~PSP_CTRL_NOTE; break;
 
             default: return;
         }
