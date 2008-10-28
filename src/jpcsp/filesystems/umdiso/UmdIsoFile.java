@@ -6,6 +6,8 @@
 package jpcsp.filesystems.umdiso;
 
 import java.io.*;
+import java.util.Date;
+
 import jpcsp.filesystems.*;
 import jpcsp.util.Utilities.*;
 
@@ -19,13 +21,14 @@ public class UmdIsoFile extends SeekableInputStream {
     private int currentSectorNumber;
     private long currentOffset;
     private long maxOffset;
+    private Date timestamp;
     
     private byte[] currentSector;
     private int sectorOffset;
     
     UmdIsoReader internalReader;
     
-    public UmdIsoFile(UmdIsoReader reader, int startSector, long lengthInBytes) throws IOException
+    public UmdIsoFile(UmdIsoReader reader, int startSector, long lengthInBytes, Date timestamp) throws IOException
     {
         startSectorNumber = startSector;
         currentSectorNumber = startSectorNumber;
@@ -34,6 +37,7 @@ public class UmdIsoFile extends SeekableInputStream {
         maxOffset = lengthInBytes;
         sectorOffset = 0;
         internalReader = reader;
+        this.timestamp = timestamp;
     }
     
     private int Ubyte(byte b)
@@ -251,4 +255,8 @@ public class UmdIsoFile extends SeekableInputStream {
         return (int)skip(bytes);
     }
 
+    public Date getTimestamp()
+    {
+    	return timestamp;
+    }
 }

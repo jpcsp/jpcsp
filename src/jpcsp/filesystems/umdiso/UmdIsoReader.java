@@ -107,7 +107,7 @@ public class UmdIsoReader {
 
         id = new byte[6];
 
-        UmdIsoFile f = new UmdIsoFile(this, 16, 2048);
+        UmdIsoFile f = new UmdIsoFile(this, 16, 2048, null);
         f.read(id);
 
         if((((char)id[1])=='C')&&
@@ -249,7 +249,7 @@ public class UmdIsoReader {
         int fileStart    = info.getLBA();
         long fileLength  = info.getSize();
 
-        return new UmdIsoFile(this, fileStart, fileLength);
+        return new UmdIsoFile(this, fileStart, fileLength, info.getTimestamp());
     }
  
     public String[] listDirectory(String filePath) throws IOException, FileNotFoundException
