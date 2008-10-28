@@ -248,7 +248,7 @@ public class sceRtc implements HLEModule {
 
 		int year = cpu.gpr[4];
 
-		if(year % 4 == 0 )
+		if((year % 4 == 0) && (year % 100 != 0) || (year % 400 == 0))
 			cpu.gpr[2] = 1;
 		else
 			cpu.gpr[2] = 0;
