@@ -18,6 +18,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -240,52 +243,52 @@ public class sceRtc implements HLEModule {
 	public void sceRtcIsLeapYear(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
 
-		/* put your own code here instead */
-
-
-
-
-		System.out.println("Unimplemented NID function sceRtcIsLeapYear [0x42307A17]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-
+		Modules.log.debug("sceRtcIsLeapYear");
+		
+		int year = cpu.gpr[4];
+		
+		if(year % 4 == 0 )
+			cpu.gpr[2] = 1;
+		else
+			cpu.gpr[2] = 0;
 	}
 
 	public void sceRtcGetDaysInMonth(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+		
+		Modules.log.debug("sceRtcGetDaysInMonth");
+		
+		int year = cpu.gpr[4];
+		int month = cpu.gpr[5];
 
-		/* put your own code here instead */
-
-
-
-
-		System.out.println("Unimplemented NID function sceRtcGetDaysInMonth [0x05EF322C]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-
+		Calendar cal = new GregorianCalendar(year,month,1);
+		
+		int days = cal.getActualMaximum(Calendar.DAY_OF_MONTH);
+		cpu.gpr[2] = days;
 	}
 
 	public void sceRtcGetDayOfWeek(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
+		
+		Modules.log.debug("sceRtcGetDayOfWeek");
 
-		/* put your own code here instead */
-
-
-
-
-		System.out.println("Unimplemented NID function sceRtcGetDayOfWeek [0x57726BC1]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-
+		int year = cpu.gpr[4];
+		int month = cpu.gpr[5];
+		int day = cpu.gpr[6];
+		
+		Calendar cal = Calendar.getInstance();
+		cal.set(year,month,day);
+		
+		int number = cal.get(Calendar.DAY_OF_WEEK);
+		
+		if(number != 1)
+			cpu.gpr[2] = number - 2;
+		else
+			cpu.gpr[2] = 6;
 	}
 
 	public void sceRtcCheckValid(Processor processor) {
@@ -446,16 +449,20 @@ public class sceRtc implements HLEModule {
 		//////Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+		int first = cpu.gpr[4];
+        int second = cpu.gpr[5];
 
+        Modules.log.debug("sceRtcCompareTick");
 
-
-
-		System.out.println("Unimplemented NID function sceRtcCompareTick [0x9ED0AE87]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-
+        long tick1 = mem.read64(first);
+        long tick2 = mem.read64(second);
+        
+        if (tick1 == tick2)
+        	cpu.gpr[2] = 0;
+        else if (tick1 < tick2)
+        	cpu.gpr[2] = -1;
+        else if (tick1 > tick2)
+        	cpu.gpr[2] = 1;
 	}
 
 	public void sceRtcTickAddTicks(Processor processor) {
