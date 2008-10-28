@@ -17,17 +17,95 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.Memory;
+import jpcsp.Processor;
+import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
-import jpcsp.Memory;
-import jpcsp.Processor;
-
-import jpcsp.Allegrex.CpuState; // New-Style Processor
-
 public class sceCtrl implements HLEModule {
 
+	private int cycle;
+    private int mode;
+    private int uiMake;
+    private int uiBreak;
+    private int uiPress;
+    private int uiRelease;
+
+    private int TimeStamp;
+    private byte Lx;
+    private byte Ly;
+    private int Buttons;
+
+    public final static int PSP_CTRL_SELECT = 0x000001;
+    public final static int PSP_CTRL_START = 0x000008;
+    public final static int PSP_CTRL_UP = 0x000010;
+    public final static int PSP_CTRL_RIGHT = 0x000020;
+    public final static int PSP_CTRL_DOWN = 0x000040;
+    public final static int PSP_CTRL_LEFT = 0x000080;
+    public final static int PSP_CTRL_LTRIGGER = 0x000100;
+    public final static int PSP_CTRL_RTRIGGER = 0x000200;
+    public final static int PSP_CTRL_TRIANGLE = 0x001000;
+    public final static int PSP_CTRL_CIRCLE = 0x002000;
+    public final static int PSP_CTRL_CROSS = 0x004000;
+    public final static int PSP_CTRL_SQUARE = 0x008000;
+    public final static int PSP_CTRL_HOME = 0x010000;
+    public final static int PSP_CTRL_HOLD = 0x020000;
+    public final static int PSP_CTRL_NOTE = 0x800000;
+    public final static int PSP_CTRL_SCREEN = 0x400000;
+    public final static int PSP_CTRL_VOLUP = 0x100000;
+    public final static int PSP_CTRL_VOLDOWN = 0x200000;
+    public final static int PSP_CTRL_WLAN_UP = 0x040000;
+    public final static int PSP_CTRL_REMOTE = 0x080000;
+    public final static int PSP_CTRL_DISC = 0x1000000;
+    public final static int PSP_CTRL_MS = 0x2000000;
+
+    // PspCtrlMode
+    public final static int PSP_CTRL_MODE_DIGITAL = 0;
+    public final static int PSP_CTRL_MODE_ANALOG = 1;
+    
+    public boolean isModeDigital() {
+        if (mode == 0)
+            return true;
+        return false;
+    }
+    
+    /** Need to call setButtons even if the user didn't move any fingers, otherwise we can't track "press" properly */
+    public void setButtons(byte Lx, byte Ly, int Buttons)
+    {
+        int oldButtons = this.Buttons;
+
+        this.TimeStamp++;
+        this.Lx = Lx;
+        this.Ly = Ly;
+        this.Buttons = Buttons;
+
+        int changed = oldButtons ^ Buttons;
+        int changed2 = oldButtons & Buttons;
+
+        /* testing
+        if ((changed2 & PSP_CTRL_CROSS) == PSP_CTRL_CROSS)
+            System.out.println("PSP_CTRL_CROSS press");
+        else
+            System.out.println("PSP_CTRL_CROSS release");
+
+        if ((changed & PSP_CTRL_CROSS) == PSP_CTRL_CROSS &&
+            (oldButtons & PSP_CTRL_CROSS) == PSP_CTRL_CROSS)
+            System.out.println("PSP_CTRL_CROSS break");
+
+        if ((changed & PSP_CTRL_CROSS) == PSP_CTRL_CROSS &&
+            (Buttons & PSP_CTRL_CROSS) == PSP_CTRL_CROSS)
+            System.out.println("PSP_CTRL_CROSS make");
+        /* */
+
+        uiMake = changed & Buttons;
+        uiBreak = changed & oldButtons;
+        uiPress = changed2;
+        uiRelease = ~changed2;
+    }
+	
     @Override
     public String getName() {
         return "sceCtrl";
@@ -99,156 +177,133 @@ public class sceCtrl implements HLEModule {
     }
 
     public void sceCtrlGetSamplingCycle(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        int a0 = cpu.gpr[4];
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-        System.out.println("Unimplemented NID function sceCtrlGetSamplingCycle [0x02BAAD91]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        mem.write32(a0, cycle);
+        cpu.gpr[2] = 0;
     }
 
     public void sceCtrlSetSamplingMode(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        /* put your own code here instead */
-
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-        System.out.println("Unimplemented NID function sceCtrlSetSamplingMode [0x1F4011E6]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        int a0 = cpu.gpr[4];
+        
+        cpu.gpr[2] = mode;
+        mode = a0;
     }
 
     public void sceCtrlGetSamplingMode(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
+        
+        int a0 = cpu.gpr[4];
 
-        /* put your own code here instead */
-
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-        System.out.println("Unimplemented NID function sceCtrlGetSamplingMode [0xDA6B76A1]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        mem.write32(a0, mode);
+        cpu.gpr[2] = 0;
     }
 
     public void sceCtrlPeekBufferPositive(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        int a0 = cpu.gpr[4], a1 = cpu.gpr[5];        
+        int i;
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        for (i = 0; i < a1; i++) {
+            mem.write32(a0, TimeStamp);
+            mem.write32(a0 + 4, Buttons);
+            mem.write8(a0 + 8, Lx);
+            mem.write8(a0 + 9, Ly);
+            a0 += 16;
+        }
 
-        System.out.println("Unimplemented NID function sceCtrlPeekBufferPositive [0x3A622550]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        cpu.gpr[2] = i;
     }
 
     public void sceCtrlPeekBufferNegative(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        int a0 = cpu.gpr[4], a1 = cpu.gpr[5];
+        int i;
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        for (i = 0; i < a1; i++) {
+            mem.write32(a0, TimeStamp);
+            mem.write32(a0 + 4, ~Buttons);
+            mem.write8(a0 + 8, Lx);
+            mem.write8(a0 + 9, Ly);
+            a0 += 16;
+        }
 
-        System.out.println("Unimplemented NID function sceCtrlPeekBufferNegative [0xC152080A]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        cpu.gpr[2] = i;
     }
 
     public void sceCtrlReadBufferPositive(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        int a0 = cpu.gpr[4], a1 = cpu.gpr[5];
+        int i;
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        for (i = 0; i < a1; i++) {
+            mem.write32(a0, TimeStamp);
+            mem.write32(a0 + 4, Buttons);
+            mem.write8(a0 + 8, Lx);
+            mem.write8(a0 + 9, Ly);
+            a0 += 16;
+        }
 
-        System.out.println("Unimplemented NID function sceCtrlReadBufferPositive [0x1F803938]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        cpu.gpr[2] = i;
+        ThreadMan.getInstance().yieldCurrentThread();
     }
 
     public void sceCtrlReadBufferNegative(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        int a0 = cpu.gpr[4], a1 = cpu.gpr[5];
+        int i;
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        for (i = 0; i < a1; i++) {
+            mem.write32(a0, TimeStamp);
+            mem.write32(a0 + 4, ~Buttons);
+            mem.write8(a0 + 8, Lx);
+            mem.write8(a0 + 9, Ly);
+            a0 += 16;
+        }
 
-        System.out.println("Unimplemented NID function sceCtrlReadBufferNegative [0x60B81F86]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        cpu.gpr[2] = i;
+        ThreadMan.getInstance().yieldCurrentThread();
     }
 
     public void sceCtrlPeekLatch(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
-
-        /* put your own code here instead */
-
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-        System.out.println("Unimplemented NID function sceCtrlPeekLatch [0xB1D0E5CD]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        
+        int a0 = cpu.gpr[4];
+        
+        mem.write32(a0, uiMake);
+        mem.write32(a0 +4, uiBreak);
+        mem.write32(a0 +8, uiPress);
+        mem.write32(a0 +12, uiRelease);
+        cpu.gpr[2] = 0;
     }
 
     public void sceCtrlReadLatch(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
-
-        /* put your own code here instead */
-
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-        System.out.println("Unimplemented NID function sceCtrlReadLatch [0x0B588501]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        
+        int a0 = cpu.gpr[4];
+        
+        mem.write32(a0, uiMake);
+        mem.write32(a0 +4, uiBreak);
+        mem.write32(a0 +8, uiPress);
+        mem.write32(a0 +12, uiRelease);
+        cpu.gpr[2] = 0;
     }
 
     public void sceCtrlSetIdleCancelThreshold(Processor processor) {

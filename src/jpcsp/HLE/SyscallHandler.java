@@ -625,7 +625,7 @@ public class SyscallHandler {
                     pspdisplay.getInstance().sceDisplayGetAccumulatedHcount();
                     break;
 		// sceDisplay_A83EF139(0x214b),
-                case 0x214c:
+            /*    case 0x214c:
                     pspctrl.getInstance().sceCtrlSetSamplingCycle(gpr[4]);
                     break;
                 case 0x214d:
@@ -654,7 +654,7 @@ public class SyscallHandler {
                     break;
                 case 0x2155:
                     pspctrl.getInstance().sceCtrlReadLatch(gpr[4]);
-                    break;
+                    break;*/
              //   sceCtrl_A7144800(0x2156),
 		// sceCtrl_687660FA(0x2157),
 		// sceCtrl_348D99D4(0x2158),

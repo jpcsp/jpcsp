@@ -23,6 +23,7 @@ package jpcsp.HLE;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 
+@Deprecated
 public class pspctrl {
     private static pspctrl instance;
 

@@ -68,6 +68,7 @@ public class HLEModuleManager {
         Modules.sceMpegModule,
         Modules.LoadCoreForKernelModule,
         Modules.sceAttrac3plusModule,
+        Modules.sceCtrlModule,
     };
 
     public static HLEModuleManager getInstance() {
