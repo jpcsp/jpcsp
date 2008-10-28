@@ -152,11 +152,19 @@ public class scePower implements HLEModule {
 
     private int cpuClock = 222;
     private int busClock = 111;
+    
+    //battery life time in minutes
+    private int batteryLifeTime = (5 * 60);
+    //some standard battery temperature 28 deg C
+    private int batteryTemp = 28;
+    //battery voltage 4,135 in slim
+    private int batteryVoltage = 4135;
 
     private static final boolean pluggedIn = true;
     private static final boolean batteryPresent = true;
     private static final int batteryPowerPercent = 100;
     private static final int batteryLowPercent = 20; // TODO check
+    private static final boolean batteryCharging = false;
 
 	public void scePower_2B51FE2F(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
@@ -331,19 +339,10 @@ public class scePower implements HLEModule {
 
 	public void scePowerIsBatteryCharging(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+		Modules.log.debug("scePowerIsBatteryCharging batteryCharging=" + batteryCharging);
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function scePowerIsBatteryCharging [0x1E490401]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+		cpu.gpr[2] = batteryCharging ? 1 : 0;
 	}
 
 	public void scePowerGetBatteryChargingStatus(Processor processor) {
@@ -435,35 +434,19 @@ public class scePower implements HLEModule {
 	public void scePowerGetBatteryLifeTime(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+		
+		Modules.log.debug("scePowerGetBatteryLifeTime batteryLifeTime =" + batteryLifeTime);
 
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function scePowerGetBatteryLifeTime [0x8EFB3FA2]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+		cpu.gpr[2] = batteryLifeTime;
 	}
 
 	public void scePowerGetBatteryTemp(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+		
+		Modules.log.debug("scePowerGetBatteryTemp batteryTemp =" + batteryTemp);
 
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function scePowerGetBatteryTemp [0x28E12023]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+		cpu.gpr[2] = batteryTemp;
 	}
 
 	public void scePowerGetBatteryElec(Processor processor) {
@@ -486,18 +469,10 @@ public class scePower implements HLEModule {
 	public void scePowerGetBatteryVolt(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+		
+		Modules.log.debug("scePowerGetBatteryVolt batteryVoltage =" + batteryVoltage);
 
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function scePowerGetBatteryVolt [0x483CE86B]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+		cpu.gpr[2] = batteryVoltage;
 	}
 
 	public void scePower_23436A4A(Processor processor) {
@@ -804,69 +779,41 @@ public class scePower implements HLEModule {
 	public void scePowerSetCpuClockFrequency(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function scePowerSetCpuClockFrequency [0x843FBF43]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+		
+		cpuClock = cpu.gpr[4];
+		
+		Modules.log.debug("scePowerSetCpuClockFrequency : " + cpuClock);
+		
+		cpu.gpr[2] = 0;
 	}
 
 	public void scePowerSetBusClockFrequency(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function scePowerSetBusClockFrequency [0xB8D7B3FB]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+		
+		busClock = cpu.gpr[4];
+		
+		Modules.log.debug("scePowerSetBusClockFrequency : " + busClock);
+		
+		cpu.gpr[2] = 0;
 	}
 
 	public void scePowerGetCpuClockFrequency(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+		Modules.log.debug("scePowerGetCpuClockFrequency ret:" + cpuClock);
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function scePowerGetCpuClockFrequency [0xFEE03A2F]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+		cpu.gpr[2] = cpuClock;
 	}
 
 	public void scePowerGetBusClockFrequency(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+		
+		Modules.log.debug("scePowerGetBusClockFrequency ret:" + busClock);
 
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function scePowerGetBusClockFrequency [0x478FE6F5]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+		cpu.gpr[2] = busClock;
 	}
 
 	public void scePowerGetCpuClockFrequencyInt(Processor processor) {
@@ -957,19 +904,17 @@ public class scePower implements HLEModule {
 
 	public void scePowerSetClockFrequency(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+		
+		//valid from 19 - 333
+		int pplClock = cpu.gpr[4];
+		//valid from 1-333
+		cpuClock = cpu.gpr[5];
+		//valid from 1-167
+		busClock = cpu.gpr[6];
+		
+		Modules.log.debug("scePowerSetClockFrequency ppl:" + pplClock + " cpu:" + cpuClock + " bus:" + busClock);
 
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function scePowerSetClockFrequency [0x737486F2]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+		cpu.gpr[2] = 0;
 	}
 
 	public final HLEModuleFunction scePower_2B51FE2FFunction = new HLEModuleFunction("scePower", "scePower_2B51FE2F") {
