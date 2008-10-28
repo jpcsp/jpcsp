@@ -929,7 +929,7 @@ public class syscallsFirm15 {
                 sceAudiocodecInit(0x307a,0x5B37EB1D), //1.50+
                 sceAudiocodecDecode(0x307b,0x70A703F8), //1.50+
                 sceAudiocodecGetInfo(0x307c,0x8ACA11D5), //1.50+
-                sceAudiocodec_6CD2A861(0x307d,0x6CD2A861), //1.50+
+                sceAudiocodec_6CD2A861(0x307d,0x6CD2A861), //1.00 - 2.50
                 sceAudiocodec_59176A0F(0x307e,0x59176A0F), //1.50+
                 sceAudiocodecGetEDRAM(0x307f,0x3A20A200), //1.50+
                 sceAudiocodecReleaseEDRAM(0x3080,0x29681260), //1.50+
@@ -948,7 +948,7 @@ public class syscallsFirm15 {
                 sceAudioOutput2GetRestSample(0x308a, 0x647CEF33), //2.50+ or lower
 
                 scePower_EBD177D6(0x308b, 0xEBD177D6), //3.52+ or lower
-                SysMemUserForUser_342061E5(0x308c, 0x342061E5), //3.72+ or lower
+                sceKernelSetCompiledSdkVersion370(0x308c, 0x342061E5), //3.72+ or lower
                 sceSasCore_07F58C24(0x308d, 0x07F58C24), //3.72+ or lower
 
                 sceKernelSetCompiledSdkVersion395(0x308e, 0xEBD5C3E6), // 3.95+ or lower
