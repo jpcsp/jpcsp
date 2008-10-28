@@ -27,6 +27,7 @@ import javax.sound.sampled.*;
  *
  * @author shadow
  */
+@Deprecated
 public class pspAudio {
 
     private class pspChannelInfo {
