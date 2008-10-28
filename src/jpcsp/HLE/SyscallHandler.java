@@ -558,6 +558,7 @@ public class SyscallHandler {
 		// sceRtcFormatRFC3339LocalTime(0x2121),
 		// sceRtcParseDateTime(0x2122),
 		// sceRtcParseRFC3339(0x2123),
+                    /*
 		case 0x2124: pspAudio.getInstance().sceAudioOutput(gpr[4], gpr[5], gpr[6]); break;
 		case 0x2125: pspAudio.getInstance().sceAudioOutputBlocking(gpr[4], gpr[5], gpr[6]); break;
 		case 0x2126: pspAudio.getInstance().sceAudioOutputPanned(gpr[4], gpr[5], gpr[6], gpr[7]); break;
@@ -585,7 +586,7 @@ public class SyscallHandler {
 		//case 0x2138: pspAudio.getInstance().sceAudio_A633048E(); break;
 		case 0x2139: pspAudio.getInstance().sceAudioGetChannelRestLen(gpr[4]); break;
 
-
+*/
                 case 0x213a:
                     pspdisplay.getInstance().sceDisplaySetMode(gpr[4], gpr[5], gpr[6]);
                     break;
