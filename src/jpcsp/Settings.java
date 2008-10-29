@@ -25,6 +25,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -34,6 +35,7 @@ import java.util.Properties;
 import java.util.Vector;
 
 import jpcsp.Controller.keyCode;
+import jpcsp.GUI.RecentElement;
 
 /**
  * 
@@ -281,6 +283,7 @@ public class Settings {
 			super(defaultSettings);
 		}
 
+		@Override
 		@SuppressWarnings("unchecked")
 		public synchronized Enumeration keys() {
 			Enumeration<?> keysEnum = super.keys();
@@ -293,17 +296,29 @@ public class Settings {
 		}
 	}
 	
-	public void readRecent(String cat, Vector<String> recent) {
+	public void readRecent(String cat, Vector<RecentElement> recent) {
 		for(int i = 0;; ++i) {
     		String r = loadedSettings.getProperty("gui.recent." + cat + "." + i);    		
     		if(r == null) break;
-    		recent.add(r);
+    		String title = loadedSettings.getProperty("gui.recent." + cat + "." + i + ".title");
+    		recent.add(new RecentElement(r, title));
     	}
 	}
 
-	public void writeRecent(String cat, Vector<String> recent) {
-		for(int i = 0; i < recent.size(); ++i)
-			loadedSettings.setProperty("gui.recent." + cat + "." + i, recent.get(i));
+	@SuppressWarnings("unchecked")
+	public void writeRecent(String cat, Vector<RecentElement> recent) {
+		Enumeration<String> keys = loadedSettings.keys();
+		while(keys.hasMoreElements()) {
+			String key = keys.nextElement();
+			if(key.startsWith("gui.recent." + cat))
+				loadedSettings.remove(key);
+		}
+		
+		for(int i = 0; i < recent.size(); ++i) {
+			loadedSettings.setProperty("gui.recent." + cat + "." + i, recent.get(i).path);
+			if(recent.get(i).title != null)
+				loadedSettings.setProperty("gui.recent." + cat + "." + i + ".title", recent.get(i).title);
+		}
 		writeSettings();
 	}
 

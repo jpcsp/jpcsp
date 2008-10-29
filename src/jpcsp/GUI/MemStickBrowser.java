@@ -16,14 +16,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.GUI;
 
-import jpcsp.*;
 import java.awt.Component;
-import java.awt.Frame;
+import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.Image;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileNotFoundException;
@@ -31,7 +29,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-
 
 import javax.swing.GroupLayout;
 import javax.swing.Icon;
@@ -52,11 +49,10 @@ import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 
-import jpcsp.filesystems.umdiso.UmdIsoFile;
-import jpcsp.filesystems.umdiso.UmdIsoReader;
+import jpcsp.Emulator;
+import jpcsp.MainGUI;
 import jpcsp.format.PBP;
 import jpcsp.format.PSF;
-import jpcsp.util.MetaInformation;
 
 /**
  * @author Orphis
@@ -390,9 +386,6 @@ public class MemStickBrowser extends JDialog {
         File selectedFile = programs[table.getSelectedRow()];
             ((MainGUI) getParent()).loadFile(selectedFile);
 
-        // Even though Emulator.java tries to set a title, we're going to do it again because we handle kxploit
-        ((Frame) getParent()).setTitle(MetaInformation.FULL_NAME + " - "
-                + table.getModel().getValueAt(table.getSelectedRow(), 1));
         setVisible(false);
         dispose();
     }

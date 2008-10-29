@@ -18,17 +18,13 @@ package jpcsp;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Iterator;
-import java.util.List;
-import java.util.LinkedList;
-
-import org.apache.log4j.Logger;
 
 import jpcsp.Allegrex.CpuState;
-import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
 import jpcsp.Debugger.InstructionCounter;
 import jpcsp.Debugger.MemoryViewer;
-import jpcsp.HLE.Modules;
+import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
+
+import org.apache.log4j.Logger;
 
 public class Emulator implements Runnable {
     private static Processor processor;
@@ -61,7 +57,7 @@ public class Emulator implements Runnable {
 
     private ModuleContext module;
 
-    public void load(String pspfilename, ByteBuffer f) throws IOException, GeneralJpcspException {
+    public ModuleContext load(String pspfilename, ByteBuffer f) throws IOException, GeneralJpcspException {
         this.pspfilename = pspfilename;
 
         initNewPsp();
@@ -85,6 +81,8 @@ public class Emulator implements Runnable {
         if (instructionCounter != null) {
             instructionCounter.setModule(module);
         }
+        
+        return module;
     }
 
     private void initCpu() {
@@ -275,6 +273,6 @@ public class Emulator implements Runnable {
     }
 
     public void setMemoryViewer(MemoryViewer memview) {
-        this.memview = memview;
+        Emulator.memview = memview;
     }
 }

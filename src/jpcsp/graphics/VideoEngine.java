@@ -1136,10 +1136,8 @@ public class VideoEngine {
 
 		            					int index = mem.read8(texaddr+j);
 
-		            					// TODO:  I don't know if it's correct, or should read the 4bits in
-		            					//       reverse order
-		            					tmp_texture_buffer16[i] 	= (short)mem.read16(texclut + getClutIndex((index >> 4) & 0xF) * 2);
-		            					tmp_texture_buffer16[i+1] 	= (short)mem.read16(texclut + getClutIndex( index       & 0xF) * 2);
+		            					tmp_texture_buffer16[i+1] 	= (short)mem.read16(texclut + getClutIndex((index >> 4) & 0xF) * 2);
+		            					tmp_texture_buffer16[i] 	= (short)mem.read16(texclut + getClutIndex( index       & 0xF) * 2);
 		            				}
                                     final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
 	        					} else {
@@ -1162,10 +1160,8 @@ public class VideoEngine {
 
 		            					int index = mem.read8(texaddr+j);
 
-		            					// TODO:  I don't know if it's correct, or should read the 4bits in
-		            					//       reverse order
-		            					tmp_texture_buffer32[i] 	= mem.read32(texclut + getClutIndex((index >> 4) & 0xF) * 4);
-		            					tmp_texture_buffer32[i+1] 	= mem.read32(texclut + getClutIndex( index       & 0xF) * 4);
+		            					tmp_texture_buffer32[i+1] 	= mem.read32(texclut + getClutIndex((index >> 4) & 0xF) * 4);
+		            					tmp_texture_buffer32[i] 	= mem.read32(texclut + getClutIndex( index       & 0xF) * 4);
 		            				}
                                     final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
 	            				} else {
@@ -2059,7 +2055,7 @@ public class VideoEngine {
             	log ("sceGuStencilFunc(func, ref, mask)");
             	break;
             }
-
+/*
             case NEARZ : {
 	            	nearZ = ( float )( int )(  short )normalArgument;
 	            }
@@ -2078,7 +2074,7 @@ public class VideoEngine {
 	            	log ("sceGuDepthRange("+ nearZ + " ," + farZ + ")");
 	            }
 	            break;
-
+*/
             case SOP: {
 
             	int fail  = getStencilOp  (normalArgument & 0xFF);

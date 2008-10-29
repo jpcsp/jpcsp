@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.LinkedList;
 import jpcsp.Loader;
 import jpcsp.format.DeferredStub;
+import jpcsp.format.PSF;
 import jpcsp.format.PSPModuleInfo;
 
 public class ModuleContext {
@@ -27,6 +28,7 @@ public class ModuleContext {
     // See Loader class for valid formats
     public int fileFormat;
     public String pspfilename; // boot path
+    public PSF psf;
 
     // The space consumed by the program image
     public int loadAddressLow, loadAddressHigh;
