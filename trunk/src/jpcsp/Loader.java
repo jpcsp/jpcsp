@@ -16,26 +16,29 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp;
 
+import java.io.File;
+import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+
 import jpcsp.Debugger.ElfHeaderInfo;
+import jpcsp.HLE.pspSysMem;
 import jpcsp.format.DeferredStub;
 import jpcsp.format.Elf32;
 import jpcsp.format.Elf32EntHeader;
-import jpcsp.format.Elf32Header;
 import jpcsp.format.Elf32ProgramHeader;
 import jpcsp.format.Elf32Relocate;
 import jpcsp.format.Elf32SectionHeader;
 import jpcsp.format.Elf32StubHeader;
 import jpcsp.format.PBP;
 import jpcsp.format.PSP;
-import jpcsp.format.PSPModuleInfo;
-import jpcsp.HLE.pspSysMem;
 import jpcsp.util.Utilities;
 
 public class Loader {
@@ -118,10 +121,67 @@ public class Loader {
             LoadUNK(f, module, baseAddress);
         } while(false);
 
+        loadPSF(module);
+        if(module.psf != null)
+        	Emulator.log.info("PBP meta data :\n" + module.psf);
+        
         return module;
     }
 
-    /** @return true on success */
+    private void loadPSF(ModuleContext module) {
+    	if(module.psf != null)
+    		return;
+    	String filetoload = module.pspfilename;
+    	if(filetoload.startsWith("ms0:"))
+    		filetoload = filetoload.replace("ms0:", "ms0");
+    	
+    	// PBP doesn't have a PSF included. Check for exploits
+    	File metapbp = null, pbpfile = new File(filetoload);
+    	File metadir = new File(pbpfile.getParentFile().getParentFile().getPath()
+                + File.separatorChar + "%" + pbpfile.getParentFile().getName());
+        if(metadir.exists()) {
+            File[] eboot = metadir.listFiles(new FileFilter() {
+                @Override
+                public boolean accept(File arg0) {
+                    return arg0.getName().equalsIgnoreCase("eboot.pbp");
+                }
+            });
+            if(eboot.length > 0)
+                metapbp = eboot[0];
+        }
+
+        // kxploit%
+        metadir = new File(pbpfile.getParentFile().getParentFile().getPath()
+                + File.separatorChar + pbpfile.getParentFile().getName() + "%");
+        if(metadir.exists()) {
+            File[] eboot = metadir.listFiles(new FileFilter() {
+                @Override
+                public boolean accept(File arg0) {
+                    return arg0.getName().equalsIgnoreCase("eboot.pbp");
+                }
+            });
+            if(eboot.length > 0)
+                metapbp = eboot[0];
+        }
+        
+        if(metapbp != null) {
+        	FileChannel roChannel;
+			try {
+				roChannel = new RandomAccessFile(metapbp, "r").getChannel();
+				ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
+	            PBP meta = new PBP(readbuffer);
+	            module.psf = meta.readPSF(readbuffer);
+	            roChannel.close();
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+            
+        }		
+	}
+
+	/** @return true on success */
     private boolean LoadPBP(ByteBuffer f, ModuleContext module, int baseAddress) throws IOException {
         PBP pbp = new PBP(f);
         if (pbp.isValid()) {
@@ -129,7 +189,7 @@ public class Loader {
 
             // Dump PSF info
             if (pbp.getOffsetParam() > 0) {
-                Emulator.log.info("PBP meta data :\n" + pbp.readPSF(f));
+                module.psf = pbp.readPSF(f);
             }
 
             // Dump unpacked PBP
