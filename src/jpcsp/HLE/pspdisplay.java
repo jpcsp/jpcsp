@@ -118,6 +118,12 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     private float accumulatedHcount;
     private float currentHcount;
 
+    // Texture state
+    private float[] texRgbScale = new float[2];
+    private int[] texMode = new int[2];
+    private int[] texSrc0Alpha = new int[2];
+    private int texStackIndex = 0;
+
     private pspdisplay (GLCapabilities capabilities) {
     	super (capabilities);
 
@@ -292,6 +298,20 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         }
     }
 
+    public void pushTexEnv(final GL gl) {
+        gl.glGetTexEnvfv(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, texRgbScale, texStackIndex);
+        gl.glGetTexEnviv(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, texMode, texStackIndex);
+        gl.glGetTexEnviv(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, texSrc0Alpha, texStackIndex);
+        texStackIndex++;
+    }
+
+    public void popTexEnv(final GL gl) {
+        texStackIndex--;
+        gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, texRgbScale[texStackIndex]);
+        gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, texMode[texStackIndex]);
+        gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, texSrc0Alpha[texStackIndex]);
+    }
+
     private void drawFrameBuffer(final GL gl, boolean first, boolean invert) {
         gl.glPushAttrib(GL.GL_ALL_ATTRIB_BITS);
 
@@ -301,7 +321,17 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             gl.glViewport(0, 0, canvasWidth, canvasHeight);
 
         gl.glDisable(GL.GL_DEPTH_TEST);
+        gl.glDisable(GL.GL_BLEND);
+        gl.glDisable(GL.GL_ALPHA_TEST);
+        gl.glDisable(GL.GL_FOG);
         gl.glDisable(GL.GL_LIGHTING);
+        gl.glDisable(GL.GL_LOGIC_OP);
+        gl.glDisable(GL.GL_STENCIL_TEST);
+
+        pushTexEnv(gl);
+        gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, 1.0f);
+        gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_MODULATE);
+        gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, GL.GL_TEXTURE);
 
         gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, getPixelFormatBytes(pixelformatFb));
         gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, bufferwidthFb);
@@ -345,6 +375,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         gl.glPopMatrix();
         gl.glMatrixMode(GL.GL_MODELVIEW);
         gl.glPopAttrib();
+
+        popTexEnv(gl);
     }
 
     private void copyScreenToPixels(GL gl, ByteBuffer pixels) {

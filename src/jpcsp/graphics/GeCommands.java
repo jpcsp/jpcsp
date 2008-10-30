@@ -468,7 +468,7 @@ public class GeCommands {
         commands[DTH2]="dth2";
         commands[DTH1]="dth1";
         commands[DTH0]="dth0";
-        commands[DFIX]="difx";
+        commands[DFIX]="dfix";
         commands[SFIX]="sfix";
         commands[ALPHA]="alpha";
         commands[ZTST]="ztst";
