@@ -463,7 +463,7 @@ public class VideoEngine {
             case VTYPE:
                 vinfo.processType(normalArgument);
                 transform_mode = (normalArgument >> 23) & 0x1;
-                log(helper.getCommandString(VTYPE) + " " + vinfo.toString());
+                log(helper.getCommandString(VTYPE) + " " + vinfo.toString() + " " + (transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD ? "RAW" : "TRANS"));
                 break;
 
             case TME:
@@ -1102,6 +1102,7 @@ public class VideoEngine {
 
 
                 log(helper.getCommandString(TFLUSH) + " 0x" + Integer.toHexString(texture_base_pointer0) + "(" + texture_width0 + "," + texture_height0 + ")");
+                log(helper.getCommandString(TFLUSH) + " texture_storage=0x" + Integer.toHexString(texture_storage) + ", tex_clut_mode=0x" + Integer.toHexString(tex_clut_mode));
             	// Extract texture information with the minor conversion possible
             	// TODO: Get rid of information copying, and implement all the available formats
             	Memory 	mem = Memory.getInstance();
@@ -1119,6 +1120,8 @@ public class VideoEngine {
                 };
 
                 int textureByteAlignment = 4;   // 32 bits
+            	int texture_format = GL.GL_RGBA;
+
             	switch (texture_storage) {
             		case TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED: {
             			switch (tex_clut_mode) {
@@ -1275,7 +1278,11 @@ public class VideoEngine {
             		}
 
             		case TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888: {
-            			texture_type = GL.GL_UNSIGNED_INT_8_8_8_8_REV;
+            			if (getOpenGLVersion(gl).compareTo("1.2") >= 0) {
+            				texture_type = GL.GL_UNSIGNED_INT_8_8_8_8_REV;	// Only available from V1.2
+            			} else {
+            				texture_type = GL.GL_UNSIGNED_BYTE;
+            			}
 
             			if (!texture_swizzle) {
                             /* TODO replace the loop with 1 line to IntBuffer.wrap
@@ -1308,6 +1315,32 @@ public class VideoEngine {
             		}
             	}
 
+            	// Some textureTypes are only supported from OpenGL v1.2.
+            	// Try to convert to type supported in v1.
+    			if (getOpenGLVersion(gl).compareTo("1.2") < 0) {
+    				if (texture_type == GL.GL_UNSIGNED_SHORT_4_4_4_4_REV) {
+    					convertPixelType(tmp_texture_buffer16, tmp_texture_buffer32, 0xF000, 16, 0x0F00, 12, 0x00F0, 8, 0x000F, 4);
+		            	final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
+		            	texture_type = GL.GL_UNSIGNED_BYTE;
+		            	textureByteAlignment = 4;
+    				} else if (texture_type == GL.GL_UNSIGNED_SHORT_1_5_5_5_REV) {
+    					convertPixelType(tmp_texture_buffer16, tmp_texture_buffer32, 0x8000, 16, 0x7C00, 9, 0x03E0, 6, 0x001F, 3);
+		            	final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
+		            	texture_type = GL.GL_UNSIGNED_BYTE;
+		            	textureByteAlignment = 4;
+    				} else if (texture_type == GL.GL_UNSIGNED_SHORT_5_6_5_REV) {
+    					convertPixelType(tmp_texture_buffer16, tmp_texture_buffer32, 0x0000, 0, 0xF800, 8, 0x07E0, 5, 0x001F, 3);
+		            	final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
+		            	texture_type = GL.GL_UNSIGNED_BYTE;
+		            	textureByteAlignment = 4;
+		            	texture_format = GL.GL_RGB;
+    				}
+    			}
+
+    			if (texture_type == GL.GL_UNSIGNED_SHORT_5_6_5_REV) {
+    				texture_format = GL.GL_RGB;
+    			}
+
             	// Upload texture to openGL
             	// TODO: Write a texture cache :)
             	gl.glBindTexture  (GL.GL_TEXTURE_2D, gl_texture_id[0]);
@@ -1315,8 +1348,6 @@ public class VideoEngine {
             	gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_mag_filter);
                 gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, textureByteAlignment);
                 gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, 0);   // ROW_LENGTH = width
-
-            	int texture_format = texture_type == GL.GL_UNSIGNED_SHORT_5_6_5_REV ? GL.GL_RGB : GL.GL_RGBA;
 
             	gl.glTexImage2D  (	GL.GL_TEXTURE_2D,
             						0,
@@ -1488,6 +1519,9 @@ public class VideoEngine {
             case YSCALE:
                 log("sceGuViewport height = " + (- floatArgument * 2));
                 break;
+            case ZSCALE:
+                log(helper.getCommandString(ZSCALE), floatArgument);
+                break;
 
             // sceGuViewport cx/cy, can we discard these settings? it's only for clipping?
             case XPOS:
@@ -1642,7 +1676,7 @@ public class VideoEngine {
                 if (vinfo.color != 0)
                 	gl.glEnable(GL.GL_COLOR_MATERIAL);
 
-                Memory mem = Memory.getInstance();
+            	Memory mem = Memory.getInstance();
                 switch (type) {
                     case PRIM_POINT:
                     case PRIM_LINE:
@@ -1729,10 +1763,6 @@ public class VideoEngine {
 		            }
 		        }
 
-                gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, 1.0f);
-                gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_MODULATE);
-           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, GL.GL_TEXTURE);
-
                 if (vinfo.color != 0)
                 	gl.glDisable	(GL.GL_COLOR_MATERIAL);
 
@@ -1786,10 +1816,10 @@ public class VideoEngine {
 
             	try {
             		gl.glBlendEquation(blend_mode);
+                	gl.glBlendFunc(src, dst);
             	} catch (GLException e) {
             		log.warn("VideoEngine: " + e.getMessage());
             	}
-            	gl.glBlendFunc(src, dst);
 
             	log ("sceGuBlendFunc(int op, int src, int dest, X, X)");
             	break;
@@ -1964,7 +1994,7 @@ public class VideoEngine {
             	//		on pc it's the opposite
             	gl.glDepthMask(normalArgument == 1 ? false : true);
 
-            	log ("sceGuDepthMask(disableWrites)");
+            	log("sceGuDepthMask(" + (normalArgument == 1 ? "disableWrites" : "enableWrites") + ")");
             	break;
             }
             
@@ -2005,9 +2035,15 @@ public class VideoEngine {
 	            		func = GL.GL_GEQUAL;
 	            		break;
 	            	}
-	            	
-	            	gl.glAlphaFunc(func,floatArgument);
-	            	log ("sceGuAlphaFunc(" + func + "," + floatArgument + ")");
+
+	            	int referenceAlphaValue = (normalArgument >> 8) & 0xff;
+	            	// Based on pspplayer: disable ALPHA_TEST when reference alpha value is 0
+	            	if (referenceAlphaValue == 0) {
+	            		gl.glDisable(GL.GL_ALPHA_TEST);
+	            	} else {
+	            		gl.glAlphaFunc(func, referenceAlphaValue / 255.0f);
+	            	}
+	            	log ("sceGuAlphaFunc(" + func + "," + referenceAlphaValue + ")");
 	            	
 	            	break;
 	            }
@@ -2055,26 +2091,26 @@ public class VideoEngine {
             	log ("sceGuStencilFunc(func, ref, mask)");
             	break;
             }
-/*
+
             case NEARZ : {
-	            	nearZ = ( float )( int )(  short )normalArgument;
+	            	nearZ = (normalArgument & 0xFFFF) / (float) 0xFFFF;
 	            }
 	            break;
 	            
 	        case FARZ : {
-	            	if(nearZ > ( float )( int )(  short )normalArgument)
-	            	{
-	            		farZ = nearZ;
-	            		nearZ = ( float )( int )(  short )normalArgument;
-	            	}
-	            	else
-	            		farZ = ( float )( int )(  short )normalArgument;
-	            	
+	        		farZ = (normalArgument & 0xFFFF) / (float) 0xFFFF;
+	        		if (nearZ > farZ) {
+	        			// swap nearZ and farZ
+	        			float temp = nearZ;
+	        			nearZ = farZ;
+	        			farZ = temp;
+	        		}
+
 	            	gl.glDepthRange(nearZ, farZ);
 	            	log ("sceGuDepthRange("+ nearZ + " ," + farZ + ")");
 	            }
 	            break;
-*/
+
             case SOP: {
 
             	int fail  = getStencilOp  (normalArgument & 0xFF);
@@ -2090,6 +2126,12 @@ public class VideoEngine {
                 if ((normalArgument & 0x1)==0) {
                     // set clear color, actarus/sam
                     gl.glClearColor(vinfo.lastVertex.r, vinfo.lastVertex.g, vinfo.lastVertex.b, vinfo.lastVertex.a);
+
+                    // Default ClearDepth is 1. Allowed values are [0..1].
+                    // The Z-axis seems to be reversed on the PSP as compared to OpenGL,
+                    // so take 0 as default.
+                	gl.glClearDepth(0);
+
                 	gl.glClear(clearFlags);
 		            log(String.format("guclear r=%.1f g=%.1f b=%.1f a=%.1f", vinfo.lastVertex.r, vinfo.lastVertex.g, vinfo.lastVertex.b, vinfo.lastVertex.a));
 				} else {
@@ -2097,7 +2139,7 @@ public class VideoEngine {
 				     if ((normalArgument & 0x100)!=0) clearFlags |= GL.GL_COLOR_BUFFER_BIT; // target
 				     if ((normalArgument & 0x200)!=0) clearFlags |= GL.GL_STENCIL_BUFFER_BIT; // stencil/alpha
 				     if ((normalArgument & 0x400)!=0) clearFlags |= GL.GL_DEPTH_BUFFER_BIT; // zbuffer
-				     log("setting clear flags");
+				     log("setting clear flags 0x" + Integer.toHexString(clearFlags));
                 }
                 break;
             case NOP:
@@ -2313,7 +2355,51 @@ public class VideoEngine {
             	}
             	break;
 
-            default:
+             case ZTST: {
+
+                int func = GL.GL_LESS;
+
+                switch (normalArgument & 0xFF) {
+                    case ZTST_FUNCTION_NEVER_PASS_PIXEL:
+                        func = GL.GL_NEVER;
+                        break;
+
+                    case ZTST_FUNCTION_ALWAYS_PASS_PIXEL:
+                        func = GL.GL_ALWAYS;
+                        break;
+
+                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_EQUAL:
+                        func = GL.GL_EQUAL;
+                        break;
+
+                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_ISNOT_EQUAL:
+                        func = GL.GL_NOTEQUAL;
+                        break;
+
+                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS:
+                        func = GL.GL_LESS;
+                        break;
+
+                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS_OR_EQUAL:
+                        func = GL.GL_LEQUAL;
+                        break;
+
+                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER:
+                        func = GL.GL_GREATER;
+                        break;
+
+                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER_OR_EQUAL:
+                        func = GL.GL_GEQUAL;
+                        break;
+                }
+
+                gl.glDepthFunc(func);
+
+                log ("sceGuDepthFunc(" + normalArgument + ")");
+                break;
+            }
+
+           default:
                 log("Unknown/unimplemented video command [ " + helper.getCommandString(command(instruction)) + " ]");
         }
 
@@ -2410,5 +2496,24 @@ public class VideoEngine {
     }
 
     private void setHardwareAcc(boolean hardwareAccelerate) {
+    }
+
+    private String getOpenGLVersion(GL gl) {
+    	return gl.glGetString(GL.GL_VERSION);
+    }
+
+    private void convertPixelType(short[] source, int[] destination,
+    		                      int aMask, int aShift,
+    		                      int rMask, int rShift,
+    		                      int gMask, int gShift,
+    		                      int bMask, int bShift) {
+    	for (int i = 0; i < texture_width0*texture_height0; i++) {
+    		int pixel = source[i];
+    		int color = ((pixel & aMask) << aShift) |
+    		            ((pixel & rMask) << rShift) |
+    		            ((pixel & gMask) << gShift) |
+    		            ((pixel & bMask) << bShift);
+    		destination[i] = color;
+    	}
     }
 }
