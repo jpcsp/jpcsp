@@ -26,6 +26,13 @@ public class SceIoStat {
     public ScePspDateTime ctime;
     public ScePspDateTime atime;
     public ScePspDateTime mtime;
+    private int[] reserved = new int[] { 0x12121212
+    								   , 0x34343434
+    								   , 0x56565656
+    								   , 0x78787878
+    								   , 0x9a9a9a9a
+    								   , 0xbcbcbcbc
+    								   };
 
     public SceIoStat(int mode, int attr, long size,
         ScePspDateTime ctime, ScePspDateTime atime, ScePspDateTime mtime) {
@@ -47,15 +54,19 @@ public class SceIoStat {
         mtime.write(mem, address + 48);
 
         // 6 ints reserved
-        mem.write32(address + 64, 0x12121212); // TODO "LBA" "sce_lbn"
-        mem.write32(address + 68, 0x34343434);
-        mem.write32(address + 72, 0x56565656);
-        mem.write32(address + 76, 0x78787878);
-        mem.write32(address + 80, 0x9a9a9a9a);
-        mem.write32(address + 84, 0xbcbcbcbc);
+        mem.write32(address + 64, reserved[0]);
+        mem.write32(address + 68, reserved[1]);
+        mem.write32(address + 72, reserved[2]);
+        mem.write32(address + 76, reserved[3]);
+        mem.write32(address + 80, reserved[4]);
+        mem.write32(address + 84, reserved[5]);
     }
 
     public static int sizeof() {
         return 16 + ScePspDateTime.sizeof() * 3 + 24;
+    }
+
+    public void setReserved(int index, int value) {
+    	reserved[index] = value;
     }
 }

@@ -189,6 +189,23 @@ public class Utilities {
     	return address;
     }
 
+    public static long parseLong(String s)
+    {
+    	long value = 0;
+
+    	if (s == null) {
+    		return value;
+    	}
+
+    	if (s.startsWith("0x")) {
+    		value = Long.parseLong(s.substring(2), 16);
+    	} else {
+    		value = Long.parseLong(s);
+    	}
+
+    	return value;
+    }
+
     public static int makePow2(int n) {
         --n;
         n = (n >>  1) | n;

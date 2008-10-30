@@ -6,7 +6,10 @@
 package jpcsp.filesystems.umdiso;
 
 import java.io.*;
+import java.util.Date;
+
 import jpcsp.filesystems.umdiso.iso9660.*;
+import jpcsp.util.Utilities;
 
 //import java.util.zip.*;
 import org.bolet.jgz.*;
@@ -219,7 +222,7 @@ public class UmdIsoReader {
             else
             {
                 String pathName = path[i];
-                int index = dir.getFileIndex(path[i]);
+                int index = dir.getFileIndex(pathName);
                 info = dir.getEntryByIndex(index);
                 dir  = null;
                 if((info.getProperties()&2)==2) // if it's a directory
@@ -235,21 +238,44 @@ public class UmdIsoReader {
 
     public UmdIsoFile getFile(String filePath) throws IOException, FileNotFoundException
     {
-        Iso9660File info = getFileEntry(filePath);
-        if(info!=null)
+        int fileStart;
+        long fileLength;
+        Date timestamp = null;
+
+        if (filePath != null && filePath.startsWith("sce_lbn"))
         {
-            if((info.getProperties()&2)==2) // if it's a directory
-            {
-                info=null;
-            }
+            //
+            // Direct sector access on UMD is using the following file name syntax:
+            //     sce_lbnSSSS_sizeLLLL
+            // where SSSS is the index of the first sector
+            //       LLLL is the length in bytes
+            // E.g.
+            //       disc0:/sce_lbn0x5fa0_size0x1428
+            //
+    		filePath = filePath.substring(7);
+    		int sep = filePath.indexOf("_size");
+    		fileStart = (int) Utilities.parseLong(filePath.substring(0, sep));
+    		fileLength = Utilities.parseLong(filePath.substring(sep + 5));
+    	}
+        else
+        {
+	        Iso9660File info = getFileEntry(filePath);
+	        if(info!=null)
+	        {
+	            if((info.getProperties()&2)==2) // if it's a directory
+	            {
+	                info=null;
+	            }
+	        }
+	
+	        if(info==null) throw new FileNotFoundException("File '" + filePath + "' not found or not a file.");
+
+	        fileStart = info.getLBA();
+	        fileLength = info.getSize();
+	        timestamp = info.getTimestamp();
         }
 
-        if(info==null) throw new FileNotFoundException("File '" + filePath + "' not found or not a file.");
-
-        int fileStart    = info.getLBA();
-        long fileLength  = info.getSize();
-
-        return new UmdIsoFile(this, fileStart, fileLength, info.getTimestamp());
+        return new UmdIsoFile(this, fileStart, fileLength, timestamp);
     }
  
     public String[] listDirectory(String filePath) throws IOException, FileNotFoundException
@@ -301,5 +327,4 @@ public class UmdIsoReader {
     {
         return fileName;
     }
-
 }

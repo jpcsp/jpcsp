@@ -9,7 +9,6 @@ import java.io.*;
 import java.util.Date;
 
 import jpcsp.filesystems.*;
-import jpcsp.util.Utilities.*;
 
 /**
  *
@@ -258,5 +257,10 @@ public class UmdIsoFile extends SeekableInputStream {
     public Date getTimestamp()
     {
     	return timestamp;
+    }
+
+    public int getStartSector()
+    {
+    	return startSectorNumber;
     }
 }
