@@ -1,3 +1,4 @@
+/* modified */
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -5,9 +6,9 @@
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -36,6 +37,7 @@ import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 
 import jpcsp.Emulator;
+import jpcsp.Settings;
 
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.Layout;
@@ -44,10 +46,10 @@ import org.apache.log4j.spi.LoggingEvent;
 
 /**
  * <b>Experimental</b> TextPaneAppender. <br>
- * 
- * 
+ *
+ *
  * Created: Sat Feb 26 18:50:27 2000 <br>
- * 
+ *
  * @author Sven Reimers
  */
 
@@ -114,7 +116,8 @@ public class TextPaneAppender extends AppenderSkeleton {
 		for (int i = 0; i < levels.length; i++) {
 			MutableAttributeSet att = new SimpleAttributeSet();
 			attributes.put(levels[i], att);
-			StyleConstants.setFontSize(att, 12);
+			StyleConstants.setFontSize(att, Settings.getInstance().getFont().getSize());
+			StyleConstants.setFontFamily(att, Settings.getInstance().getFont().getFamily());
 		}
 		StyleConstants.setForeground(attributes.get(Level.FATAL), Color.red);
 		StyleConstants.setForeground(attributes.get(Level.ERROR), Color.red);
@@ -169,7 +172,7 @@ public class TextPaneAppender extends AppenderSkeleton {
 					textpane.setEditable(false);
 				}
 				doc.insertString(doc.getLength(), text + trace, attributes.get(event.getLevel()));
-                
+
                 int l=doc.getLength();
                 if(l>30000)
                 {
