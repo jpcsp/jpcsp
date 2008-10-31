@@ -58,7 +58,7 @@ public class PSF {
     private long[] value_size_padding;
     private long[] offset_data_value;
 
-    HashMap<String, Object> map = new HashMap<String, Object>();
+    private HashMap<String, Object> map = new HashMap<String, Object>();
 
     public PSF(long p_offset_param_sfo)
     {
@@ -172,7 +172,7 @@ public class PSF {
                 break;
             sb.append(rawString.charAt(i));
         }
-        		
+
         return sb.toString();
     }
 
