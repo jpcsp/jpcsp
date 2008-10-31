@@ -38,6 +38,7 @@ import jpcsp.format.Elf32Relocate;
 import jpcsp.format.Elf32SectionHeader;
 import jpcsp.format.Elf32StubHeader;
 import jpcsp.format.PBP;
+import jpcsp.format.PSF;
 import jpcsp.format.PSP;
 import jpcsp.util.Utilities;
 
@@ -123,65 +124,88 @@ public class Loader {
 
         loadPSF(module);
         if(module.psf != null)
-        	Emulator.log.info("PBP meta data :\n" + module.psf);
-        
+            Emulator.log.info("PBP meta data :\n" + module.psf);
+
         return module;
     }
 
     private void loadPSF(ModuleContext module) {
-    	if(module.psf != null)
-    		return;
-    	String filetoload = module.pspfilename;
-    	if(filetoload.startsWith("ms0:"))
-    		filetoload = filetoload.replace("ms0:", "ms0");
-    	
-    	// PBP doesn't have a PSF included. Check for exploits
-    	File metapbp = null, pbpfile = new File(filetoload);
-    	File metadir = new File(pbpfile.getParentFile().getParentFile().getPath()
+        if (module.psf != null)
+            return;
+
+        String filetoload = module.pspfilename;
+        if (filetoload.startsWith("ms0:"))
+            filetoload = filetoload.replace("ms0:", "ms0");
+
+        // PBP doesn't have a PSF included. Check for one in kxploit directories
+        File metapbp = null;
+        File pbpfile = new File(filetoload);
+
+        // %__SCE__kxploit
+        File metadir = new File(pbpfile.getParentFile().getParentFile().getPath()
                 + File.separatorChar + "%" + pbpfile.getParentFile().getName());
-        if(metadir.exists()) {
+        if (metadir.exists()) {
             File[] eboot = metadir.listFiles(new FileFilter() {
                 @Override
                 public boolean accept(File arg0) {
                     return arg0.getName().equalsIgnoreCase("eboot.pbp");
                 }
             });
-            if(eboot.length > 0)
+            if (eboot.length > 0)
                 metapbp = eboot[0];
         }
 
         // kxploit%
         metadir = new File(pbpfile.getParentFile().getParentFile().getPath()
                 + File.separatorChar + pbpfile.getParentFile().getName() + "%");
-        if(metadir.exists()) {
+        if (metadir.exists()) {
             File[] eboot = metadir.listFiles(new FileFilter() {
                 @Override
                 public boolean accept(File arg0) {
                     return arg0.getName().equalsIgnoreCase("eboot.pbp");
                 }
             });
-            if(eboot.length > 0)
+            if (eboot.length > 0)
                 metapbp = eboot[0];
         }
-        
-        if(metapbp != null) {
-        	FileChannel roChannel;
-			try {
-				roChannel = new RandomAccessFile(metapbp, "r").getChannel();
-				ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
-	            PBP meta = new PBP(readbuffer);
-	            module.psf = meta.readPSF(readbuffer);
-	            roChannel.close();
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-            
-        }		
-	}
 
-	/** @return true on success */
+        if (metapbp != null) {
+            // Load PSF embedded in PBP
+            FileChannel roChannel;
+            try {
+                roChannel = new RandomAccessFile(metapbp, "r").getChannel();
+                ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
+                PBP meta = new PBP(readbuffer);
+                module.psf = meta.readPSF(readbuffer);
+                roChannel.close();
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } else {
+            // Load unpacked PSF
+            File[] psffile = pbpfile.getParentFile().listFiles(new FileFilter() {
+                @Override
+                public boolean accept(File arg0) {
+                    return arg0.getName().equalsIgnoreCase("param.sfo");
+                }
+            });
+            if (psffile != null && psffile.length > 0) {
+                try {
+                    FileChannel roChannel = new RandomAccessFile(psffile[0], "r").getChannel();
+                    ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
+                    module.psf = new PSF(0);
+                    module.psf.read(readbuffer);
+                    roChannel.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    /** @return true on success */
     private boolean LoadPBP(ByteBuffer f, ModuleContext module, int baseAddress) throws IOException {
         PBP pbp = new PBP(f);
         if (pbp.isValid()) {

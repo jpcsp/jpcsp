@@ -55,7 +55,7 @@ public class LogWindow extends JFrame {
 		TextPaneAppender textPaneAppender = (TextPaneAppender)Logger.getRootLogger().getAppender("JpcspAppender");
 		if (textPaneAppender != null) {
 			textPaneAppender.setTextPane(textPane);
-		}		
+		}
 
 		JButton clearButton = new JButton("Clear");
 		clearButton.addActionListener(new ActionListener() {
@@ -79,10 +79,10 @@ public class LogWindow extends JFrame {
 						if (f.exists()) {
 							int res = JOptionPane.showConfirmDialog(
 											LogWindow.this,
-											"File already Exists! Do you want to override?",
-											"Already Exists Message",
+											"File '" + f.getName() + "' already Exists! Do you want to override?",
+											"Save Log Output",
 											JOptionPane.YES_NO_OPTION,
-											JOptionPane.QUESTION_MESSAGE);
+											JOptionPane.WARNING_MESSAGE);
 
 							if (res != 0)
 								return;
