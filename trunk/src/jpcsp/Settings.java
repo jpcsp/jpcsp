@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp;
 
+import java.awt.Font;
 import java.awt.Point;
 import java.awt.event.KeyEvent;
 import java.io.BufferedInputStream;
@@ -38,7 +39,7 @@ import jpcsp.Controller.keyCode;
 import jpcsp.GUI.RecentElement;
 
 /**
- * 
+ *
  * @author spip2001
  */
 public class Settings {
@@ -80,7 +81,7 @@ public class Settings {
 
 	/**
 	 * Write settings in file
-	 * 
+	 *
 	 * @param doc
 	 *            Settings as XML document
 	 */
@@ -129,7 +130,7 @@ public class Settings {
 		String bool = loadedSettings.getProperty(option);
 		if(bool == null)
 			return false;
-		
+
 		return Integer.parseInt(bool) != 0;
 	}
 
@@ -145,7 +146,7 @@ public class Settings {
 			return "";
 		return str;
 	}
-	
+
 	public void writeString(String option, String value) {
 		loadedSettings.setProperty(option, value);
 		writeSettings();
@@ -295,10 +296,10 @@ public class Settings {
 			return keyList.elements();
 		}
 	}
-	
+
 	public void readRecent(String cat, Vector<RecentElement> recent) {
 		for(int i = 0;; ++i) {
-    		String r = loadedSettings.getProperty("gui.recent." + cat + "." + i);    		
+    		String r = loadedSettings.getProperty("gui.recent." + cat + "." + i);
     		if(r == null) break;
     		String title = loadedSettings.getProperty("gui.recent." + cat + "." + i + ".title");
     		recent.add(new RecentElement(r, title));
@@ -313,7 +314,7 @@ public class Settings {
 			if(key.startsWith("gui.recent." + cat))
 				loadedSettings.remove(key);
 		}
-		
+
 		for(int i = 0; i < recent.size(); ++i) {
 			loadedSettings.setProperty("gui.recent." + cat + "." + i, recent.get(i).path);
 			if(recent.get(i).title != null)
@@ -321,5 +322,70 @@ public class Settings {
 		}
 		writeSettings();
 	}
+
+    /**
+     * Reads the following settings:
+     * gui.memStickBrowser.font.name=SansSerif
+     * gui.memStickBrowser.font.file=
+     * gui.memStickBrowser.font.size=11
+     * @return      Tries to return a font in this order:
+     *              - Font from local file (somefont.ttf),
+     *              - Font registered with the operating system,
+     *              - SansSerif, Plain, 11.
+     */
+    private Font loadedFont = null;
+    public Font getFont() {
+        if (loadedFont != null) {
+            return loadedFont;
+        }
+
+        Font font = new Font("SansSerif", Font.PLAIN, 1);
+        int fontsize = 11;
+
+        try {
+            Font base = font; // Default font
+            String fontname = readString("gui.font.name");
+            String fontfilename = readString("gui.font.file");
+            String fontsizestr = readString("gui.font.size");
+
+            if (fontfilename.length() != 0) {
+                // Load file font
+                File fontfile = new File(fontfilename);
+                if (fontfile.exists()) {
+                    base = Font.createFont(Font.TRUETYPE_FONT, fontfile);
+                } else {
+                    System.err.println("gui.font.file '" + fontfilename + "' doesn't exist.");
+                }
+            } else if (fontname.length() != 0) {
+                // Load system font
+                base = new Font(fontname, Font.PLAIN, 1);
+            }
+
+            // Set font size
+            if (fontsizestr.length() > 0) {
+                fontsize = Integer.parseInt(fontsizestr);
+            } else {
+                System.err.println("gui.font.size setting is missing.");
+            }
+
+            font = base.deriveFont(Font.PLAIN, fontsize);
+
+            // register font as a font familty so we can use it in StyledDocument's
+            java.awt.GraphicsEnvironment ge = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment();
+            ge.registerFont(base);
+        } catch(NumberFormatException e) {
+            System.err.println("gui.font.size setting is invalid.");
+        } catch(Exception e) {
+            e.printStackTrace();
+            System.out.println(e.getMessage());
+        }
+
+        //Emulator.log.debug("font: " + font);
+        //Emulator.log.debug("font name: " + font.getName());
+        //Emulator.log.debug("font family: " + font.getFamily());
+
+        loadedFont = font;
+        return font;
+    }
 
 }

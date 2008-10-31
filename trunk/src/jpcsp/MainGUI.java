@@ -71,8 +71,8 @@ import org.apache.log4j.xml.DOMConfigurator;
  * @author  shadow
  */
 public class MainGUI extends javax.swing.JFrame implements KeyListener, ComponentListener {
-	private static final long serialVersionUID = -3647025845406693230L;
-	final String version = MetaInformation.FULL_NAME;
+    private static final long serialVersionUID = -3647025845406693230L;
+    final String version = MetaInformation.FULL_NAME;
     public static final int MAX_RECENT = 4;
     LogWindow consolewin;
     DisassemblerFrame disasm;
@@ -90,7 +90,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     private JMenu RecentMenu;
     private Vector<RecentElement> recentUMD = new Vector<RecentElement>();
     private Vector<RecentElement> recentFile = new Vector<RecentElement>();
-    
+
     /** Creates new form MainGUI */
     public MainGUI() {
         DOMConfigurator.configure("LogSettings.xml");
@@ -170,7 +170,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         setMinimumSize(new java.awt.Dimension(480, 272));
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
-			public void windowClosing(java.awt.event.WindowEvent evt) {
+            public void windowClosing(java.awt.event.WindowEvent evt) {
                 formWindowClosing(evt);
             }
         });
@@ -380,12 +380,13 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         if(recentUMD.size() > 0) {
             for(int i = 0; i < recentUMD.size(); ++i) {
-                JMenuItem item = new JMenuItem(recentUMD.get(i).toString());                
+                JMenuItem item = new JMenuItem(recentUMD.get(i).toString());
+                //item.setFont(Settings.getInstance().getFont()); // doesn't seem to work
                 item.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-                    	String str = ((JMenuItem)e.getSource()).getText();
-                    	str = str.substring(str.indexOf('-') + 1).trim();
+                        String str = ((JMenuItem)e.getSource()).getText();
+                        str = str.substring(str.indexOf('-') + 1).trim();
                         File file = new File(str);
                         if(file.exists())
                             loadUMD(file);
@@ -404,8 +405,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
                 item.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-                    	String str = ((JMenuItem)e.getSource()).getText();
-                    	str = str.substring(str.indexOf('-') + 1).trim();
+                        String str = ((JMenuItem)e.getSource()).getText();
+                        str = str.substring(str.indexOf('-') + 1).trim();
                         File file = new File(str);
                         if(file.exists())
                             loadFile(file);
@@ -487,7 +488,7 @@ public void loadFile(File file) {
         if (consolewin != null)
             consolewin.clearScreenMessages();
 
-        
+
 
         umdLoaded = false;
         loadedFile = file;
@@ -497,11 +498,11 @@ public void loadFile(File file) {
         ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
         ModuleContext context = emulator.load(pspifyFilename(file.getPath()), readbuffer);
         roChannel.close(); // doesn't seem to work properly :(
-        
-        String title = context.psf != null ? context.psf.getString("TITLE") : file.getParentFile().getName();        
+
+        String title = context.psf != null ? context.psf.getString("TITLE") : file.getParentFile().getName();
         setTitle(version + " - " + title);
         addRecentFile(file, title);
-        
+
         String findpath = file.getParent();
         //System.out.println(findpath);
         pspiofilemgr.getInstance().setfilepath(findpath);
@@ -521,15 +522,16 @@ public void loadFile(File file) {
         ex.printStackTrace();
         JpcspDialogManager.showError(this, "Critical Error : " + ex.getMessage());
     }
-    }
+}
 
 private void addRecentFile(File file, String title) {
     //try {
         String s = file.getPath(); //file.getCanonicalPath();
         int pos;
-        for(int i = 0; i < recentFile.size(); ++i)
-        	if(recentFile.get(i).path.equals(s))
-        		recentFile.remove(i--);
+        for (int i = 0; i < recentFile.size(); ++i) {
+            if (recentFile.get(i).path.equals(s))
+                recentFile.remove(i--);
+        }
         recentFile.insertElementAt(new RecentElement(s, title), 0);
         while(recentFile.size() > MAX_RECENT)
             recentFile.remove(MAX_RECENT);
@@ -544,9 +546,10 @@ private void addRecentUMD(File file, String title) {
     try {
         String s = file.getCanonicalPath();
         int pos;
-        for(int i = 0; i < recentUMD.size(); ++i)
-        	if(recentUMD.get(i).path.equals(s))
-        		recentUMD.remove(i--);
+        for (int i = 0; i < recentUMD.size(); ++i) {
+            if (recentUMD.get(i).path.equals(s))
+                recentUMD.remove(i--);
+        }
         recentUMD.insertElementAt(new RecentElement(s, title), 0);
         while(recentUMD.size() > MAX_RECENT)
             recentUMD.remove(MAX_RECENT);
@@ -682,7 +685,8 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
     }
 }
 
-private boolean loadUMD(UmdIsoReader iso, String bootPath) throws IOException, GeneralJpcspException {
+/** Don't call this directly, see loadUMD(File file) */
+private boolean loadUMD(UmdIsoReader iso, String bootPath) throws IOException {
     boolean success = false;
 
     try {
@@ -696,9 +700,25 @@ private boolean loadUMD(UmdIsoReader iso, String bootPath) throws IOException, G
         }
     } catch (FileNotFoundException e) {
         System.out.println(e.getMessage());
+    } catch (GeneralJpcspException e) {
+        //JpcspDialogManager.showError(this, "General Error : " + e.getMessage());
     }
 
     return success;
+}
+
+/** Don't call this directly, see loadUMD(File file) */
+private boolean loadUnpackedUMD(String filename) throws IOException, GeneralJpcspException {
+    // Load unpacked BOOT.BIN as if it came from the umd
+    File file = new File(filename);
+    if (file.exists()) {
+        FileChannel roChannel = new RandomAccessFile(file, "r").getChannel();
+        ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
+        emulator.load("disc0:/PSP_GAME/SYSDIR/EBOOT.BIN", readbuffer);
+        roChannel.close();
+        return true;
+    }
+    return false;
 }
 
 public void loadUMD(File file) {
@@ -721,9 +741,12 @@ public void loadUMD(File file) {
         Emulator.log.info("UMD param.sfo :\n" + params);
         setTitle(version + " - " + params.getString("TITLE"));
         addRecentUMD(file, params.getString("TITLE"));
+        String discid = params.getString("DISC_ID");
 
         if (loadUMD(iso, "PSP_GAME/SYSDIR/BOOT.BIN") ||
-            loadUMD(iso, "PSP_GAME/SYSDIR/EBOOT.BIN")) {
+            loadUMD(iso, "PSP_GAME/SYSDIR/EBOOT.BIN") ||
+            (discid != null && loadUnpackedUMD(discid + ".BIN"))) {
+
             pspiofilemgr.getInstance().setfilepath("disc0/");
             //pspiofilemgr.getInstance().setfilepath("disc0/PSP_GAME/SYSDIR");
             pspiofilemgr.getInstance().setIsoReader(iso);
@@ -733,6 +756,8 @@ public void loadUMD(File file) {
                 instructioncounter.RefreshWindow();
             StepLogger.clear();
             StepLogger.setName(file.getPath());
+        } else {
+            throw new GeneralJpcspException("File format not supported!");
         }
     } catch (GeneralJpcspException e) {
         JpcspDialogManager.showError(this, "General Error : " + e.getMessage());
