@@ -382,17 +382,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             for(int i = 0; i < recentUMD.size(); ++i) {
                 JMenuItem item = new JMenuItem(recentUMD.get(i).toString());
                 //item.setFont(Settings.getInstance().getFont()); // doesn't seem to work
-                item.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        String str = ((JMenuItem)e.getSource()).getText();
-                        str = str.substring(str.indexOf('-') + 1).trim();
-                        File file = new File(str);
-                        if(file.exists())
-                            loadUMD(file);
-                    }
-
-                });
+                item.addActionListener(new RecentElementActionListener(RecentElementActionListener.TYPE_UMD, recentUMD.get(i).path));
                 RecentMenu.add(item);
             }
             if(recentFile.size() > 0)
@@ -402,17 +392,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         if(recentFile.size() > 0) {
             for(int i = 0; i < recentFile.size(); ++i) {
                 JMenuItem item = new JMenuItem(recentFile.get(i).toString());
-                item.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        String str = ((JMenuItem)e.getSource()).getText();
-                        str = str.substring(str.indexOf('-') + 1).trim();
-                        File file = new File(str);
-                        if(file.exists())
-                            loadFile(file);
-                    }
-
-                });
+                item.addActionListener(new RecentElementActionListener(RecentElementActionListener.TYPE_FILE, recentFile.get(i).path));
                 RecentMenu.add(item);
             }
         }
@@ -957,4 +937,28 @@ public void setMainTitle(String message)
 
     @Override
     public void componentShown(ComponentEvent e) { }
+    
+    private class RecentElementActionListener implements ActionListener {
+    	public static final int TYPE_UMD = 0;
+    	public static final int TYPE_FILE = 1;
+    	int type;
+    	String path;    	
+    	
+    	public RecentElementActionListener(int type, String path) {
+    		this.path = path;
+    		this.type = type;
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			File file = new File(path);
+            if(file.exists())
+            	if(type == TYPE_UMD)
+            		loadUMD(file);
+            	else
+            		loadFile(file);
+		}
+    	
+    	
+    }
 }

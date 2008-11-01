@@ -90,18 +90,20 @@ public class VideoEngine {
     private float[][] light_pos = new float[4][4];
 
     int[] light_type = new int[4];
+    boolean lighting = false;
     
     float[] fog_color = new float[4];
     float fog_far = 0.0f,fog_dist = 0.0f;
     
-    private float nearZ = 0.0f,farZ = 0.0f;
-
+    private float nearZ = 0.0f, farZ = 0.0f, zscale;
 
 	int mat_flags = 0;
     float[] mat_ambient = new float[4];
     float[] mat_diffuse = new float[4];
     float[] mat_specular = new float[4];
 	float[] mat_emissive = new float[4];
+	
+	float[] ambient_light = new float[4];
 
     int texture_storage, texture_num_mip_maps;
     boolean texture_swizzle;
@@ -463,7 +465,7 @@ public class VideoEngine {
             case VTYPE:
                 vinfo.processType(normalArgument);
                 transform_mode = (normalArgument >> 23) & 0x1;
-                log(helper.getCommandString(VTYPE) + " " + vinfo.toString() + " " + (transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD ? "RAW" : "TRANS"));
+                log(helper.getCommandString(VTYPE) + " " + vinfo.toString());
                 break;
 
             case TME:
@@ -905,9 +907,11 @@ public class VideoEngine {
              */
             case LTE:
             	if (normalArgument != 0) {
+            		lighting = true;
                     gl.glEnable(GL.GL_LIGHTING);
                     log("sceGuEnable(GL_LIGHTING)");
                 } else {
+                	lighting = false;
                     gl.glDisable(GL.GL_LIGHTING);
                     log("sceGuDisable(GL_LIGHTING)");
                 }
@@ -918,22 +922,18 @@ public class VideoEngine {
              */
             case CMAT:
             	mat_flags = normalArgument & 7;
-            	log("cmat");
+            	log.warn("cmat " + mat_flags);
             	break;
 
             case AMA:
             	mat_ambient[3] = ((normalArgument      ) & 255) / 255.f;
-            	if((mat_flags & 1) != 0)
-            		gl.glMaterialfv(GL.GL_FRONT, GL.GL_AMBIENT, mat_ambient, 0);
             	break;
 
             case AMC:
             	mat_ambient[0] = ((normalArgument	   ) & 255) / 255.f;
             	mat_ambient[1] = ((normalArgument >>  8) & 255) / 255.f;
             	mat_ambient[2] = ((normalArgument >> 16) & 255) / 255.f;
-            	if((mat_flags & 1) != 0)
-            		gl.glMaterialfv(GL.GL_FRONT, GL.GL_AMBIENT, mat_ambient, 0);
-            	log("sceGuAmbient " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
+            	log(String.format("material ambient r=%.1f g=%.1f b=%.1f (%08X)",          			
                         mat_ambient[0], mat_ambient[1], mat_ambient[2], normalArgument));
             	break;
 
@@ -942,9 +942,7 @@ public class VideoEngine {
             	mat_diffuse[1] = ((normalArgument >>  8) & 255) / 255.f;
             	mat_diffuse[2] = ((normalArgument >> 16) & 255) / 255.f;
             	mat_diffuse[3] = 1.f;
-            	if((mat_flags & 2) != 0)
-            		gl.glMaterialfv(GL.GL_FRONT, GL.GL_DIFFUSE, mat_diffuse, 0);
-            	log("sceGuColor " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
+            	log("material diffuse " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
                         mat_diffuse[0], mat_diffuse[1], mat_diffuse[2], normalArgument));
             	break;
 
@@ -963,15 +961,27 @@ public class VideoEngine {
             	mat_specular[1] = ((normalArgument >>  8) & 255) / 255.f;
             	mat_specular[2] = ((normalArgument >> 16) & 255) / 255.f;
             	mat_specular[3] = 1.f;
-            	if((mat_flags & 4) != 0)
-            		gl.glMaterialfv(GL.GL_FRONT, GL.GL_SPECULAR, mat_specular, 0);
             	log("material specular " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
                         mat_specular[0], mat_specular[1], mat_specular[2], normalArgument));
             	break;
+            
+            case ALC:
+            	ambient_light[0] = ((normalArgument      ) & 255) / 255.f;
+            	ambient_light[1] = ((normalArgument >>  8) & 255) / 255.f;
+            	ambient_light[2] = ((normalArgument >> 16) & 255) / 255.f;
+            	gl.glLightModelfv(GL.GL_LIGHT_MODEL_AMBIENT, ambient_light, 0);
+            	log("ambient light " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
+            			ambient_light[0], ambient_light[1], ambient_light[2], normalArgument));
+            	break;
 
+            case ALA:
+            	ambient_light[3] = ((normalArgument      ) & 255) / 255.f;
+            	gl.glLightModelfv(GL.GL_LIGHT_MODEL_AMBIENT, ambient_light, 0);
+            	break;
+            	
             case SPOW:
             	gl.glMaterialf(GL.GL_FRONT, GL.GL_SHININESS, floatArgument);
-            	log("material shininess");
+            	log("material shininess " + floatArgument);
             	break;
 
             case TMS:
@@ -1520,6 +1530,7 @@ public class VideoEngine {
                 log("sceGuViewport height = " + (- floatArgument * 2));
                 break;
             case ZSCALE:
+            	zscale = floatArgument;
                 log(helper.getCommandString(ZSCALE), floatArgument);
                 break;
 
@@ -1610,8 +1621,12 @@ public class VideoEngine {
 
                 if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
                 	gl.glLoadMatrixf(proj_uploaded_matrix, 0);
-                else
+                else {
+                	// 2D mode shouldn't be affected by the depth buffer
                 	gl.glOrtho(0.0, 480, 272, 0, -1.0, 1.0);
+                	gl.glPushAttrib(GL.GL_DEPTH_BUFFER_BIT);
+                	gl.glDepthFunc(GL.GL_ALWAYS);
+                }
 
                 /*
                  * Apply texture transforms
@@ -1671,12 +1686,30 @@ public class VideoEngine {
                 if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
                 	gl.glMultMatrixf(model_uploaded_matrix, 0);
 
-                // HACK: If we don't have a material set up, and have colors per vertex, this will
-                // override materials, so at least we'll see something, otherwise it would be black
-                if (vinfo.color != 0)
+                boolean useVertexColor = false;
+                if(!lighting) {
+                	gl.glDisable(GL.GL_COLOR_MATERIAL);
+                	if(vinfo.color != 0) {
+	                	useVertexColor = true;
+                	} else {
+                		gl.glColor4fv(mat_ambient, 0);
+                    }
+                } else if (vinfo.color != 0 && mat_flags != 0) {
+                	useVertexColor = true;
+                	int flags = 0;
+                	flags |= (flags & 1) != 0 ? GL.GL_AMBIENT : 0;
+                	flags |= (flags & 2) != 0 ? GL.GL_DIFFUSE : 0;
+                	flags |= (flags & 4) != 0 ? GL.GL_SPECULAR : 0;
+                	gl.glColorMaterial(GL.GL_FRONT_AND_BACK, flags);
                 	gl.glEnable(GL.GL_COLOR_MATERIAL);
+                } else {
+                	gl.glDisable(GL.GL_COLOR_MATERIAL);
+                	gl.glMaterialfv(GL.GL_FRONT, GL.GL_AMBIENT, mat_ambient, 0);
+                	gl.glMaterialfv(GL.GL_FRONT, GL.GL_DIFFUSE, mat_diffuse, 0);
+                	gl.glMaterialfv(GL.GL_FRONT, GL.GL_SPECULAR, mat_specular, 0);
+                }
 
-            	Memory mem = Memory.getInstance();
+                Memory mem = Memory.getInstance();
                 switch (type) {
                     case PRIM_POINT:
                     case PRIM_LINE:
@@ -1693,7 +1726,7 @@ public class VideoEngine {
                                 		gl.glTexCoord2f(v.u / texture_width0, v.v / texture_height0);
                                 	else
                                 		gl.glTexCoord2f(v.u, v.v);
-                                if (vinfo.color    != 0) gl.glColor4f(v.r, v.g, v.b, v.a);
+                                if (useVertexColor) gl.glColor4f(v.r, v.g, v.b, v.a);
                                 if (vinfo.normal   != 0) gl.glNormal3f(v.nx, v.ny, v.nz);
                                 if (vinfo.position != 0) {
                                 	if(vinfo.weight != 0)
@@ -1716,8 +1749,7 @@ public class VideoEngine {
 
                                 // V1
                                 if (vinfo.normal   != 0) gl.glNormal3f(v1.nx, v1.ny, v1.nz);
-                                if (vinfo.color    != 0) gl.glColor4f(v2.r, v2.g, v2.b, v2.a); // color from v2 not v1
-
+                                if (useVertexColor) gl.glColor4f(v2.r, v2.g, v2.b, v2.a); // color from v2 not v1
                                 if (vinfo.texture  != 0)
                                 	if(transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD)
                                 		gl.glTexCoord2f(v1.u / texture_width0, v1.v / texture_height0);
@@ -1734,8 +1766,7 @@ public class VideoEngine {
 
                                 // V2
                                 if (vinfo.normal   != 0) gl.glNormal3f(v2.nx, v2.ny, v2.nz);
-                                if (vinfo.color    != 0) gl.glColor4f(v2.r, v2.g, v2.b, v2.a);
-
+                                if (useVertexColor) gl.glColor4f(v2.r, v2.g, v2.b, v2.a);
                                 if (vinfo.texture  != 0)
                                 	if(transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD)
                                 		gl.glTexCoord2f(v2.u / texture_width0, v2.v / texture_height0);
@@ -1763,8 +1794,9 @@ public class VideoEngine {
 		            }
 		        }
 
-                if (vinfo.color != 0)
-                	gl.glDisable	(GL.GL_COLOR_MATERIAL);
+                gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, 1.0f);
+                gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_MODULATE);
+           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, GL.GL_TEXTURE);
 
                 gl.glPopMatrix 	();
                 gl.glMatrixMode	(GL.GL_TEXTURE);
@@ -1773,6 +1805,9 @@ public class VideoEngine {
                 gl.glPopMatrix 	();
                 gl.glMatrixMode	(GL.GL_MODELVIEW);
 
+                if(transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD)
+                	gl.glPopAttrib();
+                
                 break;
             }
 
@@ -2091,6 +2126,52 @@ public class VideoEngine {
             	log ("sceGuStencilFunc(func, ref, mask)");
             	break;
             }
+            
+            case ZTST: {
+
+                int func = GL.GL_LESS;
+
+                switch (normalArgument & 0xFF) {
+                    case ZTST_FUNCTION_NEVER_PASS_PIXEL:
+                        func = GL.GL_NEVER;
+                        break;
+
+                    case ZTST_FUNCTION_ALWAYS_PASS_PIXEL:
+                        func = GL.GL_ALWAYS;
+                        break;
+
+                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_EQUAL:
+                        func = GL.GL_EQUAL;
+                        break;
+
+                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_ISNOT_EQUAL:
+                        func = GL.GL_NOTEQUAL;
+                        break;
+
+                    // TODO Remove this hack of depth test inversion and properly translate the GE commands
+                    // But I guess we need to implement zscale first... which is about very difficult to do
+                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS:
+                        func = GL.GL_GREATER;
+                        break;
+
+                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS_OR_EQUAL:
+                        func = GL.GL_GEQUAL;
+                        break;
+
+                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER:
+                        func = GL.GL_LESS;
+                        break;
+
+                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER_OR_EQUAL:
+                        func = GL.GL_LEQUAL;
+                        break;
+                }
+
+                gl.glDepthFunc(func);
+
+                log ("sceGuDepthFunc(" + normalArgument + ")");
+                break;
+            }
 
             case NEARZ : {
 	            	nearZ = (normalArgument & 0xFFFF) / (float) 0xFFFF;
@@ -2099,15 +2180,16 @@ public class VideoEngine {
 	            
 	        case FARZ : {
 	        		farZ = (normalArgument & 0xFFFF) / (float) 0xFFFF;
-	        		if (nearZ > farZ) {
+	        		/* I really think we don't need this...*/
+	        		/*if (nearZ > farZ) {
 	        			// swap nearZ and farZ
 	        			float temp = nearZ;
 	        			nearZ = farZ;
 	        			farZ = temp;
-	        		}
+	        		}*/
 
-	            	gl.glDepthRange(nearZ, farZ);
-	            	log ("sceGuDepthRange("+ nearZ + " ," + farZ + ")");
+	        		gl.glDepthRange(nearZ, farZ);
+	            	log.warn ("sceGuDepthRange("+ nearZ + " ," + farZ + ")");
 	            }
 	            break;
 
@@ -2123,24 +2205,34 @@ public class VideoEngine {
             }
 
             case CLEAR:
-                if ((normalArgument & 0x1)==0) {
-                    // set clear color, actarus/sam
-                    gl.glClearColor(vinfo.lastVertex.r, vinfo.lastVertex.g, vinfo.lastVertex.b, vinfo.lastVertex.a);
-
-                    // Default ClearDepth is 1. Allowed values are [0..1].
-                    // The Z-axis seems to be reversed on the PSP as compared to OpenGL,
-                    // so take 0 as default.
-                	gl.glClearDepth(0);
-
-                	gl.glClear(clearFlags);
-		            log(String.format("guclear r=%.1f g=%.1f b=%.1f a=%.1f", vinfo.lastVertex.r, vinfo.lastVertex.g, vinfo.lastVertex.b, vinfo.lastVertex.a));
-				} else {
-				     clearFlags = 0;
-				     if ((normalArgument & 0x100)!=0) clearFlags |= GL.GL_COLOR_BUFFER_BIT; // target
-				     if ((normalArgument & 0x200)!=0) clearFlags |= GL.GL_STENCIL_BUFFER_BIT; // stencil/alpha
-				     if ((normalArgument & 0x400)!=0) clearFlags |= GL.GL_DEPTH_BUFFER_BIT; // zbuffer
-				     log("setting clear flags 0x" + Integer.toHexString(clearFlags));
-                }
+            	if((normalArgument & 1) == 0) {
+            		gl.glPopAttrib();
+            		// TODO Remove this glClear
+            		// We should not use it at all but demos won't work at all without it and our current implementation
+            		// We need to tweak the Z values written to the depth buffer, but I think this is impossible to do properly
+            		// without a fragment shader I think
+            		gl.glClear(GL.GL_DEPTH_BUFFER_BIT);
+            		log("clear mode end");
+            	} else {
+            		gl.glPushAttrib(GL.GL_ALL_ATTRIB_BITS);
+            		gl.glDisable(GL.GL_BLEND);
+            		gl.glDisable(GL.GL_STENCIL_TEST);
+            		gl.glDisable(GL.GL_LIGHTING);
+            		gl.glDisable(GL.GL_TEXTURE_2D);
+            		// TODO Add more disabling in clear mode, we also need to reflect the change to the internal GE registers
+            		boolean color = false, alpha = false;
+            		if((normalArgument & 0x100) != 0) color = true;
+            		if((normalArgument & 0x200) != 0) {
+            			alpha = true;
+            			// TODO Stencil not perfect, pspsdk clear code is doing more things
+                		gl.glEnable(GL.GL_STENCIL_TEST);
+            			gl.glStencilFunc(GL.GL_ALWAYS, 0, 0);
+            			gl.glStencilOp(GL.GL_KEEP, GL.GL_KEEP, GL.GL_ZERO);
+            		} 
+            		gl.glDepthMask((normalArgument & 0x400) != 0);
+            		gl.glColorMask(color, color, color, alpha);
+            		log("clear mode : " + (normalArgument >> 8));
+            	}
                 break;
             case NOP:
                 log(helper.getCommandString(NOP));
@@ -2355,52 +2447,10 @@ public class VideoEngine {
             	}
             	break;
 
-             case ZTST: {
 
-                int func = GL.GL_LESS;
-
-                switch (normalArgument & 0xFF) {
-                    case ZTST_FUNCTION_NEVER_PASS_PIXEL:
-                        func = GL.GL_NEVER;
-                        break;
-
-                    case ZTST_FUNCTION_ALWAYS_PASS_PIXEL:
-                        func = GL.GL_ALWAYS;
-                        break;
-
-                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_EQUAL:
-                        func = GL.GL_EQUAL;
-                        break;
-
-                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_ISNOT_EQUAL:
-                        func = GL.GL_NOTEQUAL;
-                        break;
-
-                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS:
-                        func = GL.GL_LESS;
-                        break;
-
-                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS_OR_EQUAL:
-                        func = GL.GL_LEQUAL;
-                        break;
-
-                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER:
-                        func = GL.GL_GREATER;
-                        break;
-
-                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER_OR_EQUAL:
-                        func = GL.GL_GEQUAL;
-                        break;
-                }
-
-                gl.glDepthFunc(func);
-
-                log ("sceGuDepthFunc(" + normalArgument + ")");
-                break;
-            }
 
            default:
-                log("Unknown/unimplemented video command [ " + helper.getCommandString(command(instruction)) + " ]");
+                log.warn("Unknown/unimplemented video command [ " + helper.getCommandString(command(instruction)) + " ]");
         }
 
     }
