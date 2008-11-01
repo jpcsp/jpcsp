@@ -46,6 +46,7 @@ import javax.swing.UIManager;
 import jpcsp.Debugger.ElfHeaderInfo;
 import jpcsp.Debugger.InstructionCounter;
 import jpcsp.Debugger.MemoryViewer;
+import jpcsp.Debugger.StepLogger;
 import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
 import jpcsp.Debugger.DisassemblerModule.VfpuFrame;
 import jpcsp.GUI.MemStickBrowser;
@@ -937,13 +938,13 @@ public void setMainTitle(String message)
 
     @Override
     public void componentShown(ComponentEvent e) { }
-    
+
     private class RecentElementActionListener implements ActionListener {
     	public static final int TYPE_UMD = 0;
     	public static final int TYPE_FILE = 1;
     	int type;
-    	String path;    	
-    	
+    	String path;
+
     	public RecentElementActionListener(int type, String path) {
     		this.path = path;
     		this.type = type;
@@ -958,7 +959,7 @@ public void setMainTitle(String message)
             	else
             		loadFile(file);
 		}
-    	
-    	
+
+
     }
 }

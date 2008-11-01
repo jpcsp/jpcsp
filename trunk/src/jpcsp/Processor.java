@@ -16,8 +16,10 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp;
 
-import jpcsp.Allegrex.*;
 import java.nio.ByteBuffer;
+
+import jpcsp.Allegrex.*;
+import jpcsp.Debugger.StepLogger;
 
 import org.apache.log4j.Logger;
 

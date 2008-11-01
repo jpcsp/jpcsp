@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp;
+package jpcsp.Debugger;
 
 import java.util.Arrays;
 import jpcsp.Allegrex.Common;
@@ -27,20 +27,27 @@ public class StepFrame {
 
     // Optimize for speed and memory, just store the raw details and calculate
     // the formatted message the first time getMessage it called.
-    private final int pc;
-    private final int[] gpr;
+    private int pc;
+    private int[] gpr = new int[32];
 
-    private final int opcode;
-    private final String asm;
+    private int opcode;
+    private String asm;
 
-    private final int threadID;
-    private final String threadName;
+    private int threadID;
+    private String threadName;
 
+    private boolean dirty;
     private String message;
 
-    public StepFrame(CpuState cpu) {
+    public StepFrame() {
+        dirty = false;
+        message = "";
+    }
+
+    public void make(CpuState cpu) {
         pc = cpu.pc;
-        gpr = Arrays.copyOf(cpu.gpr, 32);
+        //gpr = Arrays.copyOf(cpu.gpr, 32); // this will allocate
+        for (int i = 0; i < 32; i++) gpr[i] = cpu.gpr[i]; // this will copy
         threadID = ThreadMan.getInstance().getCurrentThreadID();
         threadName = ThreadMan.getInstance().getThreadName(threadID);
 
@@ -52,6 +59,8 @@ public class StepFrame {
             opcode = 0;
             asm = "?";
         }
+
+        dirty = true;
     }
 
     private String getThreadInfo() {
@@ -89,8 +98,10 @@ public class StepFrame {
     }
 
     public String getMessage() {
-        if (message == null)
+        if (dirty) {
+            dirty = false;
             makeMessage();
+        }
         return message;
     }
 }

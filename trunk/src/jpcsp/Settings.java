@@ -370,7 +370,7 @@ public class Settings {
 
             font = base.deriveFont(Font.PLAIN, fontsize);
 
-            // register font as a font familty so we can use it in StyledDocument's
+            // register font as a font family so we can use it in StyledDocument's
             java.awt.GraphicsEnvironment ge = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment();
             ge.registerFont(base);
         } catch(NumberFormatException e) {

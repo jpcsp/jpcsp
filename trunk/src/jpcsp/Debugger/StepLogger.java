@@ -14,23 +14,32 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp;
+package jpcsp.Debugger;
 
 import java.io.IOException;
 import java.io.FileWriter;
 import java.io.PrintWriter;
+import jpcsp.Emulator;
+import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 
 public class StepLogger {
     private static int size = 0;
     private static int position = 0;
     private static final int capacity = 64;
-    private static StepFrame[] frames = new StepFrame[capacity];
+    private static StepFrame[] frames;
     private static String name;
     private static int status = Emulator.EMU_STATUS_UNKNOWN;
 
+    static {
+        frames = new StepFrame[capacity];
+        for(int i = 0; i < capacity; i++) {
+            frames[i] = new StepFrame();
+        }
+    }
+
     public static void append(CpuState cpu) {
-        frames[position] = new StepFrame(cpu);
+        frames[position].make(cpu);
 
         if (size < capacity)
             size++;
@@ -54,6 +63,7 @@ public class StepLogger {
         case Emulator.EMU_STATUS_BREAKPOINT: return "Breakpoint";
         case Emulator.EMU_STATUS_UNIMPLEMENTED: return "Unimplemented";
         case Emulator.EMU_STATUS_PAUSE: return "Pause";
+        case Emulator.EMU_STATUS_JUMPSELF: return "Jump to self (death loop)";
         default: return "Unknown 0x" + Integer.toHexString(status);
         }
     }

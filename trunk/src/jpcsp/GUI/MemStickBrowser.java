@@ -51,6 +51,7 @@ import javax.swing.table.TableColumn;
 
 import jpcsp.Emulator;
 import jpcsp.MainGUI;
+import jpcsp.Settings;
 import jpcsp.format.PBP;
 import jpcsp.format.PSF;
 
@@ -85,7 +86,7 @@ public class MemStickBrowser extends JDialog {
             CellRenderer cellRenderer = new CellRenderer();
             TableColumn tableColumn = new TableColumn(0, 144, cellRenderer, null);
             tableColumn.setHeaderValue("Icon");
-            tableColumn.setMaxWidth(154);
+            tableColumn.setMaxWidth(144);
             tableColumn.setMinWidth(144);
             TableColumn tableColumn2 = new TableColumn(1, 100, cellRenderer, null);
             tableColumn2.setHeaderValue("Title");
@@ -313,9 +314,10 @@ public class MemStickBrowser extends JDialog {
             }
         });
 
+        table.setFont(Settings.getInstance().getFont());
+
+        DefaultTableColumnModel colModel = (DefaultTableColumnModel)table.getColumnModel();
         for (int c = 0; c < table.getColumnCount() - 1; c++) {
-            DefaultTableColumnModel colModel = (DefaultTableColumnModel) table
-                    .getColumnModel();
             TableColumn col = colModel.getColumn(c);
             int width = 0;
 
