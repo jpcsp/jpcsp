@@ -70,6 +70,7 @@ public class HLEModuleManager {
         Modules.sceAttrac3plusModule,
         Modules.sceCtrlModule,
         Modules.sceAudio,
+        Modules.sceImpose,
     };
 
     public static HLEModuleManager getInstance() {
