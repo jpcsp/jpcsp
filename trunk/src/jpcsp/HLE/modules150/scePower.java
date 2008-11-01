@@ -1478,4 +1478,15 @@ public class scePower implements HLEModule {
 		}
 	};
 
+    public static int getBatteryPowerPercent() {
+        return batteryPowerPercent;
+    }
+
+    public static boolean isPluggedIn() {
+        return pluggedIn;
+    }
+
+    public static boolean isBatteryCharging() {
+        return batteryCharging;
+    }
 };
