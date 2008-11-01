@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Debugger.InstructionCounter;
 import jpcsp.Debugger.MemoryViewer;
+import jpcsp.Debugger.StepLogger;
 import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
 
 import org.apache.log4j.Logger;
@@ -81,7 +82,7 @@ public class Emulator implements Runnable {
         if (instructionCounter != null) {
             instructionCounter.setModule(module);
         }
-        
+
         return module;
     }
 
