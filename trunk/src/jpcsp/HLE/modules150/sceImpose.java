@@ -197,7 +197,6 @@ public class sceImpose implements HLEModule {
         }
         if (mem.isAddressGood(addrIconStatus)) {
             mem.write32(addrIconStatus, iconStatus); // Values: 0..3
-            mem.write32(addrIconStatus, 3);
         }
 
 		cpu.gpr[2] = 0;
