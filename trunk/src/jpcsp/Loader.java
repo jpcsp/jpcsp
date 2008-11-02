@@ -463,6 +463,21 @@ public class Loader {
                 }
             }
         }
+
+        // Save the address/size of some sections for SceModule
+        Elf32SectionHeader shdr = elf.getSectionHeader(".text");
+        if (shdr != null) {
+            module.text_addr = (int)(baseAddress + shdr.getSh_addr());
+            module.text_size = (int)shdr.getSh_size();
+        }
+
+        shdr = elf.getSectionHeader(".data");
+        if (shdr != null)
+            module.data_size = (int)shdr.getSh_size();
+
+        shdr = elf.getSectionHeader(".bss");
+        if (shdr != null)
+            module.bss_size = (int)shdr.getSh_size();
     }
 
     private void LoadELFReserveMemory(SceModule module) {
@@ -944,13 +959,7 @@ public class Loader {
         // Save executable section address/size for the debugger/instruction counter
         Elf32SectionHeader shdr;
 
-        shdr = elf.getSectionHeader(".text");
-        if (shdr != null)
-        {
-            // TODO move out of LoadELFDebuggerInfo function since these variables are important
-            module.text_addr = (int)(baseAddress + shdr.getSh_addr());
-            module.text_size = (int)shdr.getSh_size();
-        }
+        // .text moved to module.text_addr/module.text_size, assigned in LoadELFSections
 
         shdr = elf.getSectionHeader(".init");
         if (shdr != null)
