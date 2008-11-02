@@ -18,7 +18,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
-import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
@@ -186,10 +185,6 @@ public class sceImpose implements HLEModule {
         int batteryPowerPercent = scePower.getBatteryPowerPercent();
         // Possible values for iconStatus: 0..3
         int iconStatus = Math.min(batteryPowerPercent / 25, 3);
-        // I'm not sure if
-        //    scePower.isBatteryCharging() or
-        //    scePower.isPluggedIn()
-        // should be used here.
         boolean charging = scePower.isBatteryCharging();
 
         if (mem.isAddressGood(addrCharging)) {

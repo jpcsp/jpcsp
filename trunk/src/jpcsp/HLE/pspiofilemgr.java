@@ -595,7 +595,10 @@ public class pspiofilemgr {
                         case PSP_SEEK_SET:
                             if (offset > info.readOnlyFile.length()) {
                                 Modules.log.warn("seek - offset (0x" + Long.toHexString(offset) + ") longer than file length (" + Long.toHexString(info.readOnlyFile.length()) + ")!");
-                                offset = 0;
+                                Emulator.getProcessor().cpu.gpr[2] = -1;
+                                if (resultIs64bit)
+                                    Emulator.getProcessor().cpu.gpr[3] = -1;
+                                return;
                             }
                             info.readOnlyFile.seek(offset);
                             break;
