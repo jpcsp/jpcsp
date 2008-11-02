@@ -62,6 +62,8 @@ public class ThreadMan {
     private final int WDT_THREAD_IDLE_CYCLES = 1000000;
     private final int WDT_THREAD_HOG_CYCLES = 50000000;
 
+    public final static int PSP_ERROR_UNKNOWN_UID                    = 0x800200cb;
+
     public final static int PSP_ERROR_NOT_FOUND_THREAD               = 0x80020198;
     public final static int PSP_ERROR_NOT_FOUND_SEMAPHORE            = 0x80020199;
     public final static int PSP_ERROR_NOT_FOUND_EVENT_FLAG           = 0x8002019a;
@@ -914,7 +916,7 @@ public class ThreadMan {
             //int p = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_HighAligned, size, 0x1000);
             int p = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_High, size, 0);
             if (p != 0) {
-                pspSysMem.getInstance().addSysMemInfo(2, "ThreadMan-Stack", pspSysMem.PSP_SMEM_High, size, 0);
+                pspSysMem.getInstance().addSysMemInfo(2, "ThreadMan-Stack", pspSysMem.PSP_SMEM_High, size, p);
                 p += size;
             }
 
@@ -1118,7 +1120,13 @@ public class ThreadMan {
 
     public void ThreadMan_sceKernelDeleteSema(int semaid)
     {
-        Modules.log.debug("sceKernelDeleteSema id= 0x" + Integer.toHexString(semaid));
+        Modules.log.debug("sceKernelDeleteSema id=0x" + Integer.toHexString(semaid));
+
+        if (semaid <= 0) {
+            Modules.log.warn("sceKernelDeleteSema bad id=0x" + Integer.toHexString(semaid));
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_UNKNOWN_UID;
+            return;
+        }
 
         SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
         SceKernelSemaphoreInfo sema = semalist.remove(semaid);
@@ -1175,6 +1183,12 @@ public class ThreadMan {
         if (signal <= 0) {
             Modules.log.warn("hleKernelWaitSema - bad signal " + signal);
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_ILLEGAL_COUNT;
+            return;
+        }
+
+        if (semaid <= 0) {
+            Modules.log.warn("hleKernelWaitSema bad id=0x" + Integer.toHexString(semaid));
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_UNKNOWN_UID;
             return;
         }
 
@@ -1244,6 +1258,12 @@ public class ThreadMan {
             return;
         }
 
+        if (semaid <= 0) {
+            Modules.log.warn("sceKernelSignalSema bad id=0x" + Integer.toHexString(semaid));
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_UNKNOWN_UID;
+            return;
+        }
+
         SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
         SceKernelSemaphoreInfo sema = semalist.get(semaid);
         if (sema == null) {
@@ -1307,6 +1327,12 @@ public class ThreadMan {
             return;
         }
 
+        if (semaid <= 0) {
+            Modules.log.warn("sceKernelPollSema bad id=0x" + Integer.toHexString(semaid));
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_UNKNOWN_UID;
+            return;
+        }
+
         SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
         SceKernelSemaphoreInfo sema = semalist.get(semaid);
         if (sema == null) {
@@ -1323,6 +1349,12 @@ public class ThreadMan {
     public void ThreadMan_sceKernelCancelSema(int semaid)
     {
         Modules.log.debug("sceKernelCancelSema id= 0x" + Integer.toHexString(semaid));
+
+        if (semaid <= 0) {
+            Modules.log.warn("sceKernelCancelSema bad id=0x" + Integer.toHexString(semaid));
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_UNKNOWN_UID;
+            return;
+        }
 
         SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
         SceKernelSemaphoreInfo sema = semalist.get(semaid);
@@ -1356,6 +1388,12 @@ public class ThreadMan {
     public void ThreadMan_sceKernelReferSemaStatus(int semaid, int addr)
     {
         Modules.log.debug("sceKernelReferSemaStatus id= 0x" + Integer.toHexString(semaid) + " addr= 0x" + Integer.toHexString(addr));
+
+        if (semaid <= 0) {
+            Modules.log.warn("sceKernelReferSemaStatus bad id=0x" + Integer.toHexString(semaid));
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_UNKNOWN_UID;
+            return;
+        }
 
         SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
         SceKernelSemaphoreInfo sema = semalist.get(semaid);

@@ -225,16 +225,15 @@ public class pspSysMem {
 
         if (!found)
         {
-            // TODO add a SysMemInfo when calling malloc outside of sceKernelAllocPartitionMemory
-            // heh was lazy and never got round to writing it, you can also see this bug in hellojpcsp.pbp (fiveofhearts)
-            Modules.log.error("UNIMPLEMENT:failed to free addr:0x" + Integer.toHexString(addr));
-            //Modules.log.error("failed to map addr:0x" + Integer.toHexString(addr) + " to SysMemInfo, possibly bad/missing cleanup or double free in HLE");
+            // HLE modules using malloc should also call addSysMemInfo
+            Modules.log.warn("pspSysMem.free(addr) failed to find SysMemInfo for addr:0x" + Integer.toHexString(addr));
         }
     }
 
     private void free(SysMemInfo info)
     {
         // TODO
+        Modules.log.error("UNIMPLEMENT: pspSysMem.free(info) not implemented");
     }
 
     public int maxFreeMemSize() {

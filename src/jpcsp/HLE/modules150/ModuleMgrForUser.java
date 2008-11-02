@@ -25,19 +25,20 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.pspSysMem;
 import jpcsp.HLE.pspiofilemgr;
+import jpcsp.HLE.kernel.Managers;
+import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
-import jpcsp.HLE.kernel.types.SceModule;
 
 import jpcsp.Emulator;
 import jpcsp.Loader;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
-import jpcsp.ModuleContext;
 import jpcsp.Processor;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.util.Utilities;
+import jpcsp.HLE.kernel.types.SceModule;
 
 import jpcsp.Allegrex.CpuState; // New-Style Processor
 
@@ -138,8 +139,12 @@ public class ModuleMgrForUser implements HLEModule {
         // Load flash0 modules as Java HLE modules
         if (name.startsWith("flash0:")) {
             // Simulate a successful loading
-            Modules.log.warn("IGNORED:sceKernelLoadModule(path='" + name + "'): module from flash0 not loaded");
-            cpu.gpr[2] = SceModule.flashModuleUid;
+            Modules.log.warn("PARTIAL:sceKernelLoadModule(path='" + name + "'): module from flash0 not loaded");
+            SceModule fakeModule = new SceModule(true);
+            fakeModule.modname = prxname;
+            fakeModule.write(Memory.getInstance(), fakeModule.address);
+            Managers.modules.addModule(fakeModule);
+            cpu.gpr[2] = fakeModule.modid;
             // TODO cpu.gpr[2] = HLEModuleManager.getInstance().LoadFlash0Module(prxname);
             return;
         }
@@ -150,7 +155,11 @@ public class ModuleMgrForUser implements HLEModule {
             if (bannedModuleName.name().matches(prxname))
             {
                 Modules.log.warn("IGNORED:sceKernelLoadModule(path='" + name + "'): module from banlist not loaded");
-                cpu.gpr[2] = SceModule.flashModuleUid;
+                SceModule fakeModule = new SceModule(true);
+                fakeModule.modname = prxname;
+                fakeModule.write(Memory.getInstance(), fakeModule.address);
+                Managers.modules.addModule(fakeModule);
+                cpu.gpr[2] = fakeModule.modid;
                 return;
             }
         }
@@ -168,27 +177,21 @@ public class ModuleMgrForUser implements HLEModule {
                 // We need to get a load address, we can either add getHeapBottom to pspsysmem, or we can malloc something small
                 // We're going to need to write a SceModule struct somewhere, so we could malloc that, and add the size of the struct to the address
                 // For now we'll just malloc 64 bytes :P (the loadBase needs to be aligned anyway)
-
     	        int loadBase = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_Low, 64, 0) + 64;
-                ModuleContext module = Loader.getInstance().LoadModule(name, moduleBuffer, loadBase);
+                pspSysMem.getInstance().addSysMemInfo(2, "ModuleMgr", pspSysMem.PSP_SMEM_Low, 64, loadBase);
+                SceModule module = Loader.getInstance().LoadModule(name, moduleBuffer, loadBase);
 
                 if ((module.fileFormat & Loader.FORMAT_SCE) == Loader.FORMAT_SCE ||
                     (module.fileFormat & Loader.FORMAT_PSP) == Loader.FORMAT_PSP) {
                 	// Simulate a successful loading
                     Modules.log.warn("IGNORED:sceKernelLoadModule(path='" + name + "') encrypted module not loaded");
-                	cpu.gpr[2] = SceModule.flashModuleUid;
-                }
-    	        else if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {
-
-                    // TODO merge SceModule and ModuleContext classes
-                    SceModule sceModule = new SceModule();
-                    sceModule.setName(name);
-                    sceModule.setAttr(module.moduleInfo.getM_attr());
-                    sceModule.setStartAddr(module.entryAddress);
-                    sceModule.setGp((int)module.moduleInfo.getM_gp());
-                    HLEModuleManager.getInstance().addSceModule(sceModule);
-
-                    cpu.gpr[2] = sceModule.getUid();
+                    SceModule fakeModule = new SceModule(true);
+                    fakeModule.modname = prxname;
+                    fakeModule.write(Memory.getInstance(), fakeModule.address);
+                    Managers.modules.addModule(fakeModule);
+                    cpu.gpr[2] = fakeModule.modid;
+                } else if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {
+                    cpu.gpr[2] = module.modid;
                 } else {
                     // The Loader class now manages the module's memory footprint, it won't allocate if it failed to load
                     //pspSysMem.getInstance().free(loadBase);
@@ -239,12 +242,11 @@ public class ModuleMgrForUser implements HLEModule {
 	public void sceKernelStartModule(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
 
         int uid = cpu.gpr[4];
         int argsize = cpu.gpr[5];
         int argp_addr = cpu.gpr[6];
-        int status_addr = cpu.gpr[7];
+        int status_addr = cpu.gpr[7]; // TODO
         int option_addr = cpu.gpr[8]; // SceKernelSMOption
 
         Modules.log.debug("sceKernelStartModule(uid=0x" + Integer.toHexString(uid)
@@ -253,22 +255,24 @@ public class ModuleMgrForUser implements HLEModule {
             + ",status=0x" + Integer.toHexString(status_addr)
             + ",option=0x" + Integer.toHexString(option_addr) + ")");
 
-        if (uid == SceModule.flashModuleUid) {
+        SceModule sceModule = Managers.modules.getModule(uid);
+
+        if (sceModule == null) {
+            Modules.log.warn("sceKernelStartModule - unknown module UID 0x" + Integer.toHexString(uid));
+            cpu.gpr[2] = -1;
+        } else  if (sceModule.isFlashModule) {
         	// Trying to start a module loaded from flash0:
         	// Do nothing...
+            Modules.log.warn("IGNORING:sceKernelStartModule flash module");
     		cpu.gpr[2] = 0;
-        	return;
-        }
-        SceModule sceModule = HLEModuleManager.getInstance().getSceModuleByUid(uid);
-        if (sceModule == null) {
-            cpu.gpr[2] = -1;
-            Modules.log.error("sceKernelStartModule - unknown module UID 0x" + Integer.toHexString(uid));
-            return;
-        }
+        } else {
+            // TODO check thread priority
+            ThreadMan.getInstance().createThread(sceModule.modname,
+                sceModule.entry_addr, 0, 0x4000, sceModule.attribute,
+                option_addr, true, argsize, argp_addr, sceModule.gp_value);
 
-        ThreadMan.getInstance().createThread(sceModule.getName(), sceModule.getStartAddr(), 0, 0x4000, sceModule.getAttr(), option_addr, true, argsize, argp_addr, sceModule.getGp());
-
-        cpu.gpr[2] = 0;
+            cpu.gpr[2] = 0;
+        }
 	}
 
 	public void sceKernelStopModule(Processor processor) {
@@ -394,10 +398,15 @@ public class ModuleMgrForUser implements HLEModule {
 		CpuState cpu = processor.cpu; // New-Style Processor
 
         int addr = cpu.gpr[4];
-        Modules.log.warn("UNIMPLEMENTED:sceKernelGetModuleIdByAddress(addr=0x" + Integer.toHexString(addr) + ")");
+        Modules.log.debug("sceKernelGetModuleIdByAddress(addr=0x" + Integer.toHexString(addr) + ")");
 
-        // Just return > 0 so it thinks we found the module
-		cpu.gpr[2] = 1;
+        SceModule module = Managers.modules.getModuleByAddress(addr);
+        if (module != null) {
+            cpu.gpr[2] = module.modid;
+        } else {
+            Modules.log.warn("sceKernelGetModuleIdByAddress module not found");
+            cpu.gpr[2] = -1;
+        }
 	}
 
 	public final HLEModuleFunction sceKernelLoadModuleByIDFunction = new HLEModuleFunction("ModuleMgrForUser", "sceKernelLoadModuleByID") {

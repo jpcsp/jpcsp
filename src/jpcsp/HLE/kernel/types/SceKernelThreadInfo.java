@@ -96,7 +96,7 @@ public class SceKernelThreadInfo extends SceKernelUid implements Comparator<SceK
     private int mallocStack(int size) {
         if (size > 0) {
             int p = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_High, size, 0);
-            pspSysMem.getInstance().addSysMemInfo(2, "ThreadMan-Stack", pspSysMem.PSP_SMEM_High, size, 0);
+            pspSysMem.getInstance().addSysMemInfo(2, "ThreadMan-Stack", pspSysMem.PSP_SMEM_High, size, p);
             p += size;
 
             return p;

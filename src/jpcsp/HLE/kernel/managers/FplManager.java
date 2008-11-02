@@ -34,7 +34,7 @@ public class FplManager {
     private HashMap<Integer, SceKernelFplInfo> fplMap;
     // TODO private List<Integer> waitAllocateQueue; // For use when there is no free mem
 
-    public void initialize() {
+    public void reset() {
         fplMap = new HashMap<Integer, SceKernelFplInfo>();
         // TODO waitAllocateQueue = new LinkedList<Integer>();
     }
@@ -109,7 +109,7 @@ public class FplManager {
         } else {
             addr = pspSysMem.getInstance().malloc(info.partitionid, pspSysMem.PSP_SMEM_Low, info.blockSize, 0);
             if (addr != 0) {
-                pspSysMem.getInstance().addSysMemInfo(info.partitionid, "ThreadMan-Fpl", pspSysMem.PSP_SMEM_Low, info.blockSize, 0);
+                pspSysMem.getInstance().addSysMemInfo(info.partitionid, "ThreadMan-Fpl", pspSysMem.PSP_SMEM_Low, info.blockSize, addr);
                 info.blockAddress[block] = addr;
                 info.freeBlocks--;
             }
