@@ -26,7 +26,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import javax.swing.JFileChooser;
 import jpcsp.Memory;
-import jpcsp.ModuleContext;
+import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.Allegrex.Instructions.*;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.Common.Instruction;
@@ -38,7 +38,7 @@ import jpcsp.Allegrex.Common.Instruction;
 public class InstructionCounter extends javax.swing.JFrame implements PropertyChangeListener {
 
     private Task task;
-    private ModuleContext module;
+    private SceModule module;
 
     /** Creates new form InstructionCounter */
     public InstructionCounter() {
@@ -47,7 +47,7 @@ public class InstructionCounter extends javax.swing.JFrame implements PropertyCh
         //RefreshWindow();
     }
 
-    public void setModule(ModuleContext module) {
+    public void setModule(SceModule module) {
         this.module = module;
         RefreshWindow();
     }
@@ -59,13 +59,13 @@ public class InstructionCounter extends javax.swing.JFrame implements PropertyCh
         resetcounts();
         areastatus.setText("");
 
-        if (module.textsection[0] == 0) {
+        if (module.text_addr == 0) {
             textcheck.setEnabled(false);
             textcheck.setSelected(false);
         } else {
             textcheck.setEnabled(true);
             textcheck.setSelected(true);
-            areastatus.append("Found .text section at " + Integer.toHexString(module.textsection[0]) + " size " + module.textsection[1] + "\n");
+            areastatus.append("Found .text section at " + Integer.toHexString(module.text_addr) + " size " + module.text_size + "\n");
         }
 
         if (module.initsection[0] == 0) {
@@ -318,9 +318,9 @@ private void SaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:ev
     }
     public void findtextsections()
     {
-       for(int i =0; i< module.textsection[1]; i+=4)
+       for(int i =0; i< module.text_size; i+=4)
        {
-          int memread32 = Memory.getInstance().read32(module.textsection[0]+i);
+          int memread32 = Memory.getInstance().read32(module.text_addr+i);
           jpcsp.Allegrex.Decoder.instruction(memread32).increaseCount();
        }
     }

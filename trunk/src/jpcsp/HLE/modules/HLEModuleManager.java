@@ -17,15 +17,20 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules;
 
-import jpcsp.HLE.kernel.types.SceModule;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+
 import jpcsp.Emulator;
+import jpcsp.Memory;
+import jpcsp.NIDMapper;
+import jpcsp.HLE.kernel.types.SceModule;
+import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.pspSysMem;
-import jpcsp.NIDMapper;
+import jpcsp.HLE.kernel.Managers;
+
 
 /**
  * For backwards compatibility with the current jpcsp code, the old
@@ -48,7 +53,6 @@ public class HLEModuleManager {
     private int syscallCodeAllocator;
 
     private List<HLEThread> hleThreadList;
-    private List<SceModule> sceModuleList;
 
     private HashMap<String, List<HLEModule>> flash0prxMap;
 
@@ -88,7 +92,6 @@ public class HLEModuleManager {
         syscallCodeAllocator = 0x4000;
 
         hleThreadList = new LinkedList<HLEThread>();
-        sceModuleList = new LinkedList<SceModule>();
 
         // TODO use fw version from PSF, unless it's a banned PSF (such as used by pspsdk)
         firmwareVersion = pspSysMem.PSP_FIRMWARE_150;
@@ -130,8 +133,11 @@ public class HLEModuleManager {
             for (HLEModule module : prx) {
                 module.installModule(this, firmwareVersion);
             }
-            // TODO assign a proper uid and SceModule struct
-            uid = SceModule.flashModuleUid;
+            SceModule fakeModule = new SceModule(true);
+            fakeModule.modname = prxname;
+            fakeModule.write(Memory.getInstance(), fakeModule.address);
+            Managers.modules.addModule(fakeModule);
+            uid = fakeModule.modid;
         }
         return uid;
     }
@@ -210,20 +216,5 @@ public class HLEModuleManager {
         } else {
             return false;
         }
-    }
-
-    public void addSceModule(SceModule sceModule) {
-        sceModuleList.add(sceModule);
-    }
-
-    public SceModule getSceModuleByUid(int uid) {
-        for (Iterator<SceModule> it = sceModuleList.iterator(); it.hasNext();) {
-            SceModule sceModule = it.next();
-            if (sceModule.getUid() == uid) {
-                return sceModule;
-            }
-        }
-
-        return null;
     }
 }

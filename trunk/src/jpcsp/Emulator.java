@@ -24,6 +24,7 @@ import jpcsp.Debugger.InstructionCounter;
 import jpcsp.Debugger.MemoryViewer;
 import jpcsp.Debugger.StepLogger;
 import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
+import jpcsp.HLE.kernel.types.SceModule;
 
 import org.apache.log4j.Logger;
 
@@ -39,7 +40,6 @@ public class Emulator implements Runnable {
     private static DisassemblerFrame debugger;
     private InstructionCounter instructionCounter;
     private static MemoryViewer memview;
-    private String pspfilename;
     public static Logger log = Logger.getLogger("misc");
 
     public Emulator(MainGUI gui) {
@@ -56,10 +56,9 @@ public class Emulator implements Runnable {
         mainThread = new Thread(this, "Emu");
     }
 
-    private ModuleContext module;
+    private SceModule module;
 
-    public ModuleContext load(String pspfilename, ByteBuffer f) throws IOException, GeneralJpcspException {
-        this.pspfilename = pspfilename;
+    public SceModule load(String pspfilename, ByteBuffer f) throws IOException, GeneralJpcspException {
 
         initNewPsp();
 
@@ -91,20 +90,19 @@ public class Emulator implements Runnable {
         //some settings from soywiz/pspemulator
         CpuState cpu = processor.cpu;
 
-        cpu.pc = module.entryAddress; //set the pc register.
+        cpu.pc = module.entry_addr; //set the pc register.
         cpu.npc = cpu.pc + 4;
         // Gets set in ThreadMan cpu.gpr[4] = 0; //a0
         // Gets set in ThreadMan cpu.gpr[5] = (int) romManager.getBaseoffset() + (int) elf.getHeader().getE_entry(); // argumentsPointer a1 reg
         //cpu.gpr[6] = 0; //a2
         // Gets set in ThreadMan cpu.gpr[26] = 0x09F00000; //k0
         cpu.gpr[27] = 0; //k1 should probably be 0
-        cpu.gpr[28] = (int)module.moduleInfo.getM_gp(); //gp reg    gp register should get the GlobalPointer!!!
+        cpu.gpr[28] = module.gp_value; //gp reg    gp register should get the GlobalPointer!!!
         // Gets set in ThreadMan cpu.gpr[29] = 0x09F00000; //sp
         // Gets set in ThreadMan cpu.gpr[31] = 0x08000004; //ra, should this be 0?
         // All other registers are uninitialised/random values
 
-        jpcsp.HLE.ThreadMan.getInstance().Initialise(cpu.pc, module.moduleInfo.getM_attr(), pspfilename);
-        jpcsp.HLE.kernel.Managers.fpl.initialize();
+        jpcsp.HLE.ThreadMan.getInstance().Initialise(cpu.pc, module.attribute, module.pspfilename);
         jpcsp.HLE.psputils.getInstance().Initialise();
         jpcsp.HLE.pspge.getInstance().Initialise();
         jpcsp.HLE.pspdisplay.getInstance().Initialise();
@@ -121,9 +119,10 @@ public class Emulator implements Runnable {
         Memory.getInstance().Initialise();
 
         NIDMapper.getInstance().Initialise();
-        Loader.getInstance().Initialise();
+        Loader.getInstance().reset();
 
         jpcsp.HLE.modules.HLEModuleManager.getInstance().Initialise();
+        jpcsp.HLE.kernel.Managers.reset();
         jpcsp.HLE.pspSysMem.getInstance().Initialise();
     }
 

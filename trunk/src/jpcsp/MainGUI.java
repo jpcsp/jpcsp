@@ -55,6 +55,7 @@ import jpcsp.GUI.SettingsGUI;
 import jpcsp.GUI.UmdBrowser;
 import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.pspiofilemgr;
+import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PSF;
@@ -477,10 +478,10 @@ public void loadFile(File file) {
         // Create a read-only memory-mapped file
         FileChannel roChannel = new RandomAccessFile(file, "r").getChannel();
         ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
-        ModuleContext context = emulator.load(pspifyFilename(file.getPath()), readbuffer);
+        SceModule module = emulator.load(pspifyFilename(file.getPath()), readbuffer);
         roChannel.close(); // doesn't seem to work properly :(
 
-        String title = context.psf != null ? context.psf.getString("TITLE") : file.getParentFile().getName();
+        String title = module.psf != null ? module.psf.getPrintableString("TITLE") : file.getParentFile().getName();
         setTitle(version + " - " + title);
         addRecentFile(file, title);
 

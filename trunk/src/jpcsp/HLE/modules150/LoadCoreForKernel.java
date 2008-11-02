@@ -19,6 +19,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.kernel.Managers;
+import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
@@ -527,10 +529,10 @@ public class LoadCoreForKernel implements HLEModule {
 		int modulename_addr = cpu.gpr[4];
         String name = Utilities.readStringZ(mem.mainmemory, (modulename_addr & 0x3fffffff) - MemoryMap.START_RAM);
 
-		Modules.log.warn("IGNORING:sceKernelFindModuleByName name='" + name + "'");
+		Modules.log.warn("sceKernelFindModuleByName name='" + name + "'");
 
-        // TODO this should return the address of a SceModule struct
-		cpu.gpr[2] = 0;
+        SceModule sceModule = Managers.modules.getModuleByName(name);
+		cpu.gpr[2] = sceModule.address;
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
