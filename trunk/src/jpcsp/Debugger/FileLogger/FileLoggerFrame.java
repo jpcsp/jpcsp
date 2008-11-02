@@ -40,6 +40,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
     private FileHandleModel fileHandleModel;
     private FileCommandModel fileCommandModel;
     private Thread refreshThread;
+    private volatile boolean dirty;
 
     /** Creates new form FileLoggerFrame */
     public FileLoggerFrame() {
@@ -113,8 +114,6 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
         return this;
     }
 
-    private volatile boolean dirty;
-
     // TODO does fireTableDataChanged need to be in the swing thread?
     // if not we could just call fireTableDataChanged(); from the logging functions
     @Override
@@ -132,15 +131,16 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
                 // Tell the tables to redraw
                 fileHandleModel.fireTableDataChanged();
                 fileCommandModel.fireTableDataChanged();
-                dirty = false;
             }
         };
 
         while (true) {
             try {
                 synchronized(this) {
-                    while(!dirty)
+                    while(!dirty) {
                         wait();
+                    }
+                    dirty = false;
                 }
 
                 SwingUtilities.invokeLater(refresher);
@@ -348,12 +348,17 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
     private List<FileCommandInfo> fileCommandList;
 
     // TODO call from emulator
-    public void resetLogging() {
+    public synchronized void resetLogging() {
         fileHandleNameMap = new HashMap<String, FileHandleInfo>();
         fileHandleIdMap = new HashMap<Integer, FileHandleInfo>();
         fileHandleList = new LinkedList<FileHandleInfo>();
 
         fileCommandList = new LinkedList<FileCommandInfo>();
+
+        if (!dirty) {
+            dirty = true;
+            getInstance().notify();
+        }
     }
 
     private void sortLists() {
@@ -402,7 +407,10 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
                 fileHandleIdMap.put(result, info);
                 sortLists();
             } else {
+                fileHandleIdMap.remove(info.fd);
+                info.fd = result;
                 info.isOpen(true);
+                fileHandleIdMap.put(result, info);
             }
         }
 
@@ -515,7 +523,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
         fileCommandList.add(new FileCommandInfo(
                 "devctl", result,
                 String.format("device=0x%08X('%s') cmd=0x%08X indata=0x%08X inlen=0x%08X outdata=0x%08X outlen=0x%08X",
-                        device_addr, device, indata_addr, inlen, outdata_addr, outlen)
+                        device_addr, device, cmd, indata_addr, inlen, outdata_addr, outlen)
                 ));
     }
 

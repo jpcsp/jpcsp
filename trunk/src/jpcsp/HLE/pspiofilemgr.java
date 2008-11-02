@@ -200,7 +200,7 @@ public class pspiofilemgr {
 
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
-        
+
         State.fileLogger.logIoPollAsync(Emulator.getProcessor().cpu.gpr[2], uid, res_addr);
     }
 
@@ -428,6 +428,8 @@ public class pspiofilemgr {
             e.printStackTrace();
             Emulator.getProcessor().cpu.gpr[2] = -1;
         }
+
+        State.fileLogger.logIoClose(Emulator.getProcessor().cpu.gpr[2], uid);
     }
 
     public void sceIoCloseAsync(int uid) {
@@ -487,7 +489,7 @@ public class pspiofilemgr {
                 Emulator.getProcessor().cpu.gpr[2] = -1;
             }
         }
-        
+
         State.fileLogger.logIoWrite(Emulator.getProcessor().cpu.gpr[2], uid, data_addr, size);
     }
 
@@ -538,7 +540,7 @@ public class pspiofilemgr {
                 Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_FILE_READ_ERROR;
             }
         }
-        
+
         State.fileLogger.logIoRead(Emulator.getProcessor().cpu.gpr[2], uid, data_addr, size);
     }
 
@@ -636,7 +638,7 @@ public class pspiofilemgr {
                     Emulator.getProcessor().cpu.gpr[3] = -1;
             }
         }
-        
+
         if (resultIs64bit) {
             State.fileLogger.logIoSeek64(
                     (long)(Emulator.getProcessor().cpu.gpr[2] & 0xFFFFFFFFL) | ((long)Emulator.getProcessor().cpu.gpr[3] << 32),
@@ -658,7 +660,7 @@ public class pspiofilemgr {
         } else {
             Emulator.getProcessor().cpu.gpr[2] = -1;
         }
-        
+
         State.fileLogger.logIoMkdir(Emulator.getProcessor().cpu.gpr[2], dir_addr, dir, permissions);
     }
 
@@ -684,7 +686,7 @@ public class pspiofilemgr {
                 Emulator.getProcessor().cpu.gpr[2] = -1;
             }
         }
-        
+
         State.fileLogger.logIoChdir(Emulator.getProcessor().cpu.gpr[2], path_addr, path);
     }
 
@@ -742,7 +744,7 @@ public class pspiofilemgr {
         } else {
             Emulator.getProcessor().cpu.gpr[2] = -1;
         }
-        
+
         State.fileLogger.logIoDopen(Emulator.getProcessor().cpu.gpr[2], dirname_addr, dirname);
     }
 
@@ -771,7 +773,7 @@ public class pspiofilemgr {
             Modules.log.debug("sceIoDread - no more files");
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
-        
+
         // TODO would be nice to log which filename was stored
         State.fileLogger.logIoDread(Emulator.getProcessor().cpu.gpr[2], uid, dirent_addr);
     }
@@ -788,7 +790,7 @@ public class pspiofilemgr {
             SceUidManager.releaseUid(info.uid, "IOFileManager-Directory");
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
-        
+
         State.fileLogger.logIoDclose(Emulator.getProcessor().cpu.gpr[2], uid);
     }
 
@@ -852,7 +854,7 @@ public class pspiofilemgr {
                 Emulator.getProcessor().cpu.gpr[2] = -1; // Just fail for now
                 break;
         }
-        
+
         State.fileLogger.logIoDevctl(Emulator.getProcessor().cpu.gpr[2],
                 device_addr, device, cmd, indata_addr, inlen, outdata_addr, outlen);
     }
@@ -879,7 +881,7 @@ public class pspiofilemgr {
 
         //Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
         Emulator.getProcessor().cpu.gpr[2] = -1;
-        
+
         State.fileLogger.logIoAssign(Emulator.getProcessor().cpu.gpr[2],
                 dev1_addr, dev1, dev2_addr, dev2, dev3_addr, dev3, mode, unk1, unk2);
     }
@@ -975,7 +977,7 @@ public class pspiofilemgr {
         } else {
             Emulator.getProcessor().cpu.gpr[2] = -1;
         }
-        
+
         // TODO move into stat()? that will also log on Dread
         State.fileLogger.logIoGetStat(Emulator.getProcessor().cpu.gpr[2],
                 file_addr, filename, stat_addr);

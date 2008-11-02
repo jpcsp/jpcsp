@@ -21,7 +21,7 @@ package jpcsp.Debugger.FileLogger;
  * @author fiveofhearts
  */
 public class FileHandleInfo implements Comparable<FileHandleInfo> {
-    public final int fd;
+    public int fd;
     public final String filename;
 
     private boolean isOpen;
