@@ -142,7 +142,7 @@ public class ModuleMgrForUser implements HLEModule {
             Modules.log.warn("PARTIAL:sceKernelLoadModule(path='" + name + "'): module from flash0 not loaded");
             SceModule fakeModule = new SceModule(true);
             fakeModule.modname = prxname;
-            fakeModule.write(Memory.getInstance(), fakeModule.address);
+            fakeModule.write(mem, fakeModule.address);
             Managers.modules.addModule(fakeModule);
             cpu.gpr[2] = fakeModule.modid;
             // TODO cpu.gpr[2] = HLEModuleManager.getInstance().LoadFlash0Module(prxname);
@@ -157,7 +157,7 @@ public class ModuleMgrForUser implements HLEModule {
                 Modules.log.warn("IGNORED:sceKernelLoadModule(path='" + name + "'): module from banlist not loaded");
                 SceModule fakeModule = new SceModule(true);
                 fakeModule.modname = prxname;
-                fakeModule.write(Memory.getInstance(), fakeModule.address);
+                fakeModule.write(mem, fakeModule.address);
                 Managers.modules.addModule(fakeModule);
                 cpu.gpr[2] = fakeModule.modid;
                 return;
@@ -187,7 +187,7 @@ public class ModuleMgrForUser implements HLEModule {
                     Modules.log.warn("IGNORED:sceKernelLoadModule(path='" + name + "') encrypted module not loaded");
                     SceModule fakeModule = new SceModule(true);
                     fakeModule.modname = prxname;
-                    fakeModule.write(Memory.getInstance(), fakeModule.address);
+                    fakeModule.write(mem, fakeModule.address);
                     Managers.modules.addModule(fakeModule);
                     cpu.gpr[2] = fakeModule.modid;
                 } else if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {

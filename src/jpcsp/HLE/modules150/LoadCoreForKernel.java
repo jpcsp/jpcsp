@@ -519,23 +519,24 @@ public class LoadCoreForKernel implements HLEModule {
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
 
-	public void sceKernelFindModuleByName(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		//Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+    public void sceKernelFindModuleByName(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        //Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
 
-		/* put your own code here instead */
-
-		int modulename_addr = cpu.gpr[4];
+        int modulename_addr = cpu.gpr[4];
         String name = Utilities.readStringZ(mem.mainmemory, (modulename_addr & 0x3fffffff) - MemoryMap.START_RAM);
 
-		Modules.log.warn("sceKernelFindModuleByName name='" + name + "'");
+        Modules.log.debug("sceKernelFindModuleByName name='" + name + "'");
 
-        SceModule sceModule = Managers.modules.getModuleByName(name);
-		cpu.gpr[2] = sceModule.address;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
+        SceModule module = Managers.modules.getModuleByName(name);
+        if (module != null) {
+            cpu.gpr[2] = module.address;
+        } else {
+            Modules.log.warn("sceKernelFindModuleByName not found module '" + name + "'");
+            cpu.gpr[2] = -1;
+        }
+    }
 
 	public void sceKernelFindModuleByAddress(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
