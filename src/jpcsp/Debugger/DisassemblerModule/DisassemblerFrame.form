@@ -43,12 +43,8 @@
         </MenuItem>
         <MenuItem class="javax.swing.JMenuItem" name="SetPCToCursor">
           <Properties>
-            <Property name="actionCommand" type="java.lang.String" value="Set PC To Cursor"/>
-            <Property name="label" type="java.lang.String" value="Set PC To Cursor"/>
+            <Property name="text" type="java.lang.String" value="Set PC to Cursor"/>
           </Properties>
-          <AccessibilityProperties>
-            <Property name="AccessibleContext.accessibleName" type="java.lang.String" value="Set PC To Cursor"/>
-          </AccessibilityProperties>
           <Events>
             <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="SetPCToCursorActionPerformed"/>
           </Events>

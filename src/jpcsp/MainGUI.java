@@ -36,7 +36,6 @@ import java.nio.channels.FileChannel;
 import java.util.Vector;
 
 import javax.swing.JFileChooser;
-import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
@@ -77,9 +76,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     final String version = MetaInformation.FULL_NAME;
     public static final int MAX_RECENT = 4;
     LogWindow consolewin;
-    DisassemblerFrame disasm;
     ElfHeaderInfo elfheader;
-    MemoryViewer memoryview;
     SettingsGUI setgui;
     MemStickBrowser memstick;
     Emulator emulator;
@@ -89,7 +86,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     boolean umdLoaded;
     private Point mainwindowPos; // stores the last known window position
     private boolean snapConsole = true;
-    private JMenu RecentMenu;
     private Vector<RecentElement> recentUMD = new Vector<RecentElement>();
     private Vector<RecentElement> recentFile = new Vector<RecentElement>();
 
@@ -107,8 +103,11 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         //end of
 
         initComponents();
+        populateRecentMenu();
+
         int pos[] = Settings.getInstance().readWindowPos("mainwindow");
         setLocation(pos[0], pos[1]);
+        State.fileLogger.setLocation(pos[0] + 100, pos[1] + 50);
         setTitle(version);
 
         /*add glcanvas to frame and pack frame to get the canvas size*/
@@ -150,6 +149,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         openUmd = new javax.swing.JMenuItem();
         OpenFile = new javax.swing.JMenuItem();
         OpenMemStick = new javax.swing.JMenuItem();
+        RecentMenu = new javax.swing.JMenu();
         ExitEmu = new javax.swing.JMenuItem();
         EmulationMenu = new javax.swing.JMenu();
         RunEmu = new javax.swing.JMenuItem();
@@ -160,13 +160,13 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         DebugMenu = new javax.swing.JMenu();
         EnterDebugger = new javax.swing.JMenuItem();
         EnterMemoryViewer = new javax.swing.JMenuItem();
+        VfpuRegisters = new javax.swing.JMenuItem();
         ToggleConsole = new javax.swing.JMenuItem();
         ElfHeaderViewer = new javax.swing.JMenuItem();
         InstructionCounter = new javax.swing.JMenuItem();
-        VfpuRegisters = new javax.swing.JMenuItem();
+        FileLog = new javax.swing.JMenuItem();
         HelpMenu = new javax.swing.JMenu();
         About = new javax.swing.JMenuItem();
-        RecentMenu = new javax.swing.JMenu();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setMinimumSize(new java.awt.Dimension(480, 272));
@@ -248,7 +248,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         FileMenu.add(OpenMemStick);
 
         RecentMenu.setText("Load Recent");
-        populateRecentMenu();
         FileMenu.add(RecentMenu);
 
         ExitEmu.setText("Exit");
@@ -319,15 +318,13 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         DebugMenu.add(EnterMemoryViewer);
 
-        VfpuRegisters.setText("VFPU registers");
+        VfpuRegisters.setText("VFPU Registers");
         VfpuRegisters.addActionListener(new java.awt.event.ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                VfpuFrame.getInstance().setVisible(true);
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                VfpuRegistersActionPerformed(evt);
             }
         });
         DebugMenu.add(VfpuRegisters);
-
 
         ToggleConsole.setText("Toggle Console");
         ToggleConsole.addActionListener(new java.awt.event.ActionListener() {
@@ -352,6 +349,15 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         DebugMenu.add(InstructionCounter);
+
+        FileLog.setLabel("File Log");
+        FileLog.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                FileLogActionPerformed(evt);
+            }
+        });
+        DebugMenu.add(FileLog);
+        FileLog.getAccessibleContext().setAccessibleName("File Log");
 
         MenuBar.add(DebugMenu);
 
@@ -411,21 +417,19 @@ private void ToggleConsoleActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 private void EnterDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterDebuggerActionPerformed
     if (Settings.getInstance().readBool("emu.recompiler"))
         return;
-    if(disasm==null)
+
+    PauseEmu();
+    if (State.debugger == null)
     {
-        PauseEmu();
-        disasm = new DisassemblerFrame(emulator);
+        State.debugger = new DisassemblerFrame(emulator);
         int pos[] = Settings.getInstance().readWindowPos("disassembler");
-        disasm.setLocation(pos[0], pos[1]);
-        disasm.setVisible(true);
-        emulator.setDebugger(disasm);
-        disasm.setMemoryViewer(memoryview);
+        State.debugger.setLocation(pos[0], pos[1]);
+        State.debugger.setVisible(true);
     }
     else
     {
-        disasm.setVisible(true);
-        disasm.RefreshDebugger(false);
-        disasm.setMemoryViewer(memoryview);
+        State.debugger.setVisible(true);
+        State.debugger.RefreshDebugger(false);
     }
 }//GEN-LAST:event_EnterDebuggerActionPerformed
 
@@ -440,7 +444,7 @@ private void RunButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
     }
 
 private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenFileActionPerformed
-        PauseEmu();
+    PauseEmu();
 
     final JFileChooser fc = makeJFileChooser();
     int returnVal = fc.showOpenDialog(this);
@@ -564,22 +568,17 @@ private void ElfHeaderViewerActionPerformed(java.awt.event.ActionEvent evt) {//G
 
 private void EnterMemoryViewerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterMemoryViewerActionPerformed
     PauseEmu();
-    if(memoryview==null)
+    if (State.memoryViewer == null)
     {
-        memoryview = new MemoryViewer();
+        State.memoryViewer = new MemoryViewer();
         int pos[] = Settings.getInstance().readWindowPos("memoryview");
-        memoryview.setLocation(pos[0], pos[1]);
-        memoryview.setVisible(true);
-        emulator.setMemoryViewer(memoryview);
-        if (disasm != null)
-            disasm.setMemoryViewer(memoryview);
+        State.memoryViewer.setLocation(pos[0], pos[1]);
+        State.memoryViewer.setVisible(true);
     }
     else
     {
-        memoryview.RefreshMemory();
-        memoryview.setVisible(true);
-        if (disasm != null)
-            disasm.setMemoryViewer(memoryview);
+        State.memoryViewer.RefreshMemory();
+        State.memoryViewer.setVisible(true);
     }
 }//GEN-LAST:event_EnterMemoryViewerActionPerformed
 
@@ -607,8 +606,7 @@ private void SetttingsMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN
       setgui.setLocation(mainwindow.x+100, mainwindow.y+50);
       setgui.setVisible(true);
 
-      /* add a direct link to the controller and main window*/
-      setgui.setController(Emulator.getController());
+      /* add a direct link to the main window*/
       setgui.setMainGUI(this);
      }
      else
@@ -771,9 +769,9 @@ private void resetEmu() {
 }
 
 private void InstructionCounterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_InstructionCounterActionPerformed
+    PauseEmu();
     if (instructioncounter==null)
     {
-        PauseEmu();
         instructioncounter = new InstructionCounter();
         emulator.setInstructionCounter(instructioncounter);
         Point mainwindow = this.getLocation();
@@ -782,11 +780,19 @@ private void InstructionCounterActionPerformed(java.awt.event.ActionEvent evt) {
     }
     else
     {
-        PauseEmu();
         instructioncounter.RefreshWindow();
         instructioncounter.setVisible(true);
     }
 }//GEN-LAST:event_InstructionCounterActionPerformed
+
+private void FileLogActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FileLogActionPerformed
+    PauseEmu();
+    State.fileLogger.setVisible(true);
+}//GEN-LAST:event_FileLogActionPerformed
+
+private void VfpuRegistersActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_VfpuRegistersActionPerformed
+    VfpuFrame.getInstance().setVisible(true);
+}//GEN-LAST:event_VfpuRegistersActionPerformed
 
 private void exitEmu() {
     if (Settings.getInstance().readBool("gui.saveWindowPos"))
@@ -877,6 +883,7 @@ public void setMainTitle(String message)
     private javax.swing.JMenuItem EnterDebugger;
     private javax.swing.JMenuItem EnterMemoryViewer;
     private javax.swing.JMenuItem ExitEmu;
+    private javax.swing.JMenuItem FileLog;
     private javax.swing.JMenu FileMenu;
     private javax.swing.JMenu HelpMenu;
     private javax.swing.JMenuItem InstructionCounter;
@@ -886,16 +893,18 @@ public void setMainTitle(String message)
     private javax.swing.JMenu OptionsMenu;
     private javax.swing.JToggleButton PauseButton;
     private javax.swing.JMenuItem PauseEmu;
+    private javax.swing.JMenu RecentMenu;
     private javax.swing.JButton ResetButton;
     private javax.swing.JMenuItem ResetEmu;
     private javax.swing.JToggleButton RunButton;
     private javax.swing.JMenuItem RunEmu;
     private javax.swing.JMenuItem SetttingsMenu;
     private javax.swing.JMenuItem ToggleConsole;
+    private javax.swing.JMenuItem VfpuRegisters;
     private javax.swing.JToolBar jToolBar1;
     private javax.swing.JMenuItem openUmd;
-    private javax.swing.JMenuItem VfpuRegisters;
     // End of variables declaration//GEN-END:variables
+
     private boolean userChooseSomething(int returnVal) {
         return returnVal == JFileChooser.APPROVE_OPTION;
     }
@@ -905,12 +914,12 @@ public void setMainTitle(String message)
 
     @Override
     public void keyPressed(KeyEvent arg0) {
-        Emulator.getController().keyPressed(arg0);
+        State.controller.keyPressed(arg0);
     }
 
     @Override
     public void keyReleased(KeyEvent arg0) {
-        Emulator.getController().keyReleased(arg0);
+        State.controller.keyReleased(arg0);
     }
 
     @Override
