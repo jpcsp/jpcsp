@@ -85,7 +85,7 @@ public class pspSysMem {
         blockList = new HashMap<Integer, SysMemInfo>();
 
         // The loader should do the first malloc which will set the heapBottom corectly
-        heapBottom = MemoryMap.START_RAM; //0x08900000;
+        heapBottom = 0x08400000; //MemoryMap.START_RAM; //0x08900000;
         heapTop = MemoryMap.END_RAM;
     }
 

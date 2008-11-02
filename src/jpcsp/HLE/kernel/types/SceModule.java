@@ -82,14 +82,18 @@ public class SceModule {
     public List<DeferredStub> unresolvedImports;
     public int importFixupAttempts;
 
+    private static int sceModuleAddressOffset = 0x08410000;
     public SceModule(boolean isFlashModule) {
         this.isFlashModule = isFlashModule;
 
         modid = SceUidManager.getNewUid("SceModule");
 
         // Address this struct will be stored in PSP mem
-        address = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_Low, size, 0);
-        pspSysMem.getInstance().addSysMemInfo(2, "ModuleMgr", pspSysMem.PSP_SMEM_Low, size, address);
+        // TODO This messes with loader "base address" since the loader has new SceModule() right at the start, and we'd rather not use smem_high since it will make stack allocations "non-pretty"
+        //address = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_Low, size, 0);
+        //pspSysMem.getInstance().addSysMemInfo(2, "ModuleMgr", pspSysMem.PSP_SMEM_Low, size, address);
+        address = sceModuleAddressOffset;
+        sceModuleAddressOffset += (size + 64) & ~63;
 
         // Link SceModule structs together
         if (previousModule != null)
