@@ -777,10 +777,38 @@ public class pspiofilemgr {
                 Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
                 break;
 
-            case 0x02415821:
+            case 0x02415821: // register ms eject callback
                 Modules.log.warn("UNIMPLEMENTED: sceIoDevctl register ms eject callback");
                 Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
                 break;
+
+            case 0x02425818: // Free space on ms
+            {
+                int maxClusters = 512; // TODO fix these settings
+                int freeClusters = 512;
+                int maxSectors = 512;
+                int sectorSize = 512;
+                int sectorCount = 512;
+                Memory mem = Memory.getInstance();
+                if (mem.isAddressGood(indata_addr) && inlen >= 4) {
+                    int addr = mem.read32(indata_addr);
+                    if (mem.isAddressGood(addr)) {
+                        mem.write32(addr, maxClusters);
+                        mem.write32(addr + 4, freeClusters);
+                        mem.write32(addr + 8, maxSectors);
+                        mem.write32(addr + 12, sectorSize);
+                        mem.write32(addr + 16, sectorCount);
+                        Emulator.getProcessor().cpu.gpr[2] = 0;
+                    } else {
+                        Modules.log.warn("sceIoDevctl 0x02425818 bad save address " + String.format("0x%08X", addr));
+                        Emulator.getProcessor().cpu.gpr[2] = -1;
+                    }
+                } else {
+                    Modules.log.warn("sceIoDevctl 0x02425818 bad param address " + String.format("0x%08X", indata_addr) + " or size " + inlen);
+                    Emulator.getProcessor().cpu.gpr[2] = -1;
+                }
+                break;
+            }
 
             case 0x02425823:
                 Modules.log.warn("IGNORED: sceIoDevctl unhandled ms command " + String.format("0x%08X", cmd));

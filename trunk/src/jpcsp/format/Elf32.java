@@ -150,10 +150,6 @@ public class Elf32 {
         return header;
     }
 
-    public void setHeader(Elf32Header header) {
-        this.header = header;
-    }
-
     public List<Elf32ProgramHeader> getProgramHeaderList() {
         return programHeaderList;
     }
