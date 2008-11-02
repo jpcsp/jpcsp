@@ -21,9 +21,7 @@ import java.nio.ByteBuffer;
 
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Debugger.InstructionCounter;
-import jpcsp.Debugger.MemoryViewer;
 import jpcsp.Debugger.StepLogger;
-import jpcsp.Debugger.DisassemblerModule.DisassemblerFrame;
 import jpcsp.HLE.kernel.types.SceModule;
 
 import org.apache.log4j.Logger;
@@ -31,15 +29,12 @@ import org.apache.log4j.Logger;
 public class Emulator implements Runnable {
     private static Processor processor;
     private static Recompiler recompiler;
-    private static Controller controller;
     private boolean moduleLoaded;
     private Thread mainThread;
     public static boolean run = false;
     public static boolean pause = false;
     private static MainGUI gui;
-    private static DisassemblerFrame debugger;
     private InstructionCounter instructionCounter;
-    private static MemoryViewer memview;
     public static Logger log = Logger.getLogger("misc");
 
     public Emulator(MainGUI gui) {
@@ -51,7 +46,6 @@ public class Emulator implements Runnable {
         else
             recompiler = null;
 
-        controller = new Controller();
         moduleLoaded = false;
         mainThread = new Thread(this, "Emu");
     }
@@ -73,8 +67,8 @@ public class Emulator implements Runnable {
         initCpu();
 
         // Delete breakpoints and reset to PC
-        if (debugger != null) {
-            debugger.resetDebugger();
+        if (State.debugger != null) {
+            State.debugger.resetDebugger();
         }
 
         // Update instruction counter dialog with the new app
@@ -108,8 +102,8 @@ public class Emulator implements Runnable {
         jpcsp.HLE.pspdisplay.getInstance().Initialise();
         jpcsp.HLE.pspiofilemgr.getInstance().Initialise();
 
-        if (memview != null)
-            memview.RefreshMemory();
+        if (State.memoryViewer != null)
+            State.memoryViewer.RefreshMemory();
     }
 
     private void initNewPsp() {
@@ -120,6 +114,7 @@ public class Emulator implements Runnable {
 
         NIDMapper.getInstance().Initialise();
         Loader.getInstance().reset();
+        State.fileLogger.resetLogging();
 
         jpcsp.HLE.modules.HLEModuleManager.getInstance().Initialise();
         jpcsp.HLE.kernel.Managers.reset();
@@ -146,10 +141,10 @@ public class Emulator implements Runnable {
                 jpcsp.HLE.ThreadMan.getInstance().step();
                 jpcsp.HLE.pspdisplay.getInstance().step();
                 jpcsp.HLE.modules.HLEModuleManager.getInstance().step();
-                controller.checkControllerState();
+                State.controller.checkControllerState();
 
-                if (debugger != null)
-                    debugger.step();
+                if (State.debugger != null)
+                    State.debugger.step();
                 //delay(cpu.numberCyclesDelay());
             }
         }
@@ -177,8 +172,8 @@ public class Emulator implements Runnable {
         jpcsp.HLE.ThreadMan.getInstance().clearSyscallFreeCycles();
 
         gui.RefreshButtons();
-        if (debugger != null)
-            debugger.RefreshButtons();
+        if (State.debugger != null)
+            State.debugger.RefreshButtons();
     }
 
     // static so Memory can pause emu on invalid read/write
@@ -192,13 +187,13 @@ public class Emulator implements Runnable {
             {
                 gui.RefreshButtons();
 
-                if (debugger != null) {
-                    debugger.RefreshButtons();
-                    debugger.RefreshDebugger(true);
+                if (State.debugger != null) {
+                    State.debugger.RefreshButtons();
+                    State.debugger.RefreshDebugger(true);
                 }
 
-                if (memview != null)
-                    memview.RefreshMemory();
+                if (State.memoryViewer != null)
+                    State.memoryViewer.RefreshMemory();
             }
 
             StepLogger.flush();
@@ -227,13 +222,13 @@ public class Emulator implements Runnable {
             {
                 gui.RefreshButtons();
 
-                if (debugger != null) {
-                    debugger.RefreshButtons();
-                    debugger.RefreshDebugger(true);
+                if (State.debugger != null) {
+                    State.debugger.RefreshButtons();
+                    State.debugger.RefreshDebugger(true);
                 }
 
-                if (memview != null)
-                    memview.RefreshMemory();
+                if (State.memoryViewer != null)
+                    State.memoryViewer.RefreshMemory();
             }
 
             StepLogger.setStatus(status);
@@ -254,25 +249,8 @@ public class Emulator implements Runnable {
         return Memory.getInstance();
     }
 
-    public static Controller getController() {
-        return controller;
-    }
-
-    public void setDebugger(DisassemblerFrame debugger) {
-        Emulator.debugger = debugger;
-    }
-
-    // This is so bad... for GPIO
-    public static DisassemblerFrame getDebugger() {
-        return debugger;
-    }
-
     public void setInstructionCounter(InstructionCounter instructionCounter) {
         this.instructionCounter = instructionCounter;
         instructionCounter.setModule(module);
-    }
-
-    public void setMemoryViewer(MemoryViewer memview) {
-        Emulator.memview = memview;
     }
 }

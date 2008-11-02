@@ -93,7 +93,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     private int bufferwidthGe;
     private int pixelformatGe;
 
-    private boolean refreshRequired;
+    private volatile boolean refreshRequired;
     private long lastUpdate;
 
     // Canvas fields

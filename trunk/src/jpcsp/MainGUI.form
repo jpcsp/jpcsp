@@ -33,6 +33,11 @@
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="OpenMemStickActionPerformed"/>
               </Events>
             </MenuItem>
+            <Menu class="javax.swing.JMenu" name="RecentMenu">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Load Recent"/>
+              </Properties>
+            </Menu>
             <MenuItem class="javax.swing.JMenuItem" name="ExitEmu">
               <Properties>
                 <Property name="text" type="java.lang.String" value="Exit"/>
@@ -110,6 +115,14 @@
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="EnterMemoryViewerActionPerformed"/>
               </Events>
             </MenuItem>
+            <MenuItem class="javax.swing.JMenuItem" name="VfpuRegisters">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="VFPU Registers"/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="VfpuRegistersActionPerformed"/>
+              </Events>
+            </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="ToggleConsole">
               <Properties>
                 <Property name="text" type="java.lang.String" value="Toggle Console"/>
@@ -132,6 +145,17 @@
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="InstructionCounterActionPerformed"/>
+              </Events>
+            </MenuItem>
+            <MenuItem class="javax.swing.JMenuItem" name="FileLog">
+              <Properties>
+                <Property name="label" type="java.lang.String" value="File Log"/>
+              </Properties>
+              <AccessibilityProperties>
+                <Property name="AccessibleContext.accessibleName" type="java.lang.String" value="File Log"/>
+              </AccessibilityProperties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="FileLogActionPerformed"/>
               </Events>
             </MenuItem>
           </SubComponents>

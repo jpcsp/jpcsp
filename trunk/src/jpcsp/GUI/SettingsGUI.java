@@ -38,7 +38,6 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
     private keyCode targetKey;
     private HashMap<Integer, keyCode> currentKeys;
     private HashMap<keyCode, Integer> revertKeys;  //kinda lame
-    private Controller controller = null;
     private MainGUI mainWindow = null;
     
     /** Creates new form SettingsGUI */
@@ -178,10 +177,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         this.sender = sender;
         this.targetKey = targetKey;
     }
-    
-    public void setController(Controller controller) {
-        this.controller = controller;
-    }
+
     public void setMainGUI(MainGUI mainWindow) {
         this.mainWindow = mainWindow;
     }
@@ -800,8 +796,7 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
    Settings.getInstance().writeString("emu.umdpath", umdpath.getText());
    Settings.getInstance().writeKeys(currentKeys);
    
-   if (controller != null)
-       controller.loadKeyConfig(currentKeys);
+   State.controller.loadKeyConfig(currentKeys);
    if (snapConsoleCheck.isSelected() && mainWindow != null)
        mainWindow.snaptoMainwindow();
    dispose();

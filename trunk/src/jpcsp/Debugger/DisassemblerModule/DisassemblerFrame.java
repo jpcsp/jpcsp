@@ -22,7 +22,6 @@ import com.jidesoft.swing.StyleRange;
 import com.jidesoft.swing.StyledLabel;
 import java.awt.Color;
 import java.awt.Font;
-import java.awt.Graphics;
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.ClipboardOwner;
@@ -42,7 +41,7 @@ import javax.swing.SwingUtilities;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Settings;
-import jpcsp.Debugger.MemoryViewer;
+
 import jpcsp.Allegrex.Instructions.*;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.CpuState;
@@ -57,9 +56,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
     private int DebuggerPC;
     private Emulator emu;
     private DefaultListModel listmodel = new DefaultListModel();
-    private int opcode_address; // store the address of the opcode used for offsetdecode
     private ArrayList<Integer> breakpoints = new ArrayList<Integer>();
-    private MemoryViewer memview;
     private volatile boolean wantStep;
     private boolean haveFocus;
     private int gpi, gpo;
@@ -104,10 +101,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
            int find = text.indexOf("<=>");
            label.addStyleRange(new StyleRange(find, -1, Font.PLAIN, Color.GRAY));
         }
-    }
-
-    public void setMemoryViewer(MemoryViewer memview) {
-        this.memview = memview;
     }
 
     /** Delete breakpoints and reset to PC */
@@ -1038,8 +1031,8 @@ public void step() {
         /* done by PauseEmu
         RefreshDebugger(true);
         RefreshButtons();
-        if (memview != null)
-            memview.RefreshMemory();
+        if (State.memoryViewer != null)
+            State.memoryViewer.RefreshMemory();
         */
     }
 }
@@ -1054,8 +1047,8 @@ private void PauseDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 
 // Called from Emulator
 public void RefreshButtons() {
-    RunDebugger.setSelected(emu.run && !emu.pause);
-    PauseDebugger.setSelected(emu.run && emu.pause);
+    RunDebugger.setSelected(Emulator.run && !Emulator.pause);
+    PauseDebugger.setSelected(Emulator.run && Emulator.pause);
 }
 
 private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowDeactivated
