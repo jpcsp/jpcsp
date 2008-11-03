@@ -534,7 +534,7 @@ public class LoadCoreForKernel implements HLEModule {
             cpu.gpr[2] = module.address;
         } else {
             Modules.log.warn("sceKernelFindModuleByName not found module '" + name + "'");
-            cpu.gpr[2] = -1;
+            cpu.gpr[2] = 0; // return NULL
         }
     }
 
