@@ -119,6 +119,7 @@ public class VideoEngine {
     private int tex_clut_addr;
     private int tex_clut_num_blocks;
     private int tex_clut_mode, tex_clut_shift, tex_clut_mask, tex_clut_start;
+    private int tex_wrap_s = GL.GL_REPEAT, tex_wrap_t = GL.GL_REPEAT;
 
     private int transform_mode;
 
@@ -1709,6 +1710,9 @@ public class VideoEngine {
                 	gl.glMaterialfv(GL.GL_FRONT, GL.GL_SPECULAR, mat_specular, 0);
                 }
 
+                gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, tex_wrap_s);
+                gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, tex_wrap_t);
+
                 Memory mem = Memory.getInstance();
                 switch (type) {
                     case PRIM_POINT:
@@ -2447,7 +2451,40 @@ public class VideoEngine {
             	}
             	break;
 
+            case TWRAP:
+            	int wrapModeS =  normalArgument       & 0xFF;
+            	int wrapModeT = (normalArgument >> 8) & 0xFF;
+            	// TODO Check if GL_CLAMP or GL_CLAMP_TO_EDGE should be used.
+            	// pspplayer is using GL_CLAMP_TO_EDGE but I could not find any
+            	// example really requiring this.
+            	switch (wrapModeS) {
+            		case TWRAP_WRAP_MODE_REPEAT: {
+            			tex_wrap_s = GL.GL_REPEAT;
+            			break;
+            		}
+            		case TWRAP_WRAP_MODE_CLAMP: {
+            			tex_wrap_s = GL.GL_CLAMP;
+            			break;
+            		}
+            		default: {
+                        log(helper.getCommandString(TWRAP) + " unknown wrap mode " + wrapModeS);
+            		}
+            	}
 
+            	switch (wrapModeT) {
+	        		case TWRAP_WRAP_MODE_REPEAT: {
+	        			tex_wrap_t = GL.GL_REPEAT;
+	        			break;
+	        		}
+	        		case TWRAP_WRAP_MODE_CLAMP: {
+            			tex_wrap_t = GL.GL_CLAMP;
+	        			break;
+	        		}
+	        		default: {
+	                    log(helper.getCommandString(TWRAP) + " unknown wrap mode " + wrapModeT);
+	        		}
+            	}
+            	break;
 
            default:
                 log.warn("Unknown/unimplemented video command [ " + helper.getCommandString(command(instruction)) + " ]");
