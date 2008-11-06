@@ -19,8 +19,8 @@ package jpcsp.graphics;
 // Based on soywiz/pspemulator
 public class VertexState {
     float[] boneWeights = new float[8];
-    float r, g, b, a;
-    float px, py, pz;	
-    float nx, ny, nz;	
-    float u, v;
+    float[] c = new float[4]; // R, G, B, A
+    float[] p = new float[3]; // X, Y, Z
+    float[] n = new float[3]; // NX, NY, NZ
+    float[] t = new float[2]; // U, V
 }

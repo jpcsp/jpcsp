@@ -152,20 +152,20 @@ public class VertexInfo {
         //VideoEngine.log.debug("texture " + String.format("0x%08x", addr));
         switch(texture) {
             case 1:
-                v.u = (byte)mem.read8(addr); addr += 1;
-                v.v = (byte)mem.read8(addr); addr += 1;
-                VideoEngine.log.warn("texture type 1 " + v.u + ", " + v.v + "");
+                v.t[0] = (byte)mem.read8(addr); addr += 1;
+                v.t[1] = (byte)mem.read8(addr); addr += 1;
+                VideoEngine.log.trace("texture type 1 " + v.t[0] + ", " + v.t[1] + "");
                 break;
             case 2:
             	addr = (addr + 1) & ~1;
-                v.u = (short)mem.read16(addr); addr += 2;
-                v.v = (short)mem.read16(addr); addr += 2;
-                VideoEngine.log.warn("texture type 2 " + v.u + ", " + v.v + "");
+                v.t[0] = (short)mem.read16(addr); addr += 2;
+                v.t[1] = (short)mem.read16(addr); addr += 2;
+                VideoEngine.log.trace("texture type 2 " + v.t[0] + ", " + v.t[1] + "");
                 break;
             case 3:
             	addr = (addr + 3) & ~3;
-                v.u = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-                v.v = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+                v.t[0] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+                v.t[1] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
                 break;
         }
 
@@ -180,10 +180,10 @@ public class VertexInfo {
             case 6: { // GU_COLOR_4444
             	addr = (addr + 1) & ~1;
                 int packed = mem.read16(addr); addr += 2;
-                v.r = ((packed      ) & 0xf) / 15.0f;
-                v.g = ((packed >>  4) & 0xf) / 15.0f;
-                v.b = ((packed >>  8) & 0xf) / 15.0f;
-                v.a = ((packed >> 12) & 0xf) / 15.0f;
+                v.c[0] = ((packed      ) & 0xf) / 15.0f;
+                v.c[1] = ((packed >>  4) & 0xf) / 15.0f;
+                v.c[2] = ((packed >>  8) & 0xf) / 15.0f;
+                v.c[3] = ((packed >> 12) & 0xf) / 15.0f;
                 VideoEngine.log.warn("color type " + color);
                 break;
             }
@@ -192,10 +192,10 @@ public class VertexInfo {
                 // 32-bit align here instead of on vertexSize, from actarus/sam
                 addr = (addr + 3) & ~3;
                 int packed = mem.read32(addr); addr += 4;
-                v.r = ((packed      ) & 0xff) / 255.0f;
-                v.g = ((packed >>  8) & 0xff) / 255.0f;
-                v.b = ((packed >> 16) & 0xff) / 255.0f;
-                v.a = ((packed >> 24) & 0xff) / 255.0f;
+                v.c[0] = ((packed      ) & 0xff) / 255.0f;
+                v.c[1] = ((packed >>  8) & 0xff) / 255.0f;
+                v.c[2] = ((packed >> 16) & 0xff) / 255.0f;
+                v.c[3] = ((packed >> 24) & 0xff) / 255.0f;
             	//VideoEngine.log.debug("color type 7 " + String.format("r=%.1f g=%.1f b=%.1f (%08X)", v.r, v.g, v.b, packed));
                 break;
             }
@@ -204,47 +204,47 @@ public class VertexInfo {
         //VideoEngine.log.debug("normal " + String.format("0x%08x", addr));
         switch(normal) {
             case 1:
-                v.nx = (byte)mem.read8(addr); addr += 1;
-                v.ny = (byte)mem.read8(addr); addr += 1;
-                v.nz = (byte)mem.read8(addr); addr += 1;
-                VideoEngine.log.warn("normal type 1 " + v.nx + ", " + v.ny + ", " + v.nz + "");
+                v.n[0] = (byte)mem.read8(addr); addr += 1;
+                v.n[1] = (byte)mem.read8(addr); addr += 1;
+                v.n[2] = (byte)mem.read8(addr); addr += 1;
+                VideoEngine.log.warn("normal type 1 " + v.n[0] + ", " + v.n[1] + ", " + v.n[2] + "");
                 break;
             case 2:
             	addr = (addr + 1) & ~1;
-                v.nx = (short)mem.read16(addr); addr += 2;
-                v.ny = (short)mem.read16(addr); addr += 2;
-                v.nz = (short)mem.read16(addr); addr += 2;
-                VideoEngine.log.warn("normal type 2 " + v.nx + ", " + v.ny + ", " + v.nz + "");
+                v.n[0] = (short)mem.read16(addr); addr += 2;
+                v.n[1] = (short)mem.read16(addr); addr += 2;
+                v.n[2] = (short)mem.read16(addr); addr += 2;
+                VideoEngine.log.warn("normal type 2 " + v.n[0] + ", " + v.n[1] + ", " + v.n[2] + "");
                 break;
             case 3:
             	addr = (addr + 3) & ~3;
-                v.nx = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-                v.ny = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-                v.nz = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+                v.n[0] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+                v.n[1] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+                v.n[2] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
                 break;
         }
 
         //VideoEngine.log.debug("position " + String.format("0x%08x", addr));
         switch (position) {
             case 1:
-                v.px = (byte)mem.read8(addr); addr += 1;
-                v.py = (byte)mem.read8(addr); addr += 1;
-                v.pz = (byte)mem.read8(addr); addr += 1;
-                VideoEngine.log.trace("vertex type 1 " + v.px + ", " + v.py + ", " + v.pz + "");
+                v.p[0] = (byte)mem.read8(addr); addr += 1;
+                v.p[1] = (byte)mem.read8(addr); addr += 1;
+                v.p[2] = (byte)mem.read8(addr); addr += 1;
+                VideoEngine.log.trace("vertex type 1 " + v.p[0] + ", " + v.p[1] + ", " + v.p[2] + "");
                 break;
             case 2:
             	addr = (addr + 1) & ~1;
-                v.px = (short)mem.read16(addr); addr += 2;
-                v.py = (short)mem.read16(addr); addr += 2;
-                v.pz = (short)mem.read16(addr); addr += 2;
-                VideoEngine.log.trace("vertex type 2 " + v.px + ", " + v.py + ", " + v.pz + "");
+                v.p[0] = (short)mem.read16(addr); addr += 2;
+                v.p[1] = (short)mem.read16(addr); addr += 2;
+                v.p[2] = (short)mem.read16(addr); addr += 2;
+                VideoEngine.log.trace("vertex type 2 " + v.p[0] + ", " + v.p[1] + ", " + v.p[2] + "");
                 break;
             case 3: // GU_VERTEX_32BITF
             	addr = (addr + 3) & ~3;
-                v.px = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-                v.py = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-                v.pz = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-                VideoEngine.log.trace("vertex type 3 " + v.px + ", " + v.py + ", " + v.pz + "");
+                v.p[0] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+                v.p[1] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+                v.p[2] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+                VideoEngine.log.trace("vertex type 3 " + v.p[0] + ", " + v.p[1] + ", " + v.p[2] + "");
                 break;
         }
 
