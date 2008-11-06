@@ -22,6 +22,7 @@ import static jpcsp.graphics.GeCommands.*;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.Iterator;
@@ -32,12 +33,16 @@ import javax.media.opengl.GLException;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.Settings;
 import jpcsp.HLE.pspdisplay;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
 
+import com.sun.opengl.util.BufferUtil;
+
 public class VideoEngine {
+	private final int[] mapping = new int[] { GL.GL_POINTS, GL.GL_LINES, GL.GL_LINE_STRIP, GL.GL_TRIANGLES, GL.GL_TRIANGLE_STRIP, GL.GL_TRIANGLE_FAN, GL.GL_QUADS };
 
     private static VideoEngine instance;
     private GL gl;
@@ -134,7 +139,9 @@ public class VideoEngine {
     private int textureTx_dx;
     private int textureTx_dy;
     private int textureTx_pixelSize;
-
+    
+    private boolean clearMode;
+    
     // opengl needed information/buffers
     int[] gl_texture_id = new int[1];
     int[] tmp_texture_buffer32 = new int[1024*1024];
@@ -144,7 +151,11 @@ public class VideoEngine {
     private boolean listHasEnded;
     private boolean listHasFinished;
     private DisplayList actualList; // The currently executing list
-    private int clearFlags;
+    private boolean useVBO = true;
+    private int[] vboBufferId = new int[1];
+    private static final int vboBufferSize = 1024 * 1024;
+    private FloatBuffer vboBuffer = BufferUtil.newFloatBuffer(vboBufferSize);
+    
     private static void log(String msg) {
     	log.debug(msg);
         /*if (isDebugMode) {
@@ -153,26 +164,36 @@ public class VideoEngine {
     }
 
     public static VideoEngine getEngine(GL gl, boolean fullScreen, boolean hardwareAccelerate) {
-        VideoEngine engine = getEngine();
-        engine.setFullScreenShoot(fullScreen);
-        engine.setHardwareAcc(hardwareAccelerate);
-        engine.gl = gl;
-        return engine;
-    }
-
-    private static VideoEngine getEngine() {
-        if (instance == null) {
-            instance = new VideoEngine();
+    	if (instance == null) {
+            instance = new VideoEngine(gl);
             helper = new GeCommands();
         }
+    	instance.setFullScreenShoot(fullScreen);
+    	instance.setHardwareAcc(hardwareAccelerate);
+    	instance.gl = gl;
+
         return instance;
     }
 
-    private VideoEngine() {
+    private VideoEngine(GL gl) {
     	model_matrix[0] = model_matrix[5] = model_matrix[10] = model_matrix[15] = 1.f;
     	view_matrix[0] = view_matrix[5] = view_matrix[10] = view_matrix[15] = 1.f;
     	tex_envmap_matrix[0] = tex_envmap_matrix[5] = tex_envmap_matrix[10] = tex_envmap_matrix[15] = 1.f;
     	light_pos[0][3] = light_pos[1][3] = light_pos[2][3] = light_pos[3][3] = 1.f;
+    	useVBO = !Settings.getInstance().readBool("emu.disablevbo") && gl.isFunctionAvailable("glGenBuffersARB") &&
+	        gl.isFunctionAvailable("glBindBufferARB") &&
+	        gl.isFunctionAvailable("glBufferDataARB") &&
+	        gl.isFunctionAvailable("glDeleteBuffersARB");
+    	
+    	if(useVBO)
+    		buildVBO(gl);
+    }
+    
+    private void buildVBO(GL gl) {
+        gl.glGenBuffers(1, vboBufferId, 0);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vboBufferId[0]);
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, vboBufferSize * 
+                BufferUtil.SIZEOF_FLOAT, vboBuffer, GL.GL_STREAM_DRAW);
     }
 
     /** call from GL thread
@@ -1584,7 +1605,6 @@ public class VideoEngine {
 
             case PRIM:
             {
-                int[] mapping = new int[] { GL.GL_POINTS, GL.GL_LINES, GL.GL_LINE_STRIP, GL.GL_TRIANGLES, GL.GL_TRIANGLE_STRIP, GL.GL_TRIANGLE_FAN };
                 int numberOfVertex = normalArgument & 0xFFFF;
                 int type = ((normalArgument >> 16) & 0x7);
 
@@ -1638,6 +1658,8 @@ public class VideoEngine {
                 gl.glTranslatef(tex_translate_x, tex_translate_y, 0.f);
                 if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
                     gl.glScalef(tex_scale_x, tex_scale_y, 1.f);
+                else
+                	gl.glScalef(1.f / texture_width0, 1.f / texture_height0, 1.f);
 
                 switch (tex_map_mode) {
 	                case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV:
@@ -1698,9 +1720,12 @@ public class VideoEngine {
                 } else if (vinfo.color != 0 && mat_flags != 0) {
                 	useVertexColor = true;
                 	int flags = 0;
-                	flags |= (flags & 1) != 0 ? GL.GL_AMBIENT : 0;
-                	flags |= (flags & 2) != 0 ? GL.GL_DIFFUSE : 0;
-                	flags |= (flags & 4) != 0 ? GL.GL_SPECULAR : 0;
+                	// TODO : Can't emulate this properly right now since we can't mix the properties like we want
+                	if((mat_flags & 1) != 0 && (mat_flags & 2) != 0)
+                		flags = GL.GL_AMBIENT_AND_DIFFUSE;
+                	else if((mat_flags & 1) != 0) flags = GL.GL_AMBIENT;
+                	else if((mat_flags & 2) != 0) flags = GL.GL_DIFFUSE;
+                	else if((mat_flags & 4) != 0) flags = GL.GL_SPECULAR;
                 	gl.glColorMaterial(GL.GL_FRONT_AND_BACK, flags);
                 	gl.glEnable(GL.GL_COLOR_MATERIAL);
                 } else {
@@ -1714,6 +1739,9 @@ public class VideoEngine {
                 gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, tex_wrap_t);
 
                 Memory mem = Memory.getInstance();
+                bindBuffers(useVertexColor);
+                vboBuffer.clear();
+                
                 switch (type) {
                     case PRIM_POINT:
                     case PRIM_LINE:
@@ -1721,71 +1749,60 @@ public class VideoEngine {
                     case PRIM_TRIANGLE:
                     case PRIM_TRIANGLE_STRIPS:
                     case PRIM_TRIANGLE_FANS:
-                        gl.glBegin(mapping[type]);
-                            for (int i = 0; i < numberOfVertex; i++) {
-                                int addr = vinfo.getAddress(mem, i);
-                                VertexState v = vinfo.readVertex(mem, addr);
-                                if (vinfo.texture  != 0)
-                                	if(transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD)
-                                		gl.glTexCoord2f(v.u / texture_width0, v.v / texture_height0);
-                                	else
-                                		gl.glTexCoord2f(v.u, v.v);
-                                if (useVertexColor) gl.glColor4f(v.r, v.g, v.b, v.a);
-                                if (vinfo.normal   != 0) gl.glNormal3f(v.nx, v.ny, v.nz);
-                                if (vinfo.position != 0) {
-                                	if(vinfo.weight != 0)
-                                		doSkinning(vinfo, v);
-                                    gl.glVertex3f(v.px, v.py, v.pz);
-                                }
+                        for (int i = 0; i < numberOfVertex; i++) {
+                            int addr = vinfo.getAddress(mem, i);
+                            VertexState v = vinfo.readVertex(mem, addr);
+                            if (vinfo.texture  != 0) vboBuffer.put(v.t);
+                            if (useVertexColor) vboBuffer.put(v.c);
+                            if (vinfo.normal   != 0) vboBuffer.put(v.n);
+                            if (vinfo.position != 0) {
+                            	if(vinfo.weight != 0)
+                            		doSkinning(vinfo, v);
+                                vboBuffer.put(v.p);
                             }
-                        gl.glEnd();
+                        }
+                       
+                        if(useVBO)
+                        	gl.glBufferData(GL.GL_ARRAY_BUFFER, vboBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboBuffer.rewind(), GL.GL_STREAM_DRAW);
+                        gl.glDrawArrays(mapping[type], 0, numberOfVertex);
                         break;
 
                     case PRIM_SPRITES:
                         gl.glPushAttrib(GL.GL_ENABLE_BIT);
                         gl.glDisable(GL.GL_CULL_FACE);
-                        gl.glBegin(GL.GL_QUADS);
-                            for (int i = 0; i < numberOfVertex; i += 2) {
-                                int addr1 = vinfo.getAddress(mem, i);
-                                int addr2 = vinfo.getAddress(mem, i + 1);
-                                VertexState v1 = vinfo.readVertex(mem, addr1);
-                                VertexState v2 = vinfo.readVertex(mem, addr2);
+                        for (int i = 0; i < numberOfVertex; i += 2) {
+                            int addr1 = vinfo.getAddress(mem, i);
+                            int addr2 = vinfo.getAddress(mem, i + 1);
+                            VertexState v1 = vinfo.readVertex(mem, addr1);
+                            VertexState v2 = vinfo.readVertex(mem, addr2);
+                            
+                            v1.p[2] = v2.p[2];
 
-                                // V1
-                                if (vinfo.normal   != 0) gl.glNormal3f(v1.nx, v1.ny, v1.nz);
-                                if (useVertexColor) gl.glColor4f(v2.r, v2.g, v2.b, v2.a); // color from v2 not v1
-                                if (vinfo.texture  != 0)
-                                	if(transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD)
-                                		gl.glTexCoord2f(v1.u / texture_width0, v1.v / texture_height0);
-                                	else
-                                		gl.glTexCoord2f(v1.u, v1.v);
-                                if (vinfo.position != 0) gl.glVertex3f(v1.px, v1.py, v1.pz);
+                            // V1
+                            if (vinfo.texture  != 0) vboBuffer.put(v1.t);
+                            if (useVertexColor) vboBuffer.put(v2.c);
+                            if (vinfo.normal   != 0) vboBuffer.put(v2.n);
+                            if (vinfo.position != 0) vboBuffer.put(v1.p);
 
-                                if (vinfo.texture  != 0)
-                                	if(transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD)
-                                		gl.glTexCoord2f(v2.u / texture_width0, v1.v / texture_height0);
-                                	else
-                                		gl.glTexCoord2f(v2.u, v1.v);
-                                if (vinfo.position != 0) gl.glVertex3f(v2.px, v1.py, v1.pz);
+                            if (vinfo.texture  != 0) vboBuffer.put(v2.t[0]).put(v1.t[1]);
+                            if (useVertexColor) vboBuffer.put(v2.c);
+                            if (vinfo.normal   != 0) vboBuffer.put(v2.n);
+                            if (vinfo.position != 0) vboBuffer.put(v2.p[0]).put(v1.p[1]).put(v2.p[2]);
 
-                                // V2
-                                if (vinfo.normal   != 0) gl.glNormal3f(v2.nx, v2.ny, v2.nz);
-                                if (useVertexColor) gl.glColor4f(v2.r, v2.g, v2.b, v2.a);
-                                if (vinfo.texture  != 0)
-                                	if(transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD)
-                                		gl.glTexCoord2f(v2.u / texture_width0, v2.v / texture_height0);
-                                	else
-                                		gl.glTexCoord2f(v2.u, v2.v);
-                                if (vinfo.position != 0) gl.glVertex3f(v2.px, v2.py, v1.pz);
+                            // V2
+                            if (vinfo.texture  != 0) vboBuffer.put(v2.t);
+                            if (useVertexColor) vboBuffer.put(v2.c);
+                            if (vinfo.normal   != 0) vboBuffer.put(v2.n);
+                            if (vinfo.position != 0) vboBuffer.put(v2.p);
 
-                                if (vinfo.texture  != 0)
-                                	if(transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD)
-                                		gl.glTexCoord2f(v1.u / texture_width0, v2.v / texture_height0);
-                                	else
-                                		gl.glTexCoord2f(v1.u, v2.v);
-                                if (vinfo.position != 0) gl.glVertex3f(v1.px, v2.py, v1.pz);
-                            }
-                        gl.glEnd();
+                            if (vinfo.texture  != 0) vboBuffer.put(v1.t[0]).put(v2.t[1]);
+                            if (useVertexColor) vboBuffer.put(v2.c);
+                            if (vinfo.normal   != 0) vboBuffer.put(v2.n);
+                            if (vinfo.position != 0) vboBuffer.put(v1.p[0]).put(v2.p[1]).put(v2.p[2]);
+                        }
+                        if(useVBO)
+                        	gl.glBufferData(GL.GL_ARRAY_BUFFER, vboBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboBuffer.rewind(), GL.GL_STREAM_DRAW);
+                        gl.glDrawArrays(GL.GL_QUADS, 0, numberOfVertex * 2);
                         gl.glPopAttrib();
                         break;
                 }
@@ -1797,10 +1814,11 @@ public class VideoEngine {
 		            	break;
 		            }
 		        }
-
-                gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, 1.0f);
-                gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_MODULATE);
-           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, GL.GL_TEXTURE);
+                
+                gl.glDisableClientState(GL.GL_VERTEX_ARRAY);
+                if(vinfo.texture != 0) gl.glDisableClientState(GL.GL_TEXTURE_COORD_ARRAY);
+                if(useVertexColor) gl.glDisableClientState(GL.GL_COLOR_ARRAY);
+                if(vinfo.normal != 0) gl.glDisableClientState(GL.GL_NORMAL_ARRAY);
 
                 gl.glPopMatrix 	();
                 gl.glMatrixMode	(GL.GL_TEXTURE);
@@ -2209,7 +2227,8 @@ public class VideoEngine {
             }
 
             case CLEAR:
-            	if((normalArgument & 1) == 0) {
+            	if(clearMode && (normalArgument & 1) == 0) {
+            		clearMode = false;
             		gl.glPopAttrib();
             		// TODO Remove this glClear
             		// We should not use it at all but demos won't work at all without it and our current implementation
@@ -2217,7 +2236,8 @@ public class VideoEngine {
             		// without a fragment shader I think
             		gl.glClear(GL.GL_DEPTH_BUFFER_BIT);
             		log("clear mode end");
-            	} else {
+            	} else if((normalArgument & 1) != 0) {
+            		clearMode = true;
             		gl.glPushAttrib(GL.GL_ALL_ATTRIB_BITS);
             		gl.glDisable(GL.GL_BLEND);
             		gl.glDisable(GL.GL_STENCIL_TEST);
@@ -2454,16 +2474,13 @@ public class VideoEngine {
             case TWRAP:
             	int wrapModeS =  normalArgument       & 0xFF;
             	int wrapModeT = (normalArgument >> 8) & 0xFF;
-            	// TODO Check if GL_CLAMP or GL_CLAMP_TO_EDGE should be used.
-            	// pspplayer is using GL_CLAMP_TO_EDGE but I could not find any
-            	// example really requiring this.
             	switch (wrapModeS) {
             		case TWRAP_WRAP_MODE_REPEAT: {
             			tex_wrap_s = GL.GL_REPEAT;
             			break;
             		}
             		case TWRAP_WRAP_MODE_CLAMP: {
-            			tex_wrap_s = GL.GL_CLAMP;
+            			tex_wrap_s = GL.GL_CLAMP_TO_EDGE;
             			break;
             		}
             		default: {
@@ -2477,7 +2494,7 @@ public class VideoEngine {
 	        			break;
 	        		}
 	        		case TWRAP_WRAP_MODE_CLAMP: {
-            			tex_wrap_t = GL.GL_CLAMP;
+            			tex_wrap_t = GL.GL_CLAMP_TO_EDGE;
 	        			break;
 	        		}
 	        		default: {
@@ -2491,44 +2508,92 @@ public class VideoEngine {
         }
 
     }
+    
+    private void bindBuffers(boolean useVertexColor) {
+    	int stride = 0, cpos = 0, npos = 0, vpos = 0;
+    	
+    	if(vinfo.texture != 0) {
+        	gl.glEnableClientState(GL.GL_TEXTURE_COORD_ARRAY);               	
+        	stride += BufferUtil.SIZEOF_FLOAT * 2;
+        	cpos = npos = vpos = stride;
+        }
+        if(useVertexColor) {
+        	gl.glEnableClientState(GL.GL_COLOR_ARRAY);
+        	stride += BufferUtil.SIZEOF_FLOAT * 4;
+        	npos = vpos = stride;
+        }
+        if(vinfo.normal != 0) {
+        	gl.glEnableClientState(GL.GL_NORMAL_ARRAY);
+        	stride += BufferUtil.SIZEOF_FLOAT * 3;
+        	vpos = stride;
+        }
+        gl.glEnableClientState(GL.GL_VERTEX_ARRAY);
+        stride += BufferUtil.SIZEOF_FLOAT * 3;
+    	
+    	if(useVBO) {
+        	gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vboBufferId[0]);
+        	
+        	if(vinfo.texture != 0) {
+            	gl.glTexCoordPointer(2, GL.GL_FLOAT, stride, 0);
+            }
+            if(useVertexColor) {
+            	gl.glColorPointer(4, GL.GL_FLOAT, stride, cpos);
+            }
+            if(vinfo.normal != 0) {
+            	gl.glNormalPointer(GL.GL_FLOAT, stride, npos);
+            }
+            gl.glVertexPointer(3, GL.GL_FLOAT, stride, vpos);
+        } else {
+		    if(vinfo.texture != 0) {		    	
+		    	gl.glTexCoordPointer(2, GL.GL_FLOAT, stride, vboBuffer.position(0));
+		    }
+		    if(useVertexColor) {
+		    	gl.glColorPointer(4, GL.GL_FLOAT, stride, vboBuffer.position(cpos / BufferUtil.SIZEOF_FLOAT));
+		    }
+		    if(vinfo.normal != 0) {
+		    	gl.glNormalPointer(GL.GL_FLOAT, stride, vboBuffer.position(npos / BufferUtil.SIZEOF_FLOAT));
+		    }
+		    gl.glVertexPointer(3, GL.GL_FLOAT, stride, vboBuffer.position(vpos / BufferUtil.SIZEOF_FLOAT));
+        }
+	}
 
-    private void doSkinning(VertexInfo vinfo, VertexState v) {
+	private void doSkinning(VertexInfo vinfo, VertexState v) {
     	float x = 0, y = 0, z = 0;
     	float nx = 0, ny = 0, nz = 0;
 		for(int i = 0; i < vinfo.skinningWeightCount; ++i) {
 			if(v.boneWeights[i] != 0.f) {
 
-				x += (	v.px * 	bone_uploaded_matrix[i][0]
-				     + 	v.py * 	bone_uploaded_matrix[i][3]
-				     + 	v.pz * 	bone_uploaded_matrix[i][6]
+				x += (	v.p[0] * 	bone_uploaded_matrix[i][0]
+				     + 	v.p[1] * 	bone_uploaded_matrix[i][3]
+				     + 	v.p[2] * 	bone_uploaded_matrix[i][6]
 				     + 			bone_uploaded_matrix[i][9]) * v.boneWeights[i];
 
-				y += (	v.px * 	bone_uploaded_matrix[i][1]
-				     + 	v.py * 	bone_uploaded_matrix[i][4]
-				     + 	v.pz * 	bone_uploaded_matrix[i][7]
+				y += (	v.p[0] * 	bone_uploaded_matrix[i][1]
+				     + 	v.p[1] * 	bone_uploaded_matrix[i][4]
+				     + 	v.p[2] * 	bone_uploaded_matrix[i][7]
 				     + 			bone_uploaded_matrix[i][10]) * v.boneWeights[i];
 
-				z += (	v.px * 	bone_uploaded_matrix[i][2]
-				     + 	v.py * 	bone_uploaded_matrix[i][5]
-				     + 	v.pz * 	bone_uploaded_matrix[i][8]
+				z += (	v.p[0] * 	bone_uploaded_matrix[i][2]
+				     + 	v.p[1] * 	bone_uploaded_matrix[i][5]
+				     + 	v.p[2] * 	bone_uploaded_matrix[i][8]
 				     + 			bone_uploaded_matrix[i][11]) * v.boneWeights[i];
 
 				// Normals shouldn't be translated :)
-				nx += (	v.nx * bone_uploaded_matrix[i][0]
-				   + 	v.ny * bone_uploaded_matrix[i][3]
-				   +	v.nz * bone_uploaded_matrix[i][6]) * v.boneWeights[i];
+				nx += (	v.n[0] * bone_uploaded_matrix[i][0]
+				   + 	v.n[1] * bone_uploaded_matrix[i][3]
+				   +	v.n[2] * bone_uploaded_matrix[i][6]) * v.boneWeights[i];
 
-				ny += (	v.nx * bone_uploaded_matrix[i][1]
-				   + 	v.ny * bone_uploaded_matrix[i][4]
-				   + 	v.nz * bone_uploaded_matrix[i][7]) * v.boneWeights[i];
+				ny += (	v.n[0] * bone_uploaded_matrix[i][1]
+				   + 	v.n[1] * bone_uploaded_matrix[i][4]
+				   + 	v.n[2] * bone_uploaded_matrix[i][7]) * v.boneWeights[i];
 
-				nz += (	v.nx * bone_uploaded_matrix[i][2]
-				   + 	v.ny * bone_uploaded_matrix[i][5]
-				   + 	v.nz * bone_uploaded_matrix[i][8]) * v.boneWeights[i];
+				nz += (	v.n[0] * bone_uploaded_matrix[i][2]
+				   + 	v.n[1] * bone_uploaded_matrix[i][5]
+				   + 	v.n[2] * bone_uploaded_matrix[i][8]) * v.boneWeights[i];
 			}
 		}
 
-		v.px = x;	v.py = y;	v.pz = z;
+		v.p[0] = x;	v.p[1] = y;	v.p[2] = z;
 
 		/*
 		// TODO: I doubt psp hardware normalizes normals after skinning,
@@ -2544,7 +2609,7 @@ public class VideoEngine {
 		}
 		*/
 
-		v.nx = nx;	v.ny = ny;	v.nz = nz;
+		v.n[0] = nx;	v.n[1] = ny;	v.n[2] = nz;
 	}
 
 	public void setFullScreenShoot(boolean b) {

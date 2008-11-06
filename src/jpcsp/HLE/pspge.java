@@ -132,7 +132,7 @@ public class pspge {
             // remove uncache bit
             stallAddress &= 0x3fffffff;
 
-            VideoEngine.log.debug("sceGeListUpdateStallAddr qid=" + qid
+            VideoEngine.log.trace("sceGeListUpdateStallAddr qid=" + qid
                 + " addr:" + String.format("%08x", stallAddress)
                 + " approx " + ((stallAddress - displayList.stallAddress) / 4) + " new commands");
 

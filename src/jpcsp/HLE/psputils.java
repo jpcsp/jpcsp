@@ -102,23 +102,23 @@ public class psputils {
     }
 
     public void sceKernelDcacheWritebackAll() {
-        System.out.println("(Unimplement):sceKernelDcacheWritebackAll");
+        Modules.log.debug("(Unimplement):sceKernelDcacheWritebackAll");
     }
 
     public void sceKernelDcacheWritebackInvalidateAll() {
-        System.out.println("(Unimplement):sceKernelDcacheWritebackInvalidateAll");
+        Modules.log.debug("(Unimplement):sceKernelDcacheWritebackInvalidateAll");
     }
 
     public void sceKernelDcacheWritebackRange(int p_addr, int size) {
-        System.out.println("(Unimplement):sceKernelDcacheWritebackRange");
+        Modules.log.debug("(Unimplement):sceKernelDcacheWritebackRange");
     }
 
     public void sceKernelDcacheWritebackInvalidateRange(int p_addr, int size) {
-       System.out.println("(Unimplement):sceKernelDcacheWritebackInvalidateRange");
+        Modules.log.debug("(Unimplement):sceKernelDcacheWritebackInvalidateRange");
     }
 
     public void sceKernelDcacheInvalidateRange(int p_addr, int size) {
-        System.out.println("(Unimplement):sceKernelDcacheInvalidateRange");
+        Modules.log.debug("(Unimplement):sceKernelDcacheInvalidateRange");
     }
 
     public void sceKernelUtilsMt19937Init(int ctx_addr, int seed) {
