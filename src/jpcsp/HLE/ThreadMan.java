@@ -847,7 +847,7 @@ public class ThreadMan {
         long systemTime = System.nanoTime();
         int low = (int)(systemTime & 0x7fffffffL); // check, don't use msb?
         //int low = timeLow; timeLow += 10;
-        Modules.log.debug("sceKernelGetSystemTimeLow return:" + low);
+        //Modules.log.debug("sceKernelGetSystemTimeLow return:" + low);
         Emulator.getProcessor().cpu.gpr[2] = low;
     }
 

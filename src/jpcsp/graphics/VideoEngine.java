@@ -42,7 +42,7 @@ import org.apache.log4j.Logger;
 import com.sun.opengl.util.BufferUtil;
 
 public class VideoEngine {
-	private final int[] mapping = new int[] { GL.GL_POINTS, GL.GL_LINES, GL.GL_LINE_STRIP, GL.GL_TRIANGLES, GL.GL_TRIANGLE_STRIP, GL.GL_TRIANGLE_FAN, GL.GL_QUADS };
+    private final int[] prim_mapping = new int[] { GL.GL_POINTS, GL.GL_LINES, GL.GL_LINE_STRIP, GL.GL_TRIANGLES, GL.GL_TRIANGLE_STRIP, GL.GL_TRIANGLE_FAN, GL.GL_QUADS };
 
     private static VideoEngine instance;
     private GL gl;
@@ -94,32 +94,32 @@ public class VideoEngine {
 
     private float[][] light_pos = new float[4][4];
 
-    int[] light_type = new int[4];
-    boolean lighting = false;
-    
-    float[] fog_color = new float[4];
-    float fog_far = 0.0f,fog_dist = 0.0f;
-    
+    private int[] light_type = new int[4];
+    private boolean lighting = false;
+
+    private float[] fog_color = new float[4];
+    private float fog_far = 0.0f,fog_dist = 0.0f;
+
     private float nearZ = 0.0f, farZ = 0.0f, zscale;
 
-	int mat_flags = 0;
-    float[] mat_ambient = new float[4];
-    float[] mat_diffuse = new float[4];
-    float[] mat_specular = new float[4];
-	float[] mat_emissive = new float[4];
-	
-	float[] ambient_light = new float[4];
+    private int mat_flags = 0;
+    private float[] mat_ambient = new float[4];
+    private float[] mat_diffuse = new float[4];
+    private float[] mat_specular = new float[4];
+    private float[] mat_emissive = new float[4];
 
-    int texture_storage, texture_num_mip_maps;
-    boolean texture_swizzle;
-    int texture_base_pointer0, texture_width0, texture_height0;
-    int texture_buffer_width0;
-    int tex_min_filter = GL.GL_NEAREST;
-    int tex_mag_filter = GL.GL_NEAREST;
+    private float[] ambient_light = new float[4];
 
-    float tex_translate_x = 0.f, tex_translate_y = 0.f;
-    float tex_scale_x = 1.f, tex_scale_y = 1.f;
-    float[] tex_env_color = new float[4];
+    private int texture_storage, texture_num_mip_maps;
+    private boolean texture_swizzle;
+    private int texture_base_pointer0, texture_width0, texture_height0;
+    private int texture_buffer_width0;
+    private int tex_min_filter = GL.GL_NEAREST;
+    private int tex_mag_filter = GL.GL_NEAREST;
+
+    private float tex_translate_x = 0.f, tex_translate_y = 0.f;
+    private float tex_scale_x = 1.f, tex_scale_y = 1.f;
+    private float[] tex_env_color = new float[4];
 
     private int tex_clut_addr;
     private int tex_clut_num_blocks;
@@ -139,14 +139,15 @@ public class VideoEngine {
     private int textureTx_dx;
     private int textureTx_dy;
     private int textureTx_pixelSize;
-    
+
     private boolean clearMode;
-    
+
     // opengl needed information/buffers
-    int[] gl_texture_id = new int[1];
-    int[] tmp_texture_buffer32 = new int[1024*1024];
-    short[] tmp_texture_buffer16 = new short[1024*1024];
-    int tex_map_mode = TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV;
+    private int[] gl_texture_id = new int[1];
+    private int[] tmp_texture_buffer32 = new int[1024*1024];
+    private short[] tmp_texture_buffer16 = new short[1024*1024];
+    private int[] unswizzle_buffer32 = new int[1024*1024];
+    private int tex_map_mode = TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV;
 
     private boolean listHasEnded;
     private boolean listHasFinished;
@@ -155,44 +156,46 @@ public class VideoEngine {
     private int[] vboBufferId = new int[1];
     private static final int vboBufferSize = 1024 * 1024;
     private FloatBuffer vboBuffer = BufferUtil.newFloatBuffer(vboBufferSize);
-    
+
     private static void log(String msg) {
-    	log.debug(msg);
+        log.debug(msg);
         /*if (isDebugMode) {
             System.out.println("sceGe DEBUG > " + msg);
         }*/
     }
 
     public static VideoEngine getEngine(GL gl, boolean fullScreen, boolean hardwareAccelerate) {
-    	if (instance == null) {
+        if (instance == null) {
             instance = new VideoEngine(gl);
             helper = new GeCommands();
         }
-    	instance.setFullScreenShoot(fullScreen);
-    	instance.setHardwareAcc(hardwareAccelerate);
-    	instance.gl = gl;
+        instance.setFullScreenShoot(fullScreen);
+        instance.setHardwareAcc(hardwareAccelerate);
+        instance.gl = gl;
 
         return instance;
     }
 
     private VideoEngine(GL gl) {
-    	model_matrix[0] = model_matrix[5] = model_matrix[10] = model_matrix[15] = 1.f;
-    	view_matrix[0] = view_matrix[5] = view_matrix[10] = view_matrix[15] = 1.f;
-    	tex_envmap_matrix[0] = tex_envmap_matrix[5] = tex_envmap_matrix[10] = tex_envmap_matrix[15] = 1.f;
-    	light_pos[0][3] = light_pos[1][3] = light_pos[2][3] = light_pos[3][3] = 1.f;
-    	useVBO = !Settings.getInstance().readBool("emu.disablevbo") && gl.isFunctionAvailable("glGenBuffersARB") &&
-	        gl.isFunctionAvailable("glBindBufferARB") &&
-	        gl.isFunctionAvailable("glBufferDataARB") &&
-	        gl.isFunctionAvailable("glDeleteBuffersARB");
-    	
-    	if(useVBO)
-    		buildVBO(gl);
+        model_matrix[0] = model_matrix[5] = model_matrix[10] = model_matrix[15] = 1.f;
+        view_matrix[0] = view_matrix[5] = view_matrix[10] = view_matrix[15] = 1.f;
+        tex_envmap_matrix[0] = tex_envmap_matrix[5] = tex_envmap_matrix[10] = tex_envmap_matrix[15] = 1.f;
+        light_pos[0][3] = light_pos[1][3] = light_pos[2][3] = light_pos[3][3] = 1.f;
+        useVBO = !Settings.getInstance().readBool("emu.disablevbo") && gl.isFunctionAvailable("glGenBuffersARB") &&
+            gl.isFunctionAvailable("glBindBufferARB") &&
+            gl.isFunctionAvailable("glBufferDataARB") &&
+            gl.isFunctionAvailable("glDeleteBuffersARB");
+
+        if (useVBO) {
+            VideoEngine.log.info("using VBO");
+            buildVBO(gl);
+        }
     }
-    
+
     private void buildVBO(GL gl) {
         gl.glGenBuffers(1, vboBufferId, 0);
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vboBufferId[0]);
-        gl.glBufferData(GL.GL_ARRAY_BUFFER, vboBufferSize * 
+        gl.glBufferData(GL.GL_ARRAY_BUFFER, vboBufferSize *
                 BufferUtil.SIZEOF_FLOAT, vboBuffer, GL.GL_STREAM_DRAW);
     }
 
@@ -299,7 +302,7 @@ public class VideoEngine {
     	log ("UNKNOWN stencil op "+ pspOP);
     	return GL.GL_KEEP;
     }
-    
+
     //hack based on pspplayer
     private int getBlendSrc (int pspSrc)
     {
@@ -307,39 +310,39 @@ public class VideoEngine {
     	{
 	    	case 0x0:
 	    		return GL.GL_DST_COLOR;
-    		
+
 	    	case 0x1:
 	    		return GL.GL_ONE_MINUS_DST_COLOR;
-	    		
+
 	    	case 0x2:
 	    		return GL.GL_SRC_ALPHA;
-	    		
+
 	    	case 0x3:
 	    		return GL.GL_ONE_MINUS_SRC_ALPHA;
-	    		
+
 	    	case 0x4:
 	    		return GL.GL_DST_ALPHA;
-	    		
+
 	    	case 0x5:
 	    		return GL.GL_ONE_MINUS_DST_ALPHA;
-	    		
+
 	    	case 0x6:
 	    		return GL.GL_SRC_ALPHA;
-	    		
+
 	    	case 0x7:
 	    		return GL.GL_ONE_MINUS_SRC_ALPHA;
-	    		
+
 	    	case 0x8:
 	    		return GL.GL_DST_ALPHA;
-	    		
+
 	    	case 0x9:
 	    		return GL.GL_ONE_MINUS_DST_ALPHA;
-	    		
-	    	case 0xa: 
+
+	    	case 0xa:
 	    		return GL.GL_SRC_ALPHA;
-    	
+
     	}
-    	
+
     	VideoEngine.log.error("Unhandled alpha blend src used " + pspSrc);
         Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
     	return GL.GL_DST_COLOR;
@@ -371,13 +374,13 @@ public class VideoEngine {
 
 		    case ALPHA_ONE_MINUS_DESTINATION_ALPHA:
 		    	return GL.GL_ONE_MINUS_SRC_ALPHA;
-		    	
+
 		    case 0x8:
 		    	return GL.GL_DST_ALPHA;
-		    	
+
 		    case 0x9:
  		    	return GL.GL_ONE_MINUS_DST_ALPHA;
-		    	
+
 		    case 0xa:
 		    	return GL.GL_ONE_MINUS_SRC_ALPHA;
     	}
@@ -392,7 +395,6 @@ public class VideoEngine {
     }
 
     // UnSwizzling based on pspplayer
-    // This won't work if you can't unswizzle inplace!
     private Buffer unswizzleTexture32() {
         int rowWidth = texture_width0 * 4;
         int pitch = ( rowWidth - 16 ) / 4;
@@ -409,10 +411,10 @@ public class VideoEngine {
                 int dest = xdest;
                 for( int n = 0; n < 8; n++ )
                 {
-                    tmp_texture_buffer32[dest] = tmp_texture_buffer32[src];
-                    tmp_texture_buffer32[dest+1] = tmp_texture_buffer32[src + 1];
-                    tmp_texture_buffer32[dest+2] = tmp_texture_buffer32[src + 2];
-                    tmp_texture_buffer32[dest+3] = tmp_texture_buffer32[src + 3];
+                    unswizzle_buffer32[dest] = tmp_texture_buffer32[src];
+                    unswizzle_buffer32[dest+1] = tmp_texture_buffer32[src + 1];
+                    unswizzle_buffer32[dest+2] = tmp_texture_buffer32[src + 2];
+                    unswizzle_buffer32[dest+3] = tmp_texture_buffer32[src + 3];
 
                     src     += 4;
                     dest    += pitch+4;
@@ -422,7 +424,7 @@ public class VideoEngine {
             ydest += (rowWidth * 8)/4;
         }
 
-        return IntBuffer.wrap(tmp_texture_buffer32);
+        return IntBuffer.wrap(unswizzle_buffer32);
     }
 
     // UnSwizzling based on pspplayer
@@ -955,7 +957,7 @@ public class VideoEngine {
             	mat_ambient[0] = ((normalArgument	   ) & 255) / 255.f;
             	mat_ambient[1] = ((normalArgument >>  8) & 255) / 255.f;
             	mat_ambient[2] = ((normalArgument >> 16) & 255) / 255.f;
-            	log(String.format("material ambient r=%.1f g=%.1f b=%.1f (%08X)",          			
+            	log(String.format("material ambient r=%.1f g=%.1f b=%.1f (%08X)",
                         mat_ambient[0], mat_ambient[1], mat_ambient[2], normalArgument));
             	break;
 
@@ -986,7 +988,7 @@ public class VideoEngine {
             	log("material specular " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
                         mat_specular[0], mat_specular[1], mat_specular[2], normalArgument));
             	break;
-            
+
             case ALC:
             	ambient_light[0] = ((normalArgument      ) & 255) / 255.f;
             	ambient_light[1] = ((normalArgument >>  8) & 255) / 255.f;
@@ -1000,7 +1002,7 @@ public class VideoEngine {
             	ambient_light[3] = ((normalArgument      ) & 255) / 255.f;
             	gl.glLightModelfv(GL.GL_LIGHT_MODEL_AMBIENT, ambient_light, 0);
             	break;
-            	
+
             case SPOW:
             	gl.glMaterialf(GL.GL_FRONT, GL.GL_SHININESS, floatArgument);
             	log("material shininess " + floatArgument);
@@ -1076,7 +1078,7 @@ public class VideoEngine {
                 break;
 
             case TBP0:
-                texture_base_pointer0 = normalArgument;
+                texture_base_pointer0 = (actualList.base & 0xff000000) | normalArgument;
                 log ("sceGuTexImage(X,X,X,X,lo(pointer=0x" + Integer.toHexString(texture_base_pointer0) + "))");
                 break;
 
@@ -1125,6 +1127,7 @@ public class VideoEngine {
             case TFLUSH:
             {
             	// HACK: avoid texture uploads of null pointers
+                // This can come from Sony's GE init code (pspsdk GE init is ok)
             	if (texture_base_pointer0 == 0)
             		break;
 
@@ -1133,8 +1136,8 @@ public class VideoEngine {
                 	gl.glGenTextures(1, gl_texture_id, 0);
 
 
-                log(helper.getCommandString(TFLUSH) + " 0x" + Integer.toHexString(texture_base_pointer0) + "(" + texture_width0 + "," + texture_height0 + ")");
-                log(helper.getCommandString(TFLUSH) + " texture_storage=0x" + Integer.toHexString(texture_storage) + ", tex_clut_mode=0x" + Integer.toHexString(tex_clut_mode));
+                log(helper.getCommandString(TFLUSH) + " " + String.format("0x%08X", texture_base_pointer0) + " (" + texture_width0 + "," + texture_height0 + ")");
+                log(helper.getCommandString(TFLUSH) + " texture_storage=0x" + Integer.toHexString(texture_storage) + ", tex_clut_mode=0x" + Integer.toHexString(tex_clut_mode) + ", tex_clut_addr=" + String.format("0x%08X", tex_clut_addr));
             	// Extract texture information with the minor conversion possible
             	// TODO: Get rid of information copying, and implement all the available formats
             	Memory 	mem = Memory.getInstance();
@@ -1190,20 +1193,18 @@ public class VideoEngine {
 
 	            				texture_type = GL.GL_UNSIGNED_BYTE;
 
+                                for (int i = 0, j = 0; i < texture_width0*texture_height0; i += 2, j++) {
+
+                                    int index = mem.read8(texaddr+j);
+
+                                    tmp_texture_buffer32[i+1] 	= mem.read32(texclut + getClutIndex((index >> 4) & 0xF) * 4);
+                                    tmp_texture_buffer32[i] 	= mem.read32(texclut + getClutIndex( index       & 0xF) * 4);
+                                }
+
 	            				if (!texture_swizzle) {
-		            				for (int i = 0, j = 0; i < texture_width0*texture_height0; i += 2, j++) {
-
-		            					int index = mem.read8(texaddr+j);
-
-		            					tmp_texture_buffer32[i+1] 	= mem.read32(texclut + getClutIndex((index >> 4) & 0xF) * 4);
-		            					tmp_texture_buffer32[i] 	= mem.read32(texclut + getClutIndex( index       & 0xF) * 4);
-		            				}
                                     final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
 	            				} else {
-            						//VideoEngine.log.error("Unhandled swizzling on clut4/32 textures");
-		                            //Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
                                     final_buffer = unswizzleTexture32();
-		                            break;
 	        					}
 
 	            				break;
@@ -1251,17 +1252,15 @@ public class VideoEngine {
 
 	            				texture_type = GL.GL_UNSIGNED_BYTE;
 
+                                for (int i = 0; i < texture_width0*texture_height0; i++) {
+                                    int index = mem.read8(texaddr+i);
+                                    tmp_texture_buffer32[i] = mem.read32(texclut + getClutIndex(index) * 4);
+                                }
+
 	            				if (!texture_swizzle) {
-		            				for (int i = 0; i < texture_width0*texture_height0; i++) {
-		            					int index = mem.read8(texaddr+i);
-		            					tmp_texture_buffer32[i] = mem.read32(texclut + getClutIndex(index) * 4);
-		            				}
                                     final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
 	            				} else {
-	            					//VideoEngine.log.error("Unhandled swizzling on clut8/32 textures");
-	    	                        //Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
                                     final_buffer = unswizzleTexture32();
-	    	                        break;
 	            				}
 
 	            				break;
@@ -1341,7 +1340,7 @@ public class VideoEngine {
             		}
 
             		default: {
-            			System.out.println("Unhandled texture storage " + texture_storage);
+                        VideoEngine.log.warn("Unhandled texture storage " + texture_storage);
                         Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
                         break;
             		}
@@ -1741,7 +1740,7 @@ public class VideoEngine {
                 Memory mem = Memory.getInstance();
                 bindBuffers(useVertexColor);
                 vboBuffer.clear();
-                
+
                 switch (type) {
                     case PRIM_POINT:
                     case PRIM_LINE:
@@ -1761,10 +1760,10 @@ public class VideoEngine {
                                 vboBuffer.put(v.p);
                             }
                         }
-                       
+
                         if(useVBO)
                         	gl.glBufferData(GL.GL_ARRAY_BUFFER, vboBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboBuffer.rewind(), GL.GL_STREAM_DRAW);
-                        gl.glDrawArrays(mapping[type], 0, numberOfVertex);
+                        gl.glDrawArrays(prim_mapping[type], 0, numberOfVertex);
                         break;
 
                     case PRIM_SPRITES:
@@ -1775,7 +1774,7 @@ public class VideoEngine {
                             int addr2 = vinfo.getAddress(mem, i + 1);
                             VertexState v1 = vinfo.readVertex(mem, addr1);
                             VertexState v2 = vinfo.readVertex(mem, addr2);
-                            
+
                             v1.p[2] = v2.p[2];
 
                             // V1
@@ -1814,7 +1813,7 @@ public class VideoEngine {
 		            	break;
 		            }
 		        }
-                
+
                 gl.glDisableClientState(GL.GL_VERTEX_ARRAY);
                 if(vinfo.texture != 0) gl.glDisableClientState(GL.GL_TEXTURE_COORD_ARRAY);
                 if(useVertexColor) gl.glDisableClientState(GL.GL_COLOR_ARRAY);
@@ -1829,7 +1828,7 @@ public class VideoEngine {
 
                 if(transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD)
                 	gl.glPopAttrib();
-                
+
                 break;
             }
 
@@ -1864,7 +1863,7 @@ public class VideoEngine {
 	                case ALPHA_SOURCE_BLEND_OPERATION_ABSOLUTE_VALUE:
 	                	blend_mode = GL.GL_FUNC_ADD;
 	                	break;
-	                	
+
                     default:
 	                	VideoEngine.log.error("Unhandled blend mode " + op);
                         Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
@@ -2054,40 +2053,40 @@ public class VideoEngine {
             	log("sceGuDepthMask(" + (normalArgument == 1 ? "disableWrites" : "enableWrites") + ")");
             	break;
             }
-            
+
 	        case ATST: {
-	            	
+
 	            	int func = GL.GL_ALWAYS;
-	            	
+
 	            	switch(normalArgument & 0xFF) {
 	            	case ATST_NEVER_PASS_PIXEL:
 	            		func = GL.GL_NEVER;
 	            		break;
-	            		
+
 	            	case ATST_ALWAYS_PASS_PIXEL:
 	            		func = GL.GL_ALWAYS;
 	            		break;
-	            		
+
 	            	case ATST_PASS_PIXEL_IF_MATCHES:
 	            		func = GL.GL_EQUAL;
 	            		break;
-	            		
+
 	            	case ATST_PASS_PIXEL_IF_DIFFERS:
 	            		func = GL.GL_NOTEQUAL;
 	            		break;
-	            		
+
 	            	case ATST_PASS_PIXEL_IF_LESS:
 	            		func = GL.GL_LESS;
 	            		break;
-	            		
+
 	            	case ATST_PASS_PIXEL_IF_LESS_OR_EQUAL:
 	            		func = GL.GL_LEQUAL;
 	            		break;
-	            	
+
 	            	case ATST_PASS_PIXEL_IF_GREATER:
 	            		func = GL.GL_GREATER;
 	            		break;
-	            		
+
 	            	case ATST_PASS_PIXEL_IF_GREATER_OR_EQUAL:
 	            		func = GL.GL_GEQUAL;
 	            		break;
@@ -2101,7 +2100,7 @@ public class VideoEngine {
 	            		gl.glAlphaFunc(func, referenceAlphaValue / 255.0f);
 	            	}
 	            	log ("sceGuAlphaFunc(" + func + "," + referenceAlphaValue + ")");
-	            	
+
 	            	break;
 	            }
 
@@ -2148,7 +2147,7 @@ public class VideoEngine {
             	log ("sceGuStencilFunc(func, ref, mask)");
             	break;
             }
-            
+
             case ZTST: {
 
                 int func = GL.GL_LESS;
@@ -2199,7 +2198,7 @@ public class VideoEngine {
 	            	nearZ = (normalArgument & 0xFFFF) / (float) 0xFFFF;
 	            }
 	            break;
-	            
+
 	        case FARZ : {
 	        		farZ = (normalArgument & 0xFFFF) / (float) 0xFFFF;
 	        		/* I really think we don't need this...*/
@@ -2252,7 +2251,7 @@ public class VideoEngine {
                 		gl.glEnable(GL.GL_STENCIL_TEST);
             			gl.glStencilFunc(GL.GL_ALWAYS, 0, 0);
             			gl.glStencilOp(GL.GL_KEEP, GL.GL_KEEP, GL.GL_ZERO);
-            		} 
+            		}
             		gl.glDepthMask((normalArgument & 0x400) != 0);
             		gl.glColorMask(color, color, color, alpha);
             		log("clear mode : " + (normalArgument >> 8));
@@ -2315,19 +2314,23 @@ public class VideoEngine {
             	break;
 
             case TRXSBP:
+                // use base?
             	textureTx_sourceAddress = normalArgument;
             	break;
 
             case TRXSBW:
+                // remove upper bits first?
             	textureTx_sourceAddress |= (normalArgument << 8) & 0xFF000000;
             	textureTx_sourceLineWidth = normalArgument & 0x0000FFFF;
             	break;
 
             case TRXDBP:
+                // use base?
             	textureTx_destinationAddress = normalArgument;
             	break;
 
             case TRXDBW:
+                // remove upper bits first?
             	textureTx_destinationAddress |= (normalArgument << 8) & 0xFF000000;
             	textureTx_destinationLineWidth = normalArgument & 0x0000FFFF;
             	break;
@@ -2508,12 +2511,12 @@ public class VideoEngine {
         }
 
     }
-    
+
     private void bindBuffers(boolean useVertexColor) {
     	int stride = 0, cpos = 0, npos = 0, vpos = 0;
-    	
+
     	if(vinfo.texture != 0) {
-        	gl.glEnableClientState(GL.GL_TEXTURE_COORD_ARRAY);               	
+        	gl.glEnableClientState(GL.GL_TEXTURE_COORD_ARRAY);
         	stride += BufferUtil.SIZEOF_FLOAT * 2;
         	cpos = npos = vpos = stride;
         }
@@ -2529,10 +2532,10 @@ public class VideoEngine {
         }
         gl.glEnableClientState(GL.GL_VERTEX_ARRAY);
         stride += BufferUtil.SIZEOF_FLOAT * 3;
-    	
+
     	if(useVBO) {
         	gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vboBufferId[0]);
-        	
+
         	if(vinfo.texture != 0) {
             	gl.glTexCoordPointer(2, GL.GL_FLOAT, stride, 0);
             }
@@ -2544,7 +2547,7 @@ public class VideoEngine {
             }
             gl.glVertexPointer(3, GL.GL_FLOAT, stride, vpos);
         } else {
-		    if(vinfo.texture != 0) {		    	
+		    if(vinfo.texture != 0) {
 		    	gl.glTexCoordPointer(2, GL.GL_FLOAT, stride, vboBuffer.position(0));
 		    }
 		    if(useVertexColor) {
