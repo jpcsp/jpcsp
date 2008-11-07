@@ -178,7 +178,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
 
         @Override
         public int getColumnCount() {
-            return 2;
+            return 4;
         }
 
         @Override
@@ -193,6 +193,8 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
             switch(columnIndex) {
                 case 0: return "File ID";
                 case 1: return "File name";
+                case 2: return "Read";
+                case 3: return "Write";
                 default: return "(null)";
             }
         }
@@ -204,6 +206,8 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
                 switch(col) {
                     case 0: return String.format("0x%08X", info.fd);
                     case 1: return info.filename;
+                    case 2: return info.bytesRead;
+                    case 3: return info.bytesWritten;
                 }
             }
             return null;
@@ -244,8 +248,8 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
                 switch(col) {
                     case 0: return String.format("0x%08X", info.threadId);
                     case 1: return info.threadName;
-                    case 2: return info.hasFd ? String.format("0x%04X", info.fd) : "";
-                    case 3: return info.command;
+                    case 2: return (info.hasFd) ? String.format("0x%04X", info.fd) : "";
+                    case 3: return (info.occurences == 1) ? info.command : info.command + " " + info.occurences + "x";
                     case 4: return String.format("0x%08X", info.result);
                     case 5: return info.parameters;
                 }
@@ -261,6 +265,8 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
         columns = fileHandleTable.getColumnModel();
         columns.getColumn(0).setPreferredWidth(75);
         columns.getColumn(1).setPreferredWidth(500);
+        columns.getColumn(2).setPreferredWidth(75);
+        columns.getColumn(3).setPreferredWidth(75);
 
         fileHandleTable.setDefaultRenderer(Object.class, new FileHandleRenderer());
 
@@ -303,6 +309,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
         public final String command;
         public final int result;
         public final String parameters;
+        public int occurences;
 
         private FileCommandInfo(boolean hasFd, int fd, String command,
                 int result, String parameters) {
@@ -314,6 +321,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
             this.command = command;
             this.result = result;
             this.parameters = parameters;
+            this.occurences = 1;
 
             synchronized(getInstance()) {
                 if (!dirty) {
@@ -336,6 +344,27 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
          */
         public FileCommandInfo(String command, int result, String parameters) {
             this(false, -2, command, result, parameters);
+        }
+        
+        @Override
+        public boolean equals(Object _obj) {
+            FileCommandInfo obj = (FileCommandInfo)_obj;
+            return threadId == obj.threadId &&
+                    fd == obj.fd &&
+                    command.equals(obj.command) &&
+                    result == obj.result &&
+                    parameters.equals(obj.parameters);
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = 7;
+            hash = 43 * hash + this.threadId;
+            hash = 43 * hash + this.fd;
+            hash = 43 * hash + (this.command != null ? this.command.hashCode() : 0);
+            hash = 43 * hash + this.result;
+            hash = 43 * hash + (this.parameters != null ? this.parameters.hashCode() : 0);
+            return hash;
         }
     }
 
@@ -368,8 +397,19 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
         Collections.sort(fileHandleList);
     }
 
+    private FileCommandInfo lastFileCommand;
+    private void logFileCommand(FileCommandInfo info) {
+        if (lastFileCommand != null &&
+                info.equals(lastFileCommand)) {
+            lastFileCommand.occurences++;
+        } else {
+            fileCommandList.add(info);
+            lastFileCommand = info;
+        }
+    }
+    
     public void logIoSync(int result, int device_addr, String device, int unknown) {
-        fileCommandList.add(new FileCommandInfo(
+        logFileCommand(new FileCommandInfo(
                 "sync", result,
                 String.format("device=0x%08X('%s') unknown=0x%08X",
                         device_addr, device, unknown)
@@ -377,21 +417,21 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
     }
 
     public void logIoPollAsync(int result, int uid, int res_addr) {
-        fileCommandList.add(new FileCommandInfo(
+        logFileCommand(new FileCommandInfo(
                 uid, "poll async", result,
                 String.format("result=0x%08X", res_addr)
                 ));
     }
 
     public void logIoWaitAsync(int result, int uid, int res_addr) {
-        fileCommandList.add(new FileCommandInfo(
+        logFileCommand(new FileCommandInfo(
                 uid, "wait async", result,
                 String.format("result=0x%08X", res_addr)
                 ));
     }
 
     public void logIoWaitAsyncCB(int result, int uid, int res_addr) {
-        fileCommandList.add(new FileCommandInfo(
+        logFileCommand(new FileCommandInfo(
                 uid, "poll async cb", result,
                 String.format("result=0x%08X", res_addr)
                 ));
@@ -415,7 +455,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
         }
 
         // File Command list
-        fileCommandList.add(new FileCommandInfo(
+        logFileCommand(new FileCommandInfo(
                 "open", result,
                 String.format("path=0x%08X('%s') flags=0x%04X, permissions=0x%04X(%s)",
                     filename_addr, filename, flags, permissions, mode)
@@ -432,14 +472,19 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
         }
 
         // File Command list
-        fileCommandList.add(new FileCommandInfo(
+        logFileCommand(new FileCommandInfo(
                 uid, "close", result,
                 ""
                 ));
     }
 
     public void logIoWrite(int result, int uid, int data_addr, int size) {
-        fileCommandList.add(new FileCommandInfo(
+        FileHandleInfo info = fileHandleIdMap.get(uid);
+        if (result > 0 && info != null) {
+            info.bytesWritten += result;
+        }
+        
+        logFileCommand(new FileCommandInfo(
                 uid, "write", result,
                 String.format("data=0x%08X size=0x%08X",
                     data_addr, size)
@@ -447,7 +492,12 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
     }
 
     public void logIoRead(int result, int uid, int data_addr, int size) {
-        fileCommandList.add(new FileCommandInfo(
+        FileHandleInfo info = fileHandleIdMap.get(uid);
+        if (result > 0 && info != null) {
+            info.bytesRead += result;
+        }
+        
+        logFileCommand(new FileCommandInfo(
                 uid, "read", result,
                 String.format("data=0x%08X size=0x%08X",
                     data_addr, size)
@@ -464,7 +514,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
     }
 
     public void logIoSeek32(int result, int uid, int offset, int whence) {
-        fileCommandList.add(new FileCommandInfo(
+        logFileCommand(new FileCommandInfo(
                 uid, "seek32", result,
                 String.format("offset=0x%08X whence=%s",
                         offset, getWhenceName(whence))
@@ -472,7 +522,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
     }
 
     public void logIoSeek64(long result, int uid, long offset, int whence) {
-        fileCommandList.add(new FileCommandInfo(
+        logFileCommand(new FileCommandInfo(
                 uid, "seek64", (int)result, // HACK back to 32bit result
                 String.format("offset=0x%08X whence=%s",
                         offset, getWhenceName(whence))
@@ -480,7 +530,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
     }
 
     public void logIoMkdir(int result, int path_addr, String path, int permissions) {
-        fileCommandList.add(new FileCommandInfo(
+        logFileCommand(new FileCommandInfo(
                 "mkdir", result,
                 String.format("path=0x%08X('%s') permissions=%04X",
                         path_addr, path, permissions)
@@ -488,7 +538,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
     }
 
     public void logIoChdir(int result, int path_addr, String path) {
-        fileCommandList.add(new FileCommandInfo(
+        logFileCommand(new FileCommandInfo(
                 "chdir", result,
                 String.format("path=0x%08X('%s')",
                         path_addr, path)
@@ -496,7 +546,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
     }
 
     public void logIoDopen(int result, int path_addr, String path) {
-        fileCommandList.add(new FileCommandInfo(
+        logFileCommand(new FileCommandInfo(
                 "dopen", result,
                 String.format("path=0x%08X('%s')",
                         path_addr, path)
@@ -504,7 +554,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
     }
 
     public void logIoDread(int result, int uid, int dirent_addr) {
-        fileCommandList.add(new FileCommandInfo(
+        logFileCommand(new FileCommandInfo(
                 uid, "dread", result,
                 String.format("dirent=0x%08X",
                         dirent_addr)
@@ -512,7 +562,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
     }
 
     public void logIoDclose(int result, int uid) {
-        fileCommandList.add(new FileCommandInfo(
+        logFileCommand(new FileCommandInfo(
                 uid, "dclose", result,
                 ""
                 ));
@@ -520,7 +570,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
 
     public void logIoDevctl(int result, int device_addr, String device, int cmd,
             int indata_addr, int inlen, int outdata_addr, int outlen) {
-        fileCommandList.add(new FileCommandInfo(
+        logFileCommand(new FileCommandInfo(
                 "devctl", result,
                 String.format("device=0x%08X('%s') cmd=0x%08X indata=0x%08X inlen=0x%08X outdata=0x%08X outlen=0x%08X",
                         device_addr, device, cmd, indata_addr, inlen, outdata_addr, outlen)
@@ -530,7 +580,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
     public void logIoAssign(int result, int dev1_addr, String dev1,
             int dev2_addr, String dev2, int dev3_addr, String dev3,
             int mode, int unk1, int unk2) {
-        fileCommandList.add(new FileCommandInfo(
+        logFileCommand(new FileCommandInfo(
                 "assign", result,
                 String.format("dev1=0x%08X('%s') dev2=0x%08X('%s') dev3=0x%08X('%s') mode=0x%08X unk1=0x%08X unk2=0x%08X",
                         dev1_addr, dev1, dev2_addr, dev2, dev3_addr, dev3, mode, unk1, unk2)
@@ -538,7 +588,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
     }
 
     public void logIoGetStat(int result, int path_addr, String path, int stat_addr) {
-        fileCommandList.add(new FileCommandInfo(
+        logFileCommand(new FileCommandInfo(
                 "stat", result,
                 String.format("path=0x%08X('%s') stat=0x%08X",
                         path_addr, path, stat_addr)
