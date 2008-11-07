@@ -23,6 +23,8 @@ package jpcsp.Debugger.FileLogger;
 public class FileHandleInfo implements Comparable<FileHandleInfo> {
     public int fd;
     public final String filename;
+    public int bytesRead;
+    public int bytesWritten;
 
     private boolean isOpen;
     private int sortId;
@@ -31,6 +33,8 @@ public class FileHandleInfo implements Comparable<FileHandleInfo> {
     public FileHandleInfo(int fd, String filename) {
         this.fd = fd;
         this.filename = filename;
+        this.bytesRead = 0;
+        this.bytesWritten = 0;
 
         isOpen = true;
         sortId = nextSortId++;
