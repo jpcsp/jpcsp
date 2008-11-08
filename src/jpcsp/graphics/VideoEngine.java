@@ -184,7 +184,8 @@ public class VideoEngine {
         useVBO = !Settings.getInstance().readBool("emu.disablevbo") && gl.isFunctionAvailable("glGenBuffersARB") &&
             gl.isFunctionAvailable("glBindBufferARB") &&
             gl.isFunctionAvailable("glBufferDataARB") &&
-            gl.isFunctionAvailable("glDeleteBuffersARB");
+            gl.isFunctionAvailable("glDeleteBuffersARB") &&
+            gl.isFunctionAvailable("glGenBuffers");
 
         if (useVBO) {
             VideoEngine.log.info("using VBO");
