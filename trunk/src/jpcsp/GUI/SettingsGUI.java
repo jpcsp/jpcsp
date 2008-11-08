@@ -55,6 +55,8 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         recompilerCheck.setSelected(enabled);
         enabled = Settings.getInstance().readBool("emu.disablege");
         disableGECheck.setSelected(enabled);
+        enabled = Settings.getInstance().readBool("emu.disablevbo");
+        disableVBOCheck.setSelected(enabled);
         enabled = Settings.getInstance().readBool("emu.umdbrowser");
         if(enabled)
             umdBrowser.setSelected(true);
@@ -208,6 +210,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         jLabel1 = new javax.swing.JLabel();
         jButton1 = new javax.swing.JButton();
         disableGECheck = new javax.swing.JCheckBox();
+        disableVBOCheck = new javax.swing.JCheckBox();
         bg = new javax.swing.JPanel();
         fgPanel = new javax.swing.JPanel();
         fieldStart = new javax.swing.JTextField();
@@ -285,12 +288,14 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
 
         disableGECheck.setText("disable GE");
 
+        disableVBOCheck.setText("disable VBO");
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                .addContainerGap(26, Short.MAX_VALUE)
+                .addContainerGap(30, Short.MAX_VALUE)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addComponent(ClassicOpenDialogumd)
@@ -306,8 +311,10 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                                     .addComponent(snapConsoleCheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 169, Short.MAX_VALUE)
                                     .addComponent(recompilerCheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                                 .addGap(18, 18, 18)
-                                .addComponent(disableGECheck)
-                                .addGap(298, 298, 298)))
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(disableGECheck)
+                                    .addComponent(disableVBOCheck))
+                                .addGap(292, 292, 292)))
                         .addGroup(jPanel1Layout.createSequentialGroup()
                             .addGap(8, 8, 8)
                             .addComponent(jLabel1)
@@ -325,7 +332,9 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                     .addComponent(pbpunpackcheck)
                     .addComponent(disableGECheck))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(saveWindowPosCheck)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(saveWindowPosCheck)
+                    .addComponent(disableVBOCheck))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(openLogwindowCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -789,6 +798,7 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
    Settings.getInstance().writeBool("gui.snapLogwindow", snapConsoleCheck.isSelected());
    Settings.getInstance().writeBool("emu.recompiler", recompilerCheck.isSelected());
    Settings.getInstance().writeBool("emu.disablege", disableGECheck.isSelected());
+   Settings.getInstance().writeBool("emu.disablevbo", disableVBOCheck.isSelected());
    if(umdBrowser.isSelected())
       Settings.getInstance().writeBool("emu.umdbrowser", true);
    else
@@ -908,6 +918,7 @@ private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.JLabel bgLabel1;
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.JCheckBox disableGECheck;
+    private javax.swing.JCheckBox disableVBOCheck;
     private javax.swing.JPanel fgPanel;
     private javax.swing.JTextField fieldAnalogDown;
     private javax.swing.JTextField fieldAnalogLeft;

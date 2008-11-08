@@ -84,7 +84,7 @@
             <DimensionLayout dim="0">
               <Group type="103" groupAlignment="0" attributes="0">
                   <Group type="102" alignment="1" attributes="0">
-                      <EmptySpace pref="26" max="32767" attributes="0"/>
+                      <EmptySpace pref="30" max="32767" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
                           <Group type="102" alignment="0" attributes="0">
                               <Component id="ClassicOpenDialogumd" min="-2" max="-2" attributes="0"/>
@@ -102,8 +102,11 @@
                                           <Component id="recompilerCheck" alignment="0" max="32767" attributes="1"/>
                                       </Group>
                                       <EmptySpace type="separate" max="-2" attributes="0"/>
-                                      <Component id="disableGECheck" min="-2" max="-2" attributes="0"/>
-                                      <EmptySpace min="-2" pref="298" max="-2" attributes="0"/>
+                                      <Group type="103" groupAlignment="0" attributes="0">
+                                          <Component id="disableGECheck" min="-2" max="-2" attributes="0"/>
+                                          <Component id="disableVBOCheck" min="-2" max="-2" attributes="0"/>
+                                      </Group>
+                                      <EmptySpace min="-2" pref="292" max="-2" attributes="0"/>
                                   </Group>
                               </Group>
                               <Group type="102" alignment="0" attributes="0">
@@ -129,7 +132,10 @@
                           <Component id="disableGECheck" alignment="3" min="-2" max="-2" attributes="0"/>
                       </Group>
                       <EmptySpace max="-2" attributes="0"/>
-                      <Component id="saveWindowPosCheck" min="-2" max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="3" attributes="0">
+                          <Component id="saveWindowPosCheck" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="disableVBOCheck" alignment="3" min="-2" max="-2" attributes="0"/>
+                      </Group>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="openLogwindowCheck" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
@@ -217,6 +223,11 @@
             <Component class="javax.swing.JCheckBox" name="disableGECheck">
               <Properties>
                 <Property name="text" type="java.lang.String" value="disable GE"/>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="disableVBOCheck">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="disable VBO"/>
               </Properties>
             </Component>
           </SubComponents>
