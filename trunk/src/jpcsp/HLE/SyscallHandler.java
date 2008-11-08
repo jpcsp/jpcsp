@@ -18,14 +18,11 @@ package jpcsp.HLE;
 
 
 import jpcsp.Emulator;
-//import jpcsp.Processor;
 import jpcsp.GeneralJpcspException;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.Allegrex.CpuState;
-import jpcsp.Memory;
-import jpcsp.MemoryMap;
-import static jpcsp.util.Utilities.*;
+
 public class SyscallHandler {
 
     // Change this to return the number of cycles used?
@@ -285,7 +282,9 @@ public class SyscallHandler {
                 case 0x2089:
                     pspiofilemgr.getInstance().sceIoWaitAsyncCB(gpr[4], gpr[5]);
                     break;
-		// sceIoGetAsyncStat(0x208a),
+                case 0x208a:
+                    pspiofilemgr.getInstance().sceIoGetAsyncStat(gpr[4], gpr[5], gpr[6]);
+                    break;
 		// sceIoChangeAsyncPriority(0x208b),
 		// sceIoSetAsyncCallback(0x208c),
                 case 0x208d:
