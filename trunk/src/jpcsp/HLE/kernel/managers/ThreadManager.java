@@ -612,6 +612,22 @@ public class ThreadManager {
         processor.cpu.gpr[2] = currentThread.uid;
     }
 
+    public void sceKernelGetThreadCurrentPriority(Processor processor) {
+        processor.cpu.gpr[2] = currentThread.currentPriority;
+    }
+
+    public void sceKernelGetThreadExitStatus(Processor processor) {
+        int uid = processor.cpu.gpr[4];
+        SceKernelThreadInfo thread = threadMap.get(uid);
+        if (thread == null) {
+            Modules.log.warn("sceKernelGetThreadExitStatus unknown uid=0x" + Integer.toHexString(uid));
+            processor.cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
+        } else  {
+            Modules.log.debug("sceKernelGetThreadExitStatus uid=0x" + Integer.toHexString(uid) + " exitStatus=0x" + Integer.toHexString(thread.exitStatus));
+            processor.cpu.gpr[2] = thread.exitStatus;
+        }
+    }
+
     public void sceKernelReferThreadStatus(Processor processor) {
         int[] gpr = processor.cpu.gpr;
         Memory mem = Processor.memory;

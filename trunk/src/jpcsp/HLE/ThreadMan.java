@@ -674,6 +674,21 @@ public class ThreadMan {
         Emulator.getProcessor().cpu.gpr[2] = current_thread.uid;
     }
 
+    public void ThreadMan_sceKernelGetThreadCurrentPriority() {
+        Emulator.getProcessor().cpu.gpr[2] = current_thread.currentPriority;
+    }
+
+    public void ThreadMan_sceKernelGetThreadExitStatus(int uid) {
+        SceKernelThreadInfo thread = threadlist.get(uid);
+        if (thread == null) {
+            Modules.log.warn("sceKernelGetThreadExitStatus unknown uid=0x" + Integer.toHexString(uid));
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_THREAD;
+        } else  {
+            Modules.log.debug("sceKernelGetThreadExitStatus uid=0x" + Integer.toHexString(uid) + " exitStatus=0x" + Integer.toHexString(thread.exitStatus));
+            Emulator.getProcessor().cpu.gpr[2] = thread.exitStatus;
+        }
+    }
+
     public void ThreadMan_sceKernelReferThreadStatus(int uid, int addr) {
         //Get the status information for the specified thread
         if (uid == 0) uid = current_thread.uid;

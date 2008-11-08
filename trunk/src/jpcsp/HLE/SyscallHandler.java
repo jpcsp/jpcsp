@@ -257,8 +257,12 @@ public class SyscallHandler {
                 case 0x207b:
                     ThreadMan.getInstance().ThreadMan_sceKernelGetThreadId();
                     break;
-                // sceKernelGetThreadCurrentPriority(0x207c),
-		// sceKernelGetThreadExitStatus(0x207d),
+                case 0x207c:
+                    ThreadMan.getInstance().ThreadMan_sceKernelGetThreadCurrentPriority();
+                    break;
+                case 0x207d:
+                    ThreadMan.getInstance().ThreadMan_sceKernelGetThreadExitStatus(gpr[4]);
+                    break;
 		// sceKernelCheckThreadStack(0x207e),
 		// sceKernelGetThreadStackFreeSize(0x207f),
                 case 0x2080:
