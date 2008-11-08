@@ -204,6 +204,11 @@ public class pspiofilemgr {
         State.fileLogger.logIoPollAsync(Emulator.getProcessor().cpu.gpr[2], uid, res_addr);
     }
 
+    public void sceIoGetAsyncStat(int uid, int poll, int res_addr) {
+        if (debug) Modules.log.debug("sceIoGetAsyncStat redirecting to sceIoPollAsync");
+        sceIoPollAsync(uid, res_addr);
+    }
+
     public void sceIoWaitAsync(int uid, int res_addr) {
         if (debug) Modules.log.debug("sceIoWaitAsync redirecting to sceIoPollAsync");
         sceIoPollAsync(uid, res_addr);
