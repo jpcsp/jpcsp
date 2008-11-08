@@ -2501,6 +2501,7 @@ public class VideoEngine {
                         if (!texture_swizzle) {
                             final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
                         } else {
+                            // TODO find a test program and check it
                             final_buffer = unswizzleTexture32();
                         }
 
@@ -2549,15 +2550,27 @@ public class VideoEngine {
 
                         texture_type = GL.GL_UNSIGNED_BYTE;
 
-                        for (int i = 0; i < texture_width0*texture_height0; i++) {
-                            int index = mem.read8(texaddr+i);
-                            tmp_texture_buffer32[i] = mem.read32(texclut + getClutIndex(index) * 4);
-                        }
 
                         if (!texture_swizzle) {
+                            for (int i = 0; i < texture_width0*texture_height0; i++) {
+                                int index = mem.read8(texaddr+i);
+                                tmp_texture_buffer32[i] = mem.read32(texclut + getClutIndex(index) * 4);
+                            }
                             final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
                         } else {
-                            final_buffer = unswizzleTexture32();
+                            // unswizzle before applying the clut (still broken)
+                            for (int i = 0; i < texture_width0*texture_height0/4; i++) {
+                                tmp_texture_buffer32[i] = mem.read32(texaddr+i*4);
+                            }
+                            unswizzleTexture32(); // hack: we know it uses an intermediate buffer "unswizzle_buffer32"
+                            for (int i = 0, j = 0; i < texture_width0*texture_height0; i += 4, j++) {
+                                int packed = unswizzle_buffer32[j];
+                                tmp_texture_buffer32[i  ] = mem.read32(texclut + getClutIndex((packed      ) & 0xFF) * 4);
+                                tmp_texture_buffer32[i+1] = mem.read32(texclut + getClutIndex((packed >>  8) & 0xFF) * 4);
+                                tmp_texture_buffer32[i+2] = mem.read32(texclut + getClutIndex((packed >> 16) & 0xFF) * 4);
+                                tmp_texture_buffer32[i+3] = mem.read32(texclut + getClutIndex((packed >> 24) & 0xFF) * 4);
+                            }
+                            final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
                         }
 
                         break;
