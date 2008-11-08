@@ -397,6 +397,7 @@ public class VideoEngine {
     }
 
     // UnSwizzling based on pspplayer
+    // no longer used...
     private Buffer unswizzleTexture32() {
         int rowWidth = texture_width0 * 4;
         int pitch = ( rowWidth - 16 ) / 4;
@@ -432,7 +433,7 @@ public class VideoEngine {
     // UnSwizzling based on pspplayer
     private Buffer unswizzleTextureFromMemory(int texaddr, int bytesPerPixel) {
         Memory mem = Memory.getInstance();
-        int rowWidth = texture_width0 * bytesPerPixel;
+        int rowWidth = (bytesPerPixel > 0) ? (texture_width0 * bytesPerPixel) : (texture_width0 / 2);
         int pitch = ( rowWidth - 16 ) / 4;
         int bxc = rowWidth / 16;
         int byc = texture_height0 / 8;
@@ -2490,19 +2491,38 @@ public class VideoEngine {
 
                         texture_type = GL.GL_UNSIGNED_BYTE;
 
-                        for (int i = 0, j = 0; i < texture_width0*texture_height0; i += 2, j++) {
-
-                            int index = mem.read8(texaddr+j);
-
-                            tmp_texture_buffer32[i+1]   = mem.read32(texclut + getClutIndex((index >> 4) & 0xF) * 4);
-                            tmp_texture_buffer32[i]     = mem.read32(texclut + getClutIndex( index       & 0xF) * 4);
-                        }
-
                         if (!texture_swizzle) {
+                            for (int i = 0, j = 0; i < texture_width0*texture_height0; i += 2, j++) {
+
+                                int index = mem.read8(texaddr+j);
+
+                                tmp_texture_buffer32[i+1]   = mem.read32(texclut + getClutIndex((index >> 4) & 0xF) * 4);
+                                tmp_texture_buffer32[i]     = mem.read32(texclut + getClutIndex( index       & 0xF) * 4);
+                            }
                             final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
                         } else {
-                            // TODO find a test program and check it
-                            final_buffer = unswizzleTexture32();
+                            unswizzleTextureFromMemory(texaddr, 0);
+                            int pixels = texture_width0 * texture_height0;
+                            for (int i = pixels - 8, j = (pixels / 8) - 1; i >= 0; i -= 8, j--) {
+                                int n = tmp_texture_buffer32[j];
+                                int index = n & 0xF;
+                                tmp_texture_buffer32[i + 0] = mem.read32(texclut + getClutIndex(index) * 4);
+                                index = (n >> 4) & 0xF;
+                                tmp_texture_buffer32[i + 1] = mem.read32(texclut + getClutIndex(index) * 4);
+                                index = (n >> 8) & 0xF;
+                                tmp_texture_buffer32[i + 2] = mem.read32(texclut + getClutIndex(index) * 4);
+                                index = (n >> 12) & 0xF;
+                                tmp_texture_buffer32[i + 3] = mem.read32(texclut + getClutIndex(index) * 4);
+                                index = (n >> 16) & 0xF;
+                                tmp_texture_buffer32[i + 4] = mem.read32(texclut + getClutIndex(index) * 4);
+                                index = (n >> 20) & 0xF;
+                                tmp_texture_buffer32[i + 5] = mem.read32(texclut + getClutIndex(index) * 4);
+                                index = (n >> 24) & 0xF;
+                                tmp_texture_buffer32[i + 6] = mem.read32(texclut + getClutIndex(index) * 4);
+                                index = (n >> 28) & 0xF;
+                                tmp_texture_buffer32[i + 7] = mem.read32(texclut + getClutIndex(index) * 4);
+                            }
+                            final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
                         }
 
                         break;
@@ -2536,9 +2556,19 @@ public class VideoEngine {
                             }
                             final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
                         } else {
-                            VideoEngine.log.error("Unhandled swizzling on clut8/16 textures");
-                            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
-                            break;
+                            unswizzleTextureFromMemory(texaddr, 1);
+                            for (int i = 0, j = 0; i < texture_width0*texture_height0; i += 4, j++) {
+                                int n = tmp_texture_buffer32[j];
+                                int index = n & 0xFF;
+                                tmp_texture_buffer16[i + 0] = (short)mem.read16(texclut + getClutIndex(index) * 2);
+                                index = (n >> 8) & 0xFF;
+                                tmp_texture_buffer16[i + 1] = (short)mem.read16(texclut + getClutIndex(index) * 2);
+                                index = (n >> 16) & 0xFF;
+                                tmp_texture_buffer16[i + 2] = (short)mem.read16(texclut + getClutIndex(index) * 2);
+                                index = (n >> 24) & 0xFF;
+                                tmp_texture_buffer16[i + 3] = (short)mem.read16(texclut + getClutIndex(index) * 2);
+                            }
+                            final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
                         }
 
                         break;
@@ -2558,17 +2588,18 @@ public class VideoEngine {
                             }
                             final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
                         } else {
-                            // unswizzle before applying the clut (still broken)
-                            for (int i = 0; i < texture_width0*texture_height0/4; i++) {
-                                tmp_texture_buffer32[i] = mem.read32(texaddr+i*4);
-                            }
-                            unswizzleTexture32(); // hack: we know it uses an intermediate buffer "unswizzle_buffer32"
-                            for (int i = 0, j = 0; i < texture_width0*texture_height0; i += 4, j++) {
-                                int packed = unswizzle_buffer32[j];
-                                tmp_texture_buffer32[i  ] = mem.read32(texclut + getClutIndex((packed      ) & 0xFF) * 4);
-                                tmp_texture_buffer32[i+1] = mem.read32(texclut + getClutIndex((packed >>  8) & 0xFF) * 4);
-                                tmp_texture_buffer32[i+2] = mem.read32(texclut + getClutIndex((packed >> 16) & 0xFF) * 4);
-                                tmp_texture_buffer32[i+3] = mem.read32(texclut + getClutIndex((packed >> 24) & 0xFF) * 4);
+                            unswizzleTextureFromMemory(texaddr, 1);
+                            int pixels = texture_width0 * texture_height0;
+                            for (int i = pixels - 4, j = (pixels / 4) - 1; i >= 0; i -= 4, j--) {
+                                int n = tmp_texture_buffer32[j];
+                                int index = n & 0xFF;
+                                tmp_texture_buffer32[i + 0] = mem.read32(texclut + getClutIndex(index) * 4);
+                                index = (n >> 8) & 0xFF;
+                                tmp_texture_buffer32[i + 1] = mem.read32(texclut + getClutIndex(index) * 4);
+                                index = (n >> 16) & 0xFF;
+                                tmp_texture_buffer32[i + 2] = mem.read32(texclut + getClutIndex(index) * 4);
+                                index = (n >> 24) & 0xFF;
+                                tmp_texture_buffer32[i + 3] = mem.read32(texclut + getClutIndex(index) * 4);
                             }
                             final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
                         }
