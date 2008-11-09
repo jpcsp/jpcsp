@@ -73,6 +73,7 @@ public class sceUtility implements HLEModule {
 			mm.addFunction(sceUtilityCheckNetParamFunction, 0x5EEE6548);
 			mm.addFunction(sceUtilityGetNetParamFunction, 0x434D4B3A);
 
+            savedata_status = SCE_UTILITY_SAVEDATA_ERROR_NOT_INITED;
 		}
 	}
 
@@ -394,19 +395,25 @@ public class sceUtility implements HLEModule {
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-        int mode=0;//hacky should be done better
+
+    private int savedata_status;
+    private int savedata_mode = 0; //hacky should be done better
 
     // SceUtilitySavedataParam
-	public void sceUtilitySavedataInitStart(Processor processor) {
-                //hacky impelementation so it ignores.
-		CpuState cpu = processor.cpu; // New-Style Processor
+    public void sceUtilitySavedataInitStart(Processor processor) {
+        //hacky impelementation so it ignores.
+        CpuState cpu = processor.cpu; // New-Style Processor
+        Memory mem = Processor.memory;
 
-		Memory mem = Processor.memory;
-        int a0 = cpu.gpr[4];
-        Modules.log.debug("PARTIAL:sceUtilitySavedataInitStart a0= " + a0);
-        mode=mem.read32(a0+48);
+        int param_addr = cpu.gpr[4];
+        savedata_mode = mem.read32(param_addr + 48);
 
-        if(mode==0) // 0=load
+        Modules.log.warn("PARTIAL:sceUtilitySavedataInitStart param=0x" + Integer.toHexString(param_addr));
+
+        // HACK let's start on quit, then the app should call shutdown and then we change status to finished
+        savedata_status = PSP_UTILITY_DIALOG_QUIT;
+
+        if (savedata_mode == 0) // 0=load
         {
             cpu.gpr[2] = SCE_UTILITY_SAVEDATA_ERROR_LOAD_NO_DATA;
         }
@@ -414,24 +421,19 @@ public class sceUtility implements HLEModule {
         {
             cpu.gpr[2] = SCE_UTILITY_SAVEDATA_ERROR_SAVE_NO_MS;
         }
-	}
+    }
 
-	public void sceUtilitySavedataShutdownStart(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+    public void sceUtilitySavedataShutdownStart(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
 
-		/* put your own code here instead */
+        Modules.log.warn("PARTIAL:sceUtilitySavedataShutdownStart");
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        savedata_status = PSP_UTILITY_DIALOG_FINISHED;
 
-		System.out.println("Unimplemented NID function sceUtilitySavedataShutdownStart [0x9790B33C]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
+        // no return code?
+        // cpu.gpr[2] = 0xDEADC0DE;
+    }
 
 	public void sceUtilitySavedataUpdate(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
@@ -450,23 +452,18 @@ public class sceUtility implements HLEModule {
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
 
-	public void sceUtilitySavedataGetStatus(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+    public void sceUtilitySavedataGetStatus(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
 
-		/* put your own code here instead */
+        Modules.log.warn("PARTIAL:sceUtilitySavedataGetStatus return:" + savedata_status);
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        cpu.gpr[2] = savedata_status;
 
-		System.out.println("Unimplemented NID function sceUtilitySavedataGetStatus [0x8874DBE0]");
-
-		//cpu.gpr[2] = 0xDEADC0DE;
-        cpu.gpr[2] = SCE_UTILITY_SAVEDATA_ERROR_NOT_INITED;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
+        // after returning FINISHED once, return NONE on following calls
+        if (savedata_status == PSP_UTILITY_DIALOG_FINISHED)
+            savedata_status = PSP_UTILITY_DIALOG_NONE;
+    }
 
 	public void sceUtility_2995D020(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
@@ -536,40 +533,35 @@ public class sceUtility implements HLEModule {
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
 
-	public void sceUtilityMsgDialogInitStart(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+    public void sceUtilityMsgDialogInitStart(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("PARTIAL:sceUtilityMsgDialogInitStart");
+        Modules.log.warn("PARTIAL:sceUtilityMsgDialogInitStart");
 
         // HACK let's start on quit, then the app should call shutdown and then we change status to finished
         msgdialog_status = PSP_UTILITY_DIALOG_QUIT;
 
-		cpu.gpr[2] = 0;
+        cpu.gpr[2] = 0;
 
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
 
-	public void sceUtilityMsgDialogShutdownStart(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+    public void sceUtilityMsgDialogShutdownStart(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("PARTIAL:sceUtilityMsgDialogShutdownStart");
+        Modules.log.warn("PARTIAL:sceUtilityMsgDialogShutdownStart");
 
         msgdialog_status = PSP_UTILITY_DIALOG_FINISHED;
 
-		// cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
+        // no return code
+        // cpu.gpr[2] = 0xDEADC0DE;
+    }
 
 	public void sceUtilityMsgDialogUpdate(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
@@ -588,23 +580,18 @@ public class sceUtility implements HLEModule {
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
 
-	public void sceUtilityMsgDialogGetStatus(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+    public void sceUtilityMsgDialogGetStatus(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        Modules.log.warn("PARTIAL:sceUtilityMsgDialogGetStatus return:" + msgdialog_status);
 
-		System.out.println("PARTIAL:sceUtilityMsgDialogGetStatus return:" + msgdialog_status);
+        cpu.gpr[2] = msgdialog_status;
 
-		cpu.gpr[2] = msgdialog_status;
-
+        // after returning FINISHED once, return NONE on following calls
         if (msgdialog_status == PSP_UTILITY_DIALOG_FINISHED)
             msgdialog_status = PSP_UTILITY_DIALOG_NONE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
+    }
 
 	public void sceUtilityOskInitStart(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor

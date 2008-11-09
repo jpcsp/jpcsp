@@ -41,7 +41,7 @@ public class ScePspDateTime {
         this.year = cal.get(Calendar.YEAR);
         this.month = 1 + cal.get(Calendar.MONTH); // check
         this.day = cal.get(Calendar.DAY_OF_MONTH);
-        this.hour = cal.get(Calendar.HOUR);
+        this.hour = cal.get(Calendar.HOUR_OF_DAY);
         this.minute = cal.get(Calendar.MINUTE);
         this.second = cal.get(Calendar.SECOND);
         this.microsecond = cal.get(Calendar.MILLISECOND);
@@ -54,7 +54,7 @@ public class ScePspDateTime {
         this.year = cal.get(Calendar.YEAR);
         this.month = 1 + cal.get(Calendar.MONTH); // check
         this.day = cal.get(Calendar.DAY_OF_MONTH);
-        this.hour = cal.get(Calendar.HOUR);
+        this.hour = cal.get(Calendar.HOUR_OF_DAY);
         this.minute = cal.get(Calendar.MINUTE);
         this.second = cal.get(Calendar.SECOND);
         this.microsecond = cal.get(Calendar.MILLISECOND);
@@ -93,5 +93,10 @@ public class ScePspDateTime {
 
     public static int sizeof() {
         return 16;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%04d-%02d-%02d %02d:%02d:%02d", year, month, day, hour, minute, second);
     }
 }

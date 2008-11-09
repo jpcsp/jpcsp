@@ -322,22 +322,30 @@ public class sceRtc implements HLEModule {
 
 	}
 
-	public void sceRtcGetTime_t(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		//////Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+    public void sceRtcGetTime_t(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        //////Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+        /* put your own code here instead */
 
+        int date_addr = cpu.gpr[4] & 0x3fffffff;
+        int time_addr = cpu.gpr[5] & 0x3fffffff;
 
-
-
-		System.out.println("Unimplemented NID function sceRtcGetTime_t [0x27C4594C]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-
-	}
+        if (mem.isAddressGood(date_addr) && mem.isAddressGood(time_addr)) {
+            ScePspDateTime dateTime = new ScePspDateTime();
+            dateTime.read(mem, date_addr);
+            Calendar cal = Calendar.getInstance();
+            cal.set(dateTime.year, dateTime.month - 1, dateTime.day, dateTime.hour, dateTime.minute, dateTime.second);
+            int unixtime = (int)(cal.getTime().getTime() / 1000);
+            Modules.log.debug("sceRtcGetTime_t psptime:" + dateTime + " unixtime:" + unixtime);
+            mem.write32(time_addr, unixtime);
+            cpu.gpr[2] = 0;
+        } else {
+            Modules.log.warn("sceRtcGetTime_t bad address " + String.format("0x%08X 0x%08X", date_addr, time_addr));
+            cpu.gpr[2] = -1;
+        }
+    }
 
 	public void sceRtcSetDosTime(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
