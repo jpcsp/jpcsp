@@ -27,6 +27,7 @@ import jpcsp.HLE.kernel.types.SceModule;
 import org.apache.log4j.Logger;
 
 public class Emulator implements Runnable {
+    private static Emulator instance;
     private static Processor processor;
     private static Recompiler recompiler;
     private boolean moduleLoaded;
@@ -36,6 +37,7 @@ public class Emulator implements Runnable {
     private static MainGUI gui;
     private InstructionCounter instructionCounter;
     public static Logger log = Logger.getLogger("misc");
+    private SceModule module;
 
     public Emulator(MainGUI gui) {
         Emulator.gui = gui;
@@ -48,9 +50,9 @@ public class Emulator implements Runnable {
 
         moduleLoaded = false;
         mainThread = new Thread(this, "Emu");
-    }
 
-    private SceModule module;
+        instance = this;
+    }
 
     public SceModule load(String pspfilename, ByteBuffer f) throws IOException, GeneralJpcspException {
 
@@ -248,6 +250,10 @@ public class Emulator implements Runnable {
 
     public static Memory getMemory() {
         return Memory.getInstance();
+    }
+
+    public static Emulator getInstance() {
+        return instance;
     }
 
     public void setInstructionCounter(InstructionCounter instructionCounter) {

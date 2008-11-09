@@ -470,7 +470,9 @@ public class SyscallHandler {
 		// sceSuspendForUser_3E0271D3(0x20e6),
 		// sceSuspendForUser_A14F40B2(0x20e7),
 		// sceSuspendForUser_A569E425(0x20e8),
-                //sceKernelLoadExec(0x20e9),
+                case 0x20e9:
+                    LoadExec.getInstance().sceKernelLoadExec(gpr[4], gpr[5]);
+                    break;
 		// sceKernelExitGameWithStatus(0x20ea),
                 case 0x20eb:
                     LoadExec.getInstance().sceKernelExitGame();

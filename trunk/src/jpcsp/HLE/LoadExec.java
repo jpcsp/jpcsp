@@ -20,7 +20,19 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
+import jpcsp.Allegrex.CpuState;
 import jpcsp.Emulator;
+import jpcsp.GeneralJpcspException;
+import jpcsp.Loader;
+import jpcsp.Memory;
+import jpcsp.MemoryMap;
+import jpcsp.Processor;
+import jpcsp.filesystems.SeekableDataInput;
+import jpcsp.HLE.kernel.types.SceModule;
+import jpcsp.util.Utilities;
 
 public class LoadExec {
     private static LoadExec instance;
@@ -50,10 +62,43 @@ public class LoadExec {
         Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_OK);
     }
 
-    /* TODO
-    public void sceKernelLoadExec(int a0, int a1)
+    public void sceKernelLoadExec(int filename_addr, int option_addr)
     {
-        Emulator.getProcessor().gpr[2] = 0;
+        Processor processor = Emulator.getProcessor();
+        CpuState cpu = processor.cpu;
+        Memory mem = processor.memory;
+
+        String name = Utilities.readStringZ(mem.mainmemory, filename_addr & 0x3fffffff - MemoryMap.START_RAM);
+
+        Modules.log.debug("sceKernelLoadExec file='" + name + "' option=0x" + Integer.toHexString(option_addr));
+
+        if (option_addr != 0)
+            Modules.log.warn("UNIMPLEMENTED:sceKernelLoadExec option=0x" + Integer.toHexString(option_addr));
+
+        try {
+            SeekableDataInput moduleInput = pspiofilemgr.getInstance().getFile(name, pspiofilemgr.PSP_O_RDONLY);
+            if (moduleInput != null) {
+                byte[] moduleBytes = new byte[(int) moduleInput.length()];
+                moduleInput.readFully(moduleBytes);
+                ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
+
+                SceModule module = Emulator.getInstance().load(name, moduleBuffer);
+
+                if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {
+                    cpu.gpr[2] = 0;
+                } else {
+                    Modules.log.warn("sceKernelLoadExec - failed, target is not an ELF");
+                    cpu.gpr[2] = -1;
+                }
+
+                moduleInput.close();
+            }
+        } catch (GeneralJpcspException e) {
+            Modules.log.error("General Error : " + e.getMessage());
+            Emulator.PauseEmu();
+        } catch (IOException e) {
+            Modules.log.error("sceKernelLoadExec - Error while loading module " + name + ": " + e.getMessage());
+            cpu.gpr[2] = -1;
+        }
     }
-    */
 }

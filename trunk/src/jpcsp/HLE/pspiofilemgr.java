@@ -287,6 +287,26 @@ public class pspiofilemgr {
         return resultFile;
     }
 
+    public SeekableDataInput getFile(int uid) {
+        SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
+        IoInfo info = filelist.get(uid);
+        if (info == null) {
+            return null;
+        } else {
+            return info.readOnlyFile;
+        }
+    }
+
+    public String getFileFilename(int uid) {
+        SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
+        IoInfo info = filelist.get(uid);
+        if (info == null) {
+            return null;
+        } else {
+            return info.filename;
+        }
+    }
+
     private String getMode(int flags) {
     	String mode = null;
 
@@ -363,7 +383,7 @@ public class pspiofilemgr {
                         // open file
                         try {
                             UmdIsoFile file = iso.getFile(trimUmdPrefix(pcfilename));
-                            IoInfo info = new IoInfo(file, mode, flags, permissions);
+                            IoInfo info = new IoInfo(filename, file, mode, flags, permissions);
                             info.result = info.uid;
                             Emulator.getProcessor().cpu.gpr[2] = info.uid;
                             if (debug) Modules.log.debug("sceIoOpen assigned uid = 0x" + Integer.toHexString(info.uid));
@@ -392,7 +412,7 @@ public class pspiofilemgr {
                         }
 
                         SeekableRandomFile raf = new SeekableRandomFile(pcfilename, mode);
-                        IoInfo info = new IoInfo(raf, mode, flags, permissions);
+                        IoInfo info = new IoInfo(filename, raf, mode, flags, permissions);
                         info.result = info.uid;
                         Emulator.getProcessor().cpu.gpr[2] = info.uid;
                         if (debug) Modules.log.debug("sceIoOpen assigned uid = 0x" + Integer.toHexString(info.uid));
@@ -925,7 +945,7 @@ public class pspiofilemgr {
                             size = file.length();
                             timestamp = file.getTimestamp().getTime();
                             startSector = file.getStartSector();
-                            Modules.log.debug("File " + isofilename + ", StartSector=0x" + Integer.toHexString(startSector));
+                            Modules.log.debug("stat - File " + isofilename + ", StartSector=0x" + Integer.toHexString(startSector));
                         }
 
                         // Octal extend into user and group
@@ -1022,6 +1042,7 @@ public class pspiofilemgr {
 
     class IoInfo {
         // Internal settings
+        public final String filename;
         public final SeekableRandomFile msFile; // on memory stick, should either be identical to readOnlyFile or null
         public final SeekableDataInput readOnlyFile; // on memory stick or umd
         public final String mode;
@@ -1034,7 +1055,8 @@ public class pspiofilemgr {
         public long result; // The return value from the last operation on this file, used by sceIoWaitAsync
         public boolean closePending = false; // sceIoCloseAsync has been called on this file
 
-        public IoInfo(SeekableRandomFile f, String mode, int flags, int permissions) {
+        public IoInfo(String filename, SeekableRandomFile f, String mode, int flags, int permissions) {
+            this.filename = filename;
             this.msFile = f;
             this.readOnlyFile = f;
             this.mode = mode;
@@ -1044,7 +1066,8 @@ public class pspiofilemgr {
             filelist.put(uid, this);
         }
 
-        public IoInfo(SeekableDataInput f, String mode, int flags, int permissions) {
+        public IoInfo(String filename, SeekableDataInput f, String mode, int flags, int permissions) {
+            this.filename = filename;
             this.msFile = null;
             this.readOnlyFile = f;
             this.mode = mode;
