@@ -62,6 +62,12 @@ public class ThreadMan {
     private final int WDT_THREAD_IDLE_CYCLES = 1000000;
     private final int WDT_THREAD_HOG_CYCLES = 50000000;
 
+    private static final boolean USE_THREAD_BANLIST = false;
+    private String[] threadNameBanList = new String[] {
+        "SndMain", "SoundThread", "At3Main", "Atrac3PlayThread",
+        "bgm thread", "SceWaveMain", "SasCore thread",
+    };
+
     public final static int PSP_ERROR_UNKNOWN_UID                    = 0x800200cb;
 
     public final static int PSP_ERROR_NOT_FOUND_THREAD               = 0x80020198;
@@ -546,11 +552,26 @@ public class ThreadMan {
         }
     }
 
+    private boolean isBannedThread(SceKernelThreadInfo thread) {
+        if (!USE_THREAD_BANLIST) return false;
+        for (String threadName : threadNameBanList) {
+            if (thread.name.equals(threadName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void ThreadMan_sceKernelStartThread(int uid, int len, int data_addr) {
         SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadlist.get(uid);
         if (thread == null) {
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_THREAD;
+        } if (isBannedThread(thread)) {
+            Modules.log.warn("sceKernelStartThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' banned, not starting");
+            // Banned, fake start
+            Emulator.getProcessor().cpu.gpr[2] = 0;
+            contextSwitch(nextThread());
         } else {
             Modules.log.debug("sceKernelStartThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
 
@@ -800,6 +821,9 @@ public class ThreadMan {
         } else if (thread.status != PspThreadStatus.PSP_THREAD_SUSPEND) {
             Modules.log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " not suspended (status=" + thread.status + ")");
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_THREAD_IS_NOT_SUSPEND;
+        } else if (isBannedThread(thread)) {
+            Modules.log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "' banned, not waking up");
+            Emulator.getProcessor().cpu.gpr[2] = 0;
         } else {
             Modules.log.debug("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "'");
             thread.status = PspThreadStatus.PSP_THREAD_READY;

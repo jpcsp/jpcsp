@@ -33,8 +33,10 @@ public class Modules {
     public static sceMpeg sceMpegModule = new sceMpeg();
     public static LoadCoreForKernel LoadCoreForKernelModule = new LoadCoreForKernel();
     public static sceAtrac3plus sceAttrac3plusModule = new sceAtrac3plus();
-    public static sceAudio sceAudio = new sceAudio();
-    public static sceImpose sceImpose = new sceImpose();
+    public static sceAudio sceAudioModule = new sceAudio();
+    public static sceImpose sceImposeModule = new sceImpose();
+    public static sceSuspendForUser sceSuspendForUserModule = new sceSuspendForUser();
+
 
     public static Logger log = Logger.getLogger("hle");
 

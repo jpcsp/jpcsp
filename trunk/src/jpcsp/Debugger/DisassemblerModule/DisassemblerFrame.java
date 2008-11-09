@@ -1101,7 +1101,7 @@ public int GetGPI() {
 
 public void SetGPO(int gpo) {
     this.gpo = gpo;
-    if (haveFocus) {
+    if (jPanel1.isVisible()) {
         // Refresh GPO
         for(int i = 0; i < 8; i++)
             SetGPO(i, (gpo & (1 << i)) != 0);

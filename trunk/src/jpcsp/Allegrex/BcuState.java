@@ -180,6 +180,10 @@ public class BcuState extends LsuState {
 
     public boolean doBEQ(int rs, int rt, int simm16) {
         npc = (gpr[rs] == gpr[rt]) ? branchTarget(pc, simm16) : (pc + 4);
+        if (npc == pc - 4 && rs == rt) {
+            Processor.log.info("Pausing emulator - branch to self (death loop)");
+            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_JUMPSELF);
+        }
         return true;
     }
 
