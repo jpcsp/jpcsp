@@ -102,8 +102,13 @@ public class Loader {
         // chain loaders
         do {
             f.position(currentOffset);
-            if (LoadPBP(f, module, baseAddress))
+            if (LoadPBP(f, module, baseAddress)) {
                 currentOffset = f.position();
+
+                // probably kxploit stub
+                if (currentOffset == f.limit())
+                    break;
+            }
 
             f.position(currentOffset);
             if (LoadSCE(f, module, baseAddress))

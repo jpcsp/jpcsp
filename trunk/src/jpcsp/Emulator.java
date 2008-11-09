@@ -58,8 +58,9 @@ public class Emulator implements Runnable {
 
         module = jpcsp.Loader.getInstance().LoadModule(pspfilename, f, 0x08800000);
 
-        if (module.fileFormat == Loader.FORMAT_UNKNOWN ||
-            (module.fileFormat & Loader.FORMAT_PSP) == Loader.FORMAT_PSP) {
+        //if (module.fileFormat == Loader.FORMAT_UNKNOWN ||
+        //    (module.fileFormat & Loader.FORMAT_PSP) == Loader.FORMAT_PSP) {
+        if ((module.fileFormat & Loader.FORMAT_ELF) != Loader.FORMAT_ELF) {
             throw new GeneralJpcspException("File format not supported!");
         }
 
