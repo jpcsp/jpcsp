@@ -44,7 +44,8 @@ import jpcsp.State;
  */
 public class pspiofilemgr {
     private static pspiofilemgr  instance;
-    private final boolean debug = true; //enable/disable debug
+    //private final boolean debug = true; //enable/disable debug
+    private final boolean debug = false; //enable/disable debug
 
     public final static int PSP_O_RDONLY   = 0x0001;
     public final static int PSP_O_WRONLY   = 0x0002;
@@ -207,6 +208,9 @@ public class pspiofilemgr {
     public void sceIoGetAsyncStat(int uid, int poll, int res_addr) {
         if (debug) Modules.log.debug("sceIoGetAsyncStat redirecting to sceIoPollAsync");
         sceIoPollAsync(uid, res_addr);
+
+        if (poll == 0)
+            ThreadMan.getInstance().yieldCurrentThread();
     }
 
     public void sceIoWaitAsync(int uid, int res_addr) {
@@ -495,7 +499,7 @@ public class pspiofilemgr {
             }
         }
 
-        State.fileLogger.logIoWrite(Emulator.getProcessor().cpu.gpr[2], uid, data_addr, size);
+        State.fileLogger.logIoWrite(Emulator.getProcessor().cpu.gpr[2], uid, data_addr, Emulator.getProcessor().cpu.gpr[6]);
     }
 
     public void sceIoWriteAsync(int uid, int data_addr, int size) {
@@ -546,7 +550,7 @@ public class pspiofilemgr {
             }
         }
 
-        State.fileLogger.logIoRead(Emulator.getProcessor().cpu.gpr[2], uid, data_addr, size);
+        State.fileLogger.logIoRead(Emulator.getProcessor().cpu.gpr[2], uid, data_addr, Emulator.getProcessor().cpu.gpr[6]);
     }
 
     public void sceIoReadAsync(int uid, int data_addr, int size) {
@@ -570,12 +574,12 @@ public class pspiofilemgr {
     }
 
     public void sceIoLseek32(int uid, int offset, int whence) {
-        if (debug) System.out.println("sceIoLseek32 - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
+        if (debug) Modules.log.debug("sceIoLseek32 - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
         seek(uid, ((long)offset & 0xFFFFFFFFL), whence, false);
     }
 
     public void sceIoLseek32Async(int uid, int offset, int whence) {
-        if (debug) System.out.println("sceIoLseek32Async - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
+        if (debug) Modules.log.debug("sceIoLseek32Async - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
         seek(uid, ((long)offset & 0xFFFFFFFFL), whence, false);
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }

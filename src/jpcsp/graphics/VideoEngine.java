@@ -1091,13 +1091,17 @@ public class VideoEngine {
             	log ("sceGuTexImage(X,width=" + texture_width0 + ",height=" + texture_height0 + ",X,0)");
             	break;
 
-            case TMODE:
+            case TMODE: {
             	texture_num_mip_maps = (normalArgument>>16) & 0xFF;
+                int a2 = (normalArgument>>8) & 0xFF;
             	texture_swizzle 	 = ((normalArgument    ) & 0xFF) != 0;
+            	log ("sceGuTexMode(X,mipmaps=" + texture_num_mip_maps + ",a2=" + a2 + ",swizzle=" + texture_swizzle + ")");
             	break;
+            }
 
             case TPSM:
             	texture_storage = normalArgument;
+            	log ("sceGuTexMode(tpsm=" + texture_storage + ",X,X,X)");
             	break;
 
             case CBP: {
@@ -1132,6 +1136,7 @@ public class VideoEngine {
                 // defined after the TFLUSH and before the PRIM command.
                 // Delay the texture loading until the PRIM command.
                 textureHasToBeLoaded = true;
+                log ("tflush (deferring to prim)");
                 break;
             }
 
@@ -1351,32 +1356,35 @@ public class VideoEngine {
                 int numberOfVertex = normalArgument & 0xFFFF;
                 int type = ((normalArgument >> 16) & 0x7);
 
+                loadTexture();
+
                 // Logging
                 switch (type) {
                     case PRIM_POINT:
-                        log(helper.getCommandString(PRIM) + " point " + numberOfVertex + "x");
+                        log("pirm point " + numberOfVertex + "x");
                         break;
                     case PRIM_LINE:
-                        log(helper.getCommandString(PRIM) + " line " + (numberOfVertex / 2) + "x");
+                        log("prim line " + (numberOfVertex / 2) + "x");
                         break;
                     case PRIM_LINES_STRIPS:
-                        log(helper.getCommandString(PRIM) + " lines_strips " + (numberOfVertex - 1) + "x");
+                        log("prim lines_strips " + (numberOfVertex - 1) + "x");
                         break;
                     case PRIM_TRIANGLE:
-                        log(helper.getCommandString(PRIM) + " triangle " + (numberOfVertex / 3) + "x");
+                        log("prim triangle " + (numberOfVertex / 3) + "x");
                         break;
                     case PRIM_TRIANGLE_STRIPS:
-                        log(helper.getCommandString(PRIM) + " triangle_strips " + (numberOfVertex - 2) + "x");
+                        log("prim triangle_strips " + (numberOfVertex - 2) + "x");
                         break;
                     case PRIM_TRIANGLE_FANS:
-                        log(helper.getCommandString(PRIM) + " triangle_fans " + (numberOfVertex - 2) + "x");
+                        log("prim triangle_fans " + (numberOfVertex - 2) + "x");
                         break;
                     case PRIM_SPRITES:
-                        log(helper.getCommandString(PRIM) + " sprites " + (numberOfVertex / 2) + "x");
+                        log("prim sprites " + (numberOfVertex / 2) + "x");
+                        break;
+                    default:
+                        VideoEngine.log.warn("prim unhandled " + type);
                         break;
                 }
-
-                loadTexture();
 
                 /*
                  * Defer transformations until primitive rendering
@@ -2657,23 +2665,30 @@ public class VideoEngine {
                 }
 
                 if (!texture_swizzle) {
-                    /* TODO replace the loop with 1 line to IntBuffer.wrap
-                     * but be careful of vram/mainram addresses
-                    final_buffer = IntBuffer.wrap(
-                        memory.videoram.array(),
-                        texaddr - MemoryMap.START_VRAM + memory.videoram.arrayOffset(),
-                        texture_width0 * texture_height0).slice();
-                    final_buffer = IntBuffer.wrap(
-                        memory.mainmemory.array(),
-                        texaddr - MemoryMap.START_RAM + memory.mainmemory.arrayOffset(),
-                        texture_width0 * texture_height0).slice();
-                    */
-
-                    for (int i = 0; i < texture_width0*texture_height0; i++) {
-                        tmp_texture_buffer32[i] = mem.read32(texaddr+i*4);
+                    // try and use ByteBuffer.wrap on the memory, taking note of vram/main ram
+                    // speed difference is unnoticeable :(
+                    int texaddr_end = texaddr + texture_width0 * texture_height0 * 4;
+                    if (texaddr >= MemoryMap.START_VRAM && texaddr_end <= MemoryMap.END_VRAM) {
+                        ByteBuffer pixels = ByteBuffer.wrap(
+                            mem.videoram.array(),
+                            texaddr - MemoryMap.START_VRAM + mem.videoram.arrayOffset(),
+                            texture_width0 * texture_height0 * 4).slice();
+                        pixels.order(java.nio.ByteOrder.LITTLE_ENDIAN);
+                        final_buffer = pixels;
+                    } else if (texaddr >= MemoryMap.START_RAM && texaddr_end <= MemoryMap.END_RAM) {
+                        ByteBuffer pixels = ByteBuffer.wrap(
+                            mem.mainmemory.array(),
+                            texaddr - MemoryMap.START_RAM + mem.mainmemory.arrayOffset(),
+                            texture_width0 * texture_height0 * 4).slice();
+                        pixels.order(java.nio.ByteOrder.LITTLE_ENDIAN);
+                        final_buffer = pixels;
+                    } else {
+                        VideoEngine.log.warn("tpsm 3 slow");
+                        for (int i = 0; i < texture_width0*texture_height0; i++) {
+                            tmp_texture_buffer32[i] = mem.read32(texaddr+i*4);
+                        }
+                        final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
                     }
-
-                    final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
                 } else {
                     final_buffer = unswizzleTextureFromMemory(texaddr, 4);
                 }
