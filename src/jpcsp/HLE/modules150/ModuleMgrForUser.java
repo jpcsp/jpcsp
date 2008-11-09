@@ -103,19 +103,66 @@ public class ModuleMgrForUser implements HLEModule {
 
 	public void sceKernelLoadModuleByID(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+        int uid = cpu.gpr[4];
+        int option_addr = cpu.gpr[5] & 0x3fffffff;
+        String name = pspiofilemgr.getInstance().getFileFilename(uid);
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        Modules.log.debug("sceKernelLoadModuleByID(uid=0x" + Integer.toHexString(uid)
+            + "('" + name + "')"
+            + ",option=0x" + Integer.toHexString(option_addr) + ")");
 
-		System.out.println("Unimplemented NID function sceKernelLoadModuleByID [0xB7F46618]");
+        // TODO refactor this with sceKernelLoadModule
 
-		cpu.gpr[2] = 0xDEADC0DE;
+        String prxname = "UNKNOWN";
+        int findprx = name.lastIndexOf("/");
+        int endprx = name.toLowerCase().indexOf(".prx");
+        if (endprx >= 0)
+            prxname = name.substring(findprx+1, endprx);
 
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        // Load module as ELF
+        try {
+            SeekableDataInput moduleInput = pspiofilemgr.getInstance().getFile(uid);
+            if (moduleInput != null) {
+    	        byte[] moduleBytes = new byte[(int) moduleInput.length()];
+    	        moduleInput.readFully(moduleBytes);
+    	        ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
+
+    	        // TODO
+                // We need to get a load address, we can either add getHeapBottom to pspsysmem, or we can malloc something small
+                // We're going to need to write a SceModule struct somewhere, so we could malloc that, and add the size of the struct to the address
+                // For now we'll just malloc 64 bytes :P (the loadBase needs to be aligned anyway)
+    	        int loadBase = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_Low, 64, 0) + 64;
+                pspSysMem.getInstance().addSysMemInfo(2, "ModuleMgr", pspSysMem.PSP_SMEM_Low, 64, loadBase);
+                SceModule module = Loader.getInstance().LoadModule(name, moduleBuffer, loadBase);
+
+                if ((module.fileFormat & Loader.FORMAT_SCE) == Loader.FORMAT_SCE ||
+                    (module.fileFormat & Loader.FORMAT_PSP) == Loader.FORMAT_PSP) {
+                	// Simulate a successful loading
+                    Modules.log.warn("IGNORED:sceKernelLoadModuleByID(path='" + name + "') encrypted module not loaded");
+                    SceModule fakeModule = new SceModule(true);
+                    fakeModule.modname = prxname;
+                    fakeModule.write(mem, fakeModule.address);
+                    Managers.modules.addModule(fakeModule);
+                    cpu.gpr[2] = fakeModule.modid;
+                } else if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {
+                    cpu.gpr[2] = module.modid;
+                } else {
+                    // The Loader class now manages the module's memory footprint, it won't allocate if it failed to load
+                    //pspSysMem.getInstance().free(loadBase);
+                    cpu.gpr[2] = -1;
+                }
+
+    	        moduleInput.close();
+            } else {
+                Modules.log.warn("sceKernelLoadModuleByID(path='" + name + "') can't find file");
+                cpu.gpr[2] = -1;
+            }
+        } catch (IOException e) {
+        	Modules.log.error("sceKernelLoadModuleByID - Error while loading module " + name + ": " + e.getMessage());
+            cpu.gpr[2] = -1;
+        }
 	}
 
 	public void sceKernelLoadModule(Processor processor) {
@@ -126,7 +173,7 @@ public class ModuleMgrForUser implements HLEModule {
         int flags = cpu.gpr[5];
         int option_addr = cpu.gpr[6] & 0x3fffffff;
         String name = Utilities.readStringZ(mem.mainmemory, path_addr - MemoryMap.START_RAM);
-        Modules.log.warn("PARTIAL:sceKernelLoadModule(path='" + name
+        Modules.log.debug("sceKernelLoadModule(path='" + name
             + "',flags=0x" + Integer.toHexString(flags)
             + ",option=0x" + Integer.toHexString(option_addr) + ")");
 
@@ -165,7 +212,6 @@ public class ModuleMgrForUser implements HLEModule {
         }
 
         // Load module as ELF
-        cpu.gpr[2] = -1;
         try {
             SeekableDataInput moduleInput = pspiofilemgr.getInstance().getFile(name, flags);
             if (moduleInput != null) {
@@ -199,9 +245,13 @@ public class ModuleMgrForUser implements HLEModule {
                 }
 
     	        moduleInput.close();
+            } else {
+                Modules.log.warn("sceKernelLoadModule(path='" + name + "') can't find file");
+                cpu.gpr[2] = -1;
             }
         } catch (IOException e) {
         	Modules.log.error("sceKernelLoadModule - Error while loading module " + name + ": " + e.getMessage());
+            cpu.gpr[2] = -1;
         }
 	}
 
