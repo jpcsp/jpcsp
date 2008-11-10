@@ -383,7 +383,7 @@ public class Loader {
                 f.position(elfOffset + fileOffset);
                 if (f.position() + len > f.limit()) {
                     int newLen = f.limit() - f.position();
-                    Memory.log.warn(String.format("program overflow clamping len %08X to %08X", len, newLen));
+                    Memory.log.warn(String.format("PH#%d: program overflow clamping len %08X to %08X", i, len, newLen));
                     len = newLen;
                 }
                 Utilities.copyByteBuffertoByteBuffer(f, mainmemory, memOffset - MemoryMap.START_RAM, len);
@@ -391,13 +391,17 @@ public class Loader {
                 // Update memory area consumed by the module
                 if (memOffset < module.loadAddressLow) {
                     module.loadAddressLow = memOffset;
+                    Memory.log.debug(String.format("PH#%d: new loadAddressLow %08X", i, module.loadAddressLow));
                 }
                 if (memOffset + len > module.loadAddressHigh) {
                     module.loadAddressHigh = memOffset + len;
+                    Memory.log.debug(String.format("PH#%d: new loadAddressHigh %08X", i, module.loadAddressHigh));
                 }
             }
             i++;
         }
+
+        Memory.log.debug(String.format("PH alloc consumption %08X", (module.loadAddressHigh - module.loadAddressLow)));
     }
 
     /** Load some sections into memory */
@@ -456,9 +460,11 @@ public class Loader {
                             // Update memory area consumed by the module
                             if (memOffset < module.loadAddressLow) {
                                 module.loadAddressLow = memOffset;
+                                Memory.log.debug(String.format("%s: new loadAddressLow %08X (+%08X)", shdr.getSh_namez(), module.loadAddressLow, len));
                             }
                             if (memOffset + len > module.loadAddressHigh) {
                                 module.loadAddressHigh = memOffset + len;
+                                Memory.log.debug(String.format("%s: new loadAddressHigh %08X (+%08X)", shdr.getSh_namez(), module.loadAddressHigh, len));
                             }
                         } else {
                             Memory.log.warn(String.format("Type 8 section outside valid range %08X - %08X", memOffset, (memOffset + len)));

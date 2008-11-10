@@ -65,7 +65,8 @@ public class ThreadMan {
     private static final boolean USE_THREAD_BANLIST = false;
     private String[] threadNameBanList = new String[] {
         "SndMain", "SoundThread", "At3Main", "Atrac3PlayThread",
-        "bgm thread", "SceWaveMain", "SasCore thread",
+        "bgm thread", "SceWaveMain", "SasCore thread", "soundThread",
+        "ATRAC3 play thread",
     };
 
     public final static int PSP_ERROR_UNKNOWN_UID                    = 0x800200cb;
@@ -615,7 +616,7 @@ public class ThreadMan {
     public void ThreadMan_sceKernelExitDeleteThread(int exitStatus) {
         SceKernelThreadInfo thread = current_thread; // save a reference for post context switch operations
         Modules.log.debug("sceKernelExitDeleteThread SceUID=" + Integer.toHexString(current_thread.uid)
-            + " name:'" + current_thread.name + "' exitStatus:" + exitStatus);
+            + " name:'" + current_thread.name + "' exitStatus:0x" + Integer.toHexString(exitStatus));
 
         // Exit
         current_thread.status = PspThreadStatus.PSP_THREAD_STOPPED;
@@ -875,8 +876,8 @@ public class ThreadMan {
     }
 
     public void ThreadMan_sceKernelGetSystemTimeWide() {
-        Modules.log.debug("sceKernelGetSystemTimeWide");
         long systemTime = System.nanoTime();
+        Modules.log.debug("sceKernelGetSystemTimeWide ret:" + systemTime);
         Emulator.getProcessor().cpu.gpr[2] = (int)(systemTime & 0xffffffffL);
         Emulator.getProcessor().cpu.gpr[3] = (int)((systemTime >> 32) & 0xffffffffL);
     }
