@@ -44,8 +44,8 @@ import jpcsp.State;
  */
 public class pspiofilemgr {
     private static pspiofilemgr  instance;
-    //private final boolean debug = true; //enable/disable debug
-    private final boolean debug = false; //enable/disable debug
+    private final boolean debug = true; //enable/disable debug
+    //private final boolean debug = false; //enable/disable debug
 
     public final static int PSP_O_RDONLY   = 0x0001;
     public final static int PSP_O_WRONLY   = 0x0002;

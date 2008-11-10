@@ -101,9 +101,9 @@ public class ModuleMgrForUser implements HLEModule {
 	}
 
 
-	public void sceKernelLoadModuleByID(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		Memory mem = Processor.memory;
+    public void sceKernelLoadModuleByID(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        Memory mem = Processor.memory;
 
         int uid = cpu.gpr[4];
         int option_addr = cpu.gpr[5] & 0x3fffffff;
@@ -125,21 +125,21 @@ public class ModuleMgrForUser implements HLEModule {
         try {
             SeekableDataInput moduleInput = pspiofilemgr.getInstance().getFile(uid);
             if (moduleInput != null) {
-    	        byte[] moduleBytes = new byte[(int) moduleInput.length()];
-    	        moduleInput.readFully(moduleBytes);
-    	        ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
+                byte[] moduleBytes = new byte[(int) moduleInput.length()];
+                moduleInput.readFully(moduleBytes);
+                ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
 
-    	        // TODO
+                // TODO
                 // We need to get a load address, we can either add getHeapBottom to pspsysmem, or we can malloc something small
                 // We're going to need to write a SceModule struct somewhere, so we could malloc that, and add the size of the struct to the address
                 // For now we'll just malloc 64 bytes :P (the loadBase needs to be aligned anyway)
-    	        int loadBase = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_Low, 64, 0) + 64;
+                int loadBase = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_Low, 64, 0) + 64;
                 pspSysMem.getInstance().addSysMemInfo(2, "ModuleMgr", pspSysMem.PSP_SMEM_Low, 64, loadBase);
                 SceModule module = Loader.getInstance().LoadModule(name, moduleBuffer, loadBase);
 
                 if ((module.fileFormat & Loader.FORMAT_SCE) == Loader.FORMAT_SCE ||
                     (module.fileFormat & Loader.FORMAT_PSP) == Loader.FORMAT_PSP) {
-                	// Simulate a successful loading
+                    // Simulate a successful loading
                     Modules.log.warn("IGNORED:sceKernelLoadModuleByID(path='" + name + "') encrypted module not loaded");
                     SceModule fakeModule = new SceModule(true);
                     fakeModule.modname = prxname;
@@ -154,18 +154,18 @@ public class ModuleMgrForUser implements HLEModule {
                     cpu.gpr[2] = -1;
                 }
 
-    	        moduleInput.close();
+                moduleInput.close();
             } else {
                 Modules.log.warn("sceKernelLoadModuleByID(path='" + name + "') can't find file");
                 cpu.gpr[2] = -1;
             }
         } catch (IOException e) {
-        	Modules.log.error("sceKernelLoadModuleByID - Error while loading module " + name + ": " + e.getMessage());
+            Modules.log.error("sceKernelLoadModuleByID - Error while loading module " + name + ": " + e.getMessage());
             cpu.gpr[2] = -1;
         }
-	}
+    }
 
-	public void sceKernelLoadModule(Processor processor) {
+    public void sceKernelLoadModule(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         Memory mem = Processor.memory;
 
@@ -215,21 +215,21 @@ public class ModuleMgrForUser implements HLEModule {
         try {
             SeekableDataInput moduleInput = pspiofilemgr.getInstance().getFile(name, flags);
             if (moduleInput != null) {
-    	        byte[] moduleBytes = new byte[(int) moduleInput.length()];
-    	        moduleInput.readFully(moduleBytes);
-    	        ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
+                byte[] moduleBytes = new byte[(int) moduleInput.length()];
+                moduleInput.readFully(moduleBytes);
+                ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
 
-    	        // TODO
+                // TODO
                 // We need to get a load address, we can either add getHeapBottom to pspsysmem, or we can malloc something small
                 // We're going to need to write a SceModule struct somewhere, so we could malloc that, and add the size of the struct to the address
                 // For now we'll just malloc 64 bytes :P (the loadBase needs to be aligned anyway)
-    	        int loadBase = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_Low, 64, 0) + 64;
+                int loadBase = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_Low, 64, 0) + 64;
                 pspSysMem.getInstance().addSysMemInfo(2, "ModuleMgr", pspSysMem.PSP_SMEM_Low, 64, loadBase);
                 SceModule module = Loader.getInstance().LoadModule(name, moduleBuffer, loadBase);
 
                 if ((module.fileFormat & Loader.FORMAT_SCE) == Loader.FORMAT_SCE ||
                     (module.fileFormat & Loader.FORMAT_PSP) == Loader.FORMAT_PSP) {
-                	// Simulate a successful loading
+                    // Simulate a successful loading
                     Modules.log.warn("IGNORED:sceKernelLoadModule(path='" + name + "') encrypted module not loaded");
                     SceModule fakeModule = new SceModule(true);
                     fakeModule.modname = prxname;
@@ -244,16 +244,16 @@ public class ModuleMgrForUser implements HLEModule {
                     cpu.gpr[2] = -1;
                 }
 
-    	        moduleInput.close();
+                moduleInput.close();
             } else {
                 Modules.log.warn("sceKernelLoadModule(path='" + name + "') can't find file");
                 cpu.gpr[2] = -1;
             }
         } catch (IOException e) {
-        	Modules.log.error("sceKernelLoadModule - Error while loading module " + name + ": " + e.getMessage());
+            Modules.log.error("sceKernelLoadModule - Error while loading module " + name + ": " + e.getMessage());
             cpu.gpr[2] = -1;
         }
-	}
+    }
 
 	public void sceKernelLoadModuleMs(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
