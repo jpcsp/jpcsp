@@ -256,7 +256,11 @@ public class UmdIsoReader {
     		int sep = filePath.indexOf("_size");
     		fileStart = (int) Utilities.parseLong(filePath.substring(0, sep));
     		fileLength = Utilities.parseLong(filePath.substring(sep + 5));
-    	}
+
+    		if (fileStart < 0 || fileStart >= numSectors) {
+    			throw new IOException("File '" + filePath + "': Invalid Start Sector");
+    		}
+        }
         else
         {
 	        Iso9660File info = getFileEntry(filePath);

@@ -17,6 +17,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.util;
 
 import java.io.IOException;
+
+import jpcsp.Memory;
+import jpcsp.MemoryMap;
 import jpcsp.filesystems.*;
 import java.nio.ByteBuffer;
 
@@ -145,18 +148,42 @@ public class Utilities {
         }
         return sb.toString();
     }
-   public static short getUnsignedByte (ByteBuffer bb) throws IOException
-   {
-      return ((short)(bb.get() & 0xff));
-   }
-   public static short readUByte(ByteBuffer buf) throws IOException
-   {
-     return getUnsignedByte(buf);
-   }
-   public static int readUHalf(ByteBuffer buf) throws IOException
-   {
-       return getUnsignedByte(buf) | (getUnsignedByte(buf) << 8);
-   }
+    public static String readStringZ(Memory mem, int address) {
+    	return readStringZ(mem.mainmemory, (address & 0x3fffffff) - MemoryMap.START_RAM);
+    }
+    public static String readStringNZ(Memory mem, int address, int n) {
+    	return readStringNZ(mem.mainmemory, (address & 0x3fffffff) - MemoryMap.START_RAM, n);
+    }
+    public static void writeStringNZ(Memory mem, int address, int n, String s) {
+    	int offset = 0;
+    	while (offset < s.length() && offset < n) {
+    		mem.write8(address + offset, (byte) s.charAt(offset));
+    		offset++;
+    	}
+    	while (offset < n) {
+    		mem.write8(address + offset, (byte) 0);
+    		offset++;
+    	}
+    }
+    public static void writeStringZ(Memory mem, int address, String s) {
+    	int offset = 0;
+    	while (offset < s.length()) {
+    		mem.write8(address + offset, (byte) s.charAt(offset));
+    		offset++;
+    	}
+    }
+    public static short getUnsignedByte (ByteBuffer bb) throws IOException
+    {
+       return ((short)(bb.get() & 0xff));
+    }
+    public static short readUByte(ByteBuffer buf) throws IOException
+    {
+    	return getUnsignedByte(buf);
+    }
+    public static int readUHalf(ByteBuffer buf) throws IOException
+    {
+    	return getUnsignedByte(buf) | (getUnsignedByte(buf) << 8);
+    }
     public static long readUWord(ByteBuffer buf) throws IOException
     {
         long l = (getUnsignedByte(buf) | (getUnsignedByte(buf) << 8 ) | (getUnsignedByte(buf) << 16 ) | (getUnsignedByte(buf) << 24));
