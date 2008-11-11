@@ -372,36 +372,40 @@ public class Loader {
         ByteBuffer mainmemory = Memory.getInstance().mainmemory;
 
         int i = 0;
+        module.bss_size = 0;
         for (Elf32ProgramHeader phdr : programHeaderList) {
             if (phdr.getP_type() == 0x00000001L) {
                 int fileOffset = (int)phdr.getP_offset();
                 int memOffset = baseAddress + (int)phdr.getP_vaddr();
-                int len = (int)phdr.getP_filesz();
+                int fileLen = (int)phdr.getP_filesz();
+                int memLen = (int)phdr.getP_memsz();
 
-                Memory.log.debug(String.format("PH#%d: loading program %08X - %08X", i, memOffset, memOffset + len));
+                Memory.log.debug(String.format("PH#%d: loading program %08X - %08X - %08X", i, memOffset, memOffset + fileLen, memOffset + memLen));
 
                 f.position(elfOffset + fileOffset);
-                if (f.position() + len > f.limit()) {
+                if (f.position() + fileLen > f.limit()) {
                     int newLen = f.limit() - f.position();
-                    Memory.log.warn(String.format("PH#%d: program overflow clamping len %08X to %08X", i, len, newLen));
-                    len = newLen;
+                    Memory.log.warn(String.format("PH#%d: program overflow clamping len %08X to %08X", i, fileLen, newLen));
+                    fileLen = newLen;
                 }
-                Utilities.copyByteBuffertoByteBuffer(f, mainmemory, memOffset - MemoryMap.START_RAM, len);
+                Utilities.copyByteBuffertoByteBuffer(f, mainmemory, memOffset - MemoryMap.START_RAM, fileLen);
 
                 // Update memory area consumed by the module
                 if (memOffset < module.loadAddressLow) {
                     module.loadAddressLow = memOffset;
                     Memory.log.debug(String.format("PH#%d: new loadAddressLow %08X", i, module.loadAddressLow));
                 }
-                if (memOffset + len > module.loadAddressHigh) {
-                    module.loadAddressHigh = memOffset + len;
+                if (memOffset + memLen > module.loadAddressHigh) {
+                    module.loadAddressHigh = memOffset + memLen;
                     Memory.log.debug(String.format("PH#%d: new loadAddressHigh %08X", i, module.loadAddressHigh));
                 }
+
+                module.bss_size += (int)(phdr.getP_memsz() - phdr.getP_filesz());
             }
             i++;
         }
 
-        Memory.log.debug(String.format("PH alloc consumption %08X", (module.loadAddressHigh - module.loadAddressLow)));
+        Memory.log.debug(String.format("PH alloc consumption %08X (mem %08X)", (module.loadAddressHigh - module.loadAddressLow), module.bss_size));
     }
 
     /** Load some sections into memory */
@@ -411,6 +415,7 @@ public class Loader {
         List<Elf32SectionHeader> sectionHeaderList = elf.getSectionHeaderList();
         ByteBuffer mainmemory = Memory.getInstance().mainmemory;
 
+        //boolean noBssInSh = true;
         for (Elf32SectionHeader shdr : sectionHeaderList) {
             if ((shdr.getSh_flags() & Elf32SectionHeader.SHF_ALLOCATE) == Elf32SectionHeader.SHF_ALLOCATE) {
                 switch (shdr.getSh_type()) {
@@ -449,7 +454,7 @@ public class Loader {
                         if (len == 0) {
                             Memory.log.debug(String.format("%s: ignoring zero-length type 8 section %08X", shdr.getSh_namez(), memOffset));
                         } else if (memOffset >= MemoryMap.START_RAM && memOffset + len <= MemoryMap.END_RAM) {
-                            //Memory.log.debug(String.format("%s: clearing section %08X - %08X", shdr.getSh_namez(), memOffset, (memOffset + len)));
+                            Memory.log.debug(String.format("%s: clearing section %08X - %08X", shdr.getSh_namez(), memOffset, (memOffset + len)));
 
                             byte[] all = mainmemory.array();
                             Arrays.fill(all,
@@ -466,6 +471,12 @@ public class Loader {
                                 module.loadAddressHigh = memOffset + len;
                                 Memory.log.debug(String.format("%s: new loadAddressHigh %08X (+%08X)", shdr.getSh_namez(), module.loadAddressHigh, len));
                             }
+
+                            /*
+                            if (shdr.getSh_namez().equals(".bss")) {
+                                noBssInSh = false;
+                            }
+                            */
                         } else {
                             Memory.log.warn(String.format("Type 8 section outside valid range %08X - %08X", memOffset, (memOffset + len)));
                         }
@@ -474,6 +485,15 @@ public class Loader {
                 }
             }
         }
+
+        // TODO completely ignore sh .bss and use only ph .bss?
+        // If so then maybe we should just be using memsz instead of filesz in LoadELFProgram
+        /*
+        if (noBssInSh) {
+            module.loadAddressHigh += module.bss_size;
+            Memory.log.debug(String.format(".bss: new loadAddressHigh %08X (+%08X PH extra)", module.loadAddressHigh, module.bss_size));
+        }
+        */
 
         // Save the address/size of some sections for SceModule
         Elf32SectionHeader shdr = elf.getSectionHeader(".text");
@@ -487,7 +507,7 @@ public class Loader {
             module.data_size = (int)shdr.getSh_size();
 
         shdr = elf.getSectionHeader(".bss");
-        if (shdr != null)
+        if (shdr != null && shdr.getSh_size() != 0)
             module.bss_size = (int)shdr.getSh_size();
     }
 

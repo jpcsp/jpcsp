@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 import jpcsp.Memory;
+import jpcsp.HLE.Modules;
 
 /** http://psp.jim.sh/pspsdk-doc/structSceIoDirent.html */
 public class SceIoDirent {
@@ -30,6 +31,9 @@ public class SceIoDirent {
 
     public void write(Memory mem, int address) {
         int len, i;
+
+        if (!mem.isAddressGood(address) || !mem.isAddressGood(address + sizeof()))
+            Modules.log.warn("SceIoDirent write bad address " + String.format("0x%08X", address));
 
         stat.write(mem, address);
 
