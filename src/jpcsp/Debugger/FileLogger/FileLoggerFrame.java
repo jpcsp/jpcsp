@@ -345,7 +345,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
         public FileCommandInfo(String command, int result, String parameters) {
             this(false, -2, command, result, parameters);
         }
-        
+
         @Override
         public boolean equals(Object _obj) {
             FileCommandInfo obj = (FileCommandInfo)_obj;
@@ -370,15 +370,13 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
 
     // Emu interface
 
-    private HashMap<String, FileHandleInfo> fileHandleNameMap; // For (re)open()
-    private HashMap<Integer, FileHandleInfo> fileHandleIdMap; // For close()
-    private List<FileHandleInfo> fileHandleList; // Cached sorted version of fileHandle*Map
+    private HashMap<Integer, FileHandleInfo> fileHandleIdMap;
+    private List<FileHandleInfo> fileHandleList; // Cached sorted version of fileHandleIdMap
 
     private List<FileCommandInfo> fileCommandList;
 
     // TODO call from emulator
     public synchronized void resetLogging() {
-        fileHandleNameMap = new HashMap<String, FileHandleInfo>();
         fileHandleIdMap = new HashMap<Integer, FileHandleInfo>();
         fileHandleList = new LinkedList<FileHandleInfo>();
 
@@ -392,7 +390,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
 
     private void sortLists() {
         // File handles
-        Collection<FileHandleInfo> c = fileHandleNameMap.values();
+        Collection<FileHandleInfo> c = fileHandleIdMap.values();
         fileHandleList = new LinkedList<FileHandleInfo>(c);
         Collections.sort(fileHandleList);
     }
@@ -407,7 +405,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
             lastFileCommand = info;
         }
     }
-    
+
     public void logIoSync(int result, int device_addr, String device, int unknown) {
         logFileCommand(new FileCommandInfo(
                 "sync", result,
@@ -440,18 +438,9 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
     public void logIoOpen(int result, int filename_addr, String filename, int flags, int permissions, String mode) {
         // File handle list
         if (result >= 0) {
-            FileHandleInfo info = fileHandleNameMap.get(filename.toLowerCase());
-            if (info == null) {
-                info = new FileHandleInfo(result, filename);
-                fileHandleNameMap.put(filename.toLowerCase(), info);
-                fileHandleIdMap.put(result, info);
-                sortLists();
-            } else {
-                fileHandleIdMap.remove(info.fd);
-                info.fd = result;
-                info.isOpen(true);
-                fileHandleIdMap.put(result, info);
-            }
+            FileHandleInfo info = new FileHandleInfo(result, filename);
+            fileHandleIdMap.put(result, info);
+            sortLists();
         }
 
         // File Command list
@@ -483,7 +472,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
         if (result > 0 && info != null) {
             info.bytesWritten += result;
         }
-        
+
         logFileCommand(new FileCommandInfo(
                 uid, "write", result,
                 String.format("data=0x%08X size=0x%08X",
@@ -496,7 +485,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
         if (result > 0 && info != null) {
             info.bytesRead += result;
         }
-        
+
         logFileCommand(new FileCommandInfo(
                 uid, "read", result,
                 String.format("data=0x%08X size=0x%08X",

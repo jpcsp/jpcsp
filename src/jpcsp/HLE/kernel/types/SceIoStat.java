@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 import jpcsp.Memory;
+import jpcsp.HLE.Modules;
 
 /** http://psp.jim.sh/pspsdk-doc/structSceIoStat.html */
 public class SceIoStat {
@@ -45,6 +46,9 @@ public class SceIoStat {
     }
 
     public void write(Memory mem, int address) {
+        if (!mem.isAddressGood(address) || !mem.isAddressGood(address + sizeof()))
+            Modules.log.warn("SceIoStat write bad address " + String.format("0x%08X", address));
+
         mem.write32(address, mode);
         mem.write32(address + 4, attr);
         mem.write64(address + 8, size);
