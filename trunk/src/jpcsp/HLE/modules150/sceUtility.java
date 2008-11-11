@@ -18,10 +18,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
+import java.io.IOException;
+
+import jpcsp.HLE.kernel.types.SceUtilitySavedataParam;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.pspiofilemgr;
 
 import jpcsp.Memory;
 import jpcsp.Processor;
@@ -405,22 +409,69 @@ public class sceUtility implements HLEModule {
         CpuState cpu = processor.cpu; // New-Style Processor
         Memory mem = Processor.memory;
 
-        int param_addr = cpu.gpr[4];
-        savedata_mode = mem.read32(param_addr + 48);
-
-        Modules.log.warn("PARTIAL:sceUtilitySavedataInitStart param=0x" + Integer.toHexString(param_addr));
+        int savedataParamAddr = cpu.gpr[4];
+        SceUtilitySavedataParam sceUtilitySavedataParam = new SceUtilitySavedataParam();
+        sceUtilitySavedataParam.read(mem, savedataParamAddr);
+        Modules.log.debug("PARTIAL:sceUtilitySavedataInitStart savedataParamAddr=0x" + Integer.toHexString(savedataParamAddr) +
+        		          ", gameName=" + sceUtilitySavedataParam.gameName +
+        		          ", saveName=" + sceUtilitySavedataParam.saveName +
+        		          ", fileName=" + sceUtilitySavedataParam.fileName
+        		         );
+        savedata_mode = sceUtilitySavedataParam.mode;
 
         // HACK let's start on quit, then the app should call shutdown and then we change status to finished
         savedata_status = PSP_UTILITY_DIALOG_QUIT;
 
-        if (savedata_mode == 0) // 0=load
-        {
-            cpu.gpr[2] = SCE_UTILITY_SAVEDATA_ERROR_LOAD_NO_DATA;
+        int result = -1;
+        switch (savedata_mode) {
+	        case SceUtilitySavedataParam.MODE_AUTOLOAD:
+	        case SceUtilitySavedataParam.MODE_LOAD:
+	        	if (sceUtilitySavedataParam.saveName == null || sceUtilitySavedataParam.saveName.length() == 0) {
+	        		if (sceUtilitySavedataParam.saveNameList.length > 0) {
+	        			sceUtilitySavedataParam.saveName = sceUtilitySavedataParam.saveNameList[0];
+	        		} else {
+	        			sceUtilitySavedataParam.saveName = "-000";
+	        		}
+	        	}
+
+	        	try {
+					sceUtilitySavedataParam.load(mem, pspiofilemgr.getInstance());
+					sceUtilitySavedataParam.write(mem);
+					result = 0;
+				} catch (IOException e) {
+		            result = SCE_UTILITY_SAVEDATA_ERROR_LOAD_NO_DATA;
+				}
+				break;
+
+	        case SceUtilitySavedataParam.MODE_LISTLOAD:
+	        	// TODO Implement dialog to display list of available SAVEDATA files
+	        	result = SCE_UTILITY_SAVEDATA_ERROR_LOAD_NO_DATA;
+	        	break;
+
+	        case SceUtilitySavedataParam.MODE_AUTOSAVE:
+	        case SceUtilitySavedataParam.MODE_SAVE:
+	        	try {
+	        		sceUtilitySavedataParam.save(mem, pspiofilemgr.getInstance());
+	        		result = 0;
+	        	} catch (IOException e) {
+		        	result = SCE_UTILITY_SAVEDATA_ERROR_SAVE_ACCESS_ERROR;
+	        	}
+	        	break;
+
+	        case SceUtilitySavedataParam.MODE_LISTSAVE:
+	        	// TODO Implement dialog to display list of available SAVEDATA files
+	        	result = SCE_UTILITY_SAVEDATA_ERROR_SAVE_NO_MS;
+	        	break;
+
+	        default:
+	        	Modules.log.warn("sceUtilitySavedataInitStart - Unsupported mode " + savedata_mode);
+	    		break;
         }
-        else // 1=save
-        {
-            cpu.gpr[2] = SCE_UTILITY_SAVEDATA_ERROR_SAVE_NO_MS;
-        }
+
+        sceUtilitySavedataParam.base.result = result;
+        sceUtilitySavedataParam.base.writeResult(mem, savedataParamAddr);
+
+        cpu.gpr[2] = result;
     }
 
     public void sceUtilitySavedataShutdownStart(Processor processor) {
