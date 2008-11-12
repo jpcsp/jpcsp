@@ -352,6 +352,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         gl.glLoadIdentity();
 
         gl.glEnable(GL.GL_TEXTURE_2D);
+        gl.glFrontFace(GL.GL_CW);
         gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
         gl.glBegin(GL.GL_QUADS);
 
@@ -487,8 +488,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                 GL.GL_RGBA, getPixelFormatGL(pixelformatFb), pixelsFb);
 
             // Debug step, copy screen back into pixelsFb
-            drawFrameBuffer(gl, false, false);
-            copyScreenToPixels(gl, pixelsFb, bufferwidthFb, pixelformatFb);
+            //drawFrameBuffer(gl, false, false);
+            //copyScreenToPixels(gl, pixelsFb, bufferwidthFb, pixelformatFb);
 
             drawFrameBuffer(gl, false, true);
         } else {
