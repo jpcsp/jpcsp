@@ -28,7 +28,7 @@ import jpcsp.filesystems.SeekableRandomFile;
 import jpcsp.format.PSF;
 import jpcsp.util.Utilities;
 
-public class SceUtilitySavedataParam {
+public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 	public final static String savedataPath     = "ms0:/PSP/SAVEDATA/";
 	public final static String icon0FileName    = "ICON0.PNG";
 	public final static String icon1FileName    = "ICON1.PNG";
@@ -74,27 +74,26 @@ public class SceUtilitySavedataParam {
 	public PspUtilitySavedataListSaveNewData newData;
 	public String key;		// encrypt/decrypt key for save with firmware >= 2.00
 
-	public class PspUtilitySavedataSFOParam {
-		public String title;
+	public class PspUtilitySavedataSFOParam extends pspAbstractMemoryMappedStructure {
+        public String title;
 		public String savedataTitle;
 		public String detail;
 		public int parentalLevel;
 
-		public void read(Memory mem, int address) {
-			title = Utilities.readStringNZ(mem, address + 0, 0x80);
-			savedataTitle = Utilities.readStringNZ(mem, address + 0x80, 0x80);
-			detail = Utilities.readStringNZ(mem, address + 0x100, 0x400);
-			parentalLevel = mem.read8(address + 0x500);
+		protected void read() {
+			title = readStringNZ(0x80);
+			savedataTitle = readStringNZ(0x80);
+			detail = readStringNZ(0x400);
+			parentalLevel = read8();
+			readUnknown(3);
 		}
 
-		public void write(Memory mem, int address) {
-			Utilities.writeStringNZ(mem, address + 0, 0x80, title);
-			Utilities.writeStringNZ(mem, address + 0x80, 0x80, savedataTitle);
-			Utilities.writeStringNZ(mem, address + 0x100, 0x400, detail);
-			mem.write8(address + 0x500, (byte) parentalLevel);
-			mem.write8(address + 0x501, (byte) pspUtilityDialogCommon.unknown);
-			mem.write8(address + 0x502, (byte) pspUtilityDialogCommon.unknown);
-			mem.write8(address + 0x503, (byte) pspUtilityDialogCommon.unknown);
+		protected void write() {
+		    writeStringNZ(0x80, title);
+            writeStringNZ(0x80, savedataTitle);
+            writeStringNZ(0x400, detail);
+            write8((byte) parentalLevel);
+            writeUnknown(3);
 		}
 
 		public int sizeof() {
@@ -102,22 +101,23 @@ public class SceUtilitySavedataParam {
 		}
 	};
 
-	public class PspUtilitySavedataFileData {
+	public class PspUtilitySavedataFileData extends pspAbstractMemoryMappedStructure {
 		public int buf;
 		public int bufSize;
 		public int size;
 
-		public void read(Memory mem, int address) {
-			buf     = mem.read32(address + 0);
-			bufSize = mem.read32(address + 4);
-			size    = mem.read32(address + 8);
+		protected void read() {
+			buf     = read32();
+			bufSize = read32();
+			size    = read32();
+			readUnknown(4);
 		}
 
-		public void write(Memory mem, int address) {
-			mem.write32(address + 0, buf);
-			mem.write32(address + 4, bufSize);
-			mem.write32(address + 8, size);
-			mem.write32(address + 12, pspUtilityDialogCommon.unknown);
+		protected void write() {
+			write32(buf);
+			write32(bufSize);
+			write32(size);
+			writeUnknown(4);
 		}
 
 		public int sizeof() {
@@ -125,15 +125,15 @@ public class SceUtilitySavedataParam {
 		}
 	}
 
-	public class PspUtilitySavedataListSaveNewData {
+	public class PspUtilitySavedataListSaveNewData extends pspAbstractMemoryMappedStructure {
 		public PspUtilitySavedataFileData icon0;
 		public int titleAddr;
 		public String title;
 
-		public void read(Memory mem, int address) {
+		protected void read() {
 			icon0 = new PspUtilitySavedataFileData();
-			icon0.read(mem, address);
-			titleAddr = mem.read32(address + icon0.sizeof());
+			read(icon0);
+			titleAddr = read32();
 			if (titleAddr != 0) {
 				title = Utilities.readStringZ(mem, titleAddr);
 			} else {
@@ -141,9 +141,9 @@ public class SceUtilitySavedataParam {
 			}
 		}
 
-		public void write(Memory mem, int address) {
-			icon0.write(mem, address);
-			mem.write32(address + icon0.sizeof(), titleAddr);
+		protected void write() {
+			write(icon0);
+			write32(titleAddr);
 			if (titleAddr != 0) {
 				Utilities.writeStringZ(mem, titleAddr, title);
 			}
@@ -154,24 +154,18 @@ public class SceUtilitySavedataParam {
 		}
 	}
 
-	public void read(Memory mem, int address) {
-		int offset = 0;
-		baseAddress = address;
-
+	protected void read() {
 		base = new pspUtilityDialogCommon();
-		base.read(mem, address + offset);
-		offset += base.sizeof();
+		read(base);
+		setMaxSize(base.size);
 
-		mode        = mem.read32(address + offset);
-		offset += 4 + 4;	// 4 bytes unknown
-		overwrite   = mem.read32(address + offset) == 0 ? false : true;
-		offset += 4;
-		gameName    = Utilities.readStringNZ(mem, address + offset, 13);
-		offset += 16;
-		saveName    = Utilities.readStringNZ(mem, address + offset, 20);
-		offset += 20;
-		saveNameListAddr = mem.read32(address + offset);
-		offset += 4;
+		mode        = read32();
+		readUnknown(4);
+		overwrite   = read32() == 0 ? false : true;
+		gameName    = readStringNZ(13);
+		readUnknown(3);
+		saveName    = readStringNZ(20);
+		saveNameListAddr = read32();
 		if (saveNameListAddr != 0) {
 			Vector<String> saveNameList = new Vector<String>();
 			boolean endOfList = false;
@@ -185,111 +179,65 @@ public class SceUtilitySavedataParam {
 			}
 			this.saveNameList = saveNameList.toArray(new String[saveNameList.size()]);
 		}
-		fileName    = Utilities.readStringNZ(mem, address + offset, 13);
-		offset += 16;
-		dataBuf     = mem.read32(address + offset);
-		offset += 4;
-		dataBufSize = mem.read32(address + offset);
-		offset += 4;
-		dataSize    = mem.read32(address + offset);
-		offset += 4;
+		fileName    = readStringNZ(13);
+		readUnknown(3);
+		dataBuf     = read32();
+		dataBufSize = read32();
+		dataSize    = read32();
 
 		sfoParam = new PspUtilitySavedataSFOParam();
-		sfoParam.read(mem, address + offset);
-		offset += sfoParam.sizeof();
-
+		read(sfoParam);
 		icon0FileData = new PspUtilitySavedataFileData();
-		icon0FileData.read(mem, address + offset);
-		offset += icon0FileData.sizeof();
-
+		read(icon0FileData);
 		icon1FileData = new PspUtilitySavedataFileData();
-		icon1FileData.read(mem, address + offset);
-		offset += icon1FileData.sizeof();
-
+		read(icon1FileData);
 		pic1FileData = new PspUtilitySavedataFileData();
-		pic1FileData.read(mem, address + offset);
-		offset += pic1FileData.sizeof();
-
+		read(pic1FileData);
 		snd0FileData = new PspUtilitySavedataFileData();
-		snd0FileData.read(mem, address + offset);
-		offset += snd0FileData.sizeof();
+		read(snd0FileData);
 
-		newDataAddr = mem.read32(address + offset);
+		newDataAddr = read32();
 		if (newDataAddr != 0) {
 			newData = new PspUtilitySavedataListSaveNewData();
 			newData.read(mem, newDataAddr);
 		} else {
 			newData = null;
 		}
-		offset += 4;
-		focus = mem.read32(address + offset);
-		offset += 4 + 16;	// 16 bytes unknown
-		key = Utilities.readStringNZ(mem, address + offset + 24, 16);
+		focus = read32();
+		readUnknown(16);
+		key = readStringNZ(16);
 	}
 
-	public void write(Memory mem) {
-		write(mem, baseAddress);
-	}
+	protected void write() {
+        setMaxSize(base.size);
+	    write(base);
 
-	public void write(Memory mem, int address) {
-		int offset = 0;
-		baseAddress = address;
+		write32(mode);
+		writeUnknown(4);
+		write32(overwrite ? 1 : 0);
+		writeStringNZ(13, gameName);
+		writeUnknown(3);
+		writeStringNZ(20, saveName);
+		write32(saveNameListAddr);
+		writeStringNZ(13, fileName);
+		writeUnknown(3);
+		write32(dataBuf);
+		write32(dataBufSize);
+		write32(dataSize);
 
-		base.write(mem, address + offset);
-		offset += base.sizeof();
+		write(sfoParam);
+		write(icon0FileData);
+        write(icon1FileData);
+        write(pic1FileData);
+        write(snd0FileData);
 
-		mem.write32(address + offset, mode);
-		offset += 4;
-		mem.write32(address + offset, pspUtilityDialogCommon.unknown);
-		offset += 4;
-		mem.write32(address + offset, overwrite ? 1 : 0);
-		offset += 4;
-		Utilities.writeStringNZ(mem, address + offset, 13, gameName);
-		offset += 16;
-		Utilities.writeStringNZ(mem, address + offset, 20, saveName);
-		offset += 20;
-		mem.write32(address + offset, saveNameListAddr);
-		offset += 4;
-		Utilities.writeStringNZ(mem, address + offset, 13, fileName);
-		offset += 16;
-		mem.write32(address + offset, dataBuf);
-		offset += 4;
-		mem.write32(address + offset, dataBufSize);
-		offset += 4;
-		mem.write32(address + offset, dataSize);
-		offset += 4;
-
-		sfoParam.write(mem, address + offset);
-		offset += sfoParam.sizeof();
-
-		icon0FileData.write(mem, address + offset);
-		offset += icon0FileData.sizeof();
-
-		icon1FileData.write(mem, address + offset);
-		offset += icon1FileData.sizeof();
-
-		pic1FileData.write(mem, address + offset);
-		offset += pic1FileData.sizeof();
-
-		snd0FileData.write(mem, address + offset);
-		offset += snd0FileData.sizeof();
-
-		mem.write32(address + offset, newDataAddr);
-		offset += 4;
+		write32(newDataAddr);
 		if (newDataAddr != 0) {
 			newData.write(mem, newDataAddr);
 		}
-		mem.write32(address + offset, focus);
-		offset += 4;
-		mem.write32(address + offset, pspUtilityDialogCommon.unknown);
-		offset += 4;
-		mem.write32(address + offset, pspUtilityDialogCommon.unknown);
-		offset += 4;
-		mem.write32(address + offset, pspUtilityDialogCommon.unknown);
-		offset += 4;
-		mem.write32(address + offset, pspUtilityDialogCommon.unknown);
-		offset += 4;
-		Utilities.writeStringNZ(mem, address + offset, 16, key);
+		write32(focus);
+		writeUnknown(16);
+		writeStringNZ(16, key);
 	}
 
 	public void load(Memory mem, pspiofilemgr fileManager) throws IOException {
@@ -394,4 +342,8 @@ public class SceUtilitySavedataParam {
 		// TODO Implement writing of PSF file
 		Modules.log.error("Unimplemented - saving of " + name);
 	}
+
+    public int sizeof() {
+        return base.size;
+    }
 }

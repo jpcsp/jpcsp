@@ -18,9 +18,7 @@ package jpcsp.HLE.kernel.types;
 
 import jpcsp.Memory;
 
-public class pspUtilityDialogCommon {
-	public final static int unknown = 0x11111111;
-
+public class pspUtilityDialogCommon extends pspAbstractMemoryMappedStructure {
 	public int size;
 	public int language;
 	public int buttonSwap;
@@ -32,30 +30,30 @@ public class pspUtilityDialogCommon {
 	public int soundThread;		// 0x10
 	public int result;
 
-	public void read(Memory mem, int address) {
-		size           = mem.read32(address +  0);
-		language       = mem.read32(address +  4);
-		buttonSwap     = mem.read32(address +  8);
-		graphicsThread = mem.read32(address + 12);
-		accessThread   = mem.read32(address + 16);
-		fontThread     = mem.read32(address + 20);
-		soundThread    = mem.read32(address + 24);
-		result         = mem.read32(address + 28);
+	protected void read() {
+		size           = read32();
+		setMaxSize(size);
+		language       = read32();
+		buttonSwap     = read32();
+		graphicsThread = read32();
+		accessThread   = read32();
+		fontThread     = read32();
+		soundThread    = read32();
+		result         = read32();
+		readUnknown(16);
 	}
 
-	public void write(Memory mem, int address) {
-		mem.write32(address +   0, size);
-		mem.write32(address +   4, language);
-		mem.write32(address +   8, buttonSwap);
-		mem.write32(address +  12, graphicsThread);
-		mem.write32(address +  16, accessThread);
-		mem.write32(address +  20, fontThread);
-		mem.write32(address +  24, soundThread);
-		mem.write32(address +  28, result);
-		mem.write32(address +  32, unknown);
-		mem.write32(address +  36, unknown);
-		mem.write32(address +  40, unknown);
-		mem.write32(address +  44, unknown);
+	protected void write() {
+	    setMaxSize(size);
+		write32(size);
+		write32(language);
+		write32(buttonSwap);
+		write32(graphicsThread);
+		write32(accessThread);
+		write32(fontThread);
+		write32(soundThread);
+		write32(result);
+		writeUnknown(16);
 	}
 
 	public void writeResult(Memory mem, int address) {
