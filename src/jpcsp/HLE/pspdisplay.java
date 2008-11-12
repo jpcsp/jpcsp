@@ -54,6 +54,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         return instance;
     }
 
+    private static final boolean useGlReadPixels = true;
+
     // PspDisplayPixelFormats enum
     public static final int PSP_DISPLAY_PIXEL_FORMAT_565  = 0;
     public static final int PSP_DISPLAY_PIXEL_FORMAT_5551 = 1;
@@ -379,50 +381,46 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         popTexEnv(gl);
     }
 
-    private void copyScreenToPixels(GL gl, ByteBuffer pixels) {
-        // Set texFb as the current texture
-        gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
+    private void copyScreenToPixels(GL gl, ByteBuffer pixels, int bufferwidth, int pixelformat) {
+        // Using glReadPixels instead of glGetTexImage is showing
+        // between 7 and 13% performance increase.
+        if (useGlReadPixels) {
+            gl.glMatrixMode(GL.GL_PROJECTION);
+            gl.glPushMatrix();
+            gl.glLoadIdentity();
+            gl.glOrtho(0.0, width, height, 0.0, -1.0, 1.0);
+            int bufferStep = bufferwidth * getPixelFormatBytes(pixelformat);
+            int pixelFormatGL = getPixelFormatGL(pixelformat);
+            // Y-Axis on PSP is flipped against OpenGL, so we have to copy row by row
+            for (int y = 0, bufferPos = 0; y < height; y++, bufferPos += bufferStep) {
+                pixels.position(bufferPos);
+                gl.glReadPixels(0, y, width, 1, GL.GL_RGBA, pixelFormatGL, pixels);
+            }
+            gl.glPopMatrix();
+        } else {
+            // Set texFb as the current texture
+            gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
 
-        // Copy screen to the current texture
-        gl.glCopyTexSubImage2D(
-            GL.GL_TEXTURE_2D, 0,
-            0, 0, 0, 0, width, height);
+            // Copy screen to the current texture
+            gl.glCopyTexSubImage2D(
+                GL.GL_TEXTURE_2D, 0,
+                0, 0, 0, 0, width, height);
 
-        // Copy the current texture into memory
-        temp.clear();
-        gl.glGetTexImage(
-            GL.GL_TEXTURE_2D, 0, GL.GL_RGBA,
-            getPixelFormatGL(pixelformatFb), temp);
+            // Copy the current texture into memory
+            temp.clear();
+            gl.glGetTexImage(
+                GL.GL_TEXTURE_2D, 0, GL.GL_RGBA,
+                getPixelFormatGL(pixelformat), temp);
 
-        // Now we have the screen copied into temp
-        // print the color of a pixel for testing
-//        {
-//            int x = 480 / 2;
-//            int xstride = 512;
-//            int y = 6;
-//            int address = (x + y * xstride) * getPixelFormatBytes(pixelformatFb);
-//            Modules.log.debug(String.format("%08x", temp.getInt(address)));
-//        }
-
-        // Post effects here, for testing purpose :)
-        // Just on top half of the screen, to make sure we aren't upside down
-//        for (int y = 0; y < 272 / 2; y++) {
-//            for (int x = 0; x < 480; x++) {
-//                int address = (x + y * 512) * getPixelFormatBytes(pixelformatFb);
-//                int color = temp.getInt(address);
-//                color++;
-//                temp.putInt(address, color);
-//            }
-//        }
-
-        // Copy temp into pixels, temp is probably square and pixels is less,
-        // a smaller rectangle, otherwise we could copy straight into pixels.
-        temp.clear();
-        int limit = temp.limit();
-        temp.limit(pixels.limit());
-        pixels.clear();
-        pixels.put(temp);
-        temp.limit(limit);
+            // Copy temp into pixels, temp is probably square and pixels is less,
+            // a smaller rectangle, otherwise we could copy straight into pixels.
+            temp.clear();
+            int limit = temp.limit();
+            temp.limit(pixels.limit());
+            pixels.clear();
+            pixels.put(temp);
+            temp.limit(limit);
+        }
     }
 
     // GLEventListener methods
@@ -463,10 +461,12 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             gl.glTexParameteri(
                 GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP);
 
-            temp = ByteBuffer.allocate(
-                bufferwidthFb * Utilities.makePow2(height) *
-                getPixelFormatBytes(pixelformatFb));
-            temp.order(ByteOrder.LITTLE_ENDIAN);
+            if (!useGlReadPixels) {
+                temp = ByteBuffer.allocate(
+                    bufferwidthFb * Utilities.makePow2(height) *
+                    getPixelFormatBytes(pixelformatFb));
+                temp.order(ByteOrder.LITTLE_ENDIAN);
+            }
 
             createTex = false;
         }
@@ -488,7 +488,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
             // Debug step, copy screen back into pixelsFb
             drawFrameBuffer(gl, false, false);
-            copyScreenToPixels(gl, pixelsFb);
+            copyScreenToPixels(gl, pixelsFb, bufferwidthFb, pixelformatFb);
 
             drawFrameBuffer(gl, false, true);
         } else {
@@ -500,6 +500,11 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             if (bottomaddrGe != bottomaddrFb) {
 	            pixelsGe.clear();
 	            gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
+
+	            // An alternative to glTexSubImage2D would be to use glDrawPixels to
+	            // render the frame buffer.
+	            // But glDrawPixels is showing around 10% performance decrease
+	            // against glTexSubImage2D.
 	            gl.glTexSubImage2D(
 	                GL.GL_TEXTURE_2D, 0,
 	                0, 0, width, height,
@@ -521,7 +526,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                 drawFrameBuffer(gl, true, true);
 
                 // Save GE/current texture to vram
-                copyScreenToPixels(gl, pixelsGe);
+                copyScreenToPixels(gl, pixelsGe, bufferwidthGe, pixelformatGe);
             }
 
             // Render FB
