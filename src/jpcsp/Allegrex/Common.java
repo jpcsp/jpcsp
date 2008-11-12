@@ -412,6 +412,24 @@ public class Common {
         "c.le.s",
         "c.ngt.s"
     };
+    public static final String vcondNames[] = {
+        "FL",
+        "EQ",
+        "LT",
+        "LE",
+        "TR",
+        "NE",
+        "GE",
+        "GT",
+        "EZ",
+        "EN",
+        "EI",
+        "ES",
+        "NZ",
+        "NN",
+        "NI",
+        "NS"
+    };
 
     public static String disasmRDRTSA(String opname, int rd, int rt, int sa) {
         if ((rd == 0) && sa == 0) {
@@ -635,6 +653,15 @@ public class Common {
         return String.format("%1$-10s %2$s, %3$s, %4$s", opname + vsuffix[vsize - 1], vprNames[0][vd], vprNames[vsize - 1][vs], vprNames[0][vt]);
     }
     
+    public static String disasmVCMP(String opname, int vsize, int vcode, int vs, int vt) {
+        if ((vcode & ~4) == 0) {
+            return String.format("%1$-10s %2$s", opname + vsuffix[vsize - 1], vcondNames[vcode]);
+        } else if (vcode < 8) {
+            return String.format("%1$-10s %2$s, %3$s, %4$s", opname + vsuffix[vsize - 1], vcondNames[vcode], vprNames[vsize - 1][vs], vprNames[vsize - 1][vt]);
+        }
+        return String.format("%1$-10s %2$s, %3$s", opname + vsuffix[vsize - 1], vcondNames[vcode], vprNames[vsize - 1][vs], vprNames[vsize - 1][vt]);
+    }
+
     public static String disasmVROT(String opname, int vsize, int vd, int vs, int vt) {
         int i;
         int si = (vt >>> 2) & 3;

@@ -4781,7 +4781,7 @@ public String disasm(int address, int insn) {
 	int two = (insn>>15)&1;
 	int vt = (insn>>16)&127;
 
-return "Unimplemented VCMP";
+return Common.disasmVCMP("vcmp", 1+one+(two<<1), imm3, vs, vt);
 }
 };
 public static final Instruction VMIN = new Instruction(164) {
