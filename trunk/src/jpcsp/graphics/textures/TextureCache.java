@@ -106,11 +106,13 @@ public class TextureCache {
 				}
 			}
 
-			if (cache.size() > statistics.maxSizeUsed) {
-				statistics.maxSizeUsed = cache.size();
-			}
 		}
-		cache.put(addr, texture);
+
+        cache.put(addr, texture);
+
+        if (cache.size() > statistics.maxSizeUsed) {
+            statistics.maxSizeUsed = cache.size();
+        }
 	}
 
 	public Texture getTexture(int addr, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks) {
