@@ -58,6 +58,7 @@ import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PSF;
+import jpcsp.graphics.textures.TextureCache;
 import jpcsp.log.LogWindow;
 import jpcsp.log.LoggingOutputStream;
 import jpcsp.util.JpcspDialogManager;
@@ -797,6 +798,8 @@ private void VfpuRegistersActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 private void exitEmu() {
     if (Settings.getInstance().readBool("gui.saveWindowPos"))
         Settings.getInstance().writeWindowPos("mainwindow", getLocation());
+
+    Emulator.log.debug(TextureCache.getInstance().statistics.toString());
 
     System.exit(0);
 }

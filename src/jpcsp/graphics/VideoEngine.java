@@ -35,6 +35,8 @@ import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Settings;
 import jpcsp.HLE.pspdisplay;
+import jpcsp.graphics.textures.Texture;
+import jpcsp.graphics.textures.TextureCache;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -48,6 +50,7 @@ public class VideoEngine {
     private GL gl;
     public static Logger log = Logger.getLogger("ge");
     public static final boolean isDebugMode = true;
+    public static final boolean useTextureCache = true;
     private static GeCommands helper;
     private VertexInfo vinfo = new VertexInfo();
     private static final char SPACE = ' ';
@@ -1531,6 +1534,10 @@ public class VideoEngine {
 
                             v1.p[2] = v2.p[2];
 
+                            if (numberOfVertex == 2 && transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
+                                log("  sprite (" + ((int) v1.t[0]) + "," + ((int) v1.t[1]) + ")-(" + ((int) v2.t[0]) + "," + ((int) v2.t[1]) + ") at (" + ((int) v1.p[0]) + "," + ((int) v1.p[1]) + ")-(" + + ((int) v2.p[0]) + "," + ((int) v2.p[1]) + ")");
+                            }
+
                             // V1
                             if (vinfo.texture  != 0) vboBuffer.put(v1.t);
                             if (useVertexColor) vboBuffer.put(v2.c);
@@ -2437,312 +2444,356 @@ public class VideoEngine {
         if (texture_base_pointer0 == 0)
             return;
 
-        // Generate a texture id if we don't have one
-        if (gl_texture_id[0] == 0)
-            gl.glGenTextures(1, gl_texture_id, 0);
+        Texture texture;
+        if (!useTextureCache) {
+            texture = null;
 
+            // Generate a texture id if we don't have one
+            if (gl_texture_id[0] == 0) {
+                gl.glGenTextures(1, gl_texture_id, 0);
+            }
 
-        log(helper.getCommandString(TFLUSH) + " " + String.format("0x%08X", texture_base_pointer0) + " (" + texture_width0 + "," + texture_height0 + ")");
-        log(helper.getCommandString(TFLUSH) + " texture_storage=0x" + Integer.toHexString(texture_storage) + ", tex_clut_mode=0x" + Integer.toHexString(tex_clut_mode) + ", tex_clut_addr=" + String.format("0x%08X", tex_clut_addr));
-        // Extract texture information with the minor conversion possible
-        // TODO: Get rid of information copying, and implement all the available formats
-        Memory  mem = Memory.getInstance();
-        Buffer  final_buffer = null;
-        int     texture_type = 0;
-        int     texclut = tex_clut_addr;
-        int     texaddr = texture_base_pointer0;
-        texaddr &= 0xFFFFFFF;
+            gl.glBindTexture(GL.GL_TEXTURE_2D, gl_texture_id[0]);
+        } else {
+            // Check if the texture is in the cache
+            texture = TextureCache.getInstance().getTexture( texture_base_pointer0
+                                                           , texture_width0
+                                                           , texture_height0
+                                                           , texture_storage
+                                                           , tex_clut_addr
+                                                           , tex_clut_mode
+                                                           , tex_clut_start
+                                                           , tex_clut_shift
+                                                           , tex_clut_mask
+                                                           , tex_clut_num_blocks
+                                                           );
 
-        final int[] texturetype_mapping = {
-            GL.GL_UNSIGNED_SHORT_5_6_5_REV,
-            GL.GL_UNSIGNED_SHORT_1_5_5_5_REV,
-            GL.GL_UNSIGNED_SHORT_4_4_4_4_REV,
-            GL.GL_UNSIGNED_BYTE,
-        };
+            // Create the texture if not yet in the cache
+            if (texture == null) {
+                texture = new Texture( texture_base_pointer0
+                                     , texture_width0
+                                     , texture_height0
+                                     , texture_storage
+                                     , tex_clut_addr
+                                     , tex_clut_mode
+                                     , tex_clut_start
+                                     , tex_clut_shift
+                                     , tex_clut_mask
+                                     , tex_clut_num_blocks
+                                     );
+                TextureCache.getInstance().addTexture(gl, texture);
+            }
 
-        int textureByteAlignment = 4;   // 32 bits
-        int texture_format = GL.GL_RGBA;
+            texture.bindTexture(gl);
+        }
 
-        switch (texture_storage) {
-            case TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED: {
-                switch (tex_clut_mode) {
-                    case CMODE_FORMAT_16BIT_BGR5650:
-                    case CMODE_FORMAT_16BIT_ABGR5551:
-                    case CMODE_FORMAT_16BIT_ABGR4444: {
-                        if (texclut == 0)
-                            return;
+        // Load the texture if not yet loaded
+        if (texture == null || !texture.isLoaded()) {
+            log(helper.getCommandString(TFLUSH) + " " + String.format("0x%08X", texture_base_pointer0) + " (" + texture_width0 + "," + texture_height0 + ")");
+            log(helper.getCommandString(TFLUSH) + " texture_storage=0x" + Integer.toHexString(texture_storage) + ", tex_clut_mode=0x" + Integer.toHexString(tex_clut_mode) + ", tex_clut_addr=" + String.format("0x%08X", tex_clut_addr));
+            // Extract texture information with the minor conversion possible
+            // TODO: Get rid of information copying, and implement all the available formats
+            Memory  mem = Memory.getInstance();
+            Buffer  final_buffer = null;
+            int     texture_type = 0;
+            int     texclut = tex_clut_addr;
+            int     texaddr = texture_base_pointer0;
+            texaddr &= 0xFFFFFFF;
 
-                        texture_type = texturetype_mapping[tex_clut_mode];
-                        textureByteAlignment = 2;  // 16 bits
+            final int[] texturetype_mapping = {
+                GL.GL_UNSIGNED_SHORT_5_6_5_REV,
+                GL.GL_UNSIGNED_SHORT_1_5_5_5_REV,
+                GL.GL_UNSIGNED_SHORT_4_4_4_4_REV,
+                GL.GL_UNSIGNED_BYTE,
+            };
 
-                        if (!texture_swizzle) {
-                            for (int i = 0, j = 0; i < texture_width0*texture_height0; i += 2, j++) {
+            int textureByteAlignment = 4;   // 32 bits
+            int texture_format = GL.GL_RGBA;
 
-                                int index = mem.read8(texaddr+j);
+            switch (texture_storage) {
+                case TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED: {
+                    switch (tex_clut_mode) {
+                        case CMODE_FORMAT_16BIT_BGR5650:
+                        case CMODE_FORMAT_16BIT_ABGR5551:
+                        case CMODE_FORMAT_16BIT_ABGR4444: {
+                            if (texclut == 0)
+                                return;
 
-                                tmp_texture_buffer16[i+1]   = (short)mem.read16(texclut + getClutIndex((index >> 4) & 0xF) * 2);
-                                tmp_texture_buffer16[i]     = (short)mem.read16(texclut + getClutIndex( index       & 0xF) * 2);
+                            texture_type = texturetype_mapping[tex_clut_mode];
+                            textureByteAlignment = 2;  // 16 bits
+
+                            if (!texture_swizzle) {
+                                for (int i = 0, j = 0; i < texture_width0*texture_height0; i += 2, j++) {
+
+                                    int index = mem.read8(texaddr+j);
+
+                                    tmp_texture_buffer16[i+1]   = (short)mem.read16(texclut + getClutIndex((index >> 4) & 0xF) * 2);
+                                    tmp_texture_buffer16[i]     = (short)mem.read16(texclut + getClutIndex( index       & 0xF) * 2);
+                                }
+                                final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
+                            } else {
+                                VideoEngine.log.error("Unhandled swizzling on clut4/16 textures");
+                                Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
+                                break;
                             }
-                            final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
-                        } else {
-                            VideoEngine.log.error("Unhandled swizzling on clut4/16 textures");
-                            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
+
                             break;
                         }
 
-                        break;
-                    }
+                        case CMODE_FORMAT_32BIT_ABGR8888: {
+                            if (texclut == 0)
+                                return;
 
-                    case CMODE_FORMAT_32BIT_ABGR8888: {
-                        if (texclut == 0)
-                            return;
+                            texture_type = GL.GL_UNSIGNED_BYTE;
 
-                        texture_type = GL.GL_UNSIGNED_BYTE;
+                            if (!texture_swizzle) {
+                                for (int i = 0, j = 0; i < texture_width0*texture_height0; i += 2, j++) {
 
-                        if (!texture_swizzle) {
-                            for (int i = 0, j = 0; i < texture_width0*texture_height0; i += 2, j++) {
+                                    int index = mem.read8(texaddr+j);
 
-                                int index = mem.read8(texaddr+j);
-
-                                tmp_texture_buffer32[i+1]   = mem.read32(texclut + getClutIndex((index >> 4) & 0xF) * 4);
-                                tmp_texture_buffer32[i]     = mem.read32(texclut + getClutIndex( index       & 0xF) * 4);
+                                    tmp_texture_buffer32[i+1]   = mem.read32(texclut + getClutIndex((index >> 4) & 0xF) * 4);
+                                    tmp_texture_buffer32[i]     = mem.read32(texclut + getClutIndex( index       & 0xF) * 4);
+                                }
+                                final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
+                            } else {
+                                unswizzleTextureFromMemory(texaddr, 0);
+                                int pixels = texture_width0 * texture_height0;
+                                for (int i = pixels - 8, j = (pixels / 8) - 1; i >= 0; i -= 8, j--) {
+                                    int n = tmp_texture_buffer32[j];
+                                    int index = n & 0xF;
+                                    tmp_texture_buffer32[i + 0] = mem.read32(texclut + getClutIndex(index) * 4);
+                                    index = (n >> 4) & 0xF;
+                                    tmp_texture_buffer32[i + 1] = mem.read32(texclut + getClutIndex(index) * 4);
+                                    index = (n >> 8) & 0xF;
+                                    tmp_texture_buffer32[i + 2] = mem.read32(texclut + getClutIndex(index) * 4);
+                                    index = (n >> 12) & 0xF;
+                                    tmp_texture_buffer32[i + 3] = mem.read32(texclut + getClutIndex(index) * 4);
+                                    index = (n >> 16) & 0xF;
+                                    tmp_texture_buffer32[i + 4] = mem.read32(texclut + getClutIndex(index) * 4);
+                                    index = (n >> 20) & 0xF;
+                                    tmp_texture_buffer32[i + 5] = mem.read32(texclut + getClutIndex(index) * 4);
+                                    index = (n >> 24) & 0xF;
+                                    tmp_texture_buffer32[i + 6] = mem.read32(texclut + getClutIndex(index) * 4);
+                                    index = (n >> 28) & 0xF;
+                                    tmp_texture_buffer32[i + 7] = mem.read32(texclut + getClutIndex(index) * 4);
+                                }
+                                final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
                             }
-                            final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
-                        } else {
-                            unswizzleTextureFromMemory(texaddr, 0);
-                            int pixels = texture_width0 * texture_height0;
-                            for (int i = pixels - 8, j = (pixels / 8) - 1; i >= 0; i -= 8, j--) {
-                                int n = tmp_texture_buffer32[j];
-                                int index = n & 0xF;
-                                tmp_texture_buffer32[i + 0] = mem.read32(texclut + getClutIndex(index) * 4);
-                                index = (n >> 4) & 0xF;
-                                tmp_texture_buffer32[i + 1] = mem.read32(texclut + getClutIndex(index) * 4);
-                                index = (n >> 8) & 0xF;
-                                tmp_texture_buffer32[i + 2] = mem.read32(texclut + getClutIndex(index) * 4);
-                                index = (n >> 12) & 0xF;
-                                tmp_texture_buffer32[i + 3] = mem.read32(texclut + getClutIndex(index) * 4);
-                                index = (n >> 16) & 0xF;
-                                tmp_texture_buffer32[i + 4] = mem.read32(texclut + getClutIndex(index) * 4);
-                                index = (n >> 20) & 0xF;
-                                tmp_texture_buffer32[i + 5] = mem.read32(texclut + getClutIndex(index) * 4);
-                                index = (n >> 24) & 0xF;
-                                tmp_texture_buffer32[i + 6] = mem.read32(texclut + getClutIndex(index) * 4);
-                                index = (n >> 28) & 0xF;
-                                tmp_texture_buffer32[i + 7] = mem.read32(texclut + getClutIndex(index) * 4);
-                            }
-                            final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
+
+                            break;
                         }
 
-                        break;
+                        default: {
+                            VideoEngine.log.error("Unhandled clut4 texture mode " + tex_clut_mode);
+                            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
+                            break;
+                        }
                     }
 
-                    default: {
-                        VideoEngine.log.error("Unhandled clut4 texture mode " + tex_clut_mode);
-                        Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
-                        break;
-                    }
+                    break;
                 }
+                case TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED: {
 
-                break;
-            }
-            case TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED: {
+                    switch (tex_clut_mode) {
+                        case CMODE_FORMAT_16BIT_BGR5650:
+                        case CMODE_FORMAT_16BIT_ABGR5551:
+                        case CMODE_FORMAT_16BIT_ABGR4444: {
+                            if (texclut == 0)
+                                return;
 
-                switch (tex_clut_mode) {
-                    case CMODE_FORMAT_16BIT_BGR5650:
-                    case CMODE_FORMAT_16BIT_ABGR5551:
-                    case CMODE_FORMAT_16BIT_ABGR4444: {
-                        if (texclut == 0)
-                            return;
+                            texture_type = texturetype_mapping[tex_clut_mode];
+                            textureByteAlignment = 2;  // 16 bits
 
-                        texture_type = texturetype_mapping[tex_clut_mode];
-                        textureByteAlignment = 2;  // 16 bits
-
-                        if (!texture_swizzle) {
-                            for (int i = 0; i < texture_width0*texture_height0; i++) {
-                                int index = mem.read8(texaddr+i);
-                                tmp_texture_buffer16[i]     = (short)mem.read16(texclut + getClutIndex(index) * 2);
+                            if (!texture_swizzle) {
+                                for (int i = 0; i < texture_width0*texture_height0; i++) {
+                                    int index = mem.read8(texaddr+i);
+                                    tmp_texture_buffer16[i]     = (short)mem.read16(texclut + getClutIndex(index) * 2);
+                                }
+                                final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
+                            } else {
+                                unswizzleTextureFromMemory(texaddr, 1);
+                                for (int i = 0, j = 0; i < texture_width0*texture_height0; i += 4, j++) {
+                                    int n = tmp_texture_buffer32[j];
+                                    int index = n & 0xFF;
+                                    tmp_texture_buffer16[i + 0] = (short)mem.read16(texclut + getClutIndex(index) * 2);
+                                    index = (n >> 8) & 0xFF;
+                                    tmp_texture_buffer16[i + 1] = (short)mem.read16(texclut + getClutIndex(index) * 2);
+                                    index = (n >> 16) & 0xFF;
+                                    tmp_texture_buffer16[i + 2] = (short)mem.read16(texclut + getClutIndex(index) * 2);
+                                    index = (n >> 24) & 0xFF;
+                                    tmp_texture_buffer16[i + 3] = (short)mem.read16(texclut + getClutIndex(index) * 2);
+                                }
+                                final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
                             }
-                            final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
-                        } else {
-                            unswizzleTextureFromMemory(texaddr, 1);
-                            for (int i = 0, j = 0; i < texture_width0*texture_height0; i += 4, j++) {
-                                int n = tmp_texture_buffer32[j];
-                                int index = n & 0xFF;
-                                tmp_texture_buffer16[i + 0] = (short)mem.read16(texclut + getClutIndex(index) * 2);
-                                index = (n >> 8) & 0xFF;
-                                tmp_texture_buffer16[i + 1] = (short)mem.read16(texclut + getClutIndex(index) * 2);
-                                index = (n >> 16) & 0xFF;
-                                tmp_texture_buffer16[i + 2] = (short)mem.read16(texclut + getClutIndex(index) * 2);
-                                index = (n >> 24) & 0xFF;
-                                tmp_texture_buffer16[i + 3] = (short)mem.read16(texclut + getClutIndex(index) * 2);
-                            }
-                            final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
+
+                            break;
                         }
 
-                        break;
-                    }
+                        case CMODE_FORMAT_32BIT_ABGR8888: {
+                            if (texclut == 0)
+                                return;
 
-                    case CMODE_FORMAT_32BIT_ABGR8888: {
-                        if (texclut == 0)
-                            return;
+                            texture_type = GL.GL_UNSIGNED_BYTE;
 
-                        texture_type = GL.GL_UNSIGNED_BYTE;
-
-
-                        if (!texture_swizzle) {
-                            for (int i = 0; i < texture_width0*texture_height0; i++) {
-                                int index = mem.read8(texaddr+i);
-                                tmp_texture_buffer32[i] = mem.read32(texclut + getClutIndex(index) * 4);
+                            if (!texture_swizzle) {
+                                for (int i = 0; i < texture_width0*texture_height0; i++) {
+                                    int index = mem.read8(texaddr+i);
+                                    tmp_texture_buffer32[i] = mem.read32(texclut + getClutIndex(index) * 4);
+                                }
+                                final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
+                            } else {
+                                unswizzleTextureFromMemory(texaddr, 1);
+                                int pixels = texture_width0 * texture_height0;
+                                for (int i = pixels - 4, j = (pixels / 4) - 1; i >= 0; i -= 4, j--) {
+                                    int n = tmp_texture_buffer32[j];
+                                    int index = n & 0xFF;
+                                    tmp_texture_buffer32[i + 0] = mem.read32(texclut + getClutIndex(index) * 4);
+                                    index = (n >> 8) & 0xFF;
+                                    tmp_texture_buffer32[i + 1] = mem.read32(texclut + getClutIndex(index) * 4);
+                                    index = (n >> 16) & 0xFF;
+                                    tmp_texture_buffer32[i + 2] = mem.read32(texclut + getClutIndex(index) * 4);
+                                    index = (n >> 24) & 0xFF;
+                                    tmp_texture_buffer32[i + 3] = mem.read32(texclut + getClutIndex(index) * 4);
+                                }
+                                final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
                             }
-                            final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
-                        } else {
-                            unswizzleTextureFromMemory(texaddr, 1);
-                            int pixels = texture_width0 * texture_height0;
-                            for (int i = pixels - 4, j = (pixels / 4) - 1; i >= 0; i -= 4, j--) {
-                                int n = tmp_texture_buffer32[j];
-                                int index = n & 0xFF;
-                                tmp_texture_buffer32[i + 0] = mem.read32(texclut + getClutIndex(index) * 4);
-                                index = (n >> 8) & 0xFF;
-                                tmp_texture_buffer32[i + 1] = mem.read32(texclut + getClutIndex(index) * 4);
-                                index = (n >> 16) & 0xFF;
-                                tmp_texture_buffer32[i + 2] = mem.read32(texclut + getClutIndex(index) * 4);
-                                index = (n >> 24) & 0xFF;
-                                tmp_texture_buffer32[i + 3] = mem.read32(texclut + getClutIndex(index) * 4);
-                            }
-                            final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
+
+                            break;
                         }
 
-                        break;
+                        default: {
+                            VideoEngine.log.error("Unhandled clut8 texture mode " + tex_clut_mode);
+                            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
+                            break;
+                        }
                     }
 
-                    default: {
-                        VideoEngine.log.error("Unhandled clut8 texture mode " + tex_clut_mode);
-                        Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
-                        break;
-                    }
+                    break;
                 }
 
-                break;
-            }
+                case TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650:
+                case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551:
+                case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444: {
+                    texture_type = texturetype_mapping[texture_storage];
+                    textureByteAlignment = 2;  // 16 bits
 
-            case TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650:
-            case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551:
-            case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444: {
-                texture_type = texturetype_mapping[texture_storage];
-                textureByteAlignment = 2;  // 16 bits
+                    if (!texture_swizzle) {
+                        /* TODO replace the loop with 1 line to ShortBuffer.wrap
+                         * but be careful of vram/mainram addresses
+                        final_buffer = ShortBuffer.wrap(
+                            memory.videoram.array(),
+                            texaddr - MemoryMap.START_VRAM + memory.videoram.arrayOffset(),
+                            texture_width0 * texture_height0).slice();
+                        final_buffer = ShortBuffer.wrap(
+                            memory.mainmemory.array(),
+                            texaddr - MemoryMap.START_RAM + memory.mainmemory.arrayOffset(),
+                            texture_width0 * texture_height0).slice();
+                        */
 
-                if (!texture_swizzle) {
-                    /* TODO replace the loop with 1 line to ShortBuffer.wrap
-                     * but be careful of vram/mainram addresses
-                    final_buffer = ShortBuffer.wrap(
-                        memory.videoram.array(),
-                        texaddr - MemoryMap.START_VRAM + memory.videoram.arrayOffset(),
-                        texture_width0 * texture_height0).slice();
-                    final_buffer = ShortBuffer.wrap(
-                        memory.mainmemory.array(),
-                        texaddr - MemoryMap.START_RAM + memory.mainmemory.arrayOffset(),
-                        texture_width0 * texture_height0).slice();
-                    */
-
-                    for (int i = 0; i < texture_width0*texture_height0; i++) {
-                        int pixel = mem.read16(texaddr+i*2);
-                        tmp_texture_buffer16[i] = (short)pixel;
-                    }
-
-                    final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
-                } else {
-                    final_buffer = unswizzleTextureFromMemory(texaddr, 2);
-                }
-
-                break;
-            }
-
-            case TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888: {
-                if (getOpenGLVersion(gl).compareTo("1.2") >= 0) {
-                    texture_type = GL.GL_UNSIGNED_INT_8_8_8_8_REV;  // Only available from V1.2
-                } else {
-                    texture_type = GL.GL_UNSIGNED_BYTE;
-                }
-
-                if (!texture_swizzle) {
-                    // try and use ByteBuffer.wrap on the memory, taking note of vram/main ram
-                    // speed difference is unnoticeable :(
-                    int texaddr_end = texaddr + texture_width0 * texture_height0 * 4;
-                    if (texaddr >= MemoryMap.START_VRAM && texaddr_end <= MemoryMap.END_VRAM) {
-                        ByteBuffer pixels = ByteBuffer.wrap(
-                            mem.videoram.array(),
-                            texaddr - MemoryMap.START_VRAM + mem.videoram.arrayOffset(),
-                            texture_width0 * texture_height0 * 4).slice();
-                        pixels.order(java.nio.ByteOrder.LITTLE_ENDIAN);
-                        final_buffer = pixels;
-                    } else if (texaddr >= MemoryMap.START_RAM && texaddr_end <= MemoryMap.END_RAM) {
-                        ByteBuffer pixels = ByteBuffer.wrap(
-                            mem.mainmemory.array(),
-                            texaddr - MemoryMap.START_RAM + mem.mainmemory.arrayOffset(),
-                            texture_width0 * texture_height0 * 4).slice();
-                        pixels.order(java.nio.ByteOrder.LITTLE_ENDIAN);
-                        final_buffer = pixels;
-                    } else {
-                        VideoEngine.log.warn("tpsm 3 slow");
                         for (int i = 0; i < texture_width0*texture_height0; i++) {
-                            tmp_texture_buffer32[i] = mem.read32(texaddr+i*4);
+                            int pixel = mem.read16(texaddr+i*2);
+                            tmp_texture_buffer16[i] = (short)pixel;
                         }
-                        final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
+
+                        final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
+                    } else {
+                        final_buffer = unswizzleTextureFromMemory(texaddr, 2);
                     }
-                } else {
-                    final_buffer = unswizzleTextureFromMemory(texaddr, 4);
+
+                    break;
                 }
-                break;
+
+                case TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888: {
+                    if (getOpenGLVersion(gl).compareTo("1.2") >= 0) {
+                        texture_type = GL.GL_UNSIGNED_INT_8_8_8_8_REV;  // Only available from V1.2
+                    } else {
+                        texture_type = GL.GL_UNSIGNED_BYTE;
+                    }
+
+                    if (!texture_swizzle) {
+                        // try and use ByteBuffer.wrap on the memory, taking note of vram/main ram
+                        // speed difference is unnoticeable :(
+                        int texaddr_end = texaddr + texture_width0 * texture_height0 * 4;
+                        if (texaddr >= MemoryMap.START_VRAM && texaddr_end <= MemoryMap.END_VRAM) {
+                            ByteBuffer pixels = ByteBuffer.wrap(
+                                mem.videoram.array(),
+                                texaddr - MemoryMap.START_VRAM + mem.videoram.arrayOffset(),
+                                texture_width0 * texture_height0 * 4).slice();
+                            pixels.order(java.nio.ByteOrder.LITTLE_ENDIAN);
+                            final_buffer = pixels;
+                        } else if (texaddr >= MemoryMap.START_RAM && texaddr_end <= MemoryMap.END_RAM) {
+                            ByteBuffer pixels = ByteBuffer.wrap(
+                                mem.mainmemory.array(),
+                                texaddr - MemoryMap.START_RAM + mem.mainmemory.arrayOffset(),
+                                texture_width0 * texture_height0 * 4).slice();
+                            pixels.order(java.nio.ByteOrder.LITTLE_ENDIAN);
+                            final_buffer = pixels;
+                        } else {
+                            VideoEngine.log.warn("tpsm 3 slow");
+                            for (int i = 0; i < texture_width0*texture_height0; i++) {
+                                tmp_texture_buffer32[i] = mem.read32(texaddr+i*4);
+                            }
+                            final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
+                        }
+                    } else {
+                        final_buffer = unswizzleTextureFromMemory(texaddr, 4);
+                    }
+                    break;
+                }
+
+                default: {
+                    VideoEngine.log.warn("Unhandled texture storage " + texture_storage);
+                    Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
+                    break;
+                }
             }
 
-            default: {
-                VideoEngine.log.warn("Unhandled texture storage " + texture_storage);
-                Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
-                break;
+            // Some textureTypes are only supported from OpenGL v1.2.
+            // Try to convert to type supported in v1.
+            if (getOpenGLVersion(gl).compareTo("1.2") < 0) {
+                if (texture_type == GL.GL_UNSIGNED_SHORT_4_4_4_4_REV) {
+                    convertPixelType(tmp_texture_buffer16, tmp_texture_buffer32, 0xF000, 16, 0x0F00, 12, 0x00F0, 8, 0x000F, 4);
+                    final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
+                    texture_type = GL.GL_UNSIGNED_BYTE;
+                    textureByteAlignment = 4;
+                } else if (texture_type == GL.GL_UNSIGNED_SHORT_1_5_5_5_REV) {
+                    convertPixelType(tmp_texture_buffer16, tmp_texture_buffer32, 0x8000, 16, 0x7C00, 9, 0x03E0, 6, 0x001F, 3);
+                    final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
+                    texture_type = GL.GL_UNSIGNED_BYTE;
+                    textureByteAlignment = 4;
+                } else if (texture_type == GL.GL_UNSIGNED_SHORT_5_6_5_REV) {
+                    convertPixelType(tmp_texture_buffer16, tmp_texture_buffer32, 0x0000, 0, 0xF800, 8, 0x07E0, 5, 0x001F, 3);
+                    final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
+                    texture_type = GL.GL_UNSIGNED_BYTE;
+                    textureByteAlignment = 4;
+                    texture_format = GL.GL_RGB;
+                }
             }
-        }
 
-        // Some textureTypes are only supported from OpenGL v1.2.
-        // Try to convert to type supported in v1.
-        if (getOpenGLVersion(gl).compareTo("1.2") < 0) {
-            if (texture_type == GL.GL_UNSIGNED_SHORT_4_4_4_4_REV) {
-                convertPixelType(tmp_texture_buffer16, tmp_texture_buffer32, 0xF000, 16, 0x0F00, 12, 0x00F0, 8, 0x000F, 4);
-                final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
-                texture_type = GL.GL_UNSIGNED_BYTE;
-                textureByteAlignment = 4;
-            } else if (texture_type == GL.GL_UNSIGNED_SHORT_1_5_5_5_REV) {
-                convertPixelType(tmp_texture_buffer16, tmp_texture_buffer32, 0x8000, 16, 0x7C00, 9, 0x03E0, 6, 0x001F, 3);
-                final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
-                texture_type = GL.GL_UNSIGNED_BYTE;
-                textureByteAlignment = 4;
-            } else if (texture_type == GL.GL_UNSIGNED_SHORT_5_6_5_REV) {
-                convertPixelType(tmp_texture_buffer16, tmp_texture_buffer32, 0x0000, 0, 0xF800, 8, 0x07E0, 5, 0x001F, 3);
-                final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
-                texture_type = GL.GL_UNSIGNED_BYTE;
-                textureByteAlignment = 4;
+            if (texture_type == GL.GL_UNSIGNED_SHORT_5_6_5_REV) {
                 texture_format = GL.GL_RGB;
             }
+
+            // Upload texture to openGL
+            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, tex_min_filter);
+            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_mag_filter);
+            gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, textureByteAlignment);
+            gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, 0);   // ROW_LENGTH = width
+
+            gl.glTexImage2D  (  GL.GL_TEXTURE_2D,
+                                0,
+                                texture_format,
+                                texture_width0, texture_height0,
+                                0,
+                                texture_format,
+                                texture_type,
+                                final_buffer);
+
+            if (texture != null) {
+                texture.setIsLoaded();
+            }
+        } else {
+            log(helper.getCommandString(TFLUSH) + " Reusing cached texture " + texture.getGlId());
         }
-
-        if (texture_type == GL.GL_UNSIGNED_SHORT_5_6_5_REV) {
-            texture_format = GL.GL_RGB;
-        }
-
-        // Upload texture to openGL
-        // TODO: Write a texture cache :)
-        gl.glBindTexture  (GL.GL_TEXTURE_2D, gl_texture_id[0]);
-        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, tex_min_filter);
-        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_mag_filter);
-        gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, textureByteAlignment);
-        gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, 0);   // ROW_LENGTH = width
-
-        gl.glTexImage2D  (  GL.GL_TEXTURE_2D,
-                            0,
-                            texture_format,
-                            texture_width0, texture_height0,
-                            0,
-                            texture_format,
-                            texture_type,
-                            final_buffer);
     }
 }
