@@ -415,12 +415,21 @@ public class sceUtility implements HLEModule {
         Modules.log.debug("PARTIAL:sceUtilitySavedataInitStart savedataParamAddr=0x" + Integer.toHexString(savedataParamAddr) +
         		          ", gameName=" + sceUtilitySavedataParam.gameName +
         		          ", saveName=" + sceUtilitySavedataParam.saveName +
-        		          ", fileName=" + sceUtilitySavedataParam.fileName
+        		          ", fileName=" + sceUtilitySavedataParam.fileName +
+        		          ", mode=" + sceUtilitySavedataParam.mode
         		         );
         savedata_mode = sceUtilitySavedataParam.mode;
 
         // HACK let's start on quit, then the app should call shutdown and then we change status to finished
         savedata_status = PSP_UTILITY_DIALOG_QUIT;
+
+        // TODO HACK to enable game loading in ToE. To be removed when dialog for MODE_LISTLOAD and MODE_LISTSAVE is implemented.
+        if (savedata_mode == SceUtilitySavedataParam.MODE_LISTLOAD) {
+            savedata_mode = SceUtilitySavedataParam.MODE_AUTOLOAD;
+        }
+        if (savedata_mode == SceUtilitySavedataParam.MODE_LISTSAVE) {
+            savedata_mode = SceUtilitySavedataParam.MODE_AUTOSAVE;
+        }
 
         int result = -1;
         switch (savedata_mode) {
@@ -451,7 +460,15 @@ public class sceUtility implements HLEModule {
 	        case SceUtilitySavedataParam.MODE_AUTOSAVE:
 	        case SceUtilitySavedataParam.MODE_SAVE:
 	        	try {
-	        		sceUtilitySavedataParam.save(mem, pspiofilemgr.getInstance());
+	                if (sceUtilitySavedataParam.saveName == null || sceUtilitySavedataParam.saveName.length() == 0) {
+	                    if (sceUtilitySavedataParam.saveNameList.length > 0) {
+	                        sceUtilitySavedataParam.saveName = sceUtilitySavedataParam.saveNameList[0];
+	                    } else {
+	                        sceUtilitySavedataParam.saveName = "-000";
+	                    }
+	                }
+
+	                sceUtilitySavedataParam.save(mem, pspiofilemgr.getInstance());
 	        		result = 0;
 	        	} catch (IOException e) {
 		        	result = SCE_UTILITY_SAVEDATA_ERROR_SAVE_ACCESS_ERROR;
