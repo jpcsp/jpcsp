@@ -157,14 +157,30 @@ public class SyscallHandler {
 		// sceKernelTryReceiveMsgPipe(0x2040),
 		// sceKernelCancelMsgPipe(0x2041),
 		// sceKernelReferMsgPipeStatus(0x2042),
-		// sceKernelCreateVpl(0x2043),
-		// sceKernelDeleteVpl(0x2044),
-		// sceKernelAllocateVpl(0x2045),
-		// sceKernelAllocateVplCB(0x2046),
-		// sceKernelTryAllocateVpl(0x2047),
-		// sceKernelFreeVpl(0x2048),
-		// sceKernelCancelVpl(0x2049),
-		// sceKernelReferVplStatus(0x204a),
+                case 0x2043:
+                    Managers.vpl.sceKernelCreateVpl(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
+                    break;
+                case 0x2044:
+                    Managers.vpl.sceKernelDeleteVpl(gpr[4]);
+                    break;
+                case 0x2045:
+                    Managers.vpl.sceKernelAllocateVpl(gpr[4], gpr[5], gpr[6], gpr[8]);
+                    break;
+                case 0x2046:
+                    Managers.vpl.sceKernelAllocateVplCB(gpr[4], gpr[5], gpr[6], gpr[8]);
+                    break;
+                case 0x2047:
+                    Managers.vpl.sceKernelTryAllocateVpl(gpr[4], gpr[5], gpr[8]);
+                    break;
+                case 0x2048:
+                    Managers.vpl.sceKernelFreeVpl(gpr[4], gpr[5]);
+                    break;
+                case 0x2049:
+                    Managers.vpl.sceKernelCancelVpl(gpr[4], gpr[5]);
+                    break;
+                case 0x204a:
+                    Managers.vpl.sceKernelReferVplStatus(gpr[4], gpr[5]);
+                    break;
                 case 0x204b:
                     Managers.fpl.sceKernelCreateFpl(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8], gpr[9]);
                     break;
@@ -240,7 +256,9 @@ public class SyscallHandler {
                 case 0x2073:
                     ThreadMan.getInstance().ThreadMan_sceKernelTerminateThread(gpr[4]);
                     break;
-                 //sceKernelTerminateDeleteThread(0x2074),
+                case 0x2074:
+                    ThreadMan.getInstance().ThreadMan_sceKernelTerminateDeleteThread(gpr[4]);
+                    break;
 		// sceKernelSuspendDispatchThread(0x2075),
 		 //sceKernelResumeDispatchThread(0x2076),
                 case 0x2077:

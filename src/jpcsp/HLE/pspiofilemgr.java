@@ -945,7 +945,7 @@ public class pspiofilemgr {
                             size = file.length();
                             timestamp = file.getTimestamp().getTime();
                             startSector = file.getStartSector();
-                            Modules.log.debug("stat - File " + isofilename + ", StartSector=0x" + Integer.toHexString(startSector));
+                            Modules.log.debug("stat - UMD File " + isofilename + ", StartSector=0x" + Integer.toHexString(startSector));
                         }
 
                         // Octal extend into user and group
