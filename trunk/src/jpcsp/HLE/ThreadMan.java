@@ -66,7 +66,7 @@ public class ThreadMan {
     private String[] threadNameBanList = new String[] {
         "SndMain", "SoundThread", "At3Main", "Atrac3PlayThread",
         "bgm thread", "SceWaveMain", "SasCore thread", "soundThread",
-        "ATRAC3 play thread",
+        "ATRAC3 play thread", "SAS Thread",
     };
 
     public final static int PSP_ERROR_UNKNOWN_UID                    = 0x800200cb;
@@ -155,7 +155,7 @@ public class ThreadMan {
         // Setup args by copying them onto the stack
         //Modules.log.debug("pspfilename - '" + pspfilename + "'");
         int len = pspfilename.length();
-        int alignlen = (len + 1 + 3) & ~3; // string terminator + 4 byte align
+        int alignlen = (len + 1 + 15) & ~15; // string terminator + 16 byte align
         Memory mem = Memory.getInstance();
         for (int i = 0; i < len; i++)
             mem.write8((current_thread.stack_addr - alignlen) + i, (byte)pspfilename.charAt(i));
@@ -469,7 +469,7 @@ public class ThreadMan {
         // Copy user data to the new thread's stack, since we are not
         // starting the thread immediately, only marking it as ready,
         // the data needs to be saved somewhere safe.
-        int alignlen = (userDataLength + 3) & ~3; // 4 byte align
+        int alignlen = (userDataLength + 15) & ~15; // 16 byte align
         Memory mem = Memory.getInstance();
         for (int i = 0; i < userDataLength; i++)
             mem.write8((thread.stack_addr - alignlen) + i, (byte)mem.read8(userDataAddr + i));
@@ -522,9 +522,9 @@ public class ThreadMan {
     }
 
     /** terminate thread a0 */
-    public void ThreadMan_sceKernelTerminateThread(int a0) {
-        SceUidManager.checkUidPurpose(a0, "ThreadMan-thread", true);
-        SceKernelThreadInfo thread = threadlist.get(a0);
+    public void ThreadMan_sceKernelTerminateThread(int uid) {
+        SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
+        SceKernelThreadInfo thread = threadlist.get(uid);
         if (thread == null) {
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_THREAD;
         } else {
@@ -538,13 +538,32 @@ public class ThreadMan {
     }
 
     /** delete thread a0 */
-    public void ThreadMan_sceKernelDeleteThread(int a0) {
-        SceUidManager.checkUidPurpose(a0, "ThreadMan-thread", true);
-        SceKernelThreadInfo thread = threadlist.get(a0);
+    public void ThreadMan_sceKernelDeleteThread(int uid) {
+        SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
+        SceKernelThreadInfo thread = threadlist.get(uid);
         if (thread == null) {
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_THREAD;
         } else {
             Modules.log.debug("sceKernelDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
+
+            // Mark thread for deletion
+            thread.do_delete = true;
+
+            Emulator.getProcessor().cpu.gpr[2] = 0;
+        }
+    }
+
+    /** delete thread a0 */
+    public void ThreadMan_sceKernelTerminateDeleteThread(int uid) {
+        SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
+        SceKernelThreadInfo thread = threadlist.get(uid);
+        if (thread == null) {
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_THREAD;
+        } else {
+            Modules.log.debug("sceKernelTerminateDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
+
+            // Change thread state to stopped
+            thread.status = PspThreadStatus.PSP_THREAD_STOPPED;
 
             // Mark thread for deletion
             thread.do_delete = true;
@@ -568,7 +587,7 @@ public class ThreadMan {
         SceKernelThreadInfo thread = threadlist.get(uid);
         if (thread == null) {
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_THREAD;
-        } if (isBannedThread(thread)) {
+        } else if (isBannedThread(thread)) {
             Modules.log.warn("sceKernelStartThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' banned, not starting");
             // Banned, fake start
             Emulator.getProcessor().cpu.gpr[2] = 0;
@@ -579,7 +598,7 @@ public class ThreadMan {
             // Copy user data to the new thread's stack, since we are not
             // starting the thread immediately, only marking it as ready,
             // the data needs to be saved somewhere safe.
-            int alignlen = (len + 3) & ~3; // 4 byte align
+            int alignlen = (len + 15) & ~15; // 16 byte align
             Memory mem = Memory.getInstance();
             for (int i = 0; i < len; i++)
                 mem.write8((thread.stack_addr - alignlen) + i, (byte)mem.read8(data_addr + i));
@@ -1036,7 +1055,7 @@ public class ThreadMan {
                     // 512 byte min
                     stackSize = 512;
                 } else {
-                    // 256 byte size alignment
+                    // 256 byte size alignment (should be 16?)
                     stackSize = (stackSize + 0xFF) & ~0xFF;
                 }
             }

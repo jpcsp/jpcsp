@@ -29,12 +29,14 @@ public class Managers {
     public static EventFlagManager eventsFlags;
     public static ThreadManager threads;
     public static FplManager fpl;
+    public static VplManager vpl;
     public static ModuleManager modules;
 
     /** call this when resetting the emulator */
     public static void reset() {
         // TODO add other reset calls here
         fpl.reset();
+        vpl.reset();
         modules.reset();
     }
 
@@ -45,6 +47,7 @@ public class Managers {
         eventsFlags = EventFlagManager.singleton;
         threads = ThreadManager.singleton;
         fpl = FplManager.singleton;
+        vpl = VplManager.singleton;
         modules = ModuleManager.singleton;
     }
 }

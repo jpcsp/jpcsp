@@ -47,12 +47,12 @@ public class FplManager {
 
         name_addr &= 0x3FFFFFFF;
         String name = Utilities.readStringZ(Memory.getInstance().mainmemory, name_addr - MemoryMap.START_RAM);
-        Modules.log.info("sceKernelCreateFpl(name=" + name
+        Modules.log.debug("sceKernelCreateFpl(name=" + name
             + ",partition=" + partitionid
-            + ",attr=" + attr
-            + ",blocksize=" + blocksize
+            + ",attr=0x" + Integer.toHexString(attr)
+            + ",blocksize=0x" + Integer.toHexString(blocksize)
             + ",blocks=" + blocks
-            + ",opt_addr=0x" + Integer.toHexString(opt_addr) + ")");
+            + ",opt=0x" + Integer.toHexString(opt_addr) + ")");
 
         if (mem.isAddressGood(opt_addr)) {
             int size = mem.read32(opt_addr);
@@ -231,7 +231,7 @@ public class FplManager {
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Processor.memory;
 
-        Modules.log.info("sceKernelTryAllocateFpl(uid=0x" + Integer.toHexString(uid)
+        Modules.log.debug("sceKernelTryAllocateFpl(uid=0x" + Integer.toHexString(uid)
             + ",data=0x" + Integer.toHexString(data_addr) + ")");
 
         SceKernelFplInfo info = fplMap.get(uid);
@@ -300,7 +300,7 @@ public class FplManager {
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Processor.memory;
 
-        Modules.log.info("sceKernelReferFplStatus(uid=0x" + Integer.toHexString(uid)
+        Modules.log.debug("sceKernelReferFplStatus(uid=0x" + Integer.toHexString(uid)
             + ",info=0x" + Integer.toHexString(info_addr) + ")");
 
         SceKernelFplInfo info = fplMap.get(uid);

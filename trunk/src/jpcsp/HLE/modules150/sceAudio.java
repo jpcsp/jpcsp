@@ -34,7 +34,7 @@ import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
 public class sceAudio implements HLEModule {
-	private class pspChannelInfo {
+    private class pspChannelInfo {
 
         public boolean reserved;
         public int allocatedSamples;
@@ -54,108 +54,105 @@ public class sceAudio implements HLEModule {
         }
     }
 
-	static final int PSP_AUDIO_VOLUME_MAX = 0x8000;
-	static final int PSP_AUDIO_CHANNEL_MAX = 8;
-	static final int PSP_AUDIO_NEXT_CHANNEL = (-1);
-	static final int PSP_AUDIO_SAMPLE_MIN = 64;
-	static final int PSP_AUDIO_SAMPLE_MAX = 65472;
+    static final int PSP_AUDIO_VOLUME_MAX = 0x8000;
+    static final int PSP_AUDIO_CHANNEL_MAX = 8;
+    static final int PSP_AUDIO_NEXT_CHANNEL = (-1);
+    static final int PSP_AUDIO_SAMPLE_MIN = 64;
+    static final int PSP_AUDIO_SAMPLE_MAX = 65472;
 
-	static final int PSP_AUDIO_FORMAT_STEREO = 0;
-	static final int PSP_AUDIO_FORMAT_MONO = 0x10;
+    static final int PSP_AUDIO_FORMAT_STEREO = 0;
+    static final int PSP_AUDIO_FORMAT_MONO = 0x10;
 
-	static final int PSP_AUDIO_FREQ_44K = 44100;
-	static final int PSP_AUDIO_FREQ_48K = 48000;
+    static final int PSP_AUDIO_FREQ_44K = 44100;
+    static final int PSP_AUDIO_FREQ_48K = 48000;
 
     private pspChannelInfo[] pspchannels; // psp channels
     private int sampleRate;
 
-    public sceAudio() {
-    	pspchannels = new pspChannelInfo[8];
-        for(int i=0;i<8;i++)
-        {
-            pspchannels[i]=new pspChannelInfo();
-        }
+    @Override
+    public String getName() { return "sceAudio"; }
 
-        sampleRate = 48000;
+    @Override
+    public void installModule(HLEModuleManager mm, int version) {
+        if (version >= 150) {
+
+            mm.addFunction(sceAudioOutputFunction, 0x8C1009B2);
+            mm.addFunction(sceAudioOutputBlockingFunction, 0x136CAF51);
+            mm.addFunction(sceAudioOutputPannedFunction, 0xE2D56B2D);
+            mm.addFunction(sceAudioOutputPannedBlockingFunction, 0x13F592BC);
+            mm.addFunction(sceAudioChReserveFunction, 0x5EC81C55);
+            mm.addFunction(sceAudioOneshotOutputFunction, 0x41EFADE7);
+            mm.addFunction(sceAudioChReleaseFunction, 0x6FC46853);
+            mm.addFunction(sceAudioGetChannelRestLengthFunction, 0xB011922F);
+            mm.addFunction(sceAudioSetChannelDataLenFunction, 0xCB2E439E);
+            mm.addFunction(sceAudioChangeChannelConfigFunction, 0x95FD0C2D);
+            mm.addFunction(sceAudioChangeChannelVolumeFunction, 0xB7E1D8E7);
+            mm.addFunction(sceAudioSRCChReserveFunction, 0x38553111);
+            mm.addFunction(sceAudioSRCChReleaseFunction, 0x5C37C0AE);
+            mm.addFunction(sceAudioSRCOutputBlockingFunction, 0xE0727056);
+            mm.addFunction(sceAudioInputBlockingFunction, 0x086E5895);
+            mm.addFunction(sceAudioInputFunction, 0x6D4BEC68);
+            mm.addFunction(sceAudioGetInputLengthFunction, 0xA708C6A6);
+            mm.addFunction(sceAudioWaitInputEndFunction, 0x87B2E651);
+            mm.addFunction(sceAudioInputInitFunction, 0x7DE61688);
+            mm.addFunction(sceAudioInputInitExFunction, 0xE926D3FB);
+            mm.addFunction(sceAudioPollInputEndFunction, 0xA633048E);
+            mm.addFunction(sceAudioGetChannelRestLenFunction, 0xE9D97901);
+
+            /* From sceAudio_driver */
+            mm.addFunction(sceAudioInitFunction, 0x80F1F7E0);
+            mm.addFunction(sceAudioEndFunction, 0x210567F7);
+            mm.addFunction(sceAudioSetFrequencyFunction, 0xA2BEAA6C);
+            mm.addFunction(sceAudioLoopbackTestFunction, 0xB61595C0);
+            mm.addFunction(sceAudioSetVolumeOffsetFunction, 0x927AC32B);
+
+            pspchannels = new pspChannelInfo[8];
+            for (int i = 0; i < 8; i++)
+            {
+                pspchannels[i] = new pspChannelInfo();
+            }
+
+            sampleRate = 48000;
+        }
     }
 
-	@Override
-	public String getName() { return "sceAudio"; }
+    @Override
+    public void uninstallModule(HLEModuleManager mm, int version) {
+        if (version >= 150) {
 
-	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		if (version >= 150) {
+            mm.removeFunction(sceAudioOutputFunction);
+            mm.removeFunction(sceAudioOutputBlockingFunction);
+            mm.removeFunction(sceAudioOutputPannedFunction);
+            mm.removeFunction(sceAudioOutputPannedBlockingFunction);
+            mm.removeFunction(sceAudioChReserveFunction);
+            mm.removeFunction(sceAudioOneshotOutputFunction);
+            mm.removeFunction(sceAudioChReleaseFunction);
+            mm.removeFunction(sceAudioGetChannelRestLengthFunction);
+            mm.removeFunction(sceAudioSetChannelDataLenFunction);
+            mm.removeFunction(sceAudioChangeChannelConfigFunction);
+            mm.removeFunction(sceAudioChangeChannelVolumeFunction);
+            mm.removeFunction(sceAudioSRCChReserveFunction);
+            mm.removeFunction(sceAudioSRCChReleaseFunction);
+            mm.removeFunction(sceAudioSRCOutputBlockingFunction);
+            mm.removeFunction(sceAudioInputBlockingFunction);
+            mm.removeFunction(sceAudioInputFunction);
+            mm.removeFunction(sceAudioGetInputLengthFunction);
+            mm.removeFunction(sceAudioWaitInputEndFunction);
+            mm.removeFunction(sceAudioInputInitFunction);
+            mm.removeFunction(sceAudioInputInitExFunction);
+            mm.removeFunction(sceAudioPollInputEndFunction);
+            mm.removeFunction(sceAudioGetChannelRestLenFunction);
 
-			mm.addFunction(sceAudioOutputFunction, 0x8C1009B2);
-			mm.addFunction(sceAudioOutputBlockingFunction, 0x136CAF51);
-			mm.addFunction(sceAudioOutputPannedFunction, 0xE2D56B2D);
-			mm.addFunction(sceAudioOutputPannedBlockingFunction, 0x13F592BC);
-			mm.addFunction(sceAudioChReserveFunction, 0x5EC81C55);
-			mm.addFunction(sceAudioOneshotOutputFunction, 0x41EFADE7);
-			mm.addFunction(sceAudioChReleaseFunction, 0x6FC46853);
-			mm.addFunction(sceAudioGetChannelRestLengthFunction, 0xB011922F);
-			mm.addFunction(sceAudioSetChannelDataLenFunction, 0xCB2E439E);
-			mm.addFunction(sceAudioChangeChannelConfigFunction, 0x95FD0C2D);
-			mm.addFunction(sceAudioChangeChannelVolumeFunction, 0xB7E1D8E7);
-			mm.addFunction(sceAudioSRCChReserveFunction, 0x38553111);
-			mm.addFunction(sceAudioSRCChReleaseFunction, 0x5C37C0AE);
-			mm.addFunction(sceAudioSRCOutputBlockingFunction, 0xE0727056);
-			mm.addFunction(sceAudioInputBlockingFunction, 0x086E5895);
-			mm.addFunction(sceAudioInputFunction, 0x6D4BEC68);
-			mm.addFunction(sceAudioGetInputLengthFunction, 0xA708C6A6);
-			mm.addFunction(sceAudioWaitInputEndFunction, 0x87B2E651);
-			mm.addFunction(sceAudioInputInitFunction, 0x7DE61688);
-			mm.addFunction(sceAudioInputInitExFunction, 0xE926D3FB);
-			mm.addFunction(sceAudioPollInputEndFunction, 0xA633048E);
-			mm.addFunction(sceAudioGetChannelRestLenFunction, 0xE9D97901);
+            /* From sceAudio_driver */
+            mm.removeFunction(sceAudioInitFunction);
+            mm.removeFunction(sceAudioEndFunction);
+            mm.removeFunction(sceAudioSetFrequencyFunction);
+            mm.removeFunction(sceAudioLoopbackTestFunction);
+            mm.removeFunction(sceAudioSetVolumeOffsetFunction);
+        }
+    }
 
-			/* From sceAudio_driver */
-			mm.addFunction(sceAudioInitFunction, 0x80F1F7E0);
-			mm.addFunction(sceAudioEndFunction, 0x210567F7);
-			mm.addFunction(sceAudioSetFrequencyFunction, 0xA2BEAA6C);
-			mm.addFunction(sceAudioLoopbackTestFunction, 0xB61595C0);
-			mm.addFunction(sceAudioSetVolumeOffsetFunction, 0x927AC32B);
-
-		}
-	}
-
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		if (version >= 150) {
-
-			mm.removeFunction(sceAudioOutputFunction);
-			mm.removeFunction(sceAudioOutputBlockingFunction);
-			mm.removeFunction(sceAudioOutputPannedFunction);
-			mm.removeFunction(sceAudioOutputPannedBlockingFunction);
-			mm.removeFunction(sceAudioChReserveFunction);
-			mm.removeFunction(sceAudioOneshotOutputFunction);
-			mm.removeFunction(sceAudioChReleaseFunction);
-			mm.removeFunction(sceAudioGetChannelRestLengthFunction);
-			mm.removeFunction(sceAudioSetChannelDataLenFunction);
-			mm.removeFunction(sceAudioChangeChannelConfigFunction);
-			mm.removeFunction(sceAudioChangeChannelVolumeFunction);
-			mm.removeFunction(sceAudioSRCChReserveFunction);
-			mm.removeFunction(sceAudioSRCChReleaseFunction);
-			mm.removeFunction(sceAudioSRCOutputBlockingFunction);
-			mm.removeFunction(sceAudioInputBlockingFunction);
-			mm.removeFunction(sceAudioInputFunction);
-			mm.removeFunction(sceAudioGetInputLengthFunction);
-			mm.removeFunction(sceAudioWaitInputEndFunction);
-			mm.removeFunction(sceAudioInputInitFunction);
-			mm.removeFunction(sceAudioInputInitExFunction);
-			mm.removeFunction(sceAudioPollInputEndFunction);
-			mm.removeFunction(sceAudioGetChannelRestLenFunction);
-
-			/* From sceAudio_driver */
-			mm.removeFunction(sceAudioInitFunction);
-			mm.removeFunction(sceAudioEndFunction);
-			mm.removeFunction(sceAudioSetFrequencyFunction);
-			mm.removeFunction(sceAudioLoopbackTestFunction);
-			mm.removeFunction(sceAudioSetVolumeOffsetFunction);
-		}
-	}
-
-	private int doAudioOutput (int channel, int pvoid_buf)
+    private int doAudioOutput (int channel, int pvoid_buf)
     {
         int ret = -1;
 
@@ -284,89 +281,89 @@ public class sceAudio implements HLEModule {
         return ret; //just return the first channel
     }
 
-	public void sceAudioInit(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
+    public void sceAudioInit(Processor processor) {
+        CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+        /* put your own code here instead */
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceAudioInit [0x80F1F7E0]");
+        System.out.println("Unimplemented NID function sceAudioInit [0x80F1F7E0]");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = 0xDEADC0DE;
 
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
 
-	public void sceAudioEnd(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
+    public void sceAudioEnd(Processor processor) {
+        CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+        /* put your own code here instead */
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceAudioEnd [0x210567F7]");
+        System.out.println("Unimplemented NID function sceAudioEnd [0x210567F7]");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = 0xDEADC0DE;
 
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
 
-	public void sceAudioSetFrequency(Processor processor) {
-		CpuState cpu = processor.cpu;
+    public void sceAudioSetFrequency(Processor processor) {
+        CpuState cpu = processor.cpu;
 
-		int frequency = cpu.gpr[4];
+        int frequency = cpu.gpr[4];
 
-		int ret = -1;
+        int ret = -1;
         if(frequency == 44100 || frequency == 48000)
         {
             sampleRate = frequency;
             ret = 0;
         }
         cpu.gpr[2] = ret; //just return the first channel
-	}
+    }
 
-	public void sceAudioLoopbackTest(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
+    public void sceAudioLoopbackTest(Processor processor) {
+        CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+        /* put your own code here instead */
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceAudioLoopbackTest [0xB61595C0]");
+        System.out.println("Unimplemented NID function sceAudioLoopbackTest [0xB61595C0]");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = 0xDEADC0DE;
 
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
 
-	public void sceAudioSetVolumeOffset(Processor processor) {
-		CpuState cpu = processor.cpu;
-		Memory mem = Processor.memory;
+    public void sceAudioSetVolumeOffset(Processor processor) {
+        CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+        /* put your own code here instead */
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceAudioSetVolumeOffset [0x927AC32B]");
+        System.out.println("Unimplemented NID function sceAudioSetVolumeOffset [0x927AC32B]");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = 0xDEADC0DE;
 
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
 
-	public void sceAudioOutput(Processor processor) {
-		CpuState cpu = processor.cpu;
+    public void sceAudioOutput(Processor processor) {
+        CpuState cpu = processor.cpu;
         Memory mem = processor.memory;
 
-		int channel = cpu.gpr[4], vol = cpu.gpr[5], pvoid_buf = cpu.gpr[6];
+        int channel = cpu.gpr[4], vol = cpu.gpr[5], pvoid_buf = cpu.gpr[6];
 
         if (!mem.isAddressGood(pvoid_buf)) {
             Modules.log.warn("sceAudioOutput bad pointer");
@@ -375,13 +372,13 @@ public class sceAudio implements HLEModule {
             sceAudioChangeChannelVolume(channel, vol, vol);
             cpu.gpr[2] = doAudioOutput(channel, pvoid_buf);
         }
-	}
+    }
 
-	public void sceAudioOutputBlocking(Processor processor) {
-		CpuState cpu = processor.cpu;
+    public void sceAudioOutputBlocking(Processor processor) {
+        CpuState cpu = processor.cpu;
         Memory mem = processor.memory;
 
-		int channel = cpu.gpr[4], vol = cpu.gpr[5], pvoid_buf = cpu.gpr[6];
+        int channel = cpu.gpr[4], vol = cpu.gpr[5], pvoid_buf = cpu.gpr[6];
 
         if (!mem.isAddressGood(pvoid_buf)) {
             Modules.log.warn("sceAudioOutputBlocking bad pointer");
@@ -398,14 +395,14 @@ public class sceAudio implements HLEModule {
             cpu.gpr[2] = ret;
             ThreadMan.getInstance().yieldCurrentThread();
         }
-	}
+    }
 
-	public void sceAudioOutputPanned(Processor processor) {
-		CpuState cpu = processor.cpu;
+    public void sceAudioOutputPanned(Processor processor) {
+        CpuState cpu = processor.cpu;
         Memory mem = processor.memory;
 
-		int channel = cpu.gpr[4], leftvol = cpu.gpr[5], rightvol = cpu.gpr[6], pvoid_buf = cpu.gpr[7];
-		int ret = -1;
+        int channel = cpu.gpr[4], leftvol = cpu.gpr[5], rightvol = cpu.gpr[6], pvoid_buf = cpu.gpr[7];
+        int ret = -1;
 
         if (!mem.isAddressGood(pvoid_buf)) {
             Modules.log.warn("sceAudioOutputPanned bad pointer");
@@ -415,14 +412,14 @@ public class sceAudio implements HLEModule {
             ret = doAudioOutput(channel,pvoid_buf);
             cpu.gpr[2] = ret;
         }
-	}
+    }
 
-	public void sceAudioOutputPannedBlocking(Processor processor) {
-		CpuState cpu = processor.cpu;
+    public void sceAudioOutputPannedBlocking(Processor processor) {
+        CpuState cpu = processor.cpu;
         Memory mem = processor.memory;
 
-		int channel = cpu.gpr[4], leftvol = cpu.gpr[5], rightvol = cpu.gpr[6], pvoid_buf = cpu.gpr[7];
-		int ret = -1;
+        int channel = cpu.gpr[4], leftvol = cpu.gpr[5], rightvol = cpu.gpr[6], pvoid_buf = cpu.gpr[7];
+        int ret = -1;
 
         if (!mem.isAddressGood(pvoid_buf)) {
             Modules.log.warn("sceAudioOutputPannedBlocking bad pointer");
@@ -434,12 +431,12 @@ public class sceAudio implements HLEModule {
             cpu.gpr[2] = ret;
             ThreadMan.getInstance().yieldCurrentThread();
         }
-	}
+    }
 
-	public void sceAudioChReserve(Processor processor) {
-		CpuState cpu = processor.cpu;
+    public void sceAudioChReserve(Processor processor) {
+        CpuState cpu = processor.cpu;
 
-		int channel = cpu.gpr[4], samplecount = cpu.gpr[5], format = cpu.gpr[6];
+        int channel = cpu.gpr[4], samplecount = cpu.gpr[5], format = cpu.gpr[6];
 
         //if(false)
         if(true)
@@ -449,7 +446,7 @@ public class sceAudio implements HLEModule {
         }
         else
         {
-        	Modules.log.debug("sceAudioChReserve channel= " + channel + " samplecount = " + samplecount + " format = " + format);
+            Modules.log.debug("sceAudioChReserve channel= " + channel + " samplecount = " + samplecount + " format = " + format);
 
             if(channel!=-1) // use specified channel, if available
             {
@@ -480,30 +477,30 @@ public class sceAudio implements HLEModule {
             }
             cpu.gpr[2] = channel;
         }
-	}
+    }
 
-	public void sceAudioOneshotOutput(Processor processor) {
-		CpuState cpu = processor.cpu;
+    public void sceAudioOneshotOutput(Processor processor) {
+        CpuState cpu = processor.cpu;
 
-		Memory mem = Processor.memory;
+        Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+        /* put your own code here instead */
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceAudioOneshotOutput [0x41EFADE7]");
+        System.out.println("Unimplemented NID function sceAudioOneshotOutput [0x41EFADE7]");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = 0xDEADC0DE;
 
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
 
-	public void sceAudioChRelease(Processor processor) {
-		CpuState cpu = processor.cpu;
+    public void sceAudioChRelease(Processor processor) {
+        CpuState cpu = processor.cpu;
 
-		int channel = cpu.gpr[4];
-		int ret = -1;
+        int channel = cpu.gpr[4];
+        int ret = -1;
 
         if(pspchannels[channel].reserved)
         {
@@ -517,193 +514,193 @@ public class sceAudio implements HLEModule {
             ret = 0;
         }
         cpu.gpr[2] = ret; //just return the first channel
-	}
+    }
 
-	public void sceAudioGetChannelRestLength(Processor processor) {
-		sceAudioGetChannelRestLen(processor);
-	}
+    public void sceAudioGetChannelRestLength(Processor processor) {
+        sceAudioGetChannelRestLen(processor);
+    }
 
-	public void sceAudioSetChannelDataLen(Processor processor) {
-		CpuState cpu = processor.cpu;
+    public void sceAudioSetChannelDataLen(Processor processor) {
+        CpuState cpu = processor.cpu;
 
-		int channel = cpu.gpr[4], samplecount = cpu.gpr[5];
+        int channel = cpu.gpr[4], samplecount = cpu.gpr[5];
 
-		pspchannels[channel].allocatedSamples = samplecount;
+        pspchannels[channel].allocatedSamples = samplecount;
         cpu.gpr[2] = 0;
-	}
+    }
 
-	public void sceAudioChangeChannelConfig(Processor processor) {
-		CpuState cpu = processor.cpu;
+    public void sceAudioChangeChannelConfig(Processor processor) {
+        CpuState cpu = processor.cpu;
 
-		int channel = cpu.gpr[4], format = cpu.gpr[5];
+        int channel = cpu.gpr[4], format = cpu.gpr[5];
 
-		pspchannels[channel].format = format;
+        pspchannels[channel].format = format;
         cpu.gpr[2] = 0; //just return the first channel
-	}
+    }
 
-	public void sceAudioChangeChannelVolume(Processor processor) {
-		CpuState cpu = processor.cpu;
+    public void sceAudioChangeChannelVolume(Processor processor) {
+        CpuState cpu = processor.cpu;
 
-		cpu.gpr[2] = sceAudioChangeChannelVolume(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
-	}
+        cpu.gpr[2] = sceAudioChangeChannelVolume(cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]);
+    }
 
-	public void sceAudioSRCChReserve(Processor processor) {
-		CpuState cpu = processor.cpu;
+    public void sceAudioSRCChReserve(Processor processor) {
+        CpuState cpu = processor.cpu;
 
-		Memory mem = Processor.memory;
+        Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+        /* put your own code here instead */
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceAudioSRCChReserve [0x38553111]");
+        System.out.println("Unimplemented NID function sceAudioSRCChReserve [0x38553111]");
 
-		cpu.gpr[2] = -1;
-	}
+        cpu.gpr[2] = -1;
+    }
 
-	public void sceAudioSRCChRelease(Processor processor) {
-		CpuState cpu = processor.cpu;
+    public void sceAudioSRCChRelease(Processor processor) {
+        CpuState cpu = processor.cpu;
 
-		Memory mem = Processor.memory;
+        Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+        /* put your own code here instead */
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceAudioSRCChRelease [0x5C37C0AE]");
+        System.out.println("Unimplemented NID function sceAudioSRCChRelease [0x5C37C0AE]");
 
-		cpu.gpr[2] = -1;
-	}
+        cpu.gpr[2] = -1;
+    }
 
-	public void sceAudioSRCOutputBlocking(Processor processor) {
-		CpuState cpu = processor.cpu;
+    public void sceAudioSRCOutputBlocking(Processor processor) {
+        CpuState cpu = processor.cpu;
 
-		Memory mem = Processor.memory;
+        Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+        /* put your own code here instead */
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceAudioSRCOutputBlocking [0xE0727056]");
+        System.out.println("Unimplemented NID function sceAudioSRCOutputBlocking [0xE0727056]");
 
-		cpu.gpr[2] = -1;
+        cpu.gpr[2] = -1;
         ThreadMan.getInstance().yieldCurrentThread();
-	}
+    }
 
-	public void sceAudioInputBlocking(Processor processor) {
-		CpuState cpu = processor.cpu;
+    public void sceAudioInputBlocking(Processor processor) {
+        CpuState cpu = processor.cpu;
 
-		Memory mem = Processor.memory;
+        Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+        /* put your own code here instead */
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceAudioInputBlocking [0x086E5895]");
+        System.out.println("Unimplemented NID function sceAudioInputBlocking [0x086E5895]");
 
-		cpu.gpr[2] = -1;
+        cpu.gpr[2] = -1;
         ThreadMan.getInstance().yieldCurrentThread();
-	}
+    }
 
-	public void sceAudioInput(Processor processor) {
-		CpuState cpu = processor.cpu;
+    public void sceAudioInput(Processor processor) {
+        CpuState cpu = processor.cpu;
 
-		Memory mem = Processor.memory;
+        Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+        /* put your own code here instead */
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceAudioInput [0x6D4BEC68]");
+        System.out.println("Unimplemented NID function sceAudioInput [0x6D4BEC68]");
 
-		cpu.gpr[2] = -1;
-	}
+        cpu.gpr[2] = -1;
+    }
 
-	public void sceAudioGetInputLength(Processor processor) {
-		CpuState cpu = processor.cpu;
+    public void sceAudioGetInputLength(Processor processor) {
+        CpuState cpu = processor.cpu;
 
-		Memory mem = Processor.memory;
+        Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+        /* put your own code here instead */
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceAudioGetInputLength [0xA708C6A6]");
+        System.out.println("Unimplemented NID function sceAudioGetInputLength [0xA708C6A6]");
 
-		cpu.gpr[2] = -1;
-	}
+        cpu.gpr[2] = -1;
+    }
 
-	public void sceAudioWaitInputEnd(Processor processor) {
-		CpuState cpu = processor.cpu;
+    public void sceAudioWaitInputEnd(Processor processor) {
+        CpuState cpu = processor.cpu;
 
-		Memory mem = Processor.memory;
+        Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+        /* put your own code here instead */
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceAudioWaitInputEnd [0x87B2E651]");
+        System.out.println("Unimplemented NID function sceAudioWaitInputEnd [0x87B2E651]");
 
-		cpu.gpr[2] = -1;
-	}
+        cpu.gpr[2] = -1;
+    }
 
-	public void sceAudioInputInit(Processor processor) {
-		CpuState cpu = processor.cpu;
+    public void sceAudioInputInit(Processor processor) {
+        CpuState cpu = processor.cpu;
 
-		Memory mem = Processor.memory;
+        Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+        /* put your own code here instead */
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceAudioInputInit [0x7DE61688]");
+        System.out.println("Unimplemented NID function sceAudioInputInit [0x7DE61688]");
 
-		cpu.gpr[2] = -1;
-	}
+        cpu.gpr[2] = -1;
+    }
 
-	public void sceAudioInputInitEx(Processor processor) {
-		CpuState cpu = processor.cpu;
+    public void sceAudioInputInitEx(Processor processor) {
+        CpuState cpu = processor.cpu;
 
-		Memory mem = Processor.memory;
+        Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+        /* put your own code here instead */
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceAudioInputInitEx [0xE926D3FB]");
+        System.out.println("Unimplemented NID function sceAudioInputInitEx [0xE926D3FB]");
 
-		cpu.gpr[2] = -1;
-	}
+        cpu.gpr[2] = -1;
+    }
 
-	public void sceAudioPollInputEnd(Processor processor) {
-		CpuState cpu = processor.cpu;
+    public void sceAudioPollInputEnd(Processor processor) {
+        CpuState cpu = processor.cpu;
 
-		Memory mem = Processor.memory;
+        Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+        /* put your own code here instead */
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceAudioPollInputEnd [0xA633048E]");
+        System.out.println("Unimplemented NID function sceAudioPollInputEnd [0xA633048E]");
 
-		cpu.gpr[2] = -1;
-	}
+        cpu.gpr[2] = -1;
+    }
 
-	public void sceAudioGetChannelRestLen(Processor processor) {
-		CpuState cpu = processor.cpu;
+    public void sceAudioGetChannelRestLen(Processor processor) {
+        CpuState cpu = processor.cpu;
 
-		int channel = cpu.gpr[4];
-		int ret = -1;
+        int channel = cpu.gpr[4];
+        int ret = -1;
         if(pspchannels[channel].outputDataLine != null)
         {
             int bytespersample = 4;
@@ -714,303 +711,303 @@ public class sceAudio implements HLEModule {
         }
 
         cpu.gpr[2] = ret;
-	}
+    }
 
-	public final HLEModuleFunction sceAudioInitFunction = new HLEModuleFunction("sceAudio_driver", "sceAudioInit") {
-		@Override
-		public final void execute(Processor processor) {
-			sceAudioInit(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceAudio_driverModule.sceAudioInit(processor);";
-		}
-	};
+    public final HLEModuleFunction sceAudioInitFunction = new HLEModuleFunction("sceAudio_driver", "sceAudioInit") {
+        @Override
+        public final void execute(Processor processor) {
+            sceAudioInit(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAudio_driverModule.sceAudioInit(processor);";
+        }
+    };
 
-	public final HLEModuleFunction sceAudioEndFunction = new HLEModuleFunction("sceAudio_driver", "sceAudioEnd") {
-		@Override
-		public final void execute(Processor processor) {
-			sceAudioEnd(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceAudio_driverModule.sceAudioEnd(processor);";
-		}
-	};
+    public final HLEModuleFunction sceAudioEndFunction = new HLEModuleFunction("sceAudio_driver", "sceAudioEnd") {
+        @Override
+        public final void execute(Processor processor) {
+            sceAudioEnd(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAudio_driverModule.sceAudioEnd(processor);";
+        }
+    };
 
-	public final HLEModuleFunction sceAudioSetFrequencyFunction = new HLEModuleFunction("sceAudio_driver", "sceAudioSetFrequency") {
-		@Override
-		public final void execute(Processor processor) {
-			sceAudioSetFrequency(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceAudio_driverModule.sceAudioSetFrequency(processor);";
-		}
-	};
+    public final HLEModuleFunction sceAudioSetFrequencyFunction = new HLEModuleFunction("sceAudio_driver", "sceAudioSetFrequency") {
+        @Override
+        public final void execute(Processor processor) {
+            sceAudioSetFrequency(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAudio_driverModule.sceAudioSetFrequency(processor);";
+        }
+    };
 
-	public final HLEModuleFunction sceAudioLoopbackTestFunction = new HLEModuleFunction("sceAudio_driver", "sceAudioLoopbackTest") {
-		@Override
-		public final void execute(Processor processor) {
-			sceAudioLoopbackTest(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceAudio_driverModule.sceAudioLoopbackTest(processor);";
-		}
-	};
+    public final HLEModuleFunction sceAudioLoopbackTestFunction = new HLEModuleFunction("sceAudio_driver", "sceAudioLoopbackTest") {
+        @Override
+        public final void execute(Processor processor) {
+            sceAudioLoopbackTest(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAudio_driverModule.sceAudioLoopbackTest(processor);";
+        }
+    };
 
-	public final HLEModuleFunction sceAudioSetVolumeOffsetFunction = new HLEModuleFunction("sceAudio_driver", "sceAudioSetVolumeOffset") {
-		@Override
-		public final void execute(Processor processor) {
-			sceAudioSetVolumeOffset(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceAudio_driverModule.sceAudioSetVolumeOffset(processor);";
-		}
-	};
+    public final HLEModuleFunction sceAudioSetVolumeOffsetFunction = new HLEModuleFunction("sceAudio_driver", "sceAudioSetVolumeOffset") {
+        @Override
+        public final void execute(Processor processor) {
+            sceAudioSetVolumeOffset(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAudio_driverModule.sceAudioSetVolumeOffset(processor);";
+        }
+    };
 
-	public final HLEModuleFunction sceAudioOutputFunction = new HLEModuleFunction("sceAudio", "sceAudioOutput") {
-		@Override
-		public final void execute(Processor processor) {
-			sceAudioOutput(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOutput(processor);";
-		}
-	};
+    public final HLEModuleFunction sceAudioOutputFunction = new HLEModuleFunction("sceAudio", "sceAudioOutput") {
+        @Override
+        public final void execute(Processor processor) {
+            sceAudioOutput(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOutput(processor);";
+        }
+    };
 
-	public final HLEModuleFunction sceAudioOutputBlockingFunction = new HLEModuleFunction("sceAudio", "sceAudioOutputBlocking") {
-		@Override
-		public final void execute(Processor processor) {
-			sceAudioOutputBlocking(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOutputBlocking(processor);";
-		}
-	};
+    public final HLEModuleFunction sceAudioOutputBlockingFunction = new HLEModuleFunction("sceAudio", "sceAudioOutputBlocking") {
+        @Override
+        public final void execute(Processor processor) {
+            sceAudioOutputBlocking(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOutputBlocking(processor);";
+        }
+    };
 
-	public final HLEModuleFunction sceAudioOutputPannedFunction = new HLEModuleFunction("sceAudio", "sceAudioOutputPanned") {
-		@Override
-		public final void execute(Processor processor) {
-			sceAudioOutputPanned(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOutputPanned(processor);";
-		}
-	};
+    public final HLEModuleFunction sceAudioOutputPannedFunction = new HLEModuleFunction("sceAudio", "sceAudioOutputPanned") {
+        @Override
+        public final void execute(Processor processor) {
+            sceAudioOutputPanned(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOutputPanned(processor);";
+        }
+    };
 
-	public final HLEModuleFunction sceAudioOutputPannedBlockingFunction = new HLEModuleFunction("sceAudio", "sceAudioOutputPannedBlocking") {
-		@Override
-		public final void execute(Processor processor) {
-			sceAudioOutputPannedBlocking(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOutputPannedBlocking(processor);";
-		}
-	};
+    public final HLEModuleFunction sceAudioOutputPannedBlockingFunction = new HLEModuleFunction("sceAudio", "sceAudioOutputPannedBlocking") {
+        @Override
+        public final void execute(Processor processor) {
+            sceAudioOutputPannedBlocking(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOutputPannedBlocking(processor);";
+        }
+    };
 
-	public final HLEModuleFunction sceAudioChReserveFunction = new HLEModuleFunction("sceAudio", "sceAudioChReserve") {
-		@Override
-		public final void execute(Processor processor) {
-			sceAudioChReserve(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceAudioModule.sceAudioChReserve(processor);";
-		}
-	};
+    public final HLEModuleFunction sceAudioChReserveFunction = new HLEModuleFunction("sceAudio", "sceAudioChReserve") {
+        @Override
+        public final void execute(Processor processor) {
+            sceAudioChReserve(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioChReserve(processor);";
+        }
+    };
 
-	public final HLEModuleFunction sceAudioOneshotOutputFunction = new HLEModuleFunction("sceAudio", "sceAudioOneshotOutput") {
-		@Override
-		public final void execute(Processor processor) {
-			sceAudioOneshotOutput(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOneshotOutput(processor);";
-		}
-	};
+    public final HLEModuleFunction sceAudioOneshotOutputFunction = new HLEModuleFunction("sceAudio", "sceAudioOneshotOutput") {
+        @Override
+        public final void execute(Processor processor) {
+            sceAudioOneshotOutput(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioOneshotOutput(processor);";
+        }
+    };
 
-	public final HLEModuleFunction sceAudioChReleaseFunction = new HLEModuleFunction("sceAudio", "sceAudioChRelease") {
-		@Override
-		public final void execute(Processor processor) {
-			sceAudioChRelease(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceAudioModule.sceAudioChRelease(processor);";
-		}
-	};
+    public final HLEModuleFunction sceAudioChReleaseFunction = new HLEModuleFunction("sceAudio", "sceAudioChRelease") {
+        @Override
+        public final void execute(Processor processor) {
+            sceAudioChRelease(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioChRelease(processor);";
+        }
+    };
 
-	public final HLEModuleFunction sceAudioGetChannelRestLengthFunction = new HLEModuleFunction("sceAudio", "sceAudioGetChannelRestLength") {
-		@Override
-		public final void execute(Processor processor) {
-			sceAudioGetChannelRestLength(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceAudioModule.sceAudioGetChannelRestLength(processor);";
-		}
-	};
+    public final HLEModuleFunction sceAudioGetChannelRestLengthFunction = new HLEModuleFunction("sceAudio", "sceAudioGetChannelRestLength") {
+        @Override
+        public final void execute(Processor processor) {
+            sceAudioGetChannelRestLength(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioGetChannelRestLength(processor);";
+        }
+    };
 
-	public final HLEModuleFunction sceAudioSetChannelDataLenFunction = new HLEModuleFunction("sceAudio", "sceAudioSetChannelDataLen") {
-		@Override
-		public final void execute(Processor processor) {
-			sceAudioSetChannelDataLen(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceAudioModule.sceAudioSetChannelDataLen(processor);";
-		}
-	};
+    public final HLEModuleFunction sceAudioSetChannelDataLenFunction = new HLEModuleFunction("sceAudio", "sceAudioSetChannelDataLen") {
+        @Override
+        public final void execute(Processor processor) {
+            sceAudioSetChannelDataLen(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioSetChannelDataLen(processor);";
+        }
+    };
 
-	public final HLEModuleFunction sceAudioChangeChannelConfigFunction = new HLEModuleFunction("sceAudio", "sceAudioChangeChannelConfig") {
-		@Override
-		public final void execute(Processor processor) {
-			sceAudioChangeChannelConfig(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceAudioModule.sceAudioChangeChannelConfig(processor);";
-		}
-	};
+    public final HLEModuleFunction sceAudioChangeChannelConfigFunction = new HLEModuleFunction("sceAudio", "sceAudioChangeChannelConfig") {
+        @Override
+        public final void execute(Processor processor) {
+            sceAudioChangeChannelConfig(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioChangeChannelConfig(processor);";
+        }
+    };
 
-	public final HLEModuleFunction sceAudioChangeChannelVolumeFunction = new HLEModuleFunction("sceAudio", "sceAudioChangeChannelVolume") {
-		@Override
-		public final void execute(Processor processor) {
-			sceAudioChangeChannelVolume(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceAudioModule.sceAudioChangeChannelVolume(processor);";
-		}
-	};
+    public final HLEModuleFunction sceAudioChangeChannelVolumeFunction = new HLEModuleFunction("sceAudio", "sceAudioChangeChannelVolume") {
+        @Override
+        public final void execute(Processor processor) {
+            sceAudioChangeChannelVolume(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioChangeChannelVolume(processor);";
+        }
+    };
 
-	public final HLEModuleFunction sceAudioSRCChReserveFunction = new HLEModuleFunction("sceAudio", "sceAudioSRCChReserve") {
-		@Override
-		public final void execute(Processor processor) {
-			sceAudioSRCChReserve(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceAudioModule.sceAudioSRCChReserve(processor);";
-		}
-	};
+    public final HLEModuleFunction sceAudioSRCChReserveFunction = new HLEModuleFunction("sceAudio", "sceAudioSRCChReserve") {
+        @Override
+        public final void execute(Processor processor) {
+            sceAudioSRCChReserve(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioSRCChReserve(processor);";
+        }
+    };
 
-	public final HLEModuleFunction sceAudioSRCChReleaseFunction = new HLEModuleFunction("sceAudio", "sceAudioSRCChRelease") {
-		@Override
-		public final void execute(Processor processor) {
-			sceAudioSRCChRelease(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceAudioModule.sceAudioSRCChRelease(processor);";
-		}
-	};
+    public final HLEModuleFunction sceAudioSRCChReleaseFunction = new HLEModuleFunction("sceAudio", "sceAudioSRCChRelease") {
+        @Override
+        public final void execute(Processor processor) {
+            sceAudioSRCChRelease(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioSRCChRelease(processor);";
+        }
+    };
 
-	public final HLEModuleFunction sceAudioSRCOutputBlockingFunction = new HLEModuleFunction("sceAudio", "sceAudioSRCOutputBlocking") {
-		@Override
-		public final void execute(Processor processor) {
-			sceAudioSRCOutputBlocking(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceAudioModule.sceAudioSRCOutputBlocking(processor);";
-		}
-	};
+    public final HLEModuleFunction sceAudioSRCOutputBlockingFunction = new HLEModuleFunction("sceAudio", "sceAudioSRCOutputBlocking") {
+        @Override
+        public final void execute(Processor processor) {
+            sceAudioSRCOutputBlocking(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioSRCOutputBlocking(processor);";
+        }
+    };
 
-	public final HLEModuleFunction sceAudioInputBlockingFunction = new HLEModuleFunction("sceAudio", "sceAudioInputBlocking") {
-		@Override
-		public final void execute(Processor processor) {
-			sceAudioInputBlocking(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceAudioModule.sceAudioInputBlocking(processor);";
-		}
-	};
+    public final HLEModuleFunction sceAudioInputBlockingFunction = new HLEModuleFunction("sceAudio", "sceAudioInputBlocking") {
+        @Override
+        public final void execute(Processor processor) {
+            sceAudioInputBlocking(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioInputBlocking(processor);";
+        }
+    };
 
-	public final HLEModuleFunction sceAudioInputFunction = new HLEModuleFunction("sceAudio", "sceAudioInput") {
-		@Override
-		public final void execute(Processor processor) {
-			sceAudioInput(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceAudioModule.sceAudioInput(processor);";
-		}
-	};
+    public final HLEModuleFunction sceAudioInputFunction = new HLEModuleFunction("sceAudio", "sceAudioInput") {
+        @Override
+        public final void execute(Processor processor) {
+            sceAudioInput(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioInput(processor);";
+        }
+    };
 
-	public final HLEModuleFunction sceAudioGetInputLengthFunction = new HLEModuleFunction("sceAudio", "sceAudioGetInputLength") {
-		@Override
-		public final void execute(Processor processor) {
-			sceAudioGetInputLength(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceAudioModule.sceAudioGetInputLength(processor);";
-		}
-	};
+    public final HLEModuleFunction sceAudioGetInputLengthFunction = new HLEModuleFunction("sceAudio", "sceAudioGetInputLength") {
+        @Override
+        public final void execute(Processor processor) {
+            sceAudioGetInputLength(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioGetInputLength(processor);";
+        }
+    };
 
-	public final HLEModuleFunction sceAudioWaitInputEndFunction = new HLEModuleFunction("sceAudio", "sceAudioWaitInputEnd") {
-		@Override
-		public final void execute(Processor processor) {
-			sceAudioWaitInputEnd(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceAudioModule.sceAudioWaitInputEnd(processor);";
-		}
-	};
+    public final HLEModuleFunction sceAudioWaitInputEndFunction = new HLEModuleFunction("sceAudio", "sceAudioWaitInputEnd") {
+        @Override
+        public final void execute(Processor processor) {
+            sceAudioWaitInputEnd(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioWaitInputEnd(processor);";
+        }
+    };
 
-	public final HLEModuleFunction sceAudioInputInitFunction = new HLEModuleFunction("sceAudio", "sceAudioInputInit") {
-		@Override
-		public final void execute(Processor processor) {
-			sceAudioInputInit(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceAudioModule.sceAudioInputInit(processor);";
-		}
-	};
+    public final HLEModuleFunction sceAudioInputInitFunction = new HLEModuleFunction("sceAudio", "sceAudioInputInit") {
+        @Override
+        public final void execute(Processor processor) {
+            sceAudioInputInit(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioInputInit(processor);";
+        }
+    };
 
-	public final HLEModuleFunction sceAudioInputInitExFunction = new HLEModuleFunction("sceAudio", "sceAudioInputInitEx") {
-		@Override
-		public final void execute(Processor processor) {
-			sceAudioInputInitEx(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceAudioModule.sceAudioInputInitEx(processor);";
-		}
-	};
+    public final HLEModuleFunction sceAudioInputInitExFunction = new HLEModuleFunction("sceAudio", "sceAudioInputInitEx") {
+        @Override
+        public final void execute(Processor processor) {
+            sceAudioInputInitEx(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioInputInitEx(processor);";
+        }
+    };
 
-	public final HLEModuleFunction sceAudioPollInputEndFunction = new HLEModuleFunction("sceAudio", "sceAudioPollInputEnd") {
-		@Override
-		public final void execute(Processor processor) {
-			sceAudioPollInputEnd(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceAudioModule.sceAudioPollInputEnd(processor);";
-		}
-	};
+    public final HLEModuleFunction sceAudioPollInputEndFunction = new HLEModuleFunction("sceAudio", "sceAudioPollInputEnd") {
+        @Override
+        public final void execute(Processor processor) {
+            sceAudioPollInputEnd(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioPollInputEnd(processor);";
+        }
+    };
 
-	public final HLEModuleFunction sceAudioGetChannelRestLenFunction = new HLEModuleFunction("sceAudio", "sceAudioGetChannelRestLen") {
-		@Override
-		public final void execute(Processor processor) {
-			sceAudioGetChannelRestLen(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceAudioModule.sceAudioGetChannelRestLen(processor);";
-		}
-	};
+    public final HLEModuleFunction sceAudioGetChannelRestLenFunction = new HLEModuleFunction("sceAudio", "sceAudioGetChannelRestLen") {
+        @Override
+        public final void execute(Processor processor) {
+            sceAudioGetChannelRestLen(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceAudioModule.sceAudioGetChannelRestLen(processor);";
+        }
+    };
 
 };
