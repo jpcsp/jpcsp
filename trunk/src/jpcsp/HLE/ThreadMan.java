@@ -52,7 +52,8 @@ public class ThreadMan {
     private static HashMap<Integer, SceKernelThreadInfo> threadlist;
     private static HashMap<Integer, SceKernelSemaphoreInfo> semalist;
     private static HashMap<Integer, SceKernelEventFlagInfo> eventlist;
-    private  ArrayList<Integer> waitingThreads;
+    private ArrayList<SceKernelThreadInfo> waitingThreads;
+    private ArrayList<SceKernelThreadInfo> toBeDeletedThreads;
     private SceKernelThreadInfo current_thread;
     private SceKernelThreadInfo idle0, idle1;
     private int continuousIdleCycles; // watch dog timer - number of continuous cycles in any idle thread
@@ -136,7 +137,8 @@ public class ThreadMan {
         threadlist = new HashMap<Integer, SceKernelThreadInfo>();
         semalist = new HashMap<Integer, SceKernelSemaphoreInfo>();
         eventlist = new HashMap<Integer, SceKernelEventFlagInfo>();
-        waitingThreads= new ArrayList<Integer>();
+        waitingThreads = new ArrayList<SceKernelThreadInfo>();
+        toBeDeletedThreads = new ArrayList<SceKernelThreadInfo>();
 
         // Clear stack allocation info
         //pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_Addr, 0x000fffff, 0x09f00000);
@@ -229,8 +231,7 @@ public class ThreadMan {
                 Modules.log.debug("Thread exit detected SceUID=" + Integer.toHexString(current_thread.uid)
                     + " name:'" + current_thread.name + "' return:0x" + Integer.toHexString(cpu.gpr[2]));
                 current_thread.exitStatus = cpu.gpr[2]; // v0
-                current_thread.status = PspThreadStatus.PSP_THREAD_STOPPED;
-                onThreadStopped(current_thread);
+                changeThreadState(current_thread, PspThreadStatus.PSP_THREAD_STOPPED);
                 contextSwitch(nextThread());
             }
 
@@ -254,45 +255,26 @@ public class ThreadMan {
             Modules.log.error("No ready threads!");
         }
 
-        Iterator<SceKernelThreadInfo> it = threadlist.values().iterator();
-        while(it.hasNext()) {
-            SceKernelThreadInfo thread = it.next();
-
-            // Work waiting threads
-            if (thread.status == PspThreadStatus.PSP_THREAD_WAITING) {
-                if (false && thread != idle0 && thread != idle1) {
-                    Modules.log.debug("working waiting thread '" + thread.name
-                        + "' forever = " + thread.wait.forever
-                        + " timeout = " + thread.wait.timeout
-                        + " steps = " + thread.wait.steps);
-                }
-
-                thread.wait.steps++;
-                if (!thread.wait.forever &&
-                    thread.wait.steps >= thread.wait.timeout) {
-                    if (thread.status == PspThreadStatus.PSP_THREAD_WAITING) {
-                        //Modules.log.debug("wait timeout");
-                        onWaitTimeout(thread);
-                        thread.status = PspThreadStatus.PSP_THREAD_READY;
-                    }
-                }
+        // Access waitingThreads using array indexing because
+        // this is more efficient than iterator access for short lists
+        for (int i = 0; i < waitingThreads.size(); i++) {
+            SceKernelThreadInfo thread = waitingThreads.get(i);
+            thread.wait.steps++;
+            if (!thread.wait.forever && thread.wait.steps >= thread.wait.timeout) {
+                onWaitTimeout(thread);
+                changeThreadState(thread, PspThreadStatus.PSP_THREAD_READY);
             }
+        }
 
-            // Cleanup stopped threads (deferred deletion)
-            if (thread.status == PspThreadStatus.PSP_THREAD_STOPPED) {
-                if (thread.do_delete) {
-                    // cleanup thread - free the stack
-                    if (thread.stack_addr != 0) {
-                        pspSysMem.getInstance().free(thread.stack_addr);
-                    }
-                    // TODO remove from any internal lists? such as sema waiting lists
-
-                    // Changed to thread safe iterator.remove
-                    //threadlist.remove(thread.uid);
-                    it.remove();
-
-                    SceUidManager.releaseUid(thread.uid, "ThreadMan-thread");
+        // Cleanup stopped threads (deferred deletion)
+        for (int i = 0; i < toBeDeletedThreads.size(); i++) {
+            SceKernelThreadInfo thread = toBeDeletedThreads.get(i);
+            if (thread.do_delete) {
+                // cleanup thread - free the stack
+                if (thread.stack_addr != 0) {
+                    pspSysMem.getInstance().free(thread.stack_addr);
                 }
+                deleteThread(thread);
             }
         }
     }
@@ -306,8 +288,10 @@ public class ThreadMan {
 
         if (current_thread != null) {
             // Switch out old thread
-            if (current_thread.status == PspThreadStatus.PSP_THREAD_RUNNING)
-                current_thread.status = PspThreadStatus.PSP_THREAD_READY;
+            if (current_thread.status == PspThreadStatus.PSP_THREAD_RUNNING) {
+                changeThreadState(current_thread, PspThreadStatus.PSP_THREAD_READY);
+            }
+
             // save registers
             current_thread.saveContext();
 
@@ -321,7 +305,7 @@ public class ThreadMan {
 
         if (newthread != null) {
             // Switch in new thread
-            newthread.status = PspThreadStatus.PSP_THREAD_RUNNING;
+            changeThreadState(newthread, PspThreadStatus.PSP_THREAD_RUNNING);
             newthread.wakeupCount++; // check
             // restore registers
             newthread.restoreContext();
@@ -388,20 +372,20 @@ public class ThreadMan {
 
     public void yieldCurrentThread()
     {
-       contextSwitch(nextThread());
+        contextSwitch(nextThread());
     }
 
     public void blockCurrentThread()
     {
-       current_thread.status = PspThreadStatus.PSP_THREAD_SUSPEND;
-       contextSwitch(nextThread());
+        changeThreadState(current_thread, PspThreadStatus.PSP_THREAD_SUSPEND);
+        contextSwitch(nextThread());
     }
 
     public void unblockThread(int uid)
     {
         if (SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", false)) {
             SceKernelThreadInfo thread = threadlist.get(uid);
-            thread.status = PspThreadStatus.PSP_THREAD_READY;
+            changeThreadState(thread, PspThreadStatus.PSP_THREAD_READY);
         }
     }
 
@@ -442,6 +426,43 @@ public class ThreadMan {
         }
     }
 
+    private void deleteThread(SceKernelThreadInfo thread) {
+        waitingThreads.remove(thread);
+        toBeDeletedThreads.remove(thread);
+        threadlist.remove(thread.uid);
+        SceUidManager.releaseUid(thread.uid, "ThreadMan-thread");
+        // TODO remove from any internal lists? such as sema waiting lists
+    }
+
+    private void setToBeDeletedThread(SceKernelThreadInfo thread) {
+        thread.do_delete = true;
+
+        if (thread.status == PspThreadStatus.PSP_THREAD_STOPPED) {
+            toBeDeletedThreads.add(thread);
+        }
+    }
+
+    private void changeThreadState(SceKernelThreadInfo thread, PspThreadStatus newStatus) {
+        if (thread.status == PspThreadStatus.PSP_THREAD_WAITING) {
+            waitingThreads.remove(thread);
+        } else if (thread.status == PspThreadStatus.PSP_THREAD_STOPPED) {
+            toBeDeletedThreads.remove(thread);
+        }
+
+        thread.status = newStatus;
+
+        if (thread.status == PspThreadStatus.PSP_THREAD_WAITING) {
+            if (!thread.wait.forever) {
+                waitingThreads.add(thread);
+            }
+        } else if (thread.status == PspThreadStatus.PSP_THREAD_STOPPED) {
+            if (thread.do_delete) {
+                toBeDeletedThreads.add(thread);
+            }
+            onThreadStopped(thread);
+        }
+    }
+
     private void onThreadStopped(SceKernelThreadInfo stoppedThread) {
         for (Iterator<SceKernelThreadInfo> it = threadlist.values().iterator(); it.hasNext(); ) {
             SceKernelThreadInfo thread = it.next();
@@ -457,7 +478,7 @@ public class ThreadMan {
                 thread.cpuContext.gpr[2] = 0;
 
                 // Wakeup
-                thread.status = PspThreadStatus.PSP_THREAD_READY;
+                changeThreadState(thread, PspThreadStatus.PSP_THREAD_READY);
             }
         }
     }
@@ -481,7 +502,7 @@ public class ThreadMan {
         thread.cpuContext.gpr[28] = gp;
 
         if (startImmediately) {
-            thread.status = PspThreadStatus.PSP_THREAD_READY;
+            changeThreadState(thread, PspThreadStatus.PSP_THREAD_READY);
             contextSwitch(thread);
         }
 
@@ -530,10 +551,8 @@ public class ThreadMan {
         } else {
             Modules.log.debug("sceKernelTerminateThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
 
-            thread.status = PspThreadStatus.PSP_THREAD_STOPPED; // PSP_THREAD_STOPPED or PSP_THREAD_KILLED ?
-
             Emulator.getProcessor().cpu.gpr[2] = 0;
-            onThreadStopped(thread);
+            changeThreadState(thread, PspThreadStatus.PSP_THREAD_STOPPED);  // PSP_THREAD_STOPPED or PSP_THREAD_KILLED ?
         }
     }
 
@@ -547,7 +566,7 @@ public class ThreadMan {
             Modules.log.debug("sceKernelDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
 
             // Mark thread for deletion
-            thread.do_delete = true;
+            setToBeDeletedThread(thread);
 
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
@@ -563,10 +582,10 @@ public class ThreadMan {
             Modules.log.debug("sceKernelTerminateDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
 
             // Change thread state to stopped
-            thread.status = PspThreadStatus.PSP_THREAD_STOPPED;
+            changeThreadState(thread, PspThreadStatus.PSP_THREAD_STOPPED);
 
             // Mark thread for deletion
-            thread.do_delete = true;
+            setToBeDeletedThread(thread);
 
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
@@ -607,7 +626,7 @@ public class ThreadMan {
             thread.cpuContext.gpr[29] -= alignlen; // Adjust sp for size of user data
             thread.cpuContext.gpr[4] = len; // a0 = len
             thread.cpuContext.gpr[5] = thread.cpuContext.gpr[29]; // a1 = pointer to copy of data at data_addr
-            thread.status = PspThreadStatus.PSP_THREAD_READY;
+            changeThreadState(thread, PspThreadStatus.PSP_THREAD_READY);
 
             Emulator.getProcessor().cpu.gpr[2] = 0;
 
@@ -623,10 +642,9 @@ public class ThreadMan {
         Modules.log.debug("sceKernelExitThread SceUID=" + Integer.toHexString(current_thread.uid)
             + " name:'" + current_thread.name + "' exitStatus:" + exitStatus);
 
-        current_thread.status = PspThreadStatus.PSP_THREAD_STOPPED;
         current_thread.exitStatus = exitStatus;
         Emulator.getProcessor().cpu.gpr[2] = 0;
-        onThreadStopped(current_thread);
+        changeThreadState(current_thread, PspThreadStatus.PSP_THREAD_STOPPED);
 
         contextSwitch(nextThread());
     }
@@ -638,13 +656,13 @@ public class ThreadMan {
             + " name:'" + current_thread.name + "' exitStatus:0x" + Integer.toHexString(exitStatus));
 
         // Exit
-        current_thread.status = PspThreadStatus.PSP_THREAD_STOPPED;
         current_thread.exitStatus = exitStatus;
         Emulator.getProcessor().cpu.gpr[2] = 0;
-        onThreadStopped(current_thread); // TODO maybe not here in Exit and Delete thread function
+        changeThreadState(current_thread, PspThreadStatus.PSP_THREAD_STOPPED);
+        // TODO maybe not here in Exit and Delete thread function
 
         // Mark thread for deletion
-        thread.do_delete = true;
+        setToBeDeletedThread(thread);
 
         contextSwitch(nextThread());
     }
@@ -653,7 +671,7 @@ public class ThreadMan {
     public void ThreadMan_sceKernelSleepThreadCB() {
         Modules.log.debug("PARTIAL:sceKernelSleepThreadCB SceUID=" + Integer.toHexString(current_thread.uid) + " name:'" + current_thread.name + "'");
 
-        current_thread.status = PspThreadStatus.PSP_THREAD_SUSPEND;
+        changeThreadState(current_thread, PspThreadStatus.PSP_THREAD_SUSPEND);
         current_thread.do_callbacks = true;
         Emulator.getProcessor().cpu.gpr[2] = 0;
 
@@ -664,7 +682,7 @@ public class ThreadMan {
     public void ThreadMan_sceKernelSleepThread() {
         Modules.log.debug("sceKernelSleepThread SceUID=" + Integer.toHexString(current_thread.uid) + " name:'" + current_thread.name + "'");
 
-        current_thread.status = PspThreadStatus.PSP_THREAD_SUSPEND;
+        changeThreadState(current_thread, PspThreadStatus.PSP_THREAD_SUSPEND);
         current_thread.do_callbacks = false;
         Emulator.getProcessor().cpu.gpr[2] = 0;
 
@@ -678,13 +696,14 @@ public class ThreadMan {
 
     private void hleKernelDelayThread(int micros, boolean do_callbacks) {
         // Go to wait state, callbacks
-        current_thread.status = PspThreadStatus.PSP_THREAD_WAITING;
         current_thread.do_callbacks = do_callbacks;
 
         // Wait on a timeout only
         current_thread.wait.forever = false; // Delay Thread can never be infinite
         current_thread.wait.timeout = microsToSteps(micros);
         current_thread.wait.steps = 0;
+
+        changeThreadState(current_thread, PspThreadStatus.PSP_THREAD_WAITING);
 
         Emulator.getProcessor().cpu.gpr[2] = 0;
         contextSwitch(nextThread());
@@ -846,7 +865,7 @@ public class ThreadMan {
             Emulator.getProcessor().cpu.gpr[2] = 0;
         } else {
             Modules.log.debug("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "'");
-            thread.status = PspThreadStatus.PSP_THREAD_READY;
+            changeThreadState(thread, PspThreadStatus.PSP_THREAD_READY);
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
     }
@@ -860,7 +879,6 @@ public class ThreadMan {
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_THREAD;
         } else {
             // Go to wait state, no callbacks
-            current_thread.status = PspThreadStatus.PSP_THREAD_WAITING;
             current_thread.do_callbacks = false;
 
             // Wait on a specific thread end
@@ -870,6 +888,8 @@ public class ThreadMan {
 
             current_thread.wait.waitingOnThreadEnd = true;
             current_thread.wait.ThreadEnd_id = uid;
+
+            changeThreadState(current_thread, PspThreadStatus.PSP_THREAD_WAITING);
 
             contextSwitch(nextThread());
         }
@@ -1209,7 +1229,7 @@ public class ThreadMan {
                         thread.cpuContext.gpr[2] = PSP_ERROR_ERROR_WAIT_DELETE;
 
                         // Wakeup
-                        thread.status = PspThreadStatus.PSP_THREAD_READY;
+                        changeThreadState(thread, PspThreadStatus.PSP_THREAD_READY);
                     }
                 }
             }
@@ -1270,7 +1290,6 @@ public class ThreadMan {
                 sema.numWaitThreads++;
 
                 // Go to wait state
-                current_thread.status = PspThreadStatus.PSP_THREAD_WAITING;
                 current_thread.do_callbacks = do_callbacks;
 
                 // Wait on a specific semaphore
@@ -1281,6 +1300,8 @@ public class ThreadMan {
                 current_thread.wait.waitingOnSemaphore = true;
                 current_thread.wait.Semaphore_id = semaid;
                 current_thread.wait.Semaphore_signal = signal;
+
+                changeThreadState(current_thread, PspThreadStatus.PSP_THREAD_WAITING);
 
                 contextSwitch(nextThread());
             }
@@ -1361,7 +1382,7 @@ public class ThreadMan {
                     thread.cpuContext.gpr[2] = 0;
 
                     // Wakeup
-                    thread.status = PspThreadStatus.PSP_THREAD_READY;
+                    changeThreadState(thread, PspThreadStatus.PSP_THREAD_READY);
 
                     // Adjust sema
                     sema.currentCount -= thread.wait.Semaphore_signal;
@@ -1436,7 +1457,7 @@ public class ThreadMan {
                     thread.cpuContext.gpr[2] = PSP_ERROR_WAIT_CANCELLED;
 
                     // Wakeup
-                    thread.status = PspThreadStatus.PSP_THREAD_READY;
+                    changeThreadState(thread, PspThreadStatus.PSP_THREAD_READY);
                 }
             }
 
@@ -1654,7 +1675,7 @@ public class ThreadMan {
                         thread.cpuContext.gpr[2] = 0;
 
                         // Wakeup
-                        thread.status = PspThreadStatus.PSP_THREAD_READY;
+                        changeThreadState(thread, PspThreadStatus.PSP_THREAD_READY);
                     }
                 } else {
                     // EventFlag was deleted
@@ -1667,7 +1688,7 @@ public class ThreadMan {
                     thread.cpuContext.gpr[2] = PSP_ERROR_ERROR_WAIT_DELETE;
 
                     // Wakeup
-                    thread.status = PspThreadStatus.PSP_THREAD_READY;
+                    changeThreadState(thread, PspThreadStatus.PSP_THREAD_READY);
                 }
             }
         }
@@ -1705,7 +1726,6 @@ public class ThreadMan {
                 event.numWaitThreads++;
 
                 // Go to wait state
-                current_thread.status = PspThreadStatus.PSP_THREAD_WAITING;
                 current_thread.do_callbacks = do_callbacks;
 
                 // Wait on a specific event flag
@@ -1718,6 +1738,8 @@ public class ThreadMan {
                 current_thread.wait.EventFlag_bits = bits;
                 current_thread.wait.EventFlag_wait = wait;
                 current_thread.wait.EventFlag_outBits_addr = outBits_addr;
+
+                changeThreadState(current_thread, PspThreadStatus.PSP_THREAD_WAITING);
 
                 contextSwitch(nextThread());
             } else {
@@ -1797,7 +1819,7 @@ public class ThreadMan {
                     thread.cpuContext.gpr[2] = PSP_ERROR_WAIT_CANCELLED;
 
                     // Wakeup
-                    thread.status = PspThreadStatus.PSP_THREAD_READY;
+                    changeThreadState(thread, PspThreadStatus.PSP_THREAD_READY);
                 }
             }
 
