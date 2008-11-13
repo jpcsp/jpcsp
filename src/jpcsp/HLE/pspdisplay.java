@@ -385,7 +385,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     private void copyScreenToPixels(GL gl, ByteBuffer pixels, int bufferwidth, int pixelformat) {
         // Using glReadPixels instead of glGetTexImage is showing
         // between 7 and 13% performance increase.
-        if (useGlReadPixels) {
+        // But glReadPixels seems only to work correctly with 32bit pixels...
+        if (useGlReadPixels && pixelformat == PSP_DISPLAY_PIXEL_FORMAT_8888) {
             gl.glMatrixMode(GL.GL_PROJECTION);
             gl.glPushMatrix();
             gl.glLoadIdentity();
@@ -462,12 +463,10 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             gl.glTexParameteri(
                 GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP);
 
-            if (!useGlReadPixels) {
-                temp = ByteBuffer.allocate(
-                    bufferwidthFb * Utilities.makePow2(height) *
-                    getPixelFormatBytes(pixelformatFb));
-                temp.order(ByteOrder.LITTLE_ENDIAN);
-            }
+            temp = ByteBuffer.allocate(
+                bufferwidthFb * Utilities.makePow2(height) *
+                getPixelFormatBytes(pixelformatFb));
+            temp.order(ByteOrder.LITTLE_ENDIAN);
 
             createTex = false;
         }
