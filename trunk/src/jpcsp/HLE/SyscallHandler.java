@@ -206,18 +206,22 @@ public class SyscallHandler {
                     Managers.fpl.sceKernelReferFplStatus(gpr[4], gpr[5]);
                     break;
 		// ThreadManForUser_0E927AED(0x2053),
-		// sceKernelUSec2SysClock(0x2054),
+                case 0x2054:
+                    Managers.systime.sceKernelUSec2SysClock(gpr[4], gpr[5]);
+                    break;
 		// sceKernelUSec2SysClockWide(0x2055),
-		// sceKernelSysClock2USec(0x2056),
+                case 0x2056:
+                    Managers.systime.sceKernelSysClock2USec(gpr[4], gpr[5], gpr[6]);
+                    break;
 		// sceKernelSysClock2USecWide(0x2057),
                 case 0x2058:
-                    ThreadMan.getInstance().ThreadMan_sceKernelGetSystemTime(gpr[4]);
+                    Managers.systime.sceKernelGetSystemTime(gpr[4]);
                     break;
                 case 0x2059:
-                    ThreadMan.getInstance().ThreadMan_sceKernelGetSystemTimeWide();
+                    Managers.systime.sceKernelGetSystemTimeWide();
                     break;
                 case 0x205a:
-                    ThreadMan.getInstance().ThreadMan_sceKernelGetSystemTimeLow();
+                    Managers.systime.sceKernelGetSystemTimeLow();
                     break;
 		// sceKernelSetAlarm(0x205b),
 		// sceKernelSetSysClockAlarm(0x205c),
