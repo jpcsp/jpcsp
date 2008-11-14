@@ -524,44 +524,46 @@ public class LoadCoreForKernel implements HLEModule {
         if (module != null) {
             cpu.gpr[2] = module.address;
         } else {
-            Modules.log.warn("sceKernelFindModuleByName not found module '" + name + "'");
+            Modules.log.warn("sceKernelFindModuleByName not found module name='" + name + "'");
             cpu.gpr[2] = 0; // return NULL
         }
     }
 
-	public void sceKernelFindModuleByAddress(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		//Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+    public void sceKernelFindModuleByAddress(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        //Processor cpu = processor; // Old-Style Processor
 
-		/* put your own code here instead */
+        int address = cpu.gpr[4];
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        Modules.log.debug("sceKernelFindModuleByAddress address=" + String.format("0x%08X", address));
 
-		System.out.println("Unimplemented NID function sceKernelFindModuleByAddress [0xFB8AE27D]");
+        SceModule module = Managers.modules.getModuleByAddress(address);
+        if (module != null) {
+            Modules.log.debug("sceKernelFindModuleByAddress found module '" + module.modname + "'");
+            cpu.gpr[2] = module.address;
+        } else {
+            Modules.log.warn("sceKernelFindModuleByAddress not found module address=0x" + Integer.toHexString(address));
+            cpu.gpr[2] = 0; // return NULL
+        }
+    }
 
-		cpu.gpr[2] = 0xDEADC0DE;
+    public void sceKernelFindModuleByUID(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        //Processor cpu = processor; // Old-Style Processor
 
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
+        int uid = cpu.gpr[4];
 
-	public void sceKernelFindModuleByUID(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		//Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+        Modules.log.debug("sceKernelFindModuleByUID uid=0x" + Integer.toHexString(uid));
 
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceKernelFindModuleByUID [0xCCE4A157]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
+        SceModule module = Managers.modules.getModuleByUID(uid);
+        if (module != null) {
+            Modules.log.debug("sceKernelFindModuleByUID found module '" + module.modname + "'");
+            cpu.gpr[2] = module.address;
+        } else {
+            Modules.log.warn("sceKernelFindModuleByUID not found module uid=0x" + Integer.toHexString(uid));
+            cpu.gpr[2] = 0; // return NULL
+        }
+    }
 
 	public void sceKernelGetModuleListWithAlloc(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor

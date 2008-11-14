@@ -305,7 +305,7 @@ public class ModuleMgrForUser implements HLEModule {
             + ",status=0x" + Integer.toHexString(status_addr)
             + ",option=0x" + Integer.toHexString(option_addr) + ")");
 
-        SceModule sceModule = Managers.modules.getModule(uid);
+        SceModule sceModule = Managers.modules.getModuleByUID(uid);
 
         if (sceModule == null) {
             Modules.log.warn("sceKernelStartModule - unknown module UID 0x" + Integer.toHexString(uid));

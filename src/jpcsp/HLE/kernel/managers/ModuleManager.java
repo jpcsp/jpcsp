@@ -48,7 +48,7 @@ public class ModuleManager {
         return moduleUidToModule.values();
     }
 
-    public SceModule getModule(int uid) {
+    public SceModule getModuleByUID(int uid) {
         return moduleUidToModule.get(uid);
     }
 

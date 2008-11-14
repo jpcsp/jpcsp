@@ -802,6 +802,14 @@ public class syscallsFirm15 {
  	         sceSasCore_e175ef66(0x22fd,0xe175ef66),
  	         sceSasCore_e855bf76(0x22fe,0xe855bf76),
 
+                sceNetSetDropRate(0x22ff, 0xFD8585E1), // 1.00+
+                sceHttpsInit(0x2300, 0xE4D21302), // 1.00+
+                sceNetApctlConnect(0x2301, 0xCFB957C6), // 1.00+
+                sceNetResolverStartAtoN(0x2302, 0x629E2FB7), // 1.00+
+                sceNetResolverStop(0x2303, 0x808F6063), // 1.00+
+                sceUsbstorBootSetCapacity(0x2304, 0xE58818A8), // 1.00+
+                sceKernelRegisterKprintfHandler(0x2305, 0x7CEB2C09), // 1.00+
+                Kprintf(0x2306, 0x84F370BC), // 1.00+
 
                  /* FAKE MAPPING!! for Final Fantasy checks*/
                  ModuleMgrForUser_8F2DF740(0x3000,0x8f2df740), // fw 3.52 or less?
@@ -956,7 +964,34 @@ public class syscallsFirm15 {
                 sceAtrac3plus_2DD3E298(0x3090, 0x2DD3E298), // 2.50+ or lower
                 sceAtracGetOutputChannel(0x3091, 0xB3B5D042), // 2.50+ or lower
 
-                hleDummy(0x5000,0xcdcdcdcd); // got bored of editing , and ; so leave this entry at the end of the enum
+                sceUtilityHtmlViewerInitStart(0x3092, 0xCDC3AA41), // 2.00+
+                sceUtilityHtmlViewerUpdate(0x3093, 0x05AFB9E4), // 2.00+
+                sceUtilityHtmlViewerGetStatus(0x3094, 0xBDA7D894), // 2.00+
+                sceUtilityHtmlViewerShutdownStart(0x3095, 0xF5CE1134), // 2.00+
+                sceHttpSaveSystemCookie(0x3096, 0x76D1363B), // 2.00+
+                sceHttpLoadSystemCookie(0x3097, 0xF1657B22), // 2.00+
+
+                sceFontOpenUserMemory(0x3095, 0xBB8E7FE6), // 2.00+
+                sceUtilityUnloadAvModule(0x3096, 0xF7D8D092), // 2.71+
+
+                // Module magic, we choose to start at 0x4000
+                module_bootstart(0x4000, 0xD3744BE0),
+                module_reboot_before(0x4001, 0x2F064FA6),
+                module_reboot_phase(0x4002, 0xADF12745),
+                module_start(0x4003, 0xD632ACDB),
+                module_stop_1(0x4004, 0xCEE8593C),
+                module_stop_2(0x4005, 0xF01D73A7),
+                module_0F7C276C(0x4006, 0x0F7C276C),
+
+                // CFW, we choose to start at 0x5000
+                kubridge_4C25EA72(0x5000, 0x5C25EA72),
+                systemctrl_user_577AF198(0x5001, 0x577AF198),
+                systemctrl_user_75643FCA(0x5002, 0x75643FCA),
+                systemctrl_user_ABA7F1B0(0x5003, 0xABA7F1B0),
+                systemctrl_user_16C3B7EE(0x5004, 0x16C3B7EE),
+                systemctrl_user_85B520C6(0x5005, 0x85B520C6),
+
+                hleDummy(0x70000, 0xcdcdcdcd); // got bored of editing , and ; so leave this entry at the end of the enum
 
 
             //implement syscall
