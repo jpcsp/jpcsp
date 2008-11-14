@@ -19,7 +19,7 @@ package jpcsp.HLE.modules;
 
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 import jpcsp.Emulator;
@@ -92,7 +92,7 @@ public class HLEModuleManager {
         // so we'll put the HLE syscalls far away at 0x4000.
         syscallCodeAllocator = 0x4000;
 
-        hleThreadList = new LinkedList<HLEThread>();
+        hleThreadList = new ArrayList<HLEThread>();
 
         // TODO use fw version from PSF, unless it's a banned PSF (such as used by pspsdk)
         firmwareVersion = pspSysMem.PSP_FIRMWARE_150;

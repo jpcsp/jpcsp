@@ -67,7 +67,7 @@ public class ThreadMan {
     private String[] threadNameBanList = new String[] {
         "SndMain", "SoundThread", "At3Main", "Atrac3PlayThread",
         "bgm thread", "SceWaveMain", "SasCore thread", "soundThread",
-        "ATRAC3 play thread", "SAS Thread",
+        "ATRAC3 play thread", "SAS Thread", "XomAudio",
     };
 
     public final static int PSP_ERROR_UNKNOWN_UID                    = 0x800200cb;
@@ -556,7 +556,7 @@ public class ThreadMan {
         }
     }
 
-    /** delete thread a0 */
+    /** mark thread a0 for deletion */
     public void ThreadMan_sceKernelDeleteThread(int uid) {
         SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadlist.get(uid);
@@ -572,7 +572,7 @@ public class ThreadMan {
         }
     }
 
-    /** delete thread a0 */
+    /** terminate thread a0, then mark it for deletion */
     public void ThreadMan_sceKernelTerminateDeleteThread(int uid) {
         SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadlist.get(uid);
@@ -659,7 +659,6 @@ public class ThreadMan {
         current_thread.exitStatus = exitStatus;
         Emulator.getProcessor().cpu.gpr[2] = 0;
         changeThreadState(current_thread, PspThreadStatus.PSP_THREAD_STOPPED);
-        // TODO maybe not here in Exit and Delete thread function
 
         // Mark thread for deletion
         setToBeDeletedThread(thread);
@@ -893,41 +892,6 @@ public class ThreadMan {
 
             contextSwitch(nextThread());
         }
-    }
-
-    /** SceKernelSysClock time_addr http://psp.jim.sh/pspsdk-doc/structSceKernelSysClock.html
-     * +1mil every second
-     * high 32-bits never set on real psp? */
-    public void ThreadMan_sceKernelGetSystemTime(int time_addr) {
-        Modules.log.debug("sceKernelGetSystemTime 0x" + Integer.toHexString(time_addr));
-        Memory mem = Memory.getInstance();
-        if (mem.isAddressGood(time_addr)) {
-            long systemTime = System.nanoTime();
-            int low = (int)(systemTime & 0xffffffffL);
-            int hi = (int)((systemTime >> 32) & 0xffffffffL);
-
-            mem.write32(time_addr, low);
-            mem.write32(time_addr + 4, hi);
-            Emulator.getProcessor().cpu.gpr[2] = 0;
-        } else {
-            Emulator.getProcessor().cpu.gpr[2] = -1;
-        }
-    }
-
-    public void ThreadMan_sceKernelGetSystemTimeWide() {
-        long systemTime = System.nanoTime();
-        Modules.log.debug("sceKernelGetSystemTimeWide ret:" + systemTime);
-        Emulator.getProcessor().cpu.gpr[2] = (int)(systemTime & 0xffffffffL);
-        Emulator.getProcessor().cpu.gpr[3] = (int)((systemTime >> 32) & 0xffffffffL);
-    }
-
-    //private int timeLow = 0;
-    public void ThreadMan_sceKernelGetSystemTimeLow() {
-        long systemTime = System.nanoTime();
-        int low = (int)(systemTime & 0x7fffffffL); // check, don't use msb?
-        //int low = timeLow; timeLow += 10;
-        //Modules.log.debug("sceKernelGetSystemTimeLow return:" + low);
-        Emulator.getProcessor().cpu.gpr[2] = low;
     }
 
     public void ThreadMan_sceKernelCheckCallback() {

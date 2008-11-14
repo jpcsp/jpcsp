@@ -31,6 +31,7 @@ public class Managers {
     public static FplManager fpl;
     public static VplManager vpl;
     public static ModuleManager modules;
+    public static SystemTimeManager systime;
 
     /** call this when resetting the emulator */
     public static void reset() {
@@ -38,6 +39,7 @@ public class Managers {
         fpl.reset();
         vpl.reset();
         modules.reset();
+        systime.reset();
     }
 
     static {
@@ -49,5 +51,6 @@ public class Managers {
         fpl = FplManager.singleton;
         vpl = VplManager.singleton;
         modules = ModuleManager.singleton;
+        systime = SystemTimeManager.singleton;
     }
 }
