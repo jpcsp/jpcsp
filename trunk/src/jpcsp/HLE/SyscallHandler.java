@@ -282,8 +282,12 @@ public class SyscallHandler {
                 case 0x207d:
                     ThreadMan.getInstance().ThreadMan_sceKernelGetThreadExitStatus(gpr[4]);
                     break;
-		// sceKernelCheckThreadStack(0x207e),
-		// sceKernelGetThreadStackFreeSize(0x207f),
+                case 0x207e:
+                    ThreadMan.getInstance().ThreadMan_sceKernelCheckThreadStack();
+                    break;
+                case 0x207f:
+                    ThreadMan.getInstance().ThreadMan_sceKernelGetThreadStackFreeSize(gpr[4]);
+                    break;
                 case 0x2080:
                     ThreadMan.getInstance().ThreadMan_sceKernelReferThreadStatus(gpr[4], gpr[5]);
                     break;
