@@ -748,6 +748,28 @@ public class ThreadMan {
         }
     }
 
+    /** @return amount of free stack space. */
+    public void ThreadMan_sceKernelCheckThreadStack() {
+        Emulator.getProcessor().cpu.gpr[2] = current_thread.stackSize
+            - (current_thread.stack_addr - Emulator.getProcessor().cpu.gpr[29])
+            - 0x130;
+    }
+
+    /** @return amount of free stack space. */
+    public void ThreadMan_sceKernelGetThreadStackFreeSize(int uid) {
+        if (uid == 0) uid = current_thread.uid;
+        SceKernelThreadInfo thread = threadlist.get(uid);
+        if (thread == null) {
+            Modules.log.warn("sceKernelGetThreadStackFreeSize unknown uid=0x" + Integer.toHexString(uid));
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NOT_FOUND_THREAD;
+        } else  {
+        Emulator.getProcessor().cpu.gpr[2] = current_thread.stackSize
+            - (current_thread.stack_addr - Emulator.getProcessor().cpu.gpr[29])
+            - 0x130
+            - 0xfb0;
+        }
+    }
+
     public void ThreadMan_sceKernelReferThreadStatus(int uid, int addr) {
         //Get the status information for the specified thread
         if (uid == 0) uid = current_thread.uid;
