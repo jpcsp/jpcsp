@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
+import java.util.Arrays;
 import java.util.Iterator;
 
 import javax.media.opengl.GL;
@@ -37,6 +38,7 @@ import jpcsp.Settings;
 import jpcsp.HLE.pspdisplay;
 import jpcsp.graphics.textures.Texture;
 import jpcsp.graphics.textures.TextureCache;
+import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
 
 import org.apache.log4j.Logger;
@@ -54,6 +56,8 @@ public class VideoEngine {
     private static GeCommands helper;
     private VertexInfo vinfo = new VertexInfo();
     private static final char SPACE = ' ';
+    private DurationStatistics statistics;
+    private DurationStatistics[] commandStatistics;
 
     // TODO these currently here for testing only
     private int fbp, fbw; // frame buffer pointer and width
@@ -170,8 +174,8 @@ public class VideoEngine {
 
     public static VideoEngine getEngine(GL gl, boolean fullScreen, boolean hardwareAccelerate) {
         if (instance == null) {
-            instance = new VideoEngine(gl);
             helper = new GeCommands();
+            instance = new VideoEngine(gl);
         }
         instance.setFullScreenShoot(fullScreen);
         instance.setHardwareAcc(hardwareAccelerate);
@@ -195,6 +199,12 @@ public class VideoEngine {
             VideoEngine.log.info("using VBO");
             buildVBO(gl);
         }
+
+        statistics = new DurationStatistics("VideoEngine Statistics");
+        commandStatistics = new DurationStatistics[256];
+        for (int i = 0; i < commandStatistics.length; i++) {
+            commandStatistics[i] = new DurationStatistics(String.format("%-11s", helper.getCommandString(i)));
+        }
     }
 
     private void buildVBO(GL gl) {
@@ -202,6 +212,26 @@ public class VideoEngine {
         gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vboBufferId[0]);
         gl.glBufferData(GL.GL_ARRAY_BUFFER, vboBufferSize *
                 BufferUtil.SIZEOF_FLOAT, vboBuffer, GL.GL_STREAM_DRAW);
+    }
+
+    public static void exit() {
+        if (instance != null) {
+            log.info(instance.statistics.toString());
+            Arrays.sort(instance.commandStatistics);
+            int numberCommands = 20;
+            log.info(numberCommands + " most time intensive Video commands:");
+            for (int i = 0; i < numberCommands; i++) {
+                VideoEngine.log.info("    " + instance.commandStatistics[i].toString());
+            }
+        }
+    }
+
+    public static DurationStatistics getStatistics() {
+        if (instance == null) {
+            return null;
+        }
+
+        return instance.statistics;
     }
 
     /** call from GL thread
@@ -213,6 +243,8 @@ public class VideoEngine {
         // Don't draw anything until we get sync signal
         if (!jpcsp.HLE.pspge.getInstance().waitingForSync)
             return false;
+
+        statistics.start();
 
         boolean updated = false;
         DisplayList.Lock();
@@ -234,6 +266,8 @@ public class VideoEngine {
 
         if (updated)
             jpcsp.HLE.pspge.getInstance().syncDone = true;
+
+        statistics.end();
 
         //System.err.println("update done");
         return updated;
@@ -257,7 +291,9 @@ public class VideoEngine {
 
         if (actualList.pc == actualList.stallAddress) {
             actualList.status = DisplayList.STALL_REACHED;
-            log("list " + actualList.id + " stalled at " + String.format("%08x", actualList.stallAddress));
+            if (log.isDebugEnabled()) {
+                log("list " + actualList.id + " stalled at " + String.format("%08x", actualList.stallAddress));
+            }
         }
 
         if (listHasFinished) {
@@ -471,31 +507,45 @@ public class VideoEngine {
         int normalArgument = intArgument(instruction);
         float floatArgument = floatArgument(instruction);
 
-        switch (command(instruction)) {
+        int command = command(instruction);
+        commandStatistics[command].start();
+        switch (command) {
             case END:
                 listHasEnded = true;
-                log(helper.getCommandString(END));
+                if (log.isDebugEnabled()) {
+                    log(helper.getCommandString(END));
+                }
                 break;
             case FINISH:
                 listHasFinished = true;
-                log(helper.getCommandString(FINISH));
+                if (log.isDebugEnabled()) {
+                    log(helper.getCommandString(FINISH));
+                }
                 break;
             case BASE:
                 actualList.base = normalArgument << 8;
-                log(helper.getCommandString(BASE) + " " + String.format("%08x", actualList.base));
+                if (log.isDebugEnabled()) {
+                    log(helper.getCommandString(BASE) + " " + String.format("%08x", actualList.base));
+                }
                 break;
             case IADDR:
                 vinfo.ptr_index = actualList.base | normalArgument;
-                log(helper.getCommandString(IADDR) + " " + String.format("%08x", vinfo.ptr_index));
+                if (log.isDebugEnabled()) {
+                    log(helper.getCommandString(IADDR) + " " + String.format("%08x", vinfo.ptr_index));
+                }
                 break;
             case VADDR:
                 vinfo.ptr_vertex = actualList.base | normalArgument;
-                log(helper.getCommandString(VADDR) + " " + String.format("%08x", vinfo.ptr_vertex));
+                if (log.isDebugEnabled()) {
+                    log(helper.getCommandString(VADDR) + " " + String.format("%08x", vinfo.ptr_vertex));
+                }
                 break;
             case VTYPE:
                 vinfo.processType(normalArgument);
                 transform_mode = (normalArgument >> 23) & 0x1;
-                log(helper.getCommandString(VTYPE) + " " + vinfo.toString());
+                if (log.isDebugEnabled()) {
+                    log(helper.getCommandString(VTYPE) + " " + vinfo.toString());
+                }
                 break;
 
             case TME:
@@ -963,8 +1013,10 @@ public class VideoEngine {
             	mat_ambient[0] = ((normalArgument	   ) & 255) / 255.f;
             	mat_ambient[1] = ((normalArgument >>  8) & 255) / 255.f;
             	mat_ambient[2] = ((normalArgument >> 16) & 255) / 255.f;
-            	log(String.format("material ambient r=%.1f g=%.1f b=%.1f (%08X)",
-                        mat_ambient[0], mat_ambient[1], mat_ambient[2], normalArgument));
+                if (log.isDebugEnabled()) {
+                    log(String.format("material ambient r=%.1f g=%.1f b=%.1f (%08X)",
+                            mat_ambient[0], mat_ambient[1], mat_ambient[2], normalArgument));
+                }
             	break;
 
             case DMC:
@@ -972,8 +1024,10 @@ public class VideoEngine {
             	mat_diffuse[1] = ((normalArgument >>  8) & 255) / 255.f;
             	mat_diffuse[2] = ((normalArgument >> 16) & 255) / 255.f;
             	mat_diffuse[3] = 1.f;
-            	log("material diffuse " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
-                        mat_diffuse[0], mat_diffuse[1], mat_diffuse[2], normalArgument));
+                if (log.isDebugEnabled()) {
+                    log("material diffuse " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
+                            mat_diffuse[0], mat_diffuse[1], mat_diffuse[2], normalArgument));
+                }
             	break;
 
             case EMC:
@@ -982,8 +1036,10 @@ public class VideoEngine {
             	mat_emissive[2] = ((normalArgument >> 16) & 255) / 255.f;
             	mat_emissive[3] = 1.f;
             	gl.glMaterialfv(GL.GL_FRONT, GL.GL_EMISSION, mat_emissive, 0);
-            	log("material emission " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
-                        mat_emissive[0], mat_emissive[1], mat_emissive[2], normalArgument));
+                if (log.isDebugEnabled()) {
+                    log("material emission " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
+                            mat_emissive[0], mat_emissive[1], mat_emissive[2], normalArgument));
+                }
             	break;
 
             case SMC:
@@ -991,8 +1047,10 @@ public class VideoEngine {
             	mat_specular[1] = ((normalArgument >>  8) & 255) / 255.f;
             	mat_specular[2] = ((normalArgument >> 16) & 255) / 255.f;
             	mat_specular[3] = 1.f;
-            	log("material specular " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
-                        mat_specular[0], mat_specular[1], mat_specular[2], normalArgument));
+                if (log.isDebugEnabled()) {
+                    log("material specular " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
+                            mat_specular[0], mat_specular[1], mat_specular[2], normalArgument));
+                }
             	break;
 
             case ALC:
@@ -1000,8 +1058,10 @@ public class VideoEngine {
             	ambient_light[1] = ((normalArgument >>  8) & 255) / 255.f;
             	ambient_light[2] = ((normalArgument >> 16) & 255) / 255.f;
             	gl.glLightModelfv(GL.GL_LIGHT_MODEL_AMBIENT, ambient_light, 0);
-            	log("ambient light " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
-            			ambient_light[0], ambient_light[1], ambient_light[2], normalArgument));
+                if (log.isDebugEnabled()) {
+                    log("ambient light " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
+                            ambient_light[0], ambient_light[1], ambient_light[2], normalArgument));
+                }
             	break;
 
             case ALA:
@@ -1011,7 +1071,9 @@ public class VideoEngine {
 
             case SPOW:
             	gl.glMaterialf(GL.GL_FRONT, GL.GL_SHININESS, floatArgument);
-            	log("material shininess " + floatArgument);
+                if (log.isDebugEnabled()) {
+                    log("material shininess " + floatArgument);
+                }
             	break;
 
             case TMS:
@@ -1080,48 +1142,64 @@ public class VideoEngine {
             case TBW0:
                 texture_base_pointer0 = (texture_base_pointer0 & 0x00ffffff) | ((normalArgument << 8) & 0xff000000);
                 texture_buffer_width0 = normalArgument & 0xffff;
-                log ("sceGuTexImage(X,X,X,texWidth=" + texture_buffer_width0 + ",hi(pointer=0x" + Integer.toHexString(texture_base_pointer0) + "))");
+                if (log.isDebugEnabled()) {
+                    log ("sceGuTexImage(X,X,X,texWidth=" + texture_buffer_width0 + ",hi(pointer=0x" + Integer.toHexString(texture_base_pointer0) + "))");
+                }
                 break;
 
             case TBP0:
                 texture_base_pointer0 = (actualList.base & 0xff000000) | normalArgument;
-                log ("sceGuTexImage(X,X,X,X,lo(pointer=0x" + Integer.toHexString(texture_base_pointer0) + "))");
+                if (log.isDebugEnabled()) {
+                    log ("sceGuTexImage(X,X,X,X,lo(pointer=0x" + Integer.toHexString(texture_base_pointer0) + "))");
+                }
                 break;
 
             case TSIZE0:
             	texture_height0 = 1 << ((normalArgument>>8) & 0xFF);
             	texture_width0  = 1 << ((normalArgument   ) & 0xFF);
-            	log ("sceGuTexImage(X,width=" + texture_width0 + ",height=" + texture_height0 + ",X,0)");
+                if (log.isDebugEnabled()) {
+                    log ("sceGuTexImage(X,width=" + texture_width0 + ",height=" + texture_height0 + ",X,0)");
+                }
             	break;
 
             case TMODE: {
             	texture_num_mip_maps = (normalArgument>>16) & 0xFF;
                 int a2 = (normalArgument>>8) & 0xFF;
             	texture_swizzle 	 = ((normalArgument    ) & 0xFF) != 0;
-            	log ("sceGuTexMode(X,mipmaps=" + texture_num_mip_maps + ",a2=" + a2 + ",swizzle=" + texture_swizzle + ")");
+            	if (log.isDebugEnabled()) {
+            	    log ("sceGuTexMode(X,mipmaps=" + texture_num_mip_maps + ",a2=" + a2 + ",swizzle=" + texture_swizzle + ")");
+            	}
             	break;
             }
 
             case TPSM:
             	texture_storage = normalArgument;
-            	log ("sceGuTexMode(tpsm=" + texture_storage + ",X,X,X)");
+                if (log.isDebugEnabled()) {
+                    log ("sceGuTexMode(tpsm=" + texture_storage + ",X,X,X)");
+                }
             	break;
 
             case CBP: {
                 tex_clut_addr = (tex_clut_addr & 0xff000000) | normalArgument;
-                log ("sceGuClutLoad(X, lo(cbp=0x" + Integer.toHexString(tex_clut_addr) + "))");
+                if (log.isDebugEnabled()) {
+                    log ("sceGuClutLoad(X, lo(cbp=0x" + Integer.toHexString(tex_clut_addr) + "))");
+                }
                 break;
             }
 
             case CBPH: {
                 tex_clut_addr = (tex_clut_addr & 0x00ffffff) | ((normalArgument << 8) & 0x0f000000);
-                log ("sceGuClutLoad(X, hi(cbp=0x" + Integer.toHexString(tex_clut_addr) + "))");
+                if (log.isDebugEnabled()) {
+                    log ("sceGuClutLoad(X, hi(cbp=0x" + Integer.toHexString(tex_clut_addr) + "))");
+                }
                 break;
             }
 
             case CLOAD: {
             	tex_clut_num_blocks = normalArgument;
-            	log ("sceGuClutLoad(num_blocks=" + tex_clut_num_blocks + ", X)");
+                if (log.isDebugEnabled()) {
+                    log ("sceGuClutLoad(num_blocks=" + tex_clut_num_blocks + ", X)");
+                }
             	break;
             }
 
@@ -1130,7 +1208,9 @@ public class VideoEngine {
                 tex_clut_shift  = (normalArgument >> 2) & 0x3F;
                 tex_clut_mask   = (normalArgument >> 8) & 0xFF;
                 tex_clut_start  = (normalArgument >> 16) & 0xFF;
-                log ("sceGuClutMode(cpsm=" + tex_clut_mode + ", shift=" + tex_clut_shift + ", mask=0x" + Integer.toHexString(tex_clut_mask) + ", start=" + tex_clut_start + ")");
+                if (log.isDebugEnabled()) {
+                    log ("sceGuClutMode(cpsm=" + tex_clut_mode + ", shift=" + tex_clut_shift + ", mask=0x" + Integer.toHexString(tex_clut_mask) + ", start=" + tex_clut_start + ")");
+                }
                 break;
             }
 
@@ -1139,7 +1219,9 @@ public class VideoEngine {
                 // defined after the TFLUSH and before the PRIM command.
                 // Delay the texture loading until the PRIM command.
                 textureHasToBeLoaded = true;
-                log ("tflush (deferring to prim)");
+                if (log.isDebugEnabled()) {
+                    log("tflush (deferring to prim)");
+                }
                 break;
             }
 
@@ -1297,33 +1379,49 @@ public class VideoEngine {
              *
              */
             case XSCALE:
-                log("sceGuViewport width = " + (floatArgument * 2));
+                if (log.isDebugEnabled()) {
+                    log("sceGuViewport width = " + (floatArgument * 2));
+                }
                 break;
             case YSCALE:
-                log("sceGuViewport height = " + (- floatArgument * 2));
+                if (log.isDebugEnabled()) {
+                    log("sceGuViewport height = " + (- floatArgument * 2));
+                }
                 break;
             case ZSCALE:
             	zscale = floatArgument;
-                log(helper.getCommandString(ZSCALE), floatArgument);
+                if (log.isDebugEnabled()) {
+                    log(helper.getCommandString(ZSCALE), floatArgument);
+                }
                 break;
 
             // sceGuViewport cx/cy, can we discard these settings? it's only for clipping?
             case XPOS:
-                log("sceGuViewport cx = " + floatArgument);
+                if (log.isDebugEnabled()) {
+                    log("sceGuViewport cx = " + floatArgument);
+                }
                 break;
             case YPOS:
-                log("sceGuViewport cy = " + floatArgument);
+                if (log.isDebugEnabled()) {
+                    log("sceGuViewport cy = " + floatArgument);
+                }
                 break;
 
             case ZPOS:
-                log(helper.getCommandString(ZPOS), floatArgument);
+                if (log.isDebugEnabled()) {
+                    log(helper.getCommandString(ZPOS), floatArgument);
+                }
                 break;
             // sceGuOffset, can we discard these settings? it's only for clipping?
             case OFFSETX:
-                log("sceGuOffset x = " + (normalArgument >> 4));
+                if (log.isDebugEnabled()) {
+                    log("sceGuOffset x = " + (normalArgument >> 4));
+                }
                 break;
             case OFFSETY:
-                log("sceGuOffset y = " + (normalArgument >> 4));
+                if (log.isDebugEnabled()) {
+                    log("sceGuOffset y = " + (normalArgument >> 4));
+                }
                 break;
 
             case FBP:
@@ -1334,7 +1432,9 @@ public class VideoEngine {
                 fbp &= 0xffffff;
                 fbp |= (normalArgument << 8) & 0xff000000;
                 fbw = (normalArgument) & 0xffff;
-                log("fbp=" + Integer.toHexString(fbp) + ", fbw=" + fbw);
+                if (log.isDebugEnabled()) {
+                    log("fbp=" + Integer.toHexString(fbp) + ", fbw=" + fbw);
+                }
                 jpcsp.HLE.pspdisplay.getInstance().hleDisplaySetGeBuf(fbp, fbw, psm);
                 break;
 
@@ -1346,12 +1446,16 @@ public class VideoEngine {
                 zbp &= 0xffffff;
                 zbp |= (normalArgument << 8) & 0xff000000;
                 zbw = (normalArgument) & 0xffff;
-                log("zbp=" + Integer.toHexString(zbp) + ", zbw=" + zbw);
+                if (log.isDebugEnabled()) {
+                    log("zbp=" + Integer.toHexString(zbp) + ", zbw=" + zbw);
+                }
                 break;
 
             case PSM:
                 psm = normalArgument;
-                log("psm=" + normalArgument);
+                if (log.isDebugEnabled()) {
+                    log("psm=" + normalArgument);
+                }
                 break;
 
             case PRIM:
@@ -1362,31 +1466,33 @@ public class VideoEngine {
                 loadTexture();
 
                 // Logging
-                switch (type) {
-                    case PRIM_POINT:
-                        log("pirm point " + numberOfVertex + "x");
-                        break;
-                    case PRIM_LINE:
-                        log("prim line " + (numberOfVertex / 2) + "x");
-                        break;
-                    case PRIM_LINES_STRIPS:
-                        log("prim lines_strips " + (numberOfVertex - 1) + "x");
-                        break;
-                    case PRIM_TRIANGLE:
-                        log("prim triangle " + (numberOfVertex / 3) + "x");
-                        break;
-                    case PRIM_TRIANGLE_STRIPS:
-                        log("prim triangle_strips " + (numberOfVertex - 2) + "x");
-                        break;
-                    case PRIM_TRIANGLE_FANS:
-                        log("prim triangle_fans " + (numberOfVertex - 2) + "x");
-                        break;
-                    case PRIM_SPRITES:
-                        log("prim sprites " + (numberOfVertex / 2) + "x");
-                        break;
-                    default:
-                        VideoEngine.log.warn("prim unhandled " + type);
-                        break;
+                if (log.isDebugEnabled()) {
+                    switch (type) {
+                        case PRIM_POINT:
+                            log("pirm point " + numberOfVertex + "x");
+                            break;
+                        case PRIM_LINE:
+                            log("prim line " + (numberOfVertex / 2) + "x");
+                            break;
+                        case PRIM_LINES_STRIPS:
+                            log("prim lines_strips " + (numberOfVertex - 1) + "x");
+                            break;
+                        case PRIM_TRIANGLE:
+                            log("prim triangle " + (numberOfVertex / 3) + "x");
+                            break;
+                        case PRIM_TRIANGLE_STRIPS:
+                            log("prim triangle_strips " + (numberOfVertex - 2) + "x");
+                            break;
+                        case PRIM_TRIANGLE_FANS:
+                            log("prim triangle_fans " + (numberOfVertex - 2) + "x");
+                            break;
+                        case PRIM_SPRITES:
+                            log("prim sprites " + (numberOfVertex / 2) + "x");
+                            break;
+                        default:
+                            VideoEngine.log.warn("prim unhandled " + type);
+                            break;
+                    }
                 }
 
                 /*
@@ -1534,7 +1640,7 @@ public class VideoEngine {
 
                             v1.p[2] = v2.p[2];
 
-                            if (numberOfVertex == 2 && transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
+                            if (log.isDebugEnabled() && numberOfVertex == 2 && transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
                                 log("  sprite (" + ((int) v1.t[0]) + "," + ((int) v1.t[1]) + ")-(" + ((int) v2.t[0]) + "," + ((int) v2.t[1]) + ") at (" + ((int) v1.p[0]) + "," + ((int) v1.p[1]) + ")-(" + + ((int) v2.p[0]) + "," + ((int) v2.p[1]) + ")");
                             }
 
@@ -1645,14 +1751,18 @@ public class VideoEngine {
             case SHADE: {
                 int SETTED_MODEL = (normalArgument != 0) ? GL.GL_SMOOTH : GL.GL_FLAT;
                 gl.glShadeModel(SETTED_MODEL);
-                log(helper.getCommandString(SHADE) + " " + ((normalArgument != 0) ? "smooth" : "flat"));
+                if (log.isDebugEnabled()) {
+                    log(helper.getCommandString(SHADE) + " " + ((normalArgument != 0) ? "smooth" : "flat"));
+                }
                 break;
             }
 
             case FFACE: {
                 int frontFace = (normalArgument != 0) ? GL.GL_CW : GL.GL_CCW;
                 gl.glFrontFace(frontFace);
-                log(helper.getCommandString(FFACE) + " " + ((normalArgument != 0) ? "clockwise" : "counter-clockwise"));
+                if (log.isDebugEnabled()) {
+                    log(helper.getCommandString(FFACE) + " " + ((normalArgument != 0) ? "clockwise" : "counter-clockwise"));
+                }
                 break;
             }
             case DTE:
@@ -1783,8 +1893,10 @@ public class VideoEngine {
             {
                 int npc = (normalArgument | actualList.base) & 0xFFFFFFFC;
                 //I guess it must be unsign as psp player emulator
-                log(helper.getCommandString(JUMP) + " old PC:" + String.format("%08x", actualList.pc)
-                    + " new PC:" + String.format("%08x", npc));
+                if (log.isDebugEnabled()) {
+                    log(helper.getCommandString(JUMP) + " old PC:" + String.format("%08x", actualList.pc)
+                            + " new PC:" + String.format("%08x", npc));
+                }
                 actualList.pc = npc;
                 break;
             }
@@ -1792,16 +1904,20 @@ public class VideoEngine {
             {
                 actualList.stack[actualList.stackIndex++] = actualList.pc;
                 int npc = (normalArgument | actualList.base) & 0xFFFFFFFC;
-                log(helper.getCommandString(CALL) + " old PC:" + String.format("%08x", actualList.pc)
-                    + " new PC:" + String.format("%08x", npc));
+                if (log.isDebugEnabled()) {
+                    log(helper.getCommandString(CALL) + " old PC:" + String.format("%08x", actualList.pc)
+                            + " new PC:" + String.format("%08x", npc));
+                }
                 actualList.pc = npc;
                 break;
             }
             case RET:
             {
                 int npc = actualList.stack[--actualList.stackIndex];
-                log(helper.getCommandString(RET) + " old PC:" + String.format("%08x", actualList.pc)
-                    + " new PC:" + String.format("%08x", npc));
+                if (log.isDebugEnabled()) {
+                    log(helper.getCommandString(RET) + " old PC:" + String.format("%08x", actualList.pc)
+                            + " new PC:" + String.format("%08x", npc));
+                }
                 actualList.pc = npc;
                 break;
             }
@@ -1811,7 +1927,9 @@ public class VideoEngine {
             	//		on pc it's the opposite
             	gl.glDepthMask(normalArgument == 1 ? false : true);
 
-            	log("sceGuDepthMask(" + (normalArgument == 1 ? "disableWrites" : "enableWrites") + ")");
+                if (log.isDebugEnabled()) {
+                    log("sceGuDepthMask(" + (normalArgument == 1 ? "disableWrites" : "enableWrites") + ")");
+                }
             	break;
             }
 
@@ -2015,11 +2133,15 @@ public class VideoEngine {
             		}
             		gl.glDepthMask((normalArgument & 0x400) != 0);
             		gl.glColorMask(color, color, color, alpha);
-            		log("clear mode : " + (normalArgument >> 8));
+                    if (log.isDebugEnabled()) {
+                        log("clear mode : " + (normalArgument >> 8));
+                    }
             	}
                 break;
             case NOP:
-                log(helper.getCommandString(NOP));
+                if (log.isDebugEnabled()) {
+                    log(helper.getCommandString(NOP));
+                }
                 break;
 
             /*
@@ -2114,7 +2236,9 @@ public class VideoEngine {
             case TRXKICK:
             	textureTx_pixelSize = normalArgument & 0x1;
 
-                log(helper.getCommandString(TRXKICK) + " from 0x" + Integer.toHexString(textureTx_sourceAddress) + "(" + textureTx_sx + "," + textureTx_sy + ") to 0x" + Integer.toHexString(textureTx_destinationAddress) + "(" + textureTx_dx + "," + textureTx_dy + "), width=" + textureTx_width + ", height=" + textureTx_height);
+                if (log.isDebugEnabled()) {
+                    log(helper.getCommandString(TRXKICK) + " from 0x" + Integer.toHexString(textureTx_sourceAddress) + "(" + textureTx_sx + "," + textureTx_sy + ") to 0x" + Integer.toHexString(textureTx_destinationAddress) + "(" + textureTx_dx + "," + textureTx_dy + "), width=" + textureTx_width + ", height=" + textureTx_height);
+                }
             	if (!pspdisplay.getInstance().isGeAddress(textureTx_destinationAddress)) {
                     log(helper.getCommandString(TRXKICK) + " not in Ge Address space");
                 	int width = textureTx_width;
@@ -2270,7 +2394,7 @@ public class VideoEngine {
            default:
                 log.warn("Unknown/unimplemented video command [ " + helper.getCommandString(command(instruction)) + " ]");
         }
-
+        commandStatistics[command].end();
     }
 
     private void bindBuffers(boolean useVertexColor) {
@@ -2398,16 +2522,22 @@ public class VideoEngine {
     }
 
     private void log(String commandString, float floatArgument) {
-        log(commandString+SPACE+floatArgument);
+        if (log.isDebugEnabled()) {
+            log(commandString+SPACE+floatArgument);
+        }
     }
 
     private void log(String commandString, int value) {
-        log(commandString+SPACE+value);
+        if (log.isDebugEnabled()) {
+            log(commandString+SPACE+value);
+        }
     }
 
     private void log(String commandString, float[] matrix) {
-        for (int y = 0; y < 4; y++) {
-            log(commandString+SPACE+String.format("%.1f %.1f %.1f %.1f", matrix[0 + y * 4], matrix[1 + y * 4], matrix[2 + y * 4], matrix[3 + y * 4]));
+        if (log.isDebugEnabled()) {
+            for (int y = 0; y < 4; y++) {
+                log(commandString+SPACE+String.format("%.1f %.1f %.1f %.1f", matrix[0 + y * 4], matrix[1 + y * 4], matrix[2 + y * 4], matrix[3 + y * 4]));
+            }
         }
     }
 
@@ -2489,8 +2619,10 @@ public class VideoEngine {
 
         // Load the texture if not yet loaded
         if (texture == null || !texture.isLoaded()) {
-            log(helper.getCommandString(TFLUSH) + " " + String.format("0x%08X", texture_base_pointer0) + " (" + texture_width0 + "," + texture_height0 + ")");
-            log(helper.getCommandString(TFLUSH) + " texture_storage=0x" + Integer.toHexString(texture_storage) + ", tex_clut_mode=0x" + Integer.toHexString(tex_clut_mode) + ", tex_clut_addr=" + String.format("0x%08X", tex_clut_addr));
+            if (log.isDebugEnabled()) {
+                log(helper.getCommandString(TFLUSH) + " " + String.format("0x%08X", texture_base_pointer0) + " (" + texture_width0 + "," + texture_height0 + ")");
+                log(helper.getCommandString(TFLUSH) + " texture_storage=0x" + Integer.toHexString(texture_storage) + ", tex_clut_mode=0x" + Integer.toHexString(tex_clut_mode) + ", tex_clut_addr=" + String.format("0x%08X", tex_clut_addr));
+            }
             // Extract texture information with the minor conversion possible
             // TODO: Get rid of information copying, and implement all the available formats
             Memory  mem = Memory.getInstance();
@@ -2793,7 +2925,9 @@ public class VideoEngine {
                 texture.setIsLoaded();
             }
         } else {
-            log(helper.getCommandString(TFLUSH) + " Reusing cached texture " + texture.getGlId());
+            if (log.isDebugEnabled()) {
+                log(helper.getCommandString(TFLUSH) + " Reusing cached texture " + texture.getGlId());
+            }
         }
     }
 }

@@ -22,7 +22,11 @@ import java.nio.ByteBuffer;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Debugger.InstructionCounter;
 import jpcsp.Debugger.StepLogger;
+import jpcsp.HLE.ThreadMan;
+import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.kernel.types.SceModule;
+import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.textures.TextureCache;
 
 import org.apache.log4j.Logger;
 
@@ -52,6 +56,30 @@ public class Emulator implements Runnable {
         mainThread = new Thread(this, "Emu");
 
         instance = this;
+    }
+
+    public static void exit() {
+        log.info(TextureCache.getInstance().statistics.toString());
+        if (ThreadMan.getInstance().statistics != null && pspdisplay.getInstance().statistics != null) {
+            long totalMillis = ThreadMan.getInstance().statistics.getDurationMillis();
+            long displayMillis = pspdisplay.getInstance().statistics.cumulatedTimeMillis;
+            long cpuMillis = totalMillis - displayMillis;
+            long cpuCycles = ThreadMan.getInstance().statistics.allCycles;
+            double totalSecs = totalMillis / 1000.0;
+            double displaySecs = displayMillis / 1000.0;
+            double cpuSecs = cpuMillis / 1000.0;
+            log.info("Total execution time: " + String.format("%.3f", totalSecs) + "s");
+            log.info("     PSP CPU time: " + String.format("%.3f", cpuSecs) + "s (" + String.format("%.1f", cpuSecs / totalSecs * 100) + "%)");
+            log.info("     Display time: " + String.format("%.3f", displaySecs) + "s (" + String.format("%.1f", displaySecs / totalSecs * 100) + "%)");
+            if (VideoEngine.getStatistics() != null) {
+                long videoCalls = VideoEngine.getStatistics().numberCalls;
+                log.info("Elapsed time per frame: " + String.format("%.3f", totalSecs / videoCalls) + "s:");
+                log.info("    Display time: " + String.format("%.3f", displaySecs / videoCalls));
+                log.info("    PSP CPU time: " + String.format("%.3f", cpuSecs / videoCalls) + " (" + (cpuCycles / videoCalls) + " instr)");
+                log.info("Display Speed: " + String.format("%.2f", videoCalls / totalSecs) + " FPS");
+            }
+            log.info("PSP CPU Speed: " + String.format("%.3f", cpuCycles / cpuSecs / (1024 * 1024)) + "Mhz (" + (long) (cpuCycles / cpuSecs) + " instructions per second)");
+        }
     }
 
     public SceModule load(String pspfilename, ByteBuffer f) throws IOException, GeneralJpcspException {

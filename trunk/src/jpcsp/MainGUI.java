@@ -52,12 +52,14 @@ import jpcsp.GUI.MemStickBrowser;
 import jpcsp.GUI.RecentElement;
 import jpcsp.GUI.SettingsGUI;
 import jpcsp.GUI.UmdBrowser;
+import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.pspiofilemgr;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PSF;
+import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.textures.TextureCache;
 import jpcsp.log.LogWindow;
 import jpcsp.log.LoggingOutputStream;
@@ -799,7 +801,10 @@ private void exitEmu() {
     if (Settings.getInstance().readBool("gui.saveWindowPos"))
         Settings.getInstance().writeWindowPos("mainwindow", getLocation());
 
-    Emulator.log.debug(TextureCache.getInstance().statistics.toString());
+    ThreadMan.getInstance().exit();
+    pspdisplay.getInstance().exit();
+    VideoEngine.exit();
+    Emulator.exit();
 
     System.exit(0);
 }

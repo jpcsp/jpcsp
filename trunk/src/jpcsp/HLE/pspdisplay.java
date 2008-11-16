@@ -32,6 +32,7 @@ import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Settings;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
 
 /**
@@ -126,6 +127,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     private int[] texSrc0Alpha = new int[2];
     private int texStackIndex = 0;
 
+    public DurationStatistics statistics;
+
     private pspdisplay (GLCapabilities capabilities) {
     	super (capabilities);
 
@@ -135,6 +138,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     }
 
     public void Initialise() {
+        statistics = new DurationStatistics("pspdisplay Statistics");
+
         mode          = 0;
         width         = 480;
         height        = 272;
@@ -167,6 +172,12 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         vcount = 0;
         accumulatedHcount = 0.0f;
         currentHcount = 0.0f;
+    }
+
+    public void exit() {
+        if (statistics != null) {
+            Modules.log.info(statistics.toString());
+        }
     }
 
     public void step() {
@@ -435,6 +446,10 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
     @Override
     public void display(GLAutoDrawable drawable) {
+        if (statistics != null) {
+            statistics.start();
+        }
+
         final GL gl = drawable.getGL();
 
         if (createTex) {
@@ -542,6 +557,10 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         }
 
         reportFPSStats();
+
+        if (statistics != null) {
+            statistics.end();
+        }
     }
 
     @Override
