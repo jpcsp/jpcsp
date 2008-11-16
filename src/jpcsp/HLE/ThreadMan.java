@@ -58,6 +58,7 @@ public class ThreadMan {
     private SceKernelThreadInfo idle0, idle1;
     private int continuousIdleCycles; // watch dog timer - number of continuous cycles in any idle thread
     private int syscallFreeCycles; // watch dog timer - number of cycles since last syscall
+    public Statistics statistics;
 
     // TODO figure out a decent number of cycles to wait
     private final int WDT_THREAD_IDLE_CYCLES = 1000000;
@@ -139,6 +140,7 @@ public class ThreadMan {
         eventlist = new HashMap<Integer, SceKernelEventFlagInfo>();
         waitingThreads = new ArrayList<SceKernelThreadInfo>();
         toBeDeletedThreads = new ArrayList<SceKernelThreadInfo>();
+        statistics = new Statistics();
 
         // Clear stack allocation info
         //pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_Addr, 0x000fffff, 0x09f00000);
@@ -215,6 +217,24 @@ public class ThreadMan {
         idle1.status = PspThreadStatus.PSP_THREAD_READY;
 
         continuousIdleCycles = 0;
+    }
+
+    /** to be called when exiting the emulation */
+    public void exit() {
+        if (threadlist != null) {
+            // Delete all the threads to collect statistics
+            while (!threadlist.isEmpty()) {
+                SceKernelThreadInfo thread = threadlist.values().iterator().next();
+                deleteThread(thread);
+            }
+
+            statistics.endTimeMillis = System.currentTimeMillis();
+            Modules.log.info("ThreadMan Statistics (" + statistics.allCycles + " cycles in " + String.format("%.3f", statistics.getDurationMillis() / 1000.0) + "s):");
+            for (Iterator<Statistics.ThreadStatistics> it = statistics.threads.iterator(); it.hasNext(); ) {
+                Statistics.ThreadStatistics threadStatistics = it.next();
+                Modules.log.info("    Thread " + threadStatistics.name + ": " + threadStatistics.runClocks + " (" + String.format("%2.2f%%", (threadStatistics.runClocks / (double) statistics.allCycles) * 100) + ")");
+            }
+        }
     }
 
     /** to be called from the main emulation loop */
@@ -432,6 +452,8 @@ public class ThreadMan {
         threadlist.remove(thread.uid);
         SceUidManager.releaseUid(thread.uid, "ThreadMan-thread");
         // TODO remove from any internal lists? such as sema waiting lists
+
+        statistics.addThreadStatistics(thread);
     }
 
     private void setToBeDeletedThread(SceKernelThreadInfo thread) {
@@ -443,6 +465,10 @@ public class ThreadMan {
     }
 
     private void changeThreadState(SceKernelThreadInfo thread, PspThreadStatus newStatus) {
+        if (thread == null) {
+            return;
+        }
+
         if (thread.status == PspThreadStatus.PSP_THREAD_WAITING) {
             waitingThreads.remove(thread);
         } else if (thread.status == PspThreadStatus.PSP_THREAD_STOPPED) {
@@ -1865,6 +1891,39 @@ public class ThreadMan {
             mem.write32(address + 40, initPattern);
             mem.write32(address + 44, currentPattern);
             mem.write32(address + 48, numWaitThreads);
+        }
+    }
+
+    public class Statistics {
+        public ArrayList<ThreadStatistics> threads = new ArrayList<ThreadStatistics>();
+        public long allCycles = 0;
+        public long startTimeMillis;
+        public long endTimeMillis;
+
+        public Statistics() {
+            startTimeMillis = System.currentTimeMillis();
+        }
+
+        public void exit() {
+            endTimeMillis = System.currentTimeMillis();
+        }
+
+        public long getDurationMillis() {
+            return endTimeMillis - startTimeMillis;
+        }
+
+        public void addThreadStatistics(SceKernelThreadInfo thread) {
+            ThreadStatistics threadStatistics = new ThreadStatistics();
+            threadStatistics.name = thread.name;
+            threadStatistics.runClocks = thread.runClocks;
+            threads.add(threadStatistics);
+
+            allCycles += thread.runClocks;
+        }
+
+        private class ThreadStatistics {
+            public String name;
+            public long runClocks;
         }
     }
 }

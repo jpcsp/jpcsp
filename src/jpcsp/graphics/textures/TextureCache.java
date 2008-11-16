@@ -38,7 +38,7 @@ public class TextureCache {
 		public long maxSizeUsed = 0;		// Maximum size of the cache
 
 		private String percentage(long n, long max) {
-			return String.format("%2.2f%%", (n / (double) max) * 100);
+			return String.format("%.2f%%", (n / (double) max) * 100);
 		}
 
 		private String percentage(long hits) {
@@ -54,7 +54,7 @@ public class TextureCache {
 			    result.append("TotalHits=" + totalHits + ", ");
 			    result.append("SuccessfulHits=" + successfulHits + " (" + percentage(successfulHits) + "), ");
 			    result.append("NotPresentHits=" + notPresentHits + " (" + percentage(notPresentHits) + "), ");
-			    result.append("ChangedHits=" + changedHits + " ( " + percentage(changedHits) + "), ");
+			    result.append("ChangedHits=" + changedHits + " (" + percentage(changedHits) + "), ");
 			    result.append("EntriesRemoved=" + entriesRemoved + ", ");
 			    result.append("MaxSizeUsed=" + maxSizeUsed + " (" + percentage(maxSizeUsed, cacheMaxSize) + ")");
 			}
