@@ -72,10 +72,10 @@ public class Emulator implements Runnable {
             log.info("     PSP CPU time: " + String.format("%.3f", cpuSecs) + "s (" + String.format("%.1f", cpuSecs / totalSecs * 100) + "%)");
             log.info("     Display time: " + String.format("%.3f", displaySecs) + "s (" + String.format("%.1f", displaySecs / totalSecs * 100) + "%)");
             if (VideoEngine.getStatistics() != null) {
-                long videoCalls = VideoEngine.getStatistics().numberCalls;
-                log.info("Elapsed time per frame: " + String.format("%.3f", totalSecs / videoCalls) + "s:");
-                log.info("    Display time: " + String.format("%.3f", displaySecs / videoCalls));
-                log.info("    PSP CPU time: " + String.format("%.3f", cpuSecs / videoCalls) + " (" + (cpuCycles / videoCalls) + " instr)");
+                 long videoCalls = VideoEngine.getStatistics().numberCalls;
+                if(videoCalls !=0) log.info("Elapsed time per frame: " + String.format("%.3f", totalSecs / videoCalls) + "s:");
+                if(videoCalls !=0) log.info("    Display time: " + String.format("%.3f", displaySecs / videoCalls));
+                if(videoCalls !=0) log.info("    PSP CPU time: " + String.format("%.3f", cpuSecs / videoCalls) + " (" + (cpuCycles / videoCalls) + " instr)");
                 log.info("Display Speed: " + String.format("%.2f", videoCalls / totalSecs) + " FPS");
             }
             log.info("PSP CPU Speed: " + String.format("%.3f", cpuCycles / cpuSecs / (1024 * 1024)) + "Mhz (" + (long) (cpuCycles / cpuSecs) + " instructions per second)");
