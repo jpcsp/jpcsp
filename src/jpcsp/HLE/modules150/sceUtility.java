@@ -20,6 +20,7 @@ package jpcsp.HLE.modules150;
 
 import java.io.IOException;
 
+import jpcsp.HLE.kernel.types.SceUtilityMsgDialogParams;
 import jpcsp.HLE.kernel.types.SceUtilitySavedataParam;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -77,6 +78,8 @@ public class sceUtility implements HLEModule {
 			mm.addFunction(sceUtilityCheckNetParamFunction, 0x5EEE6548);
 			mm.addFunction(sceUtilityGetNetParamFunction, 0x434D4B3A);
 
+            msgdialog_params = null;
+            msgdialog_status = PSP_UTILITY_DIALOG_NONE;
             savedata_status = SCE_UTILITY_SAVEDATA_ERROR_NOT_INITED;
 		}
 	}
@@ -194,7 +197,8 @@ public class sceUtility implements HLEModule {
     public static final int PSP_UTILITY_DIALOG_QUIT = 3;
     public static final int PSP_UTILITY_DIALOG_FINISHED = 4;
 
-    private int msgdialog_status = PSP_UTILITY_DIALOG_NONE;
+    private SceUtilityMsgDialogParams msgdialog_params;
+    private int msgdialog_status;
 
 	public void sceUtilityGameSharingInitStart(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
@@ -606,26 +610,37 @@ public class sceUtility implements HLEModule {
         // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        int params_addr = cpu.gpr[4] & 0x3fffffff;
+        msgdialog_params = new SceUtilityMsgDialogParams();
+        if (mem.isAddressGood(params_addr)) {
+            msgdialog_params.read(mem, params_addr);
 
-        Modules.log.warn("PARTIAL:sceUtilityMsgDialogInitStart");
+            Modules.log.warn("PARTIAL:sceUtilityMsgDialogInitStart");
+            Modules.log.debug(msgdialog_params.toString());
 
-        // HACK let's start on quit, then the app should call shutdown and then we change status to finished
-        msgdialog_status = PSP_UTILITY_DIALOG_QUIT;
+            // HACK let's start on quit, then the app should call shutdown and then we change status to finished
+            msgdialog_status = PSP_UTILITY_DIALOG_QUIT;
 
-        cpu.gpr[2] = 0;
-
-        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+            cpu.gpr[2] = 0;
+        } else {
+            Modules.log.warn("sceUtilityMsgDialogInitStart bad address " + String.format("0x%08X", msgdialog_params));
+            cpu.gpr[2] = -1;
+        }
     }
 
     public void sceUtilityMsgDialogShutdownStart(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
 
         Modules.log.warn("PARTIAL:sceUtilityMsgDialogShutdownStart");
 
         msgdialog_status = PSP_UTILITY_DIALOG_FINISHED;
+
+        if (msgdialog_params != null) {
+            msgdialog_params.write(mem);
+            msgdialog_params = null;
+        }
 
         // no return code
         // cpu.gpr[2] = 0xDEADC0DE;

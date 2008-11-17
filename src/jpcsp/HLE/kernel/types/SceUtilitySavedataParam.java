@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 import java.io.IOException;
+import java.io.FileNotFoundException;
 import java.nio.ByteBuffer;
 import java.util.Vector;
 
@@ -293,7 +294,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 
 		SeekableDataInput fileInput = getDataInput(fileManager, path, name);
 		if (fileInput == null) {
-			return 0;
+			throw new FileNotFoundException("File not found '" + path + "' '" + name + "'");
 		}
 
 		int fileSize = (int) fileInput.length();

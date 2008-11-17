@@ -68,6 +68,7 @@ public class pspiofilemgr {
     public final static int PSP_ERROR_BAD_FILE_DESCRIPTOR = 0x80020323;
     public final static int PSP_ERROR_FILENAME_TOO_LONG   = 0x8002032d;
     public final static int PSP_ERROR_ASYNC_BUSY          = 0x80020329;
+    public final static int PSP_ERROR_NO_ASYNC_OP         = 0x8002032a;
 
 
     private HashMap<Integer, IoInfo> filelist;
@@ -186,15 +187,20 @@ public class pspiofilemgr {
         IoInfo info = filelist.get(uid);
         if (info == null) {
             Modules.log.warn("sceIoPollAsync - unknown uid " + Integer.toHexString(uid));
-            Emulator.getProcessor().cpu.gpr[2] = -1;
+
+            // Some games call sceIoPollAsync 2x after sceIoCloseAsync,
+            // returning 0 seems to work better than -1/"no async op" for these games.
+            //Emulator.getProcessor().cpu.gpr[2] = -1;
+            //Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NO_ASYNC_OP;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
         } else {
-        	if (info.closePending) {
-        		Modules.log.debug("sceIoPollAsync - file marked with closePending, calling sceIoClose");
-        		sceIoClose(uid);
-        	}
+            if (info.closePending) {
+                Modules.log.debug("sceIoPollAsync - file marked with closePending, calling sceIoClose");
+                sceIoClose(uid);
+            }
             Memory mem = Memory.getInstance();
             if (mem.isAddressGood(res_addr)) {
-            	Modules.log.debug("sceIoPollAsync returning 0x" + Long.toHexString(info.result));
+                Modules.log.debug("sceIoPollAsync storing result 0x" + Long.toHexString(info.result));
                 mem.write32(res_addr, (int)(info.result & 0xffffffffL));
                 mem.write32(res_addr + 4, (int)((info.result >> 32) & 0xffffffffL));
             }
@@ -901,15 +907,15 @@ public class pspiofilemgr {
         default: perm = "unhandled " + mode; break;
         }
 
-        Modules.log.warn("UNIMPLEMENTED:sceIoAssign(dev1='" + dev1
+        Modules.log.warn("IGNORING:sceIoAssign(dev1='" + dev1
             + "',dev2='" + dev2
             + "',dev3='" + dev3
             + "',mode=" + perm
             + ",unk1=0x" + Integer.toHexString(unk1)
             + ",unk2=0x" + Integer.toHexString(unk2) + ")");
 
-        //Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
-        Emulator.getProcessor().cpu.gpr[2] = -1;
+        Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
+        //Emulator.getProcessor().cpu.gpr[2] = -1;
 
         State.fileLogger.logIoAssign(Emulator.getProcessor().cpu.gpr[2],
                 dev1_addr, dev1, dev2_addr, dev2, dev3_addr, dev3, mode, unk1, unk2);

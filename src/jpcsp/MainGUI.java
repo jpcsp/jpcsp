@@ -509,7 +509,11 @@ public void loadFile(File file) {
         JpcspDialogManager.showError(this, "IO Error : " + e.getMessage());
     } catch (Exception ex) {
         ex.printStackTrace();
-        JpcspDialogManager.showError(this, "Critical Error : " + ex.getMessage());
+        if (ex.getMessage() != null) {
+            JpcspDialogManager.showError(this, "Critical Error : " + ex.getMessage());
+        } else {
+            JpcspDialogManager.showError(this, "Critical Error : Check console for details.");
+        }
     }
 }
 
@@ -749,7 +753,11 @@ public void loadUMD(File file) {
         JpcspDialogManager.showError(this, "IO Error : " + e.getMessage());
     } catch (Exception ex) {
         ex.printStackTrace();
-        JpcspDialogManager.showError(this, "Critical Error : " + ex.getMessage());
+        if (ex.getMessage() != null) {
+            JpcspDialogManager.showError(this, "Critical Error : " + ex.getMessage());
+        } else {
+            JpcspDialogManager.showError(this, "Critical Error : Check console for details.");
+        }
     }
 }
 

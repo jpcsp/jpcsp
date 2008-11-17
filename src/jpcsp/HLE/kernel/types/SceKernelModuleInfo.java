@@ -24,7 +24,7 @@ import jpcsp.HLE.kernel.managers.SceUidManager;
  *
  * @author hli
  */
-public class SceKernelModuleInfo {
+public class SceKernelModuleInfo extends pspAbstractMemoryMappedStructure {
 
     // PSP info
     // http://psp.jim.sh/pspsdk-doc/structSceKernelModuleInfo.html
@@ -43,6 +43,7 @@ public class SceKernelModuleInfo {
     public String name;
 
     // Internal info
+    // TODO does this need a UID? is it always bound to SceModule?
     public final int uid;
 
     public SceKernelModuleInfo() {
@@ -69,5 +70,60 @@ public class SceKernelModuleInfo {
         version[0] = sceModule.version[0];
         version[1] = sceModule.version[1];
         name = sceModule.modname;
+    }
+
+
+
+    protected void read() {
+        int size = read32();
+        setMaxSize(size);
+
+        nsegment        = read32();
+        segmentaddr[0]  = read32();
+        segmentaddr[1]  = read32();
+        segmentaddr[2]  = read32();
+        segmentaddr[3]  = read32();
+        segmentsize[0]  = read32();
+        segmentsize[1]  = read32();
+        segmentsize[2]  = read32();
+        segmentsize[3]  = read32();
+        entry_addr      = read32();
+        gp_value        = read32();
+        text_addr       = read32();
+        text_size       = read32();
+        data_size       = read32();
+        bss_size        = read32();
+        attribute       = (short)(read16() & 0xFFFF);
+        version[0]      = (byte)(read8() & 0xFF);
+        version[1]      = (byte)(read8() & 0xFF);
+        name            = readStringNZ(28);
+    }
+
+    protected void write() {
+        setMaxSize(size);
+
+        write32(nsegment);
+        write32(segmentaddr[0]);
+        write32(segmentaddr[1]);
+        write32(segmentaddr[2]);
+        write32(segmentaddr[3]);
+        write32(segmentsize[0]);
+        write32(segmentsize[1]);
+        write32(segmentsize[2]);
+        write32(segmentsize[3]);
+        write32(entry_addr);
+        write32(gp_value);
+        write32(text_addr);
+        write32(text_size);
+        write32(data_size);
+        write32(bss_size);
+        write16(attribute);
+        write8(version[0]);
+        write8(version[1]);
+        writeStringNZ(28, name);
+    }
+
+    public int sizeof() {
+        return size;
     }
 }
