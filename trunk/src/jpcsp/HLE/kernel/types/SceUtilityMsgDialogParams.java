@@ -1,0 +1,106 @@
+/*
+This file is part of jpcsp.
+
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package jpcsp.HLE.kernel.types;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Vector;
+
+import jpcsp.Memory;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.pspiofilemgr;
+import jpcsp.filesystems.SeekableDataInput;
+import jpcsp.filesystems.SeekableRandomFile;
+import jpcsp.format.PSF;
+import jpcsp.util.Utilities;
+
+public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure {
+
+    public pspUtilityDialogCommon base;
+    public int unknown;
+    public int mode;
+        public final static int PSP_UTILITY_MSGDIALOG_MODE_ERROR = 0;
+        public final static int PSP_UTILITY_MSGDIALOG_MODE_TEXT  = 1;
+    public int errorValue;
+    public String message; // 512 bytes
+    public int options;
+        public final static int PSP_UTILITY_MSGDIALOG_OPTION_ERROR          = 0;
+        public final static int PSP_UTILITY_MSGDIALOG_OPTION_TEXT           = 0x00000001;
+        public final static int PSP_UTILITY_MSGDIALOG_OPTION_YESNO_BUTTONS  = 0x00000010;
+        public final static int PSP_UTILITY_MSGDIALOG_OPTION_DEFAULT_NO     = 0x00000100;
+    public int buttonPressed;
+
+    public SceUtilityMsgDialogParams() {
+        base = new pspUtilityDialogCommon();
+        base.size = 532;
+    }
+
+    protected void read() {
+        base = new pspUtilityDialogCommon();
+        read(base);
+        setMaxSize(base.size);
+
+        unknown         = read32();
+        mode            = read32();
+        errorValue      = read32();
+        message         = readStringNZ(512);
+        options         = read32();
+        buttonPressed   = read32();
+    }
+
+    protected void write() {
+        base = new pspUtilityDialogCommon();
+        setMaxSize(base.size);
+        write(base);
+
+        write32(unknown);
+        write32(mode);
+        write32(errorValue);
+        writeStringNZ(512, message);
+        write32(options);
+        write32(buttonPressed);
+    }
+
+    public int sizeof() {
+        return base.size;
+    }
+
+    @Override
+    public String toString() {
+        StringBuffer sb = new StringBuffer();
+        sb.append("unknown " + String.format("0x%08X", unknown) + "\n");
+        sb.append("mode " + ((mode == PSP_UTILITY_MSGDIALOG_MODE_ERROR)
+            ? "PSP_UTILITY_MSGDIALOG_MODE_ERROR"
+            : (mode == PSP_UTILITY_MSGDIALOG_MODE_TEXT)
+            ? "PSP_UTILITY_MSGDIALOG_MODE_TEXT"
+            : String.format("0x%08X", unknown)) + "\n");
+        sb.append("errorValue " + String.format("0x%08X", errorValue) + "\n");
+        sb.append("message '" + message + "'\n");
+        sb.append("options " + String.format("0x%08X", options) + "\n");
+        if ((options & PSP_UTILITY_MSGDIALOG_OPTION_TEXT) == PSP_UTILITY_MSGDIALOG_OPTION_TEXT)
+            sb.append("options PSP_UTILITY_MSGDIALOG_OPTION_TEXT\n");
+        else
+            sb.append("options PSP_UTILITY_MSGDIALOG_OPTION_ERROR\n");
+        if ((options & PSP_UTILITY_MSGDIALOG_OPTION_YESNO_BUTTONS) == PSP_UTILITY_MSGDIALOG_OPTION_YESNO_BUTTONS)
+            sb.append("options PSP_UTILITY_MSGDIALOG_OPTION_YESNO_BUTTONS\n");
+        if ((options & PSP_UTILITY_MSGDIALOG_OPTION_DEFAULT_NO) == PSP_UTILITY_MSGDIALOG_OPTION_DEFAULT_NO)
+            sb.append("options PSP_UTILITY_MSGDIALOG_OPTION_DEFAULT_NO\n");
+        sb.append("buttonPressed " + String.format("0x%08X", buttonPressed) + "\n");
+
+        return sb.toString();
+    }
+}

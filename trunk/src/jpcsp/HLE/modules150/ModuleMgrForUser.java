@@ -26,6 +26,7 @@ import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.pspSysMem;
 import jpcsp.HLE.pspiofilemgr;
 import jpcsp.HLE.kernel.Managers;
+import jpcsp.HLE.kernel.types.SceKernelModuleInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -289,9 +290,9 @@ public class ModuleMgrForUser implements HLEModule {
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
 
-	public void sceKernelStartModule(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
+    public void sceKernelStartModule(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
 
         int uid = cpu.gpr[4];
         int argsize = cpu.gpr[5];
@@ -311,10 +312,10 @@ public class ModuleMgrForUser implements HLEModule {
             Modules.log.warn("sceKernelStartModule - unknown module UID 0x" + Integer.toHexString(uid));
             cpu.gpr[2] = -1;
         } else  if (sceModule.isFlashModule) {
-        	// Trying to start a module loaded from flash0:
-        	// Do nothing...
+            // Trying to start a module loaded from flash0:
+            // Do nothing...
             Modules.log.warn("IGNORING:sceKernelStartModule flash module");
-    		cpu.gpr[2] = 0;
+            cpu.gpr[2] = 0;
         } else {
             // TODO check thread priority
             ThreadMan.getInstance().createThread(sceModule.modname,
@@ -323,7 +324,7 @@ public class ModuleMgrForUser implements HLEModule {
 
             cpu.gpr[2] = 0;
         }
-	}
+    }
 
 	public void sceKernelStopModule(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
@@ -359,22 +360,26 @@ public class ModuleMgrForUser implements HLEModule {
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
 
-	public void sceKernelSelfStopUnloadModule(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
+    public void sceKernelSelfStopUnloadModule(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
 
         int unknown = cpu.gpr[4];
         int argsize = cpu.gpr[5];
         int argp_addr = cpu.gpr[6];
 
-		Modules.log.debug("sceKernelSelfStopUnloadModule(unknown=0x" + Integer.toHexString(unknown)
+        Modules.log.debug("sceKernelSelfStopUnloadModule(unknown=0x" + Integer.toHexString(unknown)
             + ",argsize=" + argsize
             + ",argp_addr=0x" + Integer.toHexString(argp_addr) + ")");
+
+        // TODO see if the current thread belongs to the root module,
+        // we can get root module from Emulator.getInstance().module.
+        // If it is not the from root module do not pause the emulator!
 
         Modules.log.info("Program exit detected (sceKernelSelfStopUnloadModule)");
         Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_OK);
 
-		cpu.gpr[2] = 0;
-	}
+        cpu.gpr[2] = 0;
+    }
 
 	public void sceKernelStopUnloadSelfModule(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
@@ -410,22 +415,31 @@ public class ModuleMgrForUser implements HLEModule {
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
 
-	public void sceKernelQueryModuleInfo(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+    public void sceKernelQueryModuleInfo(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+        int uid = cpu.gpr[4];
+        int info_addr = cpu.gpr[5];
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceKernelQueryModuleInfo [0x748CBED9]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
+        SceModule sceModule = Managers.modules.getModuleByUID(uid);
+        if (sceModule == null) {
+            Modules.log.warn("sceKernelQueryModuleInfo unknown module UID 0x" + Integer.toHexString(uid));
+            cpu.gpr[2] = -1;
+        } else if (!mem.isAddressGood(info_addr)) {
+            Modules.log.warn("sceKernelQueryModuleInfo bad info pointer " + String.format("0x%08X", info_addr));
+            cpu.gpr[2] = -1;
+        } else {
+            Modules.log.debug("sceKernelQueryModuleInfo UID 0x" + Integer.toHexString(uid)
+                + " info " + String.format("0x%08X", info_addr)
+                + " modname '" + sceModule.modname + "'");
+            SceKernelModuleInfo moduleInfo = new SceKernelModuleInfo();
+            moduleInfo.copy(sceModule);
+            moduleInfo.write(mem, info_addr);
+            cpu.gpr[2] = 0;
+        }
+    }
 
 	public void sceKernelGetModuleId(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
