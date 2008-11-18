@@ -71,12 +71,14 @@ public class ThreadMan {
     private PendingCallback currentCallback; // this is actually a list of 1 type of callback
     private LinkedList<PendingCallback> pendingCallbackList;
     private HashMap<Integer, SceKernelCallbackInfo> callbackMap;
-    
+
     private static final boolean USE_THREAD_BANLIST = false;
     private String[] threadNameBanList = new String[] {
         "SndMain", "SoundThread", "At3Main", "Atrac3PlayThread",
         "bgm thread", "SceWaveMain", "SasCore thread", "soundThread",
-        "ATRAC3 play thread", "SAS Thread", "XomAudio",
+        "ATRAC3 play thread", "SAS Thread", "XomAudio", "sgx-psp-freq-thr",
+        "sgx-psp-at3-th", "sgx-psp-pcm-th", "snd_tick_timer_thread", "snd_stream_service_thread_0",
+        "snd_stream_service_thread_1",
     };
 
     public final static int PSP_ERROR_UNKNOWN_UID                    = 0x800200cb;
@@ -154,7 +156,7 @@ public class ThreadMan {
         currentCallback = null;
         pendingCallbackList = new LinkedList<PendingCallback>();
         callbackMap = new HashMap<Integer, SceKernelCallbackInfo>();
-        
+
         // Clear stack allocation info
         //pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_Addr, 0x000fffff, 0x09f00000);
         //stackAllocated = 0;
@@ -315,14 +317,14 @@ public class ThreadMan {
                 deleteThread(thread);
             }
         }
-        
+
         // Start processing callbacks
         if (!processingCallbacks &&
             pendingCallbackList.size() != 0 &&
             canProcessCallbacks()) {
 
             Modules.log.debug("Processing " + pendingCallbackList.size() + " pending callback types ...");
-            
+
             // save current thread context
             // this call probably isn't necessary due to the way thread contexts are handled
             current_thread.saveContext();
@@ -368,8 +370,8 @@ public class ThreadMan {
             /*
             Modules.log.debug("restoreContext SceUID=" + Integer.toHexString(newthread.uid)
                 + " name:" + newthread.name
-                + " PC:" + Integer.toHexString(newthread.pcreg)
-                + " NPC:" + Integer.toHexString(newthread.npcreg));
+                + " PC:" + Integer.toHexString(newthread.cpuContext.pc)
+                + " NPC:" + Integer.toHexString(newthread.cpuContext.npc));
             */
 
             //Emulator.PauseEmu();
@@ -422,14 +424,16 @@ public class ThreadMan {
         }
         return false;
     }
-    
+
     private void switchInCallback(SceKernelCallbackInfo info, int[] gpr) {
-        Modules.log.debug("switchInCallback " + info.name
-            + " PC:0x" + Integer.toHexString(info.callback_addr));
-        
+
+        Modules.log.debug("switchInCallback PC:" + Integer.toHexString(info.callback_addr)
+            + " name:'" + info.name
+            + "' thread:" + Integer.toHexString(info.threadId));
+
         // create a new context for the callback to run in
         CpuState callbackContext = new CpuState(current_thread.cpuContext);
-        
+
         // mark $ra so we know when the callback exits
         callbackContext.gpr[31] = 0;
 
@@ -447,21 +451,18 @@ public class ThreadMan {
         info.notifyCount++;
         Emulator.getProcessor().cpu = callbackContext;
     }
-    
+
     private void checkCallbacks() {
         processingCallbacks = false;
         for (Iterator<PendingCallback> it = pendingCallbackList.iterator();
             it.hasNext(); ) {
             currentCallback = it.next();
 
-            // TODO for now we process callbacks linearly,
-            // we should check all callbacks from the beginning and check the
-            // current thread uid and callback info uid match, then remove the
-            // cb from the list and process it.
-            if (currentCallback.hasNext()) {
+            // TODO make sure checkCallbacks is called when current_thread is a waiting thread that has do_callbacks set
+            // or, make currentCallback.next() only return callbacks that match any waiting thread with do_callbacks set
+            SceKernelCallbackInfo info = currentCallback.next(current_thread.uid);
+            if (info != null) {
                 processingCallbacks = true;
-                int cbid = currentCallback.next();
-                SceKernelCallbackInfo info = callbackMap.get(cbid);
                 switchInCallback(info, currentCallback.gpr);
                 break;
             } else {
@@ -469,16 +470,17 @@ public class ThreadMan {
                 it.remove();
             }
         }
-        
+
         if (!processingCallbacks) {
             Modules.log.debug("Finished processing all ready callbacks");
-            
+            //Emulator.PauseEmu();
+
             // resume normal operation
             current_thread.restoreContext();
         }
     }
-    
-    
+
+
     public int getCurrentThreadID() {
         return current_thread.uid;
     }
@@ -590,7 +592,7 @@ public class ThreadMan {
             onThreadStopped(thread);
         }
     }
-    
+
     private void onThreadStopped(SceKernelThreadInfo stoppedThread) {
         for (Iterator<SceKernelThreadInfo> it = threadlist.values().iterator(); it.hasNext(); ) {
             SceKernelThreadInfo thread = it.next();
@@ -851,8 +853,10 @@ public class ThreadMan {
         SceKernelCallbackInfo callback = new SceKernelCallbackInfo(name, current_thread.uid, a1, a2);
 
         Modules.log.debug("sceKernelCreateCallback SceUID=" + Integer.toHexString(callback.uid)
-            + " PC=" + Integer.toHexString(callback.callback_addr) + " name:'" + callback.name + "'");
-        
+            + " PC=" + Integer.toHexString(callback.callback_addr)
+            + " name:'" + callback.name
+            + "' thread:'" + current_thread.name + "'");
+
         Emulator.getProcessor().cpu.gpr[2] = callback.uid;
     }
 
@@ -1055,30 +1059,42 @@ public class ThreadMan {
         int[] gpr = new int[32];
         gpr[5] = event;
         PendingCallback pending = new PendingCallback(cbidList, gpr);
-        pendingCallbackList.add(pending);
+        //pendingCallbackList.add(pending);
     }
-    
+
     private class PendingCallback {
-        private Iterator<Integer> cbidList;
+        private LinkedList<Integer> cbidList;
         private int[] gpr;
 
         /** @param gpr elements 5 to 8 are good for parameters to the callback
          * function. gpr 4 will be automatically set to the callback's user data
          * pointer. */
-        public PendingCallback(Iterator<Integer> cbidList, int[] gpr) {
-            this.cbidList = cbidList;
+        public PendingCallback(Iterator<Integer> cbIt, int[] gpr) {
+            cbidList = new LinkedList<Integer>();
+            while(cbIt.hasNext()) {
+                cbidList.add(cbIt.next());
+            }
+
             this.gpr = gpr;
         }
 
-        public boolean hasNext() {
-            return cbidList.hasNext();
-        }
+        public SceKernelCallbackInfo next(int uid) {
+            SceKernelCallbackInfo found = null;
 
-        public int next() {
-            return cbidList.next();
+            for (Iterator<Integer> it = cbidList.iterator(); it.hasNext(); ) {
+                int cbid = it.next();
+                SceKernelCallbackInfo info = callbackMap.get(cbid);
+                if (info.threadId == uid) {
+                    found = info;
+                    it.remove();
+                    break;
+                }
+            }
+
+            return found;
         }
     }
-    
+
     private class SceKernelCallbackInfo {
         private String name;
         private int threadId;
@@ -1119,10 +1135,20 @@ public class ThreadMan {
         }
     }
 
+    /* Insert_witty_name
+     * http://forums.ps2dev.org/viewtopic.php?p=75691&sid=7a3ab5e2cd75aa9a569ccb453a85797a#75691
+    private static final int PSP_MODULE_USER            = 0;
+    private static final int PSP_MODULE_NO_STOP         = 0x0001;
+    private static final int PSP_MODULE_SINGLE_LOAD     = 0x0002;
+    private static final int PSP_MODULE_SINGLE_START    = 0x0004;
+    private static final int PSP_MODULE_KERNEL          = 0x1000;
+    */
+
+    // TODO are module/thread attr interchangeable? (probably yes)
     private static final int PSP_THREAD_ATTR_USER = 0x80000000;
     private static final int PSP_THREAD_ATTR_USBWLAN = 0xa0000000;
     private static final int PSP_THREAD_ATTR_VSH = 0xc0000000;
-    private static final int PSP_THREAD_ATTR_KERNEL = 0x00001000; // TODO are module/thread attr interchangeable?
+    private static final int PSP_THREAD_ATTR_KERNEL = 0x00001000;
     private static final int PSP_THREAD_ATTR_VFPU = 0x00004000;
     private static final int PSP_THREAD_ATTR_SCRATCH_SRAM = 0x00008000;
     private static final int PSP_THREAD_ATTR_NO_FILLSTACK = 0x00100000; // Disables filling the stack with 0xFF on creation.
@@ -1287,6 +1313,15 @@ public class ThreadMan {
             //Emulator.getProcessor().cpu.copy(cpuContext);
 
             // ignore PSP_THREAD_ATTR_VFPU flag
+
+            /*
+            if (this != idle0 && this != idle1) {
+                Modules.log.debug("restoreContext SceUID=" + Integer.toHexString(uid)
+                    + " name:" + name
+                    + " PC:" + Integer.toHexString(cpuContext.pc)
+                    + " NPC:" + Integer.toHexString(cpuContext.npc));
+            }
+            */
         }
 
         /** For use in the scheduler */
