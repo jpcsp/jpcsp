@@ -64,6 +64,14 @@ public class ThreadMan {
     private final int WDT_THREAD_IDLE_CYCLES = 1000000;
     private final int WDT_THREAD_HOG_CYCLES = 50000000;
 
+    // TODO probably need to use the SceKernelCallbackInfo struct threadid as a filter somewhere?
+    // IMPORTANT: do not call saveContext while processingCallbacks is true,
+    // otherwise you will clobber the context with a callback context.
+    private boolean processingCallbacks;
+    private PendingCallback currentCallback; // this is actually a list of 1 type of callback
+    private LinkedList<PendingCallback> pendingCallbackList;
+    private HashMap<Integer, SceKernelCallbackInfo> callbackMap;
+    
     private static final boolean USE_THREAD_BANLIST = false;
     private String[] threadNameBanList = new String[] {
         "SndMain", "SoundThread", "At3Main", "Atrac3PlayThread",
@@ -142,6 +150,11 @@ public class ThreadMan {
         toBeDeletedThreads = new ArrayList<SceKernelThreadInfo>();
         statistics = new Statistics();
 
+        processingCallbacks = false;
+        currentCallback = null;
+        pendingCallbackList = new LinkedList<PendingCallback>();
+        callbackMap = new HashMap<Integer, SceKernelCallbackInfo>();
+        
         // Clear stack allocation info
         //pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_Addr, 0x000fffff, 0x09f00000);
         //stackAllocated = 0;
@@ -247,12 +260,17 @@ public class ThreadMan {
 
             // Hook jr ra to 0 (thread function returned)
             if (cpu.pc == 0 && cpu.gpr[31] == 0) {
-                // Thread has exited
-                Modules.log.debug("Thread exit detected SceUID=" + Integer.toHexString(current_thread.uid)
-                    + " name:'" + current_thread.name + "' return:0x" + Integer.toHexString(cpu.gpr[2]));
-                current_thread.exitStatus = cpu.gpr[2]; // v0
-                changeThreadState(current_thread, PspThreadStatus.PSP_THREAD_STOPPED);
-                contextSwitch(nextThread());
+                if (processingCallbacks) {
+                    // Callback has exited
+                    checkCallbacks();
+                } else {
+                    // Thread has exited
+                    Modules.log.debug("Thread exit detected SceUID=" + Integer.toHexString(current_thread.uid)
+                        + " name:'" + current_thread.name + "' return:0x" + Integer.toHexString(cpu.gpr[2]));
+                    current_thread.exitStatus = cpu.gpr[2]; // v0
+                    changeThreadState(current_thread, PspThreadStatus.PSP_THREAD_STOPPED);
+                    contextSwitch(nextThread());
+                }
             }
 
             // Watch dog timer
@@ -296,6 +314,21 @@ public class ThreadMan {
                 }
                 deleteThread(thread);
             }
+        }
+        
+        // Start processing callbacks
+        if (!processingCallbacks &&
+            pendingCallbackList.size() != 0 &&
+            canProcessCallbacks()) {
+
+            Modules.log.debug("Processing " + pendingCallbackList.size() + " pending callback types ...");
+            
+            // save current thread context
+            // this call probably isn't necessary due to the way thread contexts are handled
+            current_thread.saveContext();
+
+            // start the process
+            checkCallbacks();
         }
     }
 
@@ -377,6 +410,75 @@ public class ThreadMan {
         return found;
     }
 
+    private boolean canProcessCallbacks() {
+        // iterate waiting list and check do_callbacks flag
+        for (Iterator<SceKernelThreadInfo> it = waitingThreads.iterator();
+            it.hasNext(); ) {
+            SceKernelThreadInfo info = it.next();
+            if (info.do_callbacks) {
+                Modules.log.debug("canProcessCallbacks = true, thread '" + info.name + "' is waiting on CB");
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    private void switchInCallback(SceKernelCallbackInfo info, int[] gpr) {
+        Modules.log.debug("switchInCallback " + info.name
+            + " PC:0x" + Integer.toHexString(info.callback_addr));
+        
+        // create a new context for the callback to run in
+        CpuState callbackContext = new CpuState(current_thread.cpuContext);
+        
+        // mark $ra so we know when the callback exits
+        callbackContext.gpr[31] = 0;
+
+        // where the callback starts executing
+        callbackContext.pc = info.callback_addr;
+
+        // callback user data
+        callbackContext.gpr[4] = info.callback_arg_addr;
+
+        // callback event data
+        for (int i = 5; i < 4+8; i++) {
+            callbackContext.gpr[i] = gpr[i];
+        }
+
+        info.notifyCount++;
+        Emulator.getProcessor().cpu = callbackContext;
+    }
+    
+    private void checkCallbacks() {
+        processingCallbacks = false;
+        for (Iterator<PendingCallback> it = pendingCallbackList.iterator();
+            it.hasNext(); ) {
+            currentCallback = it.next();
+
+            // TODO for now we process callbacks linearly,
+            // we should check all callbacks from the beginning and check the
+            // current thread uid and callback info uid match, then remove the
+            // cb from the list and process it.
+            if (currentCallback.hasNext()) {
+                processingCallbacks = true;
+                int cbid = currentCallback.next();
+                SceKernelCallbackInfo info = callbackMap.get(cbid);
+                switchInCallback(info, currentCallback.gpr);
+                break;
+            } else {
+                Modules.log.debug("Finished processing a callback type");
+                it.remove();
+            }
+        }
+        
+        if (!processingCallbacks) {
+            Modules.log.debug("Finished processing all ready callbacks");
+            
+            // resume normal operation
+            current_thread.restoreContext();
+        }
+    }
+    
+    
     public int getCurrentThreadID() {
         return current_thread.uid;
     }
@@ -411,7 +513,7 @@ public class ThreadMan {
 
     /** Call this when a thread's wait timeout has expired.
      * You can assume the calling function will set thread.status = ready. */
-    public void onWaitTimeout(SceKernelThreadInfo thread) {
+    private void onWaitTimeout(SceKernelThreadInfo thread) {
         // ThreadEnd
         if (thread.wait.waitingOnThreadEnd) {
             //Modules.log.debug("ThreadEnd timedout");
@@ -488,7 +590,7 @@ public class ThreadMan {
             onThreadStopped(thread);
         }
     }
-
+    
     private void onThreadStopped(SceKernelThreadInfo stoppedThread) {
         for (Iterator<SceKernelThreadInfo> it = threadlist.values().iterator(); it.hasNext(); ) {
             SceKernelThreadInfo thread = it.next();
@@ -750,7 +852,7 @@ public class ThreadMan {
 
         Modules.log.debug("sceKernelCreateCallback SceUID=" + Integer.toHexString(callback.uid)
             + " PC=" + Integer.toHexString(callback.callback_addr) + " name:'" + callback.name + "'");
-
+        
         Emulator.getProcessor().cpu.gpr[2] = callback.uid;
     }
 
@@ -948,6 +1050,35 @@ public class ThreadMan {
         yieldCurrentThread();
     }
 
+    // TODO add other pushXXXCallback functions
+    public void pushUMDCallback(Iterator<Integer> cbidList, int event) {
+        int[] gpr = new int[32];
+        gpr[5] = event;
+        PendingCallback pending = new PendingCallback(cbidList, gpr);
+        pendingCallbackList.add(pending);
+    }
+    
+    private class PendingCallback {
+        private Iterator<Integer> cbidList;
+        private int[] gpr;
+
+        /** @param gpr elements 5 to 8 are good for parameters to the callback
+         * function. gpr 4 will be automatically set to the callback's user data
+         * pointer. */
+        public PendingCallback(Iterator<Integer> cbidList, int[] gpr) {
+            this.cbidList = cbidList;
+            this.gpr = gpr;
+        }
+
+        public boolean hasNext() {
+            return cbidList.hasNext();
+        }
+
+        public int next() {
+            return cbidList.next();
+        }
+    }
+    
     private class SceKernelCallbackInfo {
         private String name;
         private int threadId;
@@ -965,13 +1096,12 @@ public class ThreadMan {
             this.callback_addr = callback_addr;
             this.callback_arg_addr = callback_arg_addr;
 
-            notifyCount = 0; // ?
+            notifyCount = 0; // probably number of times the callback was called
             notifyArg = 0; // ?
 
             // internal state
             uid = SceUidManager.getNewUid("ThreadMan-callback");
-
-            // TODO add to list of callbacks
+            callbackMap.put(uid, this);
         }
     }
 
@@ -1912,7 +2042,7 @@ public class ThreadMan {
             return endTimeMillis - startTimeMillis;
         }
 
-        public void addThreadStatistics(SceKernelThreadInfo thread) {
+        private void addThreadStatistics(SceKernelThreadInfo thread) {
             ThreadStatistics threadStatistics = new ThreadStatistics();
             threadStatistics.name = thread.name;
             threadStatistics.runClocks = thread.runClocks;

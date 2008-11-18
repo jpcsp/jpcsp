@@ -18,6 +18,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
@@ -29,6 +30,7 @@ import jpcsp.Processor;
 import static jpcsp.util.Utilities.*;
 
 import jpcsp.Allegrex.CpuState; // New-Style Processor
+import jpcsp.HLE.ThreadMan;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 
 import jpcsp.HLE.kernel.types.*;
@@ -119,6 +121,14 @@ public class sceUmdUser implements HLEModule {
         String drive = readStringZ(mem.mainmemory, (cpu.gpr[5] & 0x3fffffff) - MemoryMap.START_RAM);
         Modules.log.debug("sceUmdActivate unit = " + unit + " drive = " + drive);
         cpu.gpr[2] = 0; //return >0 mean success
+
+        int event = 0;
+        if (iso != null) {
+            event = PSP_UMD_INITED | PSP_UMD_READY | PSP_UMD_PRESENT;
+        } else {
+            event = PSP_UMD_NOT_PRESENT;
+        }
+        ThreadMan.getInstance().pushUMDCallback(UMDCallBackList.values().iterator(), event);
     }
 
     public void sceUmdDeactivate(Processor processor) {
@@ -270,7 +280,7 @@ public class sceUmdUser implements HLEModule {
         // Processor cpu = processor; // Old-Style Processor
 
         int uid = cpu.gpr[4];
-        Modules.log.warn("UNIMPLEMENTED:sceUmdRegisterUMDCallBack SceUID=" + Integer.toHexString(uid));
+        Modules.log.warn("PARTIAL:sceUmdRegisterUMDCallBack SceUID=" + Integer.toHexString(uid));
 
         if (SceUidManager.checkUidPurpose(uid, "ThreadMan-callback", false)) {
             UMDCallBackList.put(uid, uid);
