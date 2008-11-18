@@ -72,8 +72,6 @@ public class SceKernelModuleInfo extends pspAbstractMemoryMappedStructure {
         name = sceModule.modname;
     }
 
-
-
     protected void read() {
         int size = read32();
         setMaxSize(size);

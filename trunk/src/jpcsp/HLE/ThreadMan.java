@@ -1135,8 +1135,7 @@ public class ThreadMan {
         }
     }
 
-    /* Insert_witty_name
-     * http://forums.ps2dev.org/viewtopic.php?p=75691&sid=7a3ab5e2cd75aa9a569ccb453a85797a#75691
+    /* Posted at http://forums.ps2dev.org/viewtopic.php?p=75691#75691 by Insert_witty_name
     private static final int PSP_MODULE_USER            = 0;
     private static final int PSP_MODULE_NO_STOP         = 0x0001;
     private static final int PSP_MODULE_SINGLE_LOAD     = 0x0002;
