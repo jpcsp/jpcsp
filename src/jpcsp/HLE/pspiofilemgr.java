@@ -846,6 +846,11 @@ public class pspiofilemgr {
                 Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
                 break;
 
+            case 0x02025801:
+                Modules.log.warn("IGNORED: sceIoDevctl unhandled ms command " + String.format("0x%08X", cmd));
+                Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
+                break;
+
             case 0x02415821: // register ms eject callback
                 Modules.log.warn("UNIMPLEMENTED: sceIoDevctl register ms eject callback");
                 Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success

@@ -87,7 +87,7 @@ public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure 
             ? "PSP_UTILITY_MSGDIALOG_MODE_ERROR"
             : (mode == PSP_UTILITY_MSGDIALOG_MODE_TEXT)
             ? "PSP_UTILITY_MSGDIALOG_MODE_TEXT"
-            : String.format("0x%08X", unknown)) + "\n");
+            : String.format("0x%08X", mode)) + "\n");
         sb.append("errorValue " + String.format("0x%08X", errorValue) + "\n");
         sb.append("message '" + message + "'\n");
         sb.append("options " + String.format("0x%08X", options) + "\n");

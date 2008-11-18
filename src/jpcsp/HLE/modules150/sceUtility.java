@@ -638,6 +638,7 @@ public class sceUtility implements HLEModule {
         msgdialog_status = PSP_UTILITY_DIALOG_FINISHED;
 
         if (msgdialog_params != null) {
+            // TODO set a sensible result/button value
             msgdialog_params.write(mem);
             msgdialog_params = null;
         }
