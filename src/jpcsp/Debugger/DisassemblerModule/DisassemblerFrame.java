@@ -58,7 +58,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
     private DefaultListModel listmodel = new DefaultListModel();
     private ArrayList<Integer> breakpoints = new ArrayList<Integer>();
     private volatile boolean wantStep;
-    private boolean haveFocus;
     private int gpi, gpo;
 
     /** Creates new form DisassemblerFrame */
@@ -109,6 +108,16 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         RefreshDebugger(true);
     }
 
+    public void SafeRefreshDebugger(final boolean moveToPC) {
+        SwingUtilities.invokeLater(new Runnable() {
+
+            @Override
+            public void run() {
+                RefreshDebugger(moveToPC);
+            }
+        });
+    }
+    
     public void RefreshDebugger(boolean moveToPC) {
         CpuState cpu = Emulator.getProcessor().cpu;
         int pc;
@@ -253,7 +262,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             }
         });
 
-        disasmList.setFont(new java.awt.Font("Courier New", 0, 11)); // NOI18N
+        disasmList.setFont(new java.awt.Font("Courier New", 0, 11));
         disasmList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         disasmList.setToolTipText("");
         disasmList.addMouseWheelListener(new java.awt.event.MouseWheelListener() {
@@ -569,15 +578,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             }
         });
         jTabbedPane1.addTab("COP1", jTable3);
-
-        jPanel1.addFocusListener(new java.awt.event.FocusAdapter() {
-            public void focusGained(java.awt.event.FocusEvent evt) {
-                onFocusGained(evt);
-            }
-            public void focusLost(java.awt.event.FocusEvent evt) {
-                onFocusLost(evt);
-            }
-        });
 
         jToggleButton1.setText("1");
         jToggleButton1.setBorder(null);
@@ -1173,14 +1173,6 @@ private void jToggleButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GE
 private void jToggleButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton8ActionPerformed
     ToggleGPI(7);
 }//GEN-LAST:event_jToggleButton8ActionPerformed
-
-private void onFocusGained(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_onFocusGained
-    haveFocus = true;
-}//GEN-LAST:event_onFocusGained
-
-private void onFocusLost(java.awt.event.FocusEvent evt) {//GEN-FIRST:event_onFocusLost
-    haveFocus = false;
-}//GEN-LAST:event_onFocusLost
 
 private void SetPCToCursorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SetPCToCursorActionPerformed
     int index = disasmList.getSelectedIndex();

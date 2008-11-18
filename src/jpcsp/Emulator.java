@@ -220,7 +220,7 @@ public class Emulator implements Runnable {
 
                 if (State.debugger != null) {
                     State.debugger.RefreshButtons();
-                    State.debugger.RefreshDebugger(true);
+                    State.debugger.SafeRefreshDebugger(true);
                 }
 
                 if (State.memoryViewer != null)
@@ -255,7 +255,7 @@ public class Emulator implements Runnable {
 
                 if (State.debugger != null) {
                     State.debugger.RefreshButtons();
-                    State.debugger.RefreshDebugger(true);
+                    State.debugger.SafeRefreshDebugger(true);
                 }
 
                 if (State.memoryViewer != null)
