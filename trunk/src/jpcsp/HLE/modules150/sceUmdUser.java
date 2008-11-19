@@ -124,7 +124,7 @@ public class sceUmdUser implements HLEModule {
 
         int event = 0;
         if (iso != null) {
-            event = PSP_UMD_INITED | PSP_UMD_READY | PSP_UMD_PRESENT;
+            event = PSP_UMD_PRESENT | PSP_UMD_READY;
         } else {
             event = PSP_UMD_NOT_PRESENT;
         }
@@ -240,21 +240,17 @@ public class sceUmdUser implements HLEModule {
         cpu.gpr[2] = stat;
     }
 
+    /** @return
+     *        0 : most of the time.
+     * 80210003 : umd was activated, but user ejected the disc, goes back to 0 when the disc is put back in.
+     */
     public void sceUmdGetErrorStat(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        cpu.gpr[2] = 0;
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-        System.out.println("Unimplemented NID function sceUmdGetErrorStat [0x20628E6F]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        Modules.log.debug("sceUmdGetErrorStat ret:0x" + Integer.toHexString(cpu.gpr[2]));
     }
 
     public void sceUmdGetDiscInfo(Processor processor) {
