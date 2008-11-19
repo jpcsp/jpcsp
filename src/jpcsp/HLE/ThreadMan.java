@@ -358,7 +358,9 @@ public class ThreadMan {
         syscallFreeCycles = 0;
     }
 
-    // This function must have the property of never returning current_thread, unless current_thread is already null
+    /** This function must have the property of never returning current_thread,
+     * unless current_thread is already null.
+     * @return The next thread to schedule (based on thread priorities). */
     public SceKernelThreadInfo nextThread() {
         Collection<SceKernelThreadInfo> c;
         List<SceKernelThreadInfo> list;
@@ -471,6 +473,8 @@ public class ThreadMan {
         }
     }
 
+    /** Moves the current thread from running to ready and switches in the next
+     * ready thread (which may be an idle thread if no other threads are ready). */
     public void yieldCurrentThread()
     {
         contextSwitch(nextThread());
@@ -545,6 +549,9 @@ public class ThreadMan {
         }
     }
 
+    /** Use this to change a thread's state (ready, running, etc)
+     * This function manages some lists such as waiting list and
+     * deferred deletion list. */
     public void changeThreadState(SceKernelThreadInfo thread, int newStatus) {
         if (thread == null) {
             return;
@@ -1066,14 +1073,6 @@ public class ThreadMan {
         PendingCallback pending = new PendingCallback(cbidList, gpr);
         //pendingCallbackList.add(pending);
     }
-
-    // each callback type can only be registered once per thread, so the last register overrides any previous registers
-    // callback params: 1, cb data, user data
-    // umd insert: 2->12->22 (10 optional, maybe first time?)
-    // umd eject: 1
-    // activate with disc in: 22
-    // activate with disc not in: 1
-    // remove disc, error stat: 80210003
 
     private class PendingCallback {
         private LinkedList<Integer> cbidList;
