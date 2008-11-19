@@ -31,6 +31,7 @@ import jpcsp.HLE.kernel.managers.SceUidManager;
 import static jpcsp.util.Utilities.*;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 
+/** Don't forget to call ThreadMan.threadMap.put(thread.uid, thread) after instantiating one of these. */
 public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
 
     /* Posted at http://forums.ps2dev.org/viewtopic.php?p=75691#75691 by Insert_witty_name
