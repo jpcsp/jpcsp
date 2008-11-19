@@ -1,27 +1,27 @@
 /*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
+This file is part of jpcsp.
+
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.managers;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 
-import jpcsp.Memory;
-import jpcsp.MemoryMap;
-import jpcsp.Processor;
-import static jpcsp.util.Utilities.*;
-
-import jpcsp.HLE.Modules;
-import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.*;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 
-/**
- *
- * @author hli
- */
 public class ModuleManager {
 
     private HashMap<Integer, SceModule> moduleUidToModule;
@@ -31,6 +31,8 @@ public class ModuleManager {
         moduleUidToModule = new HashMap<Integer, SceModule>();
         moduleNameToModule = new HashMap<String, SceModule>();
     }
+
+    // -------------------------- helpers --------------------------
 
     public void addModule(SceModule module) {
         moduleUidToModule.put(module.modid, module);
@@ -63,83 +65,6 @@ public class ModuleManager {
                 return module;
         }
         return null;
-    }
-
-    // -------------------------- ModuleMgrForUser --------------------------
-    // unfinished - do not use (hlide's stuff), use ModuleMgrForUser.java instead
-
-    public boolean isUidValid(int uid) {
-        return moduleUidToModule.containsKey(uid);
-    }
-
-    public void sceKernelLoadModule(Processor processor) {
-        /*
-        int[] gpr = processor.cpu.gpr;
-        Memory mem = Processor.memory;
-
-        int name_addr = gpr[4];
-        int start_addr = gpr[5];
-        int attr = gpr[6];
-
-        String name = readStringZ(mem.mainmemory,
-                (name_addr & 0x3fffffff) - MemoryMap.START_RAM);
-
-        SceKernelModuleInfo module = new SceKernelModuleInfo(name, start_addr, attr);
-
-        int uid = module.getUid();
-
-        gpr[2] = uid;
-
-        if (0 < uid) {
-            moduleMap.put(uid, module);
-        }
-        */
-    }
-
-    public void sceKernelLoadModuleByID(Processor processor) {
-    }
-
-    public void sceKernelLoadModuleMs(Processor processor) {
-    }
-
-    public void sceKernelLoadModuleBufferUsbWlan(Processor processor) {
-    }
-
-    public void sceKernelStartModule(Processor processor) {
-    }
-
-    public void sceKernelStopModule(Processor processor) {
-    }
-
-    public void sceKernelUnloadModule(Processor processor) {
-    }
-
-    public void sceKernelSelfStopUnloadModule(Processor processor) {
-    }
-
-    public void sceKernelStopUnloadSelfModule(Processor processor) {
-    }
-
-    public void sceKernelGetModuleIdList(Processor processor) {
-    }
-
-    public void sceKernelQueryModuleInfo(Processor processor) {
-    }
-
-    public void sceKernelGetModuleId(Processor processor) {
-    }
-
-    public void sceKernelGetModuleIdByAddress(Processor processor) {
-    }
-
-    public boolean releaseObject(SceKernelUid object) {
-        /*
-        if (Managers.uids.removeObject(object)) {
-            moduleMap.remove(object.getUid());
-            return true;
-        }
-        */
-        return false;
     }
 
     // -------------------------- singleton --------------------------

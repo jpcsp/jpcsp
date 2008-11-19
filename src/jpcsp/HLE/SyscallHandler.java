@@ -113,31 +113,31 @@ public class SyscallHandler {
                     break;
 
                 case 0x2028:
-                    ThreadMan.getInstance().ThreadMan_sceKernelCreateEventFlag(gpr[4], gpr[5], gpr[6], gpr[7]);
+                    Managers.eventFlags.sceKernelCreateEventFlag(gpr[4], gpr[5], gpr[6], gpr[7]);
                     break;
                 case 0x2029:
-                    ThreadMan.getInstance().ThreadMan_sceKernelDeleteEventFlag(gpr[4]);
+                    Managers.eventFlags.sceKernelDeleteEventFlag(gpr[4]);
                     break;
                 case 0x202a:
-                    ThreadMan.getInstance().ThreadMan_sceKernelSetEventFlag(gpr[4], gpr[5]);
+                    Managers.eventFlags.sceKernelSetEventFlag(gpr[4], gpr[5]);
                     break;
                 case 0x202b:
-                    ThreadMan.getInstance().ThreadMan_sceKernelClearEventFlag(gpr[4], gpr[5]);
+                    Managers.eventFlags.sceKernelClearEventFlag(gpr[4], gpr[5]);
                     break;
                 case 0x202c:
-                    ThreadMan.getInstance().ThreadMan_sceKernelWaitEventFlag(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
+                    Managers.eventFlags.sceKernelWaitEventFlag(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
                     break;
                 case 0x202d:
-                    ThreadMan.getInstance().ThreadMan_sceKernelWaitEventFlagCB(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
+                    Managers.eventFlags.sceKernelWaitEventFlagCB(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
                     break;
                 case 0x202e:
-                    ThreadMan.getInstance().ThreadMan_sceKernelPollEventFlag(gpr[4], gpr[5], gpr[6], gpr[7]);
+                    Managers.eventFlags.sceKernelPollEventFlag(gpr[4], gpr[5], gpr[6], gpr[7]);
                     break;
                 case 0x202f:
-                    ThreadMan.getInstance().ThreadMan_sceKernelCancelEventFlag(gpr[4], gpr[5], gpr[6]); // not in pspsdk, params guessed
+                    Managers.eventFlags.sceKernelCancelEventFlag(gpr[4], gpr[5], gpr[6]); // not in pspsdk, params guessed
                     break;
                 case 0x2030:
-                    ThreadMan.getInstance().ThreadMan_sceKernelReferEventFlagStatus(gpr[4], gpr[5]);
+                    Managers.eventFlags.sceKernelReferEventFlagStatus(gpr[4], gpr[5]);
                     break;
 		// sceKernelCreateMbx(0x2031),
 		// sceKernelDeleteMbx(0x2032),

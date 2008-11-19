@@ -40,9 +40,9 @@ public class SceKernelSemaphoreInfo extends SceKernelUid {
             this.maxCount = maxCount;
         }
     }
-    
+
     public void release() {
-        Managers.sempahores.releaseObject(this);
-    }    
+        Managers.semaphores.releaseObject(this);
+    }
 
 }
