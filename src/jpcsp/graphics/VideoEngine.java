@@ -148,7 +148,6 @@ public class VideoEngine {
     private int textureTx_pixelSize;
 
     private boolean clearMode;
-    private boolean textureHasToBeLoaded;
 
     // opengl needed information/buffers
     private int[] gl_texture_id = new int[1];
@@ -1218,7 +1217,6 @@ public class VideoEngine {
                 // Do not load the texture right now, clut parameters can still be
                 // defined after the TFLUSH and before the PRIM command.
                 // Delay the texture loading until the PRIM command.
-                textureHasToBeLoaded = true;
                 if (log.isDebugEnabled()) {
                     log("tflush (deferring to prim)");
                 }
@@ -2564,11 +2562,6 @@ public class VideoEngine {
     }
 
     private void loadTexture() {
-        if (!textureHasToBeLoaded) {
-            return;
-        }
-        textureHasToBeLoaded = false;
-
         // HACK: avoid texture uploads of null pointers
         // This can come from Sony's GE init code (pspsdk GE init is ok)
         if (texture_base_pointer0 == 0)
