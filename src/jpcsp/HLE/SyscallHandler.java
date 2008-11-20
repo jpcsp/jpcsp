@@ -61,7 +61,9 @@ public class SyscallHandler {
                 case 0x2012:
                     ThreadMan.getInstance().ThreadMan_sceKernelCheckCallback();
                     break;
-              //  case 0x2013: //sceKernelReferCallbackStatus
+                case 0x2013:
+                    ThreadMan.getInstance().ThreadMan_sceKernelReferCallbackStatus(gpr[4], gpr[5]);
+                    break;
                 case 0x2014:
                     ThreadMan.getInstance().ThreadMan_sceKernelSleepThread();
                     break;
@@ -77,7 +79,9 @@ public class SyscallHandler {
                 case 0x201a:
                     ThreadMan.getInstance().ThreadMan_sceKernelWaitThreadEnd(gpr[4], gpr[5]);
                     break;
-		//case 0x201b: //sceKernelWaitThreadEndCB
+                case 0x201b:
+                    ThreadMan.getInstance().ThreadMan_sceKernelWaitThreadEndCB(gpr[4], gpr[5]);
+                    break;
                 case 0x201c:
                     ThreadMan.getInstance().ThreadMan_sceKernelDelayThread(gpr[4]);
                     break;

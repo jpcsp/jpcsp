@@ -80,12 +80,18 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public int releaseCount;
 
     // internal variables
-    public int uid;
+    public final int uid;
     public CpuState cpuContext;
     public boolean do_delete;
     public boolean do_callbacks; // in this implementation, only valid for PSP_THREAD_WAITING and PSP_THREAD_SUSPEND
 
-    public ThreadWaitInfo wait;
+    public final ThreadWaitInfo wait;
+
+    // callbacks, only 1 of each type can be registered per thread
+    public SceKernelCallbackInfo currentCallbackInfo;
+    public boolean umdCallbackRegistered;
+    public boolean umdCallbackReady;
+    public SceKernelCallbackInfo umdCallbackInfo;
 
     public SceKernelThreadInfo(String name, int entry_addr, int initPriority, int stackSize, int attr) {
         // Ignore 0 size from the idle threads (don't want them stealing space)
@@ -142,7 +148,11 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
 
         do_delete = false;
         do_callbacks = false;
+
         wait = new ThreadWaitInfo();
+
+        umdCallbackRegistered = false;
+        umdCallbackReady = false;
     }
 
     public void saveContext() {

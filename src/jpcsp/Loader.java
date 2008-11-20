@@ -453,7 +453,7 @@ public class Loader {
                         if (len == 0) {
                             Memory.log.debug(String.format("%s: ignoring zero-length type 8 section %08X", shdr.getSh_namez(), memOffset));
                         } else if (memOffset >= MemoryMap.START_RAM && memOffset + len <= MemoryMap.END_RAM) {
-                            Memory.log.debug(String.format("%s: clearing section %08X - %08X", shdr.getSh_namez(), memOffset, (memOffset + len)));
+                            Memory.log.debug(String.format("%s: clearing section %08X - %08X (len %08X)", shdr.getSh_namez(), memOffset, (memOffset + len), len));
 
                         	mem.memset(memOffset, (byte) 0x0, len);
 

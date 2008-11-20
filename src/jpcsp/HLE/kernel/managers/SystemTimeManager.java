@@ -73,7 +73,7 @@ public class SystemTimeManager {
      * +1mil every second
      * high 32-bits never set on real psp? */
     public void sceKernelGetSystemTime(int time_addr) {
-        Modules.log.debug("sceKernelGetSystemTime 0x" + Integer.toHexString(time_addr));
+        Modules.log.debug("sceKernelGetSystemTime pointer=0x" + Integer.toHexString(time_addr));
         Memory mem = Memory.getInstance();
         if (mem.isAddressGood(time_addr)) {
             long systemTime = System.nanoTime();
