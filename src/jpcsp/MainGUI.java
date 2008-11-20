@@ -381,6 +381,10 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    public LogWindow getConsoleWindow() {
+        return consolewin;
+    }
+
     private void populateRecentMenu() {
         RecentMenu.removeAll();
         recentUMD.clear();

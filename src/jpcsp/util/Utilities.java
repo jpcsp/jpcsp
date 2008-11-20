@@ -21,7 +21,10 @@ import java.io.IOException;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.filesystems.*;
+
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 
 public class Utilities {
 
@@ -82,13 +85,6 @@ public class Utilities {
     {
         f.readFully(buf.array(), offset + buf.arrayOffset(), size);
     }
-    public static void copyByteBuffertoByteBuffer(ByteBuffer src, ByteBuffer dst , int offset , int size)throws IOException
-    {
-        byte[] data = new byte[size];
-        src.get(data);
-        dst.position(offset);
-        dst.put(data);
-    }
     public static String readStringZ(SeekableDataInput f) throws IOException {
         StringBuffer sb = new StringBuffer();
         int b;
@@ -115,17 +111,6 @@ public class Utilities {
         return sb.toString();
     }
 
-    public static String readStringZ(ByteBuffer buf, int offset) {
-        StringBuffer sb = new StringBuffer();
-        byte b;
-        for (; offset < buf.limit();) {
-            b = buf.get(offset++);
-            if (b == 0)
-                break;
-            sb.append((char)b);
-        }
-        return sb.toString();
-    }
     public static String readStringZ(ByteBuffer buf) throws IOException {
         StringBuffer sb = new StringBuffer();
         byte b;
@@ -137,11 +122,14 @@ public class Utilities {
         }
         return sb.toString();
     }
-    public static String readStringNZ(ByteBuffer buf, int offset, int n) {
+    public static String readStringNZ(Memory mem, int address, int n) {
         StringBuffer sb = new StringBuffer();
-        byte b;
-        for (; n > 0 && buf.position() < buf.limit(); n--) {
-            b = buf.get(offset++);
+        if (address + n > MemoryMap.END_RAM) {
+        	n = MemoryMap.END_RAM - address + 1;
+        }
+        int b;
+        for (; n > 0; n--) {
+            b = mem.read8(address++);
             if (b == 0)
                 break;
             sb.append((char)b);
@@ -149,10 +137,13 @@ public class Utilities {
         return sb.toString();
     }
     public static String readStringZ(Memory mem, int address) {
-    	return readStringZ(mem.mainmemory, (address & 0x3fffffff) - MemoryMap.START_RAM);
+    	return readStringNZ(mem, address, MemoryMap.END_RAM - address + 1);
     }
-    public static String readStringNZ(Memory mem, int address, int n) {
-    	return readStringNZ(mem.mainmemory, (address & 0x3fffffff) - MemoryMap.START_RAM, n);
+    public static String readStringZ(int address) {
+    	return readStringZ(Memory.getInstance(), address);
+    }
+    public static String readStringNZ(int address, int n) {
+    	return readStringNZ(Memory.getInstance(), address, n);
     }
     public static void writeStringNZ(Memory mem, int address, int n, String s) {
     	int offset = 0;
@@ -241,5 +232,36 @@ public class Utilities {
         n = (n >>  8) | n;
         n = (n >> 16) | n;
         return ++n;
+    }
+
+    public static void readFully(SeekableDataInput input, int address, int length) throws IOException {
+    	Memory mem = Memory.getInstance();
+    	for (int i = 0; i < length; i++) {
+    		mem.write8(address + i, input.readByte());
+    	}
+    }
+
+    public static void write(SeekableRandomFile output, int address, int length) throws IOException {
+    	Buffer buffer = Memory.getInstance().getBuffer(address, length);
+    	if (buffer instanceof ByteBuffer) {
+    		output.getChannel().write((ByteBuffer) buffer);
+    	} else {
+    		Memory mem = Memory.getInstance();
+    		for (int i = 0; i < length; i++) {
+    			output.writeByte(mem.read8(address + i));
+    		}
+    	}
+    }
+
+    public static void bytePositionBuffer(Buffer buffer, int bytePosition) {
+    	buffer.position(bytePosition / bufferElementSize(buffer));
+    }
+
+    public static int bufferElementSize(Buffer buffer) {
+    	if (buffer instanceof IntBuffer) {
+    		return 4;
+    	}
+
+    	return 1;
     }
 }

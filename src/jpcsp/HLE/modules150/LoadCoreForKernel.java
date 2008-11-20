@@ -516,7 +516,7 @@ public class LoadCoreForKernel implements HLEModule {
         Memory mem = Processor.memory;
 
         int modulename_addr = cpu.gpr[4];
-        String name = Utilities.readStringZ(mem.mainmemory, (modulename_addr & 0x3fffffff) - MemoryMap.START_RAM);
+        String name = Utilities.readStringZ(modulename_addr);
 
         Modules.log.debug("sceKernelFindModuleByName name='" + name + "'");
 

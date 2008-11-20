@@ -20,8 +20,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.IntBuffer;
+
 import javax.media.opengl.GL;
 import javax.media.opengl.GLAutoDrawable;
 import javax.media.opengl.GLCanvas;
@@ -100,9 +103,9 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     private long lastUpdate;
 
     // Canvas fields
-    private ByteBuffer pixelsFb;
-    private ByteBuffer pixelsGe;
-    private ByteBuffer temp;
+    private Buffer pixelsFb;
+    private Buffer pixelsGe;
+    private Buffer temp;
     private int canvasWidth;
     private int canvasHeight;
     private boolean createTex;
@@ -284,14 +287,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         }
     }
 
-    private ByteBuffer getPixels(int topaddr, int bottomaddr) {
-        Memory memory = Emulator.getMemory();
-        byte[] all = memory.videoram.array();
-        ByteBuffer pixels = ByteBuffer.wrap(
-            all,
-            topaddr - MemoryMap.START_VRAM + memory.videoram.arrayOffset(),
-            bottomaddr - topaddr).slice();
-        pixels.order(ByteOrder.LITTLE_ENDIAN);
+    private Buffer getPixels(int topaddr, int bottomaddr) {
+        Buffer pixels = Emulator.getMemory().getBuffer(topaddr, bottomaddr - topaddr);
         return pixels;
     }
 
@@ -393,7 +390,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         popTexEnv(gl);
     }
 
-    private void copyScreenToPixels(GL gl, ByteBuffer pixels, int bufferwidth, int pixelformat) {
+    private void copyScreenToPixels(GL gl, Buffer pixels, int bufferwidth, int pixelformat) {
         // Using glReadPixels instead of glGetTexImage is showing
         // between 7 and 13% performance increase.
         // But glReadPixels seems only to work correctly with 32bit pixels...
@@ -406,7 +403,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             int pixelFormatGL = getPixelFormatGL(pixelformat);
             // Y-Axis on PSP is flipped against OpenGL, so we have to copy row by row
             for (int y = 0, bufferPos = 0; y < height; y++, bufferPos += bufferStep) {
-                pixels.position(bufferPos);
+            	Utilities.bytePositionBuffer(pixels, bufferPos);
                 gl.glReadPixels(0, y, width, 1, GL.GL_RGBA, pixelFormatGL, pixels);
             }
             gl.glPopMatrix();
@@ -431,7 +428,11 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             int limit = temp.limit();
             temp.limit(pixels.limit());
             pixels.clear();
-            pixels.put(temp);
+            if (temp instanceof ByteBuffer) {
+                ((ByteBuffer) pixels).put((ByteBuffer) temp);
+            } else if (temp instanceof IntBuffer) {
+                ((IntBuffer) pixels).put((IntBuffer) temp);
+            }
             temp.limit(limit);
         }
     }
@@ -478,10 +479,15 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             gl.glTexParameteri(
                 GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP);
 
-            temp = ByteBuffer.allocate(
-                bufferwidthFb * Utilities.makePow2(height) *
-                getPixelFormatBytes(pixelformatFb));
-            temp.order(ByteOrder.LITTLE_ENDIAN);
+            if (Memory.getInstance().getMainMemoryByteBuffer() instanceof IntBuffer) {
+            	temp = IntBuffer.allocate(
+            			bufferwidthFb * Utilities.makePow2(height) *
+            			getPixelFormatBytes(pixelformatFb) / 4);
+            } else {
+            	temp = ByteBuffer.allocate(
+            			bufferwidthFb * Utilities.makePow2(height) *
+            			getPixelFormatBytes(pixelformatFb)).order(ByteOrder.LITTLE_ENDIAN);
+            }
 
             createTex = false;
         }

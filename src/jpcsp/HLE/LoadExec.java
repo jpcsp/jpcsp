@@ -27,8 +27,6 @@ import jpcsp.Allegrex.CpuState;
 import jpcsp.Emulator;
 import jpcsp.GeneralJpcspException;
 import jpcsp.Loader;
-import jpcsp.Memory;
-import jpcsp.MemoryMap;
 import jpcsp.Processor;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.HLE.kernel.types.SceModule;
@@ -66,9 +64,8 @@ public class LoadExec {
     {
         Processor processor = Emulator.getProcessor();
         CpuState cpu = processor.cpu;
-        Memory mem = processor.memory;
 
-        String name = Utilities.readStringZ(mem.mainmemory, filename_addr & 0x3fffffff - MemoryMap.START_RAM);
+        String name = Utilities.readStringZ(filename_addr);
 
         Modules.log.debug("sceKernelLoadExec file='" + name + "' option=0x" + Integer.toHexString(option_addr));
 

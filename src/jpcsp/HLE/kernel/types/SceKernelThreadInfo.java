@@ -110,7 +110,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         if (stack_addr != 0 &&
             stackSize > 0 &&
             (attr & PSP_THREAD_ATTR_NO_FILLSTACK) != PSP_THREAD_ATTR_NO_FILLSTACK) {
-            memset(stack_addr - stackSize, (byte)0xFF, stackSize);
+            Memory.getInstance().memset(stack_addr - stackSize, (byte)0xFF, stackSize);
         }
         gpReg_addr = Emulator.getProcessor().cpu.gpr[28]; // inherit gpReg // TODO addr into ModuleInfo struct?
         currentPriority = initPriority;
@@ -205,14 +205,5 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         mem.write32(address + 94, intrPreemptCount);
         mem.write32(address + 98, threadPreemptCount);
         mem.write32(address + 102, releaseCount);
-    }
-
-    private void memset(int address, byte c, int length) {
-        Memory mem = Memory.getInstance();
-        byte[] all = mem.mainmemory.array();
-        int offset = address - MemoryMap.START_RAM + mem.mainmemory.arrayOffset();
-        Modules.log.debug("memset 0x" + Integer.toHexString(address)
-            + " (offset:0x" + Integer.toHexString(offset) + ") len:0x" + Integer.toHexString(length));
-        Arrays.fill(all, offset, offset + length, c);
     }
 }

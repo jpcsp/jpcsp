@@ -60,7 +60,7 @@ public class SceKernelFplInfo {
     public void read(Memory mem, int address) {
         address &= 0x3FFFFFFF;
         int size        = mem.read32(address);
-        name            = Utilities.readStringNZ(mem.mainmemory, address + 4 - MemoryMap.START_RAM, 31);
+        name            = Utilities.readStringNZ(address + 4, 31);
         attr            = mem.read32(address + 36);
         blockSize       = mem.read32(address + 40);
         numBlocks       = mem.read32(address + 44);

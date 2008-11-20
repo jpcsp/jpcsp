@@ -23,16 +23,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
-import jpcsp.HLE.kernel.types.SceUid;
 import java.util.HashMap;
 import java.util.Iterator;
 import jpcsp.Emulator;
 import jpcsp.GeneralJpcspException;
-import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import static jpcsp.util.Utilities.*;
 
-import jpcsp.HLE.kernel.types.*;
 import jpcsp.HLE.kernel.managers.*;
 
 /**
@@ -280,7 +277,7 @@ public class pspSysMem {
     {
         pname &= 0x3fffffff;
         addr &= 0x3fffffff;
-        String name = readStringZ(Memory.getInstance().mainmemory, pname - MemoryMap.START_RAM);
+        String name = readStringZ(pname);
 
         // print debug info
         String typeStr;
