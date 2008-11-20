@@ -120,7 +120,7 @@ public class sceUmdUser implements HLEModule {
         int unit = cpu.gpr[4]; // should be always 1
         String drive = readStringZ(cpu.gpr[5]);
         Modules.log.debug("sceUmdActivate unit = " + unit + " drive = " + drive);
-        cpu.gpr[2] = 0; //return >0 mean success
+        cpu.gpr[2] = 0;
 
         int event = 0;
         if (iso != null) {
@@ -230,7 +230,7 @@ public class sceUmdUser implements HLEModule {
 
         int stat;
         if (iso != null) {
-            stat = PSP_UMD_PRESENT | PSP_UMD_READY;
+            stat = PSP_UMD_PRESENT | PSP_UMD_INITED | PSP_UMD_READY;
         } else {
             stat = PSP_UMD_NOT_PRESENT;
         }
@@ -276,10 +276,11 @@ public class sceUmdUser implements HLEModule {
         // Processor cpu = processor; // Old-Style Processor
 
         int uid = cpu.gpr[4];
-        Modules.log.warn("PARTIAL:sceUmdRegisterUMDCallBack SceUID=" + Integer.toHexString(uid));
+        Modules.log.debug("sceUmdRegisterUMDCallBack SceUID=" + Integer.toHexString(uid));
 
         if (SceUidManager.checkUidPurpose(uid, "ThreadMan-callback", false)) {
             UMDCallBackList.put(uid, uid);
+            ThreadMan.getInstance().setUMDCallback(uid);
             cpu.gpr[2] = 0;
         } else {
             Modules.log.warn("sceUmdRegisterUMDCallBack not a callback uid");
@@ -303,6 +304,7 @@ public class sceUmdUser implements HLEModule {
                 Modules.log.warn("sceUmdUnRegisterUMDCallBack not a UMD callback uid");
                 cpu.gpr[2] = -1;
             } else {
+                ThreadMan.getInstance().clearUMDCallback();
                 cpu.gpr[2] = 0;
             }
         }
