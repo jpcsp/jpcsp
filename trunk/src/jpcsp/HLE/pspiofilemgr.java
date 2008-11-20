@@ -24,6 +24,8 @@ package jpcsp.HLE;
 
 import jpcsp.filesystems.*;
 import jpcsp.filesystems.umdiso.*;
+import jpcsp.util.Utilities;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -173,7 +175,7 @@ public class pspiofilemgr {
     }
 
     public void sceIoSync(int device_addr, int unknown) {
-        String device = readStringZ(Memory.getInstance().mainmemory, (device_addr & 0x3fffffff) - MemoryMap.START_RAM);
+        String device = readStringZ(device_addr);
         if (debug) Modules.log.debug("IGNORING:sceIoSync(device='" + device + "',unknown=0x" + Integer.toHexString(unknown) + ")");
         State.fileLogger.logIoSync(0, device_addr, device, unknown);
         Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
@@ -330,7 +332,7 @@ public class pspiofilemgr {
     }
 
     public void sceIoOpen(int filename_addr, int flags, int permissions) {
-        String filename = readStringZ(Memory.getInstance().mainmemory, (filename_addr & 0x3fffffff) - MemoryMap.START_RAM);
+        String filename = readStringZ(filename_addr);
         if (debug) Modules.log.debug("sceIoOpen filename = " + filename + " flags = " + Integer.toHexString(flags) + " permissions = " + Integer.toOctalString(permissions));
 
         if (debug) {
@@ -485,11 +487,11 @@ public class pspiofilemgr {
         data_addr &= 0x3fffffff; // remove kernel/cache bits
 
         if (uid == 1) { // stdout
-            String stdout = readStringNZ(Memory.getInstance().mainmemory, data_addr - MemoryMap.START_RAM, size);
+            String stdout = readStringNZ(data_addr, size);
             System.out.print(stdout);
             Emulator.getProcessor().cpu.gpr[2] = size;
         } else if (uid == 2) { // stderr
-            String stderr = readStringNZ(Memory.getInstance().mainmemory, data_addr - MemoryMap.START_RAM, size);
+            String stderr = readStringNZ(data_addr, size);
             System.out.print(stderr);
             Emulator.getProcessor().cpu.gpr[2] = size;
         } else {
@@ -507,10 +509,7 @@ public class pspiofilemgr {
                         info.msFile.seek(info.msFile.length());
                     }
 
-                    info.msFile.write(
-                        Memory.getInstance().mainmemory.array(),
-                        Memory.getInstance().mainmemory.arrayOffset() + data_addr - MemoryMap.START_RAM,
-                        size);
+                    Utilities.write(info.msFile, data_addr, size);
 
                     info.result = size;
                     Emulator.getProcessor().cpu.gpr[2] = size;
@@ -558,10 +557,7 @@ public class pspiofilemgr {
                             + " fp=" + info.readOnlyFile.getFilePointer() + " len=" + info.readOnlyFile.length());
                     }
 
-                    info.readOnlyFile.readFully(
-                        Memory.getInstance().mainmemory.array(),
-                        Memory.getInstance().mainmemory.arrayOffset() + data_addr - MemoryMap.START_RAM,
-                        size);
+                    Utilities.readFully(info.readOnlyFile, data_addr, size);
 
                     info.result = size;
                     Emulator.getProcessor().cpu.gpr[2] = size;
@@ -684,7 +680,7 @@ public class pspiofilemgr {
     }
 
     public void sceIoMkdir(int dir_addr, int permissions) {
-        String dir = readStringZ(Memory.getInstance().mainmemory, (dir_addr & 0x3fffffff) - MemoryMap.START_RAM);
+        String dir = readStringZ(dir_addr);
         if (debug) Modules.log.debug("sceIoMkdir dir = " + dir);
         //should work okay..
         String pcfilename = getDeviceFilePath(dir);
@@ -700,7 +696,7 @@ public class pspiofilemgr {
     }
 
     public void sceIoChdir(int path_addr) {
-        String path = readStringZ(Memory.getInstance().mainmemory, (path_addr & 0x3fffffff) - MemoryMap.START_RAM);
+        String path = readStringZ(path_addr);
         if (debug) Modules.log.debug("sceIoChdir path = " + path);
 
         if (path.equals("..")) {
@@ -726,7 +722,7 @@ public class pspiofilemgr {
     }
 
     public void sceIoDopen(int dirname_addr) {
-        String dirname = readStringZ(Memory.getInstance().mainmemory, (dirname_addr & 0x3fffffff) - MemoryMap.START_RAM);
+        String dirname = readStringZ(dirname_addr);
         if (debug) Modules.log.debug("sceIoDopen dirname = " + dirname);
 
         String pcfilename = getDeviceFilePath(dirname);
@@ -830,7 +826,7 @@ public class pspiofilemgr {
     }
 
     public void sceIoDevctl(int device_addr, int cmd, int indata_addr, int inlen, int outdata_addr, int outlen) {
-        String device = readStringZ(Memory.getInstance().mainmemory, (device_addr & 0x3fffffff) - MemoryMap.START_RAM);
+        String device = readStringZ(device_addr);
         if (debug) {
             Modules.log.debug("sceIoDevctl(device='" + device
                 + "',cmd=0x" + Integer.toHexString(cmd)
@@ -900,9 +896,9 @@ public class pspiofilemgr {
     }
 
     public void sceIoAssign(int dev1_addr, int dev2_addr, int dev3_addr, int mode, int unk1, int unk2) {
-        String dev1 = readStringZ(Memory.getInstance().mainmemory, (dev1_addr & 0x3fffffff) - MemoryMap.START_RAM);
-        String dev2 = readStringZ(Memory.getInstance().mainmemory, (dev2_addr & 0x3fffffff) - MemoryMap.START_RAM);
-        String dev3 = readStringZ(Memory.getInstance().mainmemory, (dev3_addr & 0x3fffffff) - MemoryMap.START_RAM);
+        String dev1 = readStringZ(dev1_addr);
+        String dev2 = readStringZ(dev2_addr);
+        String dev3 = readStringZ(dev3_addr);
         String perm;
 
         // IoAssignPerms
@@ -1006,7 +1002,7 @@ public class pspiofilemgr {
     }
 
     public void sceIoGetstat(int file_addr, int stat_addr) {
-        String filename = readStringZ(Memory.getInstance().mainmemory, (file_addr & 0x3fffffff) - MemoryMap.START_RAM);
+        String filename = readStringZ(file_addr);
         if (debug) Modules.log.debug("sceIoGetstat - file = " + filename + " stat = " + Integer.toHexString(stat_addr));
 
         String pcfilename = getDeviceFilePath(filename);

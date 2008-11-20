@@ -63,8 +63,7 @@ public class EventFlagManager {
 
     public void sceKernelCreateEventFlag(int name_addr, int attr, int initPattern, int option)
     {
-        String name = readStringZ(Memory.getInstance().mainmemory,
-            (name_addr & 0x3fffffff) - MemoryMap.START_RAM);
+        String name = readStringZ(name_addr);
 
         Modules.log.debug("sceKernelCreateEventFlag(name='" + name
             + "',attr=0x" + Integer.toHexString(attr)

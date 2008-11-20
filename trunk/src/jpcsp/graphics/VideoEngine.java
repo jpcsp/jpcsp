@@ -33,7 +33,6 @@ import javax.media.opengl.GLException;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
-import jpcsp.MemoryMap;
 import jpcsp.Settings;
 import jpcsp.HLE.pspdisplay;
 import jpcsp.graphics.textures.Texture;
@@ -2295,10 +2294,7 @@ public class VideoEngine {
 	                gl.glPushMatrix ();
 	                gl.glLoadIdentity();
 
-                	ByteBuffer buffer = ByteBuffer.wrap(
-                            Memory.getInstance().mainmemory.array(),
-                            Memory.getInstance().mainmemory.arrayOffset() + textureTx_sourceAddress - MemoryMap.START_RAM,
-                            lineWidth * height * bpp).slice();
+                	Buffer buffer = Memory.getInstance().getBuffer(textureTx_sourceAddress, lineWidth * height * bpp);
 
 	        		//
 	        		// glTexImage2D only supports
@@ -2614,7 +2610,7 @@ public class VideoEngine {
         if (texture == null || !texture.isLoaded()) {
             if (log.isDebugEnabled()) {
                 log(helper.getCommandString(TFLUSH) + " " + String.format("0x%08X", texture_base_pointer0) + " (" + texture_width0 + "," + texture_height0 + ")");
-                log(helper.getCommandString(TFLUSH) + " texture_storage=0x" + Integer.toHexString(texture_storage) + ", tex_clut_mode=0x" + Integer.toHexString(tex_clut_mode) + ", tex_clut_addr=" + String.format("0x%08X", tex_clut_addr));
+                log(helper.getCommandString(TFLUSH) + " texture_storage=0x" + Integer.toHexString(texture_storage) + ", tex_clut_mode=0x" + Integer.toHexString(tex_clut_mode) + ", tex_clut_addr=" + String.format("0x%08X", tex_clut_addr) + ", texture_swizzle=" + texture_swizzle);
             }
             // Extract texture information with the minor conversion possible
             // TODO: Get rid of information copying, and implement all the available formats
@@ -2838,21 +2834,9 @@ public class VideoEngine {
                     if (!texture_swizzle) {
                         // try and use ByteBuffer.wrap on the memory, taking note of vram/main ram
                         // speed difference is unnoticeable :(
-                        int texaddr_end = texaddr + texture_width0 * texture_height0 * 4;
-                        if (texaddr >= MemoryMap.START_VRAM && texaddr_end <= MemoryMap.END_VRAM) {
-                            ByteBuffer pixels = ByteBuffer.wrap(
-                                mem.videoram.array(),
-                                texaddr - MemoryMap.START_VRAM + mem.videoram.arrayOffset(),
-                                texture_width0 * texture_height0 * 4).slice();
-                            pixels.order(java.nio.ByteOrder.LITTLE_ENDIAN);
-                            final_buffer = pixels;
-                        } else if (texaddr >= MemoryMap.START_RAM && texaddr_end <= MemoryMap.END_RAM) {
-                            ByteBuffer pixels = ByteBuffer.wrap(
-                                mem.mainmemory.array(),
-                                texaddr - MemoryMap.START_RAM + mem.mainmemory.arrayOffset(),
-                                texture_width0 * texture_height0 * 4).slice();
-                            pixels.order(java.nio.ByteOrder.LITTLE_ENDIAN);
-                            final_buffer = pixels;
+                        Buffer pixels = mem.getBuffer(texaddr, texture_width0 * texture_height0 * 4);
+                        if (pixels != null) {
+                        	final_buffer = pixels;
                         } else {
                             VideoEngine.log.warn("tpsm 3 slow");
                             for (int i = 0; i < texture_width0*texture_height0; i++) {

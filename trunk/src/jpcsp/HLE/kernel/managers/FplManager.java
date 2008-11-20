@@ -17,15 +17,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.managers;
 
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import jpcsp.HLE.kernel.types.SceKernelFplInfo;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.pspSysMem;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Emulator;
 import jpcsp.Memory;
-import jpcsp.MemoryMap;
 import jpcsp.Processor;
 import jpcsp.util.Utilities;
 
@@ -45,8 +42,7 @@ public class FplManager {
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Processor.memory;
 
-        name_addr &= 0x3FFFFFFF;
-        String name = Utilities.readStringZ(Memory.getInstance().mainmemory, name_addr - MemoryMap.START_RAM);
+        String name = Utilities.readStringZ(name_addr);
         Modules.log.debug("sceKernelCreateFpl(name=" + name
             + ",partition=" + partitionid
             + ",attr=0x" + Integer.toHexString(attr)

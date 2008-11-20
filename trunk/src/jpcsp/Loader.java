@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -369,7 +368,7 @@ public class Loader {
         Elf32 elf, int elfOffset) throws IOException {
 
         List<Elf32ProgramHeader> programHeaderList = elf.getProgramHeaderList();
-        ByteBuffer mainmemory = Memory.getInstance().mainmemory;
+        Memory mem = Memory.getInstance();
 
         int i = 0;
         module.bss_size = 0;
@@ -388,7 +387,7 @@ public class Loader {
                     Memory.log.warn(String.format("PH#%d: program overflow clamping len %08X to %08X", i, fileLen, newLen));
                     fileLen = newLen;
                 }
-                Utilities.copyByteBuffertoByteBuffer(f, mainmemory, memOffset - MemoryMap.START_RAM, fileLen);
+                mem.copyToMemory(memOffset, f, fileLen);
 
                 // Update memory area consumed by the module
                 if (memOffset < module.loadAddressLow) {
@@ -413,7 +412,7 @@ public class Loader {
         Elf32 elf, int elfOffset) throws IOException {
 
         List<Elf32SectionHeader> sectionHeaderList = elf.getSectionHeaderList();
-        ByteBuffer mainmemory = Memory.getInstance().mainmemory;
+        Memory mem = Memory.getInstance();
 
         //boolean noBssInSh = true;
         for (Elf32SectionHeader shdr : sectionHeaderList) {
@@ -456,11 +455,7 @@ public class Loader {
                         } else if (memOffset >= MemoryMap.START_RAM && memOffset + len <= MemoryMap.END_RAM) {
                             Memory.log.debug(String.format("%s: clearing section %08X - %08X", shdr.getSh_namez(), memOffset, (memOffset + len)));
 
-                            byte[] all = mainmemory.array();
-                            Arrays.fill(all,
-                                mainmemory.arrayOffset() + memOffset - MemoryMap.START_RAM,
-                                mainmemory.arrayOffset() + memOffset + len - MemoryMap.START_RAM,
-                                (byte)0x0);
+                        	mem.memset(memOffset, (byte) 0x0, len);
 
                             // Update memory area consumed by the module
                             if (memOffset < module.loadAddressLow) {
@@ -888,7 +883,7 @@ public class Loader {
         for (int i = 0; i < stubHeadersCount; i++)
         {
             Elf32StubHeader stubHeader = new Elf32StubHeader(mem, stubHeadersAddress);
-            stubHeader.setModuleNamez(Utilities.readStringNZ(mem.mainmemory, (int)(stubHeader.getOffsetModuleName() - MemoryMap.START_RAM), 64));
+            stubHeader.setModuleNamez(Utilities.readStringNZ((int)stubHeader.getOffsetModuleName(), 64));
             stubHeadersAddress += Elf32StubHeader.sizeof(); //stubHeader.s_size * 4;
             //System.out.println(stubHeader.toString());
 
@@ -944,7 +939,7 @@ public class Loader {
         {
             Elf32EntHeader entHeader = new Elf32EntHeader(mem, entHeadersAddress);
             if (entHeader.getOffsetModuleName() != 0) {
-                moduleName = Utilities.readStringNZ(mem.mainmemory, (int)(entHeader.getOffsetModuleName() - MemoryMap.START_RAM), 64);
+                moduleName = Utilities.readStringNZ((int) entHeader.getOffsetModuleName(), 64);
             } else {
                 // Generate a module name
                 moduleName = module.modname;

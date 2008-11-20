@@ -626,8 +626,7 @@ public class ThreadMan {
 
     public void ThreadMan_sceKernelCreateThread(int name_addr, int entry_addr,
         int initPriority, int stackSize, int attr, int option_addr) {
-        String name = readStringZ(Memory.getInstance().mainmemory,
-            (name_addr & 0x3fffffff) - MemoryMap.START_RAM);
+        String name = readStringZ(name_addr);
 
         // TODO use option_addr/SceKernelThreadOptParam?
         if (option_addr != 0)
@@ -861,7 +860,7 @@ public class ThreadMan {
     }
 
     public void ThreadMan_sceKernelCreateCallback(int a0, int a1, int a2) {
-        String name = readStringZ(Memory.getInstance().mainmemory, (a0 & 0x3fffffff) - MemoryMap.START_RAM);
+        String name = readStringZ(a0);
         SceKernelCallbackInfo callback = new SceKernelCallbackInfo(name, current_thread.uid, a1, a2);
 
         Modules.log.debug("sceKernelCreateCallback SceUID=" + Integer.toHexString(callback.uid)
@@ -1156,8 +1155,7 @@ public class ThreadMan {
 
     public void ThreadMan_sceKernelCreateSema(int name_addr, int attr, int initVal, int maxVal, int option)
     {
-        String name = readStringZ(Memory.getInstance().mainmemory,
-            (name_addr & 0x3fffffff) - MemoryMap.START_RAM);
+        String name = readStringZ(name_addr);
         Modules.log.debug("sceKernelCreateSema name= " + name + " attr= 0x" + Integer.toHexString(attr) + " initVal= " + initVal + " maxVal= "+ maxVal + " option= 0x" + Integer.toHexString(option));
 
         if (attr != 0) Modules.log.warn("UNIMPLEMENTED:sceKernelCreateSema attr value 0x" + Integer.toHexString(attr));

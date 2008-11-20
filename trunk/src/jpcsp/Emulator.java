@@ -145,7 +145,6 @@ public class Emulator implements Runnable {
         moduleLoaded = false;
 
         getProcessor().reset();
-        Memory.getInstance().Initialise();
 
         NIDMapper.getInstance().Initialise();
         Loader.getInstance().reset();

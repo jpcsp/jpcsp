@@ -118,7 +118,7 @@ public class sceUmdUser implements HLEModule {
         // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
         int unit = cpu.gpr[4]; // should be always 1
-        String drive = readStringZ(mem.mainmemory, (cpu.gpr[5] & 0x3fffffff) - MemoryMap.START_RAM);
+        String drive = readStringZ(cpu.gpr[5]);
         Modules.log.debug("sceUmdActivate unit = " + unit + " drive = " + drive);
         cpu.gpr[2] = 0; //return >0 mean success
 

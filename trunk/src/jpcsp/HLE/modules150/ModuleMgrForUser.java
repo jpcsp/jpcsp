@@ -173,7 +173,7 @@ public class ModuleMgrForUser implements HLEModule {
         int path_addr = cpu.gpr[4] & 0x3fffffff;
         int flags = cpu.gpr[5];
         int option_addr = cpu.gpr[6] & 0x3fffffff;
-        String name = Utilities.readStringZ(mem.mainmemory, path_addr - MemoryMap.START_RAM);
+        String name = Utilities.readStringZ(path_addr);
         Modules.log.debug("sceKernelLoadModule(path='" + name
             + "',flags=0x" + Integer.toHexString(flags)
             + ",option=0x" + Integer.toHexString(option_addr) + ")");
