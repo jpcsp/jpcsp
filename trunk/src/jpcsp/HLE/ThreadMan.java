@@ -28,11 +28,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
-import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -40,7 +38,6 @@ import java.util.List;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
-import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import static jpcsp.util.Utilities.*;
 
@@ -175,7 +172,7 @@ public class ThreadMan {
             ((jpcsp.AllegrexOpcodes.SPECIAL & 0x3f) << 26)
             | (jpcsp.AllegrexOpcodes.JR & 0x3f)
             | ((31 & 0x1f) << 21);
-        int instruction_syscall = // syscall <code>
+        int instruction_syscall = // syscall 0x0201c [sceKernelDelayThread]
             ((jpcsp.AllegrexOpcodes.SPECIAL & 0x3f) << 26)
             | (jpcsp.AllegrexOpcodes.SYSCALL & 0x3f)
             | ((0x201c & 0x000fffff) << 6);
@@ -212,7 +209,7 @@ public class ThreadMan {
             Modules.log.info("ThreadMan Statistics (" + statistics.allCycles + " cycles in " + String.format("%.3f", statistics.getDurationMillis() / 1000.0) + "s):");
             for (Iterator<Statistics.ThreadStatistics> it = statistics.threads.iterator(); it.hasNext(); ) {
                 Statistics.ThreadStatistics threadStatistics = it.next();
-                Modules.log.info("    Thread " + threadStatistics.name + ": " + threadStatistics.runClocks + " (" + String.format("%2.2f%%", (threadStatistics.runClocks / (double) statistics.allCycles) * 100) + ")");
+                Modules.log.info("    Thread name:'" + threadStatistics.name + "' runClocks:" + threadStatistics.runClocks + " (" + String.format("%2.2f%%", (threadStatistics.runClocks / (double) statistics.allCycles) * 100) + ")");
             }
         }
     }
@@ -304,6 +301,11 @@ public class ThreadMan {
 
     /** @param newthread The thread to switch in. */
     public void contextSwitch(SceKernelThreadInfo newthread) {
+
+        if (insideCallback) {
+            Modules.log.warn("contextSwitch called from inside callback");
+            //Emulator.PauseEmu();
+        }
 
         if (current_thread != null) {
             // Switch out old thread
@@ -481,6 +483,7 @@ public class ThreadMan {
 
         if (thread.status == PSP_THREAD_WAITING) {
             waitingThreads.remove(thread);
+            thread.do_callbacks = false;
         } else if (thread.status == PSP_THREAD_STOPPED) {
             toBeDeletedThreads.remove(thread);
         }
@@ -731,13 +734,14 @@ public class ThreadMan {
 
     /** suspend the current thread and handle callbacks */
     public void ThreadMan_sceKernelSleepThreadCB() {
-        Modules.log.debug("PARTIAL:sceKernelSleepThreadCB SceUID=" + Integer.toHexString(current_thread.uid) + " name:'" + current_thread.name + "'");
+        Modules.log.debug("sceKernelSleepThreadCB SceUID=" + Integer.toHexString(current_thread.uid) + " name:'" + current_thread.name + "'");
 
         changeThreadState(current_thread, PSP_THREAD_SUSPEND);
         current_thread.do_callbacks = true;
         Emulator.getProcessor().cpu.gpr[2] = 0;
 
         contextSwitch(nextThread());
+        checkCallbacks();
     }
 
     /** suspend the current thread */
@@ -778,7 +782,11 @@ public class ThreadMan {
 
     /** wait the current thread for a certain number of microseconds */
     public void ThreadMan_sceKernelDelayThreadCB(int micros) {
+        //if (micros > 10000)
+        //    Modules.log.debug("sceKernelDelayThreadCB micros=" + micros + " current thread:'" + current_thread.name + "'");
+
         hleKernelDelayThread(micros, true);
+        checkCallbacks();
     }
 
     public void ThreadMan_sceKernelCreateCallback(int name_addr, int func_addr, int user_arg_addr) {
@@ -997,6 +1005,14 @@ public class ThreadMan {
         if (thread == null) {
             Modules.log.warn("hleKernelWaitThreadEnd unknown thread 0x" + Integer.toHexString(uid));
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
+        } else if (isBannedThread(thread)) {
+            Modules.log.warn("hleKernelWaitThreadEnd SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "' banned, not waiting");
+            Emulator.getProcessor().cpu.gpr[2] = 0;
+            contextSwitch(nextThread()); // yield
+        } else if (thread.status == PSP_THREAD_STOPPED) {
+            Modules.log.debug("hleKernelWaitThreadEnd SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "' thread already stopped, not waiting");
+            Emulator.getProcessor().cpu.gpr[2] = 0;
+            contextSwitch(nextThread()); // yield
         } else {
             // Go to wait state
             current_thread.do_callbacks = callbacks;
@@ -1021,8 +1037,9 @@ public class ThreadMan {
     }
 
     public void ThreadMan_sceKernelWaitThreadEndCB(int uid, int micros) {
-        Modules.log.debug("sceKernelWaitThreadEnd redirecting to hleKernelWaitThreadEnd(callbacks=true)");
+        Modules.log.debug("sceKernelWaitThreadEndCB redirecting to hleKernelWaitThreadEnd(callbacks=true)");
         hleKernelWaitThreadEnd(uid, micros, true);
+        checkCallbacks();
     }
 
 
@@ -1043,7 +1060,7 @@ public class ThreadMan {
 
     // TODO add other pushXXXCallback functions
     public void pushUMDCallback(Iterator<Integer> cbidList, int event) {
-        Modules.log.info("pushUMDCallback event 0x" + Integer.toHexString(event));
+        Modules.log.debug("pushUMDCallback event 0x" + Integer.toHexString(event));
 
         while (cbidList.hasNext()) {
             int cbid = cbidList.next();
@@ -1055,6 +1072,13 @@ public class ThreadMan {
                 if (thread == null) {
                     Modules.log.warn("pushUMDCallback thread not found " + Integer.toHexString(callback.threadId));
                 } else if (thread.umdCallbackRegistered) {
+                    if (thread.umdCallbackReady) {
+                        // Behaviour may be undefined - example: crash this thread, but continue other threads as normal
+                        Modules.log.warn("pushUMDCallback thread:'" + thread.name
+                            + "' already has callback pending (oldArg=0x" + Integer.toHexString(thread.umdCallbackInfo.notifyArg)
+                            + ",newArg=0x" + Integer.toHexString(event) + ")");
+                    }
+                    
                     thread.umdCallbackReady = true;
                     thread.umdCallbackInfo.notifyArg = event;
                 }
@@ -1075,10 +1099,10 @@ public class ThreadMan {
         boolean handled = false;
 
         if (thread.umdCallbackRegistered && thread.umdCallbackReady) {
-            Modules.log.info("Entering UMD callback name:'" + thread.umdCallbackInfo.name + "'"
+            Modules.log.debug("Entering UMD callback name:'" + thread.umdCallbackInfo.name + "'"
                 + " PC:" + Integer.toHexString(thread.umdCallbackInfo.callback_addr)
                 + " thread:'" + thread.name + "'");
-            Emulator.PauseEmu();
+            //Emulator.PauseEmu();
 
             // Callbacks can pre-empt, save the current thread's context
             current_thread.saveContext();
@@ -1096,13 +1120,23 @@ public class ThreadMan {
         return handled;
     }
 
-    /** handles sceKernelCheckCallback
-     * and also iterates waiting threads, making sure do_callbacks is set. */
-    private void checkCallbacks() {
-        /* disabled for further testing
+    /**
+     * Iterates waiting threads, making sure do_callbacks is set before
+     * checking for pending callbacks.
+     * Handles sceKernelCheckCallback when do_callbacks is set on current_thread.
+     * 
+     * TODO we either need to call checkCallbacks() at the end of each xxxCB
+     * function, or add a check in step().
+     *
+     * Also I think we can only call checkCallbacks() after calling
+     * contextSwitch(), otherwise stuff will mess up (you cannot safely context
+     * switch while inside a callback). So this seems like we can't move
+     * checkCallbacks() into changeState().
+     */
+    public void checkCallbacks() {
         insideCallback = false;
 
-        Modules.log.info("checkCallbacks");
+        //Modules.log.debug("checkCallbacks current thread is '" + current_thread.name + "' do_callbacks:" + current_thread.do_callbacks);
 
         // if sceKernelCheckCallback was called we set do_callbacks on the current thread
         // first process callbacks registered to the current thread
@@ -1110,7 +1144,7 @@ public class ThreadMan {
             // then process callbacks on waiting threads
             for (Iterator<SceKernelThreadInfo> it = waitingThreads.iterator(); it.hasNext(); ) {
                 SceKernelThreadInfo thread = it.next();
-                Modules.log.debug("checkCallbacks: thread:'" + thread.name + "' do_callbacks:" + thread.do_callbacks);
+                //Modules.log.debug("checkCallbacks: candidate thread:'" + thread.name + "' do_callbacks:" + thread.do_callbacks);
                 if (thread.do_callbacks && checkThreadCallbacks(thread)) {
                     // callback was started
                     break;
@@ -1119,12 +1153,11 @@ public class ThreadMan {
         }
 
         if (!insideCallback) {
-            Modules.log.info("checkCallbacks: no suitable thread/callback combinations remaining");
+            //Modules.log.debug("checkCallbacks: no suitable thread/callback combinations remaining");
 
             // incase we came from sceKernelCheckCallback
             current_thread.do_callbacks = false;
         }
-        */
     }
 
     public int mallocStack(int size) {
@@ -1290,6 +1323,7 @@ public class ThreadMan {
     {
         Modules.log.debug("sceKernelWaitSemaCB redirecting to hleKernelWaitSema(callbacks=true)");
         ThreadMan_hleKernelWaitSema(semaid, signal, timeout_addr, true);
+        checkCallbacks();
     }
 
     public void ThreadMan_sceKernelSignalSema(int semaid, int signal)
@@ -1493,7 +1527,7 @@ public class ThreadMan {
     }
 
     public class Statistics {
-        public ArrayList<ThreadStatistics> threads = new ArrayList<ThreadStatistics>();
+        private ArrayList<ThreadStatistics> threads = new ArrayList<ThreadStatistics>();
         public long allCycles = 0;
         public long startTimeMillis;
         public long endTimeMillis;

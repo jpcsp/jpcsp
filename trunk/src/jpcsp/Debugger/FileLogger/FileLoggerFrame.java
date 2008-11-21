@@ -143,11 +143,11 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
                     dirty = false;
                 }
 
-                SwingUtilities.invokeLater(refresher);
+                SwingUtilities.invokeAndWait(refresher);
 
                 // Cap update frequency
                 Thread.sleep(200);
-            } catch(InterruptedException e) {
+            } catch(Exception e) {
                 e.printStackTrace();
             }
         }

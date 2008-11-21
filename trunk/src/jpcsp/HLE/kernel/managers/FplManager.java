@@ -221,6 +221,7 @@ public class FplManager {
         // TODO there's no point even considering CB support until we've added timeout support
         Modules.log.warn("sceKernelAllocateFplCB redirecting to sceKernelAllocateFpl");
         sceKernelAllocateFpl(uid, data_addr, timeout_addr);
+        //ThreadMan.getInstance().checkCallbacks();
     }
 
     public void sceKernelTryAllocateFpl(int uid, int data_addr) {
