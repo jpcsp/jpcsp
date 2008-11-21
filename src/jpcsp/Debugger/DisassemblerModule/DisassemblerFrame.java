@@ -1101,11 +1101,13 @@ public int GetGPI() {
 
 public void SetGPO(int gpo) {
     this.gpo = gpo;
-    if (jPanel1.isVisible()) {
+    // TODO if we want to use a visibility check here, then we need to refresh
+    // gpo onFocus too otherwise it will be stale.
+    //if (jPanel1.isVisible()) {
         // Refresh GPO
         for(int i = 0; i < 8; i++)
             SetGPO(i, (gpo & (1 << i)) != 0);
-    }
+    //}
 }
 
 private void ToggleGPI(int index) {

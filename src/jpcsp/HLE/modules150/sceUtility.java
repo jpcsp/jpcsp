@@ -493,6 +493,7 @@ public class sceUtility implements HLEModule {
         sceUtilitySavedataParam.base.writeResult(mem, savedataParamAddr);
 
         cpu.gpr[2] = result;
+        Modules.log.debug("sceUtilitySavedataInitStart ret:0x" + Integer.toHexString(cpu.gpr[2]));
     }
 
     public void sceUtilitySavedataShutdownStart(Processor processor) {

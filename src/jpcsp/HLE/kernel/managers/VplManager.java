@@ -167,6 +167,7 @@ public class VplManager {
         // TODO there's no point even considering CB support until we've added timeout support
         Modules.log.warn("sceKernelAllocateVplCB redirecting to sceKernelAllocateVpl");
         sceKernelAllocateVpl(uid, size, data_addr, timeout_addr);
+        //ThreadMan.getInstance().checkCallbacks();
     }
 
     public void sceKernelTryAllocateVpl(int uid, int size, int data_addr) {

@@ -17,27 +17,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.managers;
 
 import java.util.HashMap;
-
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+
 import jpcsp.Emulator;
 import jpcsp.Memory;
-import jpcsp.MemoryMap;
-import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import static jpcsp.util.Utilities.*;
 
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.ThreadMan;
-import jpcsp.HLE.kernel.Managers;
-import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.*;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
@@ -286,6 +274,7 @@ public class EventFlagManager {
     {
         Modules.log.debug("sceKernelWaitEventFlagCB redirecting to hleKernelWaitEventFlag(callbacks=true)");
         hleKernelWaitEventFlag(uid, bits, wait, outBits_addr, timeout_addr, true);
+        ThreadMan.getInstance().checkCallbacks();
     }
 
     public void sceKernelPollEventFlag(int uid, int bits, int wait, int outBits_addr)
