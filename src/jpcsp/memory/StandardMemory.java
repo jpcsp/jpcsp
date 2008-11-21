@@ -48,36 +48,47 @@ public class StandardMemory extends Memory {
     private ByteBuffer mainmemory;
 
 	@Override
-    public boolean Initialise() {
-        Arrays.fill(all, (byte)0);
-    	return true;
+	public boolean allocate() {
+		try {
+	        all = new byte[SIZE_ALLMEM];
+	        map = new int[PAGE_COUNT];
+	        buf = ByteBuffer.wrap(all);
+	        buf.order(ByteOrder.LITTLE_ENDIAN);
+
+	        scratchpad = ByteBuffer.wrap(
+	            all,
+	            0,
+	            SIZE_SCRATCHPAD).slice();
+	        scratchpad.order(ByteOrder.LITTLE_ENDIAN);
+
+	        videoram = ByteBuffer.wrap(
+	            all,
+	            SIZE_SCRATCHPAD,
+	            SIZE_VRAM).slice();
+	        videoram.order(ByteOrder.LITTLE_ENDIAN);
+
+	        mainmemory = ByteBuffer.wrap(
+	            all,
+	            SIZE_SCRATCHPAD + SIZE_VRAM,
+	            SIZE_RAM).slice();
+	        mainmemory.order(ByteOrder.LITTLE_ENDIAN);
+
+	        buildMap();
+		} catch (OutOfMemoryError e) {
+			// Not enough memory provided for this VM, cannot use StandardMemory model
+			Memory.log.error("Cannot allocate StandardMemory: add the option '-Xmx64m' to the Java Virtual Machine startup command to improve Performance");
+			return false;
+		}
+
+        return true;
     }
 
-    public StandardMemory() {
-        all = new byte[SIZE_ALLMEM];
-        map = new int[PAGE_COUNT];
-        buf = ByteBuffer.wrap(all);
-        buf.order(ByteOrder.LITTLE_ENDIAN);
+	@Override
+	public void Initialise() {
+        Arrays.fill(all, (byte)0);
+	}
 
-        scratchpad = ByteBuffer.wrap(
-            all,
-            0,
-            SIZE_SCRATCHPAD).slice();
-        scratchpad.order(ByteOrder.LITTLE_ENDIAN);
-
-        videoram = ByteBuffer.wrap(
-            all,
-            SIZE_SCRATCHPAD,
-            SIZE_VRAM).slice();
-        videoram.order(ByteOrder.LITTLE_ENDIAN);
-
-        mainmemory = ByteBuffer.wrap(
-            all,
-            SIZE_SCRATCHPAD + SIZE_VRAM,
-            SIZE_RAM).slice();
-        mainmemory.order(ByteOrder.LITTLE_ENDIAN);
-
-        buildMap();
+	public StandardMemory() {
     }
 
     private void buildMap() {

@@ -46,7 +46,7 @@ public class FastMemory extends Memory {
 	private final int addressMask = 0x3FFFFFFF;
 
 	@Override
-	public boolean Initialise() {
+	public boolean allocate() {
 		int allSize = (MemoryMap.END_RAM + 1) / 4;
 		try {
 			all = new int[allSize];
@@ -55,9 +55,13 @@ public class FastMemory extends Memory {
 			Memory.log.warn("Cannot allocate FastMemory: add the option '-Xmx256m' to the Java Virtual Machine startup command to improve Performance");
 			return false;
 		}
-		Arrays.fill(all, 0);
 
 		return true;
+	}
+
+	@Override
+	public void Initialise() {
+		Arrays.fill(all, 0);
 	}
 
 	@Override

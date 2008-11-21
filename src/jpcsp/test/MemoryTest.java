@@ -107,12 +107,12 @@ public class MemoryTest {
 			return;
 		}
 
-		// Test Initialise
+		// Test allocate
 		{
-			if (mem.Initialise()) {
-				success("Initialise");
+			if (mem.allocate()) {
+				success("allocate");
 			} else {
-				fail("Initialise");
+				fail("allocate");
 				return;
 			}
 		}

@@ -49,14 +49,20 @@ public abstract class Memory {
         	}
 
         	if (instance != null) {
-        		if (!instance.Initialise()) {
+        		if (!instance.allocate()) {
         			instance = null;
         		}
         	}
 
         	if (instance == null) {
         		instance = new StandardMemory();
-        		instance.Initialise();
+        		if (!instance.allocate()) {
+        			instance = null;
+        		}
+        	}
+
+        	if (instance == null) {
+    			throw new OutOfMemoryError("Cannot allocate memory");
         	}
 
         	log.debug("Using " + instance.getClass().getName());
@@ -140,7 +146,8 @@ public abstract class Memory {
         return false;
 	}
 
-	public abstract boolean Initialise();
+	public abstract boolean allocate();
+	public abstract void Initialise();
 	public abstract boolean isAddressGood(int address);
     public abstract int read8(int address);
     public abstract int read16(int address);
