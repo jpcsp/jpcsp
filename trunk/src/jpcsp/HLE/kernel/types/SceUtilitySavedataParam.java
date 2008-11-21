@@ -302,10 +302,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 			fileSize = maxLength;
 		}
 
-		for (int i = 0; i < fileSize; i++) {
-			byte b = fileInput.readByte();
-			mem.write8(address + i, b);
-		}
+		Utilities.readFully(fileInput, address, fileSize);
 		fileInput.close();
 
 		return fileSize;
@@ -332,10 +329,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 			return;
 		}
 
-		for (int i = 0; i < length; i++) {
-			int b = (byte) mem.read8(address + i);
-			fileOutput.writeByte(b);
-		}
+        Utilities.write(fileOutput, address, length);
 		fileOutput.close();
 	}
 
