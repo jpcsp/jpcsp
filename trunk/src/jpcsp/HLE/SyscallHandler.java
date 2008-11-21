@@ -79,9 +79,9 @@ public class SyscallHandler {
                 case 0x201a:
                     ThreadMan.getInstance().ThreadMan_sceKernelWaitThreadEnd(gpr[4], gpr[5]);
                     break;
-                case 0x201b:
-                    ThreadMan.getInstance().ThreadMan_sceKernelWaitThreadEndCB(gpr[4], gpr[5]);
-                    break;
+//                case 0x201b:
+//                    ThreadMan.getInstance().ThreadMan_sceKernelWaitThreadEndCB(gpr[4], gpr[5]);
+//                    break;
                 case 0x201c:
                     ThreadMan.getInstance().ThreadMan_sceKernelDelayThread(gpr[4]);
                     break;
