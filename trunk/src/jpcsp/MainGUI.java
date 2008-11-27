@@ -91,6 +91,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     private boolean snapConsole = true;
     private Vector<RecentElement> recentUMD = new Vector<RecentElement>();
     private Vector<RecentElement> recentFile = new Vector<RecentElement>();
+    private Level rootLogLevel = null;
 
     /** Creates new form MainGUI */
     public MainGUI() {
@@ -163,6 +164,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         DebugMenu = new javax.swing.JMenu();
         EnterDebugger = new javax.swing.JMenuItem();
         EnterMemoryViewer = new javax.swing.JMenuItem();
+        ToggleDebugLog = new javax.swing.JMenuItem();
         VfpuRegisters = new javax.swing.JMenuItem();
         ToggleConsole = new javax.swing.JMenuItem();
         ElfHeaderViewer = new javax.swing.JMenuItem();
@@ -361,6 +363,14 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         DebugMenu.add(FileLog);
         FileLog.getAccessibleContext().setAccessibleName("File Log");
+
+        ToggleDebugLog.setText("Toggle Debug Logging");
+        ToggleDebugLog.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ToggleDebugLogActionPerformed(evt);
+            }
+        });
+        DebugMenu.add(ToggleDebugLog);
 
         MenuBar.add(DebugMenu);
 
@@ -592,6 +602,22 @@ private void EnterMemoryViewerActionPerformed(java.awt.event.ActionEvent evt) {/
         State.memoryViewer.setVisible(true);
     }
 }//GEN-LAST:event_EnterMemoryViewerActionPerformed
+
+private void ToggleDebugLogActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ToggleDebugLogActionPerformed
+	Logger rootLogger = Logger.getRootLogger();
+	if (rootLogLevel == null)
+	{
+		// Enable DEBUG logging
+		rootLogLevel = rootLogger.getLevel();
+		rootLogger.setLevel(Level.DEBUG);
+	}
+	else
+	{
+		// Reset logging level to previous level
+		rootLogger.setLevel(rootLogLevel);
+		rootLogLevel = null;
+	}
+}//GEN-LAST:event_ToggleDebugLogActionPerformed
 
 private void AboutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AboutActionPerformed
   StringBuilder message = new StringBuilder();
@@ -902,6 +928,7 @@ public void setMainTitle(String message)
     private javax.swing.JMenu EmulationMenu;
     private javax.swing.JMenuItem EnterDebugger;
     private javax.swing.JMenuItem EnterMemoryViewer;
+    private javax.swing.JMenuItem ToggleDebugLog;
     private javax.swing.JMenuItem ExitEmu;
     private javax.swing.JMenuItem FileLog;
     private javax.swing.JMenu FileMenu;
