@@ -15,7 +15,7 @@ import jpcsp.filesystems.*;
  * @author gigaherz
  */
 public class UmdIsoFile extends SeekableInputStream {
-
+	private static final int sectorLength = 2048;
     private int startSectorNumber;
     private int currentSectorNumber;
     private long currentOffset;
@@ -47,24 +47,19 @@ public class UmdIsoFile extends SeekableInputStream {
     @Override
     public int read() throws IOException
     {
-        // I hate Java. Actuall I hate whoever decided to make "byte" signed,
+        // I hate Java. Actually I hate whoever decided to make "byte" signed,
         // and then decided that streams would have a read() function returning a value [0..255], and -1 for EOF
         
         if(currentOffset == maxOffset)
             return -1; //throw new java.io.EOFException();
-        
-        if(sectorOffset==2048)
-        {
-            currentSectorNumber++;
-            currentSector = internalReader.readSector(currentSectorNumber);
-            sectorOffset = 0;
-        }
+
+        checkSectorAvailable();
         currentOffset++;
-        
+
         int debuggingVariable = Ubyte(currentSector[sectorOffset++]); // make unsigned
-        
+
         assert (debuggingVariable>=0);
-        
+
         return debuggingVariable;
         
     }
@@ -104,14 +99,14 @@ public class UmdIsoFile extends SeekableInputStream {
         
         int oldSectorNumber = currentSectorNumber;
         long newOffset = endOffset;
-        int newSectorNumber = startSectorNumber + (int)(newOffset / 2048);
+        int newSectorNumber = startSectorNumber + (int)(newOffset / sectorLength);
         if(oldSectorNumber != newSectorNumber)
         {
             currentSector = internalReader.readSector(newSectorNumber);
         }
         currentOffset = newOffset;
         currentSectorNumber = newSectorNumber;
-        sectorOffset = (int)(currentOffset % 2048);
+        sectorOffset = (int)(currentOffset % sectorLength);
     }
     
     @Override
@@ -263,4 +258,65 @@ public class UmdIsoFile extends SeekableInputStream {
     {
     	return startSectorNumber;
     }
+
+    private int readInternal(byte[] b, int off, int len) throws IOException
+    {
+    	if (len > 0)
+    	{
+    		if (len > (maxOffset - currentOffset))
+    		{
+    			len = (int) (maxOffset - currentOffset);
+    		}
+    		System.arraycopy(currentSector, sectorOffset, b, off, len);
+    		sectorOffset += len;
+    		currentOffset += len;
+    	}
+
+    	return len;
+    }
+
+    private void checkSectorAvailable() throws IOException
+    {
+    	if (sectorOffset == sectorLength) {
+    		currentSectorNumber++;
+    		currentSector = internalReader.readSector(currentSectorNumber);
+    		sectorOffset = 0;
+    	}
+    }
+
+    @Override
+	public int read(byte[] b, int off, int len) throws IOException
+	{
+    	if (b == null)
+    	{
+    		throw new NullPointerException();
+    	}
+    	if (off < 0 || len < 0 || len > (b.length - off))
+    	{
+    		throw new IndexOutOfBoundsException();
+    	}
+
+    	int totalLength = 0;
+
+		int firstSector = readInternal(b, off, Math.min(len, sectorLength - sectorOffset));
+		off += firstSector;
+		len -= firstSector;
+		totalLength += firstSector;
+
+		// Read whole sectors
+		while (len >= sectorLength && currentOffset < maxOffset)
+		{
+			checkSectorAvailable();
+			int n = readInternal(b, off, sectorLength);
+			off += n;
+			len -= n;
+			totalLength += n;
+		}
+
+		checkSectorAvailable();
+		int lastSector = readInternal(b, off, len);
+		totalLength += lastSector;
+
+		return totalLength;
+	}
 }

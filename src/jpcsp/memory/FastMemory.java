@@ -229,9 +229,36 @@ public class FastMemory extends Memory {
 
 	@Override
 	public void copyToMemory(int address, ByteBuffer source, int length) {
-		for (int i = 0; i < length && source.hasRemaining(); i++) {
+		// copy in 1 byte steps until address is "int"-aligned
+		while ((address & 0x03) != 0 && length > 0 && source.hasRemaining()) {
 			byte b = source.get();
-			write8(address + i, b);
+			write8(address, b);
+			address++;
+			length--;
 		}
+
+		// copy 1 int at each loop
+		while (length >= 4 && source.remaining() >= 4) {
+			int data1 = source.get() & 0xFF;
+			int data2 = source.get() & 0xFF;
+			int data3 = source.get() & 0xFF;
+			int data4 = source.get() & 0xFF;
+			int data = (data4 << 24) | (data3 << 16) | (data2 << 8) | data1;
+			write32(address, data);
+			address += 4;
+			length -= 4;
+		}
+
+		// copy rest length in 1 byte steps (rest length <= 3)
+		while (length > 0 && source.hasRemaining()) {
+			byte b = source.get();
+			write8(address, b);
+			address++;
+			length--;
+		}
+	}
+
+	public int[] getAll() {
+	    return all;
 	}
 }

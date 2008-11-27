@@ -235,10 +235,9 @@ public class Utilities {
     }
 
     public static void readFully(SeekableDataInput input, int address, int length) throws IOException {
-    	Memory mem = Memory.getInstance();
-    	for (int i = 0; i < length; i++) {
-    		mem.write8(address + i, input.readByte());
-    	}
+    	byte[] buffer = new byte[length];
+    	input.readFully(buffer);
+    	Memory.getInstance().copyToMemory(address, ByteBuffer.wrap(buffer), length);
     }
 
     public static void write(SeekableRandomFile output, int address, int length) throws IOException {
