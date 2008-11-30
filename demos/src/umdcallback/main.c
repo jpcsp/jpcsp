@@ -74,6 +74,11 @@ int main(int argc, char *argv[])
     sceCtrlSetSamplingCycle(0);
     sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
 
+    {
+        int cbid = sceKernelCreateCallback("UMD Callback", umd_callback, (void*)0x34343434);
+        sceUmdRegisterUMDCallback(cbid);
+    }
+
     while(!done)
     {
         sceCtrlReadBufferPositive(&pad, 1); // context switch in here
@@ -96,6 +101,10 @@ int main(int argc, char *argv[])
         {
             result = sceUmdActivate(1, "disc0:");
             printf("sceUmdActivate result %08x\n", result);
+
+            //result = sceUmdWaitDriveStatCB(0x20); // umd in
+            result = sceUmdWaitDriveStatCB(0x1); // umd not in
+            printf("sceUmdWaitDriveStatCB result %08x\n", result);
         }
 
         if (buttonDown & PSP_CTRL_UP)
@@ -152,8 +161,8 @@ int CallbackThread(SceSize args, void *argp)
     cbid = sceKernelCreateCallback("Exit Callback", exit_callback, (void*)0x12121212);
     sceKernelRegisterExitCallback(cbid);
 
-    cbid = sceKernelCreateCallback("UMD Callback", umd_callback, (void*)0x34343434);
-    sceUmdRegisterUMDCallback(cbid);
+    //cbid = sceKernelCreateCallback("UMD Callback", umd_callback, (void*)0x34343434);
+    //sceUmdRegisterUMDCallback(cbid);
 
     sceKernelSleepThreadCB();
 
