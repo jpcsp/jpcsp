@@ -18,8 +18,7 @@ package jpcsp.HLE.kernel.types;
 
 public class ThreadWaitInfo {
     public boolean forever;
-    public int timeout; // 0 is allowed and is NOT forever
-    public int steps; // +1 for each emu step, when it reaches timeout the wait has expired
+    public long microTimeTimeout; // when Clock.microTime() reaches microTimeTimeout the wait has expired
 
     // TODO change waitingOnThreadEnd, waitingOnEventFlag, etc to waitType,
     // since we can only wait on one type of event at a time.

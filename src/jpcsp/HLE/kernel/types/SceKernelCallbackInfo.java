@@ -19,6 +19,7 @@ package jpcsp.HLE.kernel.types;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
@@ -82,5 +83,7 @@ public class SceKernelCallbackInfo {
         cpu.gpr[31] = 0; // ra
 
         Emulator.getProcessor().cpu = cpu;
+
+        RuntimeContext.executeCallback();
     }
 }

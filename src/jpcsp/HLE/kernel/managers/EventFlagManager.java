@@ -242,9 +242,7 @@ public class EventFlagManager {
                 currentThread.do_callbacks = do_callbacks;
 
                 // Wait on a specific event flag
-                currentThread.wait.forever = (timeout_addr == 0);
-                currentThread.wait.timeout = ThreadMan.microsToSteps(micros);
-                currentThread.wait.steps = 0;
+                ThreadMan.getInstance().hleKernalThreadWait(currentThread.wait, micros, (timeout_addr == 0));
 
                 currentThread.wait.waitingOnEventFlag = true;
                 currentThread.wait.EventFlag_id = uid;

@@ -25,6 +25,7 @@ import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.kernel.managers.SceUidManager;
@@ -182,6 +183,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
                 + " NPC:" + Integer.toHexString(cpuContext.npc));
         }
         */
+        RuntimeContext.update();
     }
 
     /** For use in the scheduler */

@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import jpcsp.Allegrex.CpuState;
+import jpcsp.Allegrex.compiler.Compiler;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Debugger.InstructionCounter;
 import jpcsp.Debugger.StepLogger;
 import jpcsp.HLE.ThreadMan;
@@ -33,7 +35,7 @@ import org.apache.log4j.Logger;
 public class Emulator implements Runnable {
     private static Emulator instance;
     private static Processor processor;
-    private static Recompiler recompiler;
+    private static Clock clock;
     private boolean moduleLoaded;
     private Thread mainThread;
     public static boolean run = false;
@@ -46,11 +48,7 @@ public class Emulator implements Runnable {
     public Emulator(MainGUI gui) {
         Emulator.gui = gui;
         processor = new Processor();
-
-        if (Settings.getInstance().readBool("emu.recompiler"))
-            recompiler = new Recompiler();
-        else
-            recompiler = null;
+        clock = new Clock();
 
         moduleLoaded = false;
         mainThread = new Thread(this, "Emu");
@@ -60,8 +58,10 @@ public class Emulator implements Runnable {
 
     public static void exit() {
         log.info(TextureCache.getInstance().statistics.toString());
+        Compiler.exit();
+        RuntimeContext.exit();
         if (ThreadMan.getInstance().statistics != null && pspdisplay.getInstance().statistics != null) {
-            long totalMillis = ThreadMan.getInstance().statistics.getDurationMillis();
+            long totalMillis = getClock().milliTime();
             long displayMillis = pspdisplay.getInstance().statistics.cumulatedTimeMillis;
             long cpuMillis = totalMillis - displayMillis;
             long cpuCycles = ThreadMan.getInstance().statistics.allCycles;
@@ -115,6 +115,7 @@ public class Emulator implements Runnable {
     }
 
     private void initCpu() {
+        RuntimeContext.update();
         //set the default values for registers not sure if they are correct and UNTESTED!!
         //some settings from soywiz/pspemulator
         CpuState cpu = processor.cpu;
@@ -146,6 +147,7 @@ public class Emulator implements Runnable {
 
         getProcessor().reset();
         Memory.getInstance().Initialise();
+        RuntimeContext.update();
 
         NIDMapper.getInstance().Initialise();
         Loader.getInstance().reset();
@@ -159,17 +161,27 @@ public class Emulator implements Runnable {
     @Override
     public void run()
     {
+        RuntimeContext.isActive = Settings.getInstance().readBool("emu.compiler");
+
+        clock.resume();
+
         while (true) {
-            try {
-             synchronized(this) {
-                    while (pause)
-                        wait();
-                }
-            } catch (InterruptedException e){
+    		if (pause) {
+    			clock.pause();
+	            try {
+	            	synchronized(this) {
+            			while (pause) {
+            				wait();
+            			}
+	                }
+	            } catch (InterruptedException e) {
+	            	// Ignore exception
+        		}
+    			clock.resume();
             }
 
-            if (recompiler != null) {
-                recompiler.run();
+            if (RuntimeContext.isActive) {
+            	RuntimeContext.run();
             } else {
                 processor.step();
                 jpcsp.HLE.pspge.getInstance().step();
@@ -282,6 +294,10 @@ public class Emulator implements Runnable {
 
     public static Memory getMemory() {
         return Memory.getInstance();
+    }
+
+    public static Clock getClock() {
+    	return clock;
     }
 
     public static Emulator getInstance() {

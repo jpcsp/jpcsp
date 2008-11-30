@@ -39,6 +39,7 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import static jpcsp.util.Utilities.*;
 
 import jpcsp.HLE.kernel.Managers;
@@ -261,15 +262,17 @@ public class ThreadMan {
             Modules.log.error("No ready threads!");
         }
 
-        // Access waitingThreads using array indexing because
-        // this is more efficient than iterator access for short lists
-        for (int i = 0; i < waitingThreads.size(); i++) {
-            SceKernelThreadInfo thread = waitingThreads.get(i);
-            thread.wait.steps++;
-            if (!thread.wait.forever && thread.wait.steps >= thread.wait.timeout) {
-                onWaitTimeout(thread);
-                changeThreadState(thread, PSP_THREAD_READY);
-            }
+        if (!waitingThreads.isEmpty()) {
+        	long microTimeNow = Emulator.getClock().microTime();
+	        // Access waitingThreads using array indexing because
+	        // this is more efficient than iterator access for short lists
+	        for (int i = 0; i < waitingThreads.size(); i++) {
+	            SceKernelThreadInfo thread = waitingThreads.get(i);
+	            if (!thread.wait.forever && microTimeNow >= thread.wait.microTimeTimeout) {
+	                onWaitTimeout(thread);
+	                changeThreadState(thread, PSP_THREAD_READY);
+	            }
+	        }
         }
 
         // Cleanup stopped threads (deferred deletion)
@@ -349,6 +352,8 @@ public class ThreadMan {
 
         current_thread = newthread;
         syscallFreeCycles = 0;
+
+        RuntimeContext.update();
     }
 
     /** This function must have the property of never returning current_thread,
@@ -386,6 +391,10 @@ public class ThreadMan {
 
     public SceKernelThreadInfo getCurrentThread() {
         return current_thread;
+    }
+
+    public boolean isIdleThread(SceKernelThreadInfo thread) {
+        return (thread == idle0 || thread == idle1);
     }
 
     public String getThreadName(int uid) {
@@ -755,9 +764,9 @@ public class ThreadMan {
         contextSwitch(nextThread());
     }
 
-    public static int microsToSteps(int micros) {
-        //return micros * 200000000 / 1000000; // TODO steps = micros * steprate
-        return (micros < WDT_THREAD_IDLE_CYCLES) ? micros : WDT_THREAD_IDLE_CYCLES - 1; // test version
+    public void hleKernalThreadWait(ThreadWaitInfo wait, int micros, boolean forever) {
+    	wait.forever = forever;
+    	wait.microTimeTimeout = Emulator.getClock().microTime() + micros;
     }
 
     private void hleKernelDelayThread(int micros, boolean do_callbacks) {
@@ -765,9 +774,7 @@ public class ThreadMan {
         current_thread.do_callbacks = do_callbacks;
 
         // Wait on a timeout only
-        current_thread.wait.forever = false; // Delay Thread can never be infinite
-        current_thread.wait.timeout = microsToSteps(micros);
-        current_thread.wait.steps = 0;
+        hleKernalThreadWait(current_thread.wait, micros, false);
 
         changeThreadState(current_thread, PSP_THREAD_WAITING);
 
@@ -1018,9 +1025,7 @@ public class ThreadMan {
             current_thread.do_callbacks = callbacks;
 
             // Wait on a specific thread end
-            current_thread.wait.forever = (micros == 0); // TODO check this
-            current_thread.wait.timeout = microsToSteps(micros);
-            current_thread.wait.steps = 0;
+            hleKernalThreadWait(current_thread.wait, micros, (micros == 0)); // TODO check forever
 
             current_thread.wait.waitingOnThreadEnd = true;
             current_thread.wait.ThreadEnd_id = uid;
@@ -1290,9 +1295,7 @@ public class ThreadMan {
                 current_thread.do_callbacks = do_callbacks;
 
                 // Wait on a specific semaphore
-                current_thread.wait.forever = (timeout_addr == 0);
-                current_thread.wait.timeout = microsToSteps(micros);
-                current_thread.wait.steps = 0;
+                hleKernalThreadWait(current_thread.wait, micros, (timeout_addr == 0));
 
                 current_thread.wait.waitingOnSemaphore = true;
                 current_thread.wait.Semaphore_id = semaid;
