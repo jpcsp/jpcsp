@@ -730,7 +730,7 @@ public class ThreadMan {
     /** exit the current thread */
     public void ThreadMan_sceKernelExitThread(int exitStatus) {
         Modules.log.debug("sceKernelExitThread SceUID=" + Integer.toHexString(current_thread.uid)
-            + " name:'" + current_thread.name + "' exitStatus:" + exitStatus);
+            + " name:'" + current_thread.name + "' exitStatus:0x" + Integer.toHexString(exitStatus));
 
         current_thread.exitStatus = exitStatus;
         Emulator.getProcessor().cpu.gpr[2] = 0;
@@ -1190,9 +1190,9 @@ public class ThreadMan {
      *
      * Some trickery is used in yieldCurrentThreadCB(). By the time we get
      * inside the checkCallbacks() function the thread that called yieldCB is
-     * no longer the current thread. Also the thread thread that called yieldCB
-     * is not in the wait state (it's in the ready state). so what we do is
-     * check every thread, not just the waiting threads for the do_callbacks flag.
+     * no longer the current thread. Also the thread that called yieldCB is
+     * not in the wait state (it's in the ready state). so what we do is check
+     * every thread, not just the waiting threads for the do_callbacks flag.
      * Also the waitingThreads list only contains waiting threads that have a
      * finite wait period, so we have to iterate on all threads anyway.
      *
@@ -1264,7 +1264,7 @@ public class ThreadMan {
         Modules.log.debug("sceKernelCreateSema name= " + name + " attr= 0x" + Integer.toHexString(attr) + " initVal= " + initVal + " maxVal= "+ maxVal + " option= 0x" + Integer.toHexString(option));
 
         if (attr != 0) Modules.log.warn("UNIMPLEMENTED:sceKernelCreateSema attr value 0x" + Integer.toHexString(attr));
-        if (option != 0) Modules.log.warn("UNIMPLEMENTED:sceKernelCreateSema option value at 0x" + Integer.toHexString(option));
+        if (option != 0) Modules.log.warn("UNIMPLEMENTED:sceKernelCreateSema option at 0x" + Integer.toHexString(option));
 
         SceKernelSemaphoreInfo sema = new SceKernelSemaphoreInfo(name, attr, initVal, maxVal);
 

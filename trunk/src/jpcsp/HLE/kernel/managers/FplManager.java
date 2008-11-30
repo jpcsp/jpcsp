@@ -50,12 +50,12 @@ public class FplManager {
             + ",blocks=" + blocks
             + ",opt=0x" + Integer.toHexString(opt_addr) + ")");
 
+        if (attr != 0) Modules.log.warn("UNIMPLEMENTED:sceKernelCreateFpl attr value 0x" + Integer.toHexString(attr));
+
         if (mem.isAddressGood(opt_addr)) {
-            int size = mem.read32(opt_addr);
-            if (size != 4) {
-                Modules.log.warn("sceKernelCreateFpl opt size mismatch"
-                    + " (got=" + size + ",expected=" + 4 + ")");
-            }
+            int optsize = mem.read32(opt_addr);
+            Modules.log.warn("UNIMPLEMENTED:sceKernelCreateFpl option at 0x" + Integer.toHexString(opt_addr)
+                + " (size=" + optsize + ")");
         }
 
         SceKernelFplInfo info = new SceKernelFplInfo(name, partitionid, attr, blocksize, blocks);

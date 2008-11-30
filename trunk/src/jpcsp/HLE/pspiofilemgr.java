@@ -108,11 +108,12 @@ public class pspiofilemgr {
 
     private String getDeviceFilePath(String pspfilename) {
         //Modules.log.debug("getDeviceFilePath filepath='" + filepath + "' pspfilename='" + pspfilename + "'");
-        String device = filepath;
+        String device = filepath; // must not end with /
         String path = pspfilename;
         String filename = null;
 
         // on PSP
+        // path - relative to cwd
         // /path - relative to cwd
         // dev:path
         // dev:/path
@@ -125,6 +126,11 @@ public class pspiofilemgr {
             device = pspfilename.substring(0, findcolon);
             path = pspfilename.substring(findcolon + 1);
             //Modules.log.debug("getDeviceFilePath split device='" + device + "' path='" + path + "'");
+        }
+
+        // removing trailing / on paths, but only if the path isn't just "/"
+        if (path.endsWith("/") && path.length() != 1) {
+            path = path.substring(0, path.length() - 1);
         }
 
         if (path.startsWith("/")) {
@@ -701,6 +707,7 @@ public class pspiofilemgr {
         if (debug) Modules.log.debug("sceIoChdir path = " + path);
 
         if (path.equals("..")) {
+            // Go up one level
             int index = filepath.lastIndexOf("/");
             if (index != -1)
                 filepath = filepath.substring(0, index);
