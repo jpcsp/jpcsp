@@ -24,6 +24,7 @@ import java.util.Arrays;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.HLE.pspdisplay;
 
 public class FastMemory extends Memory {
 	//
@@ -167,6 +168,7 @@ public class FastMemory extends Memory {
 				memData = (memData & 0x0000FFFF) | ((data & 0xFFFF) << 16);
 			}
 			all[address / 4] = memData;
+            pspdisplay.getInstance().write16(address, data);
 		} catch (Exception e) {
             invalidMemoryAddress(address, "write16", Emulator.EMU_STATUS_MEM_WRITE);
 		}
@@ -177,6 +179,7 @@ public class FastMemory extends Memory {
 		try {
 			address &= addressMask;
 			all[address / 4] = data;
+            pspdisplay.getInstance().write32(address, data);
 		} catch (Exception e) {
             invalidMemoryAddress(address, "write32", Emulator.EMU_STATUS_MEM_WRITE);
 		}
