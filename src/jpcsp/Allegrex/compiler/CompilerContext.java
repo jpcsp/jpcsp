@@ -312,6 +312,30 @@ public class CompilerContext {
         mv.visitJumpInsn(opcode, label);
     }
 
+    public void visitJump(MethodVisitor mv, int opcode, int address) {
+        flushInstructionCount(mv, true, false);
+        if (opcode == Opcodes.GOTO) {
+            mv.visitLdcInsn(address);
+            visitJump(mv);
+        } else {
+            Compiler.log.error("Not implemented: branching to an unknown address");
+            if (opcode == Opcodes.IF_ACMPEQ ||
+                opcode == Opcodes.IF_ACMPNE ||
+                opcode == Opcodes.IF_ICMPEQ ||
+                opcode == Opcodes.IF_ICMPNE ||
+                opcode == Opcodes.IF_ICMPGE ||
+                opcode == Opcodes.IF_ICMPGT ||
+                opcode == Opcodes.IF_ICMPLE ||
+                opcode == Opcodes.IF_ICMPLT) {
+                // 2 Arguments to POP
+                mv.visitInsn(Opcodes.POP);
+            }
+            mv.visitInsn(Opcodes.POP);
+            mv.visitLdcInsn(address);
+            visitJump(mv);
+        }
+    }
+
     public static String getClassName(int address) {
         return "_S1_" + Integer.toHexString(address).toUpperCase();
     }

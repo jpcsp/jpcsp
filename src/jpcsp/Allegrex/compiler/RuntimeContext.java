@@ -135,7 +135,7 @@ public class RuntimeContext {
 		if (mem instanceof FastMemory) {
 			memory = ((FastMemory) mem).getAll();
 		} else {
-			return false;
+		    memory = null;
 		}
 
 		return true;

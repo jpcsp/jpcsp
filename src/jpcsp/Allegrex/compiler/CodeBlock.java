@@ -48,12 +48,12 @@ public class CodeBlock {
 		RuntimeContext.addCodeBlock(startAddress, this);
 	}
 
-	public void addInstruction(int address, int opcode, Instruction insn, boolean isBranchTarget, int branchingTo) {
+	public void addInstruction(int address, int opcode, Instruction insn, boolean isBranchTarget, boolean isBranching, int branchingTo) {
 		if (Compiler.log.isDebugEnabled()) {
 			Compiler.log.debug("CodeBlock.addInstruction 0x" + Integer.toHexString(address).toUpperCase() + " - " + insn.disasm(address, opcode));
 		}
 
-		CodeInstruction codeInstruction = new CodeInstruction(address, opcode, insn, isBranchTarget, branchingTo);
+		CodeInstruction codeInstruction = new CodeInstruction(address, opcode, insn, isBranchTarget, isBranching, branchingTo);
 
 		// Insert the codeInstruction in the codeInstructions list
 		// and keep the list sorted by address.

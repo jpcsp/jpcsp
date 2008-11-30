@@ -196,6 +196,7 @@ public class Compiler implements ICompiler {
         if (log.isDebugEnabled()) {
             log.debug("Compiler.analyse Block 0x" + Integer.toHexString(startAddress));
         }
+        startAddress = startAddress & 0x3FFFFFFF;
         CodeBlock codeBlock = new CodeBlock(startAddress);
         Stack<Integer> pendingBlockAddresses = new Stack<Integer>();
         pendingBlockAddresses.clear();
@@ -215,24 +216,30 @@ public class Compiler implements ICompiler {
                     context.analysedAddresses.add(pc);
                     int npc = pc + 4;
 
-                    int branchingTo = -1;
+                    int branchingTo = 0;
+                    boolean isBranching = false;
                     if (branchBlockInstructions.contains(insn)) {
                         branchingTo = branchTarget(npc, opcode);
+                        isBranching = true;
                         pendingBlockAddresses.push(branchingTo);
                     } else if (jumpBlockInstructions.contains(insn)) {
                         branchingTo = jumpTarget(npc, opcode);
-                        pendingBlockAddresses.push(branchingTo);
+                        isBranching = true;
+                        if (branchingTo != 0) { // Ignore "J 0x00000000" instruction
+                            pendingBlockAddresses.push(branchingTo);
+                        }
                         endPc = npc;
                     } else if (endBlockInstructions.contains(insn)) {
                         endPc = npc;
                     } else if (newBlockInstructions.contains(insn)) {
                         branchingTo = jumpTarget(npc, opcode);
+                        isBranching = true;
                         if (recursive) {
                             context.blocksToBeAnalysed.push(branchingTo);
                         }
                     }
 
-                    codeBlock.addInstruction(pc, opcode, insn, isBranchTarget, branchingTo);
+                    codeBlock.addInstruction(pc, opcode, insn, isBranchTarget, isBranching, branchingTo);
                     pc = npc;
 
                     isBranchTarget = false;

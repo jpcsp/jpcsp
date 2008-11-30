@@ -33,13 +33,15 @@ public class CodeInstruction {
 	private Instruction insn;
 	private boolean isBranchTarget;
 	private int branchingTo;
+	private boolean isBranching;
 	private Label label;
 
-	public CodeInstruction(int address, int opcode, Instruction insn, boolean isBranchTarget, int branchingTo) {
+	public CodeInstruction(int address, int opcode, Instruction insn, boolean isBranchTarget, boolean isBranching, int branchingTo) {
 		this.address = address;
 		this.opcode = opcode;
 		this.insn = insn;
 		this.isBranchTarget = isBranchTarget;
+		this.isBranching = isBranching;
 		this.branchingTo = branchingTo;
 	}
 
@@ -76,7 +78,7 @@ public class CodeInstruction {
 	}
 
 	public boolean isBranching() {
-		return getBranchingTo() >= 0;
+		return isBranching;
 	}
 
 	public int getBranchingTo() {
@@ -152,8 +154,12 @@ public class CodeInstruction {
 
         if (branchingOpcode != Opcodes.NOP) {
             CodeInstruction branchingToCodeInstruction = context.getCodeBlock().getCodeInstruction(getBranchingTo());
-            Label branchingToLabel = branchingToCodeInstruction.getLabel();
-            context.visitJump(mv, branchingOpcode, branchingToLabel);
+            if (branchingToCodeInstruction != null) {
+                Label branchingToLabel = branchingToCodeInstruction.getLabel();
+                context.visitJump(mv, branchingOpcode, branchingToLabel);
+            } else {
+                context.visitJump(mv, branchingOpcode, getBranchingTo());
+            }
         }
     }
 
