@@ -100,7 +100,7 @@ public class FplManager {
             Modules.log.warn("tryAllocateFpl no free blocks (numBlocks=" + info.numBlocks + ")");
             return 0;
         } else if (info.blockSize > pspSysMem.getInstance().maxFreeMemSize()) {
-            Modules.log.warn("tryAllocateFpl no free mem (want=" + info.blockSize + ",free=" + pspSysMem.getInstance().maxFreeMemSize() + ")");
+            Modules.log.warn("tryAllocateFpl not enough free mem (want=" + info.blockSize + ",free=" + pspSysMem.getInstance().maxFreeMemSize() + ")");
             return 0;
         } else {
             addr = pspSysMem.getInstance().malloc(info.partitionid, pspSysMem.PSP_SMEM_Low, info.blockSize, 0);

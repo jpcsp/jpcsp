@@ -98,10 +98,10 @@ public class VplManager {
             Modules.log.warn("tryAllocateVpl no free blocks (numBlocks=" + info.numBlocks + ")");
             return 0;
         } else if (size > info.freeSize) {
-            Modules.log.warn("tryAllocateVpl no free pool mem (want=" + size + ",free=" + info.freeSize + ")");
+            Modules.log.warn("tryAllocateVpl not enough free pool mem (want=" + size + ",free=" + info.freeSize + ")");
             return 0;
         } else if (size > pspSysMem.getInstance().maxFreeMemSize()) {
-            Modules.log.warn("tryAllocateVpl no free sys mem (want=" + size + ",free=" + pspSysMem.getInstance().maxFreeMemSize() + ")");
+            Modules.log.warn("tryAllocateVpl not enough free sys mem (want=" + size + ",free=" + pspSysMem.getInstance().maxFreeMemSize() + ")");
             return 0;
         } else {
             addr = pspSysMem.getInstance().malloc(info.partitionid, pspSysMem.PSP_SMEM_Low, size, 0);

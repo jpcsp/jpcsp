@@ -369,7 +369,8 @@ public class ModuleMgrForUser implements HLEModule {
 
         Modules.log.debug("sceKernelSelfStopUnloadModule(unknown=0x" + Integer.toHexString(unknown)
             + ",argsize=" + argsize
-            + ",argp_addr=0x" + Integer.toHexString(argp_addr) + ")");
+            + ",argp_addr=0x" + Integer.toHexString(argp_addr) +
+            " current thread:'" + ThreadMan.getInstance().getCurrentThread().name + "'");
 
         // TODO see if the current thread belongs to the root module,
         // we can get root module from Emulator.getInstance().module.
