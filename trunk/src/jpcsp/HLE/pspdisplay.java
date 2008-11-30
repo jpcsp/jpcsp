@@ -183,9 +183,9 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         }
     }
 
-    public void step() {
+    public void step(boolean immediately) {
         long now = System.currentTimeMillis();
-        if (now - lastUpdate > 1000 / 60) {
+        if (immediately || now - lastUpdate > 1000 / 60) {
             if (refreshRequired) {
                 display();
                 refreshRequired = false;
@@ -195,6 +195,10 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             currentHcount += 0.15f;
             lastUpdate = now;
         }
+    }
+
+    public void step() {
+    	step(false);
     }
 
     public void write8(int address, int data) {

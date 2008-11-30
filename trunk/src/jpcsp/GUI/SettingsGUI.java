@@ -51,8 +51,8 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         openLogwindowCheck.setSelected(enabled);
         enabled = Settings.getInstance().readBool("gui.snapLogwindow");
         snapConsoleCheck.setSelected(enabled);
-        enabled = Settings.getInstance().readBool("emu.recompiler");
-        recompilerCheck.setSelected(enabled);
+        enabled = Settings.getInstance().readBool("emu.compiler");
+        compilerCheck.setSelected(enabled);
         enabled = Settings.getInstance().readBool("emu.disablege");
         disableGECheck.setSelected(enabled);
         enabled = Settings.getInstance().readBool("emu.disablevbo");
@@ -203,7 +203,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         saveWindowPosCheck = new javax.swing.JCheckBox();
         openLogwindowCheck = new javax.swing.JCheckBox();
         snapConsoleCheck = new javax.swing.JCheckBox();
-        recompilerCheck = new javax.swing.JCheckBox();
+        compilerCheck = new javax.swing.JCheckBox();
         umdBrowser = new javax.swing.JRadioButton();
         ClassicOpenDialogumd = new javax.swing.JRadioButton();
         umdpath = new javax.swing.JTextField();
@@ -262,10 +262,10 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
 
         snapConsoleCheck.setText("snap console to main window");
 
-        recompilerCheck.setText("use recompiler");
-        recompilerCheck.addActionListener(new java.awt.event.ActionListener() {
+        compilerCheck.setText("use compiler (dynarec)");
+        compilerCheck.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                recompilerCheckActionPerformed(evt);
+                compilerCheckActionPerformed(evt);
             }
         });
 
@@ -309,7 +309,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                                     .addComponent(openLogwindowCheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(saveWindowPosCheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(snapConsoleCheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 169, Short.MAX_VALUE)
-                                    .addComponent(recompilerCheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                    .addComponent(compilerCheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                                 .addGap(18, 18, 18)
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                     .addComponent(disableGECheck)
@@ -340,7 +340,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(snapConsoleCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(recompilerCheck)
+                .addComponent(compilerCheck)
                 .addGap(18, 18, 18)
                 .addComponent(umdBrowser)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -796,7 +796,7 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
    Settings.getInstance().writeBool("gui.saveWindowPos", saveWindowPosCheck.isSelected());
    Settings.getInstance().writeBool("gui.openLogwindow", openLogwindowCheck.isSelected());
    Settings.getInstance().writeBool("gui.snapLogwindow", snapConsoleCheck.isSelected());
-   Settings.getInstance().writeBool("emu.recompiler", recompilerCheck.isSelected());
+   Settings.getInstance().writeBool("emu.compiler", compilerCheck.isSelected());
    Settings.getInstance().writeBool("emu.disablege", disableGECheck.isSelected());
    Settings.getInstance().writeBool("emu.disablevbo", disableVBOCheck.isSelected());
    if(umdBrowser.isSelected())
@@ -900,9 +900,9 @@ private void fieldAnalogLeftMouseClicked(java.awt.event.MouseEvent evt) {//GEN-F
     setKey(fieldAnalogLeft, keyCode.ANLEFT);
 }//GEN-LAST:event_fieldAnalogLeftMouseClicked
 
-private void recompilerCheckActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_recompilerCheckActionPerformed
+private void compilerCheckActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_compilerCheckActionPerformed
 // TODO add your handling code here:
-}//GEN-LAST:event_recompilerCheckActionPerformed
+}//GEN-LAST:event_compilerCheckActionPerformed
 
 private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
   FolderChooser folderChooser = new FolderChooser("select folder");
@@ -950,7 +950,7 @@ private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JCheckBox openLogwindowCheck;
     private javax.swing.JCheckBox pbpunpackcheck;
-    private javax.swing.JCheckBox recompilerCheck;
+    private javax.swing.JCheckBox compilerCheck;
     private javax.swing.JCheckBox saveWindowPosCheck;
     private javax.swing.JCheckBox snapConsoleCheck;
     private javax.swing.JRadioButton umdBrowser;

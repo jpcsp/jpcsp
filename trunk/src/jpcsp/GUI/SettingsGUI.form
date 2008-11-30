@@ -99,7 +99,7 @@
                                           <Component id="openLogwindowCheck" alignment="0" max="32767" attributes="1"/>
                                           <Component id="saveWindowPosCheck" alignment="0" max="32767" attributes="1"/>
                                           <Component id="snapConsoleCheck" alignment="0" pref="169" max="32767" attributes="1"/>
-                                          <Component id="recompilerCheck" alignment="0" max="32767" attributes="1"/>
+                                          <Component id="compilerCheck" alignment="0" max="32767" attributes="1"/>
                                       </Group>
                                       <EmptySpace type="separate" max="-2" attributes="0"/>
                                       <Group type="103" groupAlignment="0" attributes="0">
@@ -141,7 +141,7 @@
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="snapConsoleCheck" min="-2" max="-2" attributes="0"/>
                       <EmptySpace type="unrelated" max="-2" attributes="0"/>
-                      <Component id="recompilerCheck" min="-2" max="-2" attributes="0"/>
+                      <Component id="compilerCheck" min="-2" max="-2" attributes="0"/>
                       <EmptySpace type="separate" max="-2" attributes="0"/>
                       <Component id="umdBrowser" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
@@ -178,12 +178,12 @@
                 <Property name="text" type="java.lang.String" value="snap console to main window"/>
               </Properties>
             </Component>
-            <Component class="javax.swing.JCheckBox" name="recompilerCheck">
+            <Component class="javax.swing.JCheckBox" name="compilerCheck">
               <Properties>
-                <Property name="text" type="java.lang.String" value="use recompiler"/>
+                <Property name="text" type="java.lang.String" value="use compiler (dynarec)"/>
               </Properties>
               <Events>
-                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="recompilerCheckActionPerformed"/>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="compilerCheckActionPerformed"/>
               </Events>
             </Component>
             <Component class="javax.swing.JRadioButton" name="umdBrowser">
