@@ -234,8 +234,7 @@ public class pspiofilemgr {
         sceIoPollAsync(uid, res_addr);
 
         // wait = block, we currently load files immediately so emulate a yield instead
-        // TODO check callbacks
-        ThreadMan.getInstance().yieldCurrentThread();
+        ThreadMan.getInstance().yieldCurrentThreadCB();
     }
 
     public SeekableDataInput getFile(String filename, int flags) {
@@ -483,7 +482,8 @@ public class pspiofilemgr {
     }
 
     public void sceIoWrite(int uid, int data_addr, int size) {
-        //if (debug) Modules.log.debug("sceIoWrite - uid " + Integer.toHexString(uid) + " data " + Integer.toHexString(data_addr) + " size " + size);
+        // this log message has been moved, we hide it when writing to stdout/stderr
+        //if (debug) Modules.log.debug("sceIoWrite - uid " + Integer.toHexString(uid) + " data " + Integer.toHexString(data_addr) + " size 0x" + Integer.toHexString(size));
         data_addr &= 0x3fffffff; // remove kernel/cache bits
 
         if (uid == 1) { // stdout
@@ -495,7 +495,7 @@ public class pspiofilemgr {
             System.out.print(stderr);
             Emulator.getProcessor().cpu.gpr[2] = size;
         } else {
-            if (debug) Modules.log.debug("sceIoWrite - uid " + Integer.toHexString(uid) + " data " + Integer.toHexString(data_addr) + " size " + size);
+            if (debug) Modules.log.debug("sceIoWrite - uid " + Integer.toHexString(uid) + " data " + Integer.toHexString(data_addr) + " size 0x" + Integer.toHexString(size));
 
             try {
                 SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
@@ -505,7 +505,8 @@ public class pspiofilemgr {
                     Emulator.getProcessor().cpu.gpr[2] = -1;
                 } else if ((data_addr >= MemoryMap.START_RAM ) && (data_addr + size <= MemoryMap.END_RAM)) {
                     if ((info.flags & PSP_O_APPEND) == PSP_O_APPEND) {
-                        Modules.log.warn("sceIoWrite - untested append operation");
+                        // seems to work ok
+                        //Modules.log.warn("sceIoWrite - untested append operation");
                         info.msFile.seek(info.msFile.length());
                     }
 
@@ -534,7 +535,7 @@ public class pspiofilemgr {
     }
 
     public void sceIoRead(int uid, int data_addr, int size) {
-        if (debug) Modules.log.debug("sceIoRead - uid " + Integer.toHexString(uid) + " data " + Integer.toHexString(data_addr) + " size " + size);
+        if (debug) Modules.log.debug("sceIoRead - uid " + Integer.toHexString(uid) + " data 0x" + Integer.toHexString(data_addr) + " size 0x" + Integer.toHexString(size));
         data_addr &= 0x3fffffff; // remove kernel/cache bits
 
         if (uid == 3) { // stdin
@@ -649,7 +650,7 @@ public class pspiofilemgr {
                             info.readOnlyFile.seek(info.readOnlyFile.getFilePointer() + offset);
                             break;
                         case PSP_SEEK_END:
-                            info.readOnlyFile.seek(info.readOnlyFile.length() - offset);
+                            info.readOnlyFile.seek(info.readOnlyFile.length() + offset);
                             break;
                         default:
                             Modules.log.error("seek - unhandled whence " + whence);
@@ -838,11 +839,8 @@ public class pspiofilemgr {
 
         switch(cmd) {
             case 0x02015804:
-                Modules.log.warn("IGNORED: sceIoDevctl unhandled ms command " + String.format("0x%08X", cmd));
-                Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
-                break;
-
             case 0x02025801:
+            case 0x02025806:
                 Modules.log.warn("IGNORED: sceIoDevctl unhandled ms command " + String.format("0x%08X", cmd));
                 Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
                 break;

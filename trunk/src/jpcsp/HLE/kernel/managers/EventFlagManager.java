@@ -242,7 +242,7 @@ public class EventFlagManager {
                 currentThread.do_callbacks = do_callbacks;
 
                 // Wait on a specific event flag
-                ThreadMan.getInstance().hleKernalThreadWait(currentThread.wait, micros, (timeout_addr == 0));
+                ThreadMan.getInstance().hleKernelThreadWait(currentThread.wait, micros, (timeout_addr == 0));
 
                 currentThread.wait.waitingOnEventFlag = true;
                 currentThread.wait.EventFlag_id = uid;
@@ -256,8 +256,12 @@ public class EventFlagManager {
                 // Success
                 Modules.log.debug("hleKernelWaitEventFlag fast check succeeded");
                 Emulator.getProcessor().cpu.gpr[2] = 0;
-                // TODO yield anyway?
-                ThreadMan.getInstance().yieldCurrentThread();
+
+                // TODO yield anyway? probably yes, at least when do_callbacks is true
+                if (do_callbacks)
+                    ThreadMan.getInstance().yieldCurrentThreadCB();
+                else
+                    ThreadMan.getInstance().yieldCurrentThread();
             }
         }
     }
@@ -272,7 +276,6 @@ public class EventFlagManager {
     {
         Modules.log.debug("sceKernelWaitEventFlagCB redirecting to hleKernelWaitEventFlag(callbacks=true)");
         hleKernelWaitEventFlag(uid, bits, wait, outBits_addr, timeout_addr, true);
-        ThreadMan.getInstance().checkCallbacks();
     }
 
     public void sceKernelPollEventFlag(int uid, int bits, int wait, int outBits_addr)
