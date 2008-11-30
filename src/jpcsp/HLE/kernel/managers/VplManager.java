@@ -47,12 +47,12 @@ public class VplManager {
             + ",size=0x" + Integer.toHexString(size)
             + ",opt=0x" + Integer.toHexString(opt_addr) + ")");
 
+        if (attr != 0) Modules.log.warn("UNIMPLEMENTED:sceKernelCreateVpl attr value 0x" + Integer.toHexString(attr));
+
         if (mem.isAddressGood(opt_addr)) {
             int optsize = mem.read32(opt_addr);
-            if (optsize != 4) {
-                Modules.log.warn("sceKernelCreateVpl opt size mismatch"
-                    + " (got=" + optsize + ",expected=" + 4 + ")");
-            }
+            Modules.log.warn("UNIMPLEMENTED:sceKernelCreateVpl option at 0x" + Integer.toHexString(opt_addr)
+                + " (size=" + optsize + ")");
         }
 
         SceKernelVplInfo info = new SceKernelVplInfo(name, partitionid, attr, size);
