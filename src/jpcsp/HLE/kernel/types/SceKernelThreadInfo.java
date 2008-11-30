@@ -84,12 +84,11 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public final int uid;
     public CpuState cpuContext;
     public boolean do_delete;
-    public boolean do_callbacks; // in this implementation, only valid for PSP_THREAD_WAITING and PSP_THREAD_SUSPEND
+    public boolean do_callbacks;
 
     public final ThreadWaitInfo wait;
 
     // callbacks, only 1 of each type can be registered per thread
-    public SceKernelCallbackInfo currentCallbackInfo;
     public boolean umdCallbackRegistered;
     public boolean umdCallbackReady;
     public SceKernelCallbackInfo umdCallbackInfo;

@@ -62,7 +62,7 @@ public class ThreadMan {
 
     // TODO figure out a decent number of cycles to wait
     private static final int WDT_THREAD_IDLE_CYCLES = 1000000;
-    private static final int WDT_THREAD_HOG_CYCLES = 50000000;
+    private static final int WDT_THREAD_HOG_CYCLES = 70000000; // memset can take a while when you're using sb!
 
     private boolean insideCallback;
     private HashMap<Integer, SceKernelCallbackInfo> callbackMap;
@@ -226,6 +226,9 @@ public class ThreadMan {
             // Hook jr ra to 0 (thread function returned)
             if (cpu.pc == 0 && cpu.gpr[31] == 0) {
                 if (insideCallback) {
+                    // Callback has exited
+                    Modules.log.debug("Callback exit detected");
+
                     // Not sure which of these two to use
                     //Emulator.getProcessor().cpu = current_thread.cpuContext;
                     current_thread.restoreContext(); // also sets pc = npc
@@ -263,35 +266,34 @@ public class ThreadMan {
         }
 
         if (!waitingThreads.isEmpty()) {
-        	long microTimeNow = Emulator.getClock().microTime();
-	        // Access waitingThreads using array indexing because
-	        // this is more efficient than iterator access for short lists
-	        for (int i = 0; i < waitingThreads.size(); i++) {
-	            SceKernelThreadInfo thread = waitingThreads.get(i);
-	            if (!thread.wait.forever && microTimeNow >= thread.wait.microTimeTimeout) {
-	                onWaitTimeout(thread);
-	                changeThreadState(thread, PSP_THREAD_READY);
-	            }
-	        }
+            long microTimeNow = Emulator.getClock().microTime();
+            // Access waitingThreads using array indexing because
+            // this is more efficient than iterator access for short lists
+            for (int i = 0; i < waitingThreads.size(); i++) {
+                SceKernelThreadInfo thread = waitingThreads.get(i);
+                if (!thread.wait.forever && microTimeNow >= thread.wait.microTimeTimeout) {
+                    onWaitTimeout(thread);
+                    changeThreadState(thread, PSP_THREAD_READY);
+                }
+            }
         }
 
         // Cleanup stopped threads (deferred deletion)
         for (int i = 0; i < toBeDeletedThreads.size(); i++) {
             SceKernelThreadInfo thread = toBeDeletedThreads.get(i);
+            // this check shouldn't be necessary anymore, can be inferred by the thread existing in the toBeDeletedThreads list
             if (thread.do_delete) {
-                // cleanup thread - free the stack
-                if (thread.stack_addr != 0) {
-                    pspSysMem.getInstance().free(thread.stack_addr);
-                }
                 deleteThread(thread);
+            } else {
+                Modules.log.warn("thread:'" + thread.name + "' in toBeDeletedThreads list with do_delete = false");
             }
         }
 
-        /* this isn't really necessary if we only handle the umd callback
+        /* this isn't really necessary if we only handle the umd callback.
+         * the other way is when we implement exit and power callback -
+         * bound to some key press or ui button - we manually call checkCallbacks().
         // Try and process callbacks
-        if (!insideCallback &&
-            // TODO have a waitingThreadsCB list since not all waiting threads will have do_callbacks set
-            waitingThreads.size() != 0) {
+        if (!insideCallback) {
             checkCallbacks();
         }
         */
@@ -413,6 +415,14 @@ public class ThreadMan {
         contextSwitch(nextThread());
     }
 
+    /* The same as yieldCurrentThread, except combined with sceKernelCheckCallback */
+    public void yieldCurrentThreadCB()
+    {
+        current_thread.do_callbacks = true;
+        contextSwitch(nextThread());
+        checkCallbacks();
+    }
+
     public void blockCurrentThread()
     {
         changeThreadState(current_thread, PSP_THREAD_SUSPEND);
@@ -465,6 +475,11 @@ public class ThreadMan {
     }
 
     private void deleteThread(SceKernelThreadInfo thread) {
+        // cleanup thread - free the stack
+        if (thread.stack_addr != 0) {
+            pspSysMem.getInstance().free(thread.stack_addr);
+        }
+
         waitingThreads.remove(thread);
         toBeDeletedThreads.remove(thread);
         threadMap.remove(thread.uid);
@@ -741,32 +756,134 @@ public class ThreadMan {
         contextSwitch(nextThread());
     }
 
-    /** suspend the current thread and handle callbacks */
-    public void ThreadMan_sceKernelSleepThreadCB() {
-        Modules.log.debug("sceKernelSleepThreadCB SceUID=" + Integer.toHexString(current_thread.uid) + " name:'" + current_thread.name + "'");
+    private void hleKernelSleepThread(boolean do_callbacks) {
+        // Go to wait state, callbacks
+        current_thread.do_callbacks = do_callbacks;
 
-        changeThreadState(current_thread, PSP_THREAD_SUSPEND);
-        current_thread.do_callbacks = true;
+        // Wait forever (another thread will call sceKernelWakeupThread)
+        hleKernelThreadWait(current_thread.wait, 0, true);
+
+        changeThreadState(current_thread, PSP_THREAD_WAITING);
+
         Emulator.getProcessor().cpu.gpr[2] = 0;
-
         contextSwitch(nextThread());
-        checkCallbacks();
     }
 
-    /** suspend the current thread */
+    /** sleep the current thread (using wait) */
     public void ThreadMan_sceKernelSleepThread() {
         Modules.log.debug("sceKernelSleepThread SceUID=" + Integer.toHexString(current_thread.uid) + " name:'" + current_thread.name + "'");
 
-        changeThreadState(current_thread, PSP_THREAD_SUSPEND);
-        current_thread.do_callbacks = false;
-        Emulator.getProcessor().cpu.gpr[2] = 0;
-
-        contextSwitch(nextThread());
+        hleKernelSleepThread(false);
     }
 
-    public void hleKernalThreadWait(ThreadWaitInfo wait, int micros, boolean forever) {
-    	wait.forever = forever;
-    	wait.microTimeTimeout = Emulator.getClock().microTime() + micros;
+    /** sleep the current thread and handle callbacks (using wait)
+     * in our implementation we have to use wait, not suspend otherwise we don't handle callbacks. */
+    public void ThreadMan_sceKernelSleepThreadCB() {
+        Modules.log.debug("sceKernelSleepThreadCB SceUID=" + Integer.toHexString(current_thread.uid) + " name:'" + current_thread.name + "'");
+
+        hleKernelSleepThread(true);
+        checkCallbacks();
+    }
+
+    public void ThreadMan_sceKernelWakeupThread(int uid) {
+        SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
+        SceKernelThreadInfo thread = threadMap.get(uid);
+        if (thread == null) {
+            Modules.log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " unknown thread");
+            Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
+        } else if (thread.status != PSP_THREAD_WAITING) {
+            Modules.log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " not sleeping/waiting (status=" + thread.status + ")");
+            Emulator.getProcessor().cpu.gpr[2] = ERROR_THREAD_IS_NOT_WAIT;
+        } else if (isBannedThread(thread)) {
+            Modules.log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "' banned, not waking up");
+            Emulator.getProcessor().cpu.gpr[2] = 0;
+        } else {
+            Modules.log.debug("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "'");
+            changeThreadState(thread, PSP_THREAD_READY);
+            Emulator.getProcessor().cpu.gpr[2] = 0;
+        }
+    }
+
+    public void ThreadMan_sceKernelSuspendThread(int uid) {
+        SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
+        SceKernelThreadInfo thread = threadMap.get(uid);
+        if (thread == null) {
+            Modules.log.warn("sceKernelSuspendThread SceUID=" + Integer.toHexString(uid) + " unknown thread");
+            Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
+        } else {
+            Modules.log.debug("sceKernelSuspendThread SceUID=" + Integer.toHexString(uid));
+            changeThreadState(thread, PSP_THREAD_SUSPEND);
+            Emulator.getProcessor().cpu.gpr[2] = 0;
+        }
+    }
+
+    public void ThreadMan_sceKernelResumeThread(int uid) {
+        SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
+        SceKernelThreadInfo thread = threadMap.get(uid);
+        if (thread == null) {
+            Modules.log.warn("sceKernelResumeThread SceUID=" + Integer.toHexString(uid) + " unknown thread");
+            Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
+        } else if (thread.status != PSP_THREAD_SUSPEND) {
+            Modules.log.warn("sceKernelResumeThread SceUID=" + Integer.toHexString(uid) + " not suspended (status=" + thread.status + ")");
+            Emulator.getProcessor().cpu.gpr[2] = ERROR_THREAD_IS_NOT_SUSPEND;
+        } else if (isBannedThread(thread)) {
+            Modules.log.warn("sceKernelResumeThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "' banned, not resuming");
+            Emulator.getProcessor().cpu.gpr[2] = 0;
+        } else {
+            Modules.log.debug("sceKernelResumeThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "'");
+            changeThreadState(thread, PSP_THREAD_READY);
+            Emulator.getProcessor().cpu.gpr[2] = 0;
+        }
+    }
+
+    private void hleKernelWaitThreadEnd(int uid, int micros, boolean callbacks) {
+        Modules.log.debug("hleKernelWaitThreadEnd SceUID=" + Integer.toHexString(uid)
+            + " timeout=" + micros
+            + " callbacks=" + callbacks);
+
+        SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
+        SceKernelThreadInfo thread = threadMap.get(uid);
+        if (thread == null) {
+            Modules.log.warn("hleKernelWaitThreadEnd unknown thread 0x" + Integer.toHexString(uid));
+            Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
+        } else if (isBannedThread(thread)) {
+            Modules.log.warn("hleKernelWaitThreadEnd SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "' banned, not waiting");
+            Emulator.getProcessor().cpu.gpr[2] = 0;
+            contextSwitch(nextThread()); // yield
+        } else if (thread.status == PSP_THREAD_STOPPED) {
+            Modules.log.debug("hleKernelWaitThreadEnd SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "' thread already stopped, not waiting");
+            Emulator.getProcessor().cpu.gpr[2] = 0;
+            contextSwitch(nextThread()); // yield
+        } else {
+            // Go to wait state
+            current_thread.do_callbacks = callbacks;
+
+            // Wait on a specific thread end
+            hleKernelThreadWait(current_thread.wait, micros, (micros == 0)); // TODO check forever
+
+            current_thread.wait.waitingOnThreadEnd = true;
+            current_thread.wait.ThreadEnd_id = uid;
+
+            changeThreadState(current_thread, PSP_THREAD_WAITING);
+
+            contextSwitch(nextThread());
+        }
+    }
+
+    public void ThreadMan_sceKernelWaitThreadEnd(int uid, int micros) {
+        Modules.log.debug("sceKernelWaitThreadEnd redirecting to hleKernelWaitThreadEnd(callbacks=false)");
+        hleKernelWaitThreadEnd(uid, micros, false);
+    }
+
+    public void ThreadMan_sceKernelWaitThreadEndCB(int uid, int micros) {
+        Modules.log.debug("sceKernelWaitThreadEndCB redirecting to hleKernelWaitThreadEnd(callbacks=true)");
+        hleKernelWaitThreadEnd(uid, micros, true);
+        checkCallbacks();
+    }
+
+    public void hleKernelThreadWait(ThreadWaitInfo wait, int micros, boolean forever) {
+        wait.forever = forever;
+        wait.microTimeTimeout = Emulator.getClock().microTime() + micros;
     }
 
     private void hleKernelDelayThread(int micros, boolean do_callbacks) {
@@ -774,7 +891,7 @@ public class ThreadMan {
         current_thread.do_callbacks = do_callbacks;
 
         // Wait on a timeout only
-        hleKernalThreadWait(current_thread.wait, micros, false);
+        hleKernelThreadWait(current_thread.wait, micros, false);
 
         changeThreadState(current_thread, PSP_THREAD_WAITING);
 
@@ -983,70 +1100,6 @@ public class ThreadMan {
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
-    public void ThreadMan_sceKernelWakeupThread(int uid) {
-        SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
-        SceKernelThreadInfo thread = threadMap.get(uid);
-        if (thread == null) {
-            Modules.log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " unknown thread");
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
-        } else if (thread.status != PSP_THREAD_SUSPEND) {
-            Modules.log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " not suspended (status=" + thread.status + ")");
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_THREAD_IS_NOT_SUSPEND;
-        } else if (isBannedThread(thread)) {
-            Modules.log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "' banned, not waking up");
-            Emulator.getProcessor().cpu.gpr[2] = 0;
-        } else {
-            Modules.log.debug("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "'");
-            changeThreadState(thread, PSP_THREAD_READY);
-            Emulator.getProcessor().cpu.gpr[2] = 0;
-        }
-    }
-
-    private void hleKernelWaitThreadEnd(int uid, int micros, boolean callbacks) {
-        Modules.log.debug("hleKernelWaitThreadEnd SceUID=" + Integer.toHexString(uid)
-            + " timeout=" + micros
-            + " callbacks=" + callbacks);
-
-        SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
-        SceKernelThreadInfo thread = threadMap.get(uid);
-        if (thread == null) {
-            Modules.log.warn("hleKernelWaitThreadEnd unknown thread 0x" + Integer.toHexString(uid));
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
-        } else if (isBannedThread(thread)) {
-            Modules.log.warn("hleKernelWaitThreadEnd SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "' banned, not waiting");
-            Emulator.getProcessor().cpu.gpr[2] = 0;
-            contextSwitch(nextThread()); // yield
-        } else if (thread.status == PSP_THREAD_STOPPED) {
-            Modules.log.debug("hleKernelWaitThreadEnd SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "' thread already stopped, not waiting");
-            Emulator.getProcessor().cpu.gpr[2] = 0;
-            contextSwitch(nextThread()); // yield
-        } else {
-            // Go to wait state
-            current_thread.do_callbacks = callbacks;
-
-            // Wait on a specific thread end
-            hleKernalThreadWait(current_thread.wait, micros, (micros == 0)); // TODO check forever
-
-            current_thread.wait.waitingOnThreadEnd = true;
-            current_thread.wait.ThreadEnd_id = uid;
-
-            changeThreadState(current_thread, PSP_THREAD_WAITING);
-
-            contextSwitch(nextThread());
-        }
-    }
-
-    public void ThreadMan_sceKernelWaitThreadEnd(int uid, int micros) {
-        Modules.log.debug("sceKernelWaitThreadEnd redirecting to hleKernelWaitThreadEnd(callbacks=false)");
-        hleKernelWaitThreadEnd(uid, micros, false);
-    }
-
-    public void ThreadMan_sceKernelWaitThreadEndCB(int uid, int micros) {
-        Modules.log.debug("sceKernelWaitThreadEndCB redirecting to hleKernelWaitThreadEnd(callbacks=true)");
-        hleKernelWaitThreadEnd(uid, micros, true);
-        checkCallbacks();
-    }
-
 
     public void setUMDCallback(int cbid) {
         SceKernelCallbackInfo callback = callbackMap.get(cbid);
@@ -1083,7 +1136,7 @@ public class ThreadMan {
                             + "' already has callback pending (oldArg=0x" + Integer.toHexString(thread.umdCallbackInfo.notifyArg)
                             + ",newArg=0x" + Integer.toHexString(event) + ")");
                     }
-                    
+
                     thread.umdCallbackReady = true;
                     thread.umdCallbackInfo.notifyArg = event;
                 }
@@ -1091,6 +1144,7 @@ public class ThreadMan {
         }
 
         if (!insideCallback) {
+            //Modules.log.debug("pushUMDCallback calling checkCallbacks");
             checkCallbacks();
         } else {
             Modules.log.error("pushUMDCallback called while inside another callback!");
@@ -1129,39 +1183,57 @@ public class ThreadMan {
      * Iterates waiting threads, making sure do_callbacks is set before
      * checking for pending callbacks.
      * Handles sceKernelCheckCallback when do_callbacks is set on current_thread.
-     * 
-     * TODO we either need to call checkCallbacks() at the end of each xxxCB
-     * function, or add a check in step().
+     * Handles redirects to yieldCB (from fake waitCB) on the thread that called waitCB.
      *
-     * Also I think we can only call checkCallbacks() after calling
-     * contextSwitch(), otherwise stuff will mess up (you cannot safely context
-     * switch while inside a callback). So this seems like we can't move
-     * checkCallbacks() into changeState().
+     * We currently call checkCallbacks() at the end of each waitCB function
+     * since this has less overhead than checking on every step.
+     *
+     * Some trickery is used in yieldCurrentThreadCB(). By the time we get
+     * inside the checkCallbacks() function the thread that called yieldCB is
+     * no longer the current thread. Also the thread thread that called yieldCB
+     * is not in the wait state (it's in the ready state). so what we do is
+     * check every thread, not just the waiting threads for the do_callbacks flag.
+     * Also the waitingThreads list only contains waiting threads that have a
+     * finite wait period, so we have to iterate on all threads anyway.
+     *
+     * It is probably unsafe to call contextSwitch() when insideCallback is true.
+     * insideCallback may become true after a call to checkCallbacks().
      */
     public void checkCallbacks() {
         insideCallback = false;
 
         //Modules.log.debug("checkCallbacks current thread is '" + current_thread.name + "' do_callbacks:" + current_thread.do_callbacks);
 
-        // if sceKernelCheckCallback was called we set do_callbacks on the current thread
-        // first process callbacks registered to the current thread
-        if (!current_thread.do_callbacks || !checkThreadCallbacks(current_thread)) {
-            // then process callbacks on waiting threads
-            for (Iterator<SceKernelThreadInfo> it = waitingThreads.iterator(); it.hasNext(); ) {
-                SceKernelThreadInfo thread = it.next();
-                //Modules.log.debug("checkCallbacks: candidate thread:'" + thread.name + "' do_callbacks:" + thread.do_callbacks);
+        for (Iterator<SceKernelThreadInfo> it = threadMap.values().iterator(); it.hasNext(); ) {
+            SceKernelThreadInfo thread = it.next();
+            // To work with our fake wait CB's (yieldCB()) we also need to check non-waiting threads.
+            // because of this we are able to merge the separate check on current_thread into this loop (handle sceKernelCheckCallback).
+            // Now we really need to make sure do_callbacks is consistent!
+            //if (thread.status == PSP_THREAD_WAITING) {
+                //Modules.log.debug("checkCallbacks: candidate thread:'" + thread.name
+                //    + "' state:0x" + Integer.toHexString(thread.status)
+                //    + " do_callbacks:" + thread.do_callbacks);
+
                 if (thread.do_callbacks && checkThreadCallbacks(thread)) {
                     // callback was started
                     break;
                 }
-            }
+            //}
         }
 
         if (!insideCallback) {
             //Modules.log.debug("checkCallbacks: no suitable thread/callback combinations remaining");
 
-            // incase we came from sceKernelCheckCallback
-            current_thread.do_callbacks = false;
+            // try and keep do_callbacks in a consistent state
+            // usually when we come from sceKernelCheckCallback or yieldCurrentThreadCB
+            for (Iterator<SceKernelThreadInfo> it = threadMap.values().iterator(); it.hasNext(); ) {
+                SceKernelThreadInfo thread = it.next();
+                if (thread.status != PSP_THREAD_WAITING && thread.do_callbacks) {
+                    //Modules.log.debug("checkCallbacks: removing do_callbacks from non-waiting thread:'" + thread.name + "'");
+
+                    thread.do_callbacks = false;
+                }
+            }
         }
     }
 
@@ -1295,7 +1367,7 @@ public class ThreadMan {
                 current_thread.do_callbacks = do_callbacks;
 
                 // Wait on a specific semaphore
-                hleKernalThreadWait(current_thread.wait, micros, (timeout_addr == 0));
+                hleKernelThreadWait(current_thread.wait, micros, (timeout_addr == 0));
 
                 current_thread.wait.waitingOnSemaphore = true;
                 current_thread.wait.Semaphore_id = semaid;
