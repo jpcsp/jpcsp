@@ -814,6 +814,7 @@ public class Loader {
                     Emulator.log.warn(String.format("Ignoring import at 0x%08X [0x%08X] (attempt %d)",
                         importAddress, nid, module.importFixupAttempts));
 
+                    it.remove();
                     mem.write32(importAddress + 4, 0); // write a nop over our "unmapped import detection special syscall"
                 }
 

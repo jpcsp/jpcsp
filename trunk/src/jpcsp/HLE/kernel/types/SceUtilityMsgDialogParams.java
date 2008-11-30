@@ -99,7 +99,7 @@ public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure 
             sb.append("options PSP_UTILITY_MSGDIALOG_OPTION_YESNO_BUTTONS\n");
         if ((options & PSP_UTILITY_MSGDIALOG_OPTION_DEFAULT_NO) == PSP_UTILITY_MSGDIALOG_OPTION_DEFAULT_NO)
             sb.append("options PSP_UTILITY_MSGDIALOG_OPTION_DEFAULT_NO\n");
-        sb.append("buttonPressed " + String.format("0x%08X", buttonPressed) + "\n");
+        sb.append("buttonPressed " + String.format("0x%08X", buttonPressed));
 
         return sb.toString();
     }
