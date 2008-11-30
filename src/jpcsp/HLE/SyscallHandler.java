@@ -74,11 +74,17 @@ public class SyscallHandler {
                     ThreadMan.getInstance().ThreadMan_sceKernelWakeupThread(gpr[4]);
                     break;
 		//case 0x2017: ///sceKernelCancelWakeupThread
-		//case 0x2018: //sceKernelSuspendThread
-		//case 0x2019: //sceKernelResumeThread
+                case 0x2018:
+                    ThreadMan.getInstance().ThreadMan_sceKernelSuspendThread(gpr[4]);
+                    break;
+                case 0x2019:
+                    ThreadMan.getInstance().ThreadMan_sceKernelResumeThread(gpr[4]);
+                    break;
                 case 0x201a:
                     ThreadMan.getInstance().ThreadMan_sceKernelWaitThreadEnd(gpr[4], gpr[5]);
                     break;
+// disabled while waiting for mpeg to be better implemented
+// http://code.google.com/p/jpcsp/issues/detail?id=13
 //                case 0x201b:
 //                    ThreadMan.getInstance().ThreadMan_sceKernelWaitThreadEndCB(gpr[4], gpr[5]);
 //                    break;
@@ -891,6 +897,10 @@ public class SyscallHandler {
                         // At least set a decent return value
                         cpu.gpr[2] = 0;
                         //Emulator.getProcessor().gpr[2] = 0xb515ca11;
+
+                        // HACK: __sceSasGetEndFlag [68A46B95] tell the game all channels finished playing
+                        //if (code == 0x22e5)
+                        //    cpu.gpr[2] = 0xFF;
 
                         // Display debug info
                         String params = String.format("%08x %08x %08x", cpu.gpr[4],
