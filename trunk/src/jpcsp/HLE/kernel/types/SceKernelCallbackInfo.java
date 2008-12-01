@@ -21,7 +21,6 @@ import jpcsp.Memory;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 
-import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 
 public class SceKernelCallbackInfo {
@@ -72,8 +71,9 @@ public class SceKernelCallbackInfo {
     /** Call this to switch in the callback.
      * Sets up a copy of the parent thread's context for the callback to run in.
      * @param cpu Should be the cpuContext from the thread this callback belongs to.
+     * @param thread the thread this callback belongs to.
      */
-    public void startContext(CpuState parentContext) {
+    public void startContext(CpuState parentContext, SceKernelThreadInfo thread) {
         CpuState cpu = new CpuState(parentContext);
 
         cpu.pc = cpu.npc = callback_addr;
@@ -84,6 +84,6 @@ public class SceKernelCallbackInfo {
 
         Emulator.getProcessor().cpu = cpu;
 
-        RuntimeContext.executeCallback();
+        RuntimeContext.executeCallback(thread);
     }
 }

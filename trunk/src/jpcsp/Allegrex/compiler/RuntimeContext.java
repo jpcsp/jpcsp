@@ -142,15 +142,31 @@ public class RuntimeContext {
     }
 
     // TODO executeCallBack() has not yet been tested. Which application is using callbacks?
-    public static void executeCallback() {
+    public static void executeCallback(SceKernelThreadInfo thread) {
     	if (!isActive) {
     		return;
     	}
 
-    	update();
+    	SceKernelThreadInfo previousThread = currentThread;
 
-    	IExecutable executable = getExecutable(processor.cpu.pc);
-		executable.exec(0, false);
+    	update();
+    	switchThread(thread);
+
+    	int pc = processor.cpu.pc;
+
+		if (log.isDebugEnabled()) {
+			log.debug("Start of Callback 0x" + Integer.toHexString(pc));
+		}
+
+    	IExecutable executable = getExecutable(pc);
+    	processor.cpu.pc = executable.exec(0, false);
+
+		if (log.isDebugEnabled()) {
+			log.debug("End of Callback 0x" + Integer.toHexString(pc));
+		}
+
+		switchThread(previousThread);
+		syncThread();
     }
 
     public static void update() {
@@ -171,14 +187,21 @@ public class RuntimeContext {
 
     private static void switchThread(SceKernelThreadInfo threadInfo) {
     	if (log.isDebugEnabled()) {
-    		if (currentThread == null) {
-        		log.debug("Switching to Thread " + threadInfo.name);
+    		String name;
+    		if (threadInfo == null) {
+    			name = "Idle";
     		} else {
-        		log.debug("Switching from Thread " + currentThread.name + " to " + threadInfo.name);
+    			name = threadInfo.name;
+    		}
+
+    		if (currentThread == null) {
+        		log.debug("Switching to Thread " + name);
+    		} else {
+        		log.debug("Switching from Thread " + currentThread.name + " to " + name);
     		}
     	}
 
-    	if (ThreadMan.getInstance().isIdleThread(threadInfo)) {
+    	if (threadInfo == null || ThreadMan.getInstance().isIdleThread(threadInfo)) {
     	    isIdle = true;
     	    currentThread = null;
     	    currentRuntimeThread = null;

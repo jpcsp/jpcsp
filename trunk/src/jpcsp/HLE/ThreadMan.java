@@ -1169,7 +1169,7 @@ public class ThreadMan {
             insideCallback = true;
             thread.umdCallbackReady = false;
             // Set the callback to run with the thread context it was registered from
-            thread.umdCallbackInfo.startContext(thread.cpuContext);
+            thread.umdCallbackInfo.startContext(thread.cpuContext, thread);
             thread.umdCallbackInfo.notifyCount++;
             handled = true;
         }
