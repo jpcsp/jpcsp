@@ -277,13 +277,23 @@ public class StandardMemory extends Memory {
         ByteBuffer destination = getBuffer(address, length);
         destination.put(data);
 	}
-    @Override
-	public void copyToMemoryFromOffset(int address, ByteBuffer source,int offset, int length)
-    {
-        byte[] data = new byte[length];
-        source.position(offset);
-        source.get(data);
-        ByteBuffer destination = getBuffer(address, length);
-        destination.put(data);
+
+	@Override
+	public void memcpy(int destination, int source, int length) {
+		destination = normalizeAddress(destination);
+		source = normalizeAddress(source);
+
+		ByteBuffer destinationBuffer = getBuffer(destination, length);
+		ByteBuffer sourceBuffer = getBuffer(source, length);
+
+		if (!areOverlapping(destination, source, length)) {
+			// Direct copy if buffers do not overlap
+			destinationBuffer.put(sourceBuffer);
+		} else {
+			// Buffers are overlapping, copy first to a temporary array
+			byte[] data = new byte[length];
+			sourceBuffer.get(data);
+			destinationBuffer.put(data);
+		}
 	}
 }

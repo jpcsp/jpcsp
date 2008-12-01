@@ -29,6 +29,7 @@ public abstract class Memory {
     public static Logger log = Logger.getLogger("memory");
     private static Memory instance = null;
     public static boolean useSafeMemory = true;
+	protected final int addressMask = 0x3FFFFFFF;
 
     public static Memory getInstance() {
         if (instance == null) {
@@ -161,7 +162,19 @@ public abstract class Memory {
     public abstract Buffer getMainMemoryByteBuffer();
     public abstract Buffer getBuffer(int address, int length);
     public abstract void copyToMemory(int address, ByteBuffer source, int length);
-    public abstract void copyToMemoryFromOffset(int address, ByteBuffer source,int offset, int length);
+    public abstract void memcpy(int destination, int source, int length);
+
+    protected int normalizeAddress(int address) {
+    	return address & addressMask;
+    }
+
+    protected boolean areOverlapping(int destination, int source, int length) {
+    	if (source + length <= destination || destination + length <= source) {
+    		return false;
+    	}
+
+    	return true;
+    }
 
     public void load(ByteBuffer buffer) {
     }

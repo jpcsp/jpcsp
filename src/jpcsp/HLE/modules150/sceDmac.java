@@ -15,13 +15,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.HLE.modules150;
 
-
-import java.nio.Buffer;
-import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
@@ -30,7 +26,6 @@ import jpcsp.Memory;
 import jpcsp.Processor;
 
 import jpcsp.Allegrex.CpuState; // New-Style Processor
-import jpcsp.MemoryMap;
 
 public class sceDmac implements HLEModule {
 	@Override
@@ -58,28 +53,15 @@ public class sceDmac implements HLEModule {
 	
 	
 	public void sceDmacMemcpy(Processor processor) {
-                CpuState cpu = processor.cpu;
-                Memory mem = Processor.memory;
-		
+        CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
 
-		//System.out.println("Unimplemented NID function sceDmacMemcpy [0x617F3FE6]");
-                //mem.copyToMemory(address, source, length);
-		//cpu.gpr[2] = 0xDEADC0DE;
-                int dest =cpu.gpr[4]; 
-                int source=cpu.gpr[5];
-                int size=cpu.gpr[6];
-                System.out.println("sceDmacMemcpy dest =0x" + Integer.toHexString(dest) + " source =0x" + Integer.toHexString(source) + " size= " + Integer.toHexString(size));
-                Buffer buffer = mem.getMainMemoryByteBuffer();
-                if (buffer instanceof ByteBuffer) {
-                mem.copyToMemoryFromOffset(dest, (ByteBuffer)buffer, source-MemoryMap.START_RAM, size);
-                }
-                else
-                {
-                  System.out.println("sceDmacMemcpy not supported in Fast Memory!");
-                }
-                cpu.gpr[2]=0;
-
-
+        int dest   = cpu.gpr[4];
+        int source = cpu.gpr[5];
+        int size   = cpu.gpr[6];
+        Modules.log.debug("sceDmacMemcpy dest=0x" + Integer.toHexString(dest) + ", source=0x" + Integer.toHexString(source) + ", size=0x" + Integer.toHexString(size));
+        mem.memcpy(dest, source, size);
+        cpu.gpr[2] = 0;
 	}
     
 	public void sceDmacTryMemcpy(Processor processor) {
