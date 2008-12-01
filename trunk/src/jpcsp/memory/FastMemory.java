@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory;
 
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.Arrays;
@@ -44,7 +43,6 @@ public class FastMemory extends Memory {
 	// Use SafeFastMemory for complete address checks.
 	//
 	private int[] all;
-	private final int addressMask = 0x3FFFFFFF;
 
 	@Override
 	public boolean allocate() {
@@ -202,7 +200,7 @@ public class FastMemory extends Memory {
 	}
 
 	@Override
-	public Buffer getBuffer(int address, int length) {
+	public IntBuffer getBuffer(int address, int length) {
 		IntBuffer buffer = getMainMemoryByteBuffer();
 		buffer.position(address / 4);
 		buffer.limit((address + length) / 4);
@@ -210,9 +208,13 @@ public class FastMemory extends Memory {
 		return buffer.slice();
 	}
 
+	private boolean isIntAligned(int n) {
+		return (n & 0x03) == 0;
+	}
+
 	@Override
 	public void memset(int address, byte data, int length) {
-		for (; (address & 0x03) != 0 && length > 0; address++, length--) {
+		for (; !isIntAligned(address) && length > 0; address++, length--) {
 			write8(address, data);
 		}
 
@@ -233,7 +235,7 @@ public class FastMemory extends Memory {
 	@Override
 	public void copyToMemory(int address, ByteBuffer source, int length) {
 		// copy in 1 byte steps until address is "int"-aligned
-		while ((address & 0x03) != 0 && length > 0 && source.hasRemaining()) {
+		while (!isIntAligned(address) && length > 0 && source.hasRemaining()) {
 			byte b = source.get();
 			write8(address, b);
 			address++;
@@ -260,13 +262,52 @@ public class FastMemory extends Memory {
 			length--;
 		}
 	}
-    @Override
-    public void copyToMemoryFromOffset(int address, ByteBuffer source,int offset, int length)
-    {
-       //TODO!!!!
-    }
 
 	public int[] getAll() {
 	    return all;
+	}
+
+	@Override
+	public void memcpy(int destination, int source, int length) {
+		destination = normalizeAddress(destination);
+		source = normalizeAddress(source);
+
+		if (isIntAligned(source) && isIntAligned(destination) && isIntAligned(length)) {
+			// Source, destination and length are "int"-aligned
+			IntBuffer sourceBuffer = getBuffer(source, length);
+			IntBuffer destinationBuffer = getBuffer(destination, length);
+
+			if (!areOverlapping(destination, source, length)) {
+				// Direct copy if buffers do not overlap
+				destinationBuffer.put(sourceBuffer);
+			} else {
+				// Buffers are overlapping, copy first to a temporary array
+				int[] data = new int[length / 4];
+				sourceBuffer.get(data);
+				destinationBuffer.put(data);
+			}
+		} else {
+			//
+			// Buffers are not "int"-aligned, copy in 1 byte steps.
+			// Overlapping address ranges must be correctly handled:
+			//   If source >= destination:
+			//                 [---source---]
+			//       [---destination---]
+			//      => Copy from the head
+			//   If source < destination:
+			//       [---source---]
+			//                 [---destination---]
+			//      => Copy from the tail
+			//
+			if (source >= destination || !areOverlapping(destination, source, length)) {
+				for (int i = 0; i < length; i++) {
+					write8(destination + i, (byte) read8(source + i));
+				}
+			} else {
+				for (int i = length - 1; i >= 0; i--) {
+					write8(destination + i, (byte) read8(source + i));
+				}
+			}
+		}
 	}
 }
