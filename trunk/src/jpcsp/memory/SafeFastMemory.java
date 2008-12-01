@@ -133,6 +133,15 @@ public class SafeFastMemory extends FastMemory {
 
 		super.copyToMemory(address, source, length);
 	}
+    @Override
+    public void copyToMemoryFromOffset(int address, ByteBuffer source,int offset, int length)
+    {
+        if (!isAddressGood(address, length)) {
+			invalidMemoryAddress(address, "copyToMemoryFromOffset", Emulator.EMU_STATUS_MEM_WRITE);
+			return;
+		}
+        super.copyToMemoryFromOffset(address, source, offset, length);
+    }
 
 	@Override
 	public Buffer getBuffer(int address, int length) {

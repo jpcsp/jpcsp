@@ -76,6 +76,7 @@ public class HLEModuleManager {
         Modules.sceAudioModule,
         Modules.sceImposeModule,
         Modules.sceSuspendForUserModule,
+        Modules.sceDmacModule,
     };
 
     public static HLEModuleManager getInstance() {

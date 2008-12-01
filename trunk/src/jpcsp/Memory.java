@@ -161,6 +161,7 @@ public abstract class Memory {
     public abstract Buffer getMainMemoryByteBuffer();
     public abstract Buffer getBuffer(int address, int length);
     public abstract void copyToMemory(int address, ByteBuffer source, int length);
+    public abstract void copyToMemoryFromOffset(int address, ByteBuffer source,int offset, int length);
 
     public void load(ByteBuffer buffer) {
     }

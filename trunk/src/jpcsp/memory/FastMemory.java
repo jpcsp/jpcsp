@@ -260,6 +260,11 @@ public class FastMemory extends Memory {
 			length--;
 		}
 	}
+    @Override
+    public void copyToMemoryFromOffset(int address, ByteBuffer source,int offset, int length)
+    {
+       //TODO!!!!
+    }
 
 	public int[] getAll() {
 	    return all;
