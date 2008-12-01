@@ -16,8 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.memory;
 
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 
 import jpcsp.Emulator;
 
@@ -133,23 +133,28 @@ public class SafeFastMemory extends FastMemory {
 
 		super.copyToMemory(address, source, length);
 	}
-    @Override
-    public void copyToMemoryFromOffset(int address, ByteBuffer source,int offset, int length)
-    {
-        if (!isAddressGood(address, length)) {
-			invalidMemoryAddress(address, "copyToMemoryFromOffset", Emulator.EMU_STATUS_MEM_WRITE);
-			return;
-		}
-        super.copyToMemoryFromOffset(address, source, offset, length);
-    }
 
 	@Override
-	public Buffer getBuffer(int address, int length) {
+	public IntBuffer getBuffer(int address, int length) {
 		if (!isAddressGood(address, length)) {
 			invalidMemoryAddress(address, "getBuffer", Emulator.EMU_STATUS_MEM_READ);
 			return null;
 		}
 
 		return super.getBuffer(address, length);
+	}
+
+	@Override
+	public void memcpy(int destination, int source, int length) {
+		if (!isAddressGood(destination, length)) {
+			invalidMemoryAddress(destination, "memcpy", Emulator.EMU_STATUS_MEM_WRITE);
+			return;
+		}
+		if (!isAddressGood(source, length)) {
+			invalidMemoryAddress(source, "memcpy", Emulator.EMU_STATUS_MEM_READ);
+			return;
+		}
+
+		super.memcpy(destination, source, length);
 	}
 }
