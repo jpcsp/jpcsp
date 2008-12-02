@@ -55,7 +55,7 @@ return "nop";
 public static final Instruction ICACHE_INDEX_INVALIDATE = new Instruction(1) {
 
 @Override
-public final String name() { return "CACHE 0x04"; }
+public final String name() { return "ICACHE INDEX INVALIDATE"; }
 
 @Override
 public final String category() { return "ALLEGREX"; }
@@ -81,7 +81,7 @@ return Common.disasmCODEIMMRS("cache", 0x04, (int)(short)imm16, rs);
 public static final Instruction ICACHE_INDEX_UNLOCK = new Instruction(2) {
 
 @Override
-public final String name() { return "CACHE 0x06"; }
+public final String name() { return "ICACHE INDEX UNLOCK"; }
 
 @Override
 public final String category() { return "ALLEGREX"; }
@@ -107,7 +107,7 @@ return Common.disasmCODEIMMRS("cache", 0x06, (int)(short)imm16, rs);
 public static final Instruction ICACHE_HIT_INVALIDATE = new Instruction(3) {
 
 @Override
-public final String name() { return "CACHE 0x08"; }
+public final String name() { return "ICACHE HIT INVALIDATE"; }
 
 @Override
 public final String category() { return "ALLEGREX"; }
@@ -133,7 +133,7 @@ return Common.disasmCODEIMMRS("cache", 0x08, (int)(short)imm16, rs);
 public static final Instruction ICACHE_FILL = new Instruction(4) {
 
 @Override
-public final String name() { return "CACHE 0x0A"; }
+public final String name() { return "ICACHE FILL"; }
 
 @Override
 public final String category() { return "ALLEGREX"; }
@@ -159,7 +159,7 @@ return Common.disasmCODEIMMRS("cache", 0x0A, (int)(short)imm16, rs);
 public static final Instruction ICACHE_FILL_WITH_LOCK = new Instruction(5) {
 
 @Override
-public final String name() { return "CACHE 0x0B"; }
+public final String name() { return "ICACHE FILL WITH LOCK"; }
 
 @Override
 public final String category() { return "ALLEGREX"; }
@@ -185,7 +185,7 @@ return Common.disasmCODEIMMRS("cache", 0x0B, (int)(short)imm16, rs);
 public static final Instruction DCACHE_INDEX_WRITEBACK_INVALIDATE = new Instruction(6) {
 
 @Override
-public final String name() { return "CACHE 0x14"; }
+public final String name() { return "DCACHE INDEX WRITEBACK INVALIDATE"; }
 
 @Override
 public final String category() { return "ALLEGREX"; }
@@ -211,7 +211,7 @@ return Common.disasmCODEIMMRS("cache", 0x14, (int)(short)imm16, rs);
 public static final Instruction DCACHE_INDEX_UNLOCK = new Instruction(7) {
 
 @Override
-public final String name() { return "CACHE 0x16"; }
+public final String name() { return "DCACHE INDEX UNLOCK"; }
 
 @Override
 public final String category() { return "ALLEGREX"; }
@@ -237,7 +237,7 @@ return Common.disasmCODEIMMRS("cache", 0x16, (int)(short)imm16, rs);
 public static final Instruction DCACHE_CREATE_DIRTY_EXCLUSIVE = new Instruction(8) {
 
 @Override
-public final String name() { return "CACHE 0x18"; }
+public final String name() { return "DCACHE CREATE DIRTY EXCLUSIVE"; }
 
 @Override
 public final String category() { return "ALLEGREX"; }
@@ -263,7 +263,7 @@ return Common.disasmCODEIMMRS("cache", 0x18, (int)(short)imm16, rs);
 public static final Instruction DCACHE_HIT_INVALIDATE = new Instruction(9) {
 
 @Override
-public final String name() { return "CACHE 0x19"; }
+public final String name() { return "DCACHE HIT INVALIDATE"; }
 
 @Override
 public final String category() { return "ALLEGREX"; }
@@ -289,7 +289,7 @@ return Common.disasmCODEIMMRS("cache", 0x19, (int)(short)imm16, rs);
 public static final Instruction DCACHE_HIT_WRITEBACK = new Instruction(10) {
 
 @Override
-public final String name() { return "CACHE 0x1A"; }
+public final String name() { return "DCACHE HIT WRITEBACK"; }
 
 @Override
 public final String category() { return "ALLEGREX"; }
@@ -315,7 +315,7 @@ return Common.disasmCODEIMMRS("cache", 0x1A, (int)(short)imm16, rs);
 public static final Instruction DCACHE_HIT_WRITEBACK_INVALIDATE = new Instruction(11) {
 
 @Override
-public final String name() { return "CACHE 0x1B"; }
+public final String name() { return "DCACHE HIT WRITEBACK INVALIDATE"; }
 
 @Override
 public final String category() { return "ALLEGREX"; }
@@ -341,7 +341,7 @@ return Common.disasmCODEIMMRS("cache", 0x1B, (int)(short)imm16, rs);
 public static final Instruction DCACHE_CREATE_DIRTY_EXCLUSIVE_WITH_LOCK = new Instruction(12) {
 
 @Override
-public final String name() { return "CACHE 0x1C"; }
+public final String name() { return "DCACHE CREATE DIRTY EXCLUSIVE WITH LOCK"; }
 
 @Override
 public final String category() { return "ALLEGREX"; }
@@ -367,7 +367,7 @@ return Common.disasmCODEIMMRS("cache", 0x1C, (int)(short)imm16, rs);
 public static final Instruction DCACHE_FILL = new Instruction(13) {
 
 @Override
-public final String name() { return "CACHE 0x1E"; }
+public final String name() { return "DCACHE FILL"; }
 
 @Override
 public final String category() { return "ALLEGREX"; }
@@ -393,7 +393,7 @@ return Common.disasmCODEIMMRS("cache", 0x1E, (int)(short)imm16, rs);
 public static final Instruction DCACHE_FILL_WITH_LOCK = new Instruction(14) {
 
 @Override
-public final String name() { return "CACHE 0x1F"; }
+public final String name() { return "DCACHE FILL WITH LOCK"; }
 
 @Override
 public final String category() { return "ALLEGREX"; }
@@ -1889,7 +1889,7 @@ return Common.disasmRSRT("msub", rs, rt);
 public static final Instruction MSUBU = new Instruction(66) {
 
 @Override
-public final String name() { return "MSUB"; }
+public final String name() { return "MSUBU"; }
 
 @Override
 public final String category() { return "ALLEGREX"; }
@@ -4051,7 +4051,7 @@ return Common.disasmFDFS("cvt.w.s", fd, fs);
 public static final Instruction C_COND_S = new Instruction(140) {
 
 @Override
-public final String name() { return "C.cond.S"; }
+public final String name() { return "C.COND.S"; }
 
 @Override
 public final String category() { return "FPU"; }
@@ -7552,7 +7552,7 @@ return Common.disasmVROT("VROT", 1+one+(two<<1), vd, vs, imm5);
 public static final Instruction VNOP = new Instruction(247) {
 
 @Override
-public final String name() { return "VNOT"; }
+public final String name() { return "VNOP"; }
 
 @Override
 public final String category() { return "VFPU"; }

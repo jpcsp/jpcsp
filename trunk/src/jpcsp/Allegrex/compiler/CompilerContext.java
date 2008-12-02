@@ -141,7 +141,7 @@ public class CompilerContext {
     }
 
     private void loadInstruction(MethodVisitor mv, Instruction insn) {
-        mv.visitFieldInsn(Opcodes.GETSTATIC, instructionsInternalName, insn.name().replace('.', '_').toUpperCase(), instructionDescriptor);
+        mv.visitFieldInsn(Opcodes.GETSTATIC, instructionsInternalName, insn.name().replace('.', '_').replace(' ', '_'), instructionDescriptor);
     }
 
     public void visitJump(MethodVisitor mv) {
@@ -337,7 +337,7 @@ public class CompilerContext {
     }
 
     public static String getClassName(int address) {
-        return "_S1_" + Integer.toHexString(address).toUpperCase();
+    	return "_S1_" + Integer.toHexString(address).toUpperCase();
     }
 
     public static int getClassAddress(String name) {
