@@ -89,25 +89,37 @@ public class CodeInstruction {
 		this.branchingTo = branchingTo;
 	}
 
-    public Label getLabel() {
+    public Label getLabel(boolean isBranchTarget) {
         if (label == null) {
             label = new Label();
-            setBranchTarget(true);
+            if (isBranchTarget) {
+            	setBranchTarget(true);
+            }
         }
 
         return label;
     }
 
-	public void compile(CompilerContext context, MethodVisitor mv) {
+    public Label getLabel() {
+    	return getLabel(true);
+    }
+
+    public boolean hasLabel() {
+    	return label != null;
+    }
+
+    public void compile(CompilerContext context, MethodVisitor mv) {
 	    if (Compiler.log.isDebugEnabled()) {
 	        Compiler.log.debug("CodeInstruction.compile " + toString());
 	    }
 
-	    context.startInstruction(mv, this);
+	    context.beforeInstruction(mv, this);
 
-	    if (isBranchTarget) {
+	    if (hasLabel()) {
 	        mv.visitLabel(getLabel());
 	    }
+
+	    context.startInstruction(mv, this);
 
 	    if (isBranching()) {
 	        compileBranch(context, mv);
@@ -253,7 +265,6 @@ public class CodeInstruction {
 
     private int getBranchingOpcodeBC1L(CompilerContext context, MethodVisitor mv, int branchingOpcode, int notBranchingOpcode) {
     	context.loadFcr31c(mv);
-        compileDelaySlot(context, mv);
         CodeInstruction afterDelaySlotCodeInstruction = getAfterDelaySlotCodeInstruction(context);
         context.visitJump(mv, notBranchingOpcode, afterDelaySlotCodeInstruction.getLabel());
         compileDelaySlot(context, mv);

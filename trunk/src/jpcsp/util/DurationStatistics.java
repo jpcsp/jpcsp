@@ -18,15 +18,17 @@ package jpcsp.util;
 
 public class DurationStatistics implements Comparable<DurationStatistics> {
     public String name;
-    public long cumulatedTimeMillis = 0;
-    public long numberCalls = 0;
+    public long cumulatedTimeMillis;
+    public long numberCalls;
     private long startTimeMillis;
 
     public DurationStatistics() {
+    	reset();
     }
 
     public DurationStatistics(String name) {
         this.name = name;
+        reset();
     }
 
     public void start() {
@@ -39,6 +41,12 @@ public class DurationStatistics implements Comparable<DurationStatistics> {
         numberCalls++;
 
         return duration;
+    }
+
+    public void reset() {
+    	cumulatedTimeMillis = 0;
+    	numberCalls = 0;
+    	startTimeMillis = 0;
     }
 
     public String toString() {

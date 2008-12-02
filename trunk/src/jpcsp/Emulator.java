@@ -74,11 +74,15 @@ public class Emulator implements Runnable {
                 log.info("     Display time: " + String.format("%.3f", displaySecs) + "s (" + String.format("%.1f", displaySecs / totalSecs * 100) + "%)");
             }
             if (VideoEngine.getStatistics() != null) {
-                 long videoCalls = VideoEngine.getStatistics().numberCalls;
-                if(videoCalls !=0) log.info("Elapsed time per frame: " + String.format("%.3f", totalSecs / videoCalls) + "s:");
-                if(videoCalls !=0) log.info("    Display time: " + String.format("%.3f", displaySecs / videoCalls));
-                if(videoCalls !=0) log.info("    PSP CPU time: " + String.format("%.3f", cpuSecs / videoCalls) + " (" + (cpuCycles / videoCalls) + " instr)");
-                log.info("Display Speed: " + String.format("%.2f", videoCalls / totalSecs) + " FPS");
+                long videoCalls = VideoEngine.getStatistics().numberCalls;
+                if (videoCalls != 0) {
+                	log.info("Elapsed time per frame: " + String.format("%.3f", totalSecs / videoCalls) + "s:");
+                	log.info("    Display time: " + String.format("%.3f", displaySecs / videoCalls));
+                	log.info("    PSP CPU time: " + String.format("%.3f", cpuSecs / videoCalls) + " (" + (cpuCycles / videoCalls) + " instr)");
+                }
+                if (totalSecs  != 0) {
+                	log.info("Display Speed: " + String.format("%.2f", videoCalls / totalSecs) + " FPS");
+                }
             }
             if (cpuSecs != 0) {
                 log.info("PSP CPU Speed: " + String.format("%.3f", cpuCycles / cpuSecs / (1024 * 1024)) + "Mhz (" + (long) (cpuCycles / cpuSecs) + " instructions per second)");
@@ -145,9 +149,10 @@ public class Emulator implements Runnable {
     private void initNewPsp() {
         moduleLoaded = false;
 
+        RuntimeContext.reset();
+        getClock().reset();
         getProcessor().reset();
         Memory.getInstance().Initialise();
-        RuntimeContext.update();
 
         NIDMapper.getInstance().Initialise();
         Loader.getInstance().reset();
@@ -208,7 +213,7 @@ public class Emulator implements Runnable {
         if (pause)
         {
             pause = false;
-            notify();
+            notifyAll();
         }
         else if (!run)
         {

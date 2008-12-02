@@ -27,6 +27,7 @@ import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.FpuState.Fcr31;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -220,6 +221,12 @@ public class CompilerContext {
         }
     }
 
+    public void startClass(ClassVisitor cv) {
+    	if (RuntimeContext.enableLineNumbers) {
+    		cv.visitSource(getCodeBlock().getClassName() + ".java", null);
+    	}
+    }
+
     public void startMethod(MethodVisitor mv) {
         if (RuntimeContext.debugCodeBlockCalls && RuntimeContext.log.isDebugEnabled()) {
         	mv.visitLdcInsn(getCodeBlock().getStartAddress());
@@ -282,8 +289,26 @@ public class CompilerContext {
     	flushInstructionCount(mv, false, true);
     }
 
+    public void beforeInstruction(MethodVisitor mv, CodeInstruction codeInstruction) {
+	    if (RuntimeContext.enableIntructionCounting) {
+	    	if (codeInstruction.isBranchTarget()) {
+	    		flushInstructionCount(mv, true, false);
+	    	}
+	    	currentInstructionCount++;
+	    }
+
+	    if (RuntimeContext.enableLineNumbers) {
+	    	// Force the instruction to emit a label
+    		codeInstruction.getLabel(false);
+    	}
+    }
+
     public void startInstruction(MethodVisitor mv, CodeInstruction codeInstruction) {
-	    if (RuntimeContext.debugCodeInstruction && RuntimeContext.log.isDebugEnabled()) {
+    	if (RuntimeContext.enableLineNumbers) {
+    		mv.visitLineNumber(codeInstruction.getAddress() - getCodeBlock().getLowestAddress(), codeInstruction.getLabel());
+    	}
+
+    	if (RuntimeContext.debugCodeInstruction && RuntimeContext.log.isDebugEnabled()) {
         	mv.visitLdcInsn(codeInstruction.getAddress());
         	mv.visitLdcInsn(codeInstruction.getOpcode());
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.debugCodeInstructionName, "(II)V");
@@ -292,13 +317,6 @@ public class CompilerContext {
 	    if (RuntimeContext.enableInstructionTypeCounting) {
 	    	loadInstruction(mv, codeInstruction.getInsn());
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.instructionTypeCount, "(" + instructionDescriptor + ")V");
-	    }
-
-	    if (RuntimeContext.enableIntructionCounting) {
-	    	if (codeInstruction.isBranchTarget()) {
-	    		flushInstructionCount(mv, true, false);
-	    	}
-	    	currentInstructionCount++;
 	    }
 
 	    if (RuntimeContext.enableDebugger) {
@@ -337,11 +355,11 @@ public class CompilerContext {
     }
 
     public static String getClassName(int address) {
-    	return "_S1_" + Integer.toHexString(address).toUpperCase();
+    	return "_S1_" + Compiler.getResetCount() + "_" + Integer.toHexString(address).toUpperCase();
     }
 
     public static int getClassAddress(String name) {
-        String hexAddress = name.substring(4);
+    	String hexAddress = name.substring(name.lastIndexOf("_") + 1);
 
         return Integer.parseInt(hexAddress, 16);
     }

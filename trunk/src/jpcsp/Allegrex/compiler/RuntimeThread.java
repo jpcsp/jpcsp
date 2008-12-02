@@ -27,9 +27,11 @@ import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 public class RuntimeThread extends Thread {
 	private Semaphore semaphore = new Semaphore(1);
 	private SceKernelThreadInfo threadInfo;
+	private boolean isInSyscall;
 
 	public RuntimeThread(SceKernelThreadInfo threadInfo) {
 		this.threadInfo = threadInfo;
+		this.isInSyscall = false;
 		setName(threadInfo.name);
 		suspendRuntimeExecution();
 	}
@@ -57,5 +59,13 @@ public class RuntimeThread extends Thread {
 
 	public SceKernelThreadInfo getThreadInfo() {
 		return threadInfo;
+	}
+
+	public boolean isInSyscall() {
+		return isInSyscall;
+	}
+
+	public void setInSyscall(boolean isInSyscall) {
+		this.isInSyscall = isInSyscall;
 	}
 }
