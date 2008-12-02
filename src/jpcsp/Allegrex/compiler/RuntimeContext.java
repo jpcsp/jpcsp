@@ -18,7 +18,10 @@ package jpcsp.Allegrex.compiler;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
 
@@ -57,23 +60,25 @@ public class RuntimeContext {
 	public  static final String debugCodeInstructionName = "debugCodeInstruction";
 	public  static final boolean enableInstructionTypeCounting = false;
 	public  static final String instructionTypeCount = "instructionTypeCount";
+	public  static final boolean enableLineNumbers = true;
 	private static final int idleSleepMillis = 1;
 	private static volatile Map<Integer, CodeBlock> codeBlocks = Collections.synchronizedMap(new HashMap<Integer, CodeBlock>());
 	private static volatile Map<SceKernelThreadInfo, RuntimeThread> threads = Collections.synchronizedMap(new HashMap<SceKernelThreadInfo, RuntimeThread>());
+	private static volatile Map<SceKernelThreadInfo, RuntimeThread> toBeStoppedThreads = Collections.synchronizedMap(new HashMap<SceKernelThreadInfo, RuntimeThread>());
 	public  static volatile SceKernelThreadInfo currentThread = null;
 	private static volatile RuntimeThread currentRuntimeThread = null;
 	private static volatile Object waitForEnd = new Object();
 	private static volatile Emulator emulator;
 	private static volatile boolean isIdle = false;
+	private static volatile boolean reset = false;
 	private static DurationStatistics idleDuration = new DurationStatistics("Idle Time");
-	private static volatile boolean exitNow = false;
 	private static Map<Instruction, Integer> instructionTypeCounts = Collections.synchronizedMap(new HashMap<Instruction, Integer>());
 
 	public static void execute(Instruction insn, int opcode) {
 		insn.interpret(processor, opcode);
 	}
 
-	private static int jumpCall(int address, int returnAddress, boolean isJump) {
+	private static int jumpCall(int address, int returnAddress, boolean isJump) throws Exception {
         IExecutable executable = getExecutable(address);
         if (executable == null) {
             // TODO Return to interpreter
@@ -81,7 +86,7 @@ public class RuntimeContext {
             throw new RuntimeException("Cannot find executable");
         }
 
-        int returnValue = executable.exec(returnAddress, isJump);
+		int returnValue = executable.exec(returnAddress, isJump);
 
         if (log.isDebugEnabled()) {
         	log.debug("RuntimeContext.jumpCall returning 0x" + Integer.toHexString(returnValue));
@@ -90,14 +95,14 @@ public class RuntimeContext {
         return returnValue;
 	}
 
-	public static int jump(int address, int returnAddress) {
+	public static int jump(int address, int returnAddress) throws Exception {
 		if (log.isDebugEnabled()) {
 			log.debug("RuntimeContext.jump address=0x" + Integer.toHexString(address) + ", returnAddress=0x" + Integer.toHexString(returnAddress));
 		}
 	    return jumpCall(address, returnAddress, true);
 	}
 
-    public static void call(int address, int returnAddress) {
+    public static void call(int address, int returnAddress) throws Exception {
 		if (log.isDebugEnabled()) {
 			log.debug("RuntimeContext.call address=0x" + Integer.toHexString(address) + ", returnAddress=0x" + Integer.toHexString(returnAddress));
 		}
@@ -159,14 +164,27 @@ public class RuntimeContext {
 		}
 
     	IExecutable executable = getExecutable(pc);
-    	processor.cpu.pc = executable.exec(0, false);
+        int newPc = 0;
+		try {
+			newPc = executable.exec(0, false);
+		} catch (StopThreadException e) {
+			// Ignore exception
+		} catch (Exception e) {
+			log.error(e);
+		}
+    	processor.cpu.pc = newPc;
 
 		if (log.isDebugEnabled()) {
 			log.debug("End of Callback 0x" + Integer.toHexString(pc));
 		}
 
 		switchThread(previousThread);
-		syncThread();
+		try {
+			syncThread();
+		} catch (StopThreadException e) {
+			// This exception is not expected at this point...
+			log.warn(e);
+		}
     }
 
     public static void update() {
@@ -205,6 +223,11 @@ public class RuntimeContext {
     	    isIdle = true;
     	    currentThread = null;
     	    currentRuntimeThread = null;
+    	} else if (toBeStoppedThreads.containsKey(threadInfo)) {
+    		// This thread must stop immediately
+    		isIdle = true;
+    		currentThread = null;
+    		currentRuntimeThread = null;
     	} else {
         	RuntimeThread thread = threads.get(threadInfo);
         	if (thread == null) {
@@ -231,14 +254,14 @@ public class RuntimeContext {
         Emulator.getClock().resume();
     }
 
-    private static void syncThread() {
-        ThreadMan threadMan = ThreadMan.getInstance();
-        threadMan.step();
-
+    private static void syncIdle() throws StopThreadException {
         if (isIdle) {
+            ThreadMan threadMan = ThreadMan.getInstance();
+
             log.debug("Starting Idle State...");
             idleDuration.start();
             while (isIdle) {
+            	checkStoppedThread();
                 syncEmulator(true);
                 syncPause();
                 threadMan.step();
@@ -253,6 +276,12 @@ public class RuntimeContext {
             idleDuration.end();
             log.debug("Ending Idle State");
         }
+    }
+
+    private static void syncThread() throws StopThreadException {
+    	ThreadMan.getInstance().step();
+
+        syncIdle();
 
         Thread currentThread = Thread.currentThread();
     	if (log.isDebugEnabled()) {
@@ -270,25 +299,58 @@ public class RuntimeContext {
     	}
     }
 
-    private static void syncPause() {
-    	if (Emulator.pause || exitNow) {
+    private static RuntimeThread getRuntimeThread() {
+    	Thread currentThread = Thread.currentThread();
+		if (currentThread instanceof RuntimeThread) {
+			return (RuntimeThread) currentThread;
+		}
+
+		return null;
+    }
+
+    private static boolean isStoppedThread() {
+    	if (toBeStoppedThreads.isEmpty()) {
+    		return false;
+    	}
+
+		RuntimeThread runtimeThread = getRuntimeThread();
+		if (runtimeThread != null && toBeStoppedThreads.containsValue(runtimeThread)) {
+			return true;
+		}
+
+		return false;
+    }
+
+    private static void checkStoppedThread() throws StopThreadException {
+    	if (isStoppedThread()) {
+			throw new StopThreadException("Stopping Thread " + Thread.currentThread().getName());
+		}
+    }
+
+    private static void syncPause() throws StopThreadException {
+    	if (Emulator.pause) {
 	        Emulator.getClock().pause();
 	        try {
 	            synchronized(emulator) {
-	               while (Emulator.pause || exitNow) {
+	               while (Emulator.pause) {
+	                   checkStoppedThread();
 	                   emulator.wait();
 	               }
 	           }
 	        } catch (InterruptedException e){
+	        	// Ignore Exception
+	        } finally {
+	        	Emulator.getClock().resume();
 	        }
-	        Emulator.getClock().resume();
     	}
     }
 
-    public static void syncDebugger(int pc) {
+    public static void syncDebugger(int pc) throws StopThreadException {
     	if (State.debugger != null) {
     		processor.cpu.pc = pc;
     		syncDebugger();
+    	} else if (Emulator.pause) {
+    		syncPause();
     	}
     }
 
@@ -304,32 +366,62 @@ public class RuntimeContext {
         }
 
     	pspge.getInstance().step();
-        pspdisplay.getInstance().step(immediately);
+		pspdisplay.getInstance().step(immediately);
         HLEModuleManager.getInstance().step();
         State.controller.checkControllerState();
     }
 
-    private static void sync() {
+    private static void sync() throws StopThreadException {
     	syncPause();
         syncThread();
     	syncEmulator(false);
         syncDebugger();
     	syncPause();
+    	checkStoppedThread();
     }
 
-    public static void syscall(int code) {
+    public static void syscall(int code) throws StopThreadException {
+    	RuntimeThread runtimeThread = getRuntimeThread();
+    	if (runtimeThread != null) {
+    		runtimeThread.setInSyscall(true);
+    	}
+    	checkStoppedThread();
     	syncPause();
+
     	SyscallHandler.syscall(code);
+
     	sync();
+    	if (runtimeThread != null) {
+    		runtimeThread.setInSyscall(false);
+    	}
     }
 
     public static void runThread(RuntimeThread thread) {
-    	thread.suspendRuntimeExecution();
+    	thread.setInSyscall(true);
 
-    	syncPause();
+    	if (isStoppedThread()) {
+			// This thread has already been stopped before it is really starting...
+    		return;
+    	}
+
+		thread.suspendRuntimeExecution();
+
+    	if (isStoppedThread()) {
+			// This thread has already been stopped before it is really starting...
+    		return;
+    	}
 
     	IExecutable executable = getExecutable(processor.cpu.pc);
-		executable.exec(0, false);
+		thread.setInSyscall(false);
+    	try {
+    		executable.exec(0, false);
+    	} catch (StopThreadException e) {
+    		// Ignore Exception
+    	} catch (Exception e) {
+    		e.printStackTrace();
+    		log.error(e);
+		}
+		thread.setInSyscall(true);
 
 		ThreadMan threadManager = ThreadMan.getInstance();
 		SceKernelThreadInfo threadInfo = thread.getThreadInfo();
@@ -338,9 +430,14 @@ public class RuntimeContext {
 		threadManager.changeThreadState(threadInfo, SceKernelThreadInfo.PSP_THREAD_STOPPED);
 		threadManager.contextSwitch(threadManager.nextThread());
 
-		sync();
+		try {
+			sync();
+		} catch (StopThreadException e) {
+    		// Ignore Exception
+		}
 
-		threads.remove(thread);
+		threads.remove(threadInfo);
+		toBeStoppedThreads.remove(threadInfo);
 
 		if (log.isDebugEnabled()) {
 			log.debug("End of Thread " + thread.getName());
@@ -381,9 +478,38 @@ public class RuntimeContext {
         	return;
         }
 
+        while (!toBeStoppedThreads.isEmpty()) {
+        	wakeupToBeStoppedThreads();
+        	sleep(1);
+        }
+
+        reset = false;
+
+        if (currentRuntimeThread == null) {
+        	try {
+				syncIdle();
+			} catch (StopThreadException e) {
+				// Thread is stopped, return immediately
+				return;
+			}
+
+        	if (currentRuntimeThread == null) {
+        		log.error("RuntimeContext.run: nothing to run!");
+        		Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNKNOWN);
+        		return;
+        	}
+        }
+
+        update();
+
+        if (processor.cpu.pc == 0) {
+        	Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNKNOWN);
+        	return;
+        }
+
         currentRuntimeThread.continueRuntimeExecution();
 
-        while (!threads.isEmpty()) {
+        while (!threads.isEmpty() && !reset) {
 	        synchronized(waitForEnd) {
 	        	try {
 					waitForEnd.wait();
@@ -395,9 +521,64 @@ public class RuntimeContext {
         log.debug("End of run");
     }
 
+    private static List<RuntimeThread> wakeupToBeStoppedThreads() {
+		List<RuntimeThread> threadList = new LinkedList<RuntimeThread>();
+		synchronized (toBeStoppedThreads) {
+    		for (Entry<SceKernelThreadInfo, RuntimeThread> entry : toBeStoppedThreads.entrySet()) {
+    			threadList.add(entry.getValue());
+    		}
+		}
+
+		// Trigger the threads to start execution again.
+		// Loop on a local list to avoid concurrent modification on toBeStoppedThreads.
+		for (RuntimeThread runtimeThread : threadList) {
+			Thread.State threadState = runtimeThread.getState();
+			log.debug("Thread " + runtimeThread.getName() + ", State=" + threadState);
+			if (threadState == Thread.State.TERMINATED) {
+				toBeStoppedThreads.remove(runtimeThread.getThreadInfo());
+			} else if (threadState == Thread.State.WAITING) {
+				runtimeThread.continueRuntimeExecution();
+			}
+		}
+
+		synchronized (Emulator.getInstance()) {
+			Emulator.getInstance().notifyAll();
+		}
+
+		return threadList;
+    }
+
+    private static void stopAllThreads() {
+		synchronized (threads) {
+			toBeStoppedThreads.putAll(threads);
+    		threads.clear();
+		}
+
+		List<RuntimeThread> threadList = wakeupToBeStoppedThreads();
+
+		// Wait for all threads to enter a syscall.
+		// When a syscall is entered, the thread will exit
+		// automatically by calling checkStoppedThread()
+		boolean waitForThreads = true;
+		while (waitForThreads) {
+			waitForThreads = false;
+			for (RuntimeThread runtimeThread : threadList) {
+				if (!runtimeThread.isInSyscall()) {
+					waitForThreads = true;
+					break;
+				}
+			}
+
+			if (waitForThreads) {
+				sleep(1);
+			}
+		}
+    }
+
     public static void exit() {
         if (isActive) {
-            exitNow = true;
+    		log.debug("RuntimeContext.exit");
+        	stopAllThreads();
             log.info(idleDuration.toString());
             if (enableInstructionTypeCounting) {
             	for (Instruction insn : instructionTypeCounts.keySet()) {
@@ -405,6 +586,21 @@ public class RuntimeContext {
             	}
             }
         }
+    }
+
+    public static void reset() {
+    	if (isActive) {
+    		log.debug("RuntimeContext.reset");
+    		Compiler.getInstance().reset();
+    		codeBlocks.clear();
+    		currentThread = null;
+    		currentRuntimeThread = null;
+    		stopAllThreads();
+    		reset = true;
+    		synchronized (waitForEnd) {
+				waitForEnd.notify();
+			}
+    	}
     }
 
     public static void instructionTypeCount(Instruction insn) {

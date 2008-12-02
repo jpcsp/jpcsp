@@ -37,13 +37,16 @@ import jpcsp.Allegrex.Common.Instruction;
  */
 public class CodeBlock {
 	private int startAddress;
+	private int lowestAddress;
 	private LinkedList<CodeInstruction> codeInstructions = new LinkedList<CodeInstruction>();
 	private IExecutable executable = null;
 	private final static String objectInternalName = Type.getInternalName(Object.class);
 	private final static String[] interfacesForExecutable = new String[] { Type.getInternalName(IExecutable.class) };
+	private final static String[] exceptions = new String[] { Type.getInternalName(Exception.class) };
 
 	public CodeBlock(int startAddress) {
 		this.startAddress = startAddress;
+		this.lowestAddress = startAddress;
 
 		RuntimeContext.addCodeBlock(startAddress, this);
 	}
@@ -68,6 +71,10 @@ public class CodeBlock {
 					break;
 				}
 			}
+
+			if (address < lowestAddress) {
+				lowestAddress = address;
+			}
 		}
 	}
 
@@ -84,6 +91,10 @@ public class CodeBlock {
 
 	public int getStartAddress() {
 		return startAddress;
+	}
+
+	public int getLowestAddress() {
+		return lowestAddress;
 	}
 
 	public CodeInstruction getCodeInstruction(int address) {
@@ -124,7 +135,7 @@ public class CodeBlock {
 	}
 
     private void addNonStaticMethods(CompilerContext context, ClassVisitor cv) {
-        MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PUBLIC, context.getExecMethodName(), context.getExecMethodDesc(), null, null);
+        MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PUBLIC, context.getExecMethodName(), context.getExecMethodDesc(), null, exceptions);
         mv.visitCode();
         mv.visitVarInsn(Opcodes.ILOAD, 1);
         mv.visitVarInsn(Opcodes.ILOAD, 2);
@@ -156,11 +167,12 @@ public class CodeBlock {
     	    cv = new TraceClassVisitor(cv, debugPrintWriter);
     	}
     	cv.visit(Opcodes.V1_6, Opcodes.ACC_PUBLIC | Opcodes.ACC_SUPER, className, null, objectInternalName, interfacesForExecutable);
+    	context.startClass(cv);
 
     	addConstructor(cv);
     	addNonStaticMethods(context, cv);
 
-    	MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, context.getStaticExecMethodName(), context.getStaticExecMethodDesc(), null, null);
+    	MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, context.getStaticExecMethodName(), context.getStaticExecMethodDesc(), null, exceptions);
         mv.visitCode();
         context.startMethod(mv);
 

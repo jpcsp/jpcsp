@@ -210,7 +210,11 @@ public class ThreadMan {
             Modules.log.info("ThreadMan Statistics (" + statistics.allCycles + " cycles in " + String.format("%.3f", statistics.getDurationMillis() / 1000.0) + "s):");
             for (Iterator<Statistics.ThreadStatistics> it = statistics.threads.iterator(); it.hasNext(); ) {
                 Statistics.ThreadStatistics threadStatistics = it.next();
-                Modules.log.info("    Thread name:'" + threadStatistics.name + "' runClocks:" + threadStatistics.runClocks + " (" + String.format("%2.2f%%", (threadStatistics.runClocks / (double) statistics.allCycles) * 100) + ")");
+                double percentage = 0;
+                if (statistics.allCycles != 0) {
+                	percentage = (threadStatistics.runClocks / (double) statistics.allCycles) * 100;
+                }
+                Modules.log.info("    Thread name:'" + threadStatistics.name + "' runClocks:" + threadStatistics.runClocks + " (" + String.format("%2.2f%%", percentage) + ")");
             }
         }
     }

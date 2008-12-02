@@ -116,6 +116,7 @@ import jpcsp.util.DurationStatistics;
 public class Compiler implements ICompiler {
     public static Logger log = Logger.getLogger("compiler");
 	private static Compiler instance;
+	private static int resetCount = 0;
 	private Set<Instruction> branchBlockInstructions;
 	private Set<Instruction> jumpBlockInstructions;
 	private Set<Instruction> endBlockInstructions;
@@ -142,10 +143,16 @@ public class Compiler implements ICompiler {
 	    }
 	}
 
+	public void reset() {
+		resetCount++;
+		classLoader = new CompilerClassLoader(this);
+		compileDuration.reset();
+	}
+
 	private void Initialise() {
 		mem = Memory.getInstance();
 
-		classLoader = new CompilerClassLoader(this);
+		reset();
 
 		branchBlockInstructions = new HashSet<Instruction>();
 		branchBlockInstructions.add(Instructions.BEQ);
@@ -297,4 +304,12 @@ public class Compiler implements ICompiler {
     public void setClassLoader(CompilerClassLoader classLoader) {
         this.classLoader = classLoader;
     }
+
+	public static int getResetCount() {
+		return resetCount;
+	}
+
+	public static void setResetCount(int resetCount) {
+		Compiler.resetCount = resetCount;
+	}
 }

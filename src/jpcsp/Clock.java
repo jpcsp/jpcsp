@@ -22,11 +22,7 @@ public class Clock {
 	private boolean isPaused;
 
 	public Clock() {
-		baseNanos = System.nanoTime();
-
-		// Start with a paused Clock
-		pauseNanos = baseNanos;
-		isPaused = true;
+		reset();
 	}
 
 	public synchronized void pause() {
@@ -42,6 +38,14 @@ public class Clock {
 			baseNanos += System.nanoTime() - pauseNanos;
 			isPaused = false;
 		}
+	}
+
+	public synchronized void reset() {
+		baseNanos = System.nanoTime();
+
+		// Start with a paused Clock
+		pauseNanos = baseNanos;
+		isPaused = true;
 	}
 
 	public synchronized long nanoTime() {
