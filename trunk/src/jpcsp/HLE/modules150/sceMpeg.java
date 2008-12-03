@@ -23,1362 +23,1580 @@ import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
+import jpcsp.HLE.kernel.types.SceMpegRingbuffer;
+
 import jpcsp.Memory;
 import jpcsp.Processor;
 
 import jpcsp.Allegrex.CpuState; // New-Style Processor
 
 public class sceMpeg implements HLEModule {
-	@Override
-	public String getName() { return "sceMpeg"; }
-
-	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		if (version >= 150) {
-
-			mm.addFunction(sceMpegQueryStreamOffsetFunction, 0x21FF80E4);
-			mm.addFunction(sceMpegQueryStreamSizeFunction, 0x611E9E11);
-			mm.addFunction(sceMpegInitFunction, 0x682A619B);
-			mm.addFunction(sceMpegFinishFunction, 0x874624D6);
-			mm.addFunction(sceMpegQueryMemSizeFunction, 0xC132E22F);
-			mm.addFunction(sceMpegCreateFunction, 0xD8C5F121);
-			mm.addFunction(sceMpegDeleteFunction, 0x606A4649);
-			mm.addFunction(sceMpegRegistStreamFunction, 0x42560F23);
-			mm.addFunction(sceMpegUnRegistStreamFunction, 0x591A4AA2);
-			mm.addFunction(sceMpegMallocAvcEsBufFunction, 0xA780CF7E);
-			mm.addFunction(sceMpegFreeAvcEsBufFunction, 0xCEB870B1);
-			mm.addFunction(sceMpegQueryAtracEsSizeFunction, 0xF8DCB679);
-			mm.addFunction(sceMpegQueryPcmEsSizeFunction, 0xC02CF6B5);
-			mm.addFunction(sceMpegInitAuFunction, 0x167AFD9E);
-			mm.addFunction(sceMpegChangeGetAvcAuModeFunction, 0x234586AE);
-			mm.addFunction(sceMpegChangeGetAuModeFunction, 0x9DCFB7EA);
-			mm.addFunction(sceMpegGetAvcAuFunction, 0xFE246728);
-			mm.addFunction(sceMpegGetPcmAuFunction, 0x8C1E027D);
-			mm.addFunction(sceMpegGetAtracAuFunction, 0xE1CE83A7);
-			mm.addFunction(sceMpegFlushStreamFunction, 0x500F0429);
-			mm.addFunction(sceMpegFlushAllStreamFunction, 0x707B7629);
-			mm.addFunction(sceMpegAvcDecodeFunction, 0x0E3C2E9D);
-			mm.addFunction(sceMpegAvcDecodeDetailFunction, 0x0F6C18D7);
-			mm.addFunction(sceMpegAvcDecodeModeFunction, 0xA11C7026);
-			mm.addFunction(sceMpegAvcDecodeStopFunction, 0x740FCCD1);
-			mm.addFunction(sceMpegAvcDecodeFlushFunction, 0x4571CC64);
-			mm.addFunction(sceMpegAvcQueryYCbCrSizeFunction, 0x211A057C);
-			mm.addFunction(sceMpegAvcInitYCbCrFunction, 0x67179B1B);
-			mm.addFunction(sceMpegAvcDecodeYCbCrFunction, 0xF0EB1125);
-			mm.addFunction(sceMpegAvcDecodeStopYCbCrFunction, 0xF2930C9C);
-			mm.addFunction(sceMpegAvcCscFunction, 0x31BD0272);
-			mm.addFunction(sceMpegAtracDecodeFunction, 0x800C44DF);
-			mm.addFunction(sceMpegRingbufferQueryMemSizeFunction, 0xD7A29F46);
-			mm.addFunction(sceMpegRingbufferConstructFunction, 0x37295ED8);
-			mm.addFunction(sceMpegRingbufferDestructFunction, 0x13407F13);
-			mm.addFunction(sceMpegRingbufferPutFunction, 0xB240A59E);
-			mm.addFunction(sceMpegRingbufferAvailableSizeFunction, 0xB5F6DC87);
-			mm.addFunction(sceMpeg_11CAB459Function, 0x11CAB459);
-			mm.addFunction(sceMpegNextAvcRpAuFunction, 0x3C37A7A6);
-			mm.addFunction(sceMpeg_B27711A8Function, 0xB27711A8);
-			mm.addFunction(sceMpeg_D4DD6E75Function, 0xD4DD6E75);
-			mm.addFunction(sceMpeg_C345DED2Function, 0xC345DED2);
-			mm.addFunction(sceMpeg_AB0E9556Function, 0xAB0E9556);
-			mm.addFunction(sceMpegAvcDecodeDetail2Function, 0xCF3547A2);
-			mm.addFunction(sceMpeg_988E9E12Function, 0x988E9E12);
-
-		}
-	}
-
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		if (version >= 150) {
-
-			mm.removeFunction(sceMpegQueryStreamOffsetFunction);
-			mm.removeFunction(sceMpegQueryStreamSizeFunction);
-			mm.removeFunction(sceMpegInitFunction);
-			mm.removeFunction(sceMpegFinishFunction);
-			mm.removeFunction(sceMpegQueryMemSizeFunction);
-			mm.removeFunction(sceMpegCreateFunction);
-			mm.removeFunction(sceMpegDeleteFunction);
-			mm.removeFunction(sceMpegRegistStreamFunction);
-			mm.removeFunction(sceMpegUnRegistStreamFunction);
-			mm.removeFunction(sceMpegMallocAvcEsBufFunction);
-			mm.removeFunction(sceMpegFreeAvcEsBufFunction);
-			mm.removeFunction(sceMpegQueryAtracEsSizeFunction);
-			mm.removeFunction(sceMpegQueryPcmEsSizeFunction);
-			mm.removeFunction(sceMpegInitAuFunction);
-			mm.removeFunction(sceMpegChangeGetAvcAuModeFunction);
-			mm.removeFunction(sceMpegChangeGetAuModeFunction);
-			mm.removeFunction(sceMpegGetAvcAuFunction);
-			mm.removeFunction(sceMpegGetPcmAuFunction);
-			mm.removeFunction(sceMpegGetAtracAuFunction);
-			mm.removeFunction(sceMpegFlushStreamFunction);
-			mm.removeFunction(sceMpegFlushAllStreamFunction);
-			mm.removeFunction(sceMpegAvcDecodeFunction);
-			mm.removeFunction(sceMpegAvcDecodeDetailFunction);
-			mm.removeFunction(sceMpegAvcDecodeModeFunction);
-			mm.removeFunction(sceMpegAvcDecodeStopFunction);
-			mm.removeFunction(sceMpegAvcDecodeFlushFunction);
-			mm.removeFunction(sceMpegAvcQueryYCbCrSizeFunction);
-			mm.removeFunction(sceMpegAvcInitYCbCrFunction);
-			mm.removeFunction(sceMpegAvcDecodeYCbCrFunction);
-			mm.removeFunction(sceMpegAvcDecodeStopYCbCrFunction);
-			mm.removeFunction(sceMpegAvcCscFunction);
-			mm.removeFunction(sceMpegAtracDecodeFunction);
-			mm.removeFunction(sceMpegRingbufferQueryMemSizeFunction);
-			mm.removeFunction(sceMpegRingbufferConstructFunction);
-			mm.removeFunction(sceMpegRingbufferDestructFunction);
-			mm.removeFunction(sceMpegRingbufferPutFunction);
-			mm.removeFunction(sceMpegRingbufferAvailableSizeFunction);
-			mm.removeFunction(sceMpeg_11CAB459Function);
-			mm.removeFunction(sceMpegNextAvcRpAuFunction);
-			mm.removeFunction(sceMpeg_B27711A8Function);
-			mm.removeFunction(sceMpeg_D4DD6E75Function);
-			mm.removeFunction(sceMpeg_C345DED2Function);
-			mm.removeFunction(sceMpeg_AB0E9556Function);
-			mm.removeFunction(sceMpegAvcDecodeDetail2Function);
-			mm.removeFunction(sceMpeg_988E9E12Function);
+    @Override
+    public String getName() { return "sceMpeg"; }
+
+    @Override
+    public void installModule(HLEModuleManager mm, int version) {
+        if (version >= 150) {
+
+            mm.addFunction(sceMpegQueryStreamOffsetFunction, 0x21FF80E4);
+            mm.addFunction(sceMpegQueryStreamSizeFunction, 0x611E9E11);
+            mm.addFunction(sceMpegInitFunction, 0x682A619B);
+            mm.addFunction(sceMpegFinishFunction, 0x874624D6);
+            mm.addFunction(sceMpegQueryMemSizeFunction, 0xC132E22F);
+            mm.addFunction(sceMpegCreateFunction, 0xD8C5F121);
+            mm.addFunction(sceMpegDeleteFunction, 0x606A4649);
+            mm.addFunction(sceMpegRegistStreamFunction, 0x42560F23);
+            mm.addFunction(sceMpegUnRegistStreamFunction, 0x591A4AA2);
+            mm.addFunction(sceMpegMallocAvcEsBufFunction, 0xA780CF7E);
+            mm.addFunction(sceMpegFreeAvcEsBufFunction, 0xCEB870B1);
+            mm.addFunction(sceMpegQueryAtracEsSizeFunction, 0xF8DCB679);
+            mm.addFunction(sceMpegQueryPcmEsSizeFunction, 0xC02CF6B5);
+            mm.addFunction(sceMpegInitAuFunction, 0x167AFD9E);
+            mm.addFunction(sceMpegChangeGetAvcAuModeFunction, 0x234586AE);
+            mm.addFunction(sceMpegChangeGetAuModeFunction, 0x9DCFB7EA);
+            mm.addFunction(sceMpegGetAvcAuFunction, 0xFE246728);
+            mm.addFunction(sceMpegGetPcmAuFunction, 0x8C1E027D);
+            mm.addFunction(sceMpegGetAtracAuFunction, 0xE1CE83A7);
+            mm.addFunction(sceMpegFlushStreamFunction, 0x500F0429);
+            mm.addFunction(sceMpegFlushAllStreamFunction, 0x707B7629);
+            mm.addFunction(sceMpegAvcDecodeFunction, 0x0E3C2E9D);
+            mm.addFunction(sceMpegAvcDecodeDetailFunction, 0x0F6C18D7);
+            mm.addFunction(sceMpegAvcDecodeModeFunction, 0xA11C7026);
+            mm.addFunction(sceMpegAvcDecodeStopFunction, 0x740FCCD1);
+            mm.addFunction(sceMpegAvcDecodeFlushFunction, 0x4571CC64);
+            mm.addFunction(sceMpegAvcQueryYCbCrSizeFunction, 0x211A057C);
+            mm.addFunction(sceMpegAvcInitYCbCrFunction, 0x67179B1B);
+            mm.addFunction(sceMpegAvcDecodeYCbCrFunction, 0xF0EB1125);
+            mm.addFunction(sceMpegAvcDecodeStopYCbCrFunction, 0xF2930C9C);
+            mm.addFunction(sceMpegAvcCscFunction, 0x31BD0272);
+            mm.addFunction(sceMpegAtracDecodeFunction, 0x800C44DF);
+            mm.addFunction(sceMpegRingbufferQueryMemSizeFunction, 0xD7A29F46);
+            mm.addFunction(sceMpegRingbufferConstructFunction, 0x37295ED8);
+            mm.addFunction(sceMpegRingbufferDestructFunction, 0x13407F13);
+            mm.addFunction(sceMpegRingbufferPutFunction, 0xB240A59E);
+            mm.addFunction(sceMpegRingbufferAvailableSizeFunction, 0xB5F6DC87);
+            mm.addFunction(sceMpeg_11CAB459Function, 0x11CAB459);
+            mm.addFunction(sceMpegNextAvcRpAuFunction, 0x3C37A7A6);
+            mm.addFunction(sceMpeg_B27711A8Function, 0xB27711A8);
+            mm.addFunction(sceMpeg_D4DD6E75Function, 0xD4DD6E75);
+            mm.addFunction(sceMpeg_C345DED2Function, 0xC345DED2);
+            mm.addFunction(sceMpeg_AB0E9556Function, 0xAB0E9556);
+            mm.addFunction(sceMpegAvcDecodeDetail2Function, 0xCF3547A2);
+            mm.addFunction(sceMpeg_988E9E12Function, 0x988E9E12);
+
+            mpegHandle = -1;
+        }
+    }
+
+    @Override
+    public void uninstallModule(HLEModuleManager mm, int version) {
+        if (version >= 150) {
+
+            mm.removeFunction(sceMpegQueryStreamOffsetFunction);
+            mm.removeFunction(sceMpegQueryStreamSizeFunction);
+            mm.removeFunction(sceMpegInitFunction);
+            mm.removeFunction(sceMpegFinishFunction);
+            mm.removeFunction(sceMpegQueryMemSizeFunction);
+            mm.removeFunction(sceMpegCreateFunction);
+            mm.removeFunction(sceMpegDeleteFunction);
+            mm.removeFunction(sceMpegRegistStreamFunction);
+            mm.removeFunction(sceMpegUnRegistStreamFunction);
+            mm.removeFunction(sceMpegMallocAvcEsBufFunction);
+            mm.removeFunction(sceMpegFreeAvcEsBufFunction);
+            mm.removeFunction(sceMpegQueryAtracEsSizeFunction);
+            mm.removeFunction(sceMpegQueryPcmEsSizeFunction);
+            mm.removeFunction(sceMpegInitAuFunction);
+            mm.removeFunction(sceMpegChangeGetAvcAuModeFunction);
+            mm.removeFunction(sceMpegChangeGetAuModeFunction);
+            mm.removeFunction(sceMpegGetAvcAuFunction);
+            mm.removeFunction(sceMpegGetPcmAuFunction);
+            mm.removeFunction(sceMpegGetAtracAuFunction);
+            mm.removeFunction(sceMpegFlushStreamFunction);
+            mm.removeFunction(sceMpegFlushAllStreamFunction);
+            mm.removeFunction(sceMpegAvcDecodeFunction);
+            mm.removeFunction(sceMpegAvcDecodeDetailFunction);
+            mm.removeFunction(sceMpegAvcDecodeModeFunction);
+            mm.removeFunction(sceMpegAvcDecodeStopFunction);
+            mm.removeFunction(sceMpegAvcDecodeFlushFunction);
+            mm.removeFunction(sceMpegAvcQueryYCbCrSizeFunction);
+            mm.removeFunction(sceMpegAvcInitYCbCrFunction);
+            mm.removeFunction(sceMpegAvcDecodeYCbCrFunction);
+            mm.removeFunction(sceMpegAvcDecodeStopYCbCrFunction);
+            mm.removeFunction(sceMpegAvcCscFunction);
+            mm.removeFunction(sceMpegAtracDecodeFunction);
+            mm.removeFunction(sceMpegRingbufferQueryMemSizeFunction);
+            mm.removeFunction(sceMpegRingbufferConstructFunction);
+            mm.removeFunction(sceMpegRingbufferDestructFunction);
+            mm.removeFunction(sceMpegRingbufferPutFunction);
+            mm.removeFunction(sceMpegRingbufferAvailableSizeFunction);
+            mm.removeFunction(sceMpeg_11CAB459Function);
+            mm.removeFunction(sceMpegNextAvcRpAuFunction);
+            mm.removeFunction(sceMpeg_B27711A8Function);
+            mm.removeFunction(sceMpeg_D4DD6E75Function);
+            mm.removeFunction(sceMpeg_C345DED2Function);
+            mm.removeFunction(sceMpeg_AB0E9556Function);
+            mm.removeFunction(sceMpegAvcDecodeDetail2Function);
+            mm.removeFunction(sceMpeg_988E9E12Function);
+
+        }
+    }
+
+    // for now we just support 1 instance of mpeg
+    // we'll use this variable to store the address of the mpeg context struct
+    private int mpegHandle;
+
+    public static final int PSMF_MAGIC = 0x464D5350;
+
+    public void sceMpegQueryStreamOffset(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        int mpeg = cpu.gpr[4];
+        int buffer_addr = cpu.gpr[5];
+        int offset_addr = cpu.gpr[6];
+
+        Modules.log.debug("sceMpegQueryStreamOffset(mpeg=0x" + Integer.toHexString(mpeg)
+            + ",buffer=0x" + Integer.toHexString(buffer_addr)
+            + ",offset=0x" + Integer.toHexString(offset_addr) + ")");
+
+        if (mpeg != mpegHandle) {
+            Modules.log.warn("sceMpegQueryStreamOffset bad mpeg handle 0x" + Integer.toHexString(mpeg));
+            cpu.gpr[2] = -1;
+        } else if (mem.isAddressGood(buffer_addr) && mem.isAddressGood(offset_addr)) {
+            int magic = mem.read32(buffer_addr);
+            int version = mem.read32(buffer_addr + 4);
+            int offset = mem.read32(buffer_addr + 8);
+            int size = mem.read32(buffer_addr + 12);
+            Modules.log.debug(String.format("sceMpegQueryStreamOffset magic=0x%08X"
+                + " version=0x%08X offset=0x%08X size=0x%08X", magic, version, offset, size));
+
+            if (magic == PSMF_MAGIC) {
+                mem.write32(offset_addr, offset);
+                cpu.gpr[2] = 0;
+            } else {
+                Modules.log.warn("sceMpegQueryStreamOffset bad magic " + String.format("0x%08X", magic));
+                cpu.gpr[2] = -1;
+            }
+        } else {
+            Modules.log.warn("sceMpegQueryStreamOffset bad address "
+                + String.format("0x%08X 0x%08X", buffer_addr, offset_addr));
+            cpu.gpr[2] = -1;
+        }
+    }
+
+    public void sceMpegQueryStreamSize(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        int buffer_addr = cpu.gpr[4];
+        int size_addr = cpu.gpr[5];
+
+        Modules.log.debug("sceMpegQueryStreamSize(buffer=0x" + Integer.toHexString(buffer_addr)
+            + ",size=0x" + Integer.toHexString(size_addr) + ")");
+
+        if (mem.isAddressGood(buffer_addr) && mem.isAddressGood(size_addr)) {
+            int magic = mem.read32(buffer_addr);
+            int version = mem.read32(buffer_addr + 4);
+            int offset = mem.read32(buffer_addr + 8);
+            int size = mem.read32(buffer_addr + 12);
+            Modules.log.debug(String.format("sceMpegQueryStreamSize magic=0x%08X"
+                + " version=0x%08X offset=0x%08X size=0x%08X", magic, version, offset, size));
+
+            if (true) {
+                // HACK: if fake 0 size maybe it won't play :)
+                Modules.log.warn("sceMpegQueryStreamSize using fake size 0");
+                size = 0;
+            }
+
+            if (magic == PSMF_MAGIC) {
+                mem.write32(size_addr, size);
+                cpu.gpr[2] = 0;
+            } else {
+                Modules.log.warn("sceMpegQueryStreamSize bad magic " + String.format("0x%08X", magic));
+                cpu.gpr[2] = -1;
+            }
+        } else {
+            Modules.log.warn("sceMpegQueryStreamSize bad address "
+                + String.format("0x%08X 0x%08X", buffer_addr, size_addr));
+            cpu.gpr[2] = -1;
+        }
+    }
+
+    public void sceMpegInit(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+
+        Modules.log.warn("PARTIAL:sceMpegInit");
+
+        // we'll support only 1 mpeg instance at a time, we can fix this later if needed
+        if (mpegHandle != -1) {
+            Modules.log.warn("sceMpegInit mpeg already in use");
+            cpu.gpr[2] = -1;
+        } else {
+            cpu.gpr[2] = 0;
+        }
+    }
+
+    public void sceMpegFinish(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+
+        Modules.log.warn("PARTIAL:sceMpegFinish");
+
+        mpegHandle = -1;
+
+        // no return value
+    }
+
+    // user app will malloc this amount of memory
+    public void sceMpegQueryMemSize(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+
+        int mode = cpu.gpr[4];
+
+        Modules.log.warn("PARTIAL:sceMpegQueryMemSize(mode=" + mode + ")");
+
+        //cpu.gpr[2] = 0x20000; // TODO no idea what this should be, setting it to 128k
+        cpu.gpr[2] = 512 * 4; // copied from noxa/pspplayer
+    }
+
+    public void sceMpegCreate(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        int mpeg = cpu.gpr[4];
+        int data = cpu.gpr[5];
+        int size = cpu.gpr[6];
+        int ringbuffer_addr = cpu.gpr[7];
+        int frameWidth = cpu.gpr[8];
+        int mode = cpu.gpr[9];
+        int ddrtop = cpu.gpr[10];
+
+        Modules.log.warn("PARTIAL:sceMpegCreate(mpeg=0x" + Integer.toHexString(mpeg)
+            + ",data=0x" + Integer.toHexString(data)
+            + ",size=" + size
+            + ",ringbuffer=0x" + Integer.toHexString(ringbuffer_addr)
+            + ",frameWidth=" + frameWidth
+            + ",mode=" + mode
+            + ",ddrtop=0x" + Integer.toHexString(ddrtop) + ")");
+
+        if (mem.isAddressGood(mpeg) && mem.isAddressGood(data) && mem.isAddressGood(ringbuffer_addr)) {
+            mpegHandle = mpeg;
+
+            // update the ring buffer
+            SceMpegRingbuffer ringbuffer = new SceMpegRingbuffer(mem, ringbuffer_addr);
+            ringbuffer.packetSize = size;
+            ringbuffer.mpeg = mpeg;
+            ringbuffer.write(mem, ringbuffer_addr);
+
+            cpu.gpr[2] = 0;
+        } else {
+            Modules.log.warn("sceMpegCreate bad address "
+                + String.format("0x%08X 0x%08X 0x%08X", mpeg, data, ringbuffer_addr));
+            cpu.gpr[2] = -1;
+        }
+    }
+
+    public void sceMpegDelete(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+
+        int mpeg = cpu.gpr[4];
+
+        Modules.log.warn("PARTIAL:sceMpegDelete(mpeg=0x" + Integer.toHexString(mpeg) + ")");
+
+        if (mpeg != mpegHandle) {
+            Modules.log.warn("sceMpegDelete bad mpeg handle 0x" + Integer.toHexString(mpeg));
+            cpu.gpr[2] = -1;
+        } else {
+            cpu.gpr[2] = 0;
+        }
+    }
+
+    private int makeFakeStreamHandle(int stream) {
+        return 0x34340000 | (stream & 0xFFFF);
+    }
+
+    private boolean isFakeStreamHandle(int handle) {
+        return ((handle & 0xFFFF0000) == 0x34340000);
+    }
+
+    private int getFakeStreamID(int handle) {
+        return (handle & 0x0000FFFF);
+    }
+
+    public void sceMpegRegistStream(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        int mpeg = cpu.gpr[4];
+        int stream = cpu.gpr[5];
+        int unk = cpu.gpr[6];
+
+        Modules.log.warn("PARTIAL:sceMpegRegistStream(mpeg=0x" + Integer.toHexString(mpeg)
+            + ",stream=" + Integer.toHexString(stream)
+            + ",unk=0x" + Integer.toHexString(unk) + ")");
+
+        if (mpeg != mpegHandle) {
+            Modules.log.warn("sceMpegRegistStream bad mpeg handle 0x" + Integer.toHexString(mpeg));
+            cpu.gpr[2] = -1;
+        } else {
+            // fake allocate a stream struct
+            cpu.gpr[2] = makeFakeStreamHandle(stream);
+            Modules.log.debug("sceMpegRegistStream ret=0x" + Integer.toHexString(cpu.gpr[2]));
+        }
+    }
+
+    public void sceMpegUnRegistStream(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+
+        int mpeg = cpu.gpr[4];
+        int stream_addr = cpu.gpr[5];
+
+        Modules.log.warn("PARTIAL:sceMpegUnRegistStream(mpeg=0x" + Integer.toHexString(mpeg)
+            + ",stream=0x" + Integer.toHexString(stream_addr) + ")");
+
+        if (mpeg != mpegHandle) {
+            Modules.log.warn("sceMpegUnRegistStream bad mpeg handle 0x" + Integer.toHexString(mpeg));
+            cpu.gpr[2] = -1;
+        } else if (isFakeStreamHandle(stream_addr)) {
+            Modules.log.debug("sceMpegUnRegistStream got fake stream ID " + getFakeStreamID(stream_addr));
+            cpu.gpr[2] = 0;
+        } else {
+            cpu.gpr[2] = 0;
+        }
+    }
+
+    public void sceMpegMallocAvcEsBuf(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+
+        int mpeg = cpu.gpr[4];
+
+        Modules.log.warn("PARTIAL:sceMpegMallocAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg) + ")");
+
+        if (mpeg != mpegHandle) {
+            Modules.log.warn("sceMpegMallocAvcEsBuf bad mpeg handle 0x" + Integer.toHexString(mpeg));
+            cpu.gpr[2] = -1;
+        } else {
+            cpu.gpr[2] = 0x12121212; // fake
+            Modules.log.debug("sceMpegMallocAvcEsBuf ret=0x" + Integer.toHexString(cpu.gpr[2]));
+        }
+    }
+
+    public void sceMpegFreeAvcEsBuf(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+
+        int mpeg = cpu.gpr[4];
+        int buffer_addr = cpu.gpr[5];
+
+        Modules.log.warn("PARTIAL:sceMpegFreeAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg)
+            + ",buffer=0x" + Integer.toHexString(buffer_addr) + ")");
+
+        if (mpeg != mpegHandle) {
+            Modules.log.warn("sceMpegFreeAvcEsBuf bad mpeg handle 0x" + Integer.toHexString(mpeg));
+            cpu.gpr[2] = -1;
+        } else {
+            // we could check if buffer_addr == 0x12121212 from sceMpegMallocAvcEsBuf
+            cpu.gpr[2] = 0;
+        }
+    }
+
+    public void sceMpegQueryAtracEsSize(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        int mpeg = cpu.gpr[4];
+        int esSize_addr = cpu.gpr[5];
+        int size_addr = cpu.gpr[6];
+
+        Modules.log.warn("IGNORING:sceMpegQueryAtracEsSize(mpeg=0x" + Integer.toHexString(mpeg)
+            + ",esSize=0x" + Integer.toHexString(esSize_addr)
+            + ",size=0x" + Integer.toHexString(size_addr) + ")");
+
+        if (mpeg != mpegHandle) {
+            Modules.log.warn("sceMpegQueryAtracEsSize bad mpeg handle 0x" + Integer.toHexString(mpeg));
+            cpu.gpr[2] = -1;
+        } else if (mem.isAddressGood(esSize_addr) && mem.isAddressGood(size_addr)) {
+            // TODO get the required data out of the mpeg stream
+
+            // copied from noxa/pspplayer
+            mem.write32(esSize_addr, 2112);
+            mem.write32(size_addr, 8192);
+
+            cpu.gpr[2] = 0;
+        } else {
+            Modules.log.warn("sceMpegQueryAtracEsSize bad address "
+                + String.format("0x%08X 0x%08X", esSize_addr, size_addr));
+            cpu.gpr[2] = -1;
+        }
+    }
+
+    public void sceMpegQueryPcmEsSize(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        /* put your own code here instead */
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
+        System.out.println("Unimplemented NID function sceMpegQueryPcmEsSize [0xC02CF6B5]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
+
+    public void sceMpegInitAu(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        int mpeg = cpu.gpr[4];
+        int buffer_addr = cpu.gpr[5];
+        int au_addr = cpu.gpr[6];
+
+        Modules.log.warn("IGNORING:sceMpegInitAu(mpeg=0x" + Integer.toHexString(mpeg)
+            + ",buffer=0x" + Integer.toHexString(buffer_addr)
+            + ",au=0x" + Integer.toHexString(au_addr) + ")");
+
+        if (mpeg != mpegHandle) {
+            Modules.log.warn("sceMpegInitAu bad mpeg handle 0x" + Integer.toHexString(mpeg));
+            cpu.gpr[2] = -1;
+        } else {
+            // TODO
+            // buffer_addr is from sceMpegMallocAvcEsBuf
+
+            cpu.gpr[2] = 0;
+        }
+    }
+
+    public void sceMpegChangeGetAvcAuMode(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        /* put your own code here instead */
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
+        System.out.println("Unimplemented NID function sceMpegChangeGetAvcAuMode [0x234586AE]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
+
+    public void sceMpegChangeGetAuMode(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        /* put your own code here instead */
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
+        System.out.println("Unimplemented NID function sceMpegChangeGetAuMode [0x9DCFB7EA]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
+
+    public void sceMpegGetAvcAu(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        int mpeg = cpu.gpr[4];
+        int stream_addr = cpu.gpr[5];
+        int au_addr = cpu.gpr[6];
+        int unk_addr = cpu.gpr[7];
+
+        Modules.log.warn("PARTIAL:sceMpegGetAvcAu(mpeg=0x" + Integer.toHexString(mpeg)
+            + ",stream=0x" + Integer.toHexString(stream_addr)
+            + ",au=0x" + Integer.toHexString(au_addr)
+            + ",unknown=0x" + Integer.toHexString(unk_addr) + ")");
+
+        if (mpeg != mpegHandle) {
+            Modules.log.warn("sceMpegGetAvcAu bad mpeg handle 0x" + Integer.toHexString(mpeg));
+            cpu.gpr[2] = -1;
+        } else if (mem.isAddressGood(stream_addr) && mem.isAddressGood(au_addr)) {
+            // TODO
+            mem.write32(au_addr, 0x56560001);
+
+            cpu.gpr[2] = 0;
+        } else if (isFakeStreamHandle(stream_addr)) {
+            Modules.log.debug("IGNORING:sceMpegGetAvcAu got fake stream ID " + getFakeStreamID(stream_addr));
+            mem.write32(au_addr, 0x56560001);
+            cpu.gpr[2] = 0;
+        } else {
+            Modules.log.warn("sceMpegGetAvcAu bad address "
+                + String.format("0x%08X 0x%08X", stream_addr, au_addr));
+            cpu.gpr[2] = -1;
+        }
+    }
+
+    // use fake 0x56560002 in here
+    public void sceMpegGetPcmAu(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        /* put your own code here instead */
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
+        System.out.println("Unimplemented NID function sceMpegGetPcmAu [0x8C1E027D]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
+
+    public void sceMpegGetAtracAu(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        int mpeg = cpu.gpr[4];
+        int stream_addr = cpu.gpr[5];
+        int au_addr = cpu.gpr[6];
+        int unk_addr = cpu.gpr[7];
+
+        Modules.log.warn("PARTIAL:sceMpegGetAtracAu(mpeg=0x" + Integer.toHexString(mpeg)
+            + ",stream=0x" + Integer.toHexString(stream_addr)
+            + ",au=0x" + Integer.toHexString(au_addr)
+            + ",unknown=0x" + Integer.toHexString(unk_addr) + ")");
+
+        if (mpeg != mpegHandle) {
+            Modules.log.warn("sceMpegGetAtracAu bad mpeg handle 0x" + Integer.toHexString(mpeg));
+            cpu.gpr[2] = -1;
+        } else if (mem.isAddressGood(stream_addr) && mem.isAddressGood(au_addr)) {
+            // TODO
+            mem.write32(au_addr, 0x56560003);
+
+            cpu.gpr[2] = 0;
+        } else if (isFakeStreamHandle(stream_addr)) {
+            Modules.log.debug("IGNORING:sceMpegGetAtracAu got fake stream ID " + getFakeStreamID(stream_addr));
+            mem.write32(au_addr, 0x56560003);
+            cpu.gpr[2] = 0;
+        } else {
+            Modules.log.warn("sceMpegGetAtracAu bad address "
+                + String.format("0x%08X 0x%08X", stream_addr, au_addr));
+            cpu.gpr[2] = -1;
+        }
+
+        Modules.log.debug("sceMpegGetAtracAu ret=0x" + Integer.toHexString(cpu.gpr[2]));
+    }
+
+    public void sceMpegFlushStream(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        /* put your own code here instead */
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
+        System.out.println("Unimplemented NID function sceMpegFlushStream [0x500F0429]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
+
+    public void sceMpegFlushAllStream(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        /* put your own code here instead */
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
+        System.out.println("Unimplemented NID function sceMpegFlushAllStream [0x707B7629]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
+
+    public void sceMpegAvcDecode(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        /* put your own code here instead */
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
+        System.out.println("Unimplemented NID function sceMpegAvcDecode [0x0E3C2E9D]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
+
+    public void sceMpegAvcDecodeDetail(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        /* put your own code here instead */
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
+        System.out.println("Unimplemented NID function sceMpegAvcDecodeDetail [0x0F6C18D7]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
+
+    public void sceMpegAvcDecodeMode(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        int mpeg = cpu.gpr[4];
+        int mode_addr = cpu.gpr[5];
+
+        Modules.log.warn("IGNORING:sceMpegAvcDecodeMode(mpeg=0x" + Integer.toHexString(mpeg)
+            + ",mode=0x" + Integer.toHexString(mode_addr) + ")");
+
+        if (mpeg != mpegHandle) {
+            Modules.log.warn("sceMpegAvcDecodeMode bad mpeg handle 0x" + Integer.toHexString(mpeg));
+            cpu.gpr[2] = -1;
+        } else if (mem.isAddressGood(mode_addr)) {
+            int unk = mem.read32(mode_addr);
+            int mode = mem.read32(mode_addr + 4);
+
+            Modules.log.debug("sceMpegAvcDecodeMode unk=0x" + Integer.toHexString(unk)
+                + " mode=0x" + Integer.toHexString(mode));
+
+            cpu.gpr[2] = 0;
+        } else {
+            Modules.log.warn("sceMpegAvcDecodeMode bad address "
+                + String.format("0x%08X", mode_addr));
+            cpu.gpr[2] = -1;
+        }
+    }
+
+    // noxa/pspplayer has no parameters and has a fake return
+    public void sceMpegAvcDecodeStop(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        int mpeg = cpu.gpr[4];
+        int frameWidth = cpu.gpr[5];
+        int buffer_addr = cpu.gpr[6];
+        int status_addr = cpu.gpr[7];
+
+        Modules.log.warn("IGNORING:sceMpegAvcDecodeStop(mpeg=0x" + Integer.toHexString(mpeg)
+            + ",frameWidth=" + frameWidth
+            + ",buffer=0x" + Integer.toHexString(buffer_addr)
+            + ",status=0x" + Integer.toHexString(status_addr) + ")");
+
+        if (mpeg != mpegHandle) {
+            Modules.log.warn("sceMpegAvcDecodeStop bad mpeg handle 0x" + Integer.toHexString(mpeg));
+            cpu.gpr[2] = -1;
+        } else if (mem.isAddressGood(buffer_addr) && mem.isAddressGood(status_addr)) {
+            int status = 0; // TODO
+
+            mem.write32(status_addr, status);
+
+            cpu.gpr[2] = 0;
+        } else {
+            Modules.log.warn("sceMpegAvcDecodeStop bad address "
+                + String.format("0x%08X 0x%08X", buffer_addr, status_addr));
+            cpu.gpr[2] = -1;
+        }
+    }
+
+    public void sceMpegAvcDecodeFlush(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        /* put your own code here instead */
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
+        System.out.println("Unimplemented NID function sceMpegAvcDecodeFlush [0x4571CC64]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
+
+    public void sceMpegAvcQueryYCbCrSize(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        /* put your own code here instead */
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
+        System.out.println("Unimplemented NID function sceMpegAvcQueryYCbCrSize [0x211A057C]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
+
+    public void sceMpegAvcInitYCbCr(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        /* put your own code here instead */
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
+        System.out.println("Unimplemented NID function sceMpegAvcInitYCbCr [0x67179B1B]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
+
+    public void sceMpegAvcDecodeYCbCr(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        /* put your own code here instead */
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
+        System.out.println("Unimplemented NID function sceMpegAvcDecodeYCbCr [0xF0EB1125]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
+
+    public void sceMpegAvcDecodeStopYCbCr(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        /* put your own code here instead */
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
+        System.out.println("Unimplemented NID function sceMpegAvcDecodeStopYCbCr [0xF2930C9C]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
+
+    public void sceMpegAvcCsc(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        /* put your own code here instead */
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
+        System.out.println("Unimplemented NID function sceMpegAvcCsc [0x31BD0272]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
+
+    public void sceMpegAtracDecode(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        int mpeg = cpu.gpr[4];
+        int au_addr = cpu.gpr[5];
+        int buffer_addr = cpu.gpr[6];
+        int init = cpu.gpr[7];
+
+        Modules.log.warn("IGNORING:sceMpegAtracDecode(mpeg=0x" + Integer.toHexString(mpeg)
+            + ",au=0x" + Integer.toHexString(au_addr)
+            + ",buffer=0x" + Integer.toHexString(buffer_addr)
+            + ",init=0x" + Integer.toHexString(init) + ")");
+
+        if (mpeg != mpegHandle) {
+            Modules.log.warn("sceMpegAtracDecode bad mpeg handle 0x" + Integer.toHexString(mpeg));
+            cpu.gpr[2] = -1;
+        } else if (mem.isAddressGood(au_addr) && mem.isAddressGood(buffer_addr)) {
+            // TODO
+
+            cpu.gpr[2] = 0;
+        } else {
+            Modules.log.warn("sceMpegAtracDecode bad address "
+                + String.format("0x%08X 0x%08X", au_addr, buffer_addr));
+            cpu.gpr[2] = -1;
+        }
+    }
+
+    public void sceMpegRingbufferQueryMemSize(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+
+        int packets = cpu.gpr[4];
+
+        Modules.log.warn("PARTIAL:sceMpegRingbufferQueryMemSize(packets=" + packets + ")");
+
+        int size = 0;
+
+        // copied from noxa/pspplayer
+        // packets = 4800, approx 10mb, too big?
+        size = ( packets * 104 ) + ( packets * 2048 );
+        Modules.log.debug("sceMpegRingbufferQueryMemSize noxa/pspplayer size=0x" + Integer.toHexString(size));
+
+        // we use a 1mb cap, not sure if there is actually a cap or how big it is
+        if (size > 0x100000)
+            size = 0x100000;
+
+        cpu.gpr[2] = size;
+        Modules.log.debug("sceMpegRingbufferQueryMemSize ret=0x" + Integer.toHexString(cpu.gpr[2]));
+    }
+
+    public void sceMpegRingbufferConstruct(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        int ringbuffer_addr = cpu.gpr[4];
+        int packets = cpu.gpr[5];
+        int data = cpu.gpr[6];
+        int size = cpu.gpr[7]; // seems to match sceMpegQueryMemSize
+        int callback_addr = cpu.gpr[8];
+        int callback_args = cpu.gpr[9];
+
+        Modules.log.warn("PARTIAL:sceMpegRingbufferConstruct(ringbuffer=0x" + Integer.toHexString(ringbuffer_addr)
+            + ",packets=" + packets
+            + ",data=0x" + Integer.toHexString(data)
+            + ",size=" + size
+            + ",callback=0x" + Integer.toHexString(callback_addr)
+            + ",args=0x" + Integer.toHexString(callback_args) + ")");
+
+        if (mem.isAddressGood(ringbuffer_addr)) {
+            SceMpegRingbuffer ringbuffer = new SceMpegRingbuffer(packets, data, size, callback_addr, callback_args);
+            ringbuffer.write(mem, ringbuffer_addr);
+
+            cpu.gpr[2] = 0;
+        } else {
+            Modules.log.warn("sceMpegRingbufferConstruct bad address "
+                + String.format("0x%08X", ringbuffer_addr));
+            cpu.gpr[2] = -1;
+        }
+    }
+
+    public void sceMpegRingbufferDestruct(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        int ringbuffer_addr = cpu.gpr[4];
+
+        Modules.log.warn("PARTIAL:sceMpegRingbufferDestruct(ringbuffer=0x" + Integer.toHexString(ringbuffer_addr) + ")");
+
+        // nothing to do ... ?
 
-		}
-	}
+        cpu.gpr[2] = 0;
+    }
 
+    public void sceMpegRingbufferPut(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
 
-	public void sceMpegQueryStreamOffset(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+        int ringbuffer_addr = cpu.gpr[4];
+        int numPackets = cpu.gpr[5];
+        int available = cpu.gpr[6];
 
-		/* put your own code here instead */
+        Modules.log.warn("IGNORING:sceMpegRingbufferPut(ringbuffer=0x" + Integer.toHexString(ringbuffer_addr)
+            + ",numPackets=" + numPackets
+            + ",available=" + available + ")");
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        //SceMpegRingbuffer ringbuffer = new SceMpegRingbuffer(mem, ringbuffer_addr);
 
-        Modules.log.warn("IGNORING:sceMpegQueryStreamOffset");
+        cpu.gpr[2] = numPackets;
+    }
 
-		cpu.gpr[2] = 0;
+    // TODO return in bytes or packets?
+    public void sceMpegRingbufferAvailableSize(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
 
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
+        int ringbuffer_addr = cpu.gpr[4];
 
-	public void sceMpegQueryStreamSize(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+        Modules.log.warn("PARTIAL:sceMpegRingbufferAvailableSize(ringbuffer=0x" + Integer.toHexString(ringbuffer_addr) + ")");
 
-		/* put your own code here instead */
+        //if (true) {
+        if (false) {
+            SceMpegRingbuffer ringbuffer = new SceMpegRingbuffer(mem, ringbuffer_addr);
+            cpu.gpr[2] = ringbuffer.packetsFree;
+        } else {
+            cpu.gpr[2] = 0; // fake
+        }
+    }
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+    public void sceMpeg_11CAB459(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
 
-        Modules.log.warn("IGNORING:sceMpegQueryStreamSize");
+        /* put your own code here instead */
 
-		cpu.gpr[2] = 0;
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
+        System.out.println("Unimplemented NID function sceMpeg_11CAB459 [0x11CAB459]");
 
-	public void sceMpegInit(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
+        cpu.gpr[2] = 0xDEADC0DE;
 
-		Modules.log.debug("IGNORING:sceMpegInit");
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
 
-		cpu.gpr[2] = 0;
-	}
+    public void sceMpegNextAvcRpAu(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
 
-	public void sceMpegFinish(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+        /* put your own code here instead */
 
-		/* put your own code here instead */
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        System.out.println("Unimplemented NID function sceMpegNextAvcRpAu [0x3C37A7A6]");
 
-		System.out.println("Unimplemented NID function sceMpegFinish [0x874624D6]");
+        cpu.gpr[2] = 0xDEADC0DE;
 
-		cpu.gpr[2] = 0xDEADC0DE;
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
 
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
+    public void sceMpeg_B27711A8(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
 
-	public void sceMpegQueryMemSize(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
+        /* put your own code here instead */
 
-		int iUnk = cpu.gpr[4];
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		Modules.log.warn("UNIMPLEMENTED:sceMpegQueryMemSize(iUnk=" + iUnk + ")");
+        System.out.println("Unimplemented NID function sceMpeg_B27711A8 [0xB27711A8]");
 
-        // TODO no idea what this should be, setting it to 128k
-        cpu.gpr[2] = 0x20000;
-	}
+        cpu.gpr[2] = 0xDEADC0DE;
 
-	public void sceMpegCreate(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
 
-		/* put your own code here instead */
+    public void sceMpeg_D4DD6E75(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        /* put your own code here instead */
 
-        Modules.log.warn("IGNORING:sceMpegCreate");
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		cpu.gpr[2] = 0;
+        System.out.println("Unimplemented NID function sceMpeg_D4DD6E75 [0xD4DD6E75]");
 
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
+        cpu.gpr[2] = 0xDEADC0DE;
 
-	public void sceMpegDelete(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
 
-		/* put your own code here instead */
+    public void sceMpeg_C345DED2(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        /* put your own code here instead */
 
-		System.out.println("Unimplemented NID function sceMpegDelete [0x606A4649]");
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		cpu.gpr[2] = 0xDEADC0DE;
+        System.out.println("Unimplemented NID function sceMpeg_C345DED2 [0xC345DED2]");
 
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
+        cpu.gpr[2] = 0xDEADC0DE;
 
-	public void sceMpegRegistStream(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
 
-		/* put your own code here instead */
+    public void sceMpeg_AB0E9556(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        /* put your own code here instead */
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegRegistStream [0x42560F23]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegUnRegistStream(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegUnRegistStream [0x591A4AA2]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegMallocAvcEsBuf(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegMallocAvcEsBuf [0xA780CF7E]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegFreeAvcEsBuf(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegFreeAvcEsBuf [0xCEB870B1]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegQueryAtracEsSize(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-        Modules.log.warn("IGNORING:sceMpegQueryAtracEsSize");
-
-		cpu.gpr[2] = 0;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegQueryPcmEsSize(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegQueryPcmEsSize [0xC02CF6B5]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegInitAu(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-        Modules.log.warn("IGNORING:sceMpegInitAu");
-
-		cpu.gpr[2] = 0;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegChangeGetAvcAuMode(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegChangeGetAvcAuMode [0x234586AE]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegChangeGetAuMode(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegChangeGetAuMode [0x9DCFB7EA]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegGetAvcAu(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegGetAvcAu [0xFE246728]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegGetPcmAu(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegGetPcmAu [0x8C1E027D]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegGetAtracAu(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegGetAtracAu [0xE1CE83A7]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegFlushStream(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegFlushStream [0x500F0429]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegFlushAllStream(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegFlushAllStream [0x707B7629]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegAvcDecode(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegAvcDecode [0x0E3C2E9D]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegAvcDecodeDetail(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegAvcDecodeDetail [0x0F6C18D7]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegAvcDecodeMode(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegAvcDecodeMode [0xA11C7026]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegAvcDecodeStop(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegAvcDecodeStop [0x740FCCD1]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegAvcDecodeFlush(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegAvcDecodeFlush [0x4571CC64]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegAvcQueryYCbCrSize(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegAvcQueryYCbCrSize [0x211A057C]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegAvcInitYCbCr(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegAvcInitYCbCr [0x67179B1B]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegAvcDecodeYCbCr(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegAvcDecodeYCbCr [0xF0EB1125]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegAvcDecodeStopYCbCr(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegAvcDecodeStopYCbCr [0xF2930C9C]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegAvcCsc(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegAvcCsc [0x31BD0272]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegAtracDecode(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegAtracDecode [0x800C44DF]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegRingbufferQueryMemSize(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-
-		int iPackets = cpu.gpr[4];
-
-		Modules.log.warn("UNIMPLEMENTED:sceMpegRingbufferQueryMemSize(iPackets=" + iPackets + ")");
-
-        // TODO copied from noxa/pspplayer
-        cpu.gpr[2] = ( iPackets * 104 ) + ( iPackets * 2048 );
-	}
-
-	public void sceMpegRingbufferConstruct(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-        Modules.log.warn("IGNORING:sceMpegRingbufferConstruct");
-
-		cpu.gpr[2] = 0;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegRingbufferDestruct(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegRingbufferDestruct [0x13407F13]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegRingbufferPut(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegRingbufferPut [0xB240A59E]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegRingbufferAvailableSize(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegRingbufferAvailableSize [0xB5F6DC87]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpeg_11CAB459(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpeg_11CAB459 [0x11CAB459]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegNextAvcRpAu(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegNextAvcRpAu [0x3C37A7A6]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpeg_B27711A8(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpeg_B27711A8 [0xB27711A8]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpeg_D4DD6E75(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpeg_D4DD6E75 [0xD4DD6E75]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpeg_C345DED2(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpeg_C345DED2 [0xC345DED2]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpeg_AB0E9556(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpeg_AB0E9556 [0xAB0E9556]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpegAvcDecodeDetail2(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpegAvcDecodeDetail2 [0xCF3547A2]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public void sceMpeg_988E9E12(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceMpeg_988E9E12 [0x988E9E12]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
-
-	public final HLEModuleFunction sceMpegQueryStreamOffsetFunction = new HLEModuleFunction("sceMpeg", "sceMpegQueryStreamOffset") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegQueryStreamOffset(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegQueryStreamOffset(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegQueryStreamSizeFunction = new HLEModuleFunction("sceMpeg", "sceMpegQueryStreamSize") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegQueryStreamSize(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegQueryStreamSize(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegInitFunction = new HLEModuleFunction("sceMpeg", "sceMpegInit") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegInit(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegInit(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegFinishFunction = new HLEModuleFunction("sceMpeg", "sceMpegFinish") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegFinish(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegFinish(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegQueryMemSizeFunction = new HLEModuleFunction("sceMpeg", "sceMpegQueryMemSize") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegQueryMemSize(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegQueryMemSize(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegCreateFunction = new HLEModuleFunction("sceMpeg", "sceMpegCreate") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegCreate(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegCreate(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegDeleteFunction = new HLEModuleFunction("sceMpeg", "sceMpegDelete") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegDelete(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegDelete(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegRegistStreamFunction = new HLEModuleFunction("sceMpeg", "sceMpegRegistStream") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegRegistStream(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegRegistStream(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegUnRegistStreamFunction = new HLEModuleFunction("sceMpeg", "sceMpegUnRegistStream") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegUnRegistStream(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegUnRegistStream(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegMallocAvcEsBufFunction = new HLEModuleFunction("sceMpeg", "sceMpegMallocAvcEsBuf") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegMallocAvcEsBuf(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegMallocAvcEsBuf(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegFreeAvcEsBufFunction = new HLEModuleFunction("sceMpeg", "sceMpegFreeAvcEsBuf") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegFreeAvcEsBuf(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegFreeAvcEsBuf(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegQueryAtracEsSizeFunction = new HLEModuleFunction("sceMpeg", "sceMpegQueryAtracEsSize") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegQueryAtracEsSize(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegQueryAtracEsSize(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegQueryPcmEsSizeFunction = new HLEModuleFunction("sceMpeg", "sceMpegQueryPcmEsSize") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegQueryPcmEsSize(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegQueryPcmEsSize(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegInitAuFunction = new HLEModuleFunction("sceMpeg", "sceMpegInitAu") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegInitAu(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegInitAu(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegChangeGetAvcAuModeFunction = new HLEModuleFunction("sceMpeg", "sceMpegChangeGetAvcAuMode") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegChangeGetAvcAuMode(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegChangeGetAvcAuMode(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegChangeGetAuModeFunction = new HLEModuleFunction("sceMpeg", "sceMpegChangeGetAuMode") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegChangeGetAuMode(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegChangeGetAuMode(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegGetAvcAuFunction = new HLEModuleFunction("sceMpeg", "sceMpegGetAvcAu") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegGetAvcAu(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegGetAvcAu(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegGetPcmAuFunction = new HLEModuleFunction("sceMpeg", "sceMpegGetPcmAu") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegGetPcmAu(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegGetPcmAu(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegGetAtracAuFunction = new HLEModuleFunction("sceMpeg", "sceMpegGetAtracAu") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegGetAtracAu(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegGetAtracAu(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegFlushStreamFunction = new HLEModuleFunction("sceMpeg", "sceMpegFlushStream") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegFlushStream(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegFlushStream(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegFlushAllStreamFunction = new HLEModuleFunction("sceMpeg", "sceMpegFlushAllStream") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegFlushAllStream(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegFlushAllStream(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegAvcDecodeFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcDecode") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegAvcDecode(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcDecode(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegAvcDecodeDetailFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcDecodeDetail") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegAvcDecodeDetail(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcDecodeDetail(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegAvcDecodeModeFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcDecodeMode") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegAvcDecodeMode(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcDecodeMode(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegAvcDecodeStopFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcDecodeStop") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegAvcDecodeStop(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcDecodeStop(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegAvcDecodeFlushFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcDecodeFlush") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegAvcDecodeFlush(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcDecodeFlush(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegAvcQueryYCbCrSizeFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcQueryYCbCrSize") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegAvcQueryYCbCrSize(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcQueryYCbCrSize(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegAvcInitYCbCrFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcInitYCbCr") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegAvcInitYCbCr(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcInitYCbCr(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegAvcDecodeYCbCrFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcDecodeYCbCr") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegAvcDecodeYCbCr(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcDecodeYCbCr(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegAvcDecodeStopYCbCrFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcDecodeStopYCbCr") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegAvcDecodeStopYCbCr(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcDecodeStopYCbCr(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegAvcCscFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcCsc") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegAvcCsc(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcCsc(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegAtracDecodeFunction = new HLEModuleFunction("sceMpeg", "sceMpegAtracDecode") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegAtracDecode(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAtracDecode(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegRingbufferQueryMemSizeFunction = new HLEModuleFunction("sceMpeg", "sceMpegRingbufferQueryMemSize") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegRingbufferQueryMemSize(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegRingbufferQueryMemSize(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegRingbufferConstructFunction = new HLEModuleFunction("sceMpeg", "sceMpegRingbufferConstruct") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegRingbufferConstruct(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegRingbufferConstruct(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegRingbufferDestructFunction = new HLEModuleFunction("sceMpeg", "sceMpegRingbufferDestruct") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegRingbufferDestruct(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegRingbufferDestruct(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegRingbufferPutFunction = new HLEModuleFunction("sceMpeg", "sceMpegRingbufferPut") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegRingbufferPut(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegRingbufferPut(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegRingbufferAvailableSizeFunction = new HLEModuleFunction("sceMpeg", "sceMpegRingbufferAvailableSize") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegRingbufferAvailableSize(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegRingbufferAvailableSize(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpeg_11CAB459Function = new HLEModuleFunction("sceMpeg", "sceMpeg_11CAB459") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpeg_11CAB459(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpeg_11CAB459(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegNextAvcRpAuFunction = new HLEModuleFunction("sceMpeg", "sceMpegNextAvcRpAu") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegNextAvcRpAu(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegNextAvcRpAu(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpeg_B27711A8Function = new HLEModuleFunction("sceMpeg", "sceMpeg_B27711A8") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpeg_B27711A8(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpeg_B27711A8(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpeg_D4DD6E75Function = new HLEModuleFunction("sceMpeg", "sceMpeg_D4DD6E75") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpeg_D4DD6E75(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpeg_D4DD6E75(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpeg_C345DED2Function = new HLEModuleFunction("sceMpeg", "sceMpeg_C345DED2") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpeg_C345DED2(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpeg_C345DED2(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpeg_AB0E9556Function = new HLEModuleFunction("sceMpeg", "sceMpeg_AB0E9556") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpeg_AB0E9556(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpeg_AB0E9556(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpegAvcDecodeDetail2Function = new HLEModuleFunction("sceMpeg", "sceMpegAvcDecodeDetail2") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpegAvcDecodeDetail2(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcDecodeDetail2(processor);";
-		}
-	};
-
-	public final HLEModuleFunction sceMpeg_988E9E12Function = new HLEModuleFunction("sceMpeg", "sceMpeg_988E9E12") {
-		@Override
-		public final void execute(Processor processor) {
-			sceMpeg_988E9E12(processor);
-		}
-		@Override
-		public final String compiledString() {
-			return "jpcsp.HLE.Modules.sceMpegModule.sceMpeg_988E9E12(processor);";
-		}
-	};
-
-};
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
+        System.out.println("Unimplemented NID function sceMpeg_AB0E9556 [0xAB0E9556]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
+
+    public void sceMpegAvcDecodeDetail2(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        /* put your own code here instead */
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
+        System.out.println("Unimplemented NID function sceMpegAvcDecodeDetail2 [0xCF3547A2]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
+
+    public void sceMpeg_988E9E12(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        /* put your own code here instead */
+
+        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
+        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+
+        System.out.println("Unimplemented NID function sceMpeg_988E9E12 [0x988E9E12]");
+
+        cpu.gpr[2] = 0xDEADC0DE;
+
+        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+    }
+
+    public final HLEModuleFunction sceMpegQueryStreamOffsetFunction = new HLEModuleFunction("sceMpeg", "sceMpegQueryStreamOffset") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegQueryStreamOffset(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegQueryStreamOffset(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegQueryStreamSizeFunction = new HLEModuleFunction("sceMpeg", "sceMpegQueryStreamSize") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegQueryStreamSize(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegQueryStreamSize(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegInitFunction = new HLEModuleFunction("sceMpeg", "sceMpegInit") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegInit(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegInit(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegFinishFunction = new HLEModuleFunction("sceMpeg", "sceMpegFinish") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegFinish(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegFinish(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegQueryMemSizeFunction = new HLEModuleFunction("sceMpeg", "sceMpegQueryMemSize") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegQueryMemSize(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegQueryMemSize(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegCreateFunction = new HLEModuleFunction("sceMpeg", "sceMpegCreate") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegCreate(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegCreate(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegDeleteFunction = new HLEModuleFunction("sceMpeg", "sceMpegDelete") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegDelete(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegDelete(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegRegistStreamFunction = new HLEModuleFunction("sceMpeg", "sceMpegRegistStream") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegRegistStream(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegRegistStream(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegUnRegistStreamFunction = new HLEModuleFunction("sceMpeg", "sceMpegUnRegistStream") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegUnRegistStream(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegUnRegistStream(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegMallocAvcEsBufFunction = new HLEModuleFunction("sceMpeg", "sceMpegMallocAvcEsBuf") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegMallocAvcEsBuf(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegMallocAvcEsBuf(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegFreeAvcEsBufFunction = new HLEModuleFunction("sceMpeg", "sceMpegFreeAvcEsBuf") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegFreeAvcEsBuf(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegFreeAvcEsBuf(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegQueryAtracEsSizeFunction = new HLEModuleFunction("sceMpeg", "sceMpegQueryAtracEsSize") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegQueryAtracEsSize(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegQueryAtracEsSize(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegQueryPcmEsSizeFunction = new HLEModuleFunction("sceMpeg", "sceMpegQueryPcmEsSize") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegQueryPcmEsSize(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegQueryPcmEsSize(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegInitAuFunction = new HLEModuleFunction("sceMpeg", "sceMpegInitAu") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegInitAu(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegInitAu(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegChangeGetAvcAuModeFunction = new HLEModuleFunction("sceMpeg", "sceMpegChangeGetAvcAuMode") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegChangeGetAvcAuMode(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegChangeGetAvcAuMode(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegChangeGetAuModeFunction = new HLEModuleFunction("sceMpeg", "sceMpegChangeGetAuMode") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegChangeGetAuMode(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegChangeGetAuMode(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegGetAvcAuFunction = new HLEModuleFunction("sceMpeg", "sceMpegGetAvcAu") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegGetAvcAu(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegGetAvcAu(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegGetPcmAuFunction = new HLEModuleFunction("sceMpeg", "sceMpegGetPcmAu") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegGetPcmAu(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegGetPcmAu(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegGetAtracAuFunction = new HLEModuleFunction("sceMpeg", "sceMpegGetAtracAu") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegGetAtracAu(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegGetAtracAu(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegFlushStreamFunction = new HLEModuleFunction("sceMpeg", "sceMpegFlushStream") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegFlushStream(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegFlushStream(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegFlushAllStreamFunction = new HLEModuleFunction("sceMpeg", "sceMpegFlushAllStream") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegFlushAllStream(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegFlushAllStream(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegAvcDecodeFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcDecode") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegAvcDecode(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcDecode(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegAvcDecodeDetailFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcDecodeDetail") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegAvcDecodeDetail(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcDecodeDetail(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegAvcDecodeModeFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcDecodeMode") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegAvcDecodeMode(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcDecodeMode(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegAvcDecodeStopFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcDecodeStop") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegAvcDecodeStop(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcDecodeStop(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegAvcDecodeFlushFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcDecodeFlush") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegAvcDecodeFlush(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcDecodeFlush(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegAvcQueryYCbCrSizeFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcQueryYCbCrSize") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegAvcQueryYCbCrSize(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcQueryYCbCrSize(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegAvcInitYCbCrFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcInitYCbCr") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegAvcInitYCbCr(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcInitYCbCr(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegAvcDecodeYCbCrFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcDecodeYCbCr") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegAvcDecodeYCbCr(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcDecodeYCbCr(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegAvcDecodeStopYCbCrFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcDecodeStopYCbCr") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegAvcDecodeStopYCbCr(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcDecodeStopYCbCr(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegAvcCscFunction = new HLEModuleFunction("sceMpeg", "sceMpegAvcCsc") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegAvcCsc(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcCsc(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegAtracDecodeFunction = new HLEModuleFunction("sceMpeg", "sceMpegAtracDecode") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegAtracDecode(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAtracDecode(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegRingbufferQueryMemSizeFunction = new HLEModuleFunction("sceMpeg", "sceMpegRingbufferQueryMemSize") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegRingbufferQueryMemSize(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegRingbufferQueryMemSize(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegRingbufferConstructFunction = new HLEModuleFunction("sceMpeg", "sceMpegRingbufferConstruct") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegRingbufferConstruct(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegRingbufferConstruct(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegRingbufferDestructFunction = new HLEModuleFunction("sceMpeg", "sceMpegRingbufferDestruct") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegRingbufferDestruct(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegRingbufferDestruct(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegRingbufferPutFunction = new HLEModuleFunction("sceMpeg", "sceMpegRingbufferPut") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegRingbufferPut(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegRingbufferPut(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegRingbufferAvailableSizeFunction = new HLEModuleFunction("sceMpeg", "sceMpegRingbufferAvailableSize") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegRingbufferAvailableSize(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegRingbufferAvailableSize(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpeg_11CAB459Function = new HLEModuleFunction("sceMpeg", "sceMpeg_11CAB459") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpeg_11CAB459(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpeg_11CAB459(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegNextAvcRpAuFunction = new HLEModuleFunction("sceMpeg", "sceMpegNextAvcRpAu") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegNextAvcRpAu(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegNextAvcRpAu(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpeg_B27711A8Function = new HLEModuleFunction("sceMpeg", "sceMpeg_B27711A8") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpeg_B27711A8(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpeg_B27711A8(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpeg_D4DD6E75Function = new HLEModuleFunction("sceMpeg", "sceMpeg_D4DD6E75") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpeg_D4DD6E75(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpeg_D4DD6E75(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpeg_C345DED2Function = new HLEModuleFunction("sceMpeg", "sceMpeg_C345DED2") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpeg_C345DED2(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpeg_C345DED2(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpeg_AB0E9556Function = new HLEModuleFunction("sceMpeg", "sceMpeg_AB0E9556") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpeg_AB0E9556(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpeg_AB0E9556(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpegAvcDecodeDetail2Function = new HLEModuleFunction("sceMpeg", "sceMpegAvcDecodeDetail2") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpegAvcDecodeDetail2(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpegAvcDecodeDetail2(processor);";
+        }
+    };
+
+    public final HLEModuleFunction sceMpeg_988E9E12Function = new HLEModuleFunction("sceMpeg", "sceMpeg_988E9E12") {
+        @Override
+        public final void execute(Processor processor) {
+            sceMpeg_988E9E12(processor);
+        }
+        @Override
+        public final String compiledString() {
+            return "jpcsp.HLE.Modules.sceMpegModule.sceMpeg_988E9E12(processor);";
+        }
+    };
+
+}
