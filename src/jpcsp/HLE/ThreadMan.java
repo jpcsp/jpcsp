@@ -392,7 +392,11 @@ public class ThreadMan {
     }
 
     public int getCurrentThreadID() {
-        return current_thread.uid;
+    	if (current_thread == null) {
+    		return -1;
+    	}
+
+    	return current_thread.uid;
     }
 
     public SceKernelThreadInfo getCurrentThread() {
