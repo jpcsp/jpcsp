@@ -30,51 +30,51 @@ import jpcsp.Allegrex.CpuState; // New-Style Processor
 public class sceDmac implements HLEModule {
 	@Override
 	public String getName() { return "sceDmac"; }
-	
+
 	@Override
 	public void installModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
-		
+
 			mm.addFunction(sceDmacMemcpyFunction, 0x617F3FE6);
 			mm.addFunction(sceDmacTryMemcpyFunction, 0xD97F94D8);
-			
+
 		}
 	}
-	
+
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
-		
+
 			mm.removeFunction(sceDmacMemcpyFunction);
 			mm.removeFunction(sceDmacTryMemcpyFunction);
-			
+
 		}
 	}
-	
-	
-	public void sceDmacMemcpy(Processor processor) {
+
+
+    public void sceDmacMemcpy(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
         int dest   = cpu.gpr[4];
         int source = cpu.gpr[5];
         int size   = cpu.gpr[6];
-        Modules.log.debug("sceDmacMemcpy dest=0x" + Integer.toHexString(dest) + ", source=0x" + Integer.toHexString(source) + ", size=0x" + Integer.toHexString(size));
+        Modules.log.debug(String.format("sceDmacMemcpy dest=0x%08X, source=0x%08X, size=0x%08X", dest, source, size));
         mem.memcpy(dest, source, size);
         cpu.gpr[2] = 0;
-	}
-    
+    }
+
 	public void sceDmacTryMemcpy(Processor processor) {
                CpuState cpu = processor.cpu;
                Memory mem = Processor.memory;
-		
+
 		System.out.println("Unimplemented NID function sceDmacTryMemcpy [0xD97F94D8]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
-		
+
 	}
-    
+
 	public final HLEModuleFunction sceDmacMemcpyFunction = new HLEModuleFunction("sceDmac", "sceDmacMemcpy") {
 		@Override
 		public final void execute(Processor processor) {
@@ -85,7 +85,7 @@ public class sceDmac implements HLEModule {
 			return "jpcsp.HLE.Modules.sceDmacModule.sceDmacMemcpy(processor);";
 		}
 	};
-    
+
 	public final HLEModuleFunction sceDmacTryMemcpyFunction = new HLEModuleFunction("sceDmac", "sceDmacTryMemcpy") {
 		@Override
 		public final void execute(Processor processor) {
@@ -96,5 +96,5 @@ public class sceDmac implements HLEModule {
 			return "jpcsp.HLE.Modules.sceDmacModule.sceDmacTryMemcpy(processor);";
 		}
 	};
-    
+
 };
