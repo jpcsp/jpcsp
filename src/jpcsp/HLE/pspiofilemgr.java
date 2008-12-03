@@ -31,6 +31,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
+
+import org.apache.log4j.Logger;
+
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
@@ -48,6 +51,8 @@ public class pspiofilemgr {
     private static pspiofilemgr  instance;
     private final boolean debug = true; //enable/disable debug
     //private final boolean debug = false; //enable/disable debug
+    private static Logger stdout = Logger.getLogger("stdout");
+    private static Logger stderr = Logger.getLogger("stderr");
 
     public final static int PSP_O_RDONLY   = 0x0001;
     public final static int PSP_O_WRONLY   = 0x0002;
@@ -493,12 +498,12 @@ public class pspiofilemgr {
         data_addr &= 0x3fffffff; // remove kernel/cache bits
 
         if (uid == 1) { // stdout
-            String stdout = readStringNZ(data_addr, size);
-            System.out.print(stdout);
+            String message = readStringNZ(data_addr, size);
+            stdout.info(message);
             Emulator.getProcessor().cpu.gpr[2] = size;
         } else if (uid == 2) { // stderr
-            String stderr = readStringNZ(data_addr, size);
-            System.out.print(stderr);
+            String message = readStringNZ(data_addr, size);
+            stderr.info(message);
             Emulator.getProcessor().cpu.gpr[2] = size;
         } else {
             if (debug) Modules.log.debug("sceIoWrite - uid " + Integer.toHexString(uid) + " data " + Integer.toHexString(data_addr) + " size 0x" + Integer.toHexString(size));
