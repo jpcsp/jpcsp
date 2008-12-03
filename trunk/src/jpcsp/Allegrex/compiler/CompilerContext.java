@@ -305,7 +305,11 @@ public class CompilerContext {
 
     public void startInstruction(MethodVisitor mv, CodeInstruction codeInstruction) {
     	if (RuntimeContext.enableLineNumbers) {
-    		mv.visitLineNumber(codeInstruction.getAddress() - getCodeBlock().getLowestAddress(), codeInstruction.getLabel());
+    		int lineNumber = codeInstruction.getAddress() - getCodeBlock().getLowestAddress();
+    		// Java line number is unsigned 16bits
+    		if (lineNumber >= 0 && lineNumber <= 0xFFFF) {
+    			mv.visitLineNumber(lineNumber, codeInstruction.getLabel());
+    		}
     	}
 
     	if (RuntimeContext.debugCodeInstruction && RuntimeContext.log.isDebugEnabled()) {
