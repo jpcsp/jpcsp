@@ -666,7 +666,7 @@ public class sceMpeg implements HLEModule {
 
         System.out.println("Unimplemented NID function sceMpegAvcDecodeDetail [0x0F6C18D7]");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = 0x0;
 
         // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
@@ -761,7 +761,7 @@ public class sceMpeg implements HLEModule {
 
         System.out.println("Unimplemented NID function sceMpegAvcQueryYCbCrSize [0x211A057C]");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = 0x0;
 
         // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
@@ -778,7 +778,7 @@ public class sceMpeg implements HLEModule {
 
         System.out.println("Unimplemented NID function sceMpegAvcInitYCbCr [0x67179B1B]");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = 0x0;
 
         // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
@@ -795,7 +795,7 @@ public class sceMpeg implements HLEModule {
 
         System.out.println("Unimplemented NID function sceMpegAvcDecodeYCbCr [0xF0EB1125]");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = 0x0;
 
         // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
