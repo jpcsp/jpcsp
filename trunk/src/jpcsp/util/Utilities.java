@@ -263,4 +263,12 @@ public class Utilities {
 
     	return 1;
     }
+
+    public static String stripNL(String s) {
+    	if (s != null && s.endsWith("\n")) {
+    		s = s.substring(0, s.length() - 1);
+    	}
+
+    	return s;
+    }
 }
