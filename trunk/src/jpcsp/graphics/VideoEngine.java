@@ -436,7 +436,7 @@ public class VideoEngine {
     // UnSwizzling based on pspplayer
     // no longer used...
     private Buffer unswizzleTexture32() {
-        int rowWidth = texture_width0 * 4;
+        int rowWidth = texture_buffer_width0 * 4;
         int pitch = ( rowWidth - 16 ) / 4;
         int bxc = rowWidth / 16;
         int byc = texture_height0 / 8;
@@ -470,7 +470,7 @@ public class VideoEngine {
     // UnSwizzling based on pspplayer
     private Buffer unswizzleTextureFromMemory(int texaddr, int bytesPerPixel) {
         Memory mem = Memory.getInstance();
-        int rowWidth = (bytesPerPixel > 0) ? (texture_width0 * bytesPerPixel) : (texture_width0 / 2);
+        int rowWidth = (bytesPerPixel > 0) ? (texture_buffer_width0 * bytesPerPixel) : (texture_buffer_width0 / 2);
         int pitch = ( rowWidth - 16 ) / 4;
         int bxc = rowWidth / 16;
         int byc = texture_height0 / 8;
@@ -1466,7 +1466,7 @@ public class VideoEngine {
                 if (log.isDebugEnabled()) {
                     switch (type) {
                         case PRIM_POINT:
-                            log("pirm point " + numberOfVertex + "x");
+                            log("prim point " + numberOfVertex + "x");
                             break;
                         case PRIM_LINE:
                             log("prim line " + (numberOfVertex / 2) + "x");
@@ -1619,6 +1619,11 @@ public class VideoEngine {
                             		doSkinning(vinfo, v);
                                 vboBuffer.put(v.p);
                             }
+                            if (log.isDebugEnabled()) {
+                            	if (vinfo.texture != 0 && vinfo.position != 0) {
+                            		log("  vertex#" + i + " (" + ((int) v.t[0]) + "," + ((int) v.t[1]) + ") at (" + ((int) v.p[0]) + "," + ((int) v.p[1]) + "," + ((int) v.p[2]) + ")");
+                            	}
+                            }
                         }
 
                         if(useVBO)
@@ -1626,6 +1631,7 @@ public class VideoEngine {
                         gl.glDrawArrays(prim_mapping[type], 0, numberOfVertex);
                         break;
 
+                        
                     case PRIM_SPRITES:
                         gl.glPushAttrib(GL.GL_ENABLE_BIT);
                         gl.glDisable(GL.GL_CULL_FACE);
@@ -1692,7 +1698,6 @@ public class VideoEngine {
 
                 if(transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD)
                 	gl.glPopAttrib();
-
                 break;
             }
 
@@ -2547,7 +2552,7 @@ public class VideoEngine {
     		                      int rMask, int rShift,
     		                      int gMask, int gShift,
     		                      int bMask, int bShift) {
-    	for (int i = 0; i < texture_width0*texture_height0; i++) {
+    	for (int i = 0; i < texture_buffer_width0*texture_height0; i++) {
     		int pixel = source[i];
     		int color = ((pixel & aMask) << aShift) |
     		            ((pixel & rMask) << rShift) |
@@ -2576,6 +2581,7 @@ public class VideoEngine {
         } else {
             // Check if the texture is in the cache
             texture = TextureCache.getInstance().getTexture( texture_base_pointer0
+                                                           , texture_buffer_width0
                                                            , texture_width0
                                                            , texture_height0
                                                            , texture_storage
@@ -2590,6 +2596,7 @@ public class VideoEngine {
             // Create the texture if not yet in the cache
             if (texture == null) {
                 texture = new Texture( texture_base_pointer0
+                                     , texture_buffer_width0
                                      , texture_width0
                                      , texture_height0
                                      , texture_storage
@@ -2609,7 +2616,7 @@ public class VideoEngine {
         // Load the texture if not yet loaded
         if (texture == null || !texture.isLoaded()) {
             if (log.isDebugEnabled()) {
-                log(helper.getCommandString(TFLUSH) + " " + String.format("0x%08X", texture_base_pointer0) + " (" + texture_width0 + "," + texture_height0 + ")");
+                log(helper.getCommandString(TFLUSH) + " " + String.format("0x%08X", texture_base_pointer0) + ", buffer_width=" + texture_buffer_width0 + " (" + texture_width0 + "," + texture_height0 + ")");
                 log(helper.getCommandString(TFLUSH) + " texture_storage=0x" + Integer.toHexString(texture_storage) + ", tex_clut_mode=0x" + Integer.toHexString(tex_clut_mode) + ", tex_clut_addr=" + String.format("0x%08X", tex_clut_addr) + ", texture_swizzle=" + texture_swizzle);
             }
             // Extract texture information with the minor conversion possible
@@ -2644,7 +2651,7 @@ public class VideoEngine {
                             textureByteAlignment = 2;  // 16 bits
 
                             if (!texture_swizzle) {
-                                for (int i = 0, j = 0; i < texture_width0*texture_height0; i += 2, j++) {
+                                for (int i = 0, j = 0; i < texture_buffer_width0*texture_height0; i += 2, j++) {
 
                                     int index = mem.read8(texaddr+j);
 
@@ -2668,7 +2675,7 @@ public class VideoEngine {
                             texture_type = GL.GL_UNSIGNED_BYTE;
 
                             if (!texture_swizzle) {
-                                for (int i = 0, j = 0; i < texture_width0*texture_height0; i += 2, j++) {
+                                for (int i = 0, j = 0; i < texture_buffer_width0*texture_height0; i += 2, j++) {
 
                                     int index = mem.read8(texaddr+j);
 
@@ -2678,7 +2685,7 @@ public class VideoEngine {
                                 final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
                             } else {
                                 unswizzleTextureFromMemory(texaddr, 0);
-                                int pixels = texture_width0 * texture_height0;
+                                int pixels = texture_buffer_width0 * texture_height0;
                                 for (int i = pixels - 8, j = (pixels / 8) - 1; i >= 0; i -= 8, j--) {
                                     int n = tmp_texture_buffer32[j];
                                     int index = n & 0xF;
@@ -2726,14 +2733,14 @@ public class VideoEngine {
                             textureByteAlignment = 2;  // 16 bits
 
                             if (!texture_swizzle) {
-                                for (int i = 0; i < texture_width0*texture_height0; i++) {
+                                for (int i = 0; i < texture_buffer_width0*texture_height0; i++) {
                                     int index = mem.read8(texaddr+i);
                                     tmp_texture_buffer16[i]     = (short)mem.read16(texclut + getClutIndex(index) * 2);
                                 }
                                 final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
                             } else {
                                 unswizzleTextureFromMemory(texaddr, 1);
-                                for (int i = 0, j = 0; i < texture_width0*texture_height0; i += 4, j++) {
+                                for (int i = 0, j = 0; i < texture_buffer_width0*texture_height0; i += 4, j++) {
                                     int n = tmp_texture_buffer32[j];
                                     int index = n & 0xFF;
                                     tmp_texture_buffer16[i + 0] = (short)mem.read16(texclut + getClutIndex(index) * 2);
@@ -2757,14 +2764,14 @@ public class VideoEngine {
                             texture_type = GL.GL_UNSIGNED_BYTE;
 
                             if (!texture_swizzle) {
-                                for (int i = 0; i < texture_width0*texture_height0; i++) {
+                                for (int i = 0; i < texture_buffer_width0*texture_height0; i++) {
                                     int index = mem.read8(texaddr+i);
                                     tmp_texture_buffer32[i] = mem.read32(texclut + getClutIndex(index) * 4);
                                 }
                                 final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
                             } else {
                                 unswizzleTextureFromMemory(texaddr, 1);
-                                int pixels = texture_width0 * texture_height0;
+                                int pixels = texture_buffer_width0 * texture_height0;
                                 for (int i = pixels - 4, j = (pixels / 4) - 1; i >= 0; i -= 4, j--) {
                                     int n = tmp_texture_buffer32[j];
                                     int index = n & 0xFF;
@@ -2811,7 +2818,7 @@ public class VideoEngine {
                             texture_width0 * texture_height0).slice();
                         */
 
-                        for (int i = 0; i < texture_width0*texture_height0; i++) {
+                        for (int i = 0; i < texture_buffer_width0*texture_height0; i++) {
                             int pixel = mem.read16(texaddr+i*2);
                             tmp_texture_buffer16[i] = (short)pixel;
                         }
@@ -2834,12 +2841,12 @@ public class VideoEngine {
                     if (!texture_swizzle) {
                         // try and use ByteBuffer.wrap on the memory, taking note of vram/main ram
                         // speed difference is unnoticeable :(
-                        Buffer pixels = mem.getBuffer(texaddr, texture_width0 * texture_height0 * 4);
+                        Buffer pixels = mem.getBuffer(texaddr, texture_buffer_width0 * texture_height0 * 4);
                         if (pixels != null) {
                         	final_buffer = pixels;
                         } else {
                             VideoEngine.log.warn("tpsm 3 slow");
-                            for (int i = 0; i < texture_width0*texture_height0; i++) {
+                            for (int i = 0; i < texture_buffer_width0*texture_height0; i++) {
                                 tmp_texture_buffer32[i] = mem.read32(texaddr+i*4);
                             }
                             final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
@@ -2887,7 +2894,7 @@ public class VideoEngine {
             gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, tex_min_filter);
             gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_mag_filter);
             gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, textureByteAlignment);
-            gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, 0);   // ROW_LENGTH = width
+            gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, texture_buffer_width0);
 
             gl.glTexImage2D  (  GL.GL_TEXTURE_2D,
                                 0,

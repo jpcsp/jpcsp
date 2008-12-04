@@ -114,7 +114,7 @@ public class TextureCache {
         }
 	}
 
-	public Texture getTexture(int addr, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks) {
+	public Texture getTexture(int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks) {
 		statistics.totalHits++;
 		Texture texture = getTexture(addr);
 
@@ -123,7 +123,7 @@ public class TextureCache {
 			return texture;
 		}
 
-		if (texture.equals(addr, width, height, pixelStorage, clutAddr, clutMode, clutStart, clutShift, clutMask, clutNumBlocks)) {
+		if (texture.equals(addr, lineWidth, width, height, pixelStorage, clutAddr, clutMode, clutStart, clutShift, clutMask, clutNumBlocks)) {
 			statistics.successfulHits++;
 			return texture;
 		}
