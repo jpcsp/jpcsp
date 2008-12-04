@@ -24,6 +24,7 @@ import jpcsp.graphics.VideoEngine;
 
 public class Texture {
 	private int addr;
+	private int lineWidth;
 	private int width;
 	private int height;
 	private int pixelStorage;
@@ -38,8 +39,9 @@ public class Texture {
 	private int glId = -1;	// id created by glGenTextures
 	private boolean loaded = false;	// is the texture already loaded?
 
-	public Texture(int addr, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks) {
+	public Texture(int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks) {
 		this.addr = addr;
+		this.lineWidth = lineWidth;
 		this.width = width;
 		this.height = height;
 		this.pixelStorage = pixelStorage;
@@ -51,7 +53,7 @@ public class Texture {
 		this.clutNumBlocks = clutNumBlocks;
 	}
 
-	private static int hashCode(int addr, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks) {
+	private static int hashCode(int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks) {
 	    //
 		// HashCode is computed as follows:
 	    // - XOR of pixel buffer
@@ -65,7 +67,7 @@ public class Texture {
 		Memory mem = Memory.getInstance();
 
 		if (addr != 0) {
-			int bufferLengthInBytes = width * height;
+			int bufferLengthInBytes = lineWidth * height;
 			switch (pixelStorage) {
 				case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650:
 				case GeCommands.TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551:
@@ -112,15 +114,16 @@ public class Texture {
 
 	public int hashCode() {
 		if (!hashCodeComputed) {
-			hashCode = hashCode(addr, width, height, pixelStorage, clutAddr, clutMode, clutStart, clutShift, clutMask, clutNumBlocks);
+			hashCode = hashCode(addr, lineWidth, width, height, pixelStorage, clutAddr, clutMode, clutStart, clutShift, clutMask, clutNumBlocks);
 			hashCodeComputed = true;
 		}
 
 		return hashCode;
 	}
 
-	public boolean equals(int addr, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks) {
+	public boolean equals(int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks) {
 		if (this.addr != addr ||
+			this.lineWidth != lineWidth ||
 			this.width != width ||
 			this.height != height ||
 			this.pixelStorage != pixelStorage ||
@@ -134,7 +137,7 @@ public class Texture {
 			return false;
 		}
 
-		int hashCode = hashCode(addr, width, height, pixelStorage, clutAddr, clutMode, clutStart, clutShift, clutMask, clutNumBlocks);
+		int hashCode = hashCode(addr, lineWidth, width, height, pixelStorage, clutAddr, clutMode, clutStart, clutShift, clutMask, clutNumBlocks);
 		if (hashCode != hashCode()) {
 			return false;
 		}
