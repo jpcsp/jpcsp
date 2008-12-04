@@ -21,7 +21,6 @@ package jpcsp.graphics;
 import static jpcsp.graphics.GeCommands.*;
 
 import java.nio.Buffer;
-import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
@@ -1225,6 +1224,7 @@ public class VideoEngine {
             case TFLT: {
             	log ("sceGuTexFilter(min, mag)");
 
+            	// TODO Support Mipmaps
             	switch ((normalArgument>>8) & 0xFF)
             	{
 	            	case TFLT_MAGNIFYING_FILTER_NEAREST: {
@@ -1237,18 +1237,26 @@ public class VideoEngine {
 	            	}
 	            	case TFLT_MAGNIFYING_FILTER_MIPMAP_NEAREST_NEAREST: {
 	            		tex_mag_filter = GL.GL_NEAREST_MIPMAP_NEAREST;
+	            		log.warn("MIPMAP is not yet supported");
+	            		tex_mag_filter = GL.GL_NEAREST;
 	            		break;
 	            	}
 	            	case TFLT_MAGNIFYING_FILTER_MIPMAP_NEAREST_LINEAR: {
 	            		tex_mag_filter = GL.GL_NEAREST_MIPMAP_LINEAR;
+	            		log.warn("MIPMAP is not yet supported");
+	            		tex_mag_filter = GL.GL_LINEAR;
 	            		break;
 	            	}
 	            	case TFLT_MAGNIFYING_FILTER_MIPMAP_LINEAR_NEAREST: {
 	            		tex_mag_filter = GL.GL_LINEAR_MIPMAP_NEAREST;
+	            		log.warn("MIPMAP is not yet supported");
+	            		tex_mag_filter = GL.GL_NEAREST;
 	            		break;
 	            	}
 	            	case TFLT_MAGNIFYING_FILTER_MIPMAP_LINEAR_LINEAR: {
 	            		tex_mag_filter = GL.GL_LINEAR_MIPMAP_LINEAR;
+	            		log.warn("MIPMAP is not yet supported");
+	            		tex_mag_filter = GL.GL_LINEAR;
 	            		break;
 	            	}
 
@@ -1270,18 +1278,26 @@ public class VideoEngine {
 	            	}
 	            	case TFLT_MAGNIFYING_FILTER_MIPMAP_NEAREST_NEAREST: {
 	            		tex_min_filter = GL.GL_NEAREST_MIPMAP_NEAREST;
+	            		log.warn("MIPMAP is not yet supported");
+	            		tex_min_filter = GL.GL_NEAREST;
 	            		break;
 	            	}
 	            	case TFLT_MAGNIFYING_FILTER_MIPMAP_NEAREST_LINEAR: {
 	            		tex_min_filter = GL.GL_NEAREST_MIPMAP_LINEAR;
+	            		log.warn("MIPMAP is not yet supported");
+	            		tex_min_filter = GL.GL_LINEAR;
 	            		break;
 	            	}
 	            	case TFLT_MAGNIFYING_FILTER_MIPMAP_LINEAR_NEAREST: {
 	            		tex_min_filter = GL.GL_LINEAR_MIPMAP_NEAREST;
+	            		log.warn("MIPMAP is not yet supported");
+	            		tex_min_filter = GL.GL_NEAREST;
 	            		break;
 	            	}
 	            	case TFLT_MAGNIFYING_FILTER_MIPMAP_LINEAR_LINEAR: {
 	            		tex_min_filter = GL.GL_LINEAR_MIPMAP_LINEAR;
+	            		log.warn("MIPMAP is not yet supported");
+	            		tex_min_filter = GL.GL_LINEAR;
 	            		break;
 	            	}
 
