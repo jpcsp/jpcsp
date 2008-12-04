@@ -140,6 +140,49 @@ public class PSF {
         }
     }
 
+    private boolean safeEquals(Object a, Object b) {
+        return (a == null && b == null) || (a != null && a.equals(b));
+    }
+
+    public boolean isLikelyHomebrew() {
+        boolean homebrew = false;
+
+        String disc_version = getString("DISC_VERSION");
+        String disc_id = getString("DISC_ID");
+        String category = getString("CATEGORY");
+        Long bootable = (Long)get("BOOTABLE");
+        Long region = (Long)get("REGION");
+        String psp_system_ver = getString("PSP_SYSTEM_VER");
+        Long parental_level = (Long)get("PARENTAL_LEVEL");
+
+        Long ref_one = new Long(1);
+        Long ref_region = new Long(32768);
+
+        if (safeEquals(disc_version, "1.00") &&
+            safeEquals(disc_id, "UCJS10041") && // loco roco demo, should not false positive since that demo has sys ver 3.40
+            safeEquals(category, "MG") &&
+            safeEquals(bootable, ref_one) &&
+            safeEquals(region, ref_region) &&
+            safeEquals(psp_system_ver, "1.00") &&
+            safeEquals(parental_level, ref_one)) {
+
+            if (map.size() == 8) {
+                homebrew = true;
+            } else if (map.size() == 9 &&
+                safeEquals(get("MEMSIZE"), ref_one)) {
+                // lua player hm 8
+                homebrew = true;
+            }
+        } else if (map.size() == 4 &&
+            safeEquals(category, "MG") &&
+            safeEquals(bootable, ref_one) &&
+            safeEquals(region, ref_region)) {
+            homebrew = true;
+        }
+
+        return homebrew;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -151,6 +194,7 @@ public class PSF {
                 sb.append(entry.getValue());
             sb.append('\n');
         }
+        sb.append("probably homebrew? " + isLikelyHomebrew());
         return sb.toString();
     }
 

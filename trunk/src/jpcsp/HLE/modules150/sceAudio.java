@@ -152,6 +152,12 @@ public class sceAudio implements HLEModule {
         }
     }
 
+    private boolean enabled;
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
     private int doAudioOutput (int channel, int pvoid_buf)
     {
         int ret = -1;
@@ -184,7 +190,7 @@ public class sceAudio implements HLEModule {
                 /*
                 for(int i=0;i<bytes;i++)
                 {
-                    data[i] = (byte)Emulator.getMemory().read8(pvoid_buf+i);
+                    data[i] = (byte)Memory.getInstance().read8(pvoid_buf+i);
                 }
                  */
 
@@ -194,7 +200,7 @@ public class sceAudio implements HLEModule {
                     int nsamples = pspchannels[channel].allocatedSamples;
                     for(int i=0;i<nsamples;i++)
                     {
-                        short lval = (short)Emulator.getMemory().read16(pvoid_buf+i);
+                        short lval = (short)Memory.getInstance().read16(pvoid_buf+i);
                         short rval = lval;
 
                         lval = (short)((((int)lval)*pspchannels[channel].leftVolume)>>16);
@@ -211,8 +217,8 @@ public class sceAudio implements HLEModule {
                     int nsamples = pspchannels[channel].allocatedSamples;
                     for(int i=0;i<nsamples;i++)
                     {
-                        short lval = (short)Emulator.getMemory().read16(pvoid_buf+i*2);
-                        short rval = (short)Emulator.getMemory().read16(pvoid_buf+i*2+1);
+                        short lval = (short)Memory.getInstance().read16(pvoid_buf+i*2);
+                        short rval = (short)Memory.getInstance().read16(pvoid_buf+i*2+1);
 
                         lval = (short)((((int)lval)*pspchannels[channel].leftVolume)>>16);
                         rval = (short)((((int)rval)*pspchannels[channel].rightVolume)>>16);
@@ -438,10 +444,9 @@ public class sceAudio implements HLEModule {
 
         int channel = cpu.gpr[4], samplecount = cpu.gpr[5], format = cpu.gpr[6];
 
-        //if(false)
-        if(true)
+        if (!enabled)
         {
-            Modules.log.debug("IGNORED sceAudioChReserve channel= " + channel + " samplecount = " + samplecount + " format = " + format);
+            Modules.log.warn("IGNORED sceAudioChReserve channel= " + channel + " samplecount = " + samplecount + " format = " + format);
             cpu.gpr[2] = -1;
         }
         else
