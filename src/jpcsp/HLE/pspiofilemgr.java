@@ -498,11 +498,11 @@ public class pspiofilemgr {
         data_addr &= 0x3fffffff; // remove kernel/cache bits
 
         if (uid == 1) { // stdout
-            String message = readStringNZ(data_addr, size);
+            String message = Utilities.stripNL(readStringNZ(data_addr, size));
             stdout.info(message);
             Emulator.getProcessor().cpu.gpr[2] = size;
         } else if (uid == 2) { // stderr
-            String message = readStringNZ(data_addr, size);
+            String message = Utilities.stripNL(readStringNZ(data_addr, size));
             stderr.info(message);
             Emulator.getProcessor().cpu.gpr[2] = size;
         } else {
