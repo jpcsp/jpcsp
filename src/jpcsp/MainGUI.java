@@ -110,7 +110,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         int pos[] = Settings.getInstance().readWindowPos("mainwindow");
         setLocation(pos[0], pos[1]);
-        State.fileLogger.setLocation(pos[0] + 100, pos[1] + 50);
+        State.fileLogger.setLocation(pos[0] + 488, pos[1] + 18);
         setTitle(version);
 
         /*add glcanvas to frame and pack frame to get the canvas size*/
@@ -490,8 +490,6 @@ public void loadFile(File file) {
         if (consolewin != null)
             consolewin.clearScreenMessages();
 
-
-
         umdLoaded = false;
         loadedFile = file;
 
@@ -501,7 +499,16 @@ public void loadFile(File file) {
         SceModule module = emulator.load(pspifyFilename(file.getPath()), readbuffer);
         roChannel.close(); // doesn't seem to work properly :(
 
-        String title = module.psf != null ? module.psf.getPrintableString("TITLE") : file.getParentFile().getName();
+        PSF psf = module.psf;
+        String title;
+        boolean isHomebrew;
+        if (psf != null) {
+            title = psf.getPrintableString("TITLE");
+            isHomebrew = psf.isLikelyHomebrew();
+        } else {
+            title = file.getParentFile().getName();
+            isHomebrew = true; // missing psf, assume homebrew
+        }
         setTitle(version + " - " + title);
         addRecentFile(file, title);
 
@@ -510,6 +517,7 @@ public void loadFile(File file) {
         pspiofilemgr.getInstance().setfilepath(findpath);
         pspiofilemgr.getInstance().setIsoReader(null);
         jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(null);
+        jpcsp.HLE.Modules.sceAudioModule.setEnabled(!isHomebrew);
 
         if (instructioncounter != null)
             instructioncounter.RefreshWindow();
@@ -767,6 +775,7 @@ public void loadUMD(File file) {
             //pspiofilemgr.getInstance().setfilepath("disc0/PSP_GAME/SYSDIR");
             pspiofilemgr.getInstance().setIsoReader(iso);
             jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(iso);
+            jpcsp.HLE.Modules.sceAudioModule.setEnabled(true);
 
             if (instructioncounter != null)
                 instructioncounter.RefreshWindow();
