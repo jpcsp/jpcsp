@@ -67,7 +67,7 @@ public class ThreadMan {
     private boolean insideCallback;
     private HashMap<Integer, SceKernelCallbackInfo> callbackMap;
 
-    private static final boolean USE_THREAD_BANLIST = false;
+    private  boolean USE_THREAD_BANLIST = false;
 
     // see sceKernelGetThreadmanIdList
     public final static int SCE_KERNEL_TMID_Thread             = 1;
@@ -663,6 +663,10 @@ public class ThreadMan {
         }
     }
 
+
+    public void setEnabled(boolean enabled) {
+        USE_THREAD_BANLIST = enabled;
+    }
     /** use lower case in this list */
     private final String[] threadNameBanList = new String[] {
         "bgm thread", "sgx-psp-freq-thr"
