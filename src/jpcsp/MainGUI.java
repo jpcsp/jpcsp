@@ -26,13 +26,16 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Properties;
 import java.util.Vector;
 
 import javax.swing.JFileChooser;
@@ -774,12 +777,16 @@ public void loadUMD(File file) {
 
             pspiofilemgr.getInstance().setfilepath("disc0/");
             //pspiofilemgr.getInstance().setfilepath("disc0/PSP_GAME/SYSDIR");
+         
             pspiofilemgr.getInstance().setIsoReader(iso);
             jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(iso);
-            boolean isEnable = Settings.getInstance().readBool("emu.disablesceAudio");
-            jpcsp.HLE.Modules.sceAudioModule.setEnabled(!isEnable);
-            boolean isEnable2= Settings.getInstance().readBool("emu.ignoreaudiothreads");
-            jpcsp.HLE.ThreadMan.getInstance().setEnabled(isEnable2);
+            if(!checkforpatches(discid))//if no patch file found
+            {
+              boolean isEnable = Settings.getInstance().readBool("emu.disablesceAudio");
+              jpcsp.HLE.Modules.sceAudioModule.setEnabled(!isEnable);
+              boolean isEnable2= Settings.getInstance().readBool("emu.ignoreaudiothreads");
+              jpcsp.HLE.ThreadMan.getInstance().setEnabled(isEnable2);
+            }
 
             if (instructioncounter != null)
                 instructioncounter.RefreshWindow();
@@ -802,7 +809,31 @@ public void loadUMD(File file) {
         }
     }
 }
+public boolean checkforpatches(String name)
+{
+    File patchfile = new File("patches/" + name + ".patch");
+    if(!patchfile.exists())
+    {
+      System.out.println("No patch file found for this game");
+      return false;
+    }
+    Properties patchSettings= new Properties();
+    try {
+     patchSettings.load(new BufferedInputStream(new FileInputStream(patchfile)));
+     } catch (FileNotFoundException e) {
+			e.printStackTrace();
+	} catch (IOException e) {
+			e.printStackTrace();
+	}
+    String sceAudio = patchSettings.getProperty("emu.disablesceAudio");
+    if(sceAudio != null)
+        jpcsp.HLE.Modules.sceAudioModule.setEnabled(!(Integer.parseInt(sceAudio) != 0));
+    String threadban = patchSettings.getProperty("emu.ignoreaudiothreads");
+    if(threadban !=null)
+      jpcsp.HLE.ThreadMan.getInstance().setEnabled(Integer.parseInt(threadban) != 0);
+    return true;
 
+}
 private void ResetEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetEmuActionPerformed
     resetEmu();
 }//GEN-LAST:event_ResetEmuActionPerformed
