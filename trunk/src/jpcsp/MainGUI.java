@@ -778,6 +778,8 @@ public void loadUMD(File file) {
             jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(iso);
             boolean isEnable = Settings.getInstance().readBool("emu.disablesceAudio");
             jpcsp.HLE.Modules.sceAudioModule.setEnabled(!isEnable);
+            boolean isEnable2= Settings.getInstance().readBool("emu.ignoreaudiothreads");
+            jpcsp.HLE.ThreadMan.getInstance().setEnabled(isEnable2);
 
             if (instructioncounter != null)
                 instructioncounter.RefreshWindow();

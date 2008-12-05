@@ -60,6 +60,8 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         
         enabled = Settings.getInstance().readBool("emu.disablesceAudio");
         DisableSceAudioCheck.setSelected(enabled);
+        enabled = Settings.getInstance().readBool("emu.ignoreaudiothreads");
+        IgnoreAudioThreadsCheck.setSelected(enabled);
         enabled = Settings.getInstance().readBool("emu.umdbrowser");
         if(enabled)
             umdBrowser.setSelected(true);
@@ -216,6 +218,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         disableVBOCheck = new javax.swing.JCheckBox();
         jPanel2 = new javax.swing.JPanel();
         DisableSceAudioCheck = new javax.swing.JCheckBox();
+        IgnoreAudioThreadsCheck = new javax.swing.JCheckBox();
         bg = new javax.swing.JPanel();
         fgPanel = new javax.swing.JPanel();
         fieldStart = new javax.swing.JTextField();
@@ -362,13 +365,17 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
 
         DisableSceAudioCheck.setText("Disable sceAudio (some games will work better some not)");
 
+        IgnoreAudioThreadsCheck.setText("Ignore Audio Threads");
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(DisableSceAudioCheck)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(DisableSceAudioCheck)
+                    .addComponent(IgnoreAudioThreadsCheck))
                 .addContainerGap(275, Short.MAX_VALUE))
         );
         jPanel2Layout.setVerticalGroup(
@@ -376,7 +383,9 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addGap(20, 20, 20)
                 .addComponent(DisableSceAudioCheck)
-                .addContainerGap(268, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(IgnoreAudioThreadsCheck)
+                .addContainerGap(242, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab("Hacks", jPanel2);
@@ -828,6 +837,8 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
    Settings.getInstance().writeBool("emu.disablege", disableGECheck.isSelected());
    Settings.getInstance().writeBool("emu.disablevbo", disableVBOCheck.isSelected());
    Settings.getInstance().writeBool("emu.disablesceAudio", DisableSceAudioCheck.isSelected());
+   Settings.getInstance().writeBool("emu.ignoreaudiothreads",IgnoreAudioThreadsCheck.isSelected());
+
    if(umdBrowser.isSelected())
       Settings.getInstance().writeBool("emu.umdbrowser", true);
    else
@@ -944,6 +955,7 @@ private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JRadioButton ClassicOpenDialogumd;
     private javax.swing.JCheckBox DisableSceAudioCheck;
+    private javax.swing.JCheckBox IgnoreAudioThreadsCheck;
     private javax.swing.JPanel bg;
     private javax.swing.JLabel bgLabel1;
     private javax.swing.ButtonGroup buttonGroup1;
