@@ -388,7 +388,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         setJMenuBar(MenuBar);
 
         pack();
-    }// </editor-fold>//GEN-END:initComponents
+    }// </editor-fold>                        
 
     public LogWindow getConsoleWindow() {
         return consolewin;
@@ -517,7 +517,8 @@ public void loadFile(File file) {
         pspiofilemgr.getInstance().setfilepath(findpath);
         pspiofilemgr.getInstance().setIsoReader(null);
         jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(null);
-        jpcsp.HLE.Modules.sceAudioModule.setEnabled(!isHomebrew);
+        boolean isEnable = Settings.getInstance().readBool("emu.disablesceAudio");
+        jpcsp.HLE.Modules.sceAudioModule.setEnabled(!isEnable);
 
         if (instructioncounter != null)
             instructioncounter.RefreshWindow();
@@ -775,7 +776,8 @@ public void loadUMD(File file) {
             //pspiofilemgr.getInstance().setfilepath("disc0/PSP_GAME/SYSDIR");
             pspiofilemgr.getInstance().setIsoReader(iso);
             jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(iso);
-            jpcsp.HLE.Modules.sceAudioModule.setEnabled(true);
+            boolean isEnable = Settings.getInstance().readBool("emu.disablesceAudio");
+            jpcsp.HLE.Modules.sceAudioModule.setEnabled(!isEnable);
 
             if (instructioncounter != null)
                 instructioncounter.RefreshWindow();

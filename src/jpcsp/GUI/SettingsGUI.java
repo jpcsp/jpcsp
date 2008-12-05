@@ -57,6 +57,9 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         disableGECheck.setSelected(enabled);
         enabled = Settings.getInstance().readBool("emu.disablevbo");
         disableVBOCheck.setSelected(enabled);
+        
+        enabled = Settings.getInstance().readBool("emu.disablesceAudio");
+        DisableSceAudioCheck.setSelected(enabled);
         enabled = Settings.getInstance().readBool("emu.umdbrowser");
         if(enabled)
             umdBrowser.setSelected(true);
@@ -211,6 +214,8 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         jButton1 = new javax.swing.JButton();
         disableGECheck = new javax.swing.JCheckBox();
         disableVBOCheck = new javax.swing.JCheckBox();
+        jPanel2 = new javax.swing.JPanel();
+        DisableSceAudioCheck = new javax.swing.JCheckBox();
         bg = new javax.swing.JPanel();
         fgPanel = new javax.swing.JPanel();
         fieldStart = new javax.swing.JTextField();
@@ -295,7 +300,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                .addContainerGap(30, Short.MAX_VALUE)
+                .addContainerGap(20, Short.MAX_VALUE)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addComponent(ClassicOpenDialogumd)
@@ -354,6 +359,27 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         );
 
         jTabbedPane1.addTab("General", jPanel1);
+
+        DisableSceAudioCheck.setText("Disable sceAudio (some games will work better some not)");
+
+        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
+        jPanel2.setLayout(jPanel2Layout);
+        jPanel2Layout.setHorizontalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(DisableSceAudioCheck)
+                .addContainerGap(275, Short.MAX_VALUE))
+        );
+        jPanel2Layout.setVerticalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addGap(20, 20, 20)
+                .addComponent(DisableSceAudioCheck)
+                .addContainerGap(268, Short.MAX_VALUE))
+        );
+
+        jTabbedPane1.addTab("Hacks", jPanel2);
 
         bg.setMinimumSize(new java.awt.Dimension(1, 1));
         bg.setLayout(new java.awt.GridBagLayout());
@@ -608,34 +634,34 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
             fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(fgPanelLayout.createSequentialGroup()
                 .addComponent(fieldDown, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 474, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 464, Short.MAX_VALUE)
                 .addComponent(fieldCross, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
             .addGroup(fgPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(fieldLTrigger, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 464, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 454, Short.MAX_VALUE)
                 .addComponent(fieldRTrigger, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, fgPanelLayout.createSequentialGroup()
                 .addComponent(fieldLeft, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 474, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 464, Short.MAX_VALUE)
                 .addComponent(fieldCircle, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, fgPanelLayout.createSequentialGroup()
                 .addGap(19, 19, 19)
                 .addComponent(fieldRight, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 444, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 434, Short.MAX_VALUE)
                 .addComponent(fieldSquare, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(21, 21, 21))
             .addGroup(fgPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(fieldUp, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 464, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 454, Short.MAX_VALUE)
                 .addComponent(fieldTriangle, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, fgPanelLayout.createSequentialGroup()
-                .addContainerGap(527, Short.MAX_VALUE)
+                .addContainerGap(517, Short.MAX_VALUE)
                 .addComponent(fieldHold, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, fgPanelLayout.createSequentialGroup()
@@ -643,7 +669,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                     .addGroup(fgPanelLayout.createSequentialGroup()
                         .addGap(28, 28, 28)
                         .addComponent(fieldAnalogUp, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 56, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 46, Short.MAX_VALUE)
                         .addComponent(fieldHome, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(36, 36, 36)
                         .addComponent(fieldVolPlus, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -652,7 +678,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                         .addComponent(fieldAnalogLeft, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(fieldAnalogRight, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 84, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 74, Short.MAX_VALUE)
                         .addComponent(fieldVolMin, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(48, 48, 48)))
                 .addGroup(fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -674,7 +700,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
             .addGroup(fgPanelLayout.createSequentialGroup()
                 .addGap(26, 26, 26)
                 .addComponent(fieldAnalogDown, javax.swing.GroupLayout.PREFERRED_SIZE, 53, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(511, Short.MAX_VALUE))
+                .addContainerGap(501, Short.MAX_VALUE))
         );
         fgPanelLayout.setVerticalGroup(
             fgPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -759,13 +785,15 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addContainerGap(393, Short.MAX_VALUE)
-                .addComponent(jButtonOK, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jButtonCancel, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
-            .addComponent(jTabbedPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 595, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                        .addComponent(jButtonOK, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jButtonCancel, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addContainerGap())
+                    .addComponent(jTabbedPane1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 585, Short.MAX_VALUE)))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -799,6 +827,7 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
    Settings.getInstance().writeBool("emu.compiler", compilerCheck.isSelected());
    Settings.getInstance().writeBool("emu.disablege", disableGECheck.isSelected());
    Settings.getInstance().writeBool("emu.disablevbo", disableVBOCheck.isSelected());
+   Settings.getInstance().writeBool("emu.disablesceAudio", DisableSceAudioCheck.isSelected());
    if(umdBrowser.isSelected())
       Settings.getInstance().writeBool("emu.umdbrowser", true);
    else
@@ -914,9 +943,11 @@ private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JRadioButton ClassicOpenDialogumd;
+    private javax.swing.JCheckBox DisableSceAudioCheck;
     private javax.swing.JPanel bg;
     private javax.swing.JLabel bgLabel1;
     private javax.swing.ButtonGroup buttonGroup1;
+    private javax.swing.JCheckBox compilerCheck;
     private javax.swing.JCheckBox disableGECheck;
     private javax.swing.JCheckBox disableVBOCheck;
     private javax.swing.JPanel fgPanel;
@@ -947,10 +978,10 @@ private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.JButton jButtonOK;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
     private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JCheckBox openLogwindowCheck;
     private javax.swing.JCheckBox pbpunpackcheck;
-    private javax.swing.JCheckBox compilerCheck;
     private javax.swing.JCheckBox saveWindowPosCheck;
     private javax.swing.JCheckBox snapConsoleCheck;
     private javax.swing.JRadioButton umdBrowser;
