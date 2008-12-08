@@ -165,7 +165,10 @@ public class sceSasCore implements HLEModule {
         Memory mem = Processor.memory;
 
         int sasCore = cpu.gpr[4];
-        int channel = cpu.gpr[5];
+        //int unk1 = cpu.gpr[5]; // set to 1
+        //int unk2 = cpu.gpr[6]; // looks like a heap address, but so far 0x10000 aligned
+        // 99% sure there are no more parameters
+        // probably matches __sceSasGetEndFlag
 
         Modules.log.debug("IGNORING:__sceSasGetPauseFlag(sasCore=0x" + Integer.toHexString(sasCore) + ") " + makeLogParams(cpu));
 
@@ -182,8 +185,17 @@ public class sceSasCore implements HLEModule {
 
         /* put your own code here instead */
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        int sasCore = cpu.gpr[4];
+
+        // type, probably:
+        // -1 = any
+        // 0 = ?
+        // 1 = ?
+        // 2 = ?
+        // stereo/mono?
+        //int unk1 = cpu.gpr[5];
+        //int unk2 = cpu.gpr[6]; // unused or 1 or the return code from some other function
+        //int unk3 = cpu.gpr[7]; // unused or 0, 1, 0x1000
 
         Modules.log.warn("Unimplemented NID function __sceSasRevType [0x33D4AB37] " + makeLogParams(cpu));
 
@@ -220,8 +232,11 @@ public class sceSasCore implements HLEModule {
 
         /* put your own code here instead */
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        int sasCore = cpu.gpr[4];
+        //int unk1 = cpu.gpr[5]; // 0 or 1 (probably channel number)
+        //int unk2 = cpu.gpr[6]; // left channel volume 0 - 0x1000
+        //int unk3 = cpu.gpr[7]; // right channel volume 0 - 0x1000
+        // may be more parameters
 
         Modules.log.warn("Unimplemented NID function __sceSasSetVolume [0x440CA7D8] " + makeLogParams(cpu));
 
@@ -272,13 +287,14 @@ public class sceSasCore implements HLEModule {
 
         int sasCore = cpu.gpr[4];
         //int unk1 = cpu.gpr[5]; // set to 1
-        //int unk2 = cpu.gpr[6]; // looks like a heap address
+        //int unk2 = cpu.gpr[6]; // looks like a heap address, but so far 0x10000 aligned
+        // 99% sure there are no more parameters
 
         Modules.log.debug("IGNORING:__sceSasGetEndFlag(sasCore=0x" + Integer.toHexString(sasCore) + ") " + makeLogParams(cpu));
 
         if (isSasHandleGood(sasCore, "__sceSasGetEndFlag", cpu)) {
             // Fake all channels finished
-            cpu.gpr[2] = 0x1F;
+            cpu.gpr[2] = 0xFFFFFFFF;
         }
     }
 
@@ -292,6 +308,7 @@ public class sceSasCore implements HLEModule {
         int sasCore = cpu.gpr[4];
         int channel = cpu.gpr[5];
         //int unk1 = cpu.gpr[6]; // set to 1
+        // 99% sure there are no more parameters
 
         Modules.log.warn("Unimplemented NID function __sceSasGetEnvelopeHeight [0x74AE582A] " + makeLogParams(cpu));
 
@@ -307,8 +324,11 @@ public class sceSasCore implements HLEModule {
 
         /* put your own code here instead */
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        int sasCore = cpu.gpr[4];
+        //int unk1 = cpu.gpr[5]; // 0 or 1 (probably channel number)
+        //int unk2 = cpu.gpr[6]; // 1
+        //int unk3 = cpu.gpr[7]; // 0x6e4
+        // may be more parameters
 
         Modules.log.warn("Unimplemented NID function __sceSasSetKeyOn [0x76F01ACA] " + makeLogParams(cpu));
 
@@ -341,8 +361,10 @@ public class sceSasCore implements HLEModule {
 
         /* put your own code here instead */
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        int sasCore = cpu.gpr[4];
+        //int unk1 = cpu.gpr[5]; // 0 or 1
+        //int unk2 = cpu.gpr[6]; // uncached heap address
+        //int unk3 = cpu.gpr[7]; // some size or unused
 
         Modules.log.warn("Unimplemented NID function __sceSasSetVoice [0x99944089] " + makeLogParams(cpu));
 
@@ -427,8 +449,11 @@ public class sceSasCore implements HLEModule {
 
         /* put your own code here instead */
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        int sasCore = cpu.gpr[4];
+        //int unk1 = cpu.gpr[5]; // 0 or 1 (probably channel number)
+        //int unk2 = cpu.gpr[6]; // 0x6e4
+        //int unk3 = cpu.gpr[7]; // 0x6e4
+        // may be more parameters
 
         Modules.log.warn("Unimplemented NID function __sceSasSetPitch [0xAD84D37F] " + makeLogParams(cpu));
 
@@ -512,8 +537,11 @@ public class sceSasCore implements HLEModule {
 
         /* put your own code here instead */
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        int sasCore = cpu.gpr[4];
+        // left/right channel volume?
+        //int unk1 = cpu.gpr[5]; // 0x1000
+        //int unk2 = cpu.gpr[6]; // 0x1000
+        // 99% sure there are no more parameters
 
         Modules.log.warn("Unimplemented NID function __sceSasRevEVOL [0xD5A229C9] " + makeLogParams(cpu));
 
@@ -544,10 +572,9 @@ public class sceSasCore implements HLEModule {
         // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
-        /* put your own code here instead */
-
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        int sasCore = cpu.gpr[4];
+        //int unk1 = cpu.gpr[5]; // set to 1
+        // 99% sure there are no more parameters
 
         Modules.log.warn("Unimplemented NID function __sceSasGetOutputmode [0xE175EF66] " + makeLogParams(cpu));
 
@@ -580,8 +607,10 @@ public class sceSasCore implements HLEModule {
 
         /* put your own code here instead */
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        int sasCore = cpu.gpr[4];
+        //int unk1 = cpu.gpr[5]; // set to 1
+        //int unk2 = cpu.gpr[6]; // 0 or 1
+        // 99% sure there are no more parameters
 
         Modules.log.warn("Unimplemented NID function __sceSasRevVON [0xF983B186] " + makeLogParams(cpu));
 
