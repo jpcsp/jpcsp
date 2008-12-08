@@ -18,11 +18,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.util;
 
 public class MetaInformation {
+    // These must not be "final" otherwise they become compile time constants instead of runtime
     public static String NAME = "Jpcsp";
     public static String VERSION = "v0.09";
     public static String FULL_NAME = NAME + " " + VERSION;
     public static String OFFICIAL_SITE = "http://jpcsp.org/";
     public static String OFFICIAL_FORUM = "http://jpcsp.org/forum/";
-    public static String OFFICIAL_REPOSITORY = "http://code.google.com/p/jpcsp/"; 
+    public static String OFFICIAL_REPOSITORY = "http://code.google.com/p/jpcsp/";
     public static String TEAM = "shadow, mad, dreampeppers99, wrayal, fiveofhearts,hlide,Nutzje<br />aisesal,shashClp,spip2, mozvip, Orphis,gigaherz";
 }

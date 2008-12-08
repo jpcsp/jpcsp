@@ -155,6 +155,7 @@ public class sceAudio implements HLEModule {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+        Modules.log.info("Audio functions disabled: " + !enabled);
     }
 
     private int doAudioOutput (int channel, int pvoid_buf)
@@ -371,7 +372,7 @@ public class sceAudio implements HLEModule {
         int channel = cpu.gpr[4], vol = cpu.gpr[5], pvoid_buf = cpu.gpr[6];
 
         if (!mem.isAddressGood(pvoid_buf)) {
-            Modules.log.warn("sceAudioOutput bad pointer");
+            Modules.log.warn("sceAudioOutput bad pointer " + String.format("0x%08X", pvoid_buf));
             cpu.gpr[2] = -1;
         } else {
             sceAudioChangeChannelVolume(channel, vol, vol);
@@ -386,7 +387,7 @@ public class sceAudio implements HLEModule {
         int channel = cpu.gpr[4], vol = cpu.gpr[5], pvoid_buf = cpu.gpr[6];
 
         if (!mem.isAddressGood(pvoid_buf)) {
-            Modules.log.warn("sceAudioOutputBlocking bad pointer");
+            Modules.log.warn("sceAudioOutputBlocking bad pointer " + String.format("0x%08X", pvoid_buf));
             cpu.gpr[2] = -1;
         } else {
             int ret = -1;
@@ -410,7 +411,7 @@ public class sceAudio implements HLEModule {
         int ret = -1;
 
         if (!mem.isAddressGood(pvoid_buf)) {
-            Modules.log.warn("sceAudioOutputPanned bad pointer");
+            Modules.log.warn("sceAudioOutputPanned bad pointer " + String.format("0x%08X", pvoid_buf));
             cpu.gpr[2] = -1;
         } else {
             sceAudioChangeChannelVolume(channel, leftvol, rightvol);
@@ -427,7 +428,7 @@ public class sceAudio implements HLEModule {
         int ret = -1;
 
         if (!mem.isAddressGood(pvoid_buf)) {
-            Modules.log.warn("sceAudioOutputPannedBlocking bad pointer");
+            Modules.log.warn("sceAudioOutputPannedBlocking bad pointer " + String.format("0x%08X", pvoid_buf));
             cpu.gpr[2] = -1;
         } else {
             sceAudioChangeChannelVolume(channel, leftvol, rightvol);

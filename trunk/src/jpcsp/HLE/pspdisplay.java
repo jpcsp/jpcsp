@@ -292,7 +292,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     }
 
     private Buffer getPixels(int topaddr, int bottomaddr) {
-        Buffer pixels = Emulator.getMemory().getBuffer(topaddr, bottomaddr - topaddr);
+        Buffer pixels = Memory.getInstance().getBuffer(topaddr, bottomaddr - topaddr);
         return pixels;
     }
 
@@ -617,7 +617,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     }
 
     public void sceDisplayGetMode(int pmode, int pwidth, int pheight) {
-        Memory memory = Emulator.getMemory();
+        Memory memory = Memory.getInstance();
         if (!memory.isAddressGood(pmode  ) ||
             !memory.isAddressGood(pwidth ) ||
             !memory.isAddressGood(pheight))
@@ -688,7 +688,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     public void sceDisplayGetFrameBuf(
         int topaddr, int bufferwidth, int pixelformat, int sync)
     {
-        Memory memory = Emulator.getMemory();
+        Memory memory = Memory.getInstance();
         if (!memory.isAddressGood(topaddr    ) ||
             !memory.isAddressGood(bufferwidth) ||
             !memory.isAddressGood(pixelformat) ||
