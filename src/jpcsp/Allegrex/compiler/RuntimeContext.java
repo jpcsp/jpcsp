@@ -60,6 +60,8 @@ public class RuntimeContext {
 	public  static final String debugCodeInstructionName = "debugCodeInstruction";
 	public  static final boolean enableInstructionTypeCounting = false;
 	public  static final String instructionTypeCount = "instructionTypeCount";
+	public  static final String logInfo = "logInfo";
+	public  static final String pauseEmuWithStatus = "pauseEmuWithStatus";
 	public  static final boolean enableLineNumbers = true;
 	private static final int idleSleepMillis = 1;
 	private static volatile Map<Integer, CodeBlock> codeBlocks = Collections.synchronizedMap(new HashMap<Integer, CodeBlock>());
@@ -610,5 +612,14 @@ public class RuntimeContext {
     	}
     	count++;
     	instructionTypeCounts.put(insn, count);
+    }
+
+    public static void pauseEmuWithStatus(int status) throws StopThreadException {
+    	Emulator.PauseEmuWithStatus(status);
+    	syncPause();
+    }
+
+    public static void logInfo(String message) {
+    	log.info(message);
     }
 }

@@ -20,6 +20,7 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+import jpcsp.Emulator;
 import jpcsp.Allegrex.Instructions;
 import jpcsp.Allegrex.Common.Instruction;
 
@@ -192,6 +193,11 @@ public class CodeInstruction {
     private int getBranchingOpcodeBranch0(CompilerContext context, MethodVisitor mv) {
         compileDelaySlot(context, mv);
 
+        if (getBranchingTo() == getAddress()) {
+    		context.visitLogInfo(mv, "Pausing emulator - jump to self (death loop)");
+    		context.visitPauseEmuWithStatus(mv, Emulator.EMU_STATUS_JUMPSELF);
+    	}
+
         return Opcodes.GOTO;
     }
 
@@ -239,9 +245,14 @@ public class CodeInstruction {
     }
 
     private int getBranchingOpcodeBranch2(CompilerContext context, MethodVisitor mv, int branchingOpcode, int notBranchingOpcode) {
-        loadRs(context, mv);
-        loadRt(context, mv);
-        compileDelaySlot(context, mv);
+		loadRs(context, mv);
+		loadRt(context, mv);
+		compileDelaySlot(context, mv);
+
+    	if (branchingOpcode == Opcodes.IF_ICMPEQ && getRsRegisterIndex() == getRtRegisterIndex() && getBranchingTo() == getAddress()) {
+    		context.visitLogInfo(mv, "Pausing emulator - branch to self (death loop)");
+    		context.visitPauseEmuWithStatus(mv, Emulator.EMU_STATUS_JUMPSELF);
+    	}
 
         return branchingOpcode;
     }

@@ -60,6 +60,7 @@ public class CompilerContext {
     private static final String instructionDescriptor = Type.getDescriptor(Instruction.class);
     private static final String sceKernalThreadInfoInternalName = Type.getInternalName(SceKernelThreadInfo.class);
     private static final String sceKernalThreadInfoDescriptor = Type.getDescriptor(SceKernelThreadInfo.class);
+    private static final String stringDescriptor = Type.getDescriptor(String.class);
 
     public CompilerContext(CompilerClassLoader classLoader) {
         this.classLoader = classLoader;
@@ -398,5 +399,15 @@ public class CompilerContext {
 
     public int getMaxStack() {
         return STACK_MAX;
+    }
+
+    public void visitPauseEmuWithStatus(MethodVisitor mv, int status) {
+    	mv.visitLdcInsn(status);
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.pauseEmuWithStatus, "(I)V");
+    }
+
+    public void visitLogInfo(MethodVisitor mv, String message) {
+    	mv.visitLdcInsn(message);
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.logInfo, "(" + stringDescriptor + ")V");
     }
 }
