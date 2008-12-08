@@ -38,7 +38,10 @@ public class SceMpegRingbuffer {
         this.packets = packets;
         this.packetsRead = 0;
         this.packetsWritten = 0;
-        this.packetsFree = packets; // copied from noxa/pspplayer, so maybe should be 0
+
+        // set in sceMpegCreate, since we may tell the app to allocate less mem
+        // than it wanted, in which case "packetsFree" will never reach "packets"
+        this.packetsFree = 0;
         this.packetSize = 0; // set in sceMpegCreate? (2048)
         this.data = data;
         this.callback_addr = callback_addr;

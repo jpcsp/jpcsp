@@ -162,6 +162,7 @@ public class Utilities {
     		mem.write8(address + offset, (byte) s.charAt(offset));
     		offset++;
     	}
+        mem.write8(address + offset, (byte) 0);
     }
     public static short getUnsignedByte (ByteBuffer bb) throws IOException
     {
@@ -196,7 +197,7 @@ public class Utilities {
 
         if (value.startsWith("0x"))
             value = value.substring(2);
-        
+
     	if (Integer.SIZE == 32 && value.length() == 8 && value.startsWith("8")) {
     		address = Integer.parseInt(value.substring(1), 16);
     		address |= 0x80000000;

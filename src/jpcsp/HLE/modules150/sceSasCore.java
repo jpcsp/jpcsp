@@ -40,16 +40,16 @@ public class sceSasCore implements HLEModule {
 
             mm.addFunction(__sceSasSetADSRFunction, 0x019B25EB);
             mm.addFunction(__sceSasRevParamFunction, 0x267A6DD2);
-            mm.addFunction(sceSasCore_2C8E6AB3Function, 0x2C8E6AB3);
+            mm.addFunction(__sceSasGetPauseFlagFunction, 0x2C8E6AB3);
             mm.addFunction(__sceSasRevTypeFunction, 0x33D4AB37);
             mm.addFunction(__sceSasInitFunction, 0x42778A9F);
             mm.addFunction(__sceSasSetVolumeFunction, 0x440CA7D8);
-            mm.addFunction(sceSasCore_50A14DFCFunction, 0x50A14DFC);
+            mm.addFunction(__sceSasCoreWithMixFunction, 0x50A14DFC);
             mm.addFunction(__sceSasSetSLFunction, 0x5F9529F6);
             mm.addFunction(__sceSasGetEndFlagFunction, 0x68A46B95);
             mm.addFunction(__sceSasGetEnvelopeHeightFunction, 0x74AE582A);
             mm.addFunction(__sceSasSetKeyOnFunction, 0x76F01ACA);
-            mm.addFunction(sceSasCore_787D04D5Function, 0x787D04D5);
+            mm.addFunction(__sceSasSetPauseFunction, 0x787D04D5);
             mm.addFunction(__sceSasSetVoiceFunction, 0x99944089);
             mm.addFunction(__sceSasSetADSRmodeFunction, 0x9EC3676A);
             mm.addFunction(__sceSasSetKeyOffFunction, 0xA0CF2FA4);
@@ -57,16 +57,16 @@ public class sceSasCore implements HLEModule {
             mm.addFunction(__sceSasCoreFunction, 0xA3589D81);
             mm.addFunction(__sceSasSetPitchFunction, 0xAD84D37F);
             mm.addFunction(__sceSasSetNoiseFunction, 0xB7660A23);
-            mm.addFunction(sceSasCore_BD11B7C2Function, 0xBD11B7C2);
+            mm.addFunction(__sceSasGetGrainFunction, 0xBD11B7C2);
             mm.addFunction(__sceSasSetSimpleADSRFunction, 0xCBCD4F79);
-            mm.addFunction(sceSasCore_D1E0A01EFunction, 0xD1E0A01E);
+            mm.addFunction(__sceSasSetGrainFunction, 0xD1E0A01E);
             mm.addFunction(__sceSasRevEVOLFunction, 0xD5A229C9);
-            mm.addFunction(sceSasCore_D5A229C9Function, 0xD5A229C9);
             mm.addFunction(__sceSasSetSteepWaveFunction, 0xD5EBBBCD);
-            mm.addFunction(sceSasCore_E175EF66Function, 0xE175EF66);
-            mm.addFunction(sceSasCore_E855BF76Function, 0xE855BF76);
+            mm.addFunction(__sceSasGetOutputmodeFunction, 0xE175EF66);
+            mm.addFunction(__sceSasSetOutputmodeFunction, 0xE855BF76);
             mm.addFunction(__sceSasRevVONFunction, 0xF983B186);
 
+            sasCoreHandle = -1;
         }
     }
 
@@ -76,16 +76,16 @@ public class sceSasCore implements HLEModule {
 
             mm.removeFunction(__sceSasSetADSRFunction);
             mm.removeFunction(__sceSasRevParamFunction);
-            mm.removeFunction(sceSasCore_2C8E6AB3Function);
+            mm.removeFunction(__sceSasGetPauseFlagFunction);
             mm.removeFunction(__sceSasRevTypeFunction);
             mm.removeFunction(__sceSasInitFunction);
             mm.removeFunction(__sceSasSetVolumeFunction);
-            mm.removeFunction(sceSasCore_50A14DFCFunction);
+            mm.removeFunction(__sceSasCoreWithMixFunction);
             mm.removeFunction(__sceSasSetSLFunction);
             mm.removeFunction(__sceSasGetEndFlagFunction);
             mm.removeFunction(__sceSasGetEnvelopeHeightFunction);
             mm.removeFunction(__sceSasSetKeyOnFunction);
-            mm.removeFunction(sceSasCore_787D04D5Function);
+            mm.removeFunction(__sceSasSetPauseFunction);
             mm.removeFunction(__sceSasSetVoiceFunction);
             mm.removeFunction(__sceSasSetADSRmodeFunction);
             mm.removeFunction(__sceSasSetKeyOffFunction);
@@ -93,17 +93,34 @@ public class sceSasCore implements HLEModule {
             mm.removeFunction(__sceSasCoreFunction);
             mm.removeFunction(__sceSasSetPitchFunction);
             mm.removeFunction(__sceSasSetNoiseFunction);
-            mm.removeFunction(sceSasCore_BD11B7C2Function);
+            mm.removeFunction(__sceSasGetGrainFunction);
             mm.removeFunction(__sceSasSetSimpleADSRFunction);
-            mm.removeFunction(sceSasCore_D1E0A01EFunction);
+            mm.removeFunction(__sceSasSetGrainFunction);
             mm.removeFunction(__sceSasRevEVOLFunction);
-            mm.removeFunction(sceSasCore_D5A229C9Function);
             mm.removeFunction(__sceSasSetSteepWaveFunction);
-            mm.removeFunction(sceSasCore_E175EF66Function);
-            mm.removeFunction(sceSasCore_E855BF76Function);
+            mm.removeFunction(__sceSasGetOutputmodeFunction);
+            mm.removeFunction(__sceSasSetOutputmodeFunction);
             mm.removeFunction(__sceSasRevVONFunction);
 
         }
+    }
+
+    private int sasCoreHandle;
+
+    private String makeLogParams(CpuState cpu) {
+        return String.format("%08x %08x %08x %08x",
+            cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
+    }
+
+    /** If sasCore isn't a valid handle this function will print a log message and set $v0 to -1.
+     * @return true if sasCore is good. */
+    private boolean isSasHandleGood(int sasCore, String functionName, CpuState cpu) {
+        if (sasCore == sasCoreHandle)
+            return true;
+
+        Modules.log.warn(functionName + " bad sasCore handle 0x" + Integer.toHexString(sasCore));
+        cpu.gpr[2] = -1;
+        return false;
     }
 
     public void __sceSasSetADSR(Processor processor) {
@@ -116,7 +133,7 @@ public class sceSasCore implements HLEModule {
         // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
         // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-        Modules.log.debug("Unimplemented NID function __sceSasSetADSR [0x019B25EB]");
+        Modules.log.warn("Unimplemented NID function __sceSasSetADSR [0x019B25EB] " + makeLogParams(cpu));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -133,28 +150,29 @@ public class sceSasCore implements HLEModule {
         // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
         // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-        Modules.log.debug("Unimplemented NID function __sceSasRevParam [0x267A6DD2]");
+        Modules.log.warn("Unimplemented NID function __sceSasRevParam [0x267A6DD2] " + makeLogParams(cpu));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
     // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
     }
 
-    public void sceSasCore_2C8E6AB3(Processor processor) {
+    // we could do some trickery in here too
+    // 2C8E6AB3
+    public void __sceSasGetPauseFlag(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        int sasCore = cpu.gpr[4];
+        int channel = cpu.gpr[5];
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        Modules.log.debug("IGNORING:__sceSasGetPauseFlag(sasCore=0x" + Integer.toHexString(sasCore) + ") " + makeLogParams(cpu));
 
-        Modules.log.debug("Unimplemented NID function sceSasCore_2C8E6AB3 [0x2C8E6AB3]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
+        if (isSasHandleGood(sasCore, "__sceSasGetPauseFlag", cpu)) {
+            // Fake all channels NOT paused
+            cpu.gpr[2] = 0x0;
+        }
     }
 
     public void __sceSasRevType(Processor processor) {
@@ -167,7 +185,7 @@ public class sceSasCore implements HLEModule {
         // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
         // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-        Modules.log.debug("Unimplemented NID function __sceSasRevType [0x33D4AB37]");
+        Modules.log.warn("Unimplemented NID function __sceSasRevType [0x33D4AB37] " + makeLogParams(cpu));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -177,18 +195,22 @@ public class sceSasCore implements HLEModule {
     public void __sceSasInit(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        // TODO there may be more parameters
+        // PARTIAL:__sceSasInit 08a8bd00 00000100 00000020
+        int sasCore = cpu.gpr[4];
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        //Modules.log.debug("PARTIAL:__sceSasInit() " + makeLogParams(cpu));
+        Modules.log.debug("PARTIAL:__sceSasInit(sasCore=0x" + Integer.toHexString(sasCore) + ")");
 
-        Modules.log.debug("Unimplemented NID function __sceSasInit [0x42778A9F]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
+        // we'll support only 1 sascore instance at a time, we can fix this later if needed
+        if (sasCoreHandle != -1) {
+            Modules.log.warn("UNIMPLEMENTED:__sceSasInit multiple instances not yet supported");
+            cpu.gpr[2] = -1;
+        } else {
+            sasCoreHandle = sasCore;
+            cpu.gpr[2] = 0;
+        }
     }
 
     public void __sceSasSetVolume(Processor processor) {
@@ -201,28 +223,29 @@ public class sceSasCore implements HLEModule {
         // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
         // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-        Modules.log.debug("Unimplemented NID function __sceSasSetVolume [0x440CA7D8]");
+        Modules.log.warn("Unimplemented NID function __sceSasSetVolume [0x440CA7D8] " + makeLogParams(cpu));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
     // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
     }
 
-    public void sceSasCore_50A14DFC(Processor processor) {
+    // 50A14DFC
+    public void __sceSasCoreWithMix(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        int sasCore = cpu.gpr[4];
+        //int unk1 = cpu.gpr[5]; // looks like a heap address
+        //int unk2 = cpu.gpr[6]; // looks like a bitfield
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        Modules.log.debug("IGNORING:__sceSasCoreWithMix " + makeLogParams(cpu));
 
-        Modules.log.debug("Unimplemented NID function sceSasCore_50A14DFC [0x50A14DFC]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
+        if (isSasHandleGood(sasCore, "__sceSasCoreWithMix", cpu)) {
+            // nothing to do ... ?
+            cpu.gpr[2] = 0;
+        }
     }
 
     public void __sceSasSetSL(Processor processor) {
@@ -235,28 +258,28 @@ public class sceSasCore implements HLEModule {
         // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
         // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-        Modules.log.debug("Unimplemented NID function __sceSasSetSL [0x5F9529F6]");
+        Modules.log.warn("Unimplemented NID function __sceSasSetSL [0x5F9529F6] " + makeLogParams(cpu));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
     // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
     }
 
+    // 68A46B95
     public void __sceSasGetEndFlag(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        int sasCore = cpu.gpr[4];
+        //int unk1 = cpu.gpr[5]; // set to 1
+        //int unk2 = cpu.gpr[6]; // looks like a heap address
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        Modules.log.debug("IGNORING:__sceSasGetEndFlag(sasCore=0x" + Integer.toHexString(sasCore) + ") " + makeLogParams(cpu));
 
-        Modules.log.debug("Unimplemented NID function __sceSasGetEndFlag [0x68A46B95]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
+        if (isSasHandleGood(sasCore, "__sceSasGetEndFlag", cpu)) {
+            // Fake all channels finished
+            cpu.gpr[2] = 0x1F;
+        }
     }
 
     public void __sceSasGetEnvelopeHeight(Processor processor) {
@@ -266,10 +289,11 @@ public class sceSasCore implements HLEModule {
 
         /* put your own code here instead */
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        int sasCore = cpu.gpr[4];
+        int channel = cpu.gpr[5];
+        //int unk1 = cpu.gpr[6]; // set to 1
 
-        Modules.log.debug("Unimplemented NID function __sceSasGetEnvelopeHeight [0x74AE582A]");
+        Modules.log.warn("Unimplemented NID function __sceSasGetEnvelopeHeight [0x74AE582A] " + makeLogParams(cpu));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -286,14 +310,14 @@ public class sceSasCore implements HLEModule {
         // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
         // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-        Modules.log.debug("Unimplemented NID function __sceSasSetKeyOn [0x76F01ACA]");
+        Modules.log.warn("Unimplemented NID function __sceSasSetKeyOn [0x76F01ACA] " + makeLogParams(cpu));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
     // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
     }
 
-    public void sceSasCore_787D04D5(Processor processor) {
+    public void __sceSasSetPause(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
@@ -303,7 +327,7 @@ public class sceSasCore implements HLEModule {
         // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
         // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-        Modules.log.debug("Unimplemented NID function sceSasCore_787D04D5 [0x787D04D5]");
+        Modules.log.warn("Unimplemented NID function __sceSasSetPause [0x787D04D5] " + makeLogParams(cpu));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -320,7 +344,7 @@ public class sceSasCore implements HLEModule {
         // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
         // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-        Modules.log.debug("Unimplemented NID function __sceSasSetVoice [0x99944089]");
+        Modules.log.warn("Unimplemented NID function __sceSasSetVoice [0x99944089] " + makeLogParams(cpu));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -337,7 +361,7 @@ public class sceSasCore implements HLEModule {
         // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
         // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-        Modules.log.debug("Unimplemented NID function __sceSasSetADSRmode [0x9EC3676A]");
+        Modules.log.warn("Unimplemented NID function __sceSasSetADSRmode [0x9EC3676A] " + makeLogParams(cpu));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -354,7 +378,7 @@ public class sceSasCore implements HLEModule {
         // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
         // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-        Modules.log.debug("Unimplemented NID function __sceSasSetKeyOff [0xA0CF2FA4]");
+        Modules.log.warn("Unimplemented NID function __sceSasSetKeyOff [0xA0CF2FA4] " + makeLogParams(cpu));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -371,28 +395,29 @@ public class sceSasCore implements HLEModule {
         // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
         // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-        Modules.log.debug("Unimplemented NID function __sceSasSetTrianglarWave [0xA232CBE6]");
+        Modules.log.warn("Unimplemented NID function __sceSasSetTrianglarWave [0xA232CBE6] " + makeLogParams(cpu));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
     // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
     }
 
+    // A3589D81
     public void __sceSasCore(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        int sasCore = cpu.gpr[4];
+        //int unk1 = cpu.gpr[5]; // looks like a heap address
+        //int unk2 = cpu.gpr[6]; // looks like a heap address
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        Modules.log.debug("IGNORING:__sceSasCore " + makeLogParams(cpu));
 
-        Modules.log.debug("Unimplemented NID function __sceSasCore [0xA3589D81]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
+        if (isSasHandleGood(sasCore, "__sceSasCore", cpu)) {
+            // nothing to do ... ?
+            // noxa/pspplayer blocks here, so should we yield?
+            cpu.gpr[2] = 0;
+        }
     }
 
     public void __sceSasSetPitch(Processor processor) {
@@ -405,7 +430,7 @@ public class sceSasCore implements HLEModule {
         // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
         // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-        Modules.log.debug("Unimplemented NID function __sceSasSetPitch [0xAD84D37F]");
+        Modules.log.warn("Unimplemented NID function __sceSasSetPitch [0xAD84D37F] " + makeLogParams(cpu));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -422,14 +447,14 @@ public class sceSasCore implements HLEModule {
         // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
         // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-        Modules.log.debug("Unimplemented NID function __sceSasSetNoise [0xB7660A23]");
+        Modules.log.warn("Unimplemented NID function __sceSasSetNoise [0xB7660A23] " + makeLogParams(cpu));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
     // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
     }
 
-    public void sceSasCore_BD11B7C2(Processor processor) {
+    public void __sceSasGetGrain(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
@@ -439,7 +464,7 @@ public class sceSasCore implements HLEModule {
         // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
         // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-        Modules.log.debug("Unimplemented NID function sceSasCore_BD11B7C2 [0xBD11B7C2]");
+        Modules.log.warn("Unimplemented NID function __sceSasGetGrain [0xBD11B7C2] " + makeLogParams(cpu));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -456,14 +481,14 @@ public class sceSasCore implements HLEModule {
         // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
         // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-        Modules.log.debug("Unimplemented NID function __sceSasSetSimpleADSR [0xCBCD4F79]");
+        Modules.log.warn("Unimplemented NID function __sceSasSetSimpleADSR [0xCBCD4F79] " + makeLogParams(cpu));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
     // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
     }
 
-    public void sceSasCore_D1E0A01E(Processor processor) {
+    public void __sceSasSetGrain(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
@@ -473,7 +498,7 @@ public class sceSasCore implements HLEModule {
         // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
         // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-        Modules.log.debug("Unimplemented NID function sceSasCore_D1E0A01E [0xD1E0A01E]");
+        Modules.log.warn("Unimplemented NID function __sceSasSetGrain [0xD1E0A01E] " + makeLogParams(cpu));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -490,24 +515,7 @@ public class sceSasCore implements HLEModule {
         // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
         // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-        Modules.log.debug("Unimplemented NID function __sceSasRevEVOL [0xD5A229C9]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
-    }
-
-    public void sceSasCore_D5A229C9(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
-
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-        Modules.log.debug("Unimplemented NID function sceSasCore_D5A229C9 [0xD5A229C9]");
+        Modules.log.warn("Unimplemented NID function __sceSasRevEVOL [0xD5A229C9] " + makeLogParams(cpu));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -524,14 +532,14 @@ public class sceSasCore implements HLEModule {
         // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
         // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-        Modules.log.debug("Unimplemented NID function __sceSasSetSteepWave [0xD5EBBBCD]");
+        Modules.log.warn("Unimplemented NID function __sceSasSetSteepWave [0xD5EBBBCD] " + makeLogParams(cpu));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
     // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
     }
 
-    public void sceSasCore_E175EF66(Processor processor) {
+    public void __sceSasGetOutputmode(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
@@ -541,14 +549,14 @@ public class sceSasCore implements HLEModule {
         // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
         // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-        Modules.log.debug("Unimplemented NID function sceSasCore_E175EF66 [0xE175EF66]");
+        Modules.log.warn("Unimplemented NID function __sceSasGetOutputmode [0xE175EF66] " + makeLogParams(cpu));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
     // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
     }
 
-    public void sceSasCore_E855BF76(Processor processor) {
+    public void __sceSasSetOutputmode(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
@@ -558,7 +566,7 @@ public class sceSasCore implements HLEModule {
         // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
         // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-        Modules.log.debug("Unimplemented NID function sceSasCore_E855BF76 [0xE855BF76]");
+        Modules.log.warn("Unimplemented NID function __sceSasSetOutputmode [0xE855BF76] " + makeLogParams(cpu));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -575,7 +583,7 @@ public class sceSasCore implements HLEModule {
         // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
         // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-        Modules.log.debug("Unimplemented NID function __sceSasRevVON [0xF983B186]");
+        Modules.log.warn("Unimplemented NID function __sceSasRevVON [0xF983B186] " + makeLogParams(cpu));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -605,16 +613,16 @@ public class sceSasCore implements HLEModule {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasRevParam(processor);";
         }
     };
-    public final HLEModuleFunction sceSasCore_2C8E6AB3Function = new HLEModuleFunction("sceSasCore", "sceSasCore_2C8E6AB3") {
+    public final HLEModuleFunction __sceSasGetPauseFlagFunction = new HLEModuleFunction("sceSasCore", "__sceSasGetPauseFlag") {
 
         @Override
         public final void execute(Processor processor) {
-            sceSasCore_2C8E6AB3(processor);
+            __sceSasGetPauseFlag(processor);
         }
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.sceSasCore_2C8E6AB3(processor);";
+            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasGetPauseFlag(processor);";
         }
     };
     public final HLEModuleFunction __sceSasRevTypeFunction = new HLEModuleFunction("sceSasCore", "__sceSasRevType") {
@@ -653,16 +661,16 @@ public class sceSasCore implements HLEModule {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetVolume(processor);";
         }
     };
-    public final HLEModuleFunction sceSasCore_50A14DFCFunction = new HLEModuleFunction("sceSasCore", "sceSasCore_50A14DFC") {
+    public final HLEModuleFunction __sceSasCoreWithMixFunction = new HLEModuleFunction("sceSasCore", "__sceSasCoreWithMix") {
 
         @Override
         public final void execute(Processor processor) {
-            sceSasCore_50A14DFC(processor);
+            __sceSasCoreWithMix(processor);
         }
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.sceSasCore_50A14DFC(processor);";
+            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasCoreWithMix(processor);";
         }
     };
     public final HLEModuleFunction __sceSasSetSLFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetSL") {
@@ -713,16 +721,16 @@ public class sceSasCore implements HLEModule {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetKeyOn(processor);";
         }
     };
-    public final HLEModuleFunction sceSasCore_787D04D5Function = new HLEModuleFunction("sceSasCore", "sceSasCore_787D04D5") {
+    public final HLEModuleFunction __sceSasSetPauseFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetPause") {
 
         @Override
         public final void execute(Processor processor) {
-            sceSasCore_787D04D5(processor);
+            __sceSasSetPause(processor);
         }
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.sceSasCore_787D04D5(processor);";
+            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetPause(processor);";
         }
     };
     public final HLEModuleFunction __sceSasSetVoiceFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetVoice") {
@@ -809,16 +817,16 @@ public class sceSasCore implements HLEModule {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetNoise(processor);";
         }
     };
-    public final HLEModuleFunction sceSasCore_BD11B7C2Function = new HLEModuleFunction("sceSasCore", "sceSasCore_BD11B7C2") {
+    public final HLEModuleFunction __sceSasGetGrainFunction = new HLEModuleFunction("sceSasCore", "__sceSasGetGrain") {
 
         @Override
         public final void execute(Processor processor) {
-            sceSasCore_BD11B7C2(processor);
+            __sceSasGetGrain(processor);
         }
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.sceSasCore_BD11B7C2(processor);";
+            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasGetGrain(processor);";
         }
     };
     public final HLEModuleFunction __sceSasSetSimpleADSRFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetSimpleADSR") {
@@ -833,16 +841,16 @@ public class sceSasCore implements HLEModule {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetSimpleADSR(processor);";
         }
     };
-    public final HLEModuleFunction sceSasCore_D1E0A01EFunction = new HLEModuleFunction("sceSasCore", "sceSasCore_D1E0A01E") {
+    public final HLEModuleFunction __sceSasSetGrainFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetGrain") {
 
         @Override
         public final void execute(Processor processor) {
-            sceSasCore_D1E0A01E(processor);
+            __sceSasSetGrain(processor);
         }
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.sceSasCore_D1E0A01E(processor);";
+            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetGrain(processor);";
         }
     };
     public final HLEModuleFunction __sceSasRevEVOLFunction = new HLEModuleFunction("sceSasCore", "__sceSasRevEVOL") {
@@ -857,18 +865,6 @@ public class sceSasCore implements HLEModule {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasRevEVOL(processor);";
         }
     };
-    public final HLEModuleFunction sceSasCore_D5A229C9Function = new HLEModuleFunction("sceSasCore", "sceSasCore_D5A229C9") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceSasCore_D5A229C9(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.sceSasCore_D5A229C9(processor);";
-        }
-    };
     public final HLEModuleFunction __sceSasSetSteepWaveFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetSteepWave") {
 
         @Override
@@ -881,28 +877,28 @@ public class sceSasCore implements HLEModule {
             return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetSteepWave(processor);";
         }
     };
-    public final HLEModuleFunction sceSasCore_E175EF66Function = new HLEModuleFunction("sceSasCore", "sceSasCore_E175EF66") {
+    public final HLEModuleFunction __sceSasGetOutputmodeFunction = new HLEModuleFunction("sceSasCore", "__sceSasGetOutputmode") {
 
         @Override
         public final void execute(Processor processor) {
-            sceSasCore_E175EF66(processor);
+            __sceSasGetOutputmode(processor);
         }
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.sceSasCore_E175EF66(processor);";
+            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasGetOutputmode(processor);";
         }
     };
-    public final HLEModuleFunction sceSasCore_E855BF76Function = new HLEModuleFunction("sceSasCore", "sceSasCore_E855BF76") {
+    public final HLEModuleFunction __sceSasSetOutputmodeFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetOutputmode") {
 
         @Override
         public final void execute(Processor processor) {
-            sceSasCore_E855BF76(processor);
+            __sceSasSetOutputmode(processor);
         }
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceSasCoreModule.sceSasCore_E855BF76(processor);";
+            return "jpcsp.HLE.Modules.sceSasCoreModule.__sceSasSetOutputmode(processor);";
         }
     };
     public final HLEModuleFunction __sceSasRevVONFunction = new HLEModuleFunction("sceSasCore", "__sceSasRevVON") {

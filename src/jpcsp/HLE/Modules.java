@@ -37,6 +37,7 @@ public class Modules {
     public static sceImpose sceImposeModule = new sceImpose();
     public static sceSuspendForUser sceSuspendForUserModule = new sceSuspendForUser();
     public static sceDmac sceDmacModule = new sceDmac();
+    public static sceSasCore sceSasCoreModule = new sceSasCore();
 
 
     public static Logger log = Logger.getLogger("hle");

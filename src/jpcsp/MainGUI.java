@@ -78,7 +78,6 @@ import org.apache.log4j.xml.DOMConfigurator;
  */
 public class MainGUI extends javax.swing.JFrame implements KeyListener, ComponentListener {
     private static final long serialVersionUID = -3647025845406693230L;
-    final String version = MetaInformation.FULL_NAME;
     public static final int MAX_RECENT = 4;
     LogWindow consolewin;
     ElfHeaderInfo elfheader;
@@ -114,7 +113,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         int pos[] = Settings.getInstance().readWindowPos("mainwindow");
         setLocation(pos[0], pos[1]);
         State.fileLogger.setLocation(pos[0] + 488, pos[1] + 18);
-        setTitle(version);
+        setTitle(MetaInformation.FULL_NAME);
 
         /*add glcanvas to frame and pack frame to get the canvas size*/
         getContentPane().add(pspdisplay.getInstance(), java.awt.BorderLayout.CENTER);
@@ -391,7 +390,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         setJMenuBar(MenuBar);
 
         pack();
-    }// </editor-fold>                        
+    }// </editor-fold>
 
     public LogWindow getConsoleWindow() {
         return consolewin;
@@ -492,6 +491,7 @@ public void loadFile(File file) {
     try {
         if (consolewin != null)
             consolewin.clearScreenMessages();
+        Emulator.log.info(MetaInformation.FULL_NAME);
 
         umdLoaded = false;
         loadedFile = file;
@@ -512,7 +512,7 @@ public void loadFile(File file) {
             title = file.getParentFile().getName();
             isHomebrew = true; // missing psf, assume homebrew
         }
-        setTitle(version + " - " + title);
+        setTitle(MetaInformation.FULL_NAME + " - " + title);
         addRecentFile(file, title);
 
         String findpath = file.getParent();
@@ -520,8 +520,9 @@ public void loadFile(File file) {
         pspiofilemgr.getInstance().setfilepath(findpath);
         pspiofilemgr.getInstance().setIsoReader(null);
         jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(null);
-        boolean isEnable = Settings.getInstance().readBool("emu.disablesceAudio");
-        jpcsp.HLE.Modules.sceAudioModule.setEnabled(!isEnable);
+        // TODO convert to tri-state disable/enable/auto, auto will use PSF.isLikelyHomebrew() to disable audio in homebrew
+        boolean disableAudio = Settings.getInstance().readBool("emu.disablesceAudio");
+        jpcsp.HLE.Modules.sceAudioModule.setEnabled(!disableAudio);
 
         if (instructioncounter != null)
             instructioncounter.RefreshWindow();
@@ -633,7 +634,7 @@ private void ToggleDebugLogActionPerformed(java.awt.event.ActionEvent evt) {//GE
 private void AboutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AboutActionPerformed
   StringBuilder message = new StringBuilder();
     message.append("<html>").append("<h2>" + MetaInformation.FULL_NAME + "</h2>").append("<hr/>").append("Official site      : <a href='" + MetaInformation.OFFICIAL_SITE + "'>" + MetaInformation.OFFICIAL_SITE + "</a><br/>").append("Official forum     : <a href='" + MetaInformation.OFFICIAL_FORUM + "'>" + MetaInformation.OFFICIAL_FORUM + "</a><br/>").append("Official repository: <a href='" + MetaInformation.OFFICIAL_REPOSITORY + "'>" + MetaInformation.OFFICIAL_REPOSITORY + "</a><br/>").append("<hr/>").append("<i>Team:</i> <font color='gray'>" + MetaInformation.TEAM + "</font>").append("</html>");
-    JOptionPane.showMessageDialog(this, message.toString(), version, JOptionPane.INFORMATION_MESSAGE);
+    JOptionPane.showMessageDialog(this, message.toString(), MetaInformation.FULL_NAME, JOptionPane.INFORMATION_MESSAGE);
 }//GEN-LAST:event_AboutActionPerformed
 
 private void RunEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RunEmuActionPerformed
@@ -744,6 +745,7 @@ private boolean loadUnpackedUMD(String filename) throws IOException, GeneralJpcs
         ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
         emulator.load("disc0:/PSP_GAME/SYSDIR/EBOOT.BIN", readbuffer);
         roChannel.close();
+        Emulator.log.info("Using unpacked UMD EBOOT.BIN image");
         return true;
     }
     return false;
@@ -751,8 +753,9 @@ private boolean loadUnpackedUMD(String filename) throws IOException, GeneralJpcs
 
 public void loadUMD(File file) {
     try {
-        if (consolewin!=null)
+        if (consolewin != null)
             consolewin.clearScreenMessages();
+        Emulator.log.info(MetaInformation.FULL_NAME);
 
         umdLoaded = true;
         loadedFile = file;
@@ -760,32 +763,33 @@ public void loadUMD(File file) {
         UmdIsoReader iso = new UmdIsoReader(file.getPath());
         UmdIsoFile paramSfo = iso.getFile("PSP_GAME/param.sfo");
 
-        Emulator.log.debug("Loading param.sfo from UMD");
+        //Emulator.log.debug("Loading param.sfo from UMD");
         PSF params = new PSF(0);
         byte[] sfo = new byte[(int)paramSfo.length()];
         paramSfo.read(sfo);
         ByteBuffer buf = ByteBuffer.wrap(sfo);
         params.read(buf);
         Emulator.log.info("UMD param.sfo :\n" + params);
-        setTitle(version + " - " + params.getString("TITLE"));
+        setTitle(MetaInformation.FULL_NAME + " - " + params.getString("TITLE"));
         addRecentUMD(file, params.getString("TITLE"));
         String discid = params.getString("DISC_ID");
 
-        if (loadUMD(iso, "PSP_GAME/SYSDIR/BOOT.BIN") ||
-            loadUMD(iso, "PSP_GAME/SYSDIR/EBOOT.BIN") ||
-            (discid != null && loadUnpackedUMD(discid + ".BIN"))) {
+        if ((discid != null && loadUnpackedUMD(discid + ".BIN")) ||
+            loadUMD(iso, "PSP_GAME/SYSDIR/BOOT.BIN") ||
+            loadUMD(iso, "PSP_GAME/SYSDIR/EBOOT.BIN")) {
 
             pspiofilemgr.getInstance().setfilepath("disc0/");
             //pspiofilemgr.getInstance().setfilepath("disc0/PSP_GAME/SYSDIR");
-         
+
             pspiofilemgr.getInstance().setIsoReader(iso);
             jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(iso);
-            if(!checkforpatches(discid))//if no patch file found
+            if (!checkAndInstallPatches(discid + ".patch"))
             {
-              boolean isEnable = Settings.getInstance().readBool("emu.disablesceAudio");
-              jpcsp.HLE.Modules.sceAudioModule.setEnabled(!isEnable);
-              boolean isEnable2= Settings.getInstance().readBool("emu.ignoreaudiothreads");
-              jpcsp.HLE.ThreadMan.getInstance().setEnabled(isEnable2);
+                // no patch file found
+                boolean disableAudio = Settings.getInstance().readBool("emu.disablesceAudio");
+                jpcsp.HLE.Modules.sceAudioModule.setEnabled(!disableAudio);
+                boolean ignoreAudioThreads = Settings.getInstance().readBool("emu.ignoreaudiothreads");
+                jpcsp.HLE.ThreadMan.getInstance().setThreadBanningEnabled(ignoreAudioThreads);
             }
 
             if (instructioncounter != null)
@@ -809,31 +813,36 @@ public void loadUMD(File file) {
         }
     }
 }
-public boolean checkforpatches(String name)
+
+/** @return true if a patch file was found */
+public boolean checkAndInstallPatches(String filename)
 {
-    File patchfile = new File("patches/" + name + ".patch");
-    if(!patchfile.exists())
+    File patchfile = new File("patches/" + filename);
+    if (!patchfile.exists())
     {
-      System.out.println("No patch file found for this game");
-      return false;
+        Emulator.log.debug("No patch file found for this game");
+        return false;
     }
+
     Properties patchSettings= new Properties();
     try {
-     patchSettings.load(new BufferedInputStream(new FileInputStream(patchfile)));
-     } catch (FileNotFoundException e) {
-			e.printStackTrace();
-	} catch (IOException e) {
-			e.printStackTrace();
-	}
-    String sceAudio = patchSettings.getProperty("emu.disablesceAudio");
-    if(sceAudio != null)
-        jpcsp.HLE.Modules.sceAudioModule.setEnabled(!(Integer.parseInt(sceAudio) != 0));
-    String threadban = patchSettings.getProperty("emu.ignoreaudiothreads");
-    if(threadban !=null)
-      jpcsp.HLE.ThreadMan.getInstance().setEnabled(Integer.parseInt(threadban) != 0);
-    return true;
+        Emulator.log.info("Loading patch file");
+        patchSettings.load(new BufferedInputStream(new FileInputStream(patchfile)));
 
+        String disableAudio = patchSettings.getProperty("emu.disablesceAudio");
+        if (disableAudio != null)
+            jpcsp.HLE.Modules.sceAudioModule.setEnabled(!(Integer.parseInt(disableAudio) != 0));
+
+        String ignoreAudioThreads = patchSettings.getProperty("emu.ignoreaudiothreads");
+        if (ignoreAudioThreads != null)
+            jpcsp.HLE.ThreadMan.getInstance().setThreadBanningEnabled(Integer.parseInt(ignoreAudioThreads) != 0);
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+
+    return true;
 }
+
 private void ResetEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetEmuActionPerformed
     resetEmu();
 }//GEN-LAST:event_ResetEmuActionPerformed

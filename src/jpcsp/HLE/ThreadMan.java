@@ -62,7 +62,7 @@ public class ThreadMan {
 
     // TODO figure out a decent number of cycles to wait
     private static final int WDT_THREAD_IDLE_CYCLES = 1000000;
-    private static final int WDT_THREAD_HOG_CYCLES = 70000000; // memset can take a while when you're using sb!
+    private static final int WDT_THREAD_HOG_CYCLES = (0x0A000000 - 0x08400000) * 3; // memset can take a while when you're using sb!
 
     private boolean insideCallback;
     private HashMap<Integer, SceKernelCallbackInfo> callbackMap;
@@ -135,21 +135,10 @@ public class ThreadMan {
         // Setup args by copying them onto the stack
         //Modules.log.debug("pspfilename - '" + pspfilename + "'");
         int len = pspfilename.length();
-        int alignlen = (len + 1 + 15) & ~15; // string terminator + 16 byte align
-        Memory mem = Memory.getInstance();
-        for (int i = 0; i < len; i++)
-            mem.write8((current_thread.stack_addr - alignlen) + i, (byte)pspfilename.charAt(i));
-        for (int i = len; i < alignlen; i++)
-            mem.write8((current_thread.stack_addr - alignlen) + i, (byte)0);
-        current_thread.cpuContext.gpr[29] -= alignlen; // Adjust sp for size of args
+        int address = current_thread.cpuContext.gpr[29];
+        writeStringZ(Memory.getInstance(), address, pspfilename);
         current_thread.cpuContext.gpr[4] = len + 1; // a0 = len + string terminator
-        current_thread.cpuContext.gpr[5] = current_thread.cpuContext.gpr[29]; // a1 = pointer to arg data in stack
-
-        // HACK min stack size is set to 512, let's set sp to stack top - 512.
-        // this allows plenty of padding between the sp and the eboot path
-        // that we store at the top of the stack area. should help NesterJ and
-        // Calender, both use sp+16 at the beginning (expected sp-16).
-        current_thread.cpuContext.gpr[29] -= 512 - alignlen;
+        current_thread.cpuContext.gpr[5] = address; // a1 = pointer to arg data in stack
 
         current_thread.status = PSP_THREAD_READY;
 
@@ -485,7 +474,8 @@ public class ThreadMan {
     private void deleteThread(SceKernelThreadInfo thread) {
         // cleanup thread - free the stack
         if (thread.stack_addr != 0) {
-            pspSysMem.getInstance().free(thread.stack_addr);
+            Modules.log.debug("thread:'" + thread.name + "' freeing stack " + String.format("0x%08X", thread.stack_addr - thread.stackSize));
+            pspSysMem.getInstance().free(thread.stack_addr - thread.stackSize);
         }
 
         waitingThreads.remove(thread);
@@ -555,46 +545,31 @@ public class ThreadMan {
     }
 
 
-    public int createThread(String name, int entry_addr, int initPriority, int stackSize, int attr, int option_addr, boolean startImmediately, int userDataLength, int userDataAddr, int gp) {
+    public SceKernelThreadInfo hleKernelCreateThread(String name, int entry_addr,
+        int initPriority, int stackSize, int attr, int option_addr) {
+
+        if (option_addr != 0)
+            Modules.log.warn("hleKernelCreateThread unhandled SceKernelThreadOptParam");
+
         SceKernelThreadInfo thread = new SceKernelThreadInfo(name, entry_addr, initPriority, stackSize, attr);
         threadMap.put(thread.uid, thread);
 
-        // Copy user data to the new thread's stack, since we are not
-        // starting the thread immediately, only marking it as ready,
-        // the data needs to be saved somewhere safe.
-        int alignlen = (userDataLength + 15) & ~15; // 16 byte align
-        Memory mem = Memory.getInstance();
-        for (int i = 0; i < userDataLength; i++)
-            mem.write8((thread.stack_addr - alignlen) + i, (byte)mem.read8(userDataAddr + i));
-        for (int i = userDataLength; i < alignlen; i++)
-            mem.write8((thread.stack_addr - alignlen) + i, (byte)0);
-        thread.cpuContext.gpr[29] -= alignlen; // Adjust sp for size of user data
-        thread.cpuContext.gpr[4] = userDataLength; // a0 = userDataLength
-        thread.cpuContext.gpr[5] = thread.cpuContext.gpr[29]; // a1 = pointer to copy of data at data_addr
-        thread.cpuContext.gpr[28] = gp;
+        Modules.log.debug("hleKernelCreateThread SceUID=" + Integer.toHexString(thread.uid)
+            + " name:'" + thread.name
+            + "' PC=" + Integer.toHexString(thread.cpuContext.pc)
+            + " attr:0x" + Integer.toHexString(attr)
+            + " pri:0x" + Integer.toHexString(initPriority));
 
-        if (startImmediately) {
-            changeThreadState(thread, PSP_THREAD_READY);
-            contextSwitch(thread);
-        }
-
-        return thread.uid;
+        return thread;
     }
 
     public void ThreadMan_sceKernelCreateThread(int name_addr, int entry_addr,
         int initPriority, int stackSize, int attr, int option_addr) {
+
         String name = readStringZ(name_addr);
 
-        // TODO use option_addr/SceKernelThreadOptParam?
-        if (option_addr != 0)
-            Modules.log.warn("sceKernelCreateThread unhandled SceKernelThreadOptParam");
-
-        SceKernelThreadInfo thread = new SceKernelThreadInfo(name, entry_addr, initPriority, stackSize, attr);
-        threadMap.put(thread.uid, thread);
-
-        Modules.log.debug("sceKernelCreateThread SceUID=" + Integer.toHexString(thread.uid)
-            + " name:'" + thread.name + "' PC=" + Integer.toHexString(thread.cpuContext.pc)
-            + " attr:" + Integer.toHexString(attr));
+        Modules.log.debug("sceKernelCreateThread redirecting to hleKernelCreateThread");
+        SceKernelThreadInfo thread = hleKernelCreateThread(name, entry_addr, initPriority, stackSize, attr, option_addr);
 
         // Inherit kernel mode if user mode bit is not set
         if ((current_thread.attr & PSP_THREAD_ATTR_KERNEL) == PSP_THREAD_ATTR_KERNEL &&
@@ -602,6 +577,7 @@ public class ThreadMan {
             Modules.log.debug("sceKernelCreateThread inheriting kernel mode");
             thread.attr |= PSP_THREAD_ATTR_KERNEL;
         }
+
         // Inherit user mode
         if ((current_thread.attr & PSP_THREAD_ATTR_USER) == PSP_THREAD_ATTR_USER) {
             if ((thread.attr & PSP_THREAD_ATTR_USER) != PSP_THREAD_ATTR_USER)
@@ -663,10 +639,11 @@ public class ThreadMan {
         }
     }
 
-
-    public void setEnabled(boolean enabled) {
+    public void setThreadBanningEnabled(boolean enabled) {
         USE_THREAD_BANLIST = enabled;
+        Modules.log.info("Audio threads disabled: " + USE_THREAD_BANLIST);
     }
+
     /** use lower case in this list */
     private final String[] threadNameBanList = new String[] {
         "bgm thread", "sgx-psp-freq-thr"
@@ -675,8 +652,9 @@ public class ThreadMan {
      * SndMain, SoundThread, At3Main, Atrac3PlayThread,
      * bgm thread, SceWaveMain, SasCore thread, soundThread,
      * ATRAC3 play thread, SAS Thread, XomAudio, sgx-psp-freq-thr,
-     * sgx-psp-at3-th, sgx-psp-pcm-th, snd_tick_timer_thread, snd_stream_service_thread_0,
-     * snd_stream_service_thread_1, SAS / Main Audio, AudioMixThread
+     * sgx-psp-at3-th, sgx-psp-pcm-th, sgx-psp-sas-th, snd_tick_timer_thread,
+     * snd_stream_service_thread_1, SAS / Main Audio, AudioMixThread,
+     * snd_stream_service_thread_0
      *
      * keywords:
      * snd, sound, at3, atrac3, sas, wave, pcm, audio
@@ -703,6 +681,31 @@ public class ThreadMan {
         return false;
     }
 
+    public void hleKernelStartThread(SceKernelThreadInfo thread, int userDataLength, int userDataAddr, int gp) {
+
+        Modules.log.debug("hleKernelStartThread SceUID=" + Integer.toHexString(thread.uid)
+            + " name:'" + thread.name
+            + "' dataLen=0x" + Integer.toHexString(userDataLength)
+            + " data=0x" + Integer.toHexString(userDataAddr)
+            + " gp=0x" + Integer.toHexString(gp));
+
+        // Setup args by copying them onto the stack
+        int address = thread.cpuContext.gpr[29];
+        if (userDataAddr != 0)
+            Memory.getInstance().memcpy(address, userDataAddr, userDataLength);
+        thread.cpuContext.gpr[4] = userDataLength; // a0 = user data len
+        thread.cpuContext.gpr[5] = address; // a1 = pointer to arg data in stack
+
+        if (thread.cpuContext.gpr[28] != gp) {
+            Modules.log.debug("hleKernelStartThread oldGP=0x" + Integer.toHexString(thread.cpuContext.gpr[28])
+                + " newGP=0x" + Integer.toHexString(gp));
+        }
+        thread.cpuContext.gpr[28] = gp;
+
+        changeThreadState(thread, PSP_THREAD_READY);
+        contextSwitch(thread);
+    }
+
     public void ThreadMan_sceKernelStartThread(int uid, int len, int data_addr) {
         SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadMap.get(uid);
@@ -714,28 +717,8 @@ public class ThreadMan {
             Emulator.getProcessor().cpu.gpr[2] = 0;
             contextSwitch(nextThread());
         } else {
-            Modules.log.debug("sceKernelStartThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
-
-            // Copy user data to the new thread's stack, since we are not
-            // starting the thread immediately, only marking it as ready,
-            // the data needs to be saved somewhere safe.
-            int alignlen = (len + 15) & ~15; // 16 byte align
-            Memory mem = Memory.getInstance();
-            for (int i = 0; i < len; i++)
-                mem.write8((thread.stack_addr - alignlen) + i, (byte)mem.read8(data_addr + i));
-            for (int i = len; i < alignlen; i++)
-                mem.write8((thread.stack_addr - alignlen) + i, (byte)0);
-            thread.cpuContext.gpr[29] -= alignlen; // Adjust sp for size of user data
-            thread.cpuContext.gpr[4] = len; // a0 = len
-            thread.cpuContext.gpr[5] = thread.cpuContext.gpr[29]; // a1 = pointer to copy of data at data_addr
-            changeThreadState(thread, PSP_THREAD_READY);
-
-            Emulator.getProcessor().cpu.gpr[2] = 0;
-
-            // TODO does start thread defer start or really start?
-            // threadstatus.pbp on real PSP shows the callback thread prints
-            // before the main thread, so it starts immediately.
-            contextSwitch(thread);
+            Modules.log.debug("sceKernelStartThread redirecting to hleKernelStartThread");
+            hleKernelStartThread(thread, len, data_addr, thread.gpReg_addr);
         }
     }
 
@@ -1249,6 +1232,7 @@ public class ThreadMan {
         }
     }
 
+    /** @return the top address or 0 on failure. */
     public int mallocStack(int size) {
         if (size > 0) {
             //int p = 0x09f00000 - stackAllocated;
@@ -1276,7 +1260,13 @@ public class ThreadMan {
         Modules.log.debug("sceKernelCreateSema name= " + name + " attr= 0x" + Integer.toHexString(attr) + " initVal= " + initVal + " maxVal= "+ maxVal + " option= 0x" + Integer.toHexString(option));
 
         if (attr != 0) Modules.log.warn("UNIMPLEMENTED:sceKernelCreateSema attr value 0x" + Integer.toHexString(attr));
-        if (option != 0) Modules.log.warn("UNIMPLEMENTED:sceKernelCreateSema option at 0x" + Integer.toHexString(option));
+
+        Memory mem = Memory.getInstance();
+        if (mem.isAddressGood(option)) {
+            int optsize = mem.read32(option);
+            Modules.log.warn("UNIMPLEMENTED:sceKernelCreateSema option at 0x" + Integer.toHexString(option)
+                + " (size=" + optsize + ")");
+        }
 
         SceKernelSemaphoreInfo sema = new SceKernelSemaphoreInfo(name, attr, initVal, maxVal);
 

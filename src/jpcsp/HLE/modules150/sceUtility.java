@@ -429,9 +429,10 @@ public class sceUtility implements HLEModule {
 
         // TODO HACK to enable game loading in ToE. To be removed when dialog for MODE_LISTLOAD and MODE_LISTSAVE is implemented.
         if (savedata_mode == SceUtilitySavedataParam.MODE_LISTLOAD) {
+            Modules.log.warn("sceUtilitySavedataInitStart MODE_LISTLOAD converted to MODE_AUTOLOAD");
             savedata_mode = SceUtilitySavedataParam.MODE_AUTOLOAD;
-        }
-        if (savedata_mode == SceUtilitySavedataParam.MODE_LISTSAVE) {
+        } else if (savedata_mode == SceUtilitySavedataParam.MODE_LISTSAVE) {
+            Modules.log.warn("sceUtilitySavedataInitStart MODE_LISTSAVE converted to MODE_AUTOSAVE");
             savedata_mode = SceUtilitySavedataParam.MODE_AUTOSAVE;
         }
 
@@ -440,7 +441,7 @@ public class sceUtility implements HLEModule {
 	        case SceUtilitySavedataParam.MODE_AUTOLOAD:
 	        case SceUtilitySavedataParam.MODE_LOAD:
 	        	if (sceUtilitySavedataParam.saveName == null || sceUtilitySavedataParam.saveName.length() == 0) {
-	        		if (sceUtilitySavedataParam.saveNameList.length > 0) {
+	        		if (sceUtilitySavedataParam.saveNameList != null && sceUtilitySavedataParam.saveNameList.length > 0) {
 	        			sceUtilitySavedataParam.saveName = sceUtilitySavedataParam.saveNameList[0];
 	        		} else {
 	        			sceUtilitySavedataParam.saveName = "-000";
@@ -465,7 +466,7 @@ public class sceUtility implements HLEModule {
 	        case SceUtilitySavedataParam.MODE_SAVE:
 	        	try {
 	                if (sceUtilitySavedataParam.saveName == null || sceUtilitySavedataParam.saveName.length() == 0) {
-	                    if (sceUtilitySavedataParam.saveNameList.length > 0) {
+	                    if (sceUtilitySavedataParam.saveNameList != null && sceUtilitySavedataParam.saveNameList.length > 0) {
 	                        sceUtilitySavedataParam.saveName = sceUtilitySavedataParam.saveNameList[0];
 	                    } else {
 	                        sceUtilitySavedataParam.saveName = "-000";
@@ -529,7 +530,7 @@ public class sceUtility implements HLEModule {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
 
-        Modules.log.warn("PARTIAL:sceUtilitySavedataGetStatus return:" + savedata_status);
+        Modules.log.warn("PARTIAL:sceUtilitySavedataGetStatus return:0x" + Integer.toHexString(savedata_status));
 
         cpu.gpr[2] = savedata_status;
 

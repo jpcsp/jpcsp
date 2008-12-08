@@ -39,6 +39,7 @@ import jpcsp.MemoryMap;
 import jpcsp.Processor;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.util.Utilities;
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceModule;
 
 import jpcsp.Allegrex.CpuState; // New-Style Processor
@@ -314,14 +315,14 @@ public class ModuleMgrForUser implements HLEModule {
         } else  if (sceModule.isFlashModule) {
             // Trying to start a module loaded from flash0:
             // Do nothing...
-            Modules.log.warn("IGNORING:sceKernelStartModule flash module");
+            Modules.log.warn("IGNORING:sceKernelStartModule flash module '" + sceModule.modname + "'");
             cpu.gpr[2] = 0;
         } else {
             // TODO check thread priority
-            ThreadMan.getInstance().createThread(sceModule.modname,
-                sceModule.entry_addr, 0, 0x4000, sceModule.attribute,
-                option_addr, true, argsize, argp_addr, sceModule.gp_value);
-
+            ThreadMan threadMan = ThreadMan.getInstance();
+            SceKernelThreadInfo thread = threadMan.hleKernelCreateThread(sceModule.modname,
+                sceModule.entry_addr, 0, 0x4000, sceModule.attribute, option_addr);
+            threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
             cpu.gpr[2] = 0;
         }
     }
