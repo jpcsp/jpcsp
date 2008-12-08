@@ -67,7 +67,8 @@ public class ThreadMan {
     private boolean insideCallback;
     private HashMap<Integer, SceKernelCallbackInfo> callbackMap;
 
-    private  boolean USE_THREAD_BANLIST = false;
+    private boolean USE_THREAD_BANLIST = false;
+    private static final boolean LOG_CONTEXT_SWITCHING = false;
 
     // see sceKernelGetThreadmanIdList
     public final static int SCE_KERNEL_TMID_Thread             = 1;
@@ -239,7 +240,7 @@ public class ThreadMan {
             }
 
             // Watch dog timer
-            if (current_thread == idle0 || current_thread == idle1) {
+            if (isIdleThread(current_thread)) {
                 continuousIdleCycles++;
                 if (continuousIdleCycles > WDT_THREAD_IDLE_CYCLES) {
                     Modules.log.info("Watch dog timer - pausing emulator (idle)");
@@ -329,14 +330,16 @@ public class ThreadMan {
             // restore registers
             newthread.restoreContext();
 
-            //Modules.log.debug("ThreadMan: switched to thread SceUID=" + Integer.toHexString(newthread.uid) + " name:'" + newthread.name + "'");
-            //Modules.log.debug("---------------------------------------- SceUID=" + Integer.toHexString(newthread.uid) + " name:'" + newthread.name + "'");
-            /*
-            Modules.log.debug("restoreContext SceUID=" + Integer.toHexString(newthread.uid)
-                + " name:" + newthread.name
-                + " PC:" + Integer.toHexString(newthread.cpuContext.pc)
-                + " NPC:" + Integer.toHexString(newthread.cpuContext.npc));
-            */
+            if (LOG_CONTEXT_SWITCHING && !isIdleThread(newthread)) {
+                //Modules.log.debug("ThreadMan: switched to thread SceUID=" + Integer.toHexString(newthread.uid) + " name:'" + newthread.name + "'");
+                Modules.log.debug("---------------------------------------- SceUID=" + Integer.toHexString(newthread.uid) + " name:'" + newthread.name + "'");
+                /*
+                Modules.log.debug("restoreContext SceUID=" + Integer.toHexString(newthread.uid)
+                    + " name:" + newthread.name
+                    + " PC:" + Integer.toHexString(newthread.cpuContext.pc)
+                    + " NPC:" + Integer.toHexString(newthread.cpuContext.npc));
+                */
+            }
 
             //Emulator.PauseEmu();
         } else {
@@ -409,12 +412,18 @@ public class ThreadMan {
      * ready thread (which may be an idle thread if no other threads are ready). */
     public void yieldCurrentThread()
     {
+        if (LOG_CONTEXT_SWITCHING)
+            Modules.log.debug("-------------------- yield SceUID=" + Integer.toHexString(current_thread.uid) + " name:'" + current_thread.name + "' caller:" + getCallingFunction());
+
         contextSwitch(nextThread());
     }
 
     /* The same as yieldCurrentThread, except combined with sceKernelCheckCallback */
     public void yieldCurrentThreadCB()
     {
+        if (LOG_CONTEXT_SWITCHING)
+            Modules.log.debug("-------------------- yield CB SceUID=" + Integer.toHexString(current_thread.uid) + " name:'" + current_thread.name + "' caller:" + getCallingFunction());
+
         current_thread.do_callbacks = true;
         contextSwitch(nextThread());
         checkCallbacks();
@@ -422,6 +431,9 @@ public class ThreadMan {
 
     public void blockCurrentThread()
     {
+        if (LOG_CONTEXT_SWITCHING)
+            Modules.log.debug("-------------------- block SceUID=" + Integer.toHexString(current_thread.uid) + " name:'" + current_thread.name + "' caller:" + getCallingFunction());
+
         changeThreadState(current_thread, PSP_THREAD_SUSPEND);
         contextSwitch(nextThread());
     }
@@ -431,7 +443,36 @@ public class ThreadMan {
         if (SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", false)) {
             SceKernelThreadInfo thread = threadMap.get(uid);
             changeThreadState(thread, PSP_THREAD_READY);
+
+            if (LOG_CONTEXT_SWITCHING)
+                Modules.log.debug("-------------------- unblock SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' caller:" + getCallingFunction());
         }
+    }
+
+    private String getCallingFunction()
+    {
+        String msg = "";
+        try {
+            throw new Exception();
+        } catch(Exception e) {
+            StackTraceElement[] lines = e.getStackTrace();
+            if (lines.length >= 2) {
+                msg = lines[2].toString();
+                msg = msg.substring(0, msg.indexOf("("));
+                //msg = "'" + msg.substring(msg.lastIndexOf(".") + 1, msg.length()) + "'";
+                String[] parts = msg.split("\\.");
+                msg = "'" + parts[parts.length - 2] + "." + parts[parts.length - 1] + "'";
+            } else {
+                for (int i = 0; i < lines.length && i < 10; i++)
+                {
+                    String line = lines[i].toString();
+                    if (line.startsWith("jpcsp.Allegrex") || line.startsWith("jpcsp.Processor"))
+                        break;
+                    msg += "\n" + line;
+                }
+            }
+        }
+        return msg;
     }
 
     /** Call this when a thread's wait timeout has expired.
@@ -472,6 +513,8 @@ public class ThreadMan {
     }
 
     private void deleteThread(SceKernelThreadInfo thread) {
+        Modules.log.debug("really deleting thread:'" + thread.name + "'");
+
         // cleanup thread - free the stack
         if (thread.stack_addr != 0) {
             Modules.log.debug("thread:'" + thread.name + "' freeing stack " + String.format("0x%08X", thread.stack_addr - thread.stackSize));
@@ -654,7 +697,7 @@ public class ThreadMan {
      * ATRAC3 play thread, SAS Thread, XomAudio, sgx-psp-freq-thr,
      * sgx-psp-at3-th, sgx-psp-pcm-th, sgx-psp-sas-th, snd_tick_timer_thread,
      * snd_stream_service_thread_1, SAS / Main Audio, AudioMixThread,
-     * snd_stream_service_thread_0
+     * snd_stream_service_thread_0, sound_poll_thread, stream_sound_poll_thread,
      *
      * keywords:
      * snd, sound, at3, atrac3, sas, wave, pcm, audio
@@ -761,7 +804,7 @@ public class ThreadMan {
         changeThreadState(current_thread, PSP_THREAD_WAITING);
 
         Emulator.getProcessor().cpu.gpr[2] = 0;
-        contextSwitch(nextThread());
+        yieldCurrentThread();
     }
 
     /** sleep the current thread (using wait) */
@@ -879,6 +922,9 @@ public class ThreadMan {
     public void hleKernelThreadWait(ThreadWaitInfo wait, int micros, boolean forever) {
         wait.forever = forever;
         wait.microTimeTimeout = Emulator.getClock().microTime() + micros;
+
+        if (LOG_CONTEXT_SWITCHING && !isIdleThread(current_thread))
+            Modules.log.debug("hleKernelThreadWait micros=" + micros + " forever:" + forever + " thread:'" + current_thread.name + "' caller:" + getCallingFunction());
     }
 
     private void hleKernelDelayThread(int micros, boolean do_callbacks) {

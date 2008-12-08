@@ -83,9 +83,9 @@ public class sceMpeg implements HLEModule {
             mm.addFunction(sceMpeg_AB0E9556Function, 0xAB0E9556);
             mm.addFunction(sceMpegAvcDecodeDetail2Function, 0xCF3547A2);
             mm.addFunction(sceMpeg_988E9E12Function, 0x988E9E12);
-
-            mpegHandle = -1;
         }
+
+        mpegHandle = -1;
     }
 
     @Override
@@ -143,28 +143,28 @@ public class sceMpeg implements HLEModule {
 
     // for now we just support 1 instance of mpeg
     // we'll use this variable to store the address of the mpeg context struct
-    private int mpegHandle;
+    protected int mpegHandle;
 
     public static final int PSMF_MAGIC = 0x464D5350;
 
 
-    private int makeFakeStreamHandle(int stream) {
+    protected int makeFakeStreamHandle(int stream) {
         return 0x34340000 | (stream & 0xFFFF);
     }
 
-    private boolean isFakeStreamHandle(int handle) {
+    protected boolean isFakeStreamHandle(int handle) {
         return ((handle & 0xFFFF0000) == 0x34340000);
     }
 
-    private int getFakeStreamID(int handle) {
+    protected int getFakeStreamID(int handle) {
         return (handle & 0x0000FFFF);
     }
 
-    private boolean isFakeAuHandle(int handle) {
+    protected boolean isFakeAuHandle(int handle) {
         return ((handle & 0xFFFF0000) == 0x56560000);
     }
 
-    private int getFakeAuType(int handle) {
+    protected int getFakeAuType(int handle) {
         return (handle & 0x0000FFFF);
     }
 

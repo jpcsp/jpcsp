@@ -65,9 +65,9 @@ public class sceSasCore implements HLEModule {
             mm.addFunction(__sceSasGetOutputmodeFunction, 0xE175EF66);
             mm.addFunction(__sceSasSetOutputmodeFunction, 0xE855BF76);
             mm.addFunction(__sceSasRevVONFunction, 0xF983B186);
-
-            sasCoreHandle = -1;
         }
+
+        sasCoreHandle = -1;
     }
 
     @Override
@@ -105,16 +105,16 @@ public class sceSasCore implements HLEModule {
         }
     }
 
-    private int sasCoreHandle;
+    protected int sasCoreHandle;
 
-    private String makeLogParams(CpuState cpu) {
+    protected String makeLogParams(CpuState cpu) {
         return String.format("%08x %08x %08x %08x",
             cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]);
     }
 
     /** If sasCore isn't a valid handle this function will print a log message and set $v0 to -1.
      * @return true if sasCore is good. */
-    private boolean isSasHandleGood(int sasCore, String functionName, CpuState cpu) {
+    protected boolean isSasHandleGood(int sasCore, String functionName, CpuState cpu) {
         if (sasCore == sasCoreHandle)
             return true;
 

@@ -63,6 +63,7 @@ public class sceUmdUser implements HLEModule {
         }
 
         UMDCallBackList = new HashMap<Integer, Integer>();
+        umdActivated = false;
     }
 
     @Override
@@ -96,6 +97,7 @@ public class sceUmdUser implements HLEModule {
 
     protected UmdIsoReader iso;
     protected HashMap<Integer, Integer> UMDCallBackList;
+    protected boolean umdActivated;
 
     // HLE helper functions
 
@@ -117,6 +119,7 @@ public class sceUmdUser implements HLEModule {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
+
         int unit = cpu.gpr[4]; // should be always 1
         String drive = readStringZ(cpu.gpr[5]);
         Modules.log.debug("sceUmdActivate unit = " + unit + " drive = " + drive);
@@ -125,6 +128,7 @@ public class sceUmdUser implements HLEModule {
         int event = 0;
         if (iso != null) {
             event = PSP_UMD_PRESENT | PSP_UMD_READY;
+            umdActivated = true;
         } else {
             event = PSP_UMD_NOT_PRESENT;
         }
@@ -136,16 +140,20 @@ public class sceUmdUser implements HLEModule {
         // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        int unit = cpu.gpr[4]; // should be always 1
+        String drive = readStringZ(cpu.gpr[5]);
+        Modules.log.debug("sceUmdDeactivate unit = " + unit + " drive = " + drive);
+        cpu.gpr[2] = 0;
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        umdActivated = false;
 
-        System.out.println("Unimplemented NID function sceUmdDeactivate [0xE83742BA]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        int event = 0;
+        if (iso != null) {
+            event = PSP_UMD_PRESENT | PSP_UMD_INITED;
+        } else {
+            event = PSP_UMD_INITING;
+        }
+        ThreadMan.getInstance().pushUMDCallback(UMDCallBackList.values().iterator(), event);
     }
 
     /** wait until drive stat reaches a0 */
@@ -229,9 +237,11 @@ public class sceUmdUser implements HLEModule {
 
         int stat;
         if (iso != null) {
-            stat = PSP_UMD_PRESENT | PSP_UMD_INITED | PSP_UMD_READY;
+            stat = PSP_UMD_PRESENT | PSP_UMD_INITED;
+            if (umdActivated) stat |= PSP_UMD_READY;
         } else {
             stat = PSP_UMD_NOT_PRESENT;
+            // TODO after deactivate is called, stat |= PSP_UMD_INITING
         }
 
         Modules.log.debug("sceUmdGetDriveStat return:0x" + Integer.toHexString(stat));
