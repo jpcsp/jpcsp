@@ -20,7 +20,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.concurrent.Semaphore;
 import static jpcsp.graphics.GeCommands.*;
-import jpcsp.Emulator;
+import jpcsp.Memory;
 
 // Use the locks for reading/writing member variables and calling member methods
 public class DisplayList {
@@ -94,18 +94,19 @@ public class DisplayList {
     }
 
     //  HACK: This shouldn't exist, but I need to be sure a list
-    // is complete before processing it
+    // is complete before processing it (shash)
     public boolean HasFinish () {
-    	boolean hasFinish = false;
-    	int currPC = start;
+        boolean hasFinish = false;
+        int currPC = start;
 
-    	while (!hasFinish && currPC != stallAddress) {
-            int instruction = Emulator.getMemory().read32(currPC)>>24;
+        Memory mem = Memory.getInstance();
+        while (!hasFinish && currPC != stallAddress) {
+            int instruction = mem.read32(currPC) >> 24;
             currPC += 4;
             hasFinish = (instruction == END || instruction == FINISH);
         }
 
-    	return hasFinish;
+        return hasFinish;
     }
 
     public static void Unlock() {

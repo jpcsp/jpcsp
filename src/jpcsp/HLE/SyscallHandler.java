@@ -281,7 +281,9 @@ public class SyscallHandler {
                 case 0x2078:
                     ThreadMan.getInstance().ThreadMan_sceKernelChangeThreadPriority(gpr[4], gpr[5]);
                     break;
-		// sceKernelRotateThreadReadyQueue(0x2079),
+                //case 0x2079:
+                //    ThreadMan.getInstance().ThreadMan_sceKernelRotateThreadReadyQueue(gpr[4]);
+                //    break;
 		// sceKernelReleaseWaitThread(0x207a),
                 case 0x207b:
                     ThreadMan.getInstance().ThreadMan_sceKernelGetThreadId();
@@ -897,10 +899,6 @@ public class SyscallHandler {
                         // At least set a decent return value
                         cpu.gpr[2] = 0;
                         //Emulator.getProcessor().gpr[2] = 0xb515ca11;
-
-                        // HACK: __sceSasGetEndFlag [68A46B95] tell the game all channels finished playing
-                        //if (code == 0x22e5)
-                        //    cpu.gpr[2] = 0xFF;
 
                         // Display debug info
                         String params = String.format("%08x %08x %08x", cpu.gpr[4],
