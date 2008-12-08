@@ -18,6 +18,7 @@ package jpcsp.HLE.kernel.managers;
 
 import java.util.HashMap;
 import jpcsp.HLE.kernel.types.SceKernelFplInfo;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.pspSysMem;
 import jpcsp.Allegrex.CpuState;
@@ -71,7 +72,7 @@ public class FplManager {
         SceKernelFplInfo info = fplMap.remove(uid);
         if (info == null) {
             Modules.log.warn("sceKernelDeleteFpl unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = -1;
+            cpu.gpr[2] = ERROR_NOT_FOUND_FPOOL;
         } else {
             if (info.freeBlocks < info.numBlocks) {
                 Modules.log.warn("sceKernelDeleteFpl " + (info.numBlocks - info.freeBlocks) + " unfreed blocks");
@@ -175,7 +176,7 @@ public class FplManager {
         SceKernelFplInfo info = fplMap.get(uid);
         if (info == null) {
             Modules.log.warn("sceKernelAllocateFpl unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = -1;
+            cpu.gpr[2] = ERROR_NOT_FOUND_FPOOL;
         } else {
             int addr = tryAllocateFpl(info);
             if (addr == 0) {
@@ -226,7 +227,7 @@ public class FplManager {
         SceKernelFplInfo info = fplMap.get(uid);
         if (info == null) {
             Modules.log.warn("sceKernelTryAllocateFpl unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = -1;
+            cpu.gpr[2] = ERROR_NOT_FOUND_FPOOL;
         } else {
             int addr = tryAllocateFpl(info);
             if (addr == 0) {
@@ -250,7 +251,7 @@ public class FplManager {
         SceKernelFplInfo info = fplMap.get(uid);
         if (info == null) {
             Modules.log.warn("sceKernelFreeFpl unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = -1;
+            cpu.gpr[2] = ERROR_NOT_FOUND_FPOOL;
         } else if (data_addr == 0) {
             Modules.log.warn("sceKernelFreeFpl bad address 0x" + Integer.toHexString(data_addr));
             cpu.gpr[2] = -1;
@@ -276,7 +277,7 @@ public class FplManager {
         SceKernelFplInfo info = fplMap.get(uid);
         if (info == null) {
             Modules.log.warn("sceKernelCancelFpl unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = -1;
+            cpu.gpr[2] = ERROR_NOT_FOUND_FPOOL;
         } else {
             // TODO
             // - for each thread waiting to allocate on this fpl, wake it up
@@ -296,7 +297,7 @@ public class FplManager {
         SceKernelFplInfo info = fplMap.get(uid);
         if (info == null) {
             Modules.log.warn("sceKernelReferFplStatus unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = -1;
+            cpu.gpr[2] = ERROR_NOT_FOUND_FPOOL;
         } else {
             info.write(mem, info_addr);
             cpu.gpr[2] = 0;

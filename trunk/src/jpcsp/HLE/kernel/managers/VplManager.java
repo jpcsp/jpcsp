@@ -18,6 +18,7 @@ package jpcsp.HLE.kernel.managers;
 
 import java.util.HashMap;
 import jpcsp.HLE.kernel.types.SceKernelVplInfo;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.pspSysMem;
 import jpcsp.Allegrex.CpuState;
@@ -68,7 +69,7 @@ public class VplManager {
         SceKernelVplInfo info = vplMap.remove(uid);
         if (info == null) {
             Modules.log.warn("sceKernelDeleteVpl unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = -1;
+            cpu.gpr[2] = ERROR_NOT_FOUND_VPOOL;
         } else {
             if (info.freeSize < info.poolSize) {
                 Modules.log.warn("sceKernelDeleteVpl " + (info.numBlocks - info.freeBlocks) + " unfreed mem");
@@ -129,7 +130,7 @@ public class VplManager {
         SceKernelVplInfo info = vplMap.get(uid);
         if (info == null) {
             Modules.log.warn("sceKernelAllocateVpl unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = -1;
+            cpu.gpr[2] = ERROR_NOT_FOUND_VPOOL;
         } else {
             int addr = tryAllocateVpl(info, size);
             if (addr == 0) {
@@ -181,7 +182,7 @@ public class VplManager {
         SceKernelVplInfo info = vplMap.get(uid);
         if (info == null) {
             Modules.log.warn("sceKernelTryAllocateVpl unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = -1;
+            cpu.gpr[2] = ERROR_NOT_FOUND_VPOOL;
         } else {
             int addr = tryAllocateVpl(info, size);
             if (addr == 0) {
@@ -205,7 +206,7 @@ public class VplManager {
         SceKernelVplInfo info = vplMap.get(uid);
         if (info == null) {
             Modules.log.warn("sceKernelFreeVpl unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = -1;
+            cpu.gpr[2] = ERROR_NOT_FOUND_VPOOL;
         } else {
             int block = info.findBlockByAddress(data_addr);
             if (block == -1) {
@@ -232,7 +233,7 @@ public class VplManager {
         SceKernelVplInfo info = vplMap.get(uid);
         if (info == null) {
             Modules.log.warn("sceKernelCancelVpl unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = -1;
+            cpu.gpr[2] = ERROR_NOT_FOUND_VPOOL;
         } else {
             // TODO
             // - for each thread waiting to allocate on this fpl, wake it up
@@ -252,7 +253,7 @@ public class VplManager {
         SceKernelVplInfo info = vplMap.get(uid);
         if (info == null) {
             Modules.log.warn("sceKernelReferVplStatus unknown uid=0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = -1;
+            cpu.gpr[2] = ERROR_NOT_FOUND_VPOOL;
         } else {
             info.write(mem, info_addr);
             cpu.gpr[2] = 0;
