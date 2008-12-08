@@ -77,6 +77,10 @@ public class HLEModuleManager {
         Modules.sceImposeModule,
         Modules.sceSuspendForUserModule,
         Modules.sceDmacModule,
+
+        // HACK: we should only load this when the game tries to load sc_sascore.prx,
+        // or if the firmware version has it built in.
+        Modules.sceSasCoreModule,
     };
 
     public static HLEModuleManager getInstance() {
@@ -128,6 +132,22 @@ public class HLEModuleManager {
     }
 
     /** @return the UID assigned to the module or negative on error */
+    /* unused
+    public int LoadHLEModule(String modname, HLEModule module) {
+        int uid = -1;
+        module.installModule(this, firmwareVersion);
+        SceModule fakeModule = new SceModule(true);
+        fakeModule.modname = modname;
+        fakeModule.write(Memory.getInstance(), fakeModule.address);
+        Managers.modules.addModule(fakeModule);
+        uid = fakeModule.modid;
+        return uid;
+    }
+    */
+
+    /** @return the UID assigned to the module or negative on error
+     * TODO need to figure out how the uids work when 1 prx contains several modules. */
+    /* unused
     public int LoadFlash0Module(String prxname) {
         int uid = -1;
         List<HLEModule> prx = flash0prxMap.get(prxname);
@@ -143,6 +163,7 @@ public class HLEModuleManager {
         }
         return uid;
     }
+    */
 
     /** Instead use addFunction. */
     @Deprecated

@@ -2,7 +2,7 @@
 Function:
 - HLE everything in http://psp.jim.sh/pspsdk-doc/pspiofilemgr_8h.html
 Notes:
-- Just redirecting the xxxAsync calls to xxx
+- Redirecting the xxxAsync calls to xxx and using yieldCB
 
 This file is part of jpcsp.
 
@@ -43,10 +43,8 @@ import jpcsp.HLE.kernel.types.*;
 import jpcsp.HLE.kernel.managers.*;
 import jpcsp.State;
 
-/**
- *
- * @author George
- */
+// TODO use file id's x to 31 inclusive, where x is somewhere around 0
+// TODO get std out/err/in from stdio module, it can be any number not just 1/2/3 BUT some old homebrew may expect it to be 1/2/3 (such as some versions of psplinkusb)
 public class pspiofilemgr {
     private static pspiofilemgr  instance;
     private final boolean debug = true; //enable/disable debug
@@ -461,7 +459,7 @@ public class pspiofilemgr {
             SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
             IoInfo info = filelist.remove(uid);
             if (info == null) {
-                if (uid != 1 && uid != 2) // stdin and stderr
+                if (uid != 1 && uid != 2) // ignore stdout and stderr
                     Modules.log.warn("sceIoClose - unknown uid " + Integer.toHexString(uid));
                 Emulator.getProcessor().cpu.gpr[2] = -1;
             } else {
@@ -648,7 +646,14 @@ public class pspiofilemgr {
                     switch(whence) {
                         case PSP_SEEK_SET:
                             if (offset > info.readOnlyFile.length()) {
-                                Modules.log.warn("seek - offset (0x" + Long.toHexString(offset) + ") longer than file length (" + Long.toHexString(info.readOnlyFile.length()) + ")!");
+                                Modules.log.warn("seek - offset (0x" + Long.toHexString(offset) + ") longer than file length (0x" + Long.toHexString(info.readOnlyFile.length()) + ")!");
+                                Emulator.getProcessor().cpu.gpr[2] = -1;
+                                if (resultIs64bit)
+                                    Emulator.getProcessor().cpu.gpr[3] = -1;
+                                State.fileLogger.logIoSeek64(-1, uid, offset, whence);
+                                return;
+                            } else if (offset < 0) {
+                                Modules.log.warn("seek - offset (0x" + Long.toHexString(offset) + ") less than 0!");
                                 Emulator.getProcessor().cpu.gpr[2] = -1;
                                 if (resultIs64bit)
                                     Emulator.getProcessor().cpu.gpr[3] = -1;
@@ -850,6 +855,11 @@ public class pspiofilemgr {
         }
 
         switch(cmd) {
+            case 0x01F20001:
+                Modules.log.warn("IGNORED: sceIoDevctl unhandled umd command " + String.format("0x%08X", cmd));
+                Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
+                break;
+
             case 0x02015804:
             case 0x02025801:
             case 0x02025806:
@@ -858,7 +868,7 @@ public class pspiofilemgr {
                 break;
 
             case 0x02415821: // register ms eject callback
-                Modules.log.warn("UNIMPLEMENTED: sceIoDevctl register ms eject callback");
+                Modules.log.debug("UNIMPLEMENTED: sceIoDevctl register ms eject callback");
                 Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
                 break;
 

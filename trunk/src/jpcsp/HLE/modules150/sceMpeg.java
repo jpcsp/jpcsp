@@ -147,6 +147,28 @@ public class sceMpeg implements HLEModule {
 
     public static final int PSMF_MAGIC = 0x464D5350;
 
+
+    private int makeFakeStreamHandle(int stream) {
+        return 0x34340000 | (stream & 0xFFFF);
+    }
+
+    private boolean isFakeStreamHandle(int handle) {
+        return ((handle & 0xFFFF0000) == 0x34340000);
+    }
+
+    private int getFakeStreamID(int handle) {
+        return (handle & 0x0000FFFF);
+    }
+
+    private boolean isFakeAuHandle(int handle) {
+        return ((handle & 0xFFFF0000) == 0x56560000);
+    }
+
+    private int getFakeAuType(int handle) {
+        return (handle & 0x0000FFFF);
+    }
+
+
     public void sceMpegQueryStreamOffset(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
@@ -232,7 +254,7 @@ public class sceMpeg implements HLEModule {
 
         // we'll support only 1 mpeg instance at a time, we can fix this later if needed
         if (mpegHandle != -1) {
-            Modules.log.warn("sceMpegInit mpeg already in use");
+            Modules.log.warn("UNIMPLEMENTED:sceMpegInit multiple instances not yet supported");
             cpu.gpr[2] = -1;
         } else {
             cpu.gpr[2] = 0;
@@ -290,6 +312,7 @@ public class sceMpeg implements HLEModule {
             // update the ring buffer
             SceMpegRingbuffer ringbuffer = new SceMpegRingbuffer(mem, ringbuffer_addr);
             ringbuffer.packetSize = size;
+            ringbuffer.packetsFree = (ringbuffer.dataUpperBound - ringbuffer.data) / ringbuffer.packetSize;
             ringbuffer.mpeg = mpeg;
             ringbuffer.write(mem, ringbuffer_addr);
 
@@ -315,18 +338,6 @@ public class sceMpeg implements HLEModule {
         } else {
             cpu.gpr[2] = 0;
         }
-    }
-
-    private int makeFakeStreamHandle(int stream) {
-        return 0x34340000 | (stream & 0xFFFF);
-    }
-
-    private boolean isFakeStreamHandle(int handle) {
-        return ((handle & 0xFFFF0000) == 0x34340000);
-    }
-
-    private int getFakeStreamID(int handle) {
-        return (handle & 0x0000FFFF);
     }
 
     public void sceMpegRegistStream(Processor processor) {
@@ -464,7 +475,7 @@ public class sceMpeg implements HLEModule {
 
         int mpeg = cpu.gpr[4];
         int buffer_addr = cpu.gpr[5];
-        int au_addr = cpu.gpr[6];
+        int au_addr = cpu.gpr[6]; // 136 byte struct?
 
         Modules.log.warn("IGNORING:sceMpegInitAu(mpeg=0x" + Integer.toHexString(mpeg)
             + ",buffer=0x" + Integer.toHexString(buffer_addr)
@@ -476,6 +487,8 @@ public class sceMpeg implements HLEModule {
         } else {
             // TODO
             // buffer_addr is from sceMpegMallocAvcEsBuf
+
+            mem.write32(au_addr, 0x78787878);
 
             cpu.gpr[2] = 0;
         }
@@ -539,7 +552,7 @@ public class sceMpeg implements HLEModule {
 
             cpu.gpr[2] = 0;
         } else if (isFakeStreamHandle(stream_addr)) {
-            Modules.log.debug("IGNORING:sceMpegGetAvcAu got fake stream ID " + getFakeStreamID(stream_addr));
+            Modules.log.debug("sceMpegGetAvcAu got fake stream ID " + getFakeStreamID(stream_addr));
             mem.write32(au_addr, 0x56560001);
             cpu.gpr[2] = 0;
         } else {
@@ -549,22 +562,38 @@ public class sceMpeg implements HLEModule {
         }
     }
 
-    // use fake 0x56560002 in here
     public void sceMpegGetPcmAu(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        int mpeg = cpu.gpr[4];
+        int stream_addr = cpu.gpr[5];
+        int au_addr = cpu.gpr[6];
+        int unk_addr = cpu.gpr[7];
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        Modules.log.warn("PARTIAL:sceMpegGetPcmAu(mpeg=0x" + Integer.toHexString(mpeg)
+            + ",stream=0x" + Integer.toHexString(stream_addr)
+            + ",au=0x" + Integer.toHexString(au_addr)
+            + ",unknown=0x" + Integer.toHexString(unk_addr) + ")");
 
-        System.out.println("Unimplemented NID function sceMpegGetPcmAu [0x8C1E027D]");
+        if (mpeg != mpegHandle) {
+            Modules.log.warn("sceMpegGetPcmAu bad mpeg handle 0x" + Integer.toHexString(mpeg));
+            cpu.gpr[2] = -1;
+        } else if (mem.isAddressGood(stream_addr) && mem.isAddressGood(au_addr)) {
+            // TODO
+            mem.write32(au_addr, 0x56560002);
 
-        cpu.gpr[2] = 0xDEADC0DE;
-
-        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+            cpu.gpr[2] = 0;
+        } else if (isFakeStreamHandle(stream_addr)) {
+            Modules.log.debug("sceMpegGetPcmAu got fake stream ID " + getFakeStreamID(stream_addr));
+            mem.write32(au_addr, 0x56560002);
+            cpu.gpr[2] = 0;
+        } else {
+            Modules.log.warn("sceMpegGetPcmAu bad address "
+                + String.format("0x%08X 0x%08X", stream_addr, au_addr));
+            cpu.gpr[2] = -1;
+        }
     }
 
     public void sceMpegGetAtracAu(Processor processor) {
@@ -591,7 +620,7 @@ public class sceMpeg implements HLEModule {
 
             cpu.gpr[2] = 0;
         } else if (isFakeStreamHandle(stream_addr)) {
-            Modules.log.debug("IGNORING:sceMpegGetAtracAu got fake stream ID " + getFakeStreamID(stream_addr));
+            Modules.log.debug("sceMpegGetAtracAu got fake stream ID " + getFakeStreamID(stream_addr));
             mem.write32(au_addr, 0x56560003);
             cpu.gpr[2] = 0;
         } else {
@@ -599,8 +628,6 @@ public class sceMpeg implements HLEModule {
                 + String.format("0x%08X 0x%08X", stream_addr, au_addr));
             cpu.gpr[2] = -1;
         }
-
-        Modules.log.debug("sceMpegGetAtracAu ret=0x" + Integer.toHexString(cpu.gpr[2]));
     }
 
     public void sceMpegFlushStream(Processor processor) {
@@ -642,16 +669,51 @@ public class sceMpeg implements HLEModule {
         // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        int mpeg = cpu.gpr[4];
+        int au_addr = cpu.gpr[5];
+        int frameWidth = cpu.gpr[6];
+        int buffer_addr = cpu.gpr[7];
+        int init_addr = cpu.gpr[8];
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        Modules.log.warn("UNIMPLEMENTED:sceMpegAvcDecode(mpeg=0x" + Integer.toHexString(mpeg)
+            + ",au=0x" + Integer.toHexString(au_addr)
+            + ",frameWidth=" + frameWidth
+            + ",buffer=0x" + Integer.toHexString(buffer_addr)
+            + ",init=0x" + Integer.toHexString(init_addr) + ")");
 
-        System.out.println("Unimplemented NID function sceMpegAvcDecode [0x0E3C2E9D]");
+        if (mpeg != mpegHandle) {
+            Modules.log.warn("sceMpegAvcDecode bad mpeg handle 0x" + Integer.toHexString(mpeg));
+            cpu.gpr[2] = -1;
+        } else if (mem.isAddressGood(au_addr) && mem.isAddressGood(buffer_addr) && mem.isAddressGood(init_addr)) {
+            if (false) {
+                // TODO
+                int au = mem.read32(au_addr);
+                int buffer = mem.read32(buffer_addr);
+                int init = mem.read32(init_addr);
 
-        cpu.gpr[2] = 0xDEADC0DE;
+                Modules.log.debug("sceMpegAvcDecode *au=0x" + Integer.toHexString(au)
+                    + " *buffer=0x" + Integer.toHexString(buffer)
+                    + " *init=" + init);
 
-        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+                if (isFakeAuHandle(au)) {
+                    int type = getFakeAuType(au);
+                    switch(type) {
+                    case 1: Modules.log.debug("sceMpegAvcDecode got fake avc au"); break;
+                    case 2: Modules.log.debug("sceMpegAvcDecode got fake pcm au"); break;
+                    case 3: Modules.log.debug("sceMpegAvcDecode got fake atrac au"); break;
+                    }
+                }
+
+                cpu.gpr[2] = 0;
+            } else {
+                // unimplemented
+                cpu.gpr[2] = 0xDEADC0DE;
+            }
+        } else {
+            Modules.log.warn("sceMpegAvcDecode bad address "
+                + String.format("0x%08X 0x%08X", au_addr, buffer_addr));
+            cpu.gpr[2] = -1;
+        }
     }
 
     public void sceMpegAvcDecodeDetail(Processor processor) {
@@ -878,9 +940,9 @@ public class sceMpeg implements HLEModule {
         size = ( packets * 104 ) + ( packets * 2048 );
         Modules.log.debug("sceMpegRingbufferQueryMemSize noxa/pspplayer size=0x" + Integer.toHexString(size));
 
-        // we use a 1mb cap, not sure if there is actually a cap or how big it is
-        if (size > 0x100000)
-            size = 0x100000;
+        // we use a 2mb cap, not sure if there is actually a cap or how big it is
+        if (size > 0x200000)
+            size = 0x200000;
 
         cpu.gpr[2] = size;
         Modules.log.debug("sceMpegRingbufferQueryMemSize ret=0x" + Integer.toHexString(cpu.gpr[2]));

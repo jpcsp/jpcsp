@@ -78,11 +78,8 @@ public class FplManager {
 
                 // Free blocks
                 for (int i = 0; i < info.numBlocks; i++) {
-                    int addr = info.blockAddress[i];
-                    if (addr != 0) {
-                        pspSysMem.getInstance().free(addr);
-                        info.blockAddress[i] = 0;
-                        info.freeBlocks++;
+                    if (info.isBlockAllocated(i)) {
+                        info.freeBlock(i);
                     }
                 }
             }
@@ -100,15 +97,10 @@ public class FplManager {
             Modules.log.warn("tryAllocateFpl no free blocks (numBlocks=" + info.numBlocks + ")");
             return 0;
         } else if (info.blockSize > pspSysMem.getInstance().maxFreeMemSize()) {
-            Modules.log.warn("tryAllocateFpl not enough free mem (want=" + info.blockSize + ",free=" + pspSysMem.getInstance().maxFreeMemSize() + ")");
+            Modules.log.warn("tryAllocateFpl not enough free mem (want=" + info.blockSize + ",free=" + pspSysMem.getInstance().maxFreeMemSize() + ",diff=" + (info.blockSize - pspSysMem.getInstance().maxFreeMemSize()) + ")");
             return 0;
         } else {
-            addr = pspSysMem.getInstance().malloc(info.partitionid, pspSysMem.PSP_SMEM_Low, info.blockSize, 0);
-            if (addr != 0) {
-                pspSysMem.getInstance().addSysMemInfo(info.partitionid, "ThreadMan-Fpl", pspSysMem.PSP_SMEM_Low, info.blockSize, addr);
-                info.blockAddress[block] = addr;
-                info.freeBlocks--;
-            }
+            addr = info.allocateBlock(block);
         }
 
         return addr;
@@ -259,15 +251,16 @@ public class FplManager {
         if (info == null) {
             Modules.log.warn("sceKernelFreeFpl unknown uid=0x" + Integer.toHexString(uid));
             cpu.gpr[2] = -1;
+        } else if (data_addr == 0) {
+            Modules.log.warn("sceKernelFreeFpl bad address 0x" + Integer.toHexString(data_addr));
+            cpu.gpr[2] = -1;
         } else {
             int block = info.findBlockByAddress(data_addr);
             if (block == -1) {
-                Modules.log.warn("sceKernelFreeFpl unknown block=0x" + Integer.toHexString(data_addr));
+                Modules.log.warn("sceKernelFreeFpl unknown block address=0x" + Integer.toHexString(data_addr));
                 cpu.gpr[2] = -1;
             } else {
-                pspSysMem.getInstance().free(data_addr);
-                info.blockAddress[block] = 0;
-                info.freeBlocks++;
+                info.freeBlock(block);
                 cpu.gpr[2] = 0;
                 // TODO onFreeFpl(info);
             }

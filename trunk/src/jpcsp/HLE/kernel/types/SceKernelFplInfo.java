@@ -18,7 +18,9 @@ package jpcsp.HLE.kernel.types;
 
 import java.util.LinkedList;
 import java.util.List;
+
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.pspSysMem;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.util.Utilities;
@@ -37,7 +39,7 @@ public class SceKernelFplInfo {
     // Internal info
     public final int uid;
     public final int partitionid;
-    public int[] blockAddress;
+    public int[] blockAddress; // -1 = unallocated
     // TODO public List<Integer> waitAllocateQueue; // For use when there are no free blocks
 
     public SceKernelFplInfo(String name, int partitionid, int attr, int blockSize, int numBlocks) {
@@ -53,7 +55,7 @@ public class SceKernelFplInfo {
         this.partitionid = partitionid;
         blockAddress = new int[numBlocks];
         for (int i = 0; i < numBlocks; i++)
-            blockAddress[i] = 0;
+            blockAddress[i] = -1;
         // TODO waitAllocateQueue = new LinkedList<Integer>();
     }
 
@@ -84,9 +86,40 @@ public class SceKernelFplInfo {
         mem.write32(address + 52, numWaitThreads);
     }
 
+    public boolean isBlockAllocated(int blockId) {
+        return (blockAddress[blockId] != -1);
+    }
+
+    public void freeBlock(int blockId) {
+        if (!isBlockAllocated(blockId))
+            throw new IllegalArgumentException("Block " + blockId + " is not allocated");
+
+        pspSysMem.getInstance().free(blockAddress[blockId]);
+        blockAddress[blockId] = -1;
+        freeBlocks++;
+    }
+
+    /** @return the address of the allocated block */
+    public int allocateBlock(int blockId) {
+        if (isBlockAllocated(blockId))
+            throw new IllegalArgumentException("Block " + blockId + " is already allocated");
+
+        int addr = pspSysMem.getInstance().malloc(partitionid, pspSysMem.PSP_SMEM_Low, blockSize, 0);
+        if (addr != 0) {
+            pspSysMem.getInstance().addSysMemInfo(partitionid, "ThreadMan-Fpl", pspSysMem.PSP_SMEM_Low, blockSize, addr);
+            blockAddress[blockId] = addr;
+            freeBlocks--;
+        }
+
+        return addr;
+    }
+
     /** @return the block index or -1 on failure */
     public int findFreeBlock() {
-        return findBlockByAddress(0);
+        for (int i = 0; i < numBlocks; i++)
+            if (!isBlockAllocated(i))
+                return i;
+        return -1;
     }
 
     /** @return the block index or -1 on failure */
