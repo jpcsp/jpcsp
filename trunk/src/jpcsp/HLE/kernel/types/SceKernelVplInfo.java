@@ -38,7 +38,7 @@ public class SceKernelVplInfo {
     public final int partitionid;
     public int[] blockAddress;
     public int[] blockSize;
-    public static final int numBlocks = 16; // TODO find a good size or use a list
+    public static final int numBlocks = 32; // TODO find a good size or use a list
     public int freeBlocks;
 
     public SceKernelVplInfo(String name, int partitionid, int attr, int poolSize) {
