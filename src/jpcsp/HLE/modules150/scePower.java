@@ -37,20 +37,20 @@ public class scePower implements HLEModule {
 		if (version >= 150) {
 
 			mm.addFunction(scePower_2B51FE2FFunction, 0x2B51FE2F);
-			mm.addFunction(scePower_442BFBACFunction, 0x442BFBAC);
+			mm.addFunction(scePowerGetBacklightMaximumFunction, 0x442BFBAC);
 			mm.addFunction(scePowerTickFunction, 0xEFD3C963);
 			mm.addFunction(scePowerGetIdleTimerFunction, 0xEDC13FE5);
 			mm.addFunction(scePowerIdleTimerEnableFunction, 0x7F30B3B1);
 			mm.addFunction(scePowerIdleTimerDisableFunction, 0x972CE941);
 			mm.addFunction(scePowerBatteryUpdateInfoFunction, 0x27F3292C);
-			mm.addFunction(scePower_E8E4E204Function, 0xE8E4E204);
+			mm.addFunction(scePowerGetForceSuspendCapacityFunction, 0xE8E4E204);
 			mm.addFunction(scePowerGetLowBatteryCapacityFunction, 0xB999184C);
 			mm.addFunction(scePowerIsPowerOnlineFunction, 0x87440F5E);
 			mm.addFunction(scePowerIsBatteryExistFunction, 0x0AFD0D8B);
 			mm.addFunction(scePowerIsBatteryChargingFunction, 0x1E490401);
 			mm.addFunction(scePowerGetBatteryChargingStatusFunction, 0xB4432BC8);
 			mm.addFunction(scePowerIsLowBatteryFunction, 0xD3075926);
-			mm.addFunction(scePower_78A1A796Function, 0x78A1A796);
+			mm.addFunction(scePowerIsSuspendRequiredFunction, 0x78A1A796);
 			mm.addFunction(scePowerGetBatteryRemainCapacityFunction, 0x94F5A53F);
 			mm.addFunction(scePowerGetBatteryFullCapacityFunction, 0xFD18A0FF);
 			mm.addFunction(scePowerGetBatteryLifePercentFunction, 0x2085D15D);
@@ -96,20 +96,20 @@ public class scePower implements HLEModule {
 		if (version >= 150) {
 
 			mm.removeFunction(scePower_2B51FE2FFunction);
-			mm.removeFunction(scePower_442BFBACFunction);
+			mm.removeFunction(scePowerGetBacklightMaximumFunction);
 			mm.removeFunction(scePowerTickFunction);
 			mm.removeFunction(scePowerGetIdleTimerFunction);
 			mm.removeFunction(scePowerIdleTimerEnableFunction);
 			mm.removeFunction(scePowerIdleTimerDisableFunction);
 			mm.removeFunction(scePowerBatteryUpdateInfoFunction);
-			mm.removeFunction(scePower_E8E4E204Function);
+			mm.removeFunction(scePowerGetForceSuspendCapacityFunction);
 			mm.removeFunction(scePowerGetLowBatteryCapacityFunction);
 			mm.removeFunction(scePowerIsPowerOnlineFunction);
 			mm.removeFunction(scePowerIsBatteryExistFunction);
 			mm.removeFunction(scePowerIsBatteryChargingFunction);
 			mm.removeFunction(scePowerGetBatteryChargingStatusFunction);
 			mm.removeFunction(scePowerIsLowBatteryFunction);
-			mm.removeFunction(scePower_78A1A796Function);
+			mm.removeFunction(scePowerIsSuspendRequiredFunction);
 			mm.removeFunction(scePowerGetBatteryRemainCapacityFunction);
 			mm.removeFunction(scePowerGetBatteryFullCapacityFunction);
 			mm.removeFunction(scePowerGetBatteryLifePercentFunction);
@@ -150,11 +150,35 @@ public class scePower implements HLEModule {
 		}
 	}
 
-    private int cpuClock = 222;
+	/**
+	 * Power callback flags
+	 */
+	// indicates the power switch it pushed, putting the unit into suspend mode
+	public static final int PSP_POWER_CB_POWER_SWITCH    = 0x80000000;
+	// indicates the hold switch is on
+	public static final int PSP_POWER_CB_HOLD_SWITCH     = 0x40000000;
+	// what is standby mode?
+	public static final int PSP_POWER_CB_STANDBY         = 0x00080000;
+	// indicates the resume process has been completed (only seems to be triggered when another event happens)
+	public static final int PSP_POWER_CB_RESUME_COMPLETE = 0x00040000;
+	// indicates the unit is resuming from suspend mode
+	public static final int PSP_POWER_CB_RESUMING        = 0x00020000;
+	// indicates the unit is suspending, seems to occur due to inactivity
+	public static final int PSP_POWER_CB_SUSPENDING      = 0x00010000;
+	// indicates the unit is plugged into an AC outlet
+	public static final int PSP_POWER_CB_AC_POWER        = 0x00001000;
+	// indicates the battery charge level is low
+	public static final int PSP_POWER_CB_BATTERY_LOW     = 0x00000100;
+	// indicates there is a battery present in the unit
+	public static final int PSP_POWER_CB_BATTERY_EXIST   = 0x00000080;
+	// unknown
+	public static final int PSP_POWER_CB_BATTPOWER       = 0x0000007F;
+
+	private int cpuClock = 222;
     private int busClock = 111;
 
     //battery life time in minutes
-    private int batteryLifeTime = (5 * 60);
+    private int batteryLifeTime = (5 * 60);		// 5 hours
     //some standard battery temperature 28 deg C
     private int batteryTemp = 28;
     //battery voltage 4,135 in slim
@@ -163,8 +187,14 @@ public class scePower implements HLEModule {
     private static final boolean pluggedIn = true;
     private static final boolean batteryPresent = true;
     private static final int batteryPowerPercent = 100;
-    private static final int batteryLowPercent = 20; // TODO check
+    // led starts flashing at 12%
+    private static final int batteryLowPercent = 12;
+	// PSP auto suspends at 4%
+    private static final int batteryForceSuspendPercent = 4;
+	// battery capacity in mAh when it is full
+    private static final int fullBatteryCapacity = 1800;
     private static final boolean batteryCharging = false;
+    private static final int backlightMaximum = 4;
 
 	public void scePower_2B51FE2F(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
@@ -183,21 +213,12 @@ public class scePower implements HLEModule {
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
 
-	public void scePower_442BFBAC(Processor processor) {
+	public void scePowerGetBacklightMaximum(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+		Modules.log.debug("scePowerGetBacklightMaximum backlightMaxium=" + backlightMaximum);
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function scePower_442BFBAC [0x442BFBAC]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+		cpu.gpr[2] = backlightMaximum;
 	}
 
 	public void scePowerTick(Processor processor) {
@@ -285,43 +306,26 @@ public class scePower implements HLEModule {
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
 
-	public void scePower_E8E4E204(Processor processor) {
+	public void scePowerGetForceSuspendCapacity(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+		int forceSuspendCapacity = (batteryForceSuspendPercent * fullBatteryCapacity) / 100;
+		Modules.log.debug("scePowerGetForceSuspendCapacity " + forceSuspendCapacity + "mAh");
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function scePower_E8E4E204 [0xE8E4E204]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+		cpu.gpr[2] = forceSuspendCapacity;
 	}
 
 	public void scePowerGetLowBatteryCapacity(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+		int lowBatteryCapacity = (batteryLowPercent * fullBatteryCapacity) / 100;
+		Modules.log.debug("scePowerGetLowBatteryCapacity " + lowBatteryCapacity + "mAh");
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function scePowerGetLowBatteryCapacity [0xB999184C]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+		cpu.gpr[2] = lowBatteryCapacity;
 	}
 
 	public void scePowerIsPowerOnline(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
 
 		Modules.log.debug("scePowerIsPowerOnline pluggedIn=" + pluggedIn);
 
@@ -347,79 +351,65 @@ public class scePower implements HLEModule {
 
 	public void scePowerGetBatteryChargingStatus(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+		int status = 0;
+		if (batteryPresent) {
+			status |= PSP_POWER_CB_BATTERY_EXIST;
+		}
+		if (pluggedIn) {
+			status |= PSP_POWER_CB_AC_POWER;
+		}
+		if (batteryCharging) {
+			// I don't know exactly what to return under PSP_POWER_CB_BATTPOWER
+			status |= PSP_POWER_CB_BATTPOWER;
+		}
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+		Modules.log.debug("scePowerGetBatteryChargingStatus status=0x" + Integer.toHexString(status));
 
-		System.out.println("Unimplemented NID function scePowerGetBatteryChargingStatus [0xB4432BC8]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+		cpu.gpr[2] = status;
 	}
 
 	public void scePowerIsLowBattery(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
 
 		Modules.log.debug("scePowerIsLowBattery " + (batteryPowerPercent <= batteryLowPercent));
 
 		cpu.gpr[2] = (batteryPowerPercent <= batteryLowPercent) ? 1 : 0;
 	}
 
-	public void scePower_78A1A796(Processor processor) {
+	/** 
+	 * Check if suspend is requided 
+	 * 
+	 * @note: This function return 1 only when 
+	 * the battery charge is low and 
+	 * go in suspend mode! 
+	 * 
+	 * @return 1 if suspend is requided, otherwise 0 
+	 */
+	public void scePowerIsSuspendRequired(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+		int isSuspendRequired = (batteryPowerPercent <= batteryForceSuspendPercent ? 1 : 0);
+		Modules.log.debug("scePowerIsSuspendRequired isSuspendRequired=" + isSuspendRequired);
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function scePower_78A1A796 [0x78A1A796]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+		cpu.gpr[2] = isSuspendRequired;
 	}
 
 	public void scePowerGetBatteryRemainCapacity(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+		int batteryRemainCapacity = (batteryPowerPercent * fullBatteryCapacity) / 100; 
+		Modules.log.debug("scePowerGetBatteryRemainCapacity " + batteryRemainCapacity + "mAh");
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function scePowerGetBatteryRemainCapacity [0x94F5A53F]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+		cpu.gpr[2] = batteryRemainCapacity;
 	}
 
 	public void scePowerGetBatteryFullCapacity(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+		Modules.log.debug("scePowerGetBatteryFullCapacity " + fullBatteryCapacity + "mAh");
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function scePowerGetBatteryFullCapacity [0xFD18A0FF]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+		cpu.gpr[2] = fullBatteryCapacity;
 	}
 
 	public void scePowerGetBatteryLifePercent(Processor processor) {
@@ -928,14 +918,14 @@ public class scePower implements HLEModule {
 		}
 	};
 
-	public final HLEModuleFunction scePower_442BFBACFunction = new HLEModuleFunction("scePower", "scePower_442BFBAC") {
+	public final HLEModuleFunction scePowerGetBacklightMaximumFunction = new HLEModuleFunction("scePower", "scePowerGetBacklightMaximum") {
 		@Override
 		public final void execute(Processor processor) {
-			scePower_442BFBAC(processor);
+			scePowerGetBacklightMaximum(processor);
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.Modules.scePowerModule.scePower_442BFBAC(processor);";
+			return "jpcsp.HLE.Modules.scePowerModule.scePowerGetBacklightMaximum(processor);";
 		}
 	};
 
@@ -994,14 +984,14 @@ public class scePower implements HLEModule {
 		}
 	};
 
-	public final HLEModuleFunction scePower_E8E4E204Function = new HLEModuleFunction("scePower", "scePower_E8E4E204") {
+	public final HLEModuleFunction scePowerGetForceSuspendCapacityFunction = new HLEModuleFunction("scePower", "scePowerGetForceSuspendCapacity") {
 		@Override
 		public final void execute(Processor processor) {
-			scePower_E8E4E204(processor);
+			scePowerGetForceSuspendCapacity(processor);
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.Modules.scePowerModule.scePower_E8E4E204(processor);";
+			return "jpcsp.HLE.Modules.scePowerModule.scePowerGetForceSuspendCapacity(processor);";
 		}
 	};
 
@@ -1071,14 +1061,14 @@ public class scePower implements HLEModule {
 		}
 	};
 
-	public final HLEModuleFunction scePower_78A1A796Function = new HLEModuleFunction("scePower", "scePower_78A1A796") {
+	public final HLEModuleFunction scePowerIsSuspendRequiredFunction = new HLEModuleFunction("scePower", "scePowerIsSuspendRequired") {
 		@Override
 		public final void execute(Processor processor) {
-			scePower_78A1A796(processor);
+			scePowerIsSuspendRequired(processor);
 		}
 		@Override
 		public final String compiledString() {
-			return "jpcsp.HLE.Modules.scePowerModule.scePower_78A1A796(processor);";
+			return "jpcsp.HLE.Modules.scePowerModule.scePowerIsSuspendRequired(processor);";
 		}
 	};
 
