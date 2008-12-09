@@ -1041,21 +1041,58 @@ public class VfpuState extends FpuState {
     public void doVS2I(int vsize, int vd, int vs) {
         doUNK("Unimplemented VS2I");
     }
+
+    private static enum VI2_Type { UC, C, US, S };
+
+    // Implementation based on PSPPlayer
+    private void doVI2(int vsize, int vd, int vs, VI2_Type type) {
+        loadVs(vsize, vs);
+
+        switch (type) {
+        case UC:
+        	// int to unsigned char
+        	int result = 0;
+        	for (int i = 0; i < vsize; ++i) {
+        		int v = Float.floatToRawIntBits(v1[i]);
+        		if (v > 0) {
+            		result |= ((v >> 23) & 0xFF) << (i * 8);
+        		}
+        	}
+        	vsize = 1;
+        	v3[0] = Float.intBitsToFloat(result);
+        	break;
+        case C:
+        	// int to signed char
+        	doUNK("Unimplemented VI2C");
+        	return;
+        case US:
+        	// int to unsigned short
+        	doUNK("Unimplemented VI2US");
+        	return;
+        case S:
+        	// int to signed short
+        	doUNK("Unimplemented VI2S");
+        	return;
+        }
+
+        saveVd(vsize, vd, v3);
+    }
+
     // VFPU4:VI2UC
     public void doVI2UC(int vsize, int vd, int vs) {
-        doUNK("Unimplemented VI2UC");
+        doVI2(vsize, vd, vs, VI2_Type.UC);
     }
     // VFPU4:VI2C
     public void doVI2C(int vsize, int vd, int vs) {
-        doUNK("Unimplemented VI2C");
+        doVI2(vsize, vd, vs, VI2_Type.C);
     }
     // VFPU4:VI2US
     public void doVI2US(int vsize, int vd, int vs) {
-        doUNK("Unimplemented VI2US");
+        doVI2(vsize, vd, vs, VI2_Type.US);
     }
     // VFPU4:VI2S
     public void doVI2S(int vsize, int vd, int vs) {
-        doUNK("Unimplemented VI2S");
+        doVI2(vsize, vd, vs, VI2_Type.S);
     }
     // VFPU4:VSRT1
     public void doVSRT1(int vsize, int vd, int vs) {
@@ -1131,22 +1168,43 @@ public class VfpuState extends FpuState {
 
         saveVd(vsize, vd, v3);
     }
+
+    private static enum VF2I_Type { N, Z, U, D  };
+
+    private void doVF2I(int vsize, int vd, int vs, int imm5, VF2I_Type type) {
+        loadVs(vsize, vs);
+
+        for (int i = 0; i < vsize; ++i) {
+        	double value = Math.scalb(v1[i], imm5);
+        	switch (type) {
+        		case N: value = Math.floor(value + 0.5); break;
+        		case Z: value = (v1[i] >= 0 ? Math.floor(value) : Math.ceil(value)); break;
+        		case U: value = Math.ceil(value); break;
+        		case D: value = Math.floor(value); break;
+        	}
+            v3[i] = (float) value;
+        }
+
+        saveVd(vsize, vd, v3);
+    }
+
     // VFPU4:VF2IN
     public void doVF2IN(int vsize, int vd, int vs, int imm5) {
-        doUNK("Unimplemented VF2IN");
+    	doVF2I(vsize, vd, vs, imm5, VF2I_Type.N);
     }
     // VFPU4:VF2IZ
     public void doVF2IZ(int vsize, int vd, int vs, int imm5) {
-        doUNK("Unimplemented VF2IZ");
+    	doVF2I(vsize, vd, vs, imm5, VF2I_Type.Z);
     }
     // VFPU4:VF2IU
     public void doVF2IU(int vsize, int vd, int vs, int imm5) {
-        doUNK("Unimplemented VF2IU");
+    	doVF2I(vsize, vd, vs, imm5, VF2I_Type.U);
     }
     // VFPU4:VF2ID
     public void doVF2ID(int vsize, int vd, int vs, int imm5) {
-        doUNK("Unimplemented VF2ID");
+    	doVF2I(vsize, vd, vs, imm5, VF2I_Type.D);
     }
+
     // VFPU4:VI2F
     public void doVI2F(int vsize, int vd, int vs, int imm5) {
         doUNK("Unimplemented VI2F");
