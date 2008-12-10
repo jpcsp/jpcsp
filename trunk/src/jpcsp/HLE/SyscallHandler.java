@@ -174,13 +174,13 @@ public class SyscallHandler {
                     Managers.vpl.sceKernelDeleteVpl(gpr[4]);
                     break;
                 case 0x2045:
-                    Managers.vpl.sceKernelAllocateVpl(gpr[4], gpr[5], gpr[6], gpr[8]);
+                    Managers.vpl.sceKernelAllocateVpl(gpr[4], gpr[5], gpr[6], gpr[7]);
                     break;
                 case 0x2046:
-                    Managers.vpl.sceKernelAllocateVplCB(gpr[4], gpr[5], gpr[6], gpr[8]);
+                    Managers.vpl.sceKernelAllocateVplCB(gpr[4], gpr[5], gpr[6], gpr[7]);
                     break;
                 case 0x2047:
-                    Managers.vpl.sceKernelTryAllocateVpl(gpr[4], gpr[5], gpr[8]);
+                    Managers.vpl.sceKernelTryAllocateVpl(gpr[4], gpr[5], gpr[6]);
                     break;
                 case 0x2048:
                     Managers.vpl.sceKernelFreeVpl(gpr[4], gpr[5]);
