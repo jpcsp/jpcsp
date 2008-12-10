@@ -4,7 +4,6 @@
  */
 package jpcsp.Allegrex;
 
-import jpcsp.Emulator;
 import jpcsp.Memory;
 
 import java.util.Arrays;
@@ -1046,6 +1045,7 @@ public class VfpuState extends FpuState {
     public void doVI2UC(int vsize, int vd, int vs) {
         if (vsize != 4) {
             doUNK("Only supported VI2UC.Q");
+            return;
         }
 
         loadVs(4, vs);
@@ -1069,6 +1069,7 @@ public class VfpuState extends FpuState {
     public void doVI2C(int vsize, int vd, int vs) {
         if (vsize != 4) {
             doUNK("Only supported VI2C.Q");
+            return;
         }
 
         loadVs(4, vs);
@@ -1091,6 +1092,7 @@ public class VfpuState extends FpuState {
     public void doVI2US(int vsize, int vd, int vs) {
         if ((vsize & 1) != 0) {
             doUNK("Only supported VI2US.P and VI2US.Q");
+            return;
         }
 
         loadVs(vsize, vs);
@@ -1120,6 +1122,7 @@ public class VfpuState extends FpuState {
     public void doVI2S(int vsize, int vd, int vs) {
         if ((vsize & 1) != 0) {
             doUNK("Only supported VI2S.P and VI2S.Q");
+            return;
         }
 
         loadVs(vsize, vs);
