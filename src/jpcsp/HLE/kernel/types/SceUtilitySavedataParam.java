@@ -34,7 +34,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 	public final static String icon0FileName    = "ICON0.PNG";
 	public final static String icon1FileName    = "ICON1.PNG";
 	public final static String pic1FileName     = "PIC1.PNG";
-	public final static String snd0FileName     = "SND0.PNG";
+	public final static String snd0FileName     = "SND0.AT3";
 	public final static String paramSfoFileName = "PARAM.SFO";
 
 	public int baseAddress;
@@ -272,20 +272,22 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		return null;
 	}
 
-	private void loadPsf(Memory mem, pspiofilemgr fileManager, String path, String name, PspUtilitySavedataSFOParam sfoParam) throws IOException {
-		SeekableDataInput fileInput = getDataInput(fileManager, path, name);
-		byte[] buffer = new byte[(int) fileInput.length()];
-		fileInput.readFully(buffer);
-		fileInput.close();
+    private void loadPsf(Memory mem, pspiofilemgr fileManager, String path, String name, PspUtilitySavedataSFOParam sfoParam) throws IOException {
+        SeekableDataInput fileInput = getDataInput(fileManager, path, name);
+        if (fileInput != null) {
+            byte[] buffer = new byte[(int) fileInput.length()];
+            fileInput.readFully(buffer);
+            fileInput.close();
 
-		PSF psf = new PSF(0);
-		psf.read(ByteBuffer.wrap(buffer));
+            PSF psf = new PSF(0);
+            psf.read(ByteBuffer.wrap(buffer));
 
-		sfoParam.parentalLevel = (int) psf.getNumeric("PARENTAL_LEVEL");
-		sfoParam.title = psf.getString("TITLE");
-		sfoParam.detail = psf.getString("SAVEDATA_DETAIL");
-		sfoParam.savedataTitle = psf.getString("SAVEDATA_TITLE");
-	}
+            sfoParam.parentalLevel = (int) psf.getNumeric("PARENTAL_LEVEL");
+            sfoParam.title = psf.getString("TITLE");
+            sfoParam.detail = psf.getString("SAVEDATA_DETAIL");
+            sfoParam.savedataTitle = psf.getString("SAVEDATA_TITLE");
+        }
+    }
 
 	private int loadFile(Memory mem, pspiofilemgr fileManager, String path, String name, int address, int maxLength) throws IOException {
 		if (name == null || name.length() <= 0 || address == 0 || maxLength <= 0) {

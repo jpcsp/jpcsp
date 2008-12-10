@@ -30,6 +30,7 @@ import jpcsp.Processor;
 
 import jpcsp.Allegrex.CpuState; // New-Style Processor
 
+// TODO we need to find out if any of these functions are blocking/invoke a context switch
 public class sceMpeg implements HLEModule {
     @Override
     public String getName() { return "sceMpeg"; }
@@ -652,16 +653,16 @@ public class sceMpeg implements HLEModule {
         // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        int mpeg = cpu.gpr[4];
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        Modules.log.warn("IGNORING:sceMpegFlushAllStream");
 
-        System.out.println("Unimplemented NID function sceMpegFlushAllStream [0x707B7629]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        if (mpeg != mpegHandle) {
+            Modules.log.warn("sceMpegFlushAllStream bad mpeg handle 0x" + Integer.toHexString(mpeg));
+            cpu.gpr[2] = -1;
+        } else {
+            cpu.gpr[2] = 0;
+        }
     }
 
     public void sceMpegAvcDecode(Processor processor) {

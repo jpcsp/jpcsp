@@ -1170,7 +1170,7 @@ public class ThreadMan {
                 SceKernelThreadInfo thread = threadMap.get(callback.threadId);
                 if (thread == null) {
                     Modules.log.warn("pushUMDCallback thread not found " + Integer.toHexString(callback.threadId));
-                } else if (thread.umdCallbackRegistered) {
+                } else if (thread.umdCallbackRegistered) { // We could ignore all the above stuff, iterate all threads and only use this condition
                     if (thread.umdCallbackReady) {
                         // Behaviour may be undefined - example: crash this thread, but continue other threads as normal
                         Modules.log.warn("pushUMDCallback thread:'" + thread.name
