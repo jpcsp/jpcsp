@@ -130,8 +130,10 @@ public class sceSasCore implements HLEModule {
 
         /* put your own code here instead */
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        int sasCore = cpu.gpr[4];
+        //int unk1 = cpu.gpr[5]; // 0
+        //int unk2 = cpu.gpr[6]; // 8
+        //int unk3 = cpu.gpr[7]; // 0
 
         Modules.log.warn("Unimplemented NID function __sceSasSetADSR [0x019B25EB] " + makeLogParams(cpu));
 
@@ -364,7 +366,7 @@ public class sceSasCore implements HLEModule {
         int sasCore = cpu.gpr[4];
         //int unk1 = cpu.gpr[5]; // 0 or 1
         //int unk2 = cpu.gpr[6]; // uncached heap address
-        //int unk3 = cpu.gpr[7]; // some size or unused
+        //int unk3 = cpu.gpr[7]; // some size 0x48d0 or unused
 
         Modules.log.warn("Unimplemented NID function __sceSasSetVoice [0x99944089] " + makeLogParams(cpu));
 
@@ -380,8 +382,10 @@ public class sceSasCore implements HLEModule {
 
         /* put your own code here instead */
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        int sasCore = cpu.gpr[4];
+        //int unk1 = cpu.gpr[5]; // 0
+        //int unk2 = cpu.gpr[6]; // 8
+        //int unk3 = cpu.gpr[7]; // 0
 
         Modules.log.warn("Unimplemented NID function __sceSasSetADSRmode [0x9EC3676A] " + makeLogParams(cpu));
 
@@ -539,8 +543,8 @@ public class sceSasCore implements HLEModule {
 
         int sasCore = cpu.gpr[4];
         // left/right channel volume?
-        //int unk1 = cpu.gpr[5]; // 0x1000
-        //int unk2 = cpu.gpr[6]; // 0x1000
+        //int unk1 = cpu.gpr[5]; // left channel volume 0 - 0x1000
+        //int unk2 = cpu.gpr[6]; // right channel volume 0 - 0x1000
         // 99% sure there are no more parameters
 
         Modules.log.warn("Unimplemented NID function __sceSasRevEVOL [0xD5A229C9] " + makeLogParams(cpu));

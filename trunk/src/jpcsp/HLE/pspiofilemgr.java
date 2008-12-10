@@ -653,7 +653,7 @@ public class pspiofilemgr {
                                 State.fileLogger.logIoSeek64(-1, uid, offset, whence);
                                 return;
                             } else if (offset < 0) {
-                                Modules.log.warn("seek - offset (0x" + Long.toHexString(offset) + ") less than 0!");
+                                Modules.log.warn("SEEK_SET UID " + Integer.toHexString(uid) + " filename:'" + info.filename + "' offset=0x" + Long.toHexString(offset) + " (less than 0!)");
                                 Emulator.getProcessor().cpu.gpr[2] = -1;
                                 if (resultIs64bit)
                                     Emulator.getProcessor().cpu.gpr[3] = -1;

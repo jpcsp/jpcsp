@@ -436,7 +436,6 @@ public class sceUtility implements HLEModule {
             savedata_mode = SceUtilitySavedataParam.MODE_AUTOSAVE;
         }
 
-        int result = -1;
         switch (savedata_mode) {
 	        case SceUtilitySavedataParam.MODE_AUTOLOAD:
 	        case SceUtilitySavedataParam.MODE_LOAD:
@@ -450,16 +449,16 @@ public class sceUtility implements HLEModule {
 
 	        	try {
 					sceUtilitySavedataParam.load(mem, pspiofilemgr.getInstance());
-					sceUtilitySavedataParam.write(mem);
-					result = 0;
+					sceUtilitySavedataParam.base.result = 0;
+                    sceUtilitySavedataParam.write(mem);
 				} catch (IOException e) {
-		            result = SCE_UTILITY_SAVEDATA_ERROR_LOAD_NO_DATA;
+                    sceUtilitySavedataParam.base.result = SCE_UTILITY_SAVEDATA_ERROR_LOAD_NO_DATA;
 				}
 				break;
 
 	        case SceUtilitySavedataParam.MODE_LISTLOAD:
 	        	// TODO Implement dialog to display list of available SAVEDATA files
-	        	result = SCE_UTILITY_SAVEDATA_ERROR_LOAD_NO_DATA;
+	        	sceUtilitySavedataParam.base.result = SCE_UTILITY_SAVEDATA_ERROR_LOAD_NO_DATA;
 	        	break;
 
 	        case SceUtilitySavedataParam.MODE_AUTOSAVE:
@@ -474,26 +473,27 @@ public class sceUtility implements HLEModule {
 	                }
 
 	                sceUtilitySavedataParam.save(mem, pspiofilemgr.getInstance());
-	        		result = 0;
+	        		sceUtilitySavedataParam.base.result = 0;
 	        	} catch (IOException e) {
-		        	result = SCE_UTILITY_SAVEDATA_ERROR_SAVE_ACCESS_ERROR;
+		        	sceUtilitySavedataParam.base.result = SCE_UTILITY_SAVEDATA_ERROR_SAVE_ACCESS_ERROR;
 	        	}
 	        	break;
 
 	        case SceUtilitySavedataParam.MODE_LISTSAVE:
 	        	// TODO Implement dialog to display list of available SAVEDATA files
-	        	result = SCE_UTILITY_SAVEDATA_ERROR_SAVE_NO_MS;
+	        	sceUtilitySavedataParam.base.result = SCE_UTILITY_SAVEDATA_ERROR_SAVE_NO_MS;
 	        	break;
 
 	        default:
 	        	Modules.log.warn("sceUtilitySavedataInitStart - Unsupported mode " + savedata_mode);
+                sceUtilitySavedataParam.base.result = -1;
 	    		break;
         }
 
-        sceUtilitySavedataParam.base.result = result;
         sceUtilitySavedataParam.base.writeResult(mem, savedataParamAddr);
+        Modules.log.debug("sceUtilitySavedataInitStart savedResult:0x" + Integer.toHexString(sceUtilitySavedataParam.base.result));
 
-        cpu.gpr[2] = result;
+        cpu.gpr[2] = 0;
         Modules.log.debug("sceUtilitySavedataInitStart ret:0x" + Integer.toHexString(cpu.gpr[2]));
     }
 
