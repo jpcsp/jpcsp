@@ -1042,57 +1042,108 @@ public class VfpuState extends FpuState {
         doUNK("Unimplemented VS2I");
     }
 
-    private static enum VI2_Type { UC, C, US, S };
-
-    // Implementation based on PSPPlayer
-    private void doVI2(int vsize, int vd, int vs, VI2_Type type) {
-        loadVs(vsize, vs);
-
-        switch (type) {
-        case UC:
-        	// int to unsigned char
-        	int result = 0;
-        	for (int i = 0; i < vsize; ++i) {
-        		int v = Float.floatToRawIntBits(v1[i]);
-        		if (v > 0) {
-            		result |= ((v >> 23) & 0xFF) << (i * 8);
-        		}
-        	}
-        	vsize = 1;
-        	v3[0] = Float.intBitsToFloat(result);
-        	break;
-        case C:
-        	// int to signed char
-        	doUNK("Unimplemented VI2C");
-        	return;
-        case US:
-        	// int to unsigned short
-        	doUNK("Unimplemented VI2US");
-        	return;
-        case S:
-        	// int to signed short
-        	doUNK("Unimplemented VI2S");
-        	return;
-        }
-
-        saveVd(vsize, vd, v3);
-    }
-
     // VFPU4:VI2UC
     public void doVI2UC(int vsize, int vd, int vs) {
-        doVI2(vsize, vd, vs, VI2_Type.UC);
+        if (vsize != 4) {
+            doUNK("Only supported VI2UC.Q");
+        }
+
+        loadVs(4, vs);
+        
+        int x = Float.floatToRawIntBits(v1[0]);
+        int y = Float.floatToRawIntBits(v1[1]);
+        int z = Float.floatToRawIntBits(v1[2]);
+        int w = Float.floatToRawIntBits(v1[3]);
+        
+      	v3[0] = Float.intBitsToFloat(
+                    ((x > 0) ? ((x >>> 23) <<  0) : 0)|
+                    ((y > 0) ? ((y >>> 23) <<  8) : 0)|
+                    ((z > 0) ? ((z >>> 23) << 16) : 0)| 
+                    ((w > 0) ? ((w >>> 23) << 24) : 0)
+                );
+        
+        saveVd(1, vd, v3);
     }
+
     // VFPU4:VI2C
     public void doVI2C(int vsize, int vd, int vs) {
-        doVI2(vsize, vd, vs, VI2_Type.C);
+        if (vsize != 4) {
+            doUNK("Only supported VI2C.Q");
+        }
+
+        loadVs(4, vs);
+        
+        int x = Float.floatToRawIntBits(v1[0]);
+        int y = Float.floatToRawIntBits(v1[1]);
+        int z = Float.floatToRawIntBits(v1[2]);
+        int w = Float.floatToRawIntBits(v1[3]);
+        
+      	v3[0] = Float.intBitsToFloat(
+                    ((x >>> 24) <<  0)|
+                    ((y >>> 24) <<  8)|
+                    ((z >>> 24) << 16)| 
+                    ((w >>> 24) << 24)
+                );
+        
+        saveVd(1, vd, v3);
     }
     // VFPU4:VI2US
     public void doVI2US(int vsize, int vd, int vs) {
-        doVI2(vsize, vd, vs, VI2_Type.US);
+        if ((vsize & 1) != 0) {
+            doUNK("Only supported VI2US.P and VI2US.Q");
+        }
+
+        loadVs(vsize, vs);
+        
+        int x = Float.floatToRawIntBits(v1[0]);
+        int y = Float.floatToRawIntBits(v1[1]);
+
+        v3[0] = Float.intBitsToFloat(
+                    ((x > 0) ? ((x >>> 15) <<  0) : 0)|
+                    ((y > 0) ? ((y >>> 15) << 16) : 0)
+                );
+        
+        if (vsize == 4) {
+            int z = Float.floatToRawIntBits(v1[2]);
+            int w = Float.floatToRawIntBits(v1[3]);
+        
+            v3[1] = Float.intBitsToFloat(
+                        ((z > 0) ? ((z >>> 15) <<  0) : 0)| 
+                        ((w > 0) ? ((w >>> 15) << 16) : 0)
+                    );
+            saveVd(2, vd, v3);
+        } else {
+            saveVd(1, vd, v3);
+        }        
     }
     // VFPU4:VI2S
     public void doVI2S(int vsize, int vd, int vs) {
-        doVI2(vsize, vd, vs, VI2_Type.S);
+        if ((vsize & 1) != 0) {
+            doUNK("Only supported VI2S.P and VI2S.Q");
+        }
+
+        loadVs(vsize, vs);
+        
+        int x = Float.floatToRawIntBits(v1[0]);
+        int y = Float.floatToRawIntBits(v1[1]);
+
+        v3[0] = Float.intBitsToFloat(
+                    ((x >>> 16) <<  0)|
+                    ((y >>> 16) << 16)
+                );
+        
+        if (vsize == 4) {
+            int z = Float.floatToRawIntBits(v1[2]);
+            int w = Float.floatToRawIntBits(v1[3]);
+        
+            v3[1] = Float.intBitsToFloat(
+                        ((z >>> 16) <<  0)| 
+                        ((w >>> 16) << 16)
+                    );
+            saveVd(2, vd, v3);
+        } else {
+            saveVd(1, vd, v3);
+        }        
     }
     // VFPU4:VSRT1
     public void doVSRT1(int vsize, int vd, int vs) {
