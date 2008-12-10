@@ -734,17 +734,25 @@ public class ThreadMan {
 
         // Setup args by copying them onto the stack
         int address = thread.cpuContext.gpr[29];
-        if (userDataAddr != 0)
+        if (userDataAddr != 0) //{
             Memory.getInstance().memcpy(address, userDataAddr, userDataLength);
-        thread.cpuContext.gpr[4] = userDataLength; // a0 = user data len
-        thread.cpuContext.gpr[5] = address; // a1 = pointer to arg data in stack
+            thread.cpuContext.gpr[4] = userDataLength; // a0 = user data len
+            thread.cpuContext.gpr[5] = address; // a1 = pointer to arg data in stack
+        /*
+        } else {
+            // TODO check if we should do this when user data pointer = NULL
+            thread.cpuContext.gpr[4] = 0; // a0 = user data len
+            thread.cpuContext.gpr[5] = 0; // a1 = pointer to arg data in stack
+        }*/
 
+        // testing
         if (thread.cpuContext.gpr[28] != gp) {
             Modules.log.debug("hleKernelStartThread oldGP=0x" + Integer.toHexString(thread.cpuContext.gpr[28])
                 + " newGP=0x" + Integer.toHexString(gp));
         }
         thread.cpuContext.gpr[28] = gp;
 
+        // Start thread immediately
         changeThreadState(thread, PSP_THREAD_READY);
         contextSwitch(thread);
     }
@@ -1408,7 +1416,7 @@ public class ThreadMan {
             if (!waitSemaphore(sema, signal))
             {
                 // Failed, but it's ok, just wait a little
-                Modules.log.debug("hleKernelWaitSema - fast check failed");
+                Modules.log.debug("hleKernelWaitSema - '" + sema.name + "' fast check failed");
                 sema.numWaitThreads++;
 
                 // Go to wait state
@@ -1428,7 +1436,7 @@ public class ThreadMan {
             else
             {
                 // Success
-                Modules.log.debug("hleKernelWaitSema - fast check succeeded");
+                Modules.log.debug("hleKernelWaitSema - '" + sema.name + "' fast check succeeded");
                 Emulator.getProcessor().cpu.gpr[2] = 0;
                 // TODO yield anyway?
                 contextSwitch(nextThread());
@@ -1451,10 +1459,8 @@ public class ThreadMan {
 
     public void ThreadMan_sceKernelSignalSema(int semaid, int signal)
     {
-        Modules.log.debug("sceKernelSignalSema id= 0x" + Integer.toHexString(semaid) + " signal= " + signal);
-
         if (signal <= 0) {
-            Modules.log.warn("sceKernelSignalSema - bad signal " + signal);
+            Modules.log.warn("sceKernelSignalSema - id=0x" + Integer.toHexString(semaid) + " bad signal " + signal);
             Emulator.getProcessor().cpu.gpr[2] = ERROR_ILLEGAL_COUNT;
             return;
         }
@@ -1475,6 +1481,8 @@ public class ThreadMan {
             Emulator.getProcessor().cpu.gpr[2] = ERROR_SEMA_OVERFLOW;
             // TODO clamp and continue anyway?
         } else {
+            Modules.log.debug("sceKernelSignalSema id=0x" + Integer.toHexString(semaid) + " name='" + sema.name + "' signal=" + signal);
+
             sema.currentCount += signal;
 
             // For each thread (sorted by priority),
