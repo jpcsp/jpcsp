@@ -103,10 +103,10 @@ public class Controller {
             case UP:        this.Buttons |= PSP_CTRL_UP; break;
             case LEFT:      this.Buttons |= PSP_CTRL_LEFT; break;
             case RIGHT:     this.Buttons |= PSP_CTRL_RIGHT; break;
-            case ANDOWN:    this.Lx = 0; break;
-            case ANUP:      this.Lx = (byte)255; break;
-            case ANLEFT:    this.Ly = 0; break;
-            case ANRIGHT:   this.Ly = (byte)255; break;
+            case ANDOWN:    this.Ly = 0; break;
+            case ANUP:      this.Ly = (byte)255; break;
+            case ANLEFT:    this.Lx = 0; break;
+            case ANRIGHT:   this.Lx = (byte)255; break;
 
             case TRIANGLE:  this.Buttons |= PSP_CTRL_TRIANGLE; break;
             case SQUARE:    this.Buttons |= PSP_CTRL_SQUARE; break;
@@ -149,10 +149,10 @@ public class Controller {
             case UP:        this.Buttons &= ~PSP_CTRL_UP; break;
             case LEFT:      this.Buttons &= ~PSP_CTRL_LEFT; break;
             case RIGHT:     this.Buttons &= ~PSP_CTRL_RIGHT; break;
-            case ANDOWN:    this.Lx = (byte)128; break;
-            case ANUP:      this.Lx = (byte)128; break;
-            case ANLEFT:    this.Ly = (byte)128; break;
-            case ANRIGHT:   this.Ly = (byte)128; break;
+            case ANDOWN:    this.Ly = (byte)128; break;
+            case ANUP:      this.Ly = (byte)128; break;
+            case ANLEFT:    this.Lx = (byte)128; break;
+            case ANRIGHT:   this.Lx = (byte)128; break;
 
             case TRIANGLE:  this.Buttons &= ~PSP_CTRL_TRIANGLE; break;
             case SQUARE:    this.Buttons &= ~PSP_CTRL_SQUARE; break;
