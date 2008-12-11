@@ -245,15 +245,11 @@ public class RuntimeContext {
     }
 
     private static void sleep(int millis) {
-        Emulator.getClock().pause();
-
         try {
             Thread.sleep(millis);
         } catch (InterruptedException e) {
         	// Ignore exception
         }
-
-        Emulator.getClock().resume();
     }
 
     private static void syncIdle() throws StopThreadException {
