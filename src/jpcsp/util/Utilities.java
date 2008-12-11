@@ -164,9 +164,17 @@ public class Utilities {
     	}
         mem.write8(address + offset, (byte) 0);
     }
+    public static void writeStringZ(ByteBuffer buf, String s) {
+		buf.put(s.getBytes());
+		buf.put((byte) 0);
+    }
     public static short getUnsignedByte (ByteBuffer bb) throws IOException
     {
        return ((short)(bb.get() & 0xff));
+    }
+    public static void putUnsignedByte(ByteBuffer bb, int value)
+    {
+    	bb.put((byte) (value & 0xFF));
     }
     public static short readUByte(ByteBuffer buf) throws IOException
     {
@@ -185,6 +193,22 @@ public class Utilities {
     public static int readWord(ByteBuffer buf) throws IOException
     {
         return (getUnsignedByte(buf) | (getUnsignedByte(buf) << 8 ) | (getUnsignedByte(buf) << 16 ) | (getUnsignedByte(buf) << 24));
+    }
+    public static void writeWord(ByteBuffer buf, long value)
+    {
+    	putUnsignedByte(buf, (int) (value >>  0));
+    	putUnsignedByte(buf, (int) (value >>  8));
+    	putUnsignedByte(buf, (int) (value >> 16));
+    	putUnsignedByte(buf, (int) (value >> 24));
+    }
+    public static void writeHalf(ByteBuffer buf, int value)
+    {
+    	putUnsignedByte(buf, value >> 0);
+    	putUnsignedByte(buf, value >> 8);
+    }
+    public static void writeByte(ByteBuffer buf, int value)
+    {
+    	putUnsignedByte(buf, value);
     }
 
     public static int parseAddress(String value)

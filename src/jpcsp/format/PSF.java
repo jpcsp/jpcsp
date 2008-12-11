@@ -21,6 +21,10 @@ import static jpcsp.util.Utilities.readStringZ;
 import static jpcsp.util.Utilities.readUByte;
 import static jpcsp.util.Utilities.readUHalf;
 import static jpcsp.util.Utilities.readUWord;
+import static jpcsp.util.Utilities.writeWord;
+import static jpcsp.util.Utilities.writeHalf;
+import static jpcsp.util.Utilities.writeByte;
+import static jpcsp.util.Utilities.writeStringZ;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
@@ -29,6 +33,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import jpcsp.Emulator;
+
 /**
  *
  * @author George
@@ -57,11 +62,16 @@ public class PSF {
     private long[] value_size;
     private long[] value_size_padding;
     private long[] offset_data_value;
+    private String[] keys;
 
     private HashMap<String, Object> map = new HashMap<String, Object>();
 
     public PSF(long p_offset_param_sfo)
     {
+    	fileidentify = psfident;
+    	psfversion = 0x00000101;
+    	offsetkeytable = 5 * 4;
+    	offsetvaluetable = offsetkeytable;
         this.p_offset_param_sfo = p_offset_param_sfo;
     }
 
@@ -83,6 +93,7 @@ public class PSF {
         value_size = new long[(int)numberofkeypairs];
         value_size_padding = new long[(int)numberofkeypairs];
         offset_data_value = new long[(int)numberofkeypairs];
+        keys = new String[(int)numberofkeypairs];
 
         /*System.out.println(psfversion);
         System.out.println(offsetkeytable);
@@ -108,6 +119,7 @@ public class PSF {
         {
             f.position((int)(p_offset_param_sfo + offsetkeytable+offset_keyname[i]));
             Key = readStringZ(f);
+            keys[i] = Key;
             if(datatype[i]==2)
             {
                 // String may not be in english!
@@ -138,6 +150,172 @@ public class PSF {
                 Emulator.log.warn(Key + " UNIMPLEMENT DATATYPE " + datatype[i]);
             }
         }
+    }
+
+    public void write(ByteBuffer f) {
+    	writeWord(f, fileidentify);
+    	writeWord(f, psfversion);
+    	writeWord(f, offsetkeytable);
+    	writeWord(f, offsetvaluetable);
+    	writeWord(f, numberofkeypairs);
+
+    	for (int i = 0; i < numberofkeypairs; i++) {
+    		writeHalf(f, offset_keyname[i]);
+    		writeByte(f, alignment[i]);
+    		writeByte(f, datatype[i]);
+    		writeWord(f, (int) value_size[i]);
+    		writeWord(f, (int) value_size_padding[i]);
+    		writeWord(f, (int) offset_data_value[i]);
+    	}
+
+    	for (int i = 0; i < numberofkeypairs; i++) {
+    		f.position((int)(p_offset_param_sfo + offsetkeytable + offset_keyname[i]));
+    		writeStringZ(f, keys[i]);
+    		switch (datatype[i]) {
+	    		case 2:
+	                f.position((int)(p_offset_param_sfo + offsetvaluetable + offset_data_value[i]));
+	                writeStringZ(f, (String) map.get(keys[i]));
+	                break;
+	    		case 4:
+	                f.position((int)(p_offset_param_sfo + offsetvaluetable + offset_data_value[i]));
+	                writeWord(f, (Long) map.get(keys[i]));
+	                break;
+	    		case 0:
+	                f.position((int)(p_offset_param_sfo + offsetvaluetable + offset_data_value[i]));
+	    			f.put((byte[]) map.get(keys[i]));
+	    			break;
+				default:
+	                Emulator.log.warn(keys[i] + " UNIMPLEMENT DATATYPE " + datatype[i]);
+					break;
+    		}
+    	}
+    }
+
+    private long[] extendArray(long[] array, int extent) {
+    	long[] newArray;
+
+    	if (array == null) {
+    		newArray = new long[extent];
+    	} else {
+    		newArray = new long[array.length + extent];
+    		System.arraycopy(array, 0, newArray, 0, array.length);
+    	}
+
+    	return newArray;
+    }
+
+    private int[] extendArray(int[] array, int extent) {
+    	int[] newArray;
+
+    	if (array == null) {
+    		newArray = new int[extent];
+    	} else {
+    		newArray = new int[array.length + extent];
+    		System.arraycopy(array, 0, newArray, 0, array.length);
+    	}
+
+    	return newArray;
+    }
+
+    private byte[] extendArray(byte[] array, int extent) {
+    	byte[] newArray;
+
+    	if (array == null) {
+    		newArray = new byte[extent];
+    	} else {
+    		newArray = new byte[array.length + extent];
+    		System.arraycopy(array, 0, newArray, 0, array.length);
+    	}
+
+    	return newArray;
+    }
+
+    private String[] extendArray(String[] array, int extent) {
+    	String[] newArray;
+
+    	if (array == null) {
+    		newArray = new String[extent];
+    	} else {
+    		newArray = new String[array.length + extent];
+    		System.arraycopy(array, 0, newArray, 0, array.length);
+    	}
+
+    	return newArray;
+    }
+
+    private int nextKeyTableOffset() {
+    	int i = (int) numberofkeypairs;
+
+    	if (i == 0) {
+    		return 0;
+    	}
+
+    	return offset_keyname[i - 1] + keys[i - 1].length() + 1;
+    }
+
+    private long nextValueTableOffset() {
+    	int i = (int) numberofkeypairs;
+
+    	if (i == 0) {
+    		return 0;
+    	}
+
+    	return offset_data_value[i - 1] + value_size[i - 1] + value_size_padding[i - 1];
+    }
+
+    private void newKey(String key, int valueType, long valueLength) {
+    	final int extent = 1;
+    	offset_keyname     = extendArray(offset_keyname,     extent);
+    	alignment          = extendArray(alignment,          extent);
+    	datatype           = extendArray(datatype,           extent);
+    	value_size         = extendArray(value_size,         extent);
+    	value_size_padding = extendArray(value_size_padding, extent);
+    	offset_data_value  = extendArray(offset_data_value,  extent);
+    	keys               = extendArray(keys,               extent);
+    	offsetkeytable    += 16 * extent;
+    	offsetvaluetable  += 16 * extent;
+
+    	int i = (int) numberofkeypairs;
+    	offset_keyname[i] = nextKeyTableOffset();
+    	alignment[i] = 0;
+    	keys[i] = key;
+    	if (offsetvaluetable >= offsetkeytable) {
+    		offsetvaluetable += key.length() + 1;
+    	}
+
+    	datatype[i] = (byte) valueType;
+    	value_size[i] = valueLength;
+    	value_size_padding[i] = ((valueLength & 1) == 0 ? 0 : 1);
+    	offset_data_value[i] = nextValueTableOffset();
+
+    	if (offsetkeytable >= offsetvaluetable) {
+    		offsetkeytable += value_size[i] + value_size_padding[i];
+    	}
+
+    	numberofkeypairs += extent;
+    }
+
+    public void put(String key, String value) {
+    	newKey(key, 2, value.length() + 1);
+    	map.put(key, value);
+    }
+
+    public void put(String key, long value) {
+    	newKey(key, 4, 2);
+    	map.put(key, value);
+    }
+
+    public void put(String key, byte[] value) {
+    	newKey(key, 0, value.length);
+    	map.put(key, value);
+    }
+
+    public long size() {
+    	if (offsetkeytable >= offsetvaluetable) {
+    		return offsetkeytable + nextKeyTableOffset();
+    	} else {
+    		return offsetvaluetable + nextValueTableOffset();
+    	}
     }
 
     private boolean safeEquals(Object a, Object b) {
