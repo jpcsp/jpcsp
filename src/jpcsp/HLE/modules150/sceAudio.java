@@ -32,6 +32,7 @@ import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.modules.HLEThread;
+import jpcsp.Settings;
 
 public class sceAudio implements HLEModule, HLEThread {
     protected class pspChannelInfo {
@@ -190,7 +191,10 @@ public class sceAudio implements HLEModule, HLEThread {
                 try {
                     AudioFormat format = new AudioFormat(sampleRate, 16, 2, true, false);
                     pspchannels[channel].outputDataLine = AudioSystem.getSourceDataLine(format);
-                    pspchannels[channel].outputDataLine.open(format);
+                   if(!Settings.getInstance().readBool("emu.mutesound"))
+                   {
+                     pspchannels[channel].outputDataLine.open(format);
+                   }
                     sceAudioChangeChannelVolume(channel,pspchannels[channel].leftVolume,pspchannels[channel].rightVolume);
                 }
                 catch(LineUnavailableException e)
