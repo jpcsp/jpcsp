@@ -246,6 +246,14 @@ public class pspiofilemgr {
         ThreadMan.getInstance().yieldCurrentThreadCB();
     }
 
+    public void mkdirs(String dir) {
+        String pcfilename = getDeviceFilePath(dir);
+        if (pcfilename != null) {
+            File f = new File(pcfilename);
+            f.mkdirs();
+        }
+    }
+
     public SeekableDataInput getFile(String filename, int flags) {
     	SeekableDataInput resultFile = null;
 

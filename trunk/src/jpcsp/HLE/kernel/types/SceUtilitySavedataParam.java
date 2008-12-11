@@ -16,9 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel.MapMode;
 import java.util.Vector;
 
 import jpcsp.Memory;
@@ -323,6 +325,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 	public void save(Memory mem, pspiofilemgr fileManager) throws IOException {
 		String path = savedataPath + gameName + saveName + "/";
 
+		fileManager.mkdirs(path);
 		writeFile(mem, fileManager, path, fileName,      dataBuf,           dataSize);
 		writeFile(mem, fileManager, path, icon0FileName, icon0FileData.buf, icon0FileData.size);
 		writeFile(mem, fileManager, path, icon1FileName, icon1FileData.buf, icon1FileData.size);
@@ -346,8 +349,18 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 	}
 
 	private void writePsf(Memory mem, pspiofilemgr fileManager, String path, String name, PspUtilitySavedataSFOParam sfoParam) throws IOException {
-		// TODO Implement writing of PSF file
-		Modules.log.error("Unimplemented - saving of " + name);
+        SeekableRandomFile fileOutput = getDataOutput(fileManager, path, name);
+		if (fileOutput == null) {
+			return;
+		}
+
+		PSF psf = new PSF(0);
+        psf.put("PARENTAL_LEVEL", sfoParam.parentalLevel);
+        psf.put("TITLE", sfoParam.title);
+        psf.put("SAVEDATA_DETAIL", sfoParam.detail);
+        psf.put("SAVEDATA_TITLE", sfoParam.savedataTitle);
+
+        psf.write(fileOutput.getChannel().map(MapMode.READ_WRITE, 0, psf.size()));
 	}
 
     public int sizeof() {
