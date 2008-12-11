@@ -505,8 +505,7 @@ public class sceUtility implements HLEModule {
 
         savedata_status = PSP_UTILITY_DIALOG_FINISHED;
 
-        // no return code?
-        // cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = 0; // return code required
     }
 
 	public void sceUtilitySavedataUpdate(Processor processor) {

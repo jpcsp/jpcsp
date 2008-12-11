@@ -241,6 +241,16 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		writeStringNZ(16, key);
 	}
 
+    private void safeLoad(Memory mem, pspiofilemgr fileManager, String filename, PspUtilitySavedataFileData fileData) throws IOException {
+		String path = savedataPath + gameName + saveName + "/";
+
+        try {
+            fileData.size = loadFile(mem, fileManager, path, filename, fileData.buf, fileData.bufSize);
+        } catch(FileNotFoundException e) {
+            // ignore
+        }
+    }
+
 	public void load(Memory mem, pspiofilemgr fileManager) throws IOException {
 		String path = savedataPath + gameName + saveName + "/";
 
@@ -249,10 +259,10 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		// Encrypted files cannot be loaded.
 		// TODO Detect and reject an encrypted data file.
 		dataSize           = loadFile(mem, fileManager, path, fileName,      dataBuf,           dataBufSize);
-		icon0FileData.size = loadFile(mem, fileManager, path, icon0FileName, icon0FileData.buf, icon0FileData.bufSize);
-		icon1FileData.size = loadFile(mem, fileManager, path, icon1FileName, icon1FileData.buf, icon1FileData.bufSize);
-		pic1FileData.size  = loadFile(mem, fileManager, path, pic1FileName,  pic1FileData.buf,  pic1FileData.bufSize);
-		snd0FileData.size  = loadFile(mem, fileManager, path, snd0FileName,  snd0FileData.buf,  snd0FileData.bufSize);
+        safeLoad(mem, fileManager, icon0FileName, icon0FileData);
+        safeLoad(mem, fileManager, icon1FileName, icon1FileData);
+        safeLoad(mem, fileManager, pic1FileName, pic1FileData);
+        safeLoad(mem, fileManager, snd0FileName, snd0FileData);
 		loadPsf(mem, fileManager, path, paramSfoFileName, sfoParam);
 	}
 
