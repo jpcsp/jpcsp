@@ -171,7 +171,7 @@ public class sceAudio implements HLEModule, HLEThread {
             if (pspchannels[i].waitingThreadId >= 0) {
                 int len = hleAudioGetChannelRestLen(i);
                 if (len == 0) {
-                    Modules.log.info("Audio step - unblocking thread");
+                    //Modules.log.info("Audio step - unblocking thread");
                     ThreadMan.getInstance().unblockThread(pspchannels[i].waitingThreadId);
                     pspchannels[i].waitingThreadId = -1;
                 }
@@ -423,7 +423,7 @@ public class sceAudio implements HLEModule, HLEThread {
             //if (ret>=0) {
             //    ret = doAudioFlush(channel);
             //}
-            Modules.log.info("sceAudioOutputBlocking - blocking thread");
+            //Modules.log.info("sceAudioOutputBlocking - blocking thread");
             pspchannels[channel].waitingThreadId = ThreadMan.getInstance().getCurrentThreadID();
 
             cpu.gpr[2] = ret;
@@ -463,7 +463,7 @@ public class sceAudio implements HLEModule, HLEThread {
             ret = doAudioOutput(channel,pvoid_buf);
 
             //if (ret>=0) ret = doAudioFlush(channel);
-            Modules.log.info("sceAudioOutputBlocking - blocking thread");
+            //Modules.log.info("sceAudioOutputBlocking - blocking thread");
             pspchannels[channel].waitingThreadId = ThreadMan.getInstance().getCurrentThreadID();
 
             cpu.gpr[2] = ret;
@@ -742,7 +742,7 @@ public class sceAudio implements HLEModule, HLEThread {
 
         if (pspchannels[channel].outputDataLine != null)
         {
-            /* the number of samples left to be consumed
+            /* the number of samples left to be consumed by the java sound library's own internal buffers
             int bytespersample = 4;
 
             if ((pspchannels[channel].format & 0x10) == 0x10)
