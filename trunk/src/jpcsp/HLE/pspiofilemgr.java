@@ -255,9 +255,9 @@ public class pspiofilemgr {
     }
 
     public SeekableDataInput getFile(String filename, int flags) {
-    	SeekableDataInput resultFile = null;
+        SeekableDataInput resultFile = null;
 
-    	String pcfilename = getDeviceFilePath(filename);
+        String pcfilename = getDeviceFilePath(filename);
         if (pcfilename != null) {
             if (isUmdPath(pcfilename)) {
                 // check umd is mounted
@@ -298,12 +298,12 @@ public class pspiofilemgr {
                     }
                     String mode = getMode(flags);
 
-					try {
-						SeekableRandomFile raf = new SeekableRandomFile(pcfilename, mode);
-	                    resultFile = raf;
-					} catch (FileNotFoundException e) {
-                        Modules.log.error("getFile - error opening file: " + e.getMessage());
-					}
+                    try {
+                        SeekableRandomFile raf = new SeekableRandomFile(pcfilename, mode);
+                        resultFile = raf;
+                    } catch (FileNotFoundException e) {
+                        if (debug) Modules.log.debug("getFile - file not found (ok to ignore this message, debug purpose only)");
+                    }
                 }
             }
         }
@@ -332,9 +332,9 @@ public class pspiofilemgr {
     }
 
     private String getMode(int flags) {
-    	String mode = null;
+        String mode = null;
 
-    	// PSP_O_RDWR check must come before the individual PSP_O_RDONLY and PSP_O_WRONLY checks
+        // PSP_O_RDWR check must come before the individual PSP_O_RDONLY and PSP_O_WRONLY checks
         if ((flags & PSP_O_RDWR) == PSP_O_RDWR) {
             mode = "rw";
         } else if ((flags & PSP_O_RDONLY) == PSP_O_RDONLY || flags == 0) {
@@ -491,7 +491,7 @@ public class pspiofilemgr {
         SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
         IoInfo info = filelist.get(uid);
         if (info != null) {
-        	info.closePending = true;
+            info.closePending = true;
             Emulator.getProcessor().cpu.gpr[2] = 0;
         } else {
             Emulator.getProcessor().cpu.gpr[2] = -1;
@@ -548,6 +548,7 @@ public class pspiofilemgr {
     public void sceIoWriteAsync(int uid, int data_addr, int size) {
         if (debug) Modules.log.debug("sceIoWriteAsync redirecting to sceIoWrite");
         sceIoWrite(uid, data_addr, size);
+        // TODO allow returning error codes here like in read async?
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
@@ -571,7 +572,7 @@ public class pspiofilemgr {
                     if (info.readOnlyFile.getFilePointer() + size > info.readOnlyFile.length()) {
                         int oldSize = size;
                         size = (int)(info.readOnlyFile.length() - info.readOnlyFile.getFilePointer());
-                        Modules.log.warn("sceIoRead - clamping size old=" + oldSize + " new=" + size
+                        Modules.log.debug("sceIoRead - clamping size old=" + oldSize + " new=" + size
                             + " fp=" + info.readOnlyFile.getFilePointer() + " len=" + info.readOnlyFile.length());
                     }
 
@@ -597,7 +598,7 @@ public class pspiofilemgr {
         if (debug) Modules.log.debug("sceIoReadAsync redirecting to sceIoRead");
         sceIoRead(uid, data_addr, size);
         if (Emulator.getProcessor().cpu.gpr[2] > 0) {
-        	Emulator.getProcessor().cpu.gpr[2] = 0;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
         }
     }
 
@@ -992,7 +993,7 @@ public class pspiofilemgr {
                             new ScePspDateTime(timestamp), new ScePspDateTime(0),
                             new ScePspDateTime(timestamp));
                         if (startSector > 0) {
-                        	stat.setReserved(0, startSector);
+                            stat.setReserved(0, startSector);
                         }
                     } catch(FileNotFoundException e) {
                         Modules.log.warn("stat - umd file not found");
