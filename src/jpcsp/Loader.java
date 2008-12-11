@@ -557,7 +557,8 @@ public class Loader {
 
         Emulator.log.info("Found ModuleInfo name:'" + module.modname
             + "' version:" + String.format("%02x%02x", module.version[1], module.version[0])
-            + " attr:" + String.format("%08x", module.attribute));
+            + " attr:" + String.format("%08x", module.attribute)
+            + " gp:" + String.format("%08x", module.gp_value));
 
         if ((module.attribute & 0x1000) != 0) {
             Emulator.log.warn("Kernel mode module detected");
