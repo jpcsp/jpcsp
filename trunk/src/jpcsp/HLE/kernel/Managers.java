@@ -30,6 +30,7 @@ public class Managers {
     //public static ThreadManager threads;
     public static FplManager fpl;
     public static VplManager vpl;
+    public static MutexManager mutex;
     public static ModuleManager modules;
     public static SystemTimeManager systime;
 
@@ -39,6 +40,7 @@ public class Managers {
         eventFlags.reset();
         fpl.reset();
         vpl.reset();
+        mutex.reset();
         modules.reset();
         systime.reset();
     }
@@ -51,6 +53,7 @@ public class Managers {
         //threads = ThreadManager.singleton;
         fpl = FplManager.singleton;
         vpl = VplManager.singleton;
+        mutex = MutexManager.singleton;
         modules = ModuleManager.singleton;
         systime = SystemTimeManager.singleton;
     }

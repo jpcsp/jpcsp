@@ -434,6 +434,9 @@ public class sceUtility implements HLEModule {
         } else if (savedata_mode == SceUtilitySavedataParam.MODE_LISTSAVE) {
             Modules.log.warn("sceUtilitySavedataInitStart MODE_LISTSAVE converted to MODE_AUTOSAVE");
             savedata_mode = SceUtilitySavedataParam.MODE_AUTOSAVE;
+        } else if (savedata_mode == 8) {
+            Modules.log.warn("sceUtilitySavedataInitStart mode 8 converted to MODE_AUTOSAVE");
+            savedata_mode = SceUtilitySavedataParam.MODE_AUTOSAVE;
         }
 
         switch (savedata_mode) {
@@ -458,6 +461,7 @@ public class sceUtility implements HLEModule {
 
 	        case SceUtilitySavedataParam.MODE_LISTLOAD:
 	        	// TODO Implement dialog to display list of available SAVEDATA files
+                Modules.log.warn("sceUtilitySavedataInitStart MODE_LISTLOAD => result=SCE_UTILITY_SAVEDATA_ERROR_LOAD_NO_DATA");
 	        	sceUtilitySavedataParam.base.result = SCE_UTILITY_SAVEDATA_ERROR_LOAD_NO_DATA;
 	        	break;
 
@@ -481,6 +485,7 @@ public class sceUtility implements HLEModule {
 
 	        case SceUtilitySavedataParam.MODE_LISTSAVE:
 	        	// TODO Implement dialog to display list of available SAVEDATA files
+                Modules.log.warn("sceUtilitySavedataInitStart MODE_LISTSAVE => result=SCE_UTILITY_SAVEDATA_ERROR_SAVE_NO_MS");
 	        	sceUtilitySavedataParam.base.result = SCE_UTILITY_SAVEDATA_ERROR_SAVE_NO_MS;
 	        	break;
 

@@ -18,6 +18,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
@@ -365,8 +366,8 @@ public class sceSasCore implements HLEModule {
 
         int sasCore = cpu.gpr[4];
         //int unk1 = cpu.gpr[5]; // 0 or 1
-        //int unk2 = cpu.gpr[6]; // uncached heap address
-        //int unk3 = cpu.gpr[7]; // some size 0x48d0 or unused
+        //int unk2 = cpu.gpr[6]; // heap address (may be uncached)
+        //int unk3 = cpu.gpr[7]; // some size 0x48d0/0x200 or unused
 
         Modules.log.warn("Unimplemented NID function __sceSasSetVoice [0x99944089] " + makeLogParams(cpu));
 
@@ -434,14 +435,16 @@ public class sceSasCore implements HLEModule {
         // Processor cpu = processor; // Old-Style Processor
 
         int sasCore = cpu.gpr[4];
-        //int unk1 = cpu.gpr[5]; // looks like a heap address
-        //int unk2 = cpu.gpr[6]; // looks like a heap address
+        //int unk1 = cpu.gpr[5]; // looks like a heap address, bss
+        //int unk2 = cpu.gpr[6]; // looks like a heap address, dynamic
+        //int unk3 = cpu.gpr[7]; // 80420000 internal error code
 
         Modules.log.debug("IGNORING:__sceSasCore " + makeLogParams(cpu));
 
         if (isSasHandleGood(sasCore, "__sceSasCore", cpu)) {
-            // nothing to do ... ?
-            // noxa/pspplayer blocks here, so should we yield?
+            // noxa/pspplayer blocks in __sceSasCore
+            // some games protect __sceSasCoren with locks, suggesting it may context switch
+            ThreadMan.getInstance().yieldCurrentThread();
             cpu.gpr[2] = 0;
         }
     }
@@ -455,8 +458,8 @@ public class sceSasCore implements HLEModule {
 
         int sasCore = cpu.gpr[4];
         //int unk1 = cpu.gpr[5]; // 0 or 1 (probably channel number)
-        //int unk2 = cpu.gpr[6]; // 0x6e4
-        //int unk3 = cpu.gpr[7]; // 0x6e4
+        //int unk2 = cpu.gpr[6]; // 0x6e4/0x800
+        //int unk3 = cpu.gpr[7]; // 0x6e4/0x800
         // may be more parameters
 
         Modules.log.warn("Unimplemented NID function __sceSasSetPitch [0xAD84D37F] " + makeLogParams(cpu));

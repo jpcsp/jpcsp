@@ -507,7 +507,7 @@ public class ThreadMan {
                 Modules.log.warn("EventFlag deleted while we were waiting for it! (timeout expired)");
 
                 // Return WAIT_DELETE
-                thread.cpuContext.gpr[2] = ERROR_ERROR_WAIT_DELETE;
+                thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
             }
         }
     }
@@ -525,7 +525,8 @@ public class ThreadMan {
         toBeDeletedThreads.remove(thread);
         threadMap.remove(thread.uid);
         SceUidManager.releaseUid(thread.uid, "ThreadMan-thread");
-        // TODO remove from any internal lists? such as sema waiting lists
+
+        // TODO remove from wait object reference count, example: sema.numWaitThreads--
 
         statistics.addThreadStatistics(thread);
     }
@@ -1356,7 +1357,7 @@ public class ThreadMan {
                         thread.wait.waitingOnSemaphore = false;
 
                         // Return WAIT_DELETE
-                        thread.cpuContext.gpr[2] = ERROR_ERROR_WAIT_DELETE;
+                        thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
 
                         // Wakeup
                         changeThreadState(thread, PSP_THREAD_READY);
@@ -1370,7 +1371,7 @@ public class ThreadMan {
 
     /** May modify sema.currentCount
      * @return true on success */
-    private boolean waitSemaphore(SceKernelSemaphoreInfo sema, int signal)
+    private boolean tryWaitSemaphore(SceKernelSemaphoreInfo sema, int signal)
     {
         boolean success = false;
 
@@ -1413,7 +1414,7 @@ public class ThreadMan {
                 micros = mem.read32(timeout_addr);
             }
 
-            if (!waitSemaphore(sema, signal))
+            if (!tryWaitSemaphore(sema, signal))
             {
                 // Failed, but it's ok, just wait a little
                 Modules.log.debug("hleKernelWaitSema - '" + sema.name + "' fast check failed");
@@ -1439,7 +1440,7 @@ public class ThreadMan {
                 Modules.log.debug("hleKernelWaitSema - '" + sema.name + "' fast check succeeded");
                 Emulator.getProcessor().cpu.gpr[2] = 0;
                 // TODO yield anyway?
-                contextSwitch(nextThread());
+                //contextSwitch(nextThread());
             }
         }
     }

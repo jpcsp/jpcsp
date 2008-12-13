@@ -38,4 +38,8 @@ public class ThreadWaitInfo {
     public boolean waitingOnSemaphore;
     public int Semaphore_id;
     public int Semaphore_signal;
+
+    // Mutex
+    public boolean waitingOnMutex;
+    public int Mutex_id;
 }
