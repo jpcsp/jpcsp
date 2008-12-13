@@ -80,7 +80,6 @@ public class EventFlagManager {
                 updateWaitingEventFlags();
             }
 
-            updateWaitingEventFlags();
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
     }
@@ -157,6 +156,7 @@ public class EventFlagManager {
     // Check all waiting threads for all event flags.
     // Could be optimized for all waiting threads for a specific event flag,
     // but then DeleteEventFlag will need special case handling.
+    // TODO specialise for a specific event flag uid
     private void updateWaitingEventFlags() {
         for (Iterator<SceKernelThreadInfo> it = ThreadMan.getInstance().iterator(); it.hasNext(); ) {
             SceKernelThreadInfo thread = it.next();
@@ -196,8 +196,8 @@ public class EventFlagManager {
                     // Untrack
                     thread.wait.waitingOnEventFlag = false;
 
-                    // Return ERROR_ERROR_WAIT_DELETE
-                    thread.cpuContext.gpr[2] = ERROR_ERROR_WAIT_DELETE;
+                    // Return ERROR_WAIT_DELETE
+                    thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
 
                     // Wakeup
                     ThreadMan.getInstance().changeThreadState(thread, PSP_THREAD_READY);

@@ -886,10 +886,37 @@ public class SyscallHandler {
 		 //sceUtilityDeleteNetParam(0x220e),
 		 //sceUtilityCopyNetParam(0x220f),
 		// sceUtilitySetNetParam(0x2210);
+
+                case 0x33017:
+                    Managers.mutex.sceKernelCreateMutex(gpr[4], gpr[5], gpr[6], gpr[7]);
+                    break;
+                case 0x3015:
+                    Managers.mutex.sceKernelDeleteMutex(gpr[4]);
+                    break;
+                case 0x3017:
+                    Managers.mutex.sceKernelLockMutex(gpr[4], gpr[5], gpr[6]);
+                    break;
+                case 0x30a2:
+                    Managers.mutex.sceKernelLockMutexCB(gpr[4], gpr[5], gpr[6]);
+                    break;
+                case 0x30a1:
+                    Managers.mutex.sceKernelTryLockMutex(gpr[4], gpr[5]);
+                    break;
+                case 0x3016:
+                    Managers.mutex.sceKernelUnlockMutex(gpr[4]);
+                    break;
+                case 0x30a3:
+                    Managers.mutex.sceKernelCancelMutex(gpr[4]);
+                    break;
+                case 0x30a4:
+                    Managers.mutex.sceKernelReferMutexStatus(gpr[4], gpr[5]);
+                    break;
+
                 case 0xfffff: // special code for unmapped imports
                     Modules.log.error(String.format("Unmapped import @ 0x%08X", Emulator.getProcessor().cpu.pc));
                     Emulator.PauseEmu();
                     break;
+
                 default:
                 {
                     // Try and handle as an HLE module export
@@ -904,6 +931,7 @@ public class SyscallHandler {
                         String params = String.format("%08x %08x %08x", cpu.gpr[4],
                             cpu.gpr[5], cpu.gpr[6]);
 
+                        // TODO replace this enum with a dynamically generated hashmap, this way we can avoid numbering mistakes
                         for (jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls c : jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls.values()) {
                             if (c.getSyscall() == code) {
                                 Modules.log.warn("Unsupported syscall " + Integer.toHexString(code) + " " + c + " " + params);

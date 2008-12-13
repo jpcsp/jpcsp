@@ -810,6 +810,11 @@ public class syscallsFirm15 {
                 sceUsbstorBootSetCapacity(0x2304, 0xE58818A8), // 1.00+
                 sceKernelRegisterKprintfHandler(0x2305, 0x7CEB2C09), // 1.00+
                 Kprintf(0x2306, 0x84F370BC), // 1.00+
+                sceNetGetDropRate(0x2307, 0xC80181A2), // 1.00+
+                sceCccSetTable(0x2308, 0xB4D1CBBF), // 1.00+
+                sceNetApDialogDummyInit(0x2309, 0xBB73FF67), // 1.00+
+                sceNetApDialogDummyConnect(0x230a, 0x3811281E), // 1.00+
+
 
                  /* FAKE MAPPING!! for Final Fantasy checks*/
                  ModuleMgrForUser_8F2DF740(0x3000,0x8f2df740), // fw 3.52 or less?
@@ -837,7 +842,7 @@ public class syscallsFirm15 {
                  sceKernelDeleteMutex(0x3015,0xf8170fbe),//2.70+
                  sceKernelUnlockMutex(0x3016,0x6b30100f),//2.70+
                  sceKernelLockMutex(0x3017,0xb011b11f),//2.70+
-                 sceKernelCreateMutex(0x3017,0xb7d098c6),//2.70+
+                 sceKernelCreateMutex(0x33017,0xb7d098c6),//2.70+, someone broke the numbering... prefixing another 3 to fix it
                  /*found in wipeout pure */
                  sceKernelIsCpuIntrEnable(0x3018,0xb55249d2),//1.00+
                  sceNetResolverInit(0x3019,0xf3370e61),//1.00+
@@ -974,14 +979,22 @@ public class syscallsFirm15 {
                 sceFontOpenUserMemory(0x3095, 0xBB8E7FE6), // 2.00+
                 sceUtilityUnloadAvModule(0x3096, 0xF7D8D092), // 2.71+
 
-                // Module magic, we choose to start at 0x4000
-                module_bootstart(0x4000, 0xD3744BE0),
-                module_reboot_before(0x4001, 0x2F064FA6),
-                module_reboot_phase(0x4002, 0xADF12745),
-                module_start(0x4003, 0xD632ACDB),
-                module_stop_1(0x4004, 0xCEE8593C),
-                module_stop_2(0x4005, 0xF01D73A7),
-                module_0F7C276C(0x4006, 0x0F7C276C),
+                sceFontSetAltCharacterCode(0x3097, 0xEE232411), // 2.00+
+                sceFontGetCharImageRect(0x3098, 0x5C3E4A9E), // 2.00+ or lower
+                sceNetInetGetPspError(0x3099, 0x8CA3A97E), // 2.00+
+                sceNetAdhocctlGetPeerInfo(0x309a, 0x8DB83FDC), // 2.00+
+                sceUtilityLoadUsbModule(0x309b, 0x0D5BC6D2), // 2.71+ or lower
+                sceUtilityUnloadUsbModule(0x309c, 0xF64910F0), // 2.71+ or lower
+                sceFontPointToPixelH(0x309d, 0x472694CD), // 2.00+ or lower
+                sceFontGetFontInfoByIndexNumber(0x309e, 0x5333322D), // 2.00+ or lower
+                sceNetAdhocMatchingAbortSendData(0x309f, 0xEC19337D), // 3.52+ or lower
+                sceNetAdhocMatchingSendData(0x30a0, 0xF79472D7), // 3.52+ or lower
+                sceKernelTryLockMutex(0x30a1, 0x0DDCD2C9), // 2.71+ or lower
+                sceKernelLockMutexCB(0x30a2, 0x5BF4DD27), // 2.71+ or lower
+                sceKernelCancelMutex(0x30a3, 0x87D9223C), // 2.71+ or lower
+                sceKernelReferMutexStatus(0x30a4, 0xA9C2CB9A), // 2.71+ or lower
+
+                // We choose to start HLEModuleManager at 0x4000
 
                 // CFW, we choose to start at 0x5000
                 kubridge_4C25EA72(0x5000, 0x5C25EA72),
@@ -990,6 +1003,15 @@ public class syscallsFirm15 {
                 systemctrl_user_ABA7F1B0(0x5003, 0xABA7F1B0),
                 systemctrl_user_16C3B7EE(0x5004, 0x16C3B7EE),
                 systemctrl_user_85B520C6(0x5005, 0x85B520C6),
+
+                // Module magic, we choose to start at 0x6000
+                module_bootstart(0x6000, 0xD3744BE0),
+                module_reboot_before(0x6001, 0x2F064FA6),
+                module_reboot_phase(0x6002, 0xADF12745),
+                module_start(0x6003, 0xD632ACDB),
+                module_stop_1(0x6004, 0xCEE8593C),
+                module_stop_2(0x6005, 0xF01D73A7),
+                module_0F7C276C(0x6006, 0x0F7C276C),
 
                 hleDummy(0x70000, 0xcdcdcdcd); // got bored of editing , and ; so leave this entry at the end of the enum
 

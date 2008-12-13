@@ -588,6 +588,11 @@ public class pspiofilemgr {
             } catch(IOException e) {
                 e.printStackTrace();
                 Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_FILE_READ_ERROR;
+            } catch(Exception e) {
+                e.printStackTrace();
+                Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_FILE_READ_ERROR;
+                Modules.log.error("sceIoRead: Check other console for exception details. Press Run to continue.");
+                Emulator.PauseEmu();
             }
         }
 

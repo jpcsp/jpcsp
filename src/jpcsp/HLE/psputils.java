@@ -154,11 +154,10 @@ public class psputils {
         }
     }
 
-    /** a0 = address to write result to? */
     public void sceKernelGetGPI() {
         if (State.debugger != null) {
             int gpi = State.debugger.GetGPI();
-            Modules.log.info("sceKernelGetGPI 0x" + String.format("%02X", gpi));
+            Modules.log.debug("sceKernelGetGPI 0x" + String.format("%02X", gpi));
             Emulator.getProcessor().cpu.gpr[2] = gpi;
         } else {
             Modules.log.info("sceKernelGetGPI debugger not enabled");
