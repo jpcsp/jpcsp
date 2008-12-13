@@ -52,6 +52,7 @@ public class FastMemory extends Memory {
 		} catch (OutOfMemoryError e) {
 			// Not enough memory provided for this VM, cannot use FastMemory model
 			Memory.log.warn("Cannot allocate FastMemory: add the option '-Xmx256m' to the Java Virtual Machine startup command to improve Performance");
+			Memory.log.info("The current Java Virtual Machine has been started using '-Xmx" + (Runtime.getRuntime().maxMemory() / (1024 * 1024)) + "m'");
 			return false;
 		}
 
