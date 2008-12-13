@@ -260,9 +260,15 @@ public class Utilities {
     }
 
     public static void readFully(SeekableDataInput input, int address, int length) throws IOException {
-    	byte[] buffer = new byte[length];
-    	input.readFully(buffer);
-    	Memory.getInstance().copyToMemory(address, ByteBuffer.wrap(buffer), length);
+        final int blockSize = 1024 * 1024;  // 1Mb
+        while (length > 0) {
+            int size = Math.min(length, blockSize);
+            byte[] buffer = new byte[size];
+            input.readFully(buffer);
+            Memory.getInstance().copyToMemory(address, ByteBuffer.wrap(buffer), size);
+            address += size;
+            length -= size;
+        }
     }
 
     public static void write(SeekableRandomFile output, int address, int length) throws IOException {
