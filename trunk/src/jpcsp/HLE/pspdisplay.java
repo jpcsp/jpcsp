@@ -717,19 +717,23 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     public void sceDisplayWaitVblankStartCB() {
         // TODO: implement sceDisplayWaitVblankStartCB
         Emulator.getProcessor().cpu.gpr[2] = 0;
-        ThreadMan.getInstance().yieldCurrentThread();
+        ThreadMan.getInstance().yieldCurrentThreadCB();
     }
 
+    /** Returns 0 or 1.
+     * 1 = something like sceDisplayWaitVblankStart was called before calling this but not exactly. */
     public void sceDisplayWaitVblank() {
         // TODO: implement sceDisplayWaitVblank
         Emulator.getProcessor().cpu.gpr[2] = 0;
         ThreadMan.getInstance().yieldCurrentThread();
     }
 
+    /** Returns 0 or 1.
+     * 1 = something like sceDisplayWaitVblankStart was called before calling this but not exactly. */
     public void sceDisplayWaitVblankCB() {
         // TODO: implement sceDisplayWaitVblankCB
         Emulator.getProcessor().cpu.gpr[2] = 0;
-        ThreadMan.getInstance().yieldCurrentThread();
+        ThreadMan.getInstance().yieldCurrentThreadCB();
     }
 
     public void sceDisplayGetCurrentHcount() {

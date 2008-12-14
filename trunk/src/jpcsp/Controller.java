@@ -40,6 +40,7 @@ import static jpcsp.HLE.modules150.sceCtrl.PSP_CTRL_VOLUP;
 import java.awt.event.KeyEvent;
 import java.util.HashMap;
 
+// TODO check, Torch "In digital mode, the analog x & y is zero." http://forums.ps2dev.org/viewtopic.php?p=77013#77013
 public class Controller {
     private byte Lx = 127;
     private byte Ly = 127;
