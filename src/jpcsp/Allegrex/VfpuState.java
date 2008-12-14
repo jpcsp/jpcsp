@@ -1418,7 +1418,15 @@ public class VfpuState extends FpuState {
 
     // VFPU6:VQMUL
     public void doVQMUL(int vd, int vs, int vt) {
-        doUNK("Unimplemented VQMUL.Q instruction");
+    	loadVs(4, vs);
+    	loadVt(4, vt);
+
+	    v3[0] = +v1[0] * v2[3] + v1[1] * v2[2] - v1[2] * v2[1] + v1[3] * v2[0];
+		v3[1] = -v1[0] * v2[2] + v1[1] * v2[3] + v1[2] * v2[0] + v1[3] * v2[1];
+		v3[2] = +v1[0] * v2[1] - v1[1] * v2[0] + v1[2] * v2[3] + v1[3] * v2[2];
+		v3[3] = -v1[0] * v2[0] - v1[1] * v2[1] - v1[2] * v2[2] + v1[3] * v2[3];
+	
+	    saveVd(4, vd, v3);
     }
 
     // VFPU6:VMMOV
