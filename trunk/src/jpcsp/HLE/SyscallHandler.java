@@ -54,7 +54,9 @@ public class SyscallHandler {
                 case 0x200d:
                     ThreadMan.getInstance().ThreadMan_sceKernelCreateCallback(gpr[4], gpr[5], gpr[6]);
                     break;
-               // case 0x200e: //sceKernelDeleteCallback
+                case 0x200e:
+                    ThreadMan.getInstance().ThreadMan_sceKernelDeleteCallback(gpr[4]);
+                    break;
                // case 0x200f: //sceKernelNotifyCallback
               //  case 0x2010: //sceKernelCancelCallback
               //  case 0x2011: //sceKernelGetCallbackCount
