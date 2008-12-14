@@ -130,6 +130,8 @@ public class VideoEngine {
     private int tex_clut_num_blocks;
     private int tex_clut_mode, tex_clut_shift, tex_clut_mask, tex_clut_start;
     private int tex_wrap_s = GL.GL_REPEAT, tex_wrap_t = GL.GL_REPEAT;
+    private int patch_div_s;
+    private int patch_div_t;
 
     private int transform_mode;
 
@@ -1373,10 +1375,11 @@ public class VideoEngine {
            		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, env_mode);
            		// TODO : check this
            		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, (normalArgument & 0x100) == 0 ? GL.GL_PREVIOUS : GL.GL_TEXTURE);
-           		log("sceGuTexFunc");
-           		/*log(String.format("sceGuTexFunc mode %08X", normalArgument)
-           				+ (((normalArgument & 0x10000) != 0) ? " SCALE" : "")
-           				+ (((normalArgument & 0x100) != 0) ? " ALPHA" : ""));*/
+           		if (log.isDebugEnabled()) {
+           		    log(String.format("sceGuTexFunc mode %08X", normalArgument)
+           		            + (((normalArgument & 0x10000) != 0) ? " SCALE" : "")
+           		            + (((normalArgument & 0x100) != 0) ? " ALPHA" : ""));
+           		}
             	break;
 
             case TEC:
@@ -1508,113 +1511,10 @@ public class VideoEngine {
                     }
                 }
 
-                /*
-                 * Defer transformations until primitive rendering
-                 */
-                gl.glMatrixMode(GL.GL_PROJECTION);
-                gl.glPushMatrix ();
-                gl.glLoadIdentity();
-
-                if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
-                	gl.glLoadMatrixf(proj_uploaded_matrix, 0);
-                else {
-                	// 2D mode shouldn't be affected by the depth buffer
-                	gl.glOrtho(0.0, 480, 272, 0, -1.0, 1.0);
-                	gl.glPushAttrib(GL.GL_DEPTH_BUFFER_BIT);
-                	gl.glDepthFunc(GL.GL_ALWAYS);
-                }
-
-                /*
-                 * Apply texture transforms
-                 */
-                gl.glMatrixMode(GL.GL_TEXTURE);
-                gl.glPushMatrix ();
-                gl.glLoadIdentity();
-                gl.glTranslatef(tex_translate_x, tex_translate_y, 0.f);
-                if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
-                    gl.glScalef(tex_scale_x, tex_scale_y, 1.f);
-                else
-                	gl.glScalef(1.f / texture_width0, 1.f / texture_height0, 1.f);
-
-                switch (tex_map_mode) {
-	                case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV:
-	                	break;
-
-	                case TMAP_TEXTURE_MAP_MODE_TEXTURE_MATRIX:
-	                	gl.glMultMatrixf (texture_uploaded_matrix, 0);
-	                	break;
-
-	                case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP: {
-
-	                	// First, setup texture uv generation
-	                	gl.glTexGeni(GL.GL_S, GL.GL_TEXTURE_GEN_MODE, GL.GL_SPHERE_MAP);
-	                	gl.glEnable (GL.GL_TEXTURE_GEN_S);
-
-	                	gl.glTexGeni(GL.GL_T, GL.GL_TEXTURE_GEN_MODE, GL.GL_SPHERE_MAP);
-	                	gl.glEnable (GL.GL_TEXTURE_GEN_T);
-
-	                	// Setup also texture matrix
-	                	gl.glMultMatrixf (tex_envmap_matrix, 0);
-	                	break;
-	                }
-
-	                default:
-	                	log ("Unhandled texture matrix mode " + tex_map_mode);
-                }
-
-                /*
-                 * Apply view matrix
-                 */
-                gl.glMatrixMode(GL.GL_MODELVIEW);
-                gl.glPushMatrix ();
-                gl.glLoadIdentity();
-
-                if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
-                	gl.glLoadMatrixf(view_uploaded_matrix, 0);
-
-                /*
-                 *  Setup lights on when view transformation is set up
-                 */
-                gl.glLightfv(GL.GL_LIGHT0, GL.GL_POSITION, light_pos[0], 0);
-                gl.glLightfv(GL.GL_LIGHT1, GL.GL_POSITION, light_pos[1], 0);
-                gl.glLightfv(GL.GL_LIGHT2, GL.GL_POSITION, light_pos[2], 0);
-                gl.glLightfv(GL.GL_LIGHT3, GL.GL_POSITION, light_pos[3], 0);
-
-                // Apply model matrix
-                if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
-                	gl.glMultMatrixf(model_uploaded_matrix, 0);
-
-                boolean useVertexColor = false;
-                if(!lighting) {
-                	gl.glDisable(GL.GL_COLOR_MATERIAL);
-                	if(vinfo.color != 0) {
-	                	useVertexColor = true;
-                	} else {
-                		gl.glColor4fv(mat_ambient, 0);
-                    }
-                } else if (vinfo.color != 0 && mat_flags != 0) {
-                	useVertexColor = true;
-                	int flags = 0;
-                	// TODO : Can't emulate this properly right now since we can't mix the properties like we want
-                	if((mat_flags & 1) != 0 && (mat_flags & 2) != 0)
-                		flags = GL.GL_AMBIENT_AND_DIFFUSE;
-                	else if((mat_flags & 1) != 0) flags = GL.GL_AMBIENT;
-                	else if((mat_flags & 2) != 0) flags = GL.GL_DIFFUSE;
-                	else if((mat_flags & 4) != 0) flags = GL.GL_SPECULAR;
-                	gl.glColorMaterial(GL.GL_FRONT_AND_BACK, flags);
-                	gl.glEnable(GL.GL_COLOR_MATERIAL);
-                } else {
-                	gl.glDisable(GL.GL_COLOR_MATERIAL);
-                	gl.glMaterialfv(GL.GL_FRONT, GL.GL_AMBIENT, mat_ambient, 0);
-                	gl.glMaterialfv(GL.GL_FRONT, GL.GL_DIFFUSE, mat_diffuse, 0);
-                	gl.glMaterialfv(GL.GL_FRONT, GL.GL_SPECULAR, mat_specular, 0);
-                }
-
-                gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, tex_wrap_s);
-                gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, tex_wrap_t);
+                boolean useVertexColor = initRendering();
 
                 Memory mem = Memory.getInstance();
-                bindBuffers(useVertexColor);
+                bindBuffers(useVertexColor, false);
                 vboBuffer.clear();
 
                 switch (type) {
@@ -1659,8 +1559,8 @@ public class VideoEngine {
 
                             v1.p[2] = v2.p[2];
 
-                            if (log.isDebugEnabled() && numberOfVertex == 2 && transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
-                                log("  sprite (" + ((int) v1.t[0]) + "," + ((int) v1.t[1]) + ")-(" + ((int) v2.t[0]) + "," + ((int) v2.t[1]) + ") at (" + ((int) v1.p[0]) + "," + ((int) v1.p[1]) + ")-(" + + ((int) v2.p[0]) + "," + ((int) v2.p[1]) + ")");
+                            if (log.isDebugEnabled() && transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
+                                log("  sprite (" + ((int) v1.t[0]) + "," + ((int) v1.t[1]) + ")-(" + ((int) v2.t[0]) + "," + ((int) v2.t[1]) + ") at (" + ((int) v1.p[0]) + "," + ((int) v1.p[1]) + "," + ((int) v1.p[2]) + ")-(" + + ((int) v2.p[0]) + "," + ((int) v2.p[1]) + "," + ((int) v2.p[2]) + ")");
                             }
 
                             // V1
@@ -1692,28 +1592,7 @@ public class VideoEngine {
                         break;
                 }
 
-                switch (tex_map_mode) {
-                	case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP: {
-		            	gl.glDisable (GL.GL_TEXTURE_GEN_S);
-		            	gl.glDisable (GL.GL_TEXTURE_GEN_T);
-		            	break;
-		            }
-		        }
-
-                gl.glDisableClientState(GL.GL_VERTEX_ARRAY);
-                if(vinfo.texture != 0) gl.glDisableClientState(GL.GL_TEXTURE_COORD_ARRAY);
-                if(useVertexColor) gl.glDisableClientState(GL.GL_COLOR_ARRAY);
-                if(vinfo.normal != 0) gl.glDisableClientState(GL.GL_NORMAL_ARRAY);
-
-                gl.glPopMatrix 	();
-                gl.glMatrixMode	(GL.GL_TEXTURE);
-                gl.glPopMatrix 	();
-                gl.glMatrixMode	(GL.GL_PROJECTION);
-                gl.glPopMatrix 	();
-                gl.glMatrixMode	(GL.GL_MODELVIEW);
-
-                if(transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD)
-                	gl.glPopAttrib();
+                endRendering(useVertexColor);
                 break;
             }
 
@@ -1762,7 +1641,9 @@ public class VideoEngine {
             		log.warn("VideoEngine: " + e.getMessage());
             	}
 
-            	log ("sceGuBlendFunc(int op, int src, int dest, X, X)");
+            	if (log.isDebugEnabled()) {
+            	    log("sceGuBlendFunc(op=" + op + ", src=" + (normalArgument & 0xF) + ", dst=" + ((normalArgument >> 4) & 0xF) + ")");
+            	}
             	break;
             }
 
@@ -2107,7 +1988,9 @@ public class VideoEngine {
 	        		}*/
 
 	        		gl.glDepthRange(nearZ, farZ);
-	            	log.warn ("sceGuDepthRange("+ nearZ + " ," + farZ + ")");
+	        		if (log.isDebugEnabled()) {
+	        		    log.debug("sceGuDepthRange("+ nearZ + " ," + farZ + ")");
+	        		}
 	            }
 	            break;
 
@@ -2406,16 +2289,36 @@ public class VideoEngine {
             	}
             	break;
 
-           default:
+            case PSUB:
+                patch_div_s =  normalArgument       & 0xFF;
+                patch_div_t = (normalArgument >> 8) & 0xFF;
+                if (log.isDebugEnabled()) {
+                    log(helper.getCommandString(PSUB) + " patch_div_s=" + patch_div_s + ", patch_div_t=" + patch_div_t);
+                }
+                break;
+
+            case BEZIER:
+                int ucount =  normalArgument       & 0xFF;
+                int vcount = (normalArgument >> 8) & 0xFF;
+                if (log.isDebugEnabled()) {
+                    log(helper.getCommandString(BEZIER) + " ucount=" + ucount + ", vcount=" + vcount);
+                }
+
+                loadTexture();
+
+                drawBezier(ucount, vcount);
+                break;
+
+            default:
                 log.warn("Unknown/unimplemented video command [ " + helper.getCommandString(command(instruction)) + " ]");
         }
         commandStatistics[command].end();
     }
 
-    private void bindBuffers(boolean useVertexColor) {
+    private void bindBuffers(boolean useVertexColor, boolean useTexture) {
     	int stride = 0, cpos = 0, npos = 0, vpos = 0;
 
-    	if(vinfo.texture != 0) {
+    	if(vinfo.texture != 0 || useTexture) {
         	gl.glEnableClientState(GL.GL_TEXTURE_COORD_ARRAY);
         	stride += BufferUtil.SIZEOF_FLOAT * 2;
         	cpos = npos = vpos = stride;
@@ -2923,11 +2826,307 @@ public class VideoEngine {
 
             if (texture != null) {
                 texture.setIsLoaded();
+                if (log.isDebugEnabled()) {
+                    log(helper.getCommandString(TFLUSH) + " Loaded texture " + texture.getGlId());
+                }
             }
         } else {
             if (log.isDebugEnabled()) {
                 log(helper.getCommandString(TFLUSH) + " Reusing cached texture " + texture.getGlId());
             }
         }
+    }
+
+    private boolean initRendering() {
+        /*
+         * Defer transformations until primitive rendering
+         */
+        gl.glMatrixMode(GL.GL_PROJECTION);
+        gl.glPushMatrix ();
+        gl.glLoadIdentity();
+
+        if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
+            gl.glLoadMatrixf(proj_uploaded_matrix, 0);
+        else {
+            // 2D mode shouldn't be affected by the depth buffer
+            gl.glOrtho(0.0, 480, 272, 0, -1.0, 1.0);
+            gl.glPushAttrib(GL.GL_DEPTH_BUFFER_BIT);
+            gl.glDepthFunc(GL.GL_ALWAYS);
+        }
+
+        /*
+         * Apply texture transforms
+         */
+        gl.glMatrixMode(GL.GL_TEXTURE);
+        gl.glPushMatrix ();
+        gl.glLoadIdentity();
+        gl.glTranslatef(tex_translate_x, tex_translate_y, 0.f);
+        if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
+            gl.glScalef(tex_scale_x, tex_scale_y, 1.f);
+        else
+            gl.glScalef(1.f / texture_width0, 1.f / texture_height0, 1.f);
+
+        switch (tex_map_mode) {
+            case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV:
+                break;
+
+            case TMAP_TEXTURE_MAP_MODE_TEXTURE_MATRIX:
+                gl.glMultMatrixf (texture_uploaded_matrix, 0);
+                break;
+
+            case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP: {
+
+                // First, setup texture uv generation
+                gl.glTexGeni(GL.GL_S, GL.GL_TEXTURE_GEN_MODE, GL.GL_SPHERE_MAP);
+                gl.glEnable (GL.GL_TEXTURE_GEN_S);
+
+                gl.glTexGeni(GL.GL_T, GL.GL_TEXTURE_GEN_MODE, GL.GL_SPHERE_MAP);
+                gl.glEnable (GL.GL_TEXTURE_GEN_T);
+
+                // Setup also texture matrix
+                gl.glMultMatrixf (tex_envmap_matrix, 0);
+                break;
+            }
+
+            default:
+                log ("Unhandled texture matrix mode " + tex_map_mode);
+        }
+
+        /*
+         * Apply view matrix
+         */
+        gl.glMatrixMode(GL.GL_MODELVIEW);
+        gl.glPushMatrix ();
+        gl.glLoadIdentity();
+
+        if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
+            gl.glLoadMatrixf(view_uploaded_matrix, 0);
+
+        /*
+         *  Setup lights on when view transformation is set up
+         */
+        gl.glLightfv(GL.GL_LIGHT0, GL.GL_POSITION, light_pos[0], 0);
+        gl.glLightfv(GL.GL_LIGHT1, GL.GL_POSITION, light_pos[1], 0);
+        gl.glLightfv(GL.GL_LIGHT2, GL.GL_POSITION, light_pos[2], 0);
+        gl.glLightfv(GL.GL_LIGHT3, GL.GL_POSITION, light_pos[3], 0);
+
+        // Apply model matrix
+        if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
+            gl.glMultMatrixf(model_uploaded_matrix, 0);
+
+        boolean useVertexColor = false;
+        if(!lighting) {
+            gl.glDisable(GL.GL_COLOR_MATERIAL);
+            if(vinfo.color != 0) {
+                useVertexColor = true;
+            } else {
+                gl.glColor4fv(mat_ambient, 0);
+            }
+        } else if (vinfo.color != 0 && mat_flags != 0) {
+            useVertexColor = true;
+            int flags = 0;
+            // TODO : Can't emulate this properly right now since we can't mix the properties like we want
+            if((mat_flags & 1) != 0 && (mat_flags & 2) != 0)
+                flags = GL.GL_AMBIENT_AND_DIFFUSE;
+            else if((mat_flags & 1) != 0) flags = GL.GL_AMBIENT;
+            else if((mat_flags & 2) != 0) flags = GL.GL_DIFFUSE;
+            else if((mat_flags & 4) != 0) flags = GL.GL_SPECULAR;
+            gl.glColorMaterial(GL.GL_FRONT_AND_BACK, flags);
+            gl.glEnable(GL.GL_COLOR_MATERIAL);
+        } else {
+            gl.glDisable(GL.GL_COLOR_MATERIAL);
+            gl.glMaterialfv(GL.GL_FRONT, GL.GL_AMBIENT, mat_ambient, 0);
+            gl.glMaterialfv(GL.GL_FRONT, GL.GL_DIFFUSE, mat_diffuse, 0);
+            gl.glMaterialfv(GL.GL_FRONT, GL.GL_SPECULAR, mat_specular, 0);
+        }
+
+        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, tex_wrap_s);
+        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, tex_wrap_t);
+
+        return useVertexColor;
+    }
+
+    private void endRendering(boolean useVertexColor) {
+        switch (tex_map_mode) {
+            case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP: {
+                gl.glDisable (GL.GL_TEXTURE_GEN_S);
+                gl.glDisable (GL.GL_TEXTURE_GEN_T);
+                break;
+            }
+        }
+
+        gl.glDisableClientState(GL.GL_VERTEX_ARRAY);
+        if(vinfo.texture != 0) gl.glDisableClientState(GL.GL_TEXTURE_COORD_ARRAY);
+        if(useVertexColor) gl.glDisableClientState(GL.GL_COLOR_ARRAY);
+        if(vinfo.normal != 0) gl.glDisableClientState(GL.GL_NORMAL_ARRAY);
+
+        gl.glPopMatrix  ();
+        gl.glMatrixMode (GL.GL_TEXTURE);
+        gl.glPopMatrix  ();
+        gl.glMatrixMode (GL.GL_PROJECTION);
+        gl.glPopMatrix  ();
+        gl.glMatrixMode (GL.GL_MODELVIEW);
+
+        if(transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD)
+            gl.glPopAttrib();
+    }
+
+    private void drawBezier(int ucount, int vcount) {
+        if (ucount != 4 && vcount != 4) {
+            log.warn("Unsupported Bezier parameters");
+            return;
+        }
+
+        boolean useVertexColor = initRendering();
+
+        VertexState[][] anchors = new VertexState[ucount][vcount];
+        Memory mem = Memory.getInstance();
+        for (int u = 0; u < ucount; u++) {
+            for (int v = 0; v < vcount; v++) {
+                int addr = vinfo.getAddress(mem, u * vcount + v);
+                VertexState vs = vinfo.readVertex(mem, addr);
+                if (log.isDebugEnabled()) {
+                    log("drawBezier  vertex#" + u + "," + v + " (" + ((float) vs.t[0]) + "," + ((float) vs.t[1]) + ") at (" + ((float) vs.p[0]) + "," + ((float) vs.p[1]) + "," + ((int) vs.p[2]) + ")");
+                }
+                anchors[u][v] = vs;
+            }
+        }
+
+        int udivs = patch_div_s;
+        int vdivs = patch_div_t;
+
+        //
+        // Based on
+        //    http://nehe.gamedev.net/data/lessons/lesson.asp?lesson=28
+        //
+        // TODO Check this behavior:
+        //  - X & Y coordinates seems to be swapped. Currently only if vinfo.texture != 0, is this correct?
+        //  - (Y,X) has to be mapped to (1-Y,1-X) so that the texture is displayed like on PSP
+        //
+        VertexState[] temp = new VertexState[ucount];
+        for (int i = 0; i < temp.length; i++) {
+            temp[i] = new VertexState();
+        }
+        VertexState[] last = new VertexState[vdivs + 1];
+        for (int i = 0; i < last.length; i++) {
+            last[i] = new VertexState();
+        }
+
+        // The First Derived Curve (Along X-Axis)
+        for (int u = 0; u < ucount; u++) {
+            pointCopy(temp[u], anchors[u][vcount - 1]);
+        }
+
+        // Create The First Line Of Points
+        for (int v = 0; v <= vdivs; v++) {
+            // Percent Along Y-Axis
+            float px = ((float) v) / ((float) vdivs);
+            // Use The 4 Points From The Derived Curve To Calculate The Points Along That Curve
+            Bernstein(last[v], px, temp);
+        }
+
+        bindBuffers(useVertexColor, true);
+
+        float pyold = 0;
+        for (int u = 1; u <= udivs; u++) {
+            // Percent Along Y-Axis
+            float py = ((float) u) / ((float) udivs);
+
+            // Calculate New Bezier Points
+            for (int i = 0; i < ucount; i++) {
+                 Bernstein(temp[i], py, anchors[i]);
+            }
+
+            vboBuffer.clear();
+
+            for (int v = 0; v <= vdivs; v++) {
+                // Percent Along The X-Axis
+                float px = ((float) v) / ((float) vdivs);
+
+                // Apply The Old Texture Coords
+                if (vinfo.texture != 0) {
+                    vboBuffer.put(last[v].t);
+                } else {
+                    vboBuffer.put(1 - pyold);
+                    vboBuffer.put(1 - px);
+                }
+                // Old Point
+                vboBuffer.put(last[v].p);
+
+                // Generate New Point
+                Bernstein(last[v], px, temp);
+
+                // Apply The New Texture Coords
+                if (vinfo.texture != 0) {
+                    vboBuffer.put(last[v].t);
+                } else {
+                    vboBuffer.put(1 - py);
+                    vboBuffer.put(1 - px);
+                }
+                // New Point
+                vboBuffer.put(last[v].p);
+            }
+
+            if(useVBO) {
+                gl.glBufferData(GL.GL_ARRAY_BUFFER, vboBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboBuffer.rewind(), GL.GL_STREAM_DRAW);
+            }
+            gl.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, (vdivs + 1) * 2);
+
+            pyold = py;
+        }
+
+        endRendering(useVertexColor);
+    }
+
+    private void pointAdd(VertexState result, VertexState p, VertexState q) {
+        result.p[0] = p.p[0] + q.p[0];
+        result.p[1] = p.p[1] + q.p[1];
+        result.p[2] = p.p[2] + q.p[2];
+        if (vinfo.texture != 0) {
+            result.t[0] = p.t[0] + q.t[0];
+            result.t[1] = p.t[1] + q.t[1];
+        }
+    }
+
+    private void pointTimes(VertexState result, float c, VertexState p) {
+        result.p[0] = p.p[0] * c;
+        result.p[1] = p.p[1] * c;
+        result.p[2] = p.p[2] * c;
+        if (vinfo.texture != 0) {
+            result.t[0] = p.t[0] * c;
+            result.t[1] = p.t[1] * c;
+        }
+    }
+
+    private void pointCopy(VertexState result, VertexState p) {
+        result.p[0] = p.p[0];
+        result.p[1] = p.p[1];
+        result.p[2] = p.p[2];
+        if (vinfo.texture != 0) {
+            result.t[0] = p.t[0];
+            result.t[1] = p.t[1];
+        }
+    }
+
+    // Temporary variables for Bernstein()
+    private VertexState bernsteinA = new VertexState();
+    private VertexState bernsteinB = new VertexState();
+    private VertexState bernsteinC = new VertexState();
+    private VertexState bernsteinD = new VertexState();
+
+    private void Bernstein(VertexState result, float u, VertexState[] p) {
+        float uPow2 = u * u;
+        float uPow3 = uPow2 * u;
+        float u1 = 1 - u;
+        float u1Pow2 = u1 * u1;
+        float u1Pow3 = u1Pow2 * u1;
+        pointTimes(bernsteinA, uPow3,      p[0]);
+        pointTimes(bernsteinB, 3*uPow2*u1, p[1]);
+        pointTimes(bernsteinC, 3*u*u1Pow2, p[2]);
+        pointTimes(bernsteinD, u1Pow3,     p[3]);
+
+        pointAdd(bernsteinA, bernsteinA, bernsteinB);
+        pointAdd(bernsteinC, bernsteinC, bernsteinD);
+        pointAdd(result, bernsteinA, bernsteinC);
     }
 }
