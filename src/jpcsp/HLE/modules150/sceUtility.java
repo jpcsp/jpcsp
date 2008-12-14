@@ -78,9 +78,17 @@ public class sceUtility implements HLEModule {
 			mm.addFunction(sceUtilityCheckNetParamFunction, 0x5EEE6548);
 			mm.addFunction(sceUtilityGetNetParamFunction, 0x434D4B3A);
 
+            gamesharing_status = PSP_UTILITY_ERROR_NOT_INITED;
+            netplaydialog_status = PSP_UTILITY_ERROR_NOT_INITED;
+            netconf_status = PSP_UTILITY_ERROR_NOT_INITED;
+
+            savedata_status = PSP_UTILITY_ERROR_NOT_INITED;
+            savedata_mode = -1;
+
+            msgdialog_status = PSP_UTILITY_ERROR_NOT_INITED;
             msgdialog_params = null;
-            msgdialog_status = PSP_UTILITY_DIALOG_NONE;
-            savedata_status = SCE_UTILITY_SAVEDATA_ERROR_NOT_INITED;
+
+            osk_status = PSP_UTILITY_ERROR_NOT_INITED;
 		}
 	}
 
@@ -148,13 +156,13 @@ public class sceUtility implements HLEModule {
     public static final int PSP_SYSTEMPARAM_LANGUAGE_CHINESE_TRADITIONAL = 10;
     public static final int PSP_SYSTEMPARAM_LANGUAGE_CHINESE_SIMPLIFIED = 11;
 
+    public static final int PSP_UTILITY_ERROR_NOT_INITED = 0x80110005; // might not be correct name
+
     public static final int PSP_NETPARAM_ERROR_BAD_NETCONF = 0x80110601;
     public static final int PSP_NETPARAM_ERROR_BAD_PARAM = 0x80110604;
 
     /* save-load error codes */
     public static final int SCE_UTILITY_SAVEDATA_ERROR_TYPE = 0x80110300;
-
-    public static final int SCE_UTILITY_SAVEDATA_ERROR_NOT_INITED = 0x80110005; // might not be correct name
 
     public static final int SCE_UTILITY_SAVEDATA_ERROR_LOAD_NO_MS = 0x80110301;
     public static final int SCE_UTILITY_SAVEDATA_ERROR_LOAD_EJECT_MS = 0x80110302;
@@ -197,8 +205,19 @@ public class sceUtility implements HLEModule {
     public static final int PSP_UTILITY_DIALOG_QUIT = 3;
     public static final int PSP_UTILITY_DIALOG_FINISHED = 4;
 
-    private SceUtilityMsgDialogParams msgdialog_params;
-    private int msgdialog_status;
+
+    protected int gamesharing_status;
+    protected int netplaydialog_status;
+    protected int netconf_status;
+
+    protected int savedata_status;
+    protected int savedata_mode; //hacky should be done better
+
+    protected int msgdialog_status;
+    protected SceUtilityMsgDialogParams msgdialog_params;
+
+    protected int osk_status;
+
 
 	public void sceUtilityGameSharingInitStart(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
@@ -210,7 +229,7 @@ public class sceUtility implements HLEModule {
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceUtilityGameSharingInitStart [0xC492F751]");
+		Modules.log.warn("Unimplemented NID function sceUtilityGameSharingInitStart [0xC492F751]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -227,7 +246,7 @@ public class sceUtility implements HLEModule {
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceUtilityGameSharingShutdownStart [0xEFC6F80F]");
+		Modules.log.warn("Unimplemented NID function sceUtilityGameSharingShutdownStart [0xEFC6F80F]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -244,7 +263,7 @@ public class sceUtility implements HLEModule {
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceUtilityGameSharingUpdate [0x7853182D]");
+		Modules.log.warn("Unimplemented NID function sceUtilityGameSharingUpdate [0x7853182D]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -261,9 +280,9 @@ public class sceUtility implements HLEModule {
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceUtilityGameSharingGetStatus [0x946963F3]");
+		Modules.log.warn("Unimplemented NID function sceUtilityGameSharingGetStatus [0x946963F3]");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		cpu.gpr[2] = gamesharing_status;
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
@@ -278,7 +297,7 @@ public class sceUtility implements HLEModule {
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceNetplayDialogInitStart [0x3AD50AE7]");
+		Modules.log.warn("Unimplemented NID function sceNetplayDialogInitStart [0x3AD50AE7]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -295,7 +314,7 @@ public class sceUtility implements HLEModule {
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceNetplayDialogShutdownStart [0xBC6B6296]");
+		Modules.log.warn("Unimplemented NID function sceNetplayDialogShutdownStart [0xBC6B6296]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -312,7 +331,7 @@ public class sceUtility implements HLEModule {
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceNetplayDialogUpdate [0x417BED54]");
+		Modules.log.warn("Unimplemented NID function sceNetplayDialogUpdate [0x417BED54]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -329,9 +348,9 @@ public class sceUtility implements HLEModule {
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceNetplayDialogGetStatus [0xB6CEE597]");
+		Modules.log.warn("Unimplemented NID function sceNetplayDialogGetStatus [0xB6CEE597]");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		cpu.gpr[2] = netplaydialog_status;
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
@@ -346,7 +365,7 @@ public class sceUtility implements HLEModule {
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceUtilityNetconfInitStart [0x4DB1E739]");
+		Modules.log.warn("Unimplemented NID function sceUtilityNetconfInitStart [0x4DB1E739]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -363,7 +382,7 @@ public class sceUtility implements HLEModule {
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceUtilityNetconfShutdownStart [0xF88155F6]");
+		Modules.log.warn("Unimplemented NID function sceUtilityNetconfShutdownStart [0xF88155F6]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -380,7 +399,7 @@ public class sceUtility implements HLEModule {
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceUtilityNetconfUpdate [0x91E70E35]");
+		Modules.log.warn("Unimplemented NID function sceUtilityNetconfUpdate [0x91E70E35]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -397,15 +416,12 @@ public class sceUtility implements HLEModule {
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceUtilityNetconfGetStatus [0x6332AA39]");
+		Modules.log.warn("Unimplemented NID function sceUtilityNetconfGetStatus [0x6332AA39]");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		cpu.gpr[2] = netconf_status;
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
-
-    private int savedata_status;
-    private int savedata_mode = 0; //hacky should be done better
 
     // SceUtilitySavedataParam
     public void sceUtilitySavedataInitStart(Processor processor) {
@@ -523,7 +539,7 @@ public class sceUtility implements HLEModule {
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceUtilitySavedataUpdate [0xD4B95FFB]");
+		Modules.log.warn("Unimplemented NID function sceUtilitySavedataUpdate [0xD4B95FFB]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -553,7 +569,7 @@ public class sceUtility implements HLEModule {
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceUtility_2995D020 [0x2995D020]");
+		Modules.log.warn("Unimplemented NID function sceUtility_2995D020 [0x2995D020]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -570,7 +586,7 @@ public class sceUtility implements HLEModule {
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceUtility_B62A4061 [0xB62A4061]");
+		Modules.log.warn("Unimplemented NID function sceUtility_B62A4061 [0xB62A4061]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -587,7 +603,7 @@ public class sceUtility implements HLEModule {
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceUtility_ED0FAD38 [0xED0FAD38]");
+		Modules.log.warn("Unimplemented NID function sceUtility_ED0FAD38 [0xED0FAD38]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -604,7 +620,7 @@ public class sceUtility implements HLEModule {
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceUtility_88BC7406 [0x88BC7406]");
+		Modules.log.warn("Unimplemented NID function sceUtility_88BC7406 [0x88BC7406]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -663,7 +679,7 @@ public class sceUtility implements HLEModule {
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceUtilityMsgDialogUpdate [0x95FC253B]");
+		Modules.log.warn("Unimplemented NID function sceUtilityMsgDialogUpdate [0x95FC253B]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -693,7 +709,7 @@ public class sceUtility implements HLEModule {
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceUtilityOskInitStart [0xF6269B82]");
+		Modules.log.warn("Unimplemented NID function sceUtilityOskInitStart [0xF6269B82]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -710,7 +726,7 @@ public class sceUtility implements HLEModule {
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceUtilityOskShutdownStart [0x3DFAEBA9]");
+		Modules.log.warn("Unimplemented NID function sceUtilityOskShutdownStart [0x3DFAEBA9]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -727,7 +743,7 @@ public class sceUtility implements HLEModule {
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceUtilityOskUpdate [0x4B85C861]");
+		Modules.log.warn("Unimplemented NID function sceUtilityOskUpdate [0x4B85C861]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -744,9 +760,9 @@ public class sceUtility implements HLEModule {
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceUtilityOskGetStatus [0xF3F76017]");
+		Modules.log.warn("Unimplemented NID function sceUtilityOskGetStatus [0xF3F76017]");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+		cpu.gpr[2] = osk_status;
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
@@ -761,7 +777,7 @@ public class sceUtility implements HLEModule {
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceUtilitySetSystemParamInt [0x45C18506]");
+		Modules.log.warn("Unimplemented NID function sceUtilitySetSystemParamInt [0x45C18506]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -778,7 +794,7 @@ public class sceUtility implements HLEModule {
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceUtilitySetSystemParamString [0x41E30674]");
+		Modules.log.warn("Unimplemented NID function sceUtilitySetSystemParamString [0x41E30674]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -880,7 +896,7 @@ public class sceUtility implements HLEModule {
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceUtilityGetNetParam [0x434D4B3A]");
+		Modules.log.warn("Unimplemented NID function sceUtilityGetNetParam [0x434D4B3A]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
