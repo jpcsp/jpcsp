@@ -247,14 +247,15 @@ public class UmdIsoReader {
             //
             // Direct sector access on UMD is using the following file name syntax:
             //     sce_lbnSSSS_sizeLLLL
-            // where SSSS is the index of the first sector
-            //       LLLL is the length in bytes
+            // where SSSS is the index of the first sector (in base 16)
+            //       LLLL is the length in bytes (in base 16)
             // E.g.
             //       disc0:/sce_lbn0x5fa0_size0x1428
+            //       disc0:/sce_lbn7050_sizeee850
             //
     		filePath = filePath.substring(7);
     		int sep = filePath.indexOf("_size");
-    		fileStart = (int) Utilities.parseLong(filePath.substring(0, sep));
+    		fileStart = (int) Utilities.parseHexLong(filePath.substring(0, sep));
     		fileLength = Utilities.parseLong(filePath.substring(sep + 5));
 
     		if (fileStart < 0 || fileStart >= numSectors) {

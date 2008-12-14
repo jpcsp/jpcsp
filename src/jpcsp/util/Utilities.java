@@ -232,6 +232,15 @@ public class Utilities {
     	return address;
     }
 
+
+    /**
+     * Parse the string as a number and returns its value.
+     * If the string starts with "0x", the number is parsed
+     * in base 16, otherwise base 10.
+     * 
+     * @param s the string to be parsed
+     * @return the numeric value represented by the string.
+     */
     public static long parseLong(String s)
     {
     	long value = 0;
@@ -247,6 +256,30 @@ public class Utilities {
     	}
 
     	return value;
+    }
+
+    /**
+     * Parse the string as a number and returns its value.
+     * The number is always parsed in base 16.
+     * The string can start as an option with "0x".
+     * 
+     * @param s the string to be parsed in base 16
+     * @return the numeric value represented by the string.
+     */
+    public static long parseHexLong(String s)
+    {
+        long value = 0;
+
+        if (s == null) {
+            return value;
+        }
+
+        if (s.startsWith("0x")) {
+            s = s.substring(2);
+        }
+        value = Long.parseLong(s, 16);
+
+        return value;
     }
 
     public static int makePow2(int n) {
