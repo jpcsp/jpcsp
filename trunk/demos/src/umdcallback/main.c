@@ -17,7 +17,8 @@ PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 
 int sceUmdGetErrorStat();
 int sceUmdGetDriveStat();
-int sceUmdRegisterUMDCallback(int cbid);
+int sceUmdRegisterUMDCallBack(int cbid);
+int sceUmdWaitDriveStatCB(int stat, int *timeout);
 
 int CallbackThread(SceSize args, void *argp);
 int SetupCallbacks(void);
@@ -76,7 +77,7 @@ int main(int argc, char *argv[])
 
     {
         int cbid = sceKernelCreateCallback("UMD Callback", umd_callback, (void*)0x34343434);
-        sceUmdRegisterUMDCallback(cbid);
+        sceUmdRegisterUMDCallBack(cbid);
     }
 
     while(!done)
@@ -102,8 +103,8 @@ int main(int argc, char *argv[])
             result = sceUmdActivate(1, "disc0:");
             printf("sceUmdActivate result %08x\n", result);
 
-            //result = sceUmdWaitDriveStatCB(0x20); // umd in
-            result = sceUmdWaitDriveStatCB(0x1); // umd not in
+            //result = sceUmdWaitDriveStatCB(0x20, NULL); // umd in
+            result = sceUmdWaitDriveStatCB(0x1, NULL); // umd not in
             printf("sceUmdWaitDriveStatCB result %08x\n", result);
         }
 
@@ -162,7 +163,7 @@ int CallbackThread(SceSize args, void *argp)
     sceKernelRegisterExitCallback(cbid);
 
     //cbid = sceKernelCreateCallback("UMD Callback", umd_callback, (void*)0x34343434);
-    //sceUmdRegisterUMDCallback(cbid);
+    //sceUmdRegisterUMDCallBack(cbid);
 
     sceKernelSleepThreadCB();
 
