@@ -1381,32 +1381,138 @@ public class VfpuState extends FpuState {
 
     // VFPU6:VHTFM2
     public void doVHTFM2(int vd, int vs, int vt) {
-        doUNK("Unimplemented VHTFM2 instruction");
+        // not sure :(
+        float dot0;
+        float dot1;
+        loadVt(1, vt);
+        loadVs(2, vs + 0);
+        dot0 = v1[0] * v2[0];
+        dot1 = v1[1] * v2[0];
+        loadVs(2, vs + 1);
+        v3[0] = dot0 + v1[0];
+        v3[1] = dot1 + v1[1];
+        saveVd(2, vd, v3);
     }
 
     // VFPU6:VTFM2
     public void doVTFM2(int vd, int vs, int vt) {
-        doUNK("Unimplemented VTFM2 instruction");
+        // not sure :(
+        float dot0;
+        float dot1;
+        loadVt(2, vt);
+        loadVs(2, vs + 0);
+        dot0 = v1[0] * v2[0];
+        dot1 = v1[1] * v2[0];
+        loadVs(2, vs + 1);
+        v3[0] = dot0 + v1[0] * v2[1];
+        v3[1] = dot1 + v1[1] * v2[1];
+        saveVd(2, vd, v3);
     }
 
     // VFPU6:VHTFM3
     public void doVHTFM3(int vd, int vs, int vt) {
-        doUNK("Unimplemented VHTFM3 instruction");
+        // not sure :(
+        float dot0;
+        float dot1;
+        float dot2;
+        loadVt(2, vt);
+        loadVs(3, vs + 0);
+        dot0 = v1[0] * v2[0];
+        dot1 = v1[1] * v2[0];
+        dot2 = v1[2] * v2[0];
+        loadVs(3, vs + 1);
+        dot0 += v1[0] * v2[1];
+        dot1 += v1[1] * v2[1];
+        dot2 += v1[2] * v2[1];
+        loadVs(3, vs + 2);
+        v3[0] = dot0 + v1[0];
+        v3[1] = dot1 + v1[1];
+        v3[2] = dot2 + v1[2];
+        saveVd(3, vd, v3);
     }
 
     // VFPU6:VTFM3
     public void doVTFM3(int vd, int vs, int vt) {
-        doUNK("Unimplemented VTFM3 instruction");
+        // not sure :(
+        float dot0;
+        float dot1;
+        float dot2;
+        loadVt(3, vt);
+        loadVs(3, vs + 0);
+        dot0 = v1[0] * v2[0];
+        dot1 = v1[1] * v2[0];
+        dot2 = v1[2] * v2[0];
+        loadVs(3, vs + 1);
+        dot0 += v1[0] * v2[1];
+        dot1 += v1[1] * v2[1];
+        dot2 += v1[2] * v2[1];
+        loadVs(3, vs + 2);
+        v3[0] = dot0 + v1[0] * v2[2];
+        v3[1] = dot1 + v1[1] * v2[2];
+        v3[2] = dot2 + v1[2] * v2[2];
+        saveVd(3, vd, v3);
     }
 
     // VFPU6:VHTFM4
     public void doVHTFM4(int vd, int vs, int vt) {
-        doUNK("Unimplemented VHTFM4 instruction");
+        // not sure :(
+        float dot0;
+        float dot1;
+        float dot2;
+        float dot3;
+        loadVt(3, vt);
+        loadVs(4, vs + 0);
+        dot0 = v1[0] * v2[0];
+        dot1 = v1[1] * v2[0];
+        dot2 = v1[2] * v2[0];
+        dot3 = v1[3] * v2[0];
+        loadVs(4, vs + 1);
+        dot0 += v1[0] * v2[1];
+        dot1 += v1[1] * v2[1];
+        dot2 += v1[2] * v2[1];
+        dot3 += v1[3] * v2[1];
+        loadVs(4, vs + 2);
+        dot0 += v1[0] * v2[2];
+        dot1 += v1[1] * v2[2];
+        dot2 += v1[2] * v2[2];
+        dot3 += v1[3] * v2[2];
+        loadVs(4, vs + 3);
+        v3[0] = dot0 + v1[0];
+        v3[1] = dot1 + v1[1];
+        v3[2] = dot2 + v1[2];
+        v3[3] = dot3 + v1[3];
+        saveVd(4, vd, v3);
     }
 
     // VFPU6:VTFM4
     public void doVTFM4(int vd, int vs, int vt) {
-        doUNK("Unimplemented VTFM4 instruction");
+        // not sure :(
+        float dot0;
+        float dot1;
+        float dot2;
+        float dot3;
+        loadVt(4, vt);
+        loadVs(4, vs + 0);
+        dot0 = v1[0] * v2[0];
+        dot1 = v1[1] * v2[0];
+        dot2 = v1[2] * v2[0];
+        dot3 = v1[3] * v2[0];
+        loadVs(4, vs + 1);
+        dot0 += v1[0] * v2[1];
+        dot1 += v1[1] * v2[1];
+        dot2 += v1[2] * v2[1];
+        dot3 += v1[3] * v2[1];
+        loadVs(4, vs + 2);
+        dot0 += v1[0] * v2[2];
+        dot1 += v1[1] * v2[2];
+        dot2 += v1[2] * v2[2];
+        dot3 += v1[3] * v2[2];
+        loadVs(4, vs + 3);
+        v3[0] = dot0 + v1[0] * v2[3];
+        v3[1] = dot1 + v1[1] * v2[3];
+        v3[2] = dot2 + v1[2] * v2[3];
+        v3[3] = dot3 + v1[3] * v2[3];
+        saveVd(4, vd, v3);
     }
 
     // VFPU6:VMSCL
@@ -1421,12 +1527,12 @@ public class VfpuState extends FpuState {
     	loadVs(4, vs);
     	loadVt(4, vt);
 
-	    v3[0] = +v1[0] * v2[3] + v1[1] * v2[2] - v1[2] * v2[1] + v1[3] * v2[0];
-		v3[1] = -v1[0] * v2[2] + v1[1] * v2[3] + v1[2] * v2[0] + v1[3] * v2[1];
-		v3[2] = +v1[0] * v2[1] - v1[1] * v2[0] + v1[2] * v2[3] + v1[3] * v2[2];
-		v3[3] = -v1[0] * v2[0] - v1[1] * v2[1] - v1[2] * v2[2] + v1[3] * v2[3];
+        v3[0] = +v1[0] * v2[3] + v1[1] * v2[2] - v1[2] * v2[1] + v1[3] * v2[0];
+        v3[1] = -v1[0] * v2[2] + v1[1] * v2[3] + v1[2] * v2[0] + v1[3] * v2[1];
+        v3[2] = +v1[0] * v2[1] - v1[1] * v2[0] + v1[2] * v2[3] + v1[3] * v2[2];
+        v3[3] = -v1[0] * v2[0] - v1[1] * v2[1] - v1[2] * v2[2] + v1[3] * v2[3];
 	
-	    saveVd(4, vd, v3);
+        saveVd(4, vd, v3);
     }
 
     // VFPU6:VMMOV
