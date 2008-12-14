@@ -995,8 +995,9 @@ public class pspiofilemgr {
                         mode |= attr << 8;
 
                         stat = new SceIoStat(mode, attr, size,
-                            new ScePspDateTime(timestamp), new ScePspDateTime(0),
-                            new ScePspDateTime(timestamp));
+                            ScePspDateTime.fromUnixTime(timestamp),
+                            ScePspDateTime.fromUnixTime(0),
+                            ScePspDateTime.fromUnixTime(timestamp));
                         if (startSector > 0) {
                             stat.setReserved(0, startSector);
                         }
@@ -1027,8 +1028,9 @@ public class pspiofilemgr {
 
                     // Java can't see file create/access time
                     stat = new SceIoStat(mode, attr, size,
-                        new ScePspDateTime(0), new ScePspDateTime(0),
-                        new ScePspDateTime(mtime));
+                        ScePspDateTime.fromUnixTime(0),
+                        ScePspDateTime.fromUnixTime(0),
+                        ScePspDateTime.fromUnixTime(mtime));
                 }
             }
         }

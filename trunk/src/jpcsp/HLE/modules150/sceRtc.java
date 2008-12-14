@@ -124,25 +124,29 @@ public class sceRtc implements HLEModule {
 		}
 	}
 
+    protected long hleGetCurrentTick() {
+        return System.currentTimeMillis() * 1000L;
+    }
 
-	public void sceRtcGetTickResolution(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
+    public void sceRtcGetTickResolution(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
 
-		Memory mem = Processor.memory;
+        Memory mem = Processor.memory;
 
-		cpu.gpr[2] = 1000000;
-	}
+        // resolution = micro seconds
+        cpu.gpr[2] = 1000000;
+    }
 
-	public void sceRtcGetCurrentTick(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		//////Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+    public void sceRtcGetCurrentTick(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        //////Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
 
         int addr = cpu.gpr[4];
-        mem.write64(addr, System.currentTimeMillis() * 1000);
+        mem.write64(addr, hleGetCurrentTick());
 
-		cpu.gpr[2] = 0;
-	}
+        cpu.gpr[2] = 0;
+    }
 
 	public void sceRtcGetAccumulativeTime(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
@@ -154,7 +158,7 @@ public class sceRtc implements HLEModule {
 
 
 
-		System.out.println("Unimplemented NID function sceRtcGetAccumulativeTime [0x011F03C1]");
+		Modules.log.warn("Unimplemented NID function sceRtcGetAccumulativeTime [0x011F03C1]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -171,7 +175,7 @@ public class sceRtc implements HLEModule {
 
 
 
-		System.out.println("Unimplemented NID function sceRtc_029CA3B3 [0x029CA3B3]");
+		Modules.log.warn("Unimplemented NID function sceRtc_029CA3B3 [0x029CA3B3]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -188,7 +192,7 @@ public class sceRtc implements HLEModule {
 
 
 
-		System.out.println("Unimplemented NID function sceRtcGetCurrentClock [0x4CFA57B0]");
+		Modules.log.warn("Unimplemented NID function sceRtcGetCurrentClock [0x4CFA57B0]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -298,7 +302,7 @@ public class sceRtc implements HLEModule {
 
 
 
-		System.out.println("Unimplemented NID function sceRtcCheckValid [0x4B1B5E82]");
+		Modules.log.warn("Unimplemented NID function sceRtcCheckValid [0x4B1B5E82]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -315,7 +319,7 @@ public class sceRtc implements HLEModule {
 
 
 
-		System.out.println("Unimplemented NID function sceRtcSetTime_t [0x3A807CC8]");
+		Modules.log.warn("Unimplemented NID function sceRtcSetTime_t [0x3A807CC8]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -329,15 +333,15 @@ public class sceRtc implements HLEModule {
 
         /* put your own code here instead */
 
-        int date_addr = cpu.gpr[4] & 0x3fffffff;
-        int time_addr = cpu.gpr[5] & 0x3fffffff;
+        int date_addr = cpu.gpr[4];
+        int time_addr = cpu.gpr[5];
 
         if (mem.isAddressGood(date_addr) && mem.isAddressGood(time_addr)) {
             ScePspDateTime dateTime = new ScePspDateTime();
             dateTime.read(mem, date_addr);
             Calendar cal = Calendar.getInstance();
             cal.set(dateTime.year, dateTime.month - 1, dateTime.day, dateTime.hour, dateTime.minute, dateTime.second);
-            int unixtime = (int)(cal.getTime().getTime() / 1000);
+            int unixtime = (int)(cal.getTime().getTime() / 1000L);
             Modules.log.debug("sceRtcGetTime_t psptime:" + dateTime + " unixtime:" + unixtime);
             mem.write32(time_addr, unixtime);
             cpu.gpr[2] = 0;
@@ -357,7 +361,7 @@ public class sceRtc implements HLEModule {
 
 
 
-		System.out.println("Unimplemented NID function sceRtcSetDosTime [0xF006F264]");
+		Modules.log.warn("Unimplemented NID function sceRtcSetDosTime [0xF006F264]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -374,7 +378,7 @@ public class sceRtc implements HLEModule {
 
 
 
-		System.out.println("Unimplemented NID function sceRtcGetDosTime [0x36075567]");
+		Modules.log.warn("Unimplemented NID function sceRtcGetDosTime [0x36075567]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -391,7 +395,7 @@ public class sceRtc implements HLEModule {
 
 
 
-		System.out.println("Unimplemented NID function sceRtcSetWin32FileTime [0x7ACE4C04]");
+		Modules.log.warn("Unimplemented NID function sceRtcSetWin32FileTime [0x7ACE4C04]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -408,220 +412,187 @@ public class sceRtc implements HLEModule {
 
 
 
-		System.out.println("Unimplemented NID function sceRtcGetWin32FileTime [0xCF561893]");
+		Modules.log.warn("Unimplemented NID function sceRtcGetWin32FileTime [0xCF561893]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
 
 	}
 
-	public void sceRtcSetTick(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		//////Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+    /** Set a pspTime struct based on ticks. */
+    public void sceRtcSetTick(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        //////Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+        int time_addr = cpu.gpr[4];
+        int ticks_addr = cpu.gpr[5];
 
+        Modules.log.debug("sceRtcSetTick");
 
+        if (mem.isAddressGood(time_addr) && mem.isAddressGood(ticks_addr)) {
+            long ticks = mem.read64(ticks_addr);
+            ScePspDateTime time = ScePspDateTime.fromMicros(ticks);
+            time.write(mem, time_addr);
+            cpu.gpr[2] = 0;
+        } else {
+            Modules.log.warn("sceRtcSetTick bad address "
+                + String.format("0x%08X 0x%08X", time_addr, ticks_addr));
+            cpu.gpr[2] = -1;
+        }
+    }
 
+    /** Set ticks based on a pspTime struct. */
+    public void sceRtcGetTick(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        //////Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
 
-		System.out.println("Unimplemented NID function sceRtcSetTick [0x7ED29E40]");
+        int time_addr = cpu.gpr[4];
+        int ticks_addr = cpu.gpr[5];
 
-		cpu.gpr[2] = 0xDEADC0DE;
+        Modules.log.warn("UNIMPLEMENTED:sceRtcGetTick");
 
+        if (mem.isAddressGood(time_addr) && mem.isAddressGood(ticks_addr)) {
+            /* TODO use java library to convert a date to seconds, then just multiply it by the tick resolution
+            ScePspDateTime time = new ScePspDateTime();
+            time.read(mem, time_addr);
+            long ticks = ...
+            mem.write64(ticks_addr, ticks);
+            cpu.gpr[2] = 0;
+            */
+            cpu.gpr[2] = -1;
+        } else {
+            Modules.log.warn("sceRtcGetTick bad address "
+                + String.format("0x%08X 0x%08X", time_addr, ticks_addr));
+            cpu.gpr[2] = -1;
+        }
+    }
 
-	}
+    public void sceRtcCompareTick(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        //////Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
 
-	public void sceRtcGetTick(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		//////Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-
-
-
-		System.out.println("Unimplemented NID function sceRtcGetTick [0x6FF40ACC]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-
-	}
-
-	public void sceRtcCompareTick(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		//////Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		int first = cpu.gpr[4];
+        int first = cpu.gpr[4];
         int second = cpu.gpr[5];
 
         Modules.log.debug("sceRtcCompareTick");
 
-        long tick1 = mem.read64(first);
-        long tick2 = mem.read64(second);
-
-        if (tick1 == tick2)
-        	cpu.gpr[2] = 0;
-        else if (tick1 < tick2)
-        	cpu.gpr[2] = -1;
-        else if (tick1 > tick2)
-        	cpu.gpr[2] = 1;
-	}
-
-	public void sceRtcTickAddTicks(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		//////Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-
-
-
-		System.out.println("Unimplemented NID function sceRtcTickAddTicks [0x44F45E05]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-
-	}
-
-	public void sceRtcTickAddMicroseconds(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		//////Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-
-
-
-		System.out.println("Unimplemented NID function sceRtcTickAddMicroseconds [0x26D25A5D]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-
-	}
-
-	public void sceRtcTickAddSeconds(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		//////Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-
-
-
-		System.out.println("Unimplemented NID function sceRtcTickAddSeconds [0xF2A4AFE5]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-
-	}
-
-	public void sceRtcTickAddMinutes(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		//////Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-
-
-
-		System.out.println("Unimplemented NID function sceRtcTickAddMinutes [0xE6605BCA]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-
-	}
-
-	public void sceRtcTickAddHours(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		//////Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-
-
-
-		System.out.println("Unimplemented NID function sceRtcTickAddHours [0x26D7A24A]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-
-	}
-
-	public void sceRtcTickAddDays(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		//////Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-
-
-
-		System.out.println("Unimplemented NID function sceRtcTickAddDays [0xE51B4B7A]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-
-	}
-
-	public void sceRtcTickAddWeeks(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		//////Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-
-
-
-		System.out.println("Unimplemented NID function sceRtcTickAddWeeks [0xCF3A2CA8]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-
-	}
-
-	public void sceRtcTickAddMonths(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		//////Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-
-
-
-		System.out.println("Unimplemented NID function sceRtcTickAddMonths [0xDBF74F1B]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-
-	}
-
-	public void sceRtcTickAddYears(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		//////Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
-
-		/* put your own code here instead */
-
-
-
-
-		System.out.println("Unimplemented NID function sceRtcTickAddYears [0x42842C77]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-
-	}
+        if (mem.isAddressGood(first) && mem.isAddressGood(second)) {
+            long tick1 = mem.read64(first);
+            long tick2 = mem.read64(second);
+
+            if (tick1 == tick2)
+                cpu.gpr[2] = 0;
+            else if (tick1 < tick2)
+                cpu.gpr[2] = -1;
+            else if (tick1 > tick2)
+                cpu.gpr[2] = 1;
+        } else {
+            Modules.log.warn("sceRtcCompareTick bad address "
+                + String.format("0x%08X 0x%08X", first, second));
+            cpu.gpr[2] = -1;
+        }
+    }
+
+    /** 64 bit addend */
+    protected void hleRtcTickAdd64(Processor processor, long multiplier) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        //////Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        int dest_addr = cpu.gpr[4];
+        int src_addr = cpu.gpr[5];
+        long value = ((((long)cpu.gpr[6]) & 0xFFFFFFFFL) | (((long)cpu.gpr[7])<<32));
+
+        Modules.log.debug("hleRtcTickAdd64 " + multiplier + " * " + value);
+
+        if (mem.isAddressGood(src_addr) && mem.isAddressGood(dest_addr)) {
+            long src = mem.read64(src_addr);
+            mem.write64(dest_addr, src + multiplier * value);
+            cpu.gpr[2] = 0;
+        } else {
+            Modules.log.warn("hleRtcTickAdd64 bad address "
+                + String.format("0x%08X 0x%08X", src_addr, dest_addr));
+            cpu.gpr[2] = -1;
+        }
+    }
+
+    /** 32 bit addend */
+    protected void hleRtcTickAdd32(Processor processor, long multiplier) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        //////Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
+
+        int dest_addr = cpu.gpr[4];
+        int src_addr = cpu.gpr[5];
+        int value = cpu.gpr[6];
+
+        Modules.log.debug("hleRtcTickAdd32 " + multiplier + " * " + value);
+
+        if (mem.isAddressGood(src_addr) && mem.isAddressGood(dest_addr)) {
+            long src = mem.read64(src_addr);
+            mem.write64(dest_addr, src + multiplier * value);
+            cpu.gpr[2] = 0;
+        } else {
+            Modules.log.warn("hleRtcTickAdd32 bad address "
+                + String.format("0x%08X 0x%08X", src_addr, dest_addr));
+            cpu.gpr[2] = -1;
+        }
+    }
+
+    public void sceRtcTickAddTicks(Processor processor) {
+        Modules.log.debug("sceRtcTickAddTicks redirecting to hleRtcTickAdd64(1)");
+        hleRtcTickAdd64(processor, 1);
+    }
+
+    public void sceRtcTickAddMicroseconds(Processor processor) {
+        Modules.log.debug("sceRtcTickAddMicroseconds redirecting to hleRtcTickAdd64(1)");
+        hleRtcTickAdd64(processor, 1);
+    }
+
+    public void sceRtcTickAddSeconds(Processor processor) {
+        Modules.log.debug("sceRtcTickAddSeconds redirecting to hleRtcTickAdd64(1000000)");
+        hleRtcTickAdd64(processor, 1000000L);
+    }
+
+    public void sceRtcTickAddMinutes(Processor processor) {
+        Modules.log.debug("sceRtcTickAddMinutes redirecting to hleRtcTickAdd64(60*1000000)");
+        hleRtcTickAdd64(processor, 60*1000000L);
+    }
+
+    public void sceRtcTickAddHours(Processor processor) {
+        Modules.log.debug("sceRtcTickAddHours redirecting to hleRtcTickAdd32(60*60*1000000)");
+        hleRtcTickAdd32(processor, 60*60*1000000L);
+    }
+
+    public void sceRtcTickAddDays(Processor processor) {
+        Modules.log.debug("sceRtcTickAddDays redirecting to hleRtcTickAdd32(24*60*60*1000000)");
+        hleRtcTickAdd32(processor, 24*60*60*1000000L);
+    }
+
+    public void sceRtcTickAddWeeks(Processor processor) {
+        Modules.log.debug("sceRtcTickAddWeeks redirecting to hleRtcTickAdd32(7*24*60*60*1000000)");
+        hleRtcTickAdd32(processor, 7*24*60*60*1000000L);
+    }
+
+    /** TODO check on real psp.
+     * maybe take account of different number of days in each month,
+     * decompose the source ticks into parts add months, re-assemble.
+     * setting 1 month as 30 days */
+    public void sceRtcTickAddMonths(Processor processor) {
+        Modules.log.warn("PARTIAL:sceRtcTickAddMonths redirecting to hleRtcTickAdd32(30*24*60*60*1000000)");
+        hleRtcTickAdd32(processor, 30*24*60*60*1000000L);
+    }
+
+    /** TODO check on real psp.
+     * maybe take account of different number of days in each year.
+     * setting 1 year as 365 days */
+    public void sceRtcTickAddYears(Processor processor) {
+        Modules.log.debug("PARTIAL:sceRtcTickAddYears redirecting to hleRtcTickAdd32(365*24*60*60*1000000)");
+        hleRtcTickAdd32(processor, 365*24*60*60*1000000L);
+    }
 
 	public void sceRtcFormatRFC2822(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
@@ -633,7 +604,7 @@ public class sceRtc implements HLEModule {
 
 
 
-		System.out.println("Unimplemented NID function sceRtcFormatRFC2822 [0xC663B3B9]");
+		Modules.log.warn("Unimplemented NID function sceRtcFormatRFC2822 [0xC663B3B9]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -650,7 +621,7 @@ public class sceRtc implements HLEModule {
 
 
 
-		System.out.println("Unimplemented NID function sceRtcFormatRFC2822LocalTime [0x7DE6711B]");
+		Modules.log.warn("Unimplemented NID function sceRtcFormatRFC2822LocalTime [0x7DE6711B]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -667,7 +638,7 @@ public class sceRtc implements HLEModule {
 
 
 
-		System.out.println("Unimplemented NID function sceRtcFormatRFC3339 [0x0498FB3C]");
+		Modules.log.warn("Unimplemented NID function sceRtcFormatRFC3339 [0x0498FB3C]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -684,7 +655,7 @@ public class sceRtc implements HLEModule {
 
 
 
-		System.out.println("Unimplemented NID function sceRtcFormatRFC3339LocalTime [0x27F98543]");
+		Modules.log.warn("Unimplemented NID function sceRtcFormatRFC3339LocalTime [0x27F98543]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -701,7 +672,7 @@ public class sceRtc implements HLEModule {
 
 
 
-		System.out.println("Unimplemented NID function sceRtcParseDateTime [0xDFBC5F16]");
+		Modules.log.warn("Unimplemented NID function sceRtcParseDateTime [0xDFBC5F16]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -718,7 +689,7 @@ public class sceRtc implements HLEModule {
 
 
 
-		System.out.println("Unimplemented NID function sceRtcParseRFC3339 [0x28E1E988]");
+		Modules.log.warn("Unimplemented NID function sceRtcParseRFC3339 [0x28E1E988]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
