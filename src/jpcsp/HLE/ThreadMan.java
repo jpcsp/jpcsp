@@ -703,6 +703,9 @@ public class ThreadMan {
      * keywords:
      * snd, sound, at3, atrac3, sas, wave, pcm, audio
      *
+     * false positives:
+     * pcm: SPCMain (Skate Park City Main)
+     *
      * ambiguous keywords:
      * bgm, freq, sgx
      */
@@ -712,7 +715,7 @@ public class ThreadMan {
             if (name.contains("snd") || name.contains("sound") ||
                 name.contains("at3") || name.contains("atrac") ||
                 name.contains("sas") || name.contains("wave") ||
-                name.contains("audio") || name.contains("pcm")) {
+                name.contains("audio") || name.contains("sgx-psp-pcm-th")) {
                 return true;
             }
 
@@ -974,6 +977,21 @@ public class ThreadMan {
             + "' thread:'" + current_thread.name + "'");
 
         Emulator.getProcessor().cpu.gpr[2] = callback.uid;
+    }
+
+    public void ThreadMan_sceKernelDeleteCallback(int uid) {
+        SceKernelCallbackInfo info = callbackMap.remove(uid);
+        if (info == null) {
+            Modules.log.warn("sceKernelDeleteCallback unknown uid 0x" + Integer.toHexString(uid));
+            Emulator.getProcessor().cpu.gpr[2] = -1;
+        } else {
+            Modules.log.debug("sceKernelDeleteCallback SceUID=" + Integer.toHexString(uid)
+                + " name:'" + info.name + "'");
+
+            // TODO automatically unregister the callback if it was registered with another system?
+            // example: sceKernelDeleteCallback called before sceUmdUnRegisterUMDCallBack
+            Emulator.getProcessor().cpu.gpr[2] = 0;
+        }
     }
 
     public void ThreadMan_sceKernelCheckCallback() {
