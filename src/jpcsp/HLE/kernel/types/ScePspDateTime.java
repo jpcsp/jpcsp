@@ -30,22 +30,7 @@ public class ScePspDateTime {
     public int hour;
     public int minute;
     public int second;
-    public int microsecond;
-
-    /** @param time Unix time, seconds since the epoch/1970. */
-    public ScePspDateTime(long time) {
-        Calendar cal = Calendar.getInstance();
-        Date date = new Date(time);
-        cal.setTime(date);
-
-        this.year = cal.get(Calendar.YEAR);
-        this.month = 1 + cal.get(Calendar.MONTH); // check
-        this.day = cal.get(Calendar.DAY_OF_MONTH);
-        this.hour = cal.get(Calendar.HOUR_OF_DAY);
-        this.minute = cal.get(Calendar.MINUTE);
-        this.second = cal.get(Calendar.SECOND);
-        this.microsecond = cal.get(Calendar.MILLISECOND);
-    }
+    public int microsecond; // TODO fractional part or absolute?
 
     /** All fields will be initialised to the time the object was created. */
     public ScePspDateTime() {
@@ -57,7 +42,7 @@ public class ScePspDateTime {
         this.hour = cal.get(Calendar.HOUR_OF_DAY);
         this.minute = cal.get(Calendar.MINUTE);
         this.second = cal.get(Calendar.SECOND);
-        this.microsecond = cal.get(Calendar.MILLISECOND);
+        this.microsecond = cal.get(Calendar.MILLISECOND) * 1000;
     }
 
     public ScePspDateTime(int year, int month, int day,
@@ -69,6 +54,40 @@ public class ScePspDateTime {
         this.minute = minute;
         this.second = second;
         this.microsecond = microsecond;
+    }
+
+    /** @param time Unix time, seconds since the epoch/1970. */
+    public static ScePspDateTime fromUnixTime(long time) {
+        Calendar cal = Calendar.getInstance();
+        Date date = new Date(time);
+        cal.setTime(date);
+
+        int year = cal.get(Calendar.YEAR);
+        int month = 1 + cal.get(Calendar.MONTH); // check
+        int day = cal.get(Calendar.DAY_OF_MONTH);
+        int hour = cal.get(Calendar.HOUR_OF_DAY);
+        int minute = cal.get(Calendar.MINUTE);
+        int second = cal.get(Calendar.SECOND);
+        int microsecond = cal.get(Calendar.MILLISECOND) * 1000;
+
+        return new ScePspDateTime(year, month, day, hour, minute, second, microsecond);
+    }
+
+    /** @param microseconds */
+    public static ScePspDateTime fromMicros(long micros) {
+        Calendar cal = Calendar.getInstance();
+        Date date = new Date(micros / 1000000L);
+        cal.setTime(date);
+
+        int year = cal.get(Calendar.YEAR);
+        int month = 1 + cal.get(Calendar.MONTH); // check
+        int day = cal.get(Calendar.DAY_OF_MONTH);
+        int hour = cal.get(Calendar.HOUR_OF_DAY);
+        int minute = cal.get(Calendar.MINUTE);
+        int second = cal.get(Calendar.SECOND);
+        int microsecond = (int)(micros % 1000000L);
+
+        return new ScePspDateTime(year, month, day, hour, minute, second, microsecond);
     }
 
     public void read(Memory mem, int address) {
