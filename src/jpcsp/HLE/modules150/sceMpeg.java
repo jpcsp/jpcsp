@@ -722,16 +722,19 @@ public class sceMpeg implements HLEModule {
         // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        int mpeg = cpu.gpr[4];
+        // unknown params
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        Modules.log.warn("IGNORING:sceMpegAvcDecodeDetail(mpeg=0x" + Integer.toHexString(mpeg)
+            + String.format("%08X %08X %08X %08X", cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]));
 
-        System.out.println("Unimplemented NID function sceMpegAvcDecodeDetail [0x0F6C18D7]");
-
-        cpu.gpr[2] = 0x0;
-
-        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        if (mpeg != mpegHandle) {
+            Modules.log.warn("sceMpegAvcDecodeDetail bad mpeg handle 0x" + Integer.toHexString(mpeg));
+            cpu.gpr[2] = -1;
+        } else {
+            // Fake success
+            cpu.gpr[2] = 0;
+        }
     }
 
     public void sceMpegAvcDecodeMode(Processor processor) {

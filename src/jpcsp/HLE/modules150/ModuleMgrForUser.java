@@ -344,22 +344,22 @@ public class ModuleMgrForUser implements HLEModule {
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
 
-	public void sceKernelUnloadModule(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+    public void sceKernelUnloadModule(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+        int uid = cpu.gpr[4];
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		System.out.println("Unimplemented NID function sceKernelUnloadModule [0x2E0911AA]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
+        SceModule sceModule = Managers.modules.getModuleByUID(uid);
+        if (sceModule == null) {
+            Modules.log.warn("sceKernelUnloadModule unknown module UID 0x" + Integer.toHexString(uid));
+            cpu.gpr[2] = -1;
+        } else {
+            Modules.log.warn("UNIMPLEMENTED:sceKernelUnloadModule(uid=" + uid + ") modname:'" + sceModule.modname + "'");
+            cpu.gpr[2] = 0; // Fake
+        }
+    }
 
     public void sceKernelSelfStopUnloadModule(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor

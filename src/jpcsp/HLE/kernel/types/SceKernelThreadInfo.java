@@ -36,11 +36,22 @@ import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
 
     /* Posted at http://forums.ps2dev.org/viewtopic.php?p=75691#75691 by Insert_witty_name
-    public static final int PSP_MODULE_USER            = 0;
-    public static final int PSP_MODULE_NO_STOP         = 0x00000001;
-    public static final int PSP_MODULE_SINGLE_LOAD     = 0x00000002;
-    public static final int PSP_MODULE_SINGLE_START    = 0x00000004;
-    public static final int PSP_MODULE_KERNEL          = 0x00001000;
+     * http://forums.ps2dev.org/viewtopic.php?p=77135#77135 by phobox
+     * http://forums.ps2dev.org/viewtopic.php?t=8917 by SilverSpring
+    public static final int PSP_MODULE_USER                 = 0;
+
+    public static final int PSP_MODULE_NO_STOP              = 0x00000001;
+    public static final int PSP_MODULE_SINGLE_LOAD          = 0x00000002;
+    public static final int PSP_MODULE_SINGLE_START         = 0x00000004;
+
+    public static final int PSP_MODULE_POPS                 = 0x00000200;
+    public static final int PSP_MODULE_DEMO                 = 0x00000200; // same as PSP_MODULE_POPS
+    public static final int PSP_MODULE_GAMESHARING          = 0x00000400;
+    public static final int PSP_MODULE_VSH                  = 0x00000800;
+
+    public static final int PSP_MODULE_KERNEL               = 0x00001000;
+    public static final int PSP_MODULE_USE_MEMLMD_LIB       = 0x00002000;
+    public static final int PSP_MODULE_USE_SEMAPHORE_LIB    = 0x00004000; // not kernel semaphores, but a fake name (actually security stuff)
     */
 
     // TODO are module/thread attr interchangeable? (probably yes)

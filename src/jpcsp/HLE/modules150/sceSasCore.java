@@ -443,7 +443,7 @@ public class sceSasCore implements HLEModule {
 
         if (isSasHandleGood(sasCore, "__sceSasCore", cpu)) {
             // noxa/pspplayer blocks in __sceSasCore
-            // some games protect __sceSasCoren with locks, suggesting it may context switch
+            // some games protect __sceSasCore with locks, suggesting it may context switch
             ThreadMan.getInstance().yieldCurrentThread();
             cpu.gpr[2] = 0;
         }

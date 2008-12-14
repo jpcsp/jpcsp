@@ -34,7 +34,7 @@ public class sceCtrl implements HLEModule {
     private int uiPress;
     private int uiRelease;
 
-    private int TimeStamp;
+    private int TimeStamp; // TODO check what its meant to be
     private byte Lx;
     private byte Ly;
     private int Buttons;
@@ -65,13 +65,13 @@ public class sceCtrl implements HLEModule {
     // PspCtrlMode
     public final static int PSP_CTRL_MODE_DIGITAL = 0;
     public final static int PSP_CTRL_MODE_ANALOG = 1;
-    
+
     public boolean isModeDigital() {
         if (mode == 0)
             return true;
         return false;
     }
-    
+
     /** Need to call setButtons even if the user didn't move any fingers, otherwise we can't track "press" properly */
     public void setButtons(byte Lx, byte Ly, int Buttons)
     {
@@ -105,7 +105,7 @@ public class sceCtrl implements HLEModule {
         uiPress = changed2;
         uiRelease = ~changed2;
     }
-	
+
     @Override
     public String getName() {
         return "sceCtrl";
@@ -163,9 +163,9 @@ public class sceCtrl implements HLEModule {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
-        
+
         int a0 = cpu.gpr[4];
-        
+
         cpu.gpr[2] = cycle;
         cycle = a0;
     }
@@ -185,7 +185,7 @@ public class sceCtrl implements HLEModule {
         Memory mem = Processor.memory;
 
         int a0 = cpu.gpr[4];
-        
+
         cpu.gpr[2] = mode;
         mode = a0;
     }
@@ -193,7 +193,7 @@ public class sceCtrl implements HLEModule {
     public void sceCtrlGetSamplingMode(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
-        
+
         int a0 = cpu.gpr[4];
 
         mem.write32(a0, mode);
@@ -204,7 +204,7 @@ public class sceCtrl implements HLEModule {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        int a0 = cpu.gpr[4], a1 = cpu.gpr[5];        
+        int a0 = cpu.gpr[4], a1 = cpu.gpr[5];
         int i;
 
         for (i = 0; i < a1; i++) {
@@ -277,9 +277,9 @@ public class sceCtrl implements HLEModule {
     public void sceCtrlPeekLatch(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
-        
+
         int a0 = cpu.gpr[4];
-        
+
         mem.write32(a0, uiMake);
         mem.write32(a0 +4, uiBreak);
         mem.write32(a0 +8, uiPress);
@@ -290,9 +290,9 @@ public class sceCtrl implements HLEModule {
     public void sceCtrlReadLatch(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
-        
+
         int a0 = cpu.gpr[4];
-        
+
         mem.write32(a0, uiMake);
         mem.write32(a0 +4, uiBreak);
         mem.write32(a0 +8, uiPress);
