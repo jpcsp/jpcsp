@@ -151,8 +151,10 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         // Thread specific registers
         cpuContext.pc = entry_addr;
         cpuContext.npc = entry_addr; // + 4;
-        cpuContext.gpr[29] = stack_addr + stackSize - 512; // sp, 512 byte padding at the top for user data
-        cpuContext.gpr[26] = cpuContext.gpr[29]; // k0 mirrors sp
+
+        // sp, 512 byte padding at the top for user data, this will get re-jigged when we call start thread
+        cpuContext.gpr[29] = stack_addr + stackSize - 512;
+        cpuContext.gpr[26] = cpuContext.gpr[29]; // k0 mirrors initial sp (almost)
 
         // We'll hook "jr ra" where ra = 0 as the thread exiting
         cpuContext.gpr[31] = 0; // ra
