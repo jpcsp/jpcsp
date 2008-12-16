@@ -20,6 +20,8 @@ public class SceKernelErrors {
 
     public final static int ERROR_UNKNOWN_UID = 0x800200cb;
     // some missing
+
+    public final static int ERROR_ILLEGAL_THREAD = 0x80020197;
     public final static int ERROR_NOT_FOUND_THREAD = 0x80020198;
     public final static int ERROR_NOT_FOUND_SEMAPHORE = 0x80020199;
     public final static int ERROR_NOT_FOUND_EVENT_FLAG = 0x8002019a;

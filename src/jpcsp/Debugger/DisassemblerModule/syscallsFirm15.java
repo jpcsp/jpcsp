@@ -367,7 +367,7 @@ public class syscallsFirm15 {
 		 sceCtrlSetIdleCancelThreshold(0x2156,0xa7144800),
 		 sceCtrlGetIdleCancelThreshold(0x2157,0x687660fa),
 		 sceCtrl_348D99D4(0x2158,0x348d99d4),
-		 sceCtrl_AF5960F3(0x2159,0xaf5960f),
+		 sceCtrl_AF5960F3(0x2159,0xaf5960f3),
 		 sceCtrlClearRapidFire(0x215a,0xa68fd260),
 		 sceCtrlSetRapidFire(0x215b,0x6841be1a),
 		 sceHprmRegisterCallback(0x215c,0xc7154136),
@@ -814,7 +814,8 @@ public class syscallsFirm15 {
                 sceCccSetTable(0x2308, 0xB4D1CBBF), // 1.00+
                 sceNetApDialogDummyInit(0x2309, 0xBB73FF67), // 1.00+
                 sceNetApDialogDummyConnect(0x230a, 0x3811281E), // 1.00+
-
+                sceNetApDialogDummyGetState(0x230b, 0xCA9BE5BF), // 1.00+
+                sceNetApDialogDummyTerm(0x230c, 0xF213BE65), // 1.00+
 
                  /* FAKE MAPPING!! for Final Fantasy checks*/
                  ModuleMgrForUser_8F2DF740(0x3000,0x8f2df740), // fw 3.52 or less?
@@ -993,6 +994,9 @@ public class syscallsFirm15 {
                 sceKernelLockMutexCB(0x30a2, 0x5BF4DD27), // 2.71+ or lower
                 sceKernelCancelMutex(0x30a3, 0x87D9223C), // 2.71+ or lower
                 sceKernelReferMutexStatus(0x30a4, 0xA9C2CB9A), // 2.71+ or lower
+
+                sceAtracSetMOutHalfwayBuffer(0x30a5, 0x5CF9D852), // 2.50+ or lower
+                sceFontSetResolution(0x30a6, 0x48293280), // 2.00+
 
                 // We choose to start HLEModuleManager at 0x4000
 
