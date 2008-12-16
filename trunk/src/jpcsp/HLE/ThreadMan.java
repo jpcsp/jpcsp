@@ -775,6 +775,8 @@ public class ThreadMan {
 
         // 64 bytes padding between program stack top and user data
         thread.cpuContext.gpr[29] = address - 0x40;
+        // $k0 set just past the user data
+        thread.cpuContext.gpr[26] = thread.stack_addr + thread.stackSize - 0x100;
 
         // testing
         if (thread.cpuContext.gpr[28] != gp) {
