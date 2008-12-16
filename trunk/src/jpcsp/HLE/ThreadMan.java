@@ -190,6 +190,8 @@ public class ThreadMan {
     /** to be called when exiting the emulation */
     public void exit() {
         if (threadMap != null) {
+            Modules.log.info("----------------------------- ThreadMan exit -----------------------------");
+
             // Delete all the threads to collect statistics
             while (!threadMap.isEmpty()) {
                 SceKernelThreadInfo thread = threadMap.values().iterator().next();
@@ -589,6 +591,21 @@ public class ThreadMan {
     }
 
 
+    /** Note: Some functions allow uid = 0 = current thread, others don't.
+     * if uid = 0 then $v0 is set to ERROR_ILLEGAL_THREAD and false is returned
+     * if uid < 0 then $v0 is set to ERROR_NOT_FOUND_THREAD and false is returned */
+    private boolean checkThreadID(int uid) {
+        if (uid == 0) {
+            Emulator.getProcessor().cpu.gpr[2] = ERROR_ILLEGAL_THREAD;
+            return false;
+        } else if (uid < 0) {
+            Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
+            return false;
+        } else {
+            return true;
+        }
+    }
+
     public SceKernelThreadInfo hleKernelCreateThread(String name, int entry_addr,
         int initPriority, int stackSize, int attr, int option_addr) {
 
@@ -610,7 +627,7 @@ public class ThreadMan {
     public void ThreadMan_sceKernelCreateThread(int name_addr, int entry_addr,
         int initPriority, int stackSize, int attr, int option_addr) {
 
-        String name = readStringZ(name_addr);
+        String name = readStringNZ(name_addr, 32);
 
         Modules.log.debug("sceKernelCreateThread redirecting to hleKernelCreateThread");
         SceKernelThreadInfo thread = hleKernelCreateThread(name, entry_addr, initPriority, stackSize, attr, option_addr);
@@ -648,8 +665,9 @@ public class ThreadMan {
         }
     }
 
-    /** mark thread a0 for deletion */
+    /** mark a thread for deletion. */
     public void ThreadMan_sceKernelDeleteThread(int uid) {
+        if (uid == 0) uid = current_thread.uid;
         SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
@@ -660,12 +678,17 @@ public class ThreadMan {
             // Mark thread for deletion
             setToBeDeletedThread(thread);
 
-            Emulator.getProcessor().cpu.gpr[2] = 0;
+            if (thread.status != PSP_THREAD_STOPPED) {
+                Emulator.getProcessor().cpu.gpr[2] = ERROR_THREAD_IS_NOT_DORMANT;
+            } else {
+                Emulator.getProcessor().cpu.gpr[2] = 0;
+            }
         }
     }
 
     /** terminate thread a0, then mark it for deletion */
     public void ThreadMan_sceKernelTerminateDeleteThread(int uid) {
+        if (!checkThreadID(uid)) return;
         SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
@@ -737,20 +760,25 @@ public class ThreadMan {
             + " gp=0x" + Integer.toHexString(gp));
 
         // Setup args by copying them onto the stack
-        int address = thread.cpuContext.gpr[29];
-        if (userDataAddr != 0) //{
+        //int address = thread.cpuContext.gpr[29];
+        // 256 bytes padding between user data top and real stack top
+        int address = (thread.stack_addr + thread.stackSize - 0x100) - ((userDataLength + 0xF) & ~0xF);
+        if (userDataAddr != 0) {
             Memory.getInstance().memcpy(address, userDataAddr, userDataLength);
             thread.cpuContext.gpr[4] = userDataLength; // a0 = user data len
             thread.cpuContext.gpr[5] = address; // a1 = pointer to arg data in stack
-        /*
         } else {
-            // TODO check if we should do this when user data pointer = NULL
+            // Set the pointer to NULL when none is provided
             thread.cpuContext.gpr[4] = 0; // a0 = user data len
             thread.cpuContext.gpr[5] = 0; // a1 = pointer to arg data in stack
-        }*/
+        }
+
+        // 64 bytes padding between program stack top and user data
+        thread.cpuContext.gpr[29] = address - 0x40;
 
         // testing
         if (thread.cpuContext.gpr[28] != gp) {
+            // from sceKernelStartModule is ok, anywhere else might be an error
             Modules.log.debug("hleKernelStartThread oldGP=0x" + Integer.toHexString(thread.cpuContext.gpr[28])
                 + " newGP=0x" + Integer.toHexString(gp));
         }
@@ -967,7 +995,7 @@ public class ThreadMan {
     }
 
     public void ThreadMan_sceKernelCreateCallback(int name_addr, int func_addr, int user_arg_addr) {
-        String name = readStringZ(name_addr);
+        String name = readStringNZ(name_addr, 32);
         SceKernelCallbackInfo callback = new SceKernelCallbackInfo(name, current_thread.uid, func_addr, user_arg_addr);
         callbackMap.put(callback.uid, callback);
 
@@ -1044,14 +1072,19 @@ public class ThreadMan {
         }
     }
 
-    /** @return amount of free stack space. */
+    /** @return amount of free stack space.
+     * TODO this isn't quite right */
     public void ThreadMan_sceKernelCheckThreadStack() {
-        Emulator.getProcessor().cpu.gpr[2] = current_thread.stackSize
-            - (current_thread.stack_addr - Emulator.getProcessor().cpu.gpr[29])
+        int size = current_thread.stackSize
+            - (Emulator.getProcessor().cpu.gpr[29] - current_thread.stack_addr)
             - 0x130;
+        if (size < 0)
+            size = 0;
+        Emulator.getProcessor().cpu.gpr[2] = size;
     }
 
-    /** @return amount of free stack space. */
+    /** @return amount of free stack space? up to 0x1000 lower?
+     * TODO this isn't quite right */
     public void ThreadMan_sceKernelGetThreadStackFreeSize(int uid) {
         if (uid == 0) uid = current_thread.uid;
         SceKernelThreadInfo thread = threadMap.get(uid);
@@ -1059,10 +1092,13 @@ public class ThreadMan {
             Modules.log.warn("sceKernelGetThreadStackFreeSize unknown uid=0x" + Integer.toHexString(uid));
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
         } else  {
-        Emulator.getProcessor().cpu.gpr[2] = current_thread.stackSize
-            - (current_thread.stack_addr - Emulator.getProcessor().cpu.gpr[29])
-            - 0x130
-            - 0xfb0;
+            int size = current_thread.stackSize
+                - (Emulator.getProcessor().cpu.gpr[29] - current_thread.stack_addr)
+                - 0x130
+                - 0xfb0;
+            if (size < 0)
+                size = 0;
+            Emulator.getProcessor().cpu.gpr[2] = size;
         }
     }
 
@@ -1305,7 +1341,7 @@ public class ThreadMan {
         }
     }
 
-    /** @return the top address or 0 on failure. */
+    /** @return the bottom address or 0 on failure. */
     public int mallocStack(int size) {
         if (size > 0) {
             //int p = 0x09f00000 - stackAllocated;
@@ -1316,7 +1352,7 @@ public class ThreadMan {
             int p = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_High, size, 0);
             if (p != 0) {
                 pspSysMem.getInstance().addSysMemInfo(2, "ThreadMan-Stack", pspSysMem.PSP_SMEM_High, size, p);
-                p += size;
+                //p += size; // top address
             }
 
             return p;
@@ -1329,7 +1365,7 @@ public class ThreadMan {
 
     public void ThreadMan_sceKernelCreateSema(int name_addr, int attr, int initVal, int maxVal, int option)
     {
-        String name = readStringZ(name_addr);
+        String name = readStringNZ(name_addr, 32);
         Modules.log.debug("sceKernelCreateSema name= " + name + " attr= 0x" + Integer.toHexString(attr) + " initVal= " + initVal + " maxVal= "+ maxVal + " option= 0x" + Integer.toHexString(option));
 
         if (attr != 0) Modules.log.warn("UNIMPLEMENTED:sceKernelCreateSema attr value 0x" + Integer.toHexString(attr));

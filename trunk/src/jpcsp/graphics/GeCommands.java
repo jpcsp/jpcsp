@@ -611,7 +611,7 @@ public class GeCommands {
         commands[AMC]="amc";
         commands[EMC]="emc";
         commands[CMAT]="cmat";
-        commands[RNORM]="rnomr";
+        commands[RNORM]="rnorm";
         commands[SHADE]="shade";
         commands[UNKNOWCOMMAND_0x4F]="unk 0x4f";
         commands[UNKNOWCOMMAND_0X4E]="unk 0x4e";

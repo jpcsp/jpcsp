@@ -179,6 +179,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
     public void exit() {
         if (statistics != null) {
+            Modules.log.info("----------------------------- pspdisplay exit -----------------------------");
             Modules.log.info(statistics.toString());
         }
     }
