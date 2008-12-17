@@ -79,6 +79,10 @@ public class sceAudio implements HLEModule, HLEThread {
 
     @Override
     public void installModule(HLEModuleManager mm, int version) {
+
+        // put this here until we add it to the gui/loader
+        disableBlockingAudio = false;
+
         if (version >= 150) {
 
             mm.addFunction(sceAudioOutputFunction, 0x8C1009B2);
@@ -111,7 +115,8 @@ public class sceAudio implements HLEModule, HLEThread {
             mm.addFunction(sceAudioLoopbackTestFunction, 0xB61595C0);
             mm.addFunction(sceAudioSetVolumeOffsetFunction, 0x927AC32B);
 
-            mm.addThread(this);
+            if (!disableBlockingAudio)
+                mm.addThread(this);
         }
 
         pspchannels = new pspChannelInfo[8];
@@ -126,7 +131,8 @@ public class sceAudio implements HLEModule, HLEThread {
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
-            mm.removeThread(this);
+            if (!disableBlockingAudio)
+                mm.removeThread(this);
 
             mm.removeFunction(sceAudioOutputFunction);
             mm.removeFunction(sceAudioOutputBlockingFunction);
@@ -160,11 +166,16 @@ public class sceAudio implements HLEModule, HLEThread {
         }
     }
 
-    protected boolean enabled;
+    protected boolean disableChReserve;
+    protected boolean disableBlockingAudio;
 
+    // TODO rename setEnabled to setChReserveEnabled
+    // TODO add setBlockingEnabled
+    // TODO add emu.disableBlockingAudio to the settings GUI
     public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-        Modules.log.info("Audio functions disabled: " + !enabled);
+        disableChReserve = !enabled;
+        Modules.log.info("Audio ChReserve disabled: " + disableChReserve);
+        //Modules.log.info("Audio Blocking disabled: " + disableBlockingAudio);
     }
 
     public void step() {
@@ -191,10 +202,10 @@ public class sceAudio implements HLEModule, HLEThread {
                 try {
                     AudioFormat format = new AudioFormat(sampleRate, 16, 2, true, false);
                     pspchannels[channel].outputDataLine = AudioSystem.getSourceDataLine(format);
-                   if(!Settings.getInstance().readBool("emu.mutesound"))
-                   {
-                     pspchannels[channel].outputDataLine.open(format);
-                   }
+                    if (!Settings.getInstance().readBool("emu.mutesound"))
+                    {
+                        pspchannels[channel].outputDataLine.open(format);
+                    }
                     sceAudioChangeChannelVolume(channel,pspchannels[channel].leftVolume,pspchannels[channel].rightVolume);
                 }
                 catch(LineUnavailableException e)
@@ -431,7 +442,11 @@ public class sceAudio implements HLEModule, HLEThread {
             pspchannels[channel].waitingThreadId = ThreadMan.getInstance().getCurrentThreadID();
 
             cpu.gpr[2] = ret;
-            ThreadMan.getInstance().blockCurrentThread();
+
+            if (!disableBlockingAudio)
+                ThreadMan.getInstance().blockCurrentThread();
+            else
+                ThreadMan.getInstance().yieldCurrentThread();
         }
     }
 
@@ -471,7 +486,11 @@ public class sceAudio implements HLEModule, HLEThread {
             pspchannels[channel].waitingThreadId = ThreadMan.getInstance().getCurrentThreadID();
 
             cpu.gpr[2] = ret;
-            ThreadMan.getInstance().blockCurrentThread();
+
+            if (!disableBlockingAudio)
+                ThreadMan.getInstance().blockCurrentThread();
+            else
+                ThreadMan.getInstance().yieldCurrentThread();
         }
     }
 
@@ -480,7 +499,7 @@ public class sceAudio implements HLEModule, HLEThread {
 
         int channel = cpu.gpr[4], samplecount = cpu.gpr[5], format = cpu.gpr[6];
 
-        if (!enabled)
+        if (disableChReserve)
         {
             Modules.log.warn("IGNORED sceAudioChReserve channel= " + channel + " samplecount = " + samplecount + " format = " + format);
             cpu.gpr[2] = -1;

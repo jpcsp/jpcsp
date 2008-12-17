@@ -70,7 +70,10 @@ public class pspiofilemgr {
 
 
 
+
+    public final static int PSP_ERROR_ASYNC_FILE_OPEN_ERROR = 0x80010002; // actual name unknown
     //public final static int PSP_ERROR_FILE_OPEN_ERROR     = 0x80010003; // actual name unknown, no such device? bad format path name?
+
     public final static int PSP_ERROR_FILE_READ_ERROR     = 0x80020130;
     public final static int PSP_ERROR_TOO_MANY_OPEN_FILES = 0x80020320;
     public final static int PSP_ERROR_BAD_FILE_DESCRIPTOR = 0x80020323;
@@ -195,7 +198,7 @@ public class pspiofilemgr {
         // TODO "block"/yield?
     }
 
-    /** if operation is still in progress return 1 and do not write to res.
+    /** if operation is still in progress return 1 and do not write to res. also calls to read/write/close will return PSP_ERROR_ASYNC_BUSY.
      * if operating is done return 0, write to res and flush out the saved result. */
     public void sceIoPollAsync(int uid, int res_addr) {
         if (debug) Modules.log.debug("sceIoPollAsync - uid " + Integer.toHexString(uid) + " res:0x" + Integer.toHexString(res_addr));
@@ -205,11 +208,14 @@ public class pspiofilemgr {
         if (info == null) {
             Modules.log.warn("sceIoPollAsync - unknown uid " + Integer.toHexString(uid));
 
+            // OLD
             // Some games call sceIoPollAsync 2x after sceIoCloseAsync,
             // returning 0 seems to work better than -1/"no async op" for these games.
             //Emulator.getProcessor().cpu.gpr[2] = -1;
             //Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NO_ASYNC_OP;
-            Emulator.getProcessor().cpu.gpr[2] = 0;
+            //Emulator.getProcessor().cpu.gpr[2] = 0;
+
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
         } else if (info.result == PSP_ERROR_NO_ASYNC_OP) {
             // Don't write to res
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NO_ASYNC_OP;
@@ -218,6 +224,13 @@ public class pspiofilemgr {
                 Modules.log.debug("sceIoPollAsync - file marked with closePending, calling sceIoClose");
                 sceIoClose(uid);
             }
+
+            // deferred error with sceIoOpenAsync
+            if (info.result == PSP_ERROR_ASYNC_FILE_OPEN_ERROR) {
+                filelist.remove(info.uid);
+                SceUidManager.releaseUid(info.uid, "IOFileManager-File");
+            }
+
             Memory mem = Memory.getInstance();
             if (mem.isAddressGood(res_addr)) {
                 Modules.log.debug("sceIoPollAsync storing result 0x" + Long.toHexString(info.result));
@@ -469,6 +482,9 @@ public class pspiofilemgr {
                 filename_addr, filename, flags, permissions, mode);
     }
 
+    /** allocates an fd and returns it, even if the file could not be opened.
+     * on the next successful poll/wait async 0x80010002 will be saved if the
+     * file could not be opened. */
     public void sceIoOpenAsync(int filename_addr, int flags, int permissions) {
         if (debug) Modules.log.debug("sceIoOpenAsync redirecting to sceIoOpen");
         sceIoOpen(filename_addr, flags, permissions);
@@ -478,6 +494,12 @@ public class pspiofilemgr {
         IoInfo info = filelist.get(uid);
         if (info != null) {
             info.result = Emulator.getProcessor().cpu.gpr[2];
+        } else {
+            Modules.log.warn("sceIoOpenAsync file not found");
+            // HACK
+            info = new IoInfo(null, null, null, 0, 0);
+            info.result = PSP_ERROR_ASYNC_FILE_OPEN_ERROR;
+            Emulator.getProcessor().cpu.gpr[2] = info.uid;
         }
     }
 
@@ -490,7 +512,7 @@ public class pspiofilemgr {
             if (info == null) {
                 if (uid != 1 && uid != 2) // ignore stdout and stderr
                     Modules.log.warn("sceIoClose - unknown uid " + Integer.toHexString(uid));
-                Emulator.getProcessor().cpu.gpr[2] = -1;
+                Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
             } else {
                 info.readOnlyFile.close();
                 SceUidManager.releaseUid(info.uid, "IOFileManager-File");
@@ -512,10 +534,11 @@ public class pspiofilemgr {
         SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
         IoInfo info = filelist.get(uid);
         if (info != null) {
+            info.result = 0;
             info.closePending = true;
             Emulator.getProcessor().cpu.gpr[2] = 0;
         } else {
-            Emulator.getProcessor().cpu.gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
         }
     }
 
@@ -540,7 +563,7 @@ public class pspiofilemgr {
                 IoInfo info = filelist.get(uid);
                 if (info == null) {
                     Modules.log.warn("sceIoWrite - unknown uid " + Integer.toHexString(uid));
-                    Emulator.getProcessor().cpu.gpr[2] = -1;
+                    Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
                 } else if ((data_addr >= MemoryMap.START_RAM ) && (data_addr + size <= MemoryMap.END_RAM)) {
                     if ((info.flags & PSP_O_APPEND) == PSP_O_APPEND) {
                         // seems to work ok
@@ -660,6 +683,7 @@ public class pspiofilemgr {
         }
     }
 
+    // TODO check what happens with PSP_ERROR_BAD_FILE_DESCRIPTOR 32bit error code on 64bit mode
     private void seek(int uid, long offset, int whence, boolean resultIs64bit) {
         //if (debug) Modules.log.debug("seek - uid " + Integer.toHexString(uid) + " offset " + offset + " whence " + whence);
 
@@ -833,16 +857,19 @@ public class pspiofilemgr {
     }
 
     public void sceIoDread(int uid, int dirent_addr) {
-        if (debug) Modules.log.debug("sceIoDread - uid = " + Integer.toHexString(uid) + " dirent = " + Integer.toHexString(dirent_addr));
+        //if (debug) Modules.log.debug("sceIoDread - uid = " + Integer.toHexString(uid) + " dirent = " + Integer.toHexString(dirent_addr));
 
         SceUidManager.checkUidPurpose(uid, "IOFileManager-Directory", true);
         IoDirInfo info = dirlist.get(uid);
         if (info == null) {
-            Modules.log.warn("sceIoDread - unknown uid " + Integer.toHexString(uid));
+            Modules.log.warn("sceIoDread unknown uid " + Integer.toHexString(uid));
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
         } else if (info.hasNext()) {
-            String filename = info.next(); // TODO is the separator needed?
-            Modules.log.debug("sceIoDread - path = " + info.path + " filename = " + filename);
+            String filename = info.next();
+            Modules.log.debug("sceIoDread uid=" + Integer.toHexString(uid)
+                + " #" + info.printableposition
+                + " dir='" + info.path
+                + "', file='" + filename + "'");
 
             SceIoStat stat = stat(info.path + "/" + filename);
             if (stat != null) {
@@ -850,11 +877,11 @@ public class pspiofilemgr {
                 dirent.write(Memory.getInstance(), dirent_addr);
                 Emulator.getProcessor().cpu.gpr[2] = 1; // TODO "> 0", so number of files remaining or 1 is ok?
             } else {
-                Modules.log.warn("sceIoDread - stat failed (" + info.path + "/" + filename + ")");
+                Modules.log.warn("sceIoDread uid=" + Integer.toHexString(uid) + " stat failed (" + info.path + "/" + filename + ")");
                 Emulator.getProcessor().cpu.gpr[2] = -1;
             }
         } else {
-            Modules.log.debug("sceIoDread - no more files");
+            Modules.log.debug("sceIoDread uid=" + Integer.toHexString(uid) + " no more files");
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
 
@@ -887,6 +914,15 @@ public class pspiofilemgr {
                 + ",inlen=" + inlen
                 + ",outdata=0x" + Integer.toHexString(outdata_addr)
                 + ",outlen=" + outlen + ")");
+
+            Memory mem = Memory.getInstance();
+            if (mem.isAddressGood(indata_addr)) {
+                Modules.log.debug("sceIoDevctl *indata=0x" + Integer.toHexString(mem.read32(indata_addr)));
+            }
+
+            if (mem.isAddressGood(outdata_addr)) {
+                Modules.log.debug("sceIoDevctl *outdata=0x" + Integer.toHexString(mem.read32(outdata_addr)));
+            }
         }
 
         switch(cmd) {
@@ -897,10 +933,24 @@ public class pspiofilemgr {
 
             case 0x02015804:
             case 0x02025801:
-            case 0x02025806:
                 Modules.log.warn("IGNORED: sceIoDevctl unhandled ms command " + String.format("0x%08X", cmd));
                 Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
                 break;
+
+            case 0x02025806:
+            {
+                Modules.log.debug("sceIoDevctl check ms inserted");
+                Memory mem = Memory.getInstance();
+                if (mem.isAddressGood(outdata_addr)) {
+                    // 0 = not inserted
+                    // 1 = inserted
+                    mem.write32(outdata_addr, 1);
+                    Emulator.getProcessor().cpu.gpr[2] = 0;
+                } else {
+                    Emulator.getProcessor().cpu.gpr[2] = -1;
+                }
+                break;
+            }
 
             case 0x02415821: // register ms eject callback
                 Modules.log.debug("UNIMPLEMENTED: sceIoDevctl register ms eject callback");
@@ -1007,7 +1057,7 @@ public class pspiofilemgr {
                             size = file.length();
                             timestamp = file.getTimestamp().getTime();
                             startSector = file.getStartSector();
-                            Modules.log.debug("stat - UMD File " + isofilename + ", StartSector=0x" + Integer.toHexString(startSector));
+                            //Modules.log.debug("stat - UMD File " + isofilename + ", StartSector=0x" + Integer.toHexString(startSector));
                         }
 
                         // Octal extend into user and group
@@ -1146,6 +1196,7 @@ public class pspiofilemgr {
         final String path;
         final String[] filenames;
         int position;
+        int printableposition;
         final int uid;
 
         public IoDirInfo(String path, String[] filenames) {
@@ -1158,6 +1209,7 @@ public class pspiofilemgr {
 
             this.filenames = filenames;
             position = 0;
+            printableposition = 0;
 
             // Hide iso special files
             if (filenames.length > position && filenames[position].equals("."))
@@ -1178,6 +1230,7 @@ public class pspiofilemgr {
             if (position < filenames.length) {
                 filename = filenames[position];
                 position++;
+                printableposition++;
             }
             return filename;
         }

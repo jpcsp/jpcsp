@@ -512,6 +512,8 @@ public class ThreadMan {
                 thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
             }
         }
+
+        // TODO mutex timeout, if it has one
     }
 
     private void deleteThread(SceKernelThreadInfo thread) {
@@ -916,9 +918,10 @@ public class ThreadMan {
         }
     }
 
-    private void hleKernelWaitThreadEnd(int uid, int micros, boolean callbacks) {
+    private void hleKernelWaitThreadEnd(int uid, int micros, boolean forever, boolean callbacks) {
         Modules.log.debug("hleKernelWaitThreadEnd SceUID=" + Integer.toHexString(uid)
-            + " timeout=" + micros
+            + " micros=" + micros
+            + " forever=" + forever
             + " callbacks=" + callbacks);
 
         SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
@@ -939,7 +942,7 @@ public class ThreadMan {
             current_thread.do_callbacks = callbacks;
 
             // Wait on a specific thread end
-            hleKernelThreadWait(current_thread.wait, micros, (micros == 0)); // TODO check forever
+            hleKernelThreadWait(current_thread.wait, micros, forever);
 
             current_thread.wait.waitingOnThreadEnd = true;
             current_thread.wait.ThreadEnd_id = uid;
@@ -950,14 +953,32 @@ public class ThreadMan {
         }
     }
 
-    public void ThreadMan_sceKernelWaitThreadEnd(int uid, int micros) {
+    public void ThreadMan_sceKernelWaitThreadEnd(int uid, int timeout_addr) {
         Modules.log.debug("sceKernelWaitThreadEnd redirecting to hleKernelWaitThreadEnd(callbacks=false)");
-        hleKernelWaitThreadEnd(uid, micros, false);
+
+        int micros = 0;
+        boolean forever = true;
+
+        if (timeout_addr != 0) { // psp does not check for valid address here
+            micros = Memory.getInstance().read32(timeout_addr);
+            forever = false;
+        }
+
+        hleKernelWaitThreadEnd(uid, micros, forever, false);
     }
 
-    public void ThreadMan_sceKernelWaitThreadEndCB(int uid, int micros) {
+    public void ThreadMan_sceKernelWaitThreadEndCB(int uid, int timeout_addr) {
         Modules.log.debug("sceKernelWaitThreadEndCB redirecting to hleKernelWaitThreadEnd(callbacks=true)");
-        hleKernelWaitThreadEnd(uid, micros, true);
+
+        int micros = 0;
+        boolean forever = true;
+
+        if (timeout_addr != 0) { // psp does not check for valid address here
+            micros = Memory.getInstance().read32(timeout_addr);
+            forever = false;
+        }
+
+        hleKernelWaitThreadEnd(uid, micros, forever, true);
         checkCallbacks();
     }
 
@@ -1534,7 +1555,7 @@ public class ThreadMan {
             Modules.log.warn("sceKernelSignalSema - unknown uid 0x" + Integer.toHexString(semaid));
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
         } else if (sema.currentCount + signal > sema.maxCount) {
-            Modules.log.warn("sceKernelSignalSema - overflow uid 0x" + Integer.toHexString(semaid) + " signal=" + signal + " current=" + sema.currentCount + " max=" + sema.maxCount);
+            Modules.log.warn("sceKernelSignalSema - overflow uid 0x" + Integer.toHexString(semaid) + " name='" + sema.name + "' signal=" + signal + " current=" + sema.currentCount + " max=" + sema.maxCount);
             Emulator.getProcessor().cpu.gpr[2] = ERROR_SEMA_OVERFLOW;
             // TODO clamp and continue anyway?
         } else {
