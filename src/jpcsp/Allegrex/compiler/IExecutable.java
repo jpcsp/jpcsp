@@ -22,4 +22,5 @@ package jpcsp.Allegrex.compiler;
  */
 public interface IExecutable {
 	public int exec(int returnAddress, boolean isJump) throws Exception;
+	public int getCallCount();
 }

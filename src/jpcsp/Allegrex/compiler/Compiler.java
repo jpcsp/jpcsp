@@ -47,7 +47,6 @@ import jpcsp.util.DurationStatistics;
  *     - is reading Rt
  *     - is writing Rt
  *     - is writing Rd
- * - move instruction compiling into Common.Instruction (replace existing compile method)
  *
  * TODO Ideas to further enhance performance:
  * - store stack variables "nn(sp)" into local variables
@@ -215,6 +214,7 @@ public class Compiler implements ICompiler {
             if (context.analysedAddresses.contains(pc) && isBranchTarget) {
                 codeBlock.setIsBranchTarget(pc);
             } else {
+                boolean hasDelaySlot = false;
                 while (!context.analysedAddresses.contains(pc) && pc <= endPc) {
                     int opcode = mem.read32(pc);
 
@@ -228,28 +228,33 @@ public class Compiler implements ICompiler {
                     if (branchBlockInstructions.contains(insn)) {
                         branchingTo = branchTarget(npc, opcode);
                         isBranching = true;
+                        hasDelaySlot = true;
                         pendingBlockAddresses.push(branchingTo);
                     } else if (jumpBlockInstructions.contains(insn)) {
                         branchingTo = jumpTarget(npc, opcode);
                         isBranching = true;
+                        hasDelaySlot = true;
                         if (branchingTo != 0) { // Ignore "J 0x00000000" instruction
                             pendingBlockAddresses.push(branchingTo);
                         }
                         endPc = npc;
                     } else if (endBlockInstructions.contains(insn)) {
+                        hasDelaySlot = true;
                         endPc = npc;
                     } else if (newBlockInstructions.contains(insn)) {
                         branchingTo = jumpTarget(npc, opcode);
                         isBranching = true;
+                        hasDelaySlot = true;
                         if (recursive) {
                             context.blocksToBeAnalysed.push(branchingTo);
                         }
                     }
 
-                    codeBlock.addInstruction(pc, opcode, insn, isBranchTarget, isBranching, branchingTo);
+                    codeBlock.addInstruction(pc, opcode, insn, isBranchTarget, isBranching, branchingTo, hasDelaySlot);
                     pc = npc;
 
                     isBranchTarget = false;
+                    hasDelaySlot = false;
                 }
             }
         }

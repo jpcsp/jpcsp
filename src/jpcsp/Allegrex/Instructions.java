@@ -1,5 +1,3 @@
-
-/* this is an auto-generated file from Allegrex.isa file */
 /* This file is part of jpcsp.
 Jpcsp is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -17,15 +15,22 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.Allegrex;
 
+
+import org.objectweb.asm.Opcodes;
+
 import jpcsp.HLE.SyscallHandler;
 
 import jpcsp.Allegrex.Common.*;
+import jpcsp.Allegrex.compiler.ICompilerContext;
 
 import jpcsp.Processor;
 
 /**
- *
- * @author hli
+ * This file has been auto-generated from Allegrex.isa file.
+ * Changes are now performed directly in this file,
+ * Allegrex.isa is no longer used.
+ * 
+ * @author hli, gid15
  */
 public class Instructions {
 
@@ -44,7 +49,8 @@ public void interpret(Processor processor, int insn) {
 
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	// Nothing to compile
 }
 @Override
 public String disasm(int address, int insn) {
@@ -68,7 +74,8 @@ public void interpret(Processor processor, int insn) {
 
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	// Nothing to compile
 }
 @Override
 public String disasm(int address, int insn) {
@@ -94,7 +101,8 @@ public void interpret(Processor processor, int insn) {
 
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	// Nothing to compile
 }
 @Override
 public String disasm(int address, int insn) {
@@ -120,7 +128,8 @@ public void interpret(Processor processor, int insn) {
 
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	// Nothing to compile
 }
 @Override
 public String disasm(int address, int insn) {
@@ -146,7 +155,8 @@ public void interpret(Processor processor, int insn) {
 
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	// Nothing to compile
 }
 @Override
 public String disasm(int address, int insn) {
@@ -172,7 +182,8 @@ public void interpret(Processor processor, int insn) {
 
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	// Nothing to compile
 }
 @Override
 public String disasm(int address, int insn) {
@@ -198,7 +209,8 @@ public void interpret(Processor processor, int insn) {
 
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	// Nothing to compile
 }
 @Override
 public String disasm(int address, int insn) {
@@ -224,7 +236,8 @@ public void interpret(Processor processor, int insn) {
 
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	// Nothing to compile
 }
 @Override
 public String disasm(int address, int insn) {
@@ -250,7 +263,8 @@ public void interpret(Processor processor, int insn) {
 
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	// Nothing to compile
 }
 @Override
 public String disasm(int address, int insn) {
@@ -276,7 +290,8 @@ public void interpret(Processor processor, int insn) {
 
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	// Nothing to compile
 }
 @Override
 public String disasm(int address, int insn) {
@@ -302,7 +317,8 @@ public void interpret(Processor processor, int insn) {
 
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	// Nothing to compile
 }
 @Override
 public String disasm(int address, int insn) {
@@ -328,7 +344,8 @@ public void interpret(Processor processor, int insn) {
 
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	// Nothing to compile
 }
 @Override
 public String disasm(int address, int insn) {
@@ -354,7 +371,8 @@ public void interpret(Processor processor, int insn) {
 
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	// Nothing to compile
 }
 @Override
 public String disasm(int address, int insn) {
@@ -380,7 +398,8 @@ public void interpret(Processor processor, int insn) {
 
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	// Nothing to compile
 }
 @Override
 public String disasm(int address, int insn) {
@@ -406,7 +425,8 @@ public void interpret(Processor processor, int insn) {
 
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	// Nothing to compile
 }
 @Override
 public String disasm(int address, int insn) {
@@ -433,7 +453,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	context.compileSyscall();
 }
 @Override
 public String disasm(int address, int insn) {
@@ -456,7 +477,8 @@ public void interpret(Processor processor, int insn) {
 
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -480,7 +502,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -504,7 +527,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -527,7 +551,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -551,7 +576,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -576,7 +602,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -605,7 +632,24 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRdRegister0()) {
+		context.prepareRdForStore();
+		if (context.isRsRegister0()) {
+			if (context.isRtRegister0()) {
+				context.loadImm(0);
+			} else {
+				context.loadRt();
+			}
+		} else {
+			context.loadRs();
+			if (!context.isRtRegister0()) {
+				context.loadRt();
+				context.getMethodVisitor().visitInsn(Opcodes.IADD);
+			}
+		}
+		context.storeRd();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -635,7 +679,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	ADD.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -666,7 +711,17 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRtRegister0()) {
+		context.prepareRtForStore();
+		context.loadRs();
+		int imm = context.getImm16(true);
+		if (imm != 0) {
+			context.loadImm(imm);
+			context.getMethodVisitor().visitInsn(Opcodes.IADD);
+		}
+		context.storeRt();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -696,7 +751,17 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRtRegister0()) {
+		context.prepareRtForStore();
+		context.loadRs();
+		int imm = context.getImm16(true);
+		if (imm != 0) {
+			context.loadImm(imm);
+			context.getMethodVisitor().visitInsn(Opcodes.IADD);
+		}
+		context.storeRt();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -726,7 +791,14 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRdRegister0()) {
+		context.prepareRdForStore();
+		context.loadRs();
+		context.loadRt();
+		context.getMethodVisitor().visitInsn(Opcodes.IAND);
+		context.storeRd();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -756,7 +828,15 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRtRegister0()) {
+		context.prepareRtForStore();
+		context.loadRs();
+		int imm = context.getImm16(false);
+		context.loadImm(imm);
+		context.getMethodVisitor().visitInsn(Opcodes.IAND);
+		context.storeRt();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -786,7 +866,16 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRdRegister0()) {
+		context.prepareRdForStore();
+		context.loadRs();
+		context.loadRt();
+		context.getMethodVisitor().visitInsn(Opcodes.IOR);
+		context.loadImm(-1);
+		context.getMethodVisitor().visitInsn(Opcodes.IXOR);
+		context.storeRd();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -816,7 +905,14 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRdRegister0()) {
+		context.prepareRdForStore();
+		context.loadRs();
+		context.loadRt();
+		context.getMethodVisitor().visitInsn(Opcodes.IOR);
+		context.storeRd();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -846,7 +942,17 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRtRegister0()) {
+		context.prepareRtForStore();
+		context.loadRs();
+		int imm = context.getImm16(false);
+		if (imm != 0) {
+			context.loadImm(imm);
+			context.getMethodVisitor().visitInsn(Opcodes.IOR);
+		}
+		context.storeRt();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -876,7 +982,14 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRdRegister0()) {
+		context.prepareRdForStore();
+		context.loadRs();
+		context.loadRt();
+		context.getMethodVisitor().visitInsn(Opcodes.IXOR);
+		context.storeRd();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -906,7 +1019,17 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRtRegister0()) {
+		context.prepareRtForStore();
+		context.loadRs();
+		int imm = context.getImm16(false);
+		if (imm != 0) {
+			context.loadImm(imm);
+			context.getMethodVisitor().visitInsn(Opcodes.IXOR);
+		}
+		context.storeRt();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -936,7 +1059,17 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRdRegister0()) {
+		context.prepareRdForStore();
+		context.loadRt();
+		int sa = context.getSaValue();
+		if (sa != 0) {
+			context.loadImm(sa);
+			context.getMethodVisitor().visitInsn(Opcodes.ISHL);
+		}
+		context.storeRd();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -966,7 +1099,18 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRdRegister0()) {
+		context.prepareRdForStore();
+		context.loadRt();
+		if (!context.isRsRegister0()) {
+			context.loadRs();
+			context.loadImm(31);
+			context.getMethodVisitor().visitInsn(Opcodes.IAND);
+			context.getMethodVisitor().visitInsn(Opcodes.ISHL);
+		}
+		context.storeRd();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -996,7 +1140,17 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRdRegister0()) {
+		context.prepareRdForStore();
+		context.loadRt();
+		int sa = context.getSaValue();
+		if (sa != 0) {
+			context.loadImm(sa);
+			context.getMethodVisitor().visitInsn(Opcodes.ISHR);
+		}
+		context.storeRd();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1026,7 +1180,18 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRdRegister0()) {
+		context.prepareRdForStore();
+		context.loadRt();
+		if (!context.isRsRegister0()) {
+			context.loadRs();
+			context.loadImm(31);
+			context.getMethodVisitor().visitInsn(Opcodes.IAND);
+			context.getMethodVisitor().visitInsn(Opcodes.ISHR);
+		}
+		context.storeRd();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1056,7 +1221,17 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRdRegister0()) {
+		context.prepareRdForStore();
+		context.loadRt();
+		int sa = context.getSaValue();
+		if (sa != 0) {
+			context.loadImm(sa);
+			context.getMethodVisitor().visitInsn(Opcodes.IUSHR);
+		}
+		context.storeRd();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1086,7 +1261,18 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRdRegister0()) {
+		context.prepareRdForStore();
+		context.loadRt();
+		if (!context.isRsRegister0()) {
+			context.loadRs();
+			context.loadImm(31);
+			context.getMethodVisitor().visitInsn(Opcodes.IAND);
+			context.getMethodVisitor().visitInsn(Opcodes.IUSHR);
+		}
+		context.storeRd();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1116,7 +1302,23 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRdRegister0()) {
+		context.prepareRdForStore();
+		context.loadRt();
+		int sa = context.getSaValue();
+		if (sa != 0) {
+			// rotateRight(rt, sa) = (rt >>> sa | rt << -sa)
+			context.getMethodVisitor().visitInsn(Opcodes.DUP);
+			context.loadImm(sa);
+			context.getMethodVisitor().visitInsn(Opcodes.IUSHR);
+			context.getMethodVisitor().visitInsn(Opcodes.SWAP);
+			context.loadImm(-sa);
+			context.getMethodVisitor().visitInsn(Opcodes.ISHL);
+			context.getMethodVisitor().visitInsn(Opcodes.IOR);
+		}
+		context.storeRd();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1146,7 +1348,25 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRdRegister0()) {
+		context.prepareRdForStore();
+		context.loadRt();
+		if (!context.isRsRegister0()) {
+			// rotateRight(rt, rs) = (rt >>> rs | rt << -rs)
+			context.loadRs();
+			context.loadImm(31);
+			context.getMethodVisitor().visitInsn(Opcodes.IAND);
+			context.getMethodVisitor().visitInsn(Opcodes.DUP2);
+			context.getMethodVisitor().visitInsn(Opcodes.IUSHR);
+			context.getMethodVisitor().visitInsn(Opcodes.DUP_X2);
+			context.getMethodVisitor().visitInsn(Opcodes.POP);
+			context.getMethodVisitor().visitInsn(Opcodes.INEG);
+			context.getMethodVisitor().visitInsn(Opcodes.ISHL);
+			context.getMethodVisitor().visitInsn(Opcodes.IOR);
+		}
+		context.storeRd();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1176,7 +1396,17 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRdRegister0()) {
+		context.prepareRdForStore();
+		// rd = (rs - rt) >>> 31
+		context.loadRs();
+		context.loadRt();
+		context.getMethodVisitor().visitInsn(Opcodes.ISUB);
+		context.loadImm(31);
+		context.getMethodVisitor().visitInsn(Opcodes.IUSHR);
+		context.storeRd();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1206,7 +1436,17 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRtRegister0()) {
+		context.prepareRtForStore();
+		// rt = (rs - simm16) >>> 31
+		context.loadRs();
+		context.loadImm16(true);
+		context.getMethodVisitor().visitInsn(Opcodes.ISUB);
+		context.loadImm(31);
+		context.getMethodVisitor().visitInsn(Opcodes.IUSHR);
+		context.storeRt();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1236,7 +1476,20 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRdRegister0()) {
+		context.prepareRdForStore();
+		// rd = (((long) rs) & 0xFFFFFFFFL - ((long) rt) & 0xFFFFFFFFL) >>> 63
+		context.loadRs();
+		context.convertUnsignedIntToLong();
+		context.loadRt();
+		context.convertUnsignedIntToLong();
+		context.getMethodVisitor().visitInsn(Opcodes.LSUB);
+		context.loadImm(63);
+		context.getMethodVisitor().visitInsn(Opcodes.LUSHR);
+		context.getMethodVisitor().visitInsn(Opcodes.L2I);
+		context.storeRd();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1266,7 +1519,20 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRtRegister0()) {
+		context.prepareRtForStore();
+		// rd = (((long) rs) & 0xFFFFFFFFL - ((long) imm16)) >>> 63
+		context.loadRs();
+		context.convertUnsignedIntToLong();
+		context.loadImm16(true);
+        context.convertUnsignedIntToLong();
+		context.getMethodVisitor().visitInsn(Opcodes.LSUB);
+		context.loadImm(63);
+		context.getMethodVisitor().visitInsn(Opcodes.LUSHR);
+		context.getMethodVisitor().visitInsn(Opcodes.L2I);
+		context.storeRt();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1297,7 +1563,25 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRdRegister0()) {
+		context.prepareRdForStore();
+		if (context.isRsRegister0()) {
+			if (context.isRtRegister0()) {
+				context.loadImm(0);
+			} else {
+				context.loadRt();
+				context.getMethodVisitor().visitInsn(Opcodes.INEG);
+			}
+		} else {
+			context.loadRs();
+			if (!context.isRtRegister0()) {
+				context.loadRt();
+				context.getMethodVisitor().visitInsn(Opcodes.ISUB);
+			}
+		}
+		context.storeRd();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1327,7 +1611,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	SUB.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1356,7 +1641,13 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRtRegister0()) {
+		context.prepareRtForStore();
+		int uimm16 = context.getImm16(false);
+		context.loadImm(uimm16 << 16);
+		context.storeRt();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1384,7 +1675,13 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRdRegister0()) {
+		context.prepareRdForStore();
+		context.loadRt();
+		context.getMethodVisitor().visitInsn(Opcodes.I2B);
+		context.storeRd();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1412,7 +1709,13 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRdRegister0()) {
+		context.prepareRdForStore();
+		context.loadRt();
+		context.getMethodVisitor().visitInsn(Opcodes.I2S);
+		context.storeRd();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1440,7 +1743,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	context.compileRDRT("doBITREV");
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1468,7 +1772,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	context.compileRDRT("doWSBH");
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1496,7 +1801,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	context.compileRDRT("doWSBW");
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1525,7 +1831,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	context.compileRDRSRT("doMOVZ");
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1555,7 +1862,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	context.compileRDRSRT("doMOVN");
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1585,7 +1893,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	context.compileRDRSRT("doMAX");
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1615,7 +1924,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	context.compileRDRSRT("doMIN");
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1644,7 +1954,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1672,7 +1983,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1702,7 +2014,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1734,7 +2047,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1764,7 +2078,18 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	context.prepareHiloForStore();
+	if (context.isRsRegister0() || context.isRtRegister0()) {
+		context.getMethodVisitor().visitLdcInsn(0L);
+	} else {
+		context.loadRs();
+		context.getMethodVisitor().visitInsn(Opcodes.I2L);
+		context.loadRt();
+		context.getMethodVisitor().visitInsn(Opcodes.I2L);
+		context.getMethodVisitor().visitInsn(Opcodes.LMUL);
+	}
+	context.storeHilo();
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1792,7 +2117,18 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	context.prepareHiloForStore();
+	if (context.isRsRegister0() || context.isRtRegister0()) {
+		context.getMethodVisitor().visitLdcInsn(0L);
+	} else {
+		context.loadRs();
+		context.convertUnsignedIntToLong();
+		context.loadRt();
+		context.convertUnsignedIntToLong();
+		context.getMethodVisitor().visitInsn(Opcodes.LMUL);
+	}
+	context.storeHilo();
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1820,7 +2156,18 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRsRegister0() && !context.isRtRegister0()) {
+		context.prepareHiloForStore();
+		context.loadHilo();
+		context.loadRs();
+		context.getMethodVisitor().visitInsn(Opcodes.I2L);
+		context.loadRt();
+		context.getMethodVisitor().visitInsn(Opcodes.I2L);
+		context.getMethodVisitor().visitInsn(Opcodes.LMUL);
+		context.getMethodVisitor().visitInsn(Opcodes.LADD);
+		context.storeHilo();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1848,7 +2195,18 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRsRegister0() && !context.isRtRegister0()) {
+		context.prepareHiloForStore();
+		context.loadHilo();
+		context.loadRs();
+		context.convertUnsignedIntToLong();
+		context.loadRt();
+		context.convertUnsignedIntToLong();
+		context.getMethodVisitor().visitInsn(Opcodes.LMUL);
+		context.getMethodVisitor().visitInsn(Opcodes.LADD);
+		context.storeHilo();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1876,7 +2234,18 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRsRegister0() && !context.isRtRegister0()) {
+		context.prepareHiloForStore();
+		context.loadHilo();
+		context.loadRs();
+		context.getMethodVisitor().visitInsn(Opcodes.I2L);
+		context.loadRt();
+		context.getMethodVisitor().visitInsn(Opcodes.I2L);
+		context.getMethodVisitor().visitInsn(Opcodes.LMUL);
+		context.getMethodVisitor().visitInsn(Opcodes.LSUB);
+		context.storeHilo();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1904,7 +2273,18 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRsRegister0() && !context.isRtRegister0()) {
+		context.prepareHiloForStore();
+		context.loadHilo();
+		context.loadRs();
+		context.convertUnsignedIntToLong();
+		context.loadRt();
+		context.convertUnsignedIntToLong();
+		context.getMethodVisitor().visitInsn(Opcodes.LMUL);
+		context.getMethodVisitor().visitInsn(Opcodes.LSUB);
+		context.storeHilo();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1932,7 +2312,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1960,7 +2341,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -1987,7 +2369,15 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRdRegister0()) {
+		context.prepareRdForStore();
+		context.loadHilo();
+		context.loadImm(32);
+		context.getMethodVisitor().visitInsn(Opcodes.LUSHR);
+		context.getMethodVisitor().visitInsn(Opcodes.L2I);
+		context.storeRd();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2013,7 +2403,15 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRdRegister0()) {
+		context.prepareRdForStore();
+		context.loadHilo();
+		context.getMethodVisitor().visitLdcInsn(0xFFFFFFFFL);
+		context.getMethodVisitor().visitInsn(Opcodes.LAND);
+		context.getMethodVisitor().visitInsn(Opcodes.L2I);
+		context.storeRd();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2039,7 +2437,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2065,7 +2464,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2094,7 +2494,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2125,7 +2526,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2155,7 +2557,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2184,7 +2587,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2213,7 +2617,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2242,7 +2647,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2271,7 +2677,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2300,7 +2707,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2329,7 +2737,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2358,7 +2767,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2387,7 +2797,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2416,7 +2827,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2445,7 +2857,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2474,7 +2887,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2504,7 +2918,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2535,7 +2950,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2564,7 +2980,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2591,7 +3008,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2619,7 +3037,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2647,7 +3066,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2674,7 +3094,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2701,7 +3122,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2728,7 +3150,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2755,7 +3178,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2783,7 +3207,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2812,7 +3237,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2841,7 +3267,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2870,7 +3297,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2899,7 +3327,13 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRtRegister0()) {
+		context.prepareRtForStore();
+		context.memRead8(context.getRsRegisterIndex(), context.getImm16(true));
+		context.getMethodVisitor().visitInsn(Opcodes.I2B);
+		context.storeRt();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2929,7 +3363,12 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRtRegister0()) {
+		context.prepareRtForStore();
+		context.memRead8(context.getRsRegisterIndex(), context.getImm16(true));
+		context.storeRt();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2959,7 +3398,13 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRtRegister0()) {
+		context.prepareRtForStore();
+		context.memRead16(context.getRsRegisterIndex(), context.getImm16(true));
+		context.getMethodVisitor().visitInsn(Opcodes.I2S);
+		context.storeRt();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -2989,7 +3434,12 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRtRegister0()) {
+		context.prepareRtForStore();
+		context.memRead16(context.getRsRegisterIndex(), context.getImm16(true));
+		context.storeRt();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3019,7 +3469,12 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	if (!context.isRtRegister0()) {
+		context.prepareRtForStore();
+		context.memRead32(context.getRsRegisterIndex(), context.getImm16(true));
+		context.storeRt();
+	}
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3049,7 +3504,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	context.compileRTRSIMM("doLWL", true);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3079,7 +3535,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	context.compileRTRSIMM("doLWR", true);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3109,7 +3566,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	context.compileRTRSIMM("doSB", true);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3139,7 +3597,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	context.compileRTRSIMM("doSH", true);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3169,7 +3628,12 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	int rs = context.getRsRegisterIndex();
+	int simm16 = context.getImm16(true);
+	context.prepareMemWrite32(rs, simm16);
+	context.loadRt();
+	context.memWrite32(rs, simm16);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3199,7 +3663,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	context.compileRTRSIMM("doSWL", true);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3229,7 +3694,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	context.compileRTRSIMM("doSWR", true);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3259,7 +3725,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	context.compileRTRSIMM("doLL", true);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3289,7 +3756,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3320,7 +3788,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3352,7 +3821,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3384,7 +3854,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3416,7 +3887,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3447,7 +3919,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	context.compileRTRSIMM("doSC", true);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3477,7 +3950,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3508,7 +3982,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3540,7 +4015,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3572,7 +4048,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3604,7 +4081,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3636,7 +4114,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3667,7 +4146,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3697,7 +4177,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3727,7 +4208,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3757,7 +4239,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3786,7 +4269,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3814,7 +4298,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3842,7 +4327,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3870,7 +4356,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3898,7 +4385,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3926,7 +4414,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3954,7 +4443,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -3982,7 +4472,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4010,7 +4501,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4038,7 +4530,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4067,7 +4560,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4096,7 +4590,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4124,7 +4619,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4152,7 +4648,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4180,7 +4677,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4207,7 +4705,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4234,7 +4733,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4261,7 +4761,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4288,7 +4789,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4319,7 +4821,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4353,7 +4856,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4387,7 +4891,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4421,7 +4926,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4455,7 +4961,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4489,7 +4996,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4523,7 +5031,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4557,7 +5066,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4591,7 +5101,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4625,7 +5136,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4656,7 +5168,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4684,7 +5197,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4712,7 +5226,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4740,7 +5255,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4771,7 +5287,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4805,7 +5322,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4839,7 +5357,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4873,7 +5392,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4907,7 +5427,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4941,7 +5462,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -4974,7 +5496,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5006,7 +5529,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5038,7 +5562,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5069,7 +5594,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5100,7 +5626,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5132,7 +5659,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5163,7 +5691,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5193,7 +5722,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5224,7 +5754,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5256,7 +5787,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5288,7 +5820,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5320,7 +5853,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5352,7 +5886,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5384,7 +5919,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5416,7 +5952,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5448,7 +5985,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5480,7 +6018,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5512,7 +6051,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5544,7 +6084,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5575,7 +6116,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5605,7 +6147,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5635,7 +6178,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5665,7 +6209,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5696,7 +6241,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5728,7 +6274,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5760,7 +6307,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5792,7 +6340,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5824,7 +6373,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5856,7 +6406,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5888,7 +6439,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5920,7 +6472,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5952,7 +6505,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -5984,7 +6538,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6016,7 +6571,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6048,7 +6604,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6080,7 +6637,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6112,7 +6670,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6144,7 +6703,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6176,7 +6736,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6208,7 +6769,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6240,7 +6802,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6272,7 +6835,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6304,7 +6868,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6336,7 +6901,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6368,7 +6934,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6398,7 +6965,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6426,7 +6994,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6456,7 +7025,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6488,7 +7058,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6520,7 +7091,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6552,7 +7124,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6585,7 +7158,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6619,7 +7193,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6653,7 +7228,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6687,7 +7263,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6721,7 +7298,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6755,7 +7333,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6789,7 +7368,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6823,7 +7403,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6873,7 +7454,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -6957,7 +7539,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -7031,7 +7614,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -7077,7 +7661,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -7105,7 +7690,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -7136,7 +7722,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -7168,7 +7755,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -7198,7 +7786,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -7228,7 +7817,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -7258,7 +7848,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -7288,7 +7879,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -7318,7 +7910,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -7350,7 +7943,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -7382,7 +7976,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -7413,7 +8008,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -7444,7 +8040,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -7474,7 +8071,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -7504,7 +8102,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -7536,7 +8135,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -7564,7 +8164,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -7587,7 +8188,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -7610,7 +8212,8 @@ public void interpret(Processor processor, int insn) {
             
 }
 @Override
-public void compile(Processor processor, int insn) {
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {

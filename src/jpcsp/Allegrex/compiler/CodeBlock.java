@@ -18,8 +18,11 @@ package jpcsp.Allegrex.compiler;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Collections;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.ListIterator;
+import java.util.Vector;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -39,6 +42,7 @@ public class CodeBlock {
 	private int startAddress;
 	private int lowestAddress;
 	private LinkedList<CodeInstruction> codeInstructions = new LinkedList<CodeInstruction>();
+	private LinkedList<SequenceCodeInstruction> sequenceCodeInstructions = new LinkedList<SequenceCodeInstruction>();
 	private IExecutable executable = null;
 	private final static String objectInternalName = Type.getInternalName(Object.class);
 	private final static String[] interfacesForExecutable = new String[] { Type.getInternalName(IExecutable.class) };
@@ -51,12 +55,12 @@ public class CodeBlock {
 		RuntimeContext.addCodeBlock(startAddress, this);
 	}
 
-	public void addInstruction(int address, int opcode, Instruction insn, boolean isBranchTarget, boolean isBranching, int branchingTo) {
+	public void addInstruction(int address, int opcode, Instruction insn, boolean isBranchTarget, boolean isBranching, int branchingTo, boolean hasDelaySlot) {
 		if (Compiler.log.isDebugEnabled()) {
 			Compiler.log.debug("CodeBlock.addInstruction 0x" + Integer.toHexString(address).toUpperCase() + " - " + insn.disasm(address, opcode));
 		}
 
-		CodeInstruction codeInstruction = new CodeInstruction(address, opcode, insn, isBranchTarget, isBranching, branchingTo);
+		CodeInstruction codeInstruction = new CodeInstruction(address, opcode, insn, isBranchTarget, isBranching, branchingTo, hasDelaySlot);
 
 		// Insert the codeInstruction in the codeInstructions list
 		// and keep the list sorted by address.
@@ -143,15 +147,141 @@ public class CodeBlock {
         mv.visitInsn(Opcodes.IRETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();
+
+        mv = cv.visitMethod(Opcodes.ACC_PUBLIC, "getCallCount", "()I", null, null);
+        mv.visitCode();
+        mv.visitFieldInsn(Opcodes.GETSTATIC, getClassName(), "callCount", "I");
+        mv.visitInsn(Opcodes.IRETURN);
+        mv.visitMaxs(0, 0);
+        mv.visitEnd();
+
+        cv.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, "callCount", "I", null, 0);
     }
 
-	private Class<IExecutable> compile(CompilerContext context) {
+    private void generateCodeSequences(List<CodeSequence> codeSequences) {
+        CodeSequence currentCodeSequence = null;
+
+        int nextAddress = 0;
+        for (CodeInstruction codeInstruction : codeInstructions) {
+            int address = codeInstruction.getAddress();
+            if (address < nextAddress) {
+                // Skip it
+            } else if (codeInstruction.hasDelaySlot()) {
+                if (currentCodeSequence != null) {
+                    codeSequences.add(currentCodeSequence);
+                }
+                nextAddress = address + 8;
+                currentCodeSequence = null;
+            } else if (codeInstruction.isBranchTarget()) {
+                if (currentCodeSequence != null) {
+                    codeSequences.add(currentCodeSequence);
+                }
+                currentCodeSequence = new CodeSequence(address);
+            } else {
+                if (currentCodeSequence == null) {
+                    currentCodeSequence = new CodeSequence(address);
+                }
+                currentCodeSequence.setEndAddress(address);
+            }
+        }
+
+        if (currentCodeSequence != null) {
+            codeSequences.add(currentCodeSequence);
+        }
+    }
+
+    private CodeSequence findCodeSequence(CodeInstruction codeInstruction, List<CodeSequence> codeSequences, CodeSequence currentCodeSequence) {
+        int address = codeInstruction.getAddress();
+
+        if (currentCodeSequence != null) {
+            if (currentCodeSequence.isInside(address)) {
+                return currentCodeSequence;
+            }
+        }
+
+        for (CodeSequence codeSequence : codeSequences) {
+            if (codeSequence.isInside(address)) {
+                return codeSequence;
+            }
+        }
+
+        return null;
+    }
+
+    private void splitCodeSequences(CompilerContext context, int methodMaxInstructions) {
+        Vector<CodeSequence> codeSequences = new Vector<CodeSequence>();
+
+        generateCodeSequences(codeSequences);
+        Collections.sort(codeSequences);
+
+        int currentMethodInstructions = codeInstructions.size();
+        Vector<CodeSequence> sequencesToBeSplit = new Vector<CodeSequence>();
+        for (CodeSequence codeSequence : codeSequences) {
+            sequencesToBeSplit.add(codeSequence);
+            if (Compiler.log.isDebugEnabled()) {
+                Compiler.log.debug("Sequence to be split: " + codeSequence.toString());
+            }
+            currentMethodInstructions -= codeSequence.getLength();
+            if (currentMethodInstructions <= methodMaxInstructions) {
+                break;
+            }
+        }
+
+        CodeSequence currentCodeSequence = null;
+        for (ListIterator<CodeInstruction> lit = codeInstructions.listIterator(); lit.hasNext(); ) {
+            CodeInstruction codeInstruction = lit.next();
+            CodeSequence codeSequence = findCodeSequence(codeInstruction, sequencesToBeSplit, currentCodeSequence);
+            if (codeSequence != null) {
+                lit.remove();
+                if (codeSequence.getInstructions().isEmpty()) {
+                    codeSequence.addInstruction(codeInstruction);
+                    SequenceCodeInstruction sequenceCodeInstruction = new SequenceCodeInstruction(codeSequence);
+                    lit.add(sequenceCodeInstruction);
+                    sequenceCodeInstructions.add(sequenceCodeInstruction);
+                } else {
+                    codeSequence.addInstruction(codeInstruction);
+                }
+                currentCodeSequence = codeSequence;
+            }
+        }
+    }
+
+    private void prepare(CompilerContext context) {
+        int methodMaxInstructions = context.getMethodMaxInstructions();
+
+        if (codeInstructions.size() > methodMaxInstructions) {
+            if (Compiler.log.isInfoEnabled()) {
+                Compiler.log.info("Splitting " + getClassName() + " (" + codeInstructions.size() + "/" + methodMaxInstructions + ")");
+            }
+            splitCodeSequences(context, methodMaxInstructions);
+        }
+    }
+
+    private void compile(CompilerContext context, MethodVisitor mv, List<CodeInstruction> codeInstructions) {
+        boolean skipNextInstruction = false;
+        for (CodeInstruction codeInstruction : codeInstructions) {
+            if (skipNextInstruction) {
+                skipNextInstruction = false;
+            } else {
+                codeInstruction.compile(context, mv);
+                skipNextInstruction = context.isSkipNextIntruction();
+                context.setSkipNextIntruction(false);
+            }
+        }
+    }
+
+    private Class<IExecutable> compile(CompilerContext context) {
 		Class<IExecutable> compiledClass = null;
 
 		context.setCodeBlock(this);
 		String className = getInternalClassName();
+		if (Compiler.log.isDebugEnabled()) {
+		    Compiler.log.debug("Compiling " + className);
+		}
 
-		int computeFlag = ClassWriter.COMPUTE_FRAMES;
+        prepare(context);
+
+        int computeFlag = ClassWriter.COMPUTE_FRAMES;
 		if (context.isAutomaticMaxLocals() || context.isAutomaticMaxStack()) {
 		    computeFlag |= ClassWriter.COMPUTE_MAXS;
 		}
@@ -174,27 +304,35 @@ public class CodeBlock {
 
     	MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, context.getStaticExecMethodName(), context.getStaticExecMethodDesc(), null, exceptions);
         mv.visitCode();
-        context.startMethod(mv);
+        context.setMethodVisitor(mv);
+        context.startMethod();
 
         // Jump to the block start if other instructions have been inserted in front
         if (!codeInstructions.isEmpty() && codeInstructions.getFirst().getAddress() != getStartAddress()) {
             mv.visitJumpInsn(Opcodes.GOTO, getCodeInstruction(getStartAddress()).getLabel());
         }
 
-        boolean skipNextInstruction = false;
-    	for (CodeInstruction codeInstruction : codeInstructions) {
-    	    if (skipNextInstruction) {
-    	        skipNextInstruction = false;
-    	    } else {
-    	        codeInstruction.compile(context, mv);
-    	        skipNextInstruction = context.isSkipNextIntruction();
-    	        context.setSkipNextIntruction(false);
-    	    }
-		}
-    	mv.visitMaxs(context.getMaxLocals(), context.getMaxStack());
+        compile(context, mv, codeInstructions);
+        mv.visitMaxs(context.getMaxLocals(), context.getMaxStack());
         mv.visitEnd();
 
-    	cv.visitEnd();
+        for (SequenceCodeInstruction sequenceCodeInstruction : sequenceCodeInstructions) {
+            if (Compiler.log.isDebugEnabled()) {
+                Compiler.log.debug("Compiling Sequence " + sequenceCodeInstruction.getMethodName(context));
+            }
+            mv = cv.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, sequenceCodeInstruction.getMethodName(context), "()V", null, exceptions);
+            mv.visitCode();
+            context.setMethodVisitor(mv);
+            context.startSequenceMethod();
+
+            compile(context, mv, sequenceCodeInstruction.getCodeSequence().getInstructions());
+
+            context.endSequenceMethod();
+            mv.visitMaxs(context.getMaxLocals(), context.getMaxStack());
+            mv.visitEnd();
+        }
+
+        cv.visitEnd();
 
     	if (debugOutput != null) {
     	    Compiler.log.debug(debugOutput.toString());
