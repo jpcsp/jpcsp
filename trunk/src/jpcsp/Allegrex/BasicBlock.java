@@ -72,7 +72,7 @@ public class BasicBlock {
         while (!stop) {
             int opcode = cpu.fetchOpcode();
             Common.Instruction insn = Decoder.instruction(opcode);
-            insn.compile(processor, opcode);
+            // insn.compile(processor, opcode);
         }
     }
 

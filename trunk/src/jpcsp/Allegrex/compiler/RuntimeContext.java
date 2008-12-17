@@ -29,6 +29,7 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.State;
+import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.HLE.SyscallHandler;
@@ -48,8 +49,10 @@ public class RuntimeContext {
     public  static Logger log = Logger.getLogger("runtime");
 	public  static boolean isActive = true;
 	public  static volatile int gpr[];
-	public  static volatile int memory[];
+	public  static volatile int memoryInt[];
 	public  static volatile Processor processor;
+	public  static volatile CpuState cpu;
+	public  static volatile Memory memory;
 	public  static final boolean enableIntructionCounting = true;
 	public  static final boolean enableDebugger = true;
 	public  static final String debuggerName = "syncDebugger";
@@ -60,6 +63,7 @@ public class RuntimeContext {
 	public  static final String debugCodeInstructionName = "debugCodeInstruction";
 	public  static final boolean enableInstructionTypeCounting = false;
 	public  static final String instructionTypeCount = "instructionTypeCount";
+	public  static final boolean enableCallCount = false;
 	public  static final String logInfo = "logInfo";
 	public  static final String pauseEmuWithStatus = "pauseEmuWithStatus";
 	public  static final boolean enableLineNumbers = true;
@@ -138,11 +142,11 @@ public class RuntimeContext {
             return false;
         }
 
-        Memory mem = Emulator.getMemory();
-		if (mem instanceof FastMemory) {
-			memory = ((FastMemory) mem).getAll();
+		memory = Emulator.getMemory();
+		if (memory instanceof FastMemory) {
+			memoryInt = ((FastMemory) memory).getAll();
 		} else {
-		    memory = null;
+		    memoryInt = null;
 		}
 
 		return true;
@@ -189,16 +193,21 @@ public class RuntimeContext {
 		}
     }
 
+    private static void updateStaticVariables() {
+		emulator = Emulator.getInstance();
+		processor = Emulator.getProcessor();
+		cpu = processor.cpu;
+		gpr = processor.cpu.gpr;
+    }
+
     public static void update() {
         if (!isActive) {
             return;
         }
 
-		emulator = Emulator.getInstance();
-		processor = Emulator.getProcessor();
-		gpr = processor.cpu.gpr;
+        updateStaticVariables();
 
-		ThreadMan threadManager = ThreadMan.getInstance();
+        ThreadMan threadManager = ThreadMan.getInstance();
 		SceKernelThreadInfo newThread = threadManager.getCurrentThread();
 		if (newThread != null && newThread != currentThread) {
 			switchThread(newThread);
@@ -293,6 +302,7 @@ public class RuntimeContext {
     			log.debug("Waiting to be scheduled...");
 				runtimeThread.suspendRuntimeExecution();
     			log.debug("Scheduled, restarting...");
+    			updateStaticVariables();
     		}
     	}
     }
@@ -347,6 +357,7 @@ public class RuntimeContext {
     	if (State.debugger != null) {
     		processor.cpu.pc = pc;
     		syncDebugger();
+    		syncPause();
     	} else if (Emulator.pause) {
     		syncPause();
     	}
@@ -412,6 +423,7 @@ public class RuntimeContext {
     	IExecutable executable = getExecutable(processor.cpu.pc);
 		thread.setInSyscall(false);
     	try {
+    		updateStaticVariables();
     		executable.exec(0, false);
     	} catch (StopThreadException e) {
     		// Ignore Exception
@@ -475,6 +487,8 @@ public class RuntimeContext {
         	isActive = false;
         	return;
         }
+
+        log.info("Using Compiler");
 
         while (!toBeStoppedThreads.isEmpty()) {
         	wakeupToBeStoppedThreads();
@@ -578,9 +592,27 @@ public class RuntimeContext {
     		log.debug("RuntimeContext.exit");
         	stopAllThreads();
             log.info(idleDuration.toString());
+
             if (enableInstructionTypeCounting) {
-            	for (Instruction insn : instructionTypeCounts.keySet()) {
-            		log.info(String.format("  %10s %d", insn.name(), instructionTypeCounts.get(insn).intValue()));
+            	while (!instructionTypeCounts.isEmpty()) {
+            		Instruction highestCountInsn = null;
+            		int highestCount = -1;
+                	for (Instruction insn : instructionTypeCounts.keySet()) {
+                		int count = instructionTypeCounts.get(insn);
+                		if (count > highestCount) {
+                			highestCount = count;
+                			highestCountInsn = insn;
+                		}
+                	}
+                	instructionTypeCounts.remove(highestCountInsn);
+            		log.info(String.format("  %10s %s %d", highestCountInsn.name(), (highestCountInsn.hasFlags(Instruction.FLAG_INTERPRETED) ? "I" : "C"), highestCount));
+            	}
+            }
+
+            if (enableCallCount) {
+            	for (CodeBlock codeBlock : codeBlocks.values()) {
+            		IExecutable executable = codeBlock.getExecutable();
+            		log.info(String.format("%s %d calls", codeBlock.getClassName(), executable.getCallCount()));
             	}
             }
         }

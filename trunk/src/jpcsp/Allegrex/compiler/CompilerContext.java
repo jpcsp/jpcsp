@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
 
+import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Instructions;
@@ -37,30 +38,42 @@ import org.objectweb.asm.Type;
  * @author gid15
  *
  */
-public class CompilerContext {
+public class CompilerContext implements ICompilerContext {
 	private CompilerClassLoader classLoader;
 	private CodeBlock codeBlock;
 	private boolean skipNextIntruction;
+	private MethodVisitor mv;
+	private CodeInstruction codeInstruction;
 	private static final boolean storeGprLocal = true;
 	private static final boolean storeProcessorLocal = true;
+	private static final boolean storeCpuLocal = false;
 	private static final int LOCAL_RETURN_ADDRESS = 0;
     private static final int LOCAL_IS_JUMP = 1;
     private static final int LOCAL_PROCESSOR = 2;
     private static final int LOCAL_GPR = 3;
     private static final int LOCAL_INSTRUCTION_COUNT = 4;
-    private static final int LOCAL_MAX = 5;
-    private static final int STACK_MAX = 3;
+    private static final int LOCAL_CPU = 5;
+    private static final int LOCAL_TMP = 6;
+    private static final int LOCAL_MAX = 7;
+    private static final int STACK_MAX = 10;
     public Set<Integer> analysedAddresses = new HashSet<Integer>();
     public Stack<Integer> blocksToBeAnalysed = new Stack<Integer>();
     private int currentInstructionCount;
+    private int preparedRegisterForStore = -1;
+    private boolean memWrite32prepared = false;
+    private boolean hiloPrepared = false;
     private static final String runtimeContextInternalName = Type.getInternalName(RuntimeContext.class);
     private static final String processorDescriptor = Type.getDescriptor(Processor.class);
+    private static final String cpuDescriptor = Type.getDescriptor(CpuState.class);
+    private static final String cpuInternalName = Type.getInternalName(CpuState.class);
     private static final String instructionsInternalName = Type.getInternalName(Instructions.class);
     private static final String instructionInternalName = Type.getInternalName(Instruction.class);
     private static final String instructionDescriptor = Type.getDescriptor(Instruction.class);
     private static final String sceKernalThreadInfoInternalName = Type.getInternalName(SceKernelThreadInfo.class);
     private static final String sceKernalThreadInfoDescriptor = Type.getDescriptor(SceKernelThreadInfo.class);
     private static final String stringDescriptor = Type.getDescriptor(String.class);
+    private static final String memoryDescriptor = Type.getDescriptor(Memory.class);
+    private static final String memoryInternalName = Type.getInternalName(Memory.class);
 
     public CompilerContext(CompilerClassLoader classLoader) {
         this.classLoader = classLoader;
@@ -90,7 +103,7 @@ public class CompilerContext {
         this.skipNextIntruction = skipNextIntruction;
     }
 
-    private void loadGpr(MethodVisitor mv) {
+    private void loadGpr() {
     	if (storeGprLocal) {
     		mv.visitVarInsn(Opcodes.ALOAD, LOCAL_GPR);
     	} else {
@@ -98,7 +111,15 @@ public class CompilerContext {
     	}
     }
 
-    private void loadProcessor(MethodVisitor mv) {
+    private void loadCpu() {
+    	if (storeCpuLocal) {
+    		mv.visitVarInsn(Opcodes.ALOAD, LOCAL_CPU);
+    	} else {
+    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "cpu", cpuDescriptor);
+    	}
+	}
+
+    private void loadProcessor() {
     	if (storeProcessorLocal) {
     		mv.visitVarInsn(Opcodes.ALOAD, LOCAL_PROCESSOR);
     	} else {
@@ -106,48 +127,84 @@ public class CompilerContext {
     	}
     }
 
-    public void loadRegister(MethodVisitor mv, int reg) {
-    	loadGpr(mv);
+    public void loadRegister(int reg) {
+    	loadGpr();
         mv.visitLdcInsn(reg);
         mv.visitInsn(Opcodes.IALOAD);
     }
 
-    public void storeRegister(MethodVisitor mv, int reg) {
-    	loadGpr(mv);
-        mv.visitInsn(Opcodes.SWAP);
-        mv.visitLdcInsn(reg);
-        mv.visitInsn(Opcodes.SWAP);
-        mv.visitInsn(Opcodes.IASTORE);
+    public void prepareRegisterForStore(int reg) {
+    	if (preparedRegisterForStore < 0) {
+        	loadGpr();
+            mv.visitLdcInsn(reg);
+    		preparedRegisterForStore = reg;
+    	}
     }
 
-    public void storeRegister(MethodVisitor mv, int reg, int constantValue) {
-    	loadGpr(mv);
+    public void storeRegister(int reg) {
+    	if (preparedRegisterForStore == reg) {
+	        mv.visitInsn(Opcodes.IASTORE);
+	        preparedRegisterForStore = -1;
+    	} else {
+	    	loadGpr();
+	        mv.visitInsn(Opcodes.SWAP);
+	        mv.visitLdcInsn(reg);
+	        mv.visitInsn(Opcodes.SWAP);
+	        mv.visitInsn(Opcodes.IASTORE);
+    	}
+    }
+
+    public void storeRegister(int reg, int constantValue) {
+    	loadGpr();
         mv.visitLdcInsn(reg);
         mv.visitLdcInsn(constantValue);
         mv.visitInsn(Opcodes.IASTORE);
     }
 
-    public void loadFcr31(MethodVisitor mv) {
-    	loadProcessor(mv);
-        mv.visitFieldInsn(Opcodes.GETFIELD, Type.getInternalName(Processor.class), "cpu", Type.getDescriptor(CpuState.class));
+    public void loadFcr31() {
+    	loadCpu();
         mv.visitFieldInsn(Opcodes.GETFIELD, Type.getInternalName(CpuState.class), "fcr31", Type.getDescriptor(Fcr31.class));
     }
 
-    public void loadFcr31c(MethodVisitor mv) {
-    	loadFcr31(mv);
+	@Override
+	public void loadHilo() {
+		loadCpu();
+        mv.visitFieldInsn(Opcodes.GETFIELD, Type.getInternalName(CpuState.class), "hilo", Type.getDescriptor(long.class));
+	}
+
+	@Override
+	public void prepareHiloForStore() {
+		loadCpu();
+		hiloPrepared = true;
+	}
+
+	@Override
+	public void storeHilo() {
+		if (!hiloPrepared) {
+			loadCpu();
+			mv.visitInsn(Opcodes.DUP_X2);
+        	mv.visitInsn(Opcodes.POP);
+		}
+        mv.visitFieldInsn(Opcodes.PUTFIELD, Type.getInternalName(CpuState.class), "hilo", Type.getDescriptor(long.class));
+
+        hiloPrepared = false;
+	}
+
+	public void loadFcr31c() {
+    	loadFcr31();
         mv.visitFieldInsn(Opcodes.GETFIELD, Type.getInternalName(Fcr31.class), "c", "Z");
     }
 
-    private void loadLocalVar(MethodVisitor mv, int localVar) {
+    private void loadLocalVar(int localVar) {
         mv.visitVarInsn(Opcodes.ILOAD, localVar);
     }
 
-    private void loadInstruction(MethodVisitor mv, Instruction insn) {
+    private void loadInstruction(Instruction insn) {
         mv.visitFieldInsn(Opcodes.GETSTATIC, instructionsInternalName, insn.name().replace('.', '_').replace(' ', '_'), instructionDescriptor);
     }
 
-    public void visitJump(MethodVisitor mv) {
-    	flushInstructionCount(mv, true, false);
+    public void visitJump() {
+    	flushInstructionCount(true, false);
 
     	//
         //      jr x
@@ -167,49 +224,53 @@ public class CompilerContext {
 
         mv.visitLabel(jumpLoop);
         mv.visitInsn(Opcodes.DUP);
-        loadLocalVar(mv, LOCAL_RETURN_ADDRESS);
-        visitJump(mv, Opcodes.IF_ICMPEQ, returnLabel);
-        loadLocalVar(mv, LOCAL_IS_JUMP);
-        visitJump(mv, Opcodes.IFEQ, jumpLabel);
+        loadLocalVar(LOCAL_RETURN_ADDRESS);
+        visitJump(Opcodes.IF_ICMPEQ, returnLabel);
+        loadLocalVar(LOCAL_IS_JUMP);
+        visitJump(Opcodes.IFEQ, jumpLabel);
 
         mv.visitLabel(returnLabel);
-        endMethod(mv);
+        endMethod();
         mv.visitInsn(Opcodes.IRETURN);
 
         mv.visitLabel(jumpLabel);
-        loadLocalVar(mv, LOCAL_RETURN_ADDRESS);
+        loadLocalVar(LOCAL_RETURN_ADDRESS);
         mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "jump", "(II)I");
-        visitJump(mv, Opcodes.GOTO, jumpLoop);
+        visitJump(Opcodes.GOTO, jumpLoop);
     }
 
-    public void visitCall(MethodVisitor mv, int address, int returnAddress, int returnRegister) {
+    public void visitCall(int address, int returnAddress, int returnRegister) {
         mv.visitLdcInsn(returnAddress);
         if (returnRegister != 0) {
             mv.visitInsn(Opcodes.DUP);
-            storeRegister(mv, returnRegister);
+            storeRegister(returnRegister);
         }
         mv.visitInsn(Opcodes.ICONST_0);		// isJump = false
         mv.visitMethodInsn(Opcodes.INVOKESTATIC, getClassName(address), getStaticExecMethodName(), getStaticExecMethodDesc());
         mv.visitInsn(Opcodes.POP);
     }
 
-    public void visitCall(MethodVisitor mv, int returnAddress, int returnRegister) {
+    public void visitCall(int returnAddress, int returnRegister) {
         if (returnRegister != 0) {
-            storeRegister(mv, returnRegister, returnAddress);
+            storeRegister(returnRegister, returnAddress);
         }
         mv.visitLdcInsn(returnAddress);
         mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "call", "(II)V");
     }
 
-    public void visitIntepreterCall(MethodVisitor mv, int opcode, Instruction insn) {
-    	loadInstruction(mv, insn);
-        loadProcessor(mv);
+    public void visitCall(int address, String methodName) {
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, getClassName(address), methodName, "()V");
+    }
+
+    public void visitIntepreterCall(int opcode, Instruction insn) {
+    	loadInstruction(insn);
+        loadProcessor();
         mv.visitLdcInsn(opcode);
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, instructionInternalName, "interpret", "(" + processorDescriptor + "I)V");
     }
 
-    public void visitSyscall(MethodVisitor mv, int opcode, Instruction insn) {
-    	flushInstructionCount(mv, false, false);
+    public void visitSyscall(int opcode) {
+    	flushInstructionCount(false, false);
 
     	int code = (opcode >> 6) & 0x000FFFFF;
     	mv.visitLdcInsn(code);
@@ -220,6 +281,12 @@ public class CompilerContext {
         	mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "gpr", "[I");
             mv.visitVarInsn(Opcodes.ASTORE, LOCAL_GPR);
         }
+
+        if (storeCpuLocal) {
+        	// Reload "cpu", it could have been changed due to a thread switch
+        	mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "cpu", cpuDescriptor);
+            mv.visitVarInsn(Opcodes.ASTORE, LOCAL_CPU);
+        }
     }
 
     public void startClass(ClassVisitor cv) {
@@ -228,32 +295,52 @@ public class CompilerContext {
     	}
     }
 
-    public void startMethod(MethodVisitor mv) {
-        if (RuntimeContext.debugCodeBlockCalls && RuntimeContext.log.isDebugEnabled()) {
-        	mv.visitLdcInsn(getCodeBlock().getStartAddress());
-        	loadLocalVar(mv, LOCAL_RETURN_ADDRESS);
-        	loadLocalVar(mv, LOCAL_IS_JUMP);
-            mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.debugCodeBlockStart, "(IIZ)V");
-        }
-
+    public void startSequenceMethod() {
         if (storeProcessorLocal) {
-        	mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "processor", processorDescriptor);
-        	mv.visitVarInsn(Opcodes.ASTORE, LOCAL_PROCESSOR);
+            mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "processor", processorDescriptor);
+            mv.visitVarInsn(Opcodes.ASTORE, LOCAL_PROCESSOR);
         }
 
         if (storeGprLocal) {
-        	mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "gpr", "[I");
+            mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "gpr", "[I");
             mv.visitVarInsn(Opcodes.ASTORE, LOCAL_GPR);
         }
 
+        if (storeCpuLocal) {
+            mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "cpu", cpuDescriptor);
+            mv.visitVarInsn(Opcodes.ASTORE, LOCAL_CPU);
+        }
+
         if (RuntimeContext.enableIntructionCounting) {
-        	currentInstructionCount = 0;
-        	mv.visitInsn(Opcodes.ICONST_0);
+            currentInstructionCount = 0;
+            mv.visitInsn(Opcodes.ICONST_0);
             mv.visitVarInsn(Opcodes.ISTORE, LOCAL_INSTRUCTION_COUNT);
         }
     }
 
-    private void flushInstructionCount(MethodVisitor mv, boolean local, boolean last) {
+    public void endSequenceMethod() {
+        mv.visitInsn(Opcodes.RETURN);
+    }
+
+    public void startMethod() {
+    	if (RuntimeContext.enableCallCount) {
+	    	mv.visitFieldInsn(Opcodes.GETSTATIC, codeBlock.getClassName(), "callCount", "I");
+	    	mv.visitInsn(Opcodes.ICONST_1);
+	    	mv.visitInsn(Opcodes.IADD);
+	    	mv.visitFieldInsn(Opcodes.PUTSTATIC, codeBlock.getClassName(), "callCount", "I");
+    	}
+
+    	if (RuntimeContext.debugCodeBlockCalls && RuntimeContext.log.isDebugEnabled()) {
+        	mv.visitLdcInsn(getCodeBlock().getStartAddress());
+        	loadLocalVar(LOCAL_RETURN_ADDRESS);
+        	loadLocalVar(LOCAL_IS_JUMP);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.debugCodeBlockStart, "(IIZ)V");
+        }
+
+    	startSequenceMethod();
+    }
+
+    private void flushInstructionCount(boolean local, boolean last) {
         if (RuntimeContext.enableIntructionCounting) {
         	if (local) {
         		if (currentInstructionCount > 0) {
@@ -280,20 +367,20 @@ public class CompilerContext {
         }
     }
 
-    public void endMethod(MethodVisitor mv) {
+    public void endMethod() {
         if (RuntimeContext.debugCodeBlockCalls && RuntimeContext.log.isDebugEnabled()) {
             mv.visitInsn(Opcodes.DUP);
         	mv.visitLdcInsn(getCodeBlock().getStartAddress());
             mv.visitInsn(Opcodes.SWAP);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.debugCodeBlockEnd, "(II)V");
         }
-    	flushInstructionCount(mv, false, true);
+    	flushInstructionCount(false, true);
     }
 
-    public void beforeInstruction(MethodVisitor mv, CodeInstruction codeInstruction) {
+    public void beforeInstruction(CodeInstruction codeInstruction) {
 	    if (RuntimeContext.enableIntructionCounting) {
 	    	if (codeInstruction.isBranchTarget()) {
-	    		flushInstructionCount(mv, true, false);
+	    		flushInstructionCount(true, false);
 	    	}
 	    	currentInstructionCount++;
 	    }
@@ -304,7 +391,7 @@ public class CompilerContext {
     	}
     }
 
-    public void startInstruction(MethodVisitor mv, CodeInstruction codeInstruction) {
+    public void startInstruction(CodeInstruction codeInstruction) {
     	if (RuntimeContext.enableLineNumbers) {
     		int lineNumber = codeInstruction.getAddress() - getCodeBlock().getLowestAddress();
     		// Java line number is unsigned 16bits
@@ -320,7 +407,7 @@ public class CompilerContext {
 	    }
 
 	    if (RuntimeContext.enableInstructionTypeCounting) {
-	    	loadInstruction(mv, codeInstruction.getInsn());
+	    	loadInstruction(codeInstruction.getInsn());
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.instructionTypeCount, "(" + instructionDescriptor + ")V");
 	    }
 
@@ -330,16 +417,16 @@ public class CompilerContext {
 	    }
     }
 
-    public void visitJump(MethodVisitor mv, int opcode, Label label) {
-    	flushInstructionCount(mv, true, false);
+    public void visitJump(int opcode, Label label) {
+    	flushInstructionCount(true, false);
         mv.visitJumpInsn(opcode, label);
     }
 
-    public void visitJump(MethodVisitor mv, int opcode, int address) {
-        flushInstructionCount(mv, true, false);
+    public void visitJump(int opcode, int address) {
+        flushInstructionCount(true, false);
         if (opcode == Opcodes.GOTO) {
             mv.visitLdcInsn(address);
-            visitJump(mv);
+            visitJump();
         } else {
             Compiler.log.error("Not implemented: branching to an unknown address");
             if (opcode == Opcodes.IF_ACMPEQ ||
@@ -355,7 +442,7 @@ public class CompilerContext {
             }
             mv.visitInsn(Opcodes.POP);
             mv.visitLdcInsn(address);
-            visitJump(mv);
+            visitJump();
         }
     }
 
@@ -409,5 +496,361 @@ public class CompilerContext {
     public void visitLogInfo(MethodVisitor mv, String message) {
     	mv.visitLdcInsn(message);
         mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.logInfo, "(" + stringDescriptor + ")V");
+    }
+
+	@Override
+	public MethodVisitor getMethodVisitor() {
+		return mv;
+	}
+
+	public void setMethodVisitor(MethodVisitor mv) {
+		this.mv = mv;
+	}
+
+	public CodeInstruction getCodeInstruction() {
+		return codeInstruction;
+	}
+
+	public void setCodeInstruction(CodeInstruction codeInstruction) {
+		this.codeInstruction = codeInstruction;
+	}
+
+	@Override
+	public int getSaValue() {
+        return (codeInstruction.getOpcode() >> 6) & 31;
+    }
+
+	@Override
+	public int getRsRegisterIndex() {
+        return (codeInstruction.getOpcode() >> 21) & 31;
+    }
+
+	@Override
+    public int getRtRegisterIndex() {
+        return (codeInstruction.getOpcode() >> 16) & 31;
+    }
+
+	@Override
+    public int getRdRegisterIndex() {
+        return (codeInstruction.getOpcode() >> 11) & 31;
+    }
+
+	@Override
+    public void loadRs() {
+        loadRegister(getRsRegisterIndex());
+    }
+
+	@Override
+    public void loadRt() {
+        loadRegister(getRtRegisterIndex());
+    }
+
+	@Override
+    public void loadRd() {
+        loadRegister(getRdRegisterIndex());
+    }
+
+	@Override
+    public void loadSaValue() {
+        loadImm(getSaValue());
+    }
+
+    public void loadRegisterIndex(int registerIndex) {
+    	mv.visitLdcInsn(registerIndex);
+    }
+
+    public void loadRsIndex() {
+        loadRegisterIndex(getRsRegisterIndex());
+    }
+
+    public void loadRtIndex() {
+        loadRegisterIndex(getRtRegisterIndex());
+    }
+
+    public void loadRdIndex() {
+        loadRegisterIndex(getRdRegisterIndex());
+    }
+
+	@Override
+    public int getImm16(boolean signedImm) {
+    	int imm16 = codeInstruction.getOpcode()& 0xFFFF;
+    	if (signedImm) {
+    		imm16 = (int)(short) imm16;
+    	}
+
+    	return imm16;
+    }
+
+	@Override
+    public void loadImm16(boolean signedImm) {
+    	loadImm(getImm16(signedImm));
+    }
+
+	@Override
+    public void loadImm(int imm) {
+		switch (imm) {
+			case -1: mv.visitInsn(Opcodes.ICONST_M1); break;
+			case  0: mv.visitInsn(Opcodes.ICONST_0);  break;
+			case  1: mv.visitInsn(Opcodes.ICONST_1);  break;
+			case  2: mv.visitInsn(Opcodes.ICONST_2);  break;
+			case  3: mv.visitInsn(Opcodes.ICONST_3);  break;
+			case  4: mv.visitInsn(Opcodes.ICONST_4);  break;
+			case  5: mv.visitInsn(Opcodes.ICONST_5);  break;
+			default: mv.visitLdcInsn(imm);            break;
+		}
+    }
+
+	@Override
+	public void compileInterpreterInstruction() {
+		visitIntepreterCall(codeInstruction.getOpcode(), codeInstruction.getInsn());
+	}
+
+	@Override
+	public void compileRTRSIMM(String method, boolean signedImm) {
+		loadCpu();
+		loadRtIndex();
+		loadRsIndex();
+		loadImm16(signedImm);
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, cpuInternalName, method, "(III)V");
+	}
+
+	@Override
+	public void compileRDRSRT(String method) {
+		loadCpu();
+		loadRdIndex();
+		loadRsIndex();
+		loadRtIndex();
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, cpuInternalName, method, "(III)V");
+	}
+
+	@Override
+	public void compileRDRTRS(String method) {
+		loadCpu();
+		loadRdIndex();
+		loadRtIndex();
+		loadRsIndex();
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, cpuInternalName, method, "(III)V");
+	}
+
+	@Override
+	public void compileRDRT(String method) {
+		loadCpu();
+		loadRdIndex();
+		loadRtIndex();
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, cpuInternalName, method, "(II)V");
+	}
+
+	@Override
+	public void storeRd() {
+		storeRegister(getRdRegisterIndex());
+	}
+
+	@Override
+	public void storeRt() {
+		storeRegister(getRtRegisterIndex());
+	}
+
+    @Override
+	public boolean isRdRegister0() {
+		return getRdRegisterIndex() == 0;
+	}
+
+	@Override
+	public boolean isRtRegister0() {
+		return getRtRegisterIndex() == 0;
+	}
+
+	@Override
+	public boolean isRsRegister0() {
+		return getRsRegisterIndex() == 0;
+	}
+
+	@Override
+	public void prepareRdForStore() {
+		prepareRegisterForStore(getRdRegisterIndex());
+	}
+
+	@Override
+	public void prepareRtForStore() {
+		prepareRegisterForStore(getRtRegisterIndex());
+	}
+
+	@Override
+	public void memRead32(int registerIndex, int offset) {
+		if (RuntimeContext.memoryInt == null) {
+    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memory", memoryDescriptor);
+		} else {
+    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memoryInt", "[I");
+		}
+
+		loadRegister(registerIndex);
+		if (offset != 0) {
+			loadImm(offset);
+			mv.visitInsn(Opcodes.IADD);
+		}
+
+		if (RuntimeContext.memoryInt == null) {
+	        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "read32", "(I)I");
+		} else {
+			// memoryInt[(address & 0x3FFFFFFF) / 4] == memoryInt[(address << 2) >>> 4]
+			loadImm(2);
+			mv.visitInsn(Opcodes.ISHL);
+			loadImm(4);
+			mv.visitInsn(Opcodes.IUSHR);
+			mv.visitInsn(Opcodes.IALOAD);
+		}
+	}
+
+	@Override
+	public void memRead16(int registerIndex, int offset) {
+		if (RuntimeContext.memoryInt == null) {
+    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memory", memoryDescriptor);
+		} else {
+    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memoryInt", "[I");
+		}
+
+		loadRegister(registerIndex);
+		if (offset != 0) {
+			loadImm(offset);
+			mv.visitInsn(Opcodes.IADD);
+		}
+
+		if (RuntimeContext.memoryInt == null) {
+	        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "read16", "(I)I");
+		} else {
+			// memoryInt[(address & 0x3FFFFFFF) / 4] == memoryInt[(address << 2) >>> 4]
+			loadImm(2);
+			mv.visitInsn(Opcodes.ISHL);
+			loadImm(3);
+			mv.visitInsn(Opcodes.IUSHR);
+			mv.visitInsn(Opcodes.DUP);
+			loadImm(1);
+			mv.visitInsn(Opcodes.IAND);
+			loadImm(4);
+			mv.visitInsn(Opcodes.ISHL);
+			mv.visitVarInsn(Opcodes.ISTORE, LOCAL_TMP);
+			loadImm(1);
+			mv.visitInsn(Opcodes.IUSHR);
+			mv.visitInsn(Opcodes.IALOAD);
+			mv.visitVarInsn(Opcodes.ILOAD, LOCAL_TMP);
+			mv.visitInsn(Opcodes.IUSHR);
+			loadImm(0xFFFF);
+			mv.visitInsn(Opcodes.IAND);
+		}
+	}
+
+	@Override
+	public void memRead8(int registerIndex, int offset) {
+		if (RuntimeContext.memoryInt == null) {
+    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memory", memoryDescriptor);
+		} else {
+    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memoryInt", "[I");
+		}
+
+		loadRegister(registerIndex);
+		if (offset != 0) {
+			loadImm(offset);
+			mv.visitInsn(Opcodes.IADD);
+		}
+
+		if (RuntimeContext.memoryInt == null) {
+	        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "read8", "(I)I");
+		} else {
+			// memoryInt[(address & 0x3FFFFFFF) / 4] == memoryInt[(address << 2) >>> 4]
+			loadImm(2);
+			mv.visitInsn(Opcodes.ISHL);
+			loadImm(2);
+			mv.visitInsn(Opcodes.IUSHR);
+			mv.visitInsn(Opcodes.DUP);
+			loadImm(3);
+			mv.visitInsn(Opcodes.IAND);
+			loadImm(3);
+			mv.visitInsn(Opcodes.ISHL);
+			mv.visitVarInsn(Opcodes.ISTORE, LOCAL_TMP);
+			loadImm(2);
+			mv.visitInsn(Opcodes.IUSHR);
+			mv.visitInsn(Opcodes.IALOAD);
+			mv.visitVarInsn(Opcodes.ILOAD, LOCAL_TMP);
+			mv.visitInsn(Opcodes.IUSHR);
+			loadImm(0xFF);
+			mv.visitInsn(Opcodes.IAND);
+		}
+	}
+
+	@Override
+	public void prepareMemWrite32(int registerIndex, int offset) {
+		if (RuntimeContext.memoryInt == null) {
+    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memory", memoryDescriptor);
+		} else {
+    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memoryInt", "[I");
+		}
+
+		loadRegister(registerIndex);
+		if (offset != 0) {
+			loadImm(offset);
+			mv.visitInsn(Opcodes.IADD);
+		}
+
+		if (RuntimeContext.memoryInt != null) {
+			// memoryInt[(address & 0x3FFFFFFF) / 4] == memoryInt[(address << 2) >>> 4]
+			loadImm(2);
+			mv.visitInsn(Opcodes.ISHL);
+			loadImm(4);
+			mv.visitInsn(Opcodes.IUSHR);
+		}
+
+		memWrite32prepared = true;
+	}
+
+	@Override
+	public void memWrite32(int registerIndex, int offset) {
+		if (!memWrite32prepared) {
+			if (RuntimeContext.memoryInt == null) {
+	    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memory", memoryDescriptor);
+			} else {
+	    		mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "memoryInt", "[I");
+			}
+			mv.visitInsn(Opcodes.SWAP);
+
+			loadRegister(registerIndex);
+			if (offset != 0) {
+				loadImm(offset);
+				mv.visitInsn(Opcodes.IADD);
+			}
+			mv.visitInsn(Opcodes.SWAP);
+		}
+
+		if (RuntimeContext.memoryInt == null) {
+	        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "write32", "(II)V");
+		} else {
+			mv.visitInsn(Opcodes.IASTORE);
+		}
+
+		memWrite32prepared = false;
+	}
+
+	@Override
+	public void compileSyscall() {
+		visitSyscall(codeInstruction.getOpcode());
+	}
+
+	@Override
+	public void compileRDRTSA(String method) {
+		loadCpu();
+		loadRdIndex();
+		loadRtIndex();
+		loadSaValue();
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, cpuInternalName, method, "(III)V");
+	}
+
+	@Override
+	public void convertUnsignedIntToLong() {
+		mv.visitInsn(Opcodes.I2L);
+		mv.visitLdcInsn(0xFFFFFFFFL);
+		mv.visitInsn(Opcodes.LAND);
+	}
+
+    public int getMethodMaxInstructions() {
+        return 3000;
     }
 }

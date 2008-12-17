@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex;
 
+import jpcsp.Allegrex.compiler.ICompilerContext;
 import jpcsp.util.Utilities;
 import jpcsp.Processor;
 
@@ -29,10 +30,15 @@ public class Common {
     public static abstract class Instruction {
 
         private int m_count = 0;
+        private int flags = 0;
+        public final static int FLAG_INTERPRETED = 1;
 
-        public abstract void interpret(jpcsp.Processor processor, int insn);
+        public abstract void interpret(Processor processor, int insn);
 
-        public abstract void compile(jpcsp.Processor processor, int insn);
+        public void compile(ICompilerContext context, int insn) {
+        	flags |= FLAG_INTERPRETED;
+        	context.compileInterpreterInstruction();
+        }
 
         public abstract String disasm(int address, int insn);
 
@@ -66,6 +72,14 @@ public class Common {
 
         public Instruction() {
         }
+
+		public int getFlags() {
+			return flags;
+		}
+
+		public boolean hasFlags(int testFlags) {
+			return (flags & testFlags) == testFlags;
+		}
     }
 
     public static abstract class STUB extends Instruction {
@@ -76,8 +90,8 @@ public class Common {
         }
 
         @Override
-        public void compile(Processor processor, int insn) {
-            instance(insn).compile(processor, insn);
+        public void compile(ICompilerContext context, int insn) {
+            instance(insn).compile(context, insn);
         }
 
         @Override
@@ -105,7 +119,8 @@ public class Common {
         }
 
         @Override
-        public void compile(Processor processor, int insn) {
+        public void compile(ICompilerContext context, int insn) {
+        	super.compile(context, insn);
         }
 
         @Override
