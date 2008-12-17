@@ -20,6 +20,8 @@ package jpcsp.graphics;
 
 import static jpcsp.graphics.GeCommands.*;
 
+import java.io.BufferedInputStream;
+import java.io.IOException;
 import java.nio.Buffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
@@ -99,13 +101,15 @@ public class VideoEngine {
 
     private float[][] light_pos = new float[4][4];
 
+    private int[] light_enabled = new int[4];
     private int[] light_type = new int[4];
+    private int[] light_kind = new int[4];
     private boolean lighting = false;
 
     private float[] fog_color = new float[4];
     private float fog_far = 0.0f,fog_dist = 0.0f;
 
-    private float nearZ = 0.0f, farZ = 0.0f, zscale;
+    private float nearZ = 0.0f, farZ = 0.0f, zscale, zpos;
 
     private int mat_flags = 0;
     private float[] mat_ambient = new float[4];
@@ -125,6 +129,7 @@ public class VideoEngine {
     private float tex_translate_x = 0.f, tex_translate_y = 0.f;
     private float tex_scale_x = 1.f, tex_scale_y = 1.f;
     private float[] tex_env_color = new float[4];
+    private int tex_enable;
 
     private int tex_clut_addr;
     private int tex_clut_num_blocks;
@@ -163,7 +168,9 @@ public class VideoEngine {
     private int[] vboBufferId = new int[1];
     private static final int vboBufferSize = 1024 * 1024;
     private FloatBuffer vboBuffer = BufferUtil.newFloatBuffer(vboBufferSize);
-
+    private boolean useShaders = true;
+    private int shaderProgram;
+    
     private static void log(String msg) {
         log.debug(msg);
         /*if (isDebugMode) {
@@ -193,12 +200,27 @@ public class VideoEngine {
             gl.isFunctionAvailable("glBufferDataARB") &&
             gl.isFunctionAvailable("glDeleteBuffersARB") &&
             gl.isFunctionAvailable("glGenBuffers");
+        
+        useShaders = Settings.getInstance().readBool("emu.useshaders") &&
+			gl.isFunctionAvailable("glCreateShader") &&
+			gl.isFunctionAvailable("glShaderSource") &&
+			gl.isFunctionAvailable("glCompileShader") &&
+			gl.isFunctionAvailable("glCreateProgram") &&
+			gl.isFunctionAvailable("glAttachShader") &&
+			gl.isFunctionAvailable("glLinkProgram") &&
+			gl.isFunctionAvailable("glValidateProgram") &&
+			gl.isFunctionAvailable("glUseProgram") && true;
 
-        if (useVBO) {
-            VideoEngine.log.info("using VBO");
+        if(useShaders) {
+        	VideoEngine.log.info("Using shaders");
+        	loadShaders(gl);
+        }
+        
+        if(useVBO) {
+            VideoEngine.log.info("Using VBO");
             buildVBO(gl);
         }
-
+        
         statistics = new DurationStatistics("VideoEngine Statistics");
         commandStatistics = new DurationStatistics[256];
         for (int i = 0; i < commandStatistics.length; i++) {
@@ -212,6 +234,87 @@ public class VideoEngine {
         gl.glBufferData(GL.GL_ARRAY_BUFFER, vboBufferSize *
                 BufferUtil.SIZEOF_FLOAT, vboBuffer, GL.GL_STREAM_DRAW);
     }
+    
+    private void loadShaders(GL gl) {
+    	int v = gl.glCreateShader(GL.GL_VERTEX_SHADER);
+    	int f = gl.glCreateShader(GL.GL_FRAGMENT_SHADER);
+
+    	BufferedInputStream biv = new BufferedInputStream(getClass().getResourceAsStream("/jpcsp/graphics/shader.vert"));
+
+    	String[] srcArray = new String[1];
+    	StringBuilder sb = new StringBuilder();
+    	int c;
+    	try {
+			while((c = (int) biv.read()) != -1)
+				sb.append((char)c);
+			biv.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+    	srcArray[0] = sb.toString();
+    	gl.glShaderSource(v, 1, srcArray, null, 0);
+    	gl.glCompileShader(v);
+    	printShaderInfoLog(gl, v);
+
+    	BufferedInputStream bif = new BufferedInputStream(getClass().getResourceAsStream("/jpcsp/graphics/shader.frag"));
+    	sb = new StringBuilder();
+    	try {
+			while((c = bif.read()) != -1)
+				sb.append((char)c);
+			bif.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+    	srcArray[0] = sb.toString();
+    	gl.glShaderSource(f, 1, srcArray, null, 0);
+    	gl.glCompileShader(f);
+    	printShaderInfoLog(gl, f);
+
+    	shaderProgram = gl.glCreateProgram();
+    	gl.glAttachShader(shaderProgram, v);
+    	//gl.glAttachShader(shaderProgram, f);
+    	gl.glLinkProgram(shaderProgram);
+    	printProgramInfoLog(gl, shaderProgram);
+    	gl.glValidateProgram(shaderProgram);
+    	printProgramInfoLog(gl, shaderProgram);
+    	
+    	for(Uniforms uniform : Uniforms.values())
+    		uniform.allocateId(gl, shaderProgram);
+        }
+    
+    void printShaderInfoLog(GL gl, int obj)
+	{
+	    int[] infologLength = new int[1];
+	    int[] charsWritten = new int[1];
+	    byte[] infoLog;
+
+		gl.glGetShaderiv(obj, GL.GL_INFO_LOG_LENGTH, infologLength, 0);
+
+	    if (infologLength[0] > 1)
+	    {
+	        infoLog = new byte[infologLength[0]];
+	        gl.glGetShaderInfoLog(obj, infologLength[0], charsWritten, 0, infoLog, 0);
+			log.error("Shader info log : " + new String(infoLog));
+	    }
+	}
+
+	void printProgramInfoLog(GL gl, int obj)
+	{
+		int[] infologLength = new int[1];
+	    int[] charsWritten = new int[1];
+	    byte[] infoLog;
+
+		gl.glGetProgramiv(obj, GL.GL_INFO_LOG_LENGTH, infologLength, 0);
+
+	    if (infologLength[0] > 1)
+	    {
+	        infoLog = new byte[infologLength[0]];
+	        gl.glGetProgramInfoLog(obj, infologLength[0], charsWritten, 0, infoLog, 0);
+			log.error("Program info log : " + new String(infoLog));
+	    }
+	}
+
 
     public static void exit() {
         if (instance != null) {
@@ -243,6 +346,8 @@ public class VideoEngine {
         if (!jpcsp.HLE.pspge.getInstance().waitingForSync)
             return false;
 
+        gl.glUseProgram(shaderProgram);
+
         statistics.start();
 
         boolean updated = false;
@@ -263,6 +368,8 @@ public class VideoEngine {
         }
         DisplayList.Unlock();
 
+        gl.glUseProgram(0);
+        
         if (updated)
             jpcsp.HLE.pspge.getInstance().syncDone = true;
 
@@ -549,10 +656,14 @@ public class VideoEngine {
 
             case TME:
                 if (normalArgument != 0) {
+                	tex_enable = 1;
                     gl.glEnable(GL.GL_TEXTURE_2D);
+                    if(useShaders) gl.glUniform1i(Uniforms.texEnable.getId(), 1);
                     log("sceGuEnable(GU_TEXTURE_2D)");
                 } else {
+                	tex_enable = 0;
                     gl.glDisable(GL.GL_TEXTURE_2D);
+                    if(useShaders) gl.glUniform1i(Uniforms.texEnable.getId(), 0);
                     log("sceGuDisable(GU_TEXTURE_2D)");
                 }
                 break;
@@ -898,88 +1009,56 @@ public class VideoEngine {
             /*
              * Light types
              */
-
-            case LT0: {
-            	light_type[0] = normalArgument;
-
-            	if (light_type[0] == LIGTH_DIRECTIONAL)
-            		light_pos[0][3] = 0.f;
-            	else
-            		light_pos[0][3] = 1.f;
-            	break;
-        	}
-            case LT1: {
-            	light_type[1] = normalArgument;
-
-            	if (light_type[1] == LIGTH_DIRECTIONAL)
-            		light_pos[1][3] = 0.f;
-            	else
-            		light_pos[1][3] = 1.f;
-            	break;
-        	}
-            case LT2: {
-            	light_type[2] = normalArgument;
-
-            	if (light_type[2] == LIGTH_DIRECTIONAL)
-            		light_pos[2][3] = 0.f;
-            	else
-            		light_pos[2][3] = 1.f;
-            	break;
-        	}
+            	
+            case LT0:
+            case LT1:
+            case LT2:
             case LT3: {
-            	light_type[3] = normalArgument;
-
-            	if (light_type[3] == LIGTH_DIRECTIONAL)
-            		light_pos[3][3] = 0.f;
-            	else
-            		light_pos[3][3] = 1.f;
+            	int lnum = command - LT0;
+            	light_type[lnum] = (normalArgument >> 8) & 3;
+            	light_kind[lnum] = normalArgument & 3; // TODO Use this somewhere...
+            	switch(light_type[lnum]) {
+            	case LIGTH_DIRECTIONAL:
+            		light_pos[lnum][3] = 0.f;
+            		break;
+            	case LIGTH_POINT:
+            		gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_SPOT_CUTOFF, 180);
+            		light_pos[lnum][3] = 1.f;
+            		break;
+            	case LIGTH_SPOT:
+            		light_pos[lnum][3] = 1.f;
+            		break;
+            	default:
+            		log.error("Unknown light type : " + normalArgument);
+            	}
+            	if(useShaders) {
+            		gl.glUniform4iv(Uniforms.lightType.getId(), 1, light_type, 0);
+            		gl.glUniform4iv(Uniforms.lightKind.getId(), 1, light_kind, 0);
+            	}
+            	log.debug("Light " + lnum + " type " + (normalArgument >> 8) + " kind " + (normalArgument & 3));
             	break;
-        	}
-
-
+            }
             /*
              * Individual lights enable/disable
              */
             case LTE0:
-            	if (normalArgument != 0) {
-                    gl.glEnable(GL.GL_LIGHT0);
-                    log("sceGuEnable(GL_LIGHT0)");
-                } else {
-                    gl.glDisable(GL.GL_LIGHT0);
-                    log("sceGuDisable(GL_LIGHT0)");
-                }
-                break;
-
             case LTE1:
-            	if (normalArgument != 0) {
-                    gl.glEnable(GL.GL_LIGHT1);
-                    log("sceGuEnable(GL_LIGHT1)");
-                } else {
-                    gl.glDisable(GL.GL_LIGHT1);
-                    log("sceGuDisable(GL_LIGHT1)");
-                }
-                break;
-
             case LTE2:
+            case LTE3: {
+            	int lnum = command - LTE0;
+            	light_enabled[lnum] = normalArgument & 1;
             	if (normalArgument != 0) {
-                    gl.glEnable(GL.GL_LIGHT2);
-                    log("sceGuEnable(GL_LIGHT2)");
+                    gl.glEnable(GL.GL_LIGHT0 + lnum);
+                    log.error("sceGuEnable(GL_LIGHT"+lnum+")");
                 } else {
-                    gl.glDisable(GL.GL_LIGHT2);
-                    log("sceGuDisable(GL_LIGHT2)");
+                    gl.glDisable(GL.GL_LIGHT0 + lnum);
+                    log.error("sceGuDisable(GL_LIGHT"+lnum+")");
                 }
+            	if(useShaders) {
+            		gl.glUniform4iv(Uniforms.lightEnabled.getId(), 1, light_enabled, 0);
+            	}
                 break;
-
-            case LTE3:
-            	if (normalArgument != 0) {
-                    gl.glEnable(GL.GL_LIGHT3);
-                    log("sceGuEnable(GL_LIGHT3)");
-                } else {
-                    gl.glDisable(GL.GL_LIGHT3);
-                    log("sceGuDisable(GL_LIGHT3)");
-                }
-                break;
-
+            }
 
             /*
              * Lighting enable/disable
@@ -987,12 +1066,14 @@ public class VideoEngine {
             case LTE:
             	if (normalArgument != 0) {
             		lighting = true;
+            		if(useShaders) gl.glUniform1i(Uniforms.lightingEnable.getId(), 1);
                     gl.glEnable(GL.GL_LIGHTING);
-                    log("sceGuEnable(GL_LIGHTING)");
+                    log.error("sceGuEnable(GL_LIGHTING)");
                 } else {
                 	lighting = false;
+                	if(useShaders) gl.glUniform1i(Uniforms.lightingEnable.getId(), 0);
                     gl.glDisable(GL.GL_LIGHTING);
-                    log("sceGuDisable(GL_LIGHTING)");
+                    log.error("sceGuDisable(GL_LIGHTING)");
                 }
                 break;
 
@@ -1372,6 +1453,7 @@ public class VideoEngine {
 	           		case 4: env_mode = GL.GL_ADD; break;
            			default: VideoEngine.log.warn("Unimplemented tfunc mode");
            		}
+           		if(useShaders) gl.glUniform1i(Uniforms.texEnvMode.getId(), normalArgument & 7);
            		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, env_mode);
            		// TODO : check this
            		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, (normalArgument & 0x100) == 0 ? GL.GL_PREVIOUS : GL.GL_TEXTURE);
@@ -1405,7 +1487,8 @@ public class VideoEngine {
                 }
                 break;
             case ZSCALE:
-            	zscale = floatArgument;
+            	zscale = floatArgument / 65535.f;
+            	if(useShaders) gl.glUniform1f(Uniforms.zScale.getId(), zscale);
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(ZSCALE), floatArgument);
                 }
@@ -1424,6 +1507,8 @@ public class VideoEngine {
                 break;
 
             case ZPOS:
+            	zpos = floatArgument / 65535.f;
+            	if(useShaders) gl.glUniform1f(Uniforms.zPos.getId(), zpos);
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(ZPOS), floatArgument);
                 }
@@ -1535,9 +1620,9 @@ public class VideoEngine {
                             		doSkinning(vinfo, v);
                                 vboBuffer.put(v.p);
                             }
-                            if (log.isDebugEnabled()) {
+                            if (log.isTraceEnabled()) {
                             	if (vinfo.texture != 0 && vinfo.position != 0) {
-                            		log("  vertex#" + i + " (" + ((int) v.t[0]) + "," + ((int) v.t[1]) + ") at (" + ((int) v.p[0]) + "," + ((int) v.p[1]) + "," + ((int) v.p[2]) + ")");
+                            		log.trace("  vertex#" + i + " (" + ((int) v.t[0]) + "," + ((int) v.t[1]) + ") at (" + ((int) v.p[0]) + "," + ((int) v.p[1]) + "," + ((int) v.p[2]) + ")");
                             	}
                             }
                         }
@@ -1930,40 +2015,30 @@ public class VideoEngine {
 
                 int func = GL.GL_LESS;
 
-                switch (normalArgument & 0xFF) {
-                    case ZTST_FUNCTION_NEVER_PASS_PIXEL:
-                        func = GL.GL_NEVER;
-                        break;
-
-                    case ZTST_FUNCTION_ALWAYS_PASS_PIXEL:
-                        func = GL.GL_ALWAYS;
-                        break;
-
-                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_EQUAL:
-                        func = GL.GL_EQUAL;
-                        break;
-
-                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_ISNOT_EQUAL:
-                        func = GL.GL_NOTEQUAL;
-                        break;
-
-                    // TODO Remove this hack of depth test inversion and properly translate the GE commands
-                    // But I guess we need to implement zscale first... which is about very difficult to do
-                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS:
-                        func = GL.GL_GREATER;
-                        break;
-
-                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS_OR_EQUAL:
-                        func = GL.GL_GEQUAL;
-                        break;
-
-                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER:
-                        func = GL.GL_LESS;
-                        break;
-
-                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER_OR_EQUAL:
-                        func = GL.GL_LEQUAL;
-                        break;
+                if(useShaders) {
+                	switch (normalArgument & 0xFF) {
+	                    case ZTST_FUNCTION_NEVER_PASS_PIXEL: func = GL.GL_NEVER; break;
+	                    case ZTST_FUNCTION_ALWAYS_PASS_PIXEL: func = GL.GL_ALWAYS; break;
+	                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_EQUAL: func = GL.GL_EQUAL; break;
+	                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_ISNOT_EQUAL: func = GL.GL_NOTEQUAL; break;
+	                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS: func = GL.GL_LESS; break;
+	                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS_OR_EQUAL: func = GL.GL_LEQUAL; break;
+	                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER: func = GL.GL_GREATER; break;
+	                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER_OR_EQUAL: func = GL.GL_GEQUAL; break;
+                	}
+                } else {
+	                switch (normalArgument & 0xFF) {
+	                    case ZTST_FUNCTION_NEVER_PASS_PIXEL: func = GL.GL_NEVER; break;
+	                    case ZTST_FUNCTION_ALWAYS_PASS_PIXEL: func = GL.GL_ALWAYS; break;
+	                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_EQUAL: func = GL.GL_EQUAL; break;
+	                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_ISNOT_EQUAL: func = GL.GL_NOTEQUAL; break;
+	                    // TODO Remove this hack of depth test inversion and properly translate the GE commands
+	                    // But I guess we need to implement zscale first... which is about very difficult to do
+	                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS: func = GL.GL_GREATER; break;
+	                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS_OR_EQUAL: func = GL.GL_GEQUAL; break;
+	                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER: func = GL.GL_LESS; break;
+	                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER_OR_EQUAL: func = GL.GL_LEQUAL; break;
+	                }
                 }
 
                 gl.glDepthFunc(func);
@@ -2012,8 +2087,15 @@ public class VideoEngine {
             		// TODO Remove this glClear
             		// We should not use it at all but demos won't work at all without it and our current implementation
             		// We need to tweak the Z values written to the depth buffer, but I think this is impossible to do properly
-            		// without a fragment shader I think
-            		gl.glClear(GL.GL_DEPTH_BUFFER_BIT);
+            		// without a fragment shader
+            		if(!useShaders)
+            			gl.glClear(GL.GL_DEPTH_BUFFER_BIT);            		
+            		else {
+            			gl.glUniform1f(Uniforms.zPos.getId(), zpos);
+            			gl.glUniform1f(Uniforms.zScale.getId(), zscale);
+            			gl.glUniform1i(Uniforms.texEnable.getId(), tex_enable);
+            			gl.glUniform1i(Uniforms.lightingEnable.getId(), lighting ? 1 : 0);
+            		}
             		log("clear mode end");
             	} else if((normalArgument & 1) != 0) {
             		clearMode = true;
@@ -2022,6 +2104,14 @@ public class VideoEngine {
             		gl.glDisable(GL.GL_STENCIL_TEST);
             		gl.glDisable(GL.GL_LIGHTING);
             		gl.glDisable(GL.GL_TEXTURE_2D);
+            		
+            		if(useShaders) {
+            			gl.glUniform1f(Uniforms.zPos.getId(), 0);
+            			gl.glUniform1f(Uniforms.zScale.getId(), 0);
+            			gl.glUniform1i(Uniforms.texEnable.getId(), 0);
+            			gl.glUniform1i(Uniforms.lightingEnable.getId(), 0);
+            		}
+            		
             		// TODO Add more disabling in clear mode, we also need to reflect the change to the internal GE registers
             		boolean color = false, alpha = false;
             		if((normalArgument & 0x100) != 0) color = true;
@@ -2924,20 +3014,34 @@ public class VideoEngine {
             }
         } else if (vinfo.color != 0 && mat_flags != 0) {
             useVertexColor = true;
-            int flags = 0;
-            // TODO : Can't emulate this properly right now since we can't mix the properties like we want
-            if((mat_flags & 1) != 0 && (mat_flags & 2) != 0)
-                flags = GL.GL_AMBIENT_AND_DIFFUSE;
-            else if((mat_flags & 1) != 0) flags = GL.GL_AMBIENT;
-            else if((mat_flags & 2) != 0) flags = GL.GL_DIFFUSE;
-            else if((mat_flags & 4) != 0) flags = GL.GL_SPECULAR;
-            gl.glColorMaterial(GL.GL_FRONT_AND_BACK, flags);
-            gl.glEnable(GL.GL_COLOR_MATERIAL);
+            if(useShaders) {
+        		int[] bvec = new int[4];
+        		if((mat_flags & 1) != 0) bvec[1] = 1; // GL.GL_AMBIENT;
+            	if((mat_flags & 2) != 0) bvec[2] = 1; // GL.GL_DIFFUSE;
+            	if((mat_flags & 4) != 0) bvec[3] = 1; // GL.GL_SPECULAR;
+        		bvec[0] = 1;
+        		gl.glUniform4iv(Uniforms.matFlags.getId(), 1, bvec, 0);
+        	} else {
+            	int flags = 0;
+            	// TODO : Can't emulate this properly right now since we can't mix the properties like we want
+            	if((mat_flags & 1) != 0 && (mat_flags & 2) != 0)
+            		flags = GL.GL_AMBIENT_AND_DIFFUSE;
+            	else if((mat_flags & 1) != 0) flags = GL.GL_AMBIENT;
+            	else if((mat_flags & 2) != 0) flags = GL.GL_DIFFUSE;
+            	else if((mat_flags & 4) != 0) flags = GL.GL_SPECULAR;
+            	gl.glColorMaterial(GL.GL_FRONT_AND_BACK, flags);
+            	gl.glEnable(GL.GL_COLOR_MATERIAL);
+        	}
         } else {
             gl.glDisable(GL.GL_COLOR_MATERIAL);
             gl.glMaterialfv(GL.GL_FRONT, GL.GL_AMBIENT, mat_ambient, 0);
             gl.glMaterialfv(GL.GL_FRONT, GL.GL_DIFFUSE, mat_diffuse, 0);
             gl.glMaterialfv(GL.GL_FRONT, GL.GL_SPECULAR, mat_specular, 0);
+            if(useShaders) {
+            	int[] bvec = new int[4];
+            	bvec[0] = 0;
+        		gl.glUniform4iv(Uniforms.matFlags.getId(), 1, bvec, 0);
+            }
         }
 
         gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, tex_wrap_s);
