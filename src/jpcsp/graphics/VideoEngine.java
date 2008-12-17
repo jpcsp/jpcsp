@@ -1049,10 +1049,10 @@ public class VideoEngine {
             	light_enabled[lnum] = normalArgument & 1;
             	if (normalArgument != 0) {
                     gl.glEnable(GL.GL_LIGHT0 + lnum);
-                    log.error("sceGuEnable(GL_LIGHT"+lnum+")");
+                    log("sceGuEnable(GL_LIGHT"+lnum+")");
                 } else {
                     gl.glDisable(GL.GL_LIGHT0 + lnum);
-                    log.error("sceGuDisable(GL_LIGHT"+lnum+")");
+                    log("sceGuDisable(GL_LIGHT"+lnum+")");
                 }
             	if(useShaders) {
             		gl.glUniform4iv(Uniforms.lightEnabled.getId(), 1, light_enabled, 0);
@@ -1068,12 +1068,12 @@ public class VideoEngine {
             		lighting = true;
             		if(useShaders) gl.glUniform1i(Uniforms.lightingEnable.getId(), 1);
                     gl.glEnable(GL.GL_LIGHTING);
-                    log.error("sceGuEnable(GL_LIGHTING)");
+                    log("sceGuEnable(GL_LIGHTING)");
                 } else {
                 	lighting = false;
                 	if(useShaders) gl.glUniform1i(Uniforms.lightingEnable.getId(), 0);
                     gl.glDisable(GL.GL_LIGHTING);
-                    log.error("sceGuDisable(GL_LIGHTING)");
+                    log("sceGuDisable(GL_LIGHTING)");
                 }
                 break;
 
