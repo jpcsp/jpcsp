@@ -696,6 +696,10 @@ public class sceMpeg implements HLEModule {
                     + " *buffer=0x" + Integer.toHexString(buffer)
                     + " *init=" + init);
 
+                // testing
+                if (init != 1) mem.write32(init_addr, 1);
+                if (init != 0) mem.write32(init_addr, 0);
+
                 if (isFakeAuHandle(au)) {
                     int type = getFakeAuType(au);
                     switch(type) {

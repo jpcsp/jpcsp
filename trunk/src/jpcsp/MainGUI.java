@@ -523,6 +523,8 @@ public void loadFile(File file) {
         // TODO convert to tri-state disable/enable/auto, auto will use PSF.isLikelyHomebrew() to disable audio in homebrew
         boolean disableAudio = Settings.getInstance().readBool("emu.disablesceAudio");
         jpcsp.HLE.Modules.sceAudioModule.setEnabled(!disableAudio);
+        boolean ignoreAudioThreads = Settings.getInstance().readBool("emu.ignoreaudiothreads");
+        jpcsp.HLE.ThreadMan.getInstance().setThreadBanningEnabled(ignoreAudioThreads);
 
         if (instructioncounter != null)
             instructioncounter.RefreshWindow();
