@@ -521,8 +521,8 @@ public class ThreadMan {
 
         // cleanup thread - free the stack
         if (thread.stack_addr != 0) {
-            Modules.log.debug("thread:'" + thread.name + "' freeing stack " + String.format("0x%08X", thread.stack_addr - thread.stackSize));
-            pspSysMem.getInstance().free(thread.stack_addr - thread.stackSize);
+            Modules.log.debug("thread:'" + thread.name + "' freeing stack " + String.format("0x%08X", thread.stack_addr));
+            pspSysMem.getInstance().free(thread.stack_addr);
         }
 
         waitingThreads.remove(thread);
