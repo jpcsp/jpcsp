@@ -59,6 +59,9 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         enabled = Settings.getInstance().readBool("emu.compiler");
         compilerCheck.setSelected(enabled);
         
+        enabled = Settings.getInstance().readBool("emu.useshaders");
+        shadersCheck.setSelected(enabled);
+        
         enabled = Settings.getInstance().readBool("emu.disablege");
         disableGECheck.setSelected(enabled);
         
@@ -227,6 +230,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         umdpath = new javax.swing.JTextField();
         jLabel1 = new javax.swing.JLabel();
         jButton1 = new javax.swing.JButton();
+        shadersCheck = new javax.swing.JCheckBox();
         compatibilityPanel = new javax.swing.JPanel();
         jPanel1 = new javax.swing.JPanel();
         disableSoundCheck = new javax.swing.JCheckBox();
@@ -287,11 +291,6 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         snapConsoleCheck.setText("Snap console to main window");
 
         compilerCheck.setText("Use compiler (dynarec)");
-        compilerCheck.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                compilerCheckActionPerformed(evt);
-            }
-        });
 
         buttonGroup1.add(umdBrowser);
         umdBrowser.setText("Use UMD Browser");
@@ -310,39 +309,39 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
             }
         });
 
+        shadersCheck.setText("Use shaders (highly experimental)");
+
         javax.swing.GroupLayout generalPanelLayout = new javax.swing.GroupLayout(generalPanel);
         generalPanel.setLayout(generalPanelLayout);
         generalPanelLayout.setHorizontalGroup(
             generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, generalPanelLayout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(generalPanelLayout.createSequentialGroup()
+                .addContainerGap()
                 .addGroup(generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(generalPanelLayout.createSequentialGroup()
-                        .addComponent(umdBrowser)
+                        .addComponent(shadersCheck)
                         .addContainerGap())
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                         .addGroup(generalPanelLayout.createSequentialGroup()
-                            .addComponent(ClassicOpenDialogumd)
+                            .addGroup(generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addComponent(umdBrowser)
+                                .addComponent(ClassicOpenDialogumd))
                             .addContainerGap())
-                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, generalPanelLayout.createSequentialGroup()
-                                .addGroup(generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                    .addComponent(pbpunpackcheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(openLogwindowCheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(saveWindowPosCheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(snapConsoleCheck, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 169, Short.MAX_VALUE))
-                                .addGap(435, 435, 435))
-                            .addGroup(generalPanelLayout.createSequentialGroup()
-                                .addComponent(jLabel1)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(umdpath, javax.swing.GroupLayout.PREFERRED_SIZE, 175, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addContainerGap())))))
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, generalPanelLayout.createSequentialGroup()
-                .addGap(10, 10, 10)
-                .addComponent(compilerCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 598, Short.MAX_VALUE)
-                .addContainerGap())
+                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, generalPanelLayout.createSequentialGroup()
+                            .addGroup(generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addComponent(pbpunpackcheck, javax.swing.GroupLayout.DEFAULT_SIZE, 384, Short.MAX_VALUE)
+                                .addComponent(saveWindowPosCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 384, Short.MAX_VALUE)
+                                .addComponent(openLogwindowCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 384, Short.MAX_VALUE)
+                                .addComponent(snapConsoleCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 384, Short.MAX_VALUE)
+                                .addComponent(compilerCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 384, Short.MAX_VALUE))
+                            .addGap(216, 216, 216))
+                        .addGroup(generalPanelLayout.createSequentialGroup()
+                            .addComponent(jLabel1)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(umdpath, javax.swing.GroupLayout.PREFERRED_SIZE, 175, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addContainerGap(310, Short.MAX_VALUE)))))
         );
         generalPanelLayout.setVerticalGroup(
             generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -357,16 +356,18 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                 .addComponent(snapConsoleCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(compilerCheck)
-                .addGap(21, 21, 21)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(shadersCheck)
+                .addGap(29, 29, 29)
                 .addComponent(umdBrowser)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(ClassicOpenDialogumd)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(generalPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel1)
+                    .addComponent(jButton1)
                     .addComponent(umdpath, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jButton1))
-                .addContainerGap(86, Short.MAX_VALUE))
+                    .addComponent(jLabel1))
+                .addContainerGap(55, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab("General", generalPanel);
@@ -429,7 +430,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
             compatibilityPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, compatibilityPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, 295, Short.MAX_VALUE)
+                .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
@@ -860,9 +861,9 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                         .addComponent(jButtonOK, javax.swing.GroupLayout.PREFERRED_SIZE, 88, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jButtonCancel, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addContainerGap())
-                    .addComponent(jTabbedPane1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 615, Short.MAX_VALUE)))
+                        .addComponent(jButtonCancel, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jTabbedPane1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 615, Short.MAX_VALUE))
+                .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -894,6 +895,7 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
    Settings.getInstance().writeBool("gui.openLogwindow", openLogwindowCheck.isSelected());
    Settings.getInstance().writeBool("gui.snapLogwindow", snapConsoleCheck.isSelected());
    Settings.getInstance().writeBool("emu.compiler", compilerCheck.isSelected());
+   Settings.getInstance().writeBool("emu.useshaders", shadersCheck.isSelected());
    Settings.getInstance().writeBool("emu.disablege", disableGECheck.isSelected());
    Settings.getInstance().writeBool("emu.disablevbo", disableVBOCheck.isSelected());
    Settings.getInstance().writeBool("emu.disablesceAudio", DisableSceAudioCheck.isSelected());
@@ -1000,10 +1002,6 @@ private void fieldAnalogLeftMouseClicked(java.awt.event.MouseEvent evt) {//GEN-F
     setKey(fieldAnalogLeft, keyCode.ANLEFT);
 }//GEN-LAST:event_fieldAnalogLeftMouseClicked
 
-private void compilerCheckActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_compilerCheckActionPerformed
-// TODO add your handling code here:
-}//GEN-LAST:event_compilerCheckActionPerformed
-
 private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
   FolderChooser folderChooser = new FolderChooser("select folder");
   int result = folderChooser.showSaveDialog(jButton1.getTopLevelAncestor());
@@ -1058,6 +1056,7 @@ private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.JCheckBox openLogwindowCheck;
     private javax.swing.JCheckBox pbpunpackcheck;
     private javax.swing.JCheckBox saveWindowPosCheck;
+    private javax.swing.JCheckBox shadersCheck;
     private javax.swing.JCheckBox snapConsoleCheck;
     private javax.swing.JRadioButton umdBrowser;
     private javax.swing.JTextField umdpath;
