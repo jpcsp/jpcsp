@@ -302,7 +302,7 @@ public class pspiofilemgr {
                         UmdIsoFile file = iso.getFile(trimUmdPrefix(pcfilename));
                         resultFile = file;
                     } catch(FileNotFoundException e) {
-                        if (debug) Modules.log.debug("getFile - umd file not found (ok to ignore this message, debug purpose only)");
+                        if (debug) Modules.log.debug("getFile - umd file not found '" + pcfilename + "' (ok to ignore this message, debug purpose only)");
                     } catch(IOException e) {
                         Modules.log.error("getFile - error opening umd media: " + e.getMessage());
                     }
@@ -327,7 +327,7 @@ public class pspiofilemgr {
                         SeekableRandomFile raf = new SeekableRandomFile(pcfilename, mode);
                         resultFile = raf;
                     } catch (FileNotFoundException e) {
-                        if (debug) Modules.log.debug("getFile - file not found (ok to ignore this message, debug purpose only)");
+                        if (debug) Modules.log.debug("getFile - file not found '" + pcfilename + "' (ok to ignore this message, debug purpose only)");
                     }
                 }
             }
@@ -954,6 +954,17 @@ public class pspiofilemgr {
 
             case 0x02415821: // register ms eject callback
                 Modules.log.debug("UNIMPLEMENTED: sceIoDevctl register ms eject callback");
+                Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
+                break;
+
+            case 0x02415822: // unregister ms eject callback
+                Modules.log.debug("UNIMPLEMENTED: sceIoDevctl unregister ms eject callback");
+                Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
+                break;
+
+
+            case 0x02415823:
+                Modules.log.warn("IGNORED: sceIoDevctl unhandled ms command " + String.format("0x%08X", cmd));
                 Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
                 break;
 

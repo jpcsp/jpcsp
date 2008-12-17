@@ -805,69 +805,41 @@ public class sceMpeg implements HLEModule {
     public void sceMpegAvcDecodeFlush(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        Modules.log.warn("UNIMPLEMENTED:sceMpegAvcDecodeFlush "
+            + String.format("%08X %08X %08X %08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]));
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-        System.out.println("Unimplemented NID function sceMpegAvcDecodeFlush [0x4571CC64]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        cpu.gpr[2] = 0;
     }
 
     public void sceMpegAvcQueryYCbCrSize(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        Modules.log.warn("UNIMPLEMENTED:sceMpegAvcQueryYCbCrSize "
+            + String.format("%08X %08X %08X %08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]));
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-        System.out.println("Unimplemented NID function sceMpegAvcQueryYCbCrSize [0x211A057C]");
-
-        cpu.gpr[2] = 0x0;
-
-        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        cpu.gpr[2] = 0;
     }
 
     public void sceMpegAvcInitYCbCr(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        Modules.log.warn("UNIMPLEMENTED:sceMpegAvcInitYCbCr "
+            + String.format("%08X %08X %08X %08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]));
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-        System.out.println("Unimplemented NID function sceMpegAvcInitYCbCr [0x67179B1B]");
-
-        cpu.gpr[2] = 0x0;
-
-        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        cpu.gpr[2] = 0;
     }
 
     public void sceMpegAvcDecodeYCbCr(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        Modules.log.warn("UNIMPLEMENTED:sceMpegAvcDecodeYCbCr "
+            + String.format("%08X %08X %08X %08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]));
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-        System.out.println("Unimplemented NID function sceMpegAvcDecodeYCbCr [0xF0EB1125]");
-
-        cpu.gpr[2] = 0x0;
-
-        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        cpu.gpr[2] = 0;
     }
 
     public void sceMpegAvcDecodeStopYCbCr(Processor processor) {
@@ -1058,18 +1030,11 @@ public class sceMpeg implements HLEModule {
     public void sceMpegNextAvcRpAu(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        Modules.log.warn("UNIMPLEMENTED:sceMpegNextAvcRpAu "
+            + String.format("%08X %08X %08X %08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]));
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-        System.out.println("Unimplemented NID function sceMpegNextAvcRpAu [0x3C37A7A6]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        cpu.gpr[2] = 0;
     }
 
     public void sceMpeg_B27711A8(Processor processor) {
