@@ -163,7 +163,7 @@ public class CodeBlock {
         cv.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, "callCount", "I", null, 0);
     }
 
-    private void generateCodeSequences(List<CodeSequence> codeSequences) {
+    private void generateCodeSequences(List<CodeSequence> codeSequences, int sequenceMaxInstructions) {
         CodeSequence currentCodeSequence = null;
 
         int nextAddress = 0;
@@ -187,6 +187,9 @@ public class CodeBlock {
                     currentCodeSequence = new CodeSequence(address);
                 } else {
                     if (currentCodeSequence == null) {
+                        currentCodeSequence = new CodeSequence(address);
+                    } else if (currentCodeSequence.getLength() >= sequenceMaxInstructions) {
+                        codeSequences.add(currentCodeSequence);
                         currentCodeSequence = new CodeSequence(address);
                     }
                     currentCodeSequence.setEndAddress(address);
@@ -220,7 +223,7 @@ public class CodeBlock {
     private void splitCodeSequences(CompilerContext context, int methodMaxInstructions) {
         Vector<CodeSequence> codeSequences = new Vector<CodeSequence>();
 
-        generateCodeSequences(codeSequences);
+        generateCodeSequences(codeSequences, methodMaxInstructions);
         Collections.sort(codeSequences);
 
         int currentMethodInstructions = codeInstructions.size();
@@ -255,9 +258,7 @@ public class CodeBlock {
         }
     }
 
-    private void prepare(CompilerContext context) {
-        int methodMaxInstructions = context.getMethodMaxInstructions();
-
+    private void prepare(CompilerContext context, int methodMaxInstructions) {
         if (codeInstructions.size() > methodMaxInstructions) {
             if (Compiler.log.isInfoEnabled()) {
                 Compiler.log.info("Splitting " + getClassName() + " (" + codeInstructions.size() + "/" + methodMaxInstructions + ")");
@@ -288,7 +289,7 @@ public class CodeBlock {
 		    Compiler.log.debug("Compiling " + className);
 		}
 
-        prepare(context);
+        prepare(context, context.getMethodMaxInstructions());
 
         currentSequence = null;
         int computeFlag = ClassWriter.COMPUTE_FRAMES;
@@ -350,15 +351,18 @@ public class CodeBlock {
     	    Compiler.log.debug(debugOutput.toString());
     	}
 
-    	compiledClass = loadExecutable(context, className, cw.toByteArray());
+	    compiledClass = loadExecutable(context, className, cw.toByteArray());
 
     	return compiledClass;
 	}
 
-	public synchronized IExecutable getExecutable() {
+    public IExecutable getExecutable() {
+        return executable;
+    }
+
+    public synchronized IExecutable getExecutable(CompilerContext context) {
 	    if (executable == null) {
-	        CompilerContext recompilerContext = new CompilerContext(Compiler.getInstance().getClassLoader());
-	        Class<IExecutable> classExecutable = compile(recompilerContext);
+	        Class<IExecutable> classExecutable = compile(context);
 	        if (classExecutable != null) {
 	            try {
                     executable = classExecutable.newInstance();

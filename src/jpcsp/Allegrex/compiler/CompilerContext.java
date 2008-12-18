@@ -62,6 +62,7 @@ public class CompilerContext implements ICompilerContext {
     private int preparedRegisterForStore = -1;
     private boolean memWrite32prepared = false;
     private boolean hiloPrepared = false;
+    private int methodMaxInstructions = 3000;
     private static final String runtimeContextInternalName = Type.getInternalName(RuntimeContext.class);
     private static final String processorDescriptor = Type.getDescriptor(Processor.class);
     private static final String cpuDescriptor = Type.getDescriptor(CpuState.class);
@@ -851,6 +852,10 @@ public class CompilerContext implements ICompilerContext {
 	}
 
     public int getMethodMaxInstructions() {
-        return 3000;
+        return methodMaxInstructions;
+    }
+
+    public void setMethodMaxInstructions(int methodMaxInstructions) {
+        this.methodMaxInstructions = methodMaxInstructions;
     }
 }
