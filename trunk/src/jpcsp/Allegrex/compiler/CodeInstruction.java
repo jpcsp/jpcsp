@@ -35,20 +35,18 @@ public class CodeInstruction {
 	private boolean isBranchTarget;
 	private int branchingTo;
 	private boolean isBranching;
-    private boolean hasDelaySlot;
 	private Label label;
 
     protected CodeInstruction() {
     }
 
-    public CodeInstruction(int address, int opcode, Instruction insn, boolean isBranchTarget, boolean isBranching, int branchingTo, boolean hasDelaySlot) {
+    public CodeInstruction(int address, int opcode, Instruction insn, boolean isBranchTarget, boolean isBranching, int branchingTo) {
 		this.address = address;
 		this.opcode = opcode;
 		this.insn = insn;
 		this.isBranchTarget = isBranchTarget;
 		this.isBranching = isBranching;
 		this.branchingTo = branchingTo;
-		this.hasDelaySlot = hasDelaySlot;
 	}
 
 	public int getAddress() {
@@ -99,10 +97,6 @@ public class CodeInstruction {
 		this.branchingTo = branchingTo;
 	}
 
-    public boolean hasDelaySlot() {
-        return hasDelaySlot;
-    }
-
     public Label getLabel(boolean isBranchTarget) {
         if (label == null) {
             label = new Label();
@@ -147,13 +141,8 @@ public class CodeInstruction {
 	        compileJr(context, mv);
         } else if (insn == Instructions.JALR) {
             compileJalr(context, mv);
-        } else if (insn == Instructions.BC1F || insn == Instructions.BC1FL ||
-        		   insn == Instructions.BC1T || insn == Instructions.BC1TL ||
-        		   insn == Instructions.BVF  || insn == Instructions.BVFL  ||
-        		   insn == Instructions.BVT  || insn == Instructions.BVTL  ) {
-        	Compiler.log.error("Unsupported Instruction " + insn.disasm(getAddress(), getOpcode()));
 //	    } else if (" ADD ADDU ADDI ADDIU AND ANDI NOR OR ORI XOR XORI SLL SLLV SRA SRAV SRL SRLV ROTR ROTRV SLT SLTI SLTU SLTIU SUB SUBU LUI SEB BITREV WSBH WSBW MOVZ MOVN MAX MIN LW SB SW ".indexOf(" " + insn.name() + " ") >= 0) {
-    		context.compileInterpreterInstruction();
+//    		context.compileInterpreterInstruction();
 	    } else {
 		    insn.compile(context, getOpcode());
 	    }
@@ -299,7 +288,7 @@ public class CodeInstruction {
     }
 
     private int getBranchingOpcode(CompilerContext context, MethodVisitor mv) {
-        int branchingOpcode = Opcodes.IFEQ;
+        int branchingOpcode = Opcodes.NOP;
 
         if (insn == Instructions.BEQ) {
             branchingOpcode = getBranchingOpcodeBranch2(context, mv, Opcodes.IF_ICMPEQ, Opcodes.IF_ICMPNE);
@@ -345,11 +334,20 @@ public class CodeInstruction {
             branchingOpcode = getBranchingOpcodeBC1(context, mv, Opcodes.IFNE, Opcodes.IFEQ);
         } else if (insn == Instructions.BC1TL) {
             branchingOpcode = getBranchingOpcodeBC1L(context, mv, Opcodes.IFNE, Opcodes.IFEQ);
+        } else if (insn == Instructions.BC1F || insn == Instructions.BC1FL ||
+                   insn == Instructions.BC1T || insn == Instructions.BC1TL ||
+                   insn == Instructions.BVF  || insn == Instructions.BVFL  ||
+                   insn == Instructions.BVT  || insn == Instructions.BVTL  ) {
+            Compiler.log.error("Unimplemented Instruction " + insn.disasm(getAddress(), getOpcode()));
         } else {
             Compiler.log.error("CodeInstruction.getBranchingOpcode: unknown instruction " + insn.disasm(getAddress(), getOpcode()));
         }
 
         return branchingOpcode;
+    }
+
+    public boolean hasFlags(int flags) {
+        return getInsn().hasFlags(flags);
     }
 
     public String toString() {
