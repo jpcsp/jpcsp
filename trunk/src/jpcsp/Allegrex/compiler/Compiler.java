@@ -209,7 +209,7 @@ public class Compiler implements ICompiler {
             }
         }
 
-        IExecutable executable = codeBlock.getExecutable();
+        IExecutable executable = codeBlock.getExecutable(context);
         if (log.isDebugEnabled()) {
             log.debug("Executable: " + executable);
         }
@@ -246,8 +246,36 @@ public class Compiler implements ICompiler {
     public IExecutable compile(int address) {
         compileDuration.start();
         CompilerContext context = new CompilerContext(classLoader);
-        IExecutable executable = analyse(context, address, false);
+        IExecutable executable = null;
+        ClassFormatError error = null;
+        for (int retries = 2; retries > 0; retries--) {
+            try {
+                executable = analyse(context, address, false);
+                break;
+            } catch (ClassFormatError e) {
+                // Catch exception
+                //     java.lang.ClassFormatError: Invalid method Code length nnnnnn in class file XXXX
+                //
+                error = e;
+
+                // Try again with stricter methodMaxInstructions (75% of current value)
+                int methodMaxInstructions = context.getMethodMaxInstructions() * 3 / 4;
+                Compiler.log.debug("Catched exception '" + e.toString() + "' (can be ignored)");
+                Compiler.log.debug("Retrying compilation again with maxInstruction=" + methodMaxInstructions + ", retries left=" + (retries - 1) + "...");
+                context = new CompilerContext(classLoader);
+                context.setMethodMaxInstructions(methodMaxInstructions);
+            }
+        }
         compileDuration.end();
+
+        if (error != null) {
+            if (executable == null) {
+                Compiler.log.debug("Compilation failed with maxInstruction=" + context.getMethodMaxInstructions());
+                throw error;
+            } else {
+                Compiler.log.debug("Compilation was now correct with maxInstruction=" + context.getMethodMaxInstructions());
+            }
+        }
 
         return executable;
     }
