@@ -346,7 +346,8 @@ public class VideoEngine {
         if (!jpcsp.HLE.pspge.getInstance().waitingForSync)
             return false;
 
-        gl.glUseProgram(shaderProgram);
+        if(useShaders)
+        	gl.glUseProgram(shaderProgram);
 
         statistics.start();
 
@@ -368,7 +369,8 @@ public class VideoEngine {
         }
         DisplayList.Unlock();
 
-        gl.glUseProgram(0);
+        if(useShaders)
+        	gl.glUseProgram(0);
         
         if (updated)
             jpcsp.HLE.pspge.getInstance().syncDone = true;

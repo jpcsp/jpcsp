@@ -9,9 +9,9 @@ uniform bool lightingEnable;
 
 float calculateAttenuation(in int i, in float dist)
 {
-    return(1.0 / (gl_LightSource[i].constantAttenuation +
+    return clamp(1.0 / (gl_LightSource[i].constantAttenuation +
                   gl_LightSource[i].linearAttenuation * dist +
-                  gl_LightSource[i].quadraticAttenuation * dist * dist));
+                  gl_LightSource[i].quadraticAttenuation * dist * dist), 0.0, 1.0);
 }
 
 void directionalLight(in int i, in vec3 N, in float shininess,
@@ -91,10 +91,10 @@ void spotLight(in int i, in vec3 N, in vec3 V, in float shininess,
     ambient  += gl_LightSource[i].ambient * attenuation;
 }
 
-void calculateLighting(in int numLights, in vec3 N, in vec3 V, in float shininess,
+void calculateLighting(in vec3 N, in vec3 V, in float shininess,
                        inout vec4 ambient, inout vec4 diffuse, inout vec4 specular)
 {
-    for (int i = 0; i < numLights; i++)
+    for (int i = 0; i < 4; i++)
     {
     	if(psp_lightEnabled[i] != 0) {
 	    	if(psp_lightType[i] == 0)
@@ -113,7 +113,7 @@ vec4 doLight(in vec4 matAmbient, in vec4 matDiffuse, in vec4 matSpecular) {
     vec4 specular = vec4(0.0);
 	vec3 n = normalize(gl_NormalMatrix * gl_Normal);
 	    
-    calculateLighting(4, n, vec3(gl_ModelViewMatrix * gl_Vertex), gl_FrontMaterial.shininess,
+    calculateLighting(n, vec3(gl_ModelViewMatrix * gl_Vertex), gl_FrontMaterial.shininess,
                       ambient, diffuse, specular);
    
     vec4 color = gl_FrontLightModelProduct.sceneColor  +
