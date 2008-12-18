@@ -17,7 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.Allegrex.compiler;
 
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
 
 public class SequenceCodeInstruction extends CodeInstruction {
     private CodeSequence codeSequence;

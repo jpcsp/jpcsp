@@ -41,7 +41,7 @@ public class CodeSequence implements Comparable<CodeSequence> {
     }
 
     public int getLength() {
-        return (endAddress - startAddress) / 4;
+        return (endAddress - startAddress + 1) / 4;
     }
 
     public boolean isInside(int address) {
@@ -54,6 +54,16 @@ public class CodeSequence implements Comparable<CodeSequence> {
 
     public List<CodeInstruction> getInstructions() {
         return codeInstructions;
+    }
+
+    public CodeInstruction getCodeInstruction(int address) {
+        for (CodeInstruction codeInstruction : codeInstructions) {
+            if (codeInstruction.getAddress() == address) {
+                return codeInstruction;
+            }
+        }
+
+        return null;
     }
 
     @Override
@@ -76,6 +86,6 @@ public class CodeSequence implements Comparable<CodeSequence> {
 
     @Override
     public String toString() {
-        return String.format("CodeSequence 0x%X - 0x%X", getStartAddress(), getEndAddress());
+        return String.format("CodeSequence 0x%X - 0x%X (length %d)", getStartAddress(), getEndAddress(), getLength());
     }
 }

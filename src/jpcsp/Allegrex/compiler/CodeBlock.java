@@ -43,6 +43,7 @@ public class CodeBlock {
 	private int lowestAddress;
 	private LinkedList<CodeInstruction> codeInstructions = new LinkedList<CodeInstruction>();
 	private LinkedList<SequenceCodeInstruction> sequenceCodeInstructions = new LinkedList<SequenceCodeInstruction>();
+	private SequenceCodeInstruction currentSequence = null;
 	private IExecutable executable = null;
 	private final static String objectInternalName = Type.getInternalName(Object.class);
 	private final static String[] interfacesForExecutable = new String[] { Type.getInternalName(IExecutable.class) };
@@ -55,12 +56,12 @@ public class CodeBlock {
 		RuntimeContext.addCodeBlock(startAddress, this);
 	}
 
-	public void addInstruction(int address, int opcode, Instruction insn, boolean isBranchTarget, boolean isBranching, int branchingTo, boolean hasDelaySlot) {
+	public void addInstruction(int address, int opcode, Instruction insn, boolean isBranchTarget, boolean isBranching, int branchingTo) {
 		if (Compiler.log.isDebugEnabled()) {
 			Compiler.log.debug("CodeBlock.addInstruction 0x" + Integer.toHexString(address).toUpperCase() + " - " + insn.disasm(address, opcode));
 		}
 
-		CodeInstruction codeInstruction = new CodeInstruction(address, opcode, insn, isBranchTarget, isBranching, branchingTo, hasDelaySlot);
+		CodeInstruction codeInstruction = new CodeInstruction(address, opcode, insn, isBranchTarget, isBranching, branchingTo);
 
 		// Insert the codeInstruction in the codeInstructions list
 		// and keep the list sorted by address.
@@ -102,7 +103,11 @@ public class CodeBlock {
 	}
 
 	public CodeInstruction getCodeInstruction(int address) {
-		for (CodeInstruction codeInstruction : codeInstructions) {
+	    if (currentSequence != null) {
+            return currentSequence.getCodeSequence().getCodeInstruction(address);
+	    }
+
+	    for (CodeInstruction codeInstruction : codeInstructions) {
 			if (codeInstruction.getAddress() == address) {
 				return codeInstruction;
 			}
@@ -166,22 +171,26 @@ public class CodeBlock {
             int address = codeInstruction.getAddress();
             if (address < nextAddress) {
                 // Skip it
-            } else if (codeInstruction.hasDelaySlot()) {
-                if (currentCodeSequence != null) {
-                    codeSequences.add(currentCodeSequence);
-                }
-                nextAddress = address + 8;
-                currentCodeSequence = null;
-            } else if (codeInstruction.isBranchTarget()) {
-                if (currentCodeSequence != null) {
-                    codeSequences.add(currentCodeSequence);
-                }
-                currentCodeSequence = new CodeSequence(address);
             } else {
-                if (currentCodeSequence == null) {
+                if (codeInstruction.hasFlags(Instruction.FLAG_CANNOT_BE_SPLIT)) {
+                    if (currentCodeSequence != null) {
+                        codeSequences.add(currentCodeSequence);
+                    }
+                    currentCodeSequence = null;
+                    if (codeInstruction.hasFlags(Instruction.FLAG_HAS_DELAY_SLOT)) {
+                        nextAddress = address + 8;
+                    }
+                } else if (codeInstruction.isBranchTarget()) {
+                    if (currentCodeSequence != null) {
+                        codeSequences.add(currentCodeSequence);
+                    }
                     currentCodeSequence = new CodeSequence(address);
+                } else {
+                    if (currentCodeSequence == null) {
+                        currentCodeSequence = new CodeSequence(address);
+                    }
+                    currentCodeSequence.setEndAddress(address);
                 }
-                currentCodeSequence.setEndAddress(address);
             }
         }
 
@@ -281,6 +290,7 @@ public class CodeBlock {
 
         prepare(context);
 
+        currentSequence = null;
         int computeFlag = ClassWriter.COMPUTE_FRAMES;
 		if (context.isAutomaticMaxLocals() || context.isAutomaticMaxStack()) {
 		    computeFlag |= ClassWriter.COMPUTE_MAXS;
@@ -320,6 +330,7 @@ public class CodeBlock {
             if (Compiler.log.isDebugEnabled()) {
                 Compiler.log.debug("Compiling Sequence " + sequenceCodeInstruction.getMethodName(context));
             }
+            currentSequence = sequenceCodeInstruction;
             mv = cv.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, sequenceCodeInstruction.getMethodName(context), "()V", null, exceptions);
             mv.visitCode();
             context.setMethodVisitor(mv);
@@ -331,6 +342,7 @@ public class CodeBlock {
             mv.visitMaxs(context.getMaxLocals(), context.getMaxStack());
             mv.visitEnd();
         }
+        currentSequence = null;
 
         cv.visitEnd();
 

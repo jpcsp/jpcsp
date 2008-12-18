@@ -16,8 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.Stack;
 
 import org.apache.log4j.Logger;
@@ -25,21 +23,20 @@ import org.apache.log4j.Logger;
 import jpcsp.Memory;
 import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.Decoder;
-import jpcsp.Allegrex.Instructions;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.util.DurationStatistics;
 
 /*
  * TODO to cleanup the code:
  * - add flags to Common.Instruction:
- *     - isBranching (see branchBlockInstructions list below)
- *     - is end of CodeBlock (see endBlockInstructions list below)
- *     - is starting a new CodeBlock (see newBlockInstructions list below)
- *     - isBranching unconditional
- *     - isBranching with 16 bits target
- *     - isBranching with 26 bits target (see jumpBlockInstructions list below)
- *     - is jump or call
- *     - is compiled or interpreted
+ *     - isBranching (see branchBlockInstructions list below) [DONE]
+ *     - is end of CodeBlock (see endBlockInstructions list below) [DONE]
+ *     - is starting a new CodeBlock (see newBlockInstructions list below) [DONE]
+ *     - isBranching unconditional [DONE]
+ *     - isBranching with 16 bits target [DONE]
+ *     - isBranching with 26 bits target (see jumpBlockInstructions list below) [DONE]
+ *     - is jump or call [DONE]
+ *     - is compiled or interpreted [DONE]
  *     - is referencing $pc register
  *     - can switch thread context
  *     - is loading $sp address to another register
@@ -116,10 +113,6 @@ public class Compiler implements ICompiler {
     public static Logger log = Logger.getLogger("compiler");
 	private static Compiler instance;
 	private static int resetCount = 0;
-	private Set<Instruction> branchBlockInstructions;
-	private Set<Instruction> jumpBlockInstructions;
-	private Set<Instruction> endBlockInstructions;
-	private Set<Instruction> newBlockInstructions;
 	private Memory mem;
 	private CompilerClassLoader classLoader;
 	private DurationStatistics compileDuration = new DurationStatistics("Compilation Time");
@@ -152,42 +145,6 @@ public class Compiler implements ICompiler {
 		mem = Memory.getInstance();
 
 		reset();
-
-		branchBlockInstructions = new HashSet<Instruction>();
-		branchBlockInstructions.add(Instructions.BEQ);
-		branchBlockInstructions.add(Instructions.BEQL);
-		branchBlockInstructions.add(Instructions.BGEZ);
-		branchBlockInstructions.add(Instructions.BGEZL);
-		branchBlockInstructions.add(Instructions.BGTZ);
-		branchBlockInstructions.add(Instructions.BGTZL);
-		branchBlockInstructions.add(Instructions.BLEZ);
-		branchBlockInstructions.add(Instructions.BLEZL);
-		branchBlockInstructions.add(Instructions.BLTZ);
-		branchBlockInstructions.add(Instructions.BLTZL);
-		branchBlockInstructions.add(Instructions.BNE);
-		branchBlockInstructions.add(Instructions.BNEL);
-		branchBlockInstructions.add(Instructions.BC1F);
-		branchBlockInstructions.add(Instructions.BC1FL);
-		branchBlockInstructions.add(Instructions.BC1T);
-		branchBlockInstructions.add(Instructions.BC1TL);
-		branchBlockInstructions.add(Instructions.BVF);
-		branchBlockInstructions.add(Instructions.BVFL);
-		branchBlockInstructions.add(Instructions.BVT);
-		branchBlockInstructions.add(Instructions.BVTL);
-
-		jumpBlockInstructions = new HashSet<Instruction>();
-		jumpBlockInstructions.add(Instructions.J);
-
-		endBlockInstructions = new HashSet<Instruction>();
-		endBlockInstructions.add(Instructions.JR);
-
-		newBlockInstructions = new HashSet<Instruction>();
-		newBlockInstructions.add(Instructions.JAL);
-//		newBlockInstructions.add(Instructions.JALR);
-		newBlockInstructions.add(Instructions.BLTZAL);
-		newBlockInstructions.add(Instructions.BLTZALL);
-		newBlockInstructions.add(Instructions.BGEZAL);
-		newBlockInstructions.add(Instructions.BGEZALL);
 	}
 
 	private int jumpTarget(int pc, int opcode) {
@@ -214,7 +171,6 @@ public class Compiler implements ICompiler {
             if (context.analysedAddresses.contains(pc) && isBranchTarget) {
                 codeBlock.setIsBranchTarget(pc);
             } else {
-                boolean hasDelaySlot = false;
                 while (!context.analysedAddresses.contains(pc) && pc <= endPc) {
                     int opcode = mem.read32(pc);
 
@@ -225,36 +181,30 @@ public class Compiler implements ICompiler {
 
                     int branchingTo = 0;
                     boolean isBranching = false;
-                    if (branchBlockInstructions.contains(insn)) {
+                    if (insn.hasFlags(Instruction.FLAG_IS_BRANCHING)) {
                         branchingTo = branchTarget(npc, opcode);
                         isBranching = true;
-                        hasDelaySlot = true;
-                        pendingBlockAddresses.push(branchingTo);
-                    } else if (jumpBlockInstructions.contains(insn)) {
+                    } else if (insn.hasFlags(Instruction.FLAG_IS_JUMPING)) {
                         branchingTo = jumpTarget(npc, opcode);
                         isBranching = true;
-                        hasDelaySlot = true;
-                        if (branchingTo != 0) { // Ignore "J 0x00000000" instruction
-                            pendingBlockAddresses.push(branchingTo);
-                        }
+                    }
+                    if (insn.hasFlags(Instruction.FLAG_ENDS_BLOCK)) {
                         endPc = npc;
-                    } else if (endBlockInstructions.contains(insn)) {
-                        hasDelaySlot = true;
-                        endPc = npc;
-                    } else if (newBlockInstructions.contains(insn)) {
-                        branchingTo = jumpTarget(npc, opcode);
-                        isBranching = true;
-                        hasDelaySlot = true;
+                    }
+                    if (insn.hasFlags(Instruction.FLAG_STARTS_NEW_BLOCK)) {
                         if (recursive) {
                             context.blocksToBeAnalysed.push(branchingTo);
                         }
+                    } else if (isBranching) {
+                        if (branchingTo != 0) {  // Ignore "J 0x00000000" instruction
+                            pendingBlockAddresses.push(branchingTo);
+                        }
                     }
 
-                    codeBlock.addInstruction(pc, opcode, insn, isBranchTarget, isBranching, branchingTo, hasDelaySlot);
+                    codeBlock.addInstruction(pc, opcode, insn, isBranchTarget, isBranching, branchingTo);
                     pc = npc;
 
                     isBranchTarget = false;
-                    hasDelaySlot = false;
                 }
             }
         }

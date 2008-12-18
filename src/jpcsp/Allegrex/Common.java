@@ -31,7 +31,16 @@ public class Common {
 
         private int m_count = 0;
         private int flags = 0;
-        public final static int FLAG_INTERPRETED = 1;
+        public final static int FLAG_INTERPRETED      = (1 << 0);
+        public final static int FLAG_CANNOT_BE_SPLIT  = (1 << 1);
+        public final static int FLAG_HAS_DELAY_SLOT   = (1 << 2);
+        public final static int FLAG_IS_BRANCHING     = (1 << 3);
+        public final static int FLAG_IS_JUMPING       = (1 << 4);
+        public final static int FLAG_IS_CONDITIONAL   = (1 << 5);
+        public final static int FLAG_STARTS_NEW_BLOCK = (1 << 6);
+        public final static int FLAG_ENDS_BLOCK       = (1 << 7);
+        public final static int FLAGS_BRANCH_INSTRUCTION = FLAG_CANNOT_BE_SPLIT | FLAG_HAS_DELAY_SLOT | FLAG_IS_BRANCHING | FLAG_IS_CONDITIONAL;
+        public final static int FLAGS_LINK_INSTRUCTION   = FLAG_HAS_DELAY_SLOT | FLAG_STARTS_NEW_BLOCK | FLAG_IS_JUMPING;
 
         public abstract void interpret(Processor processor, int insn);
 
@@ -66,8 +75,17 @@ public class Common {
             return this;
         }
 
+        private void setInstance(int index) {
+            m_instances[index] = this;
+        }
+
         public Instruction(int index) {
-            jpcsp.Allegrex.Common.m_instances[index] = this;
+            setInstance(index);
+        }
+
+        public Instruction(int index, int flags) {
+            setInstance(index);
+            this.flags = flags;
         }
 
         public Instruction() {
@@ -80,6 +98,48 @@ public class Common {
 		public boolean hasFlags(int testFlags) {
 			return (flags & testFlags) == testFlags;
 		}
+
+		private void appendFlagString(StringBuffer result, String flagString) {
+		    if (result.length() > 0) {
+		        result.append(" | ");
+		    }
+		    result.append(flagString);
+		}
+
+		private String flagsToString() {
+		    StringBuffer result = new StringBuffer();
+		    if (hasFlags(FLAG_INTERPRETED)) {
+		        appendFlagString(result, "FLAG_INTERPRETED");
+		    }
+            if (hasFlags(FLAG_CANNOT_BE_SPLIT)) {
+                appendFlagString(result, "FLAG_CANNOT_BE_SPLIT");
+            }
+            if (hasFlags(FLAG_HAS_DELAY_SLOT)) {
+                appendFlagString(result, "FLAG_HAS_DELAY_SLOT");
+            }
+            if (hasFlags(FLAG_IS_BRANCHING)) {
+                appendFlagString(result, "FLAG_IS_BRANCHING");
+            }
+            if (hasFlags(FLAG_IS_JUMPING)) {
+                appendFlagString(result, "FLAG_IS_JUMPING");
+            }
+            if (hasFlags(FLAG_IS_CONDITIONAL)) {
+                appendFlagString(result, "FLAG_IS_CONDITIONAL");
+            }
+            if (hasFlags(FLAG_STARTS_NEW_BLOCK)) {
+                appendFlagString(result, "FLAG_STARTS_NEW_BLOCK");
+            }
+            if (hasFlags(FLAG_ENDS_BLOCK)) {
+                appendFlagString(result, "FLAG_ENDS_BLOCK");
+            }
+
+            return result.toString();
+		}
+
+		@Override
+        public String toString() {
+            return name() + "(" + flagsToString() + ")";
+        }
     }
 
     public static abstract class STUB extends Instruction {
