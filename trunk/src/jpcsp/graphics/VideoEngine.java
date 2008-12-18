@@ -2938,10 +2938,14 @@ public class VideoEngine {
         if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
             gl.glLoadMatrixf(proj_uploaded_matrix, 0);
         else {
-            // 2D mode shouldn't be affected by the depth buffer
-            gl.glOrtho(0.0, 480, 272, 0, -1.0, 1.0);
-            gl.glPushAttrib(GL.GL_DEPTH_BUFFER_BIT);
+            // 2D mode shouldn't be affected by the depth buffer nor lighting
+        	gl.glOrtho(0.0, 480, 272, 0, -1.0, 1.0);
+            gl.glPushAttrib(GL.GL_DEPTH_BUFFER_BIT | GL.GL_LIGHTING_BIT);
             gl.glDepthFunc(GL.GL_ALWAYS);
+            gl.glDisable(GL.GL_LIGHTING);
+            if(useShaders) {
+            	gl.glUniform1i(Uniforms.lightingEnable.getId(), 0);
+            }
         }
 
         /*
@@ -3071,8 +3075,12 @@ public class VideoEngine {
         gl.glPopMatrix  ();
         gl.glMatrixMode (GL.GL_MODELVIEW);
 
-        if(transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD)
+        if(transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
             gl.glPopAttrib();
+            if(useShaders) {
+            	gl.glUniform1i(Uniforms.lightingEnable.getId(), lighting ? 1 : 0);
+            }
+        }
     }
 
     private void drawBezier(int ucount, int vcount) {
