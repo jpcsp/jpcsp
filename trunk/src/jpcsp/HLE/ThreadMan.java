@@ -353,6 +353,8 @@ public class ThreadMan {
         current_thread = newthread;
         syscallFreeCycles = 0;
 
+        pspiofilemgr.getInstance().onContextSwitch();
+
         RuntimeContext.update();
     }
 
@@ -514,6 +516,8 @@ public class ThreadMan {
         }
 
         // TODO mutex timeout, if it has one
+
+        // IO has no timeout, it's always forever
     }
 
     private void deleteThread(SceKernelThreadInfo thread) {
@@ -848,7 +852,7 @@ public class ThreadMan {
         changeThreadState(current_thread, PSP_THREAD_WAITING);
 
         Emulator.getProcessor().cpu.gpr[2] = 0;
-        yieldCurrentThread();
+        yieldCurrentThread(); // should be contextSwitch(nextThread()) but we get more logging this way
     }
 
     /** sleep the current thread (using wait) */
@@ -938,12 +942,13 @@ public class ThreadMan {
             Emulator.getProcessor().cpu.gpr[2] = 0;
             contextSwitch(nextThread()); // yield
         } else {
-            // Go to wait state
+            // Do callbacks?
             current_thread.do_callbacks = callbacks;
 
-            // Wait on a specific thread end
+            // Go to wait state
             hleKernelThreadWait(current_thread.wait, micros, forever);
 
+            // Wait on a specific thread end
             current_thread.wait.waitingOnThreadEnd = true;
             current_thread.wait.ThreadEnd_id = uid;
 
@@ -1014,7 +1019,13 @@ public class ThreadMan {
         //    Modules.log.debug("sceKernelDelayThreadCB micros=" + micros + " current thread:'" + current_thread.name + "'");
 
         hleKernelDelayThread(micros, true);
-        checkCallbacks();
+
+        // This check is required
+        if (!insideCallback) {
+            checkCallbacks();
+        } else {
+            Modules.log.warn("sceKernelDelayThreadCB called from inside callback!");
+        }
     }
 
     public void ThreadMan_sceKernelCreateCallback(int name_addr, int func_addr, int user_arg_addr) {
@@ -1243,7 +1254,51 @@ public class ThreadMan {
         current_thread.umdCallbackInfo = null;
     }
 
+    /** @return true if the cbid is a valid callback uid */
+    public boolean setIOCallback(int cbid) {
+        SceKernelCallbackInfo callback = callbackMap.get(cbid);
+        if (callback == null) {
+            return false;
+        } else {
+            current_thread.ioCallbackRegistered = true;
+            current_thread.ioCallbackInfo = callback;
+            return true;
+        }
+    }
+
+    public void clearIOCallback() {
+        current_thread.ioCallbackRegistered = false;
+        current_thread.ioCallbackInfo = null;
+    }
+
     // TODO add other pushXXXCallback functions
+
+    public void pushIoCallback(int cbid, int notifyArg) {
+        for (Iterator<SceKernelThreadInfo> it = threadMap.values().iterator(); it.hasNext(); ) {
+            SceKernelThreadInfo thread = it.next();
+
+            if (thread.ioCallbackRegistered) {
+                if (thread.ioCallbackReady) {
+                    // TODO behaviour may be undefined - example: terminate this thread, but continue other threads as normal
+                    Modules.log.warn("pushIoCallback thread:'" + thread.name
+                        + "' already has callback pending (oldArg=0x" + Integer.toHexString(thread.ioCallbackInfo.notifyArg)
+                        + ",newArg=0x" + Integer.toHexString(notifyArg) + ")");
+                }
+
+                thread.ioCallbackReady = true;
+                thread.ioCallbackInfo.notifyArg = notifyArg;
+            }
+        }
+
+        if (!insideCallback) {
+            Modules.log.debug("pushIoCallback calling checkCallbacks");
+            checkCallbacks();
+        } else {
+            Modules.log.error("pushIoCallback called while inside another callback!");
+            Emulator.PauseEmu();
+        }
+    }
+
     public void pushUMDCallback(Iterator<Integer> cbidList, int event) {
         Modules.log.debug("pushUMDCallback event 0x" + Integer.toHexString(event));
 
@@ -1258,7 +1313,7 @@ public class ThreadMan {
                     Modules.log.warn("pushUMDCallback thread not found " + Integer.toHexString(callback.threadId));
                 } else if (thread.umdCallbackRegistered) { // We could ignore all the above stuff, iterate all threads and only use this condition
                     if (thread.umdCallbackReady) {
-                        // Behaviour may be undefined - example: crash this thread, but continue other threads as normal
+                        // TODO behaviour may be undefined - example: terminate this thread, but continue other threads as normal
                         Modules.log.warn("pushUMDCallback thread:'" + thread.name
                             + "' already has callback pending (oldArg=0x" + Integer.toHexString(thread.umdCallbackInfo.notifyArg)
                             + ",newArg=0x" + Integer.toHexString(event) + ")");
@@ -1299,6 +1354,21 @@ public class ThreadMan {
             thread.umdCallbackInfo.startContext(thread.cpuContext, thread);
             thread.umdCallbackInfo.notifyCount++;
             handled = true;
+        } else if (thread.ioCallbackRegistered && thread.ioCallbackReady) {
+            Modules.log.debug("Entering IO callback name:'" + thread.ioCallbackInfo.name + "'"
+                + " PC:" + Integer.toHexString(thread.ioCallbackInfo.callback_addr)
+                + " thread:'" + thread.name + "'");
+            //Emulator.PauseEmu();
+
+            // Callbacks can pre-empt, save the current thread's context
+            current_thread.saveContext();
+
+            insideCallback = true;
+            thread.ioCallbackReady = false;
+            // Set the callback to run with the thread context it was registered from
+            thread.ioCallbackInfo.startContext(thread.cpuContext, thread);
+            thread.ioCallbackInfo.notifyCount++;
+            handled = true;
         }
 
         // TODO add other callback types here in else-if blocks
@@ -1329,7 +1399,7 @@ public class ThreadMan {
     public void checkCallbacks() {
         insideCallback = false;
 
-        //Modules.log.debug("checkCallbacks current thread is '" + current_thread.name + "' do_callbacks:" + current_thread.do_callbacks);
+        //Modules.log.debug("checkCallbacks current thread is '" + current_thread.name + "' do_callbacks:" + current_thread.do_callbacks + " caller:" + getCallingFunction());
 
         for (Iterator<SceKernelThreadInfo> it = threadMap.values().iterator(); it.hasNext(); ) {
             SceKernelThreadInfo thread = it.next();
@@ -1497,12 +1567,13 @@ public class ThreadMan {
                 Modules.log.debug("hleKernelWaitSema - '" + sema.name + "' fast check failed");
                 sema.numWaitThreads++;
 
-                // Go to wait state
+                // Do callbacks?
                 current_thread.do_callbacks = do_callbacks;
 
-                // Wait on a specific semaphore
+                // Go to wait state
                 hleKernelThreadWait(current_thread.wait, micros, (timeout_addr == 0));
 
+                // Wait on a specific semaphore
                 current_thread.wait.waitingOnSemaphore = true;
                 current_thread.wait.Semaphore_id = semaid;
                 current_thread.wait.Semaphore_signal = signal;

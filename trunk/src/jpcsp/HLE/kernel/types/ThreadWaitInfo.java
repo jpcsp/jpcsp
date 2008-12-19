@@ -42,4 +42,8 @@ public class ThreadWaitInfo {
     // Mutex
     public boolean waitingOnMutex;
     public int Mutex_id;
+
+    // IO
+    public boolean waitingOnIo;
+    public int Io_id;
 }

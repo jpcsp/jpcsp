@@ -998,6 +998,20 @@ public class syscallsFirm15 {
                 sceAtracSetMOutHalfwayBuffer(0x30a5, 0x5CF9D852), // 2.50+ or lower
                 sceFontSetResolution(0x30a6, 0x48293280), // 2.00+
 
+                sceMp3ReserveMp3Handle(0x30a7, 0x07EC321A), // 3.95+
+                sceMp3NotifyAddStreamData(0x30a8, 0x0DB149F4), // 3.95+
+                sceMp3ResetPlayPosition(0x30a9, 0x2A368661), // 3.95+
+                sceMp3InitResource(0x30aa, 0x35750070), // 3.95+
+                sceMp3TermResource(0x30ab, 0x3C2FA058), // 3.95+
+                sceMp3SetLoopNum(0x30ac, 0x3CEF484F), // 3.95+
+                sceMp3Init(0x30ad, 0x44E07129), // 3.95+
+                sceMp3GetMp3ChannelNum(0x30ae, 0x7F696782), // 3.95+
+                sceMp3GetSamplingRate(0x30af, 0x8F450998), // 3.95+
+                sceMp3GetInfoToAddStreamData(0x30b0, 0xA703FE0F), // 3.95+
+                sceMp3Decode(0x30b1, 0xD021C0FB), // 3.95+
+                sceMp3CheckStreamDataNeeded(0x30b2, 0xD0A56296), // 3.95+
+                sceMp3ReleaseMp3Handle(0x30b3, 0xF5478233), // 3.95+
+
                 // We choose to start HLEModuleManager at 0x4000
 
                 // CFW, we choose to start at 0x5000

@@ -40,6 +40,7 @@ import jpcsp.MemoryMap;
 import static jpcsp.util.Utilities.*;
 
 import jpcsp.HLE.kernel.types.*;
+import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 import jpcsp.HLE.kernel.managers.*;
 import jpcsp.State;
 
@@ -61,14 +62,13 @@ public class pspiofilemgr {
     public final static int PSP_O_CREAT    = 0x0200;
     public final static int PSP_O_TRUNC    = 0x0400;
     public final static int PSP_O_EXCL     = 0x0800;
+    public final static int PSP_O_UNKNOWN1 = 0x4000; // something async?
     public final static int PSP_O_NOWAIT   = 0x8000;
-    public final static int PSP_O_UNKNOWN1 = 0xf0000; // seen on Wipeout Pure
+    public final static int PSP_O_UNKNOWN2 = 0xf0000; // seen on Wipeout Pure
 
     public final static int PSP_SEEK_SET  = 0;
     public final static int PSP_SEEK_CUR  = 1;
     public final static int PSP_SEEK_END  = 2;
-
-
 
 
     public final static int PSP_ERROR_ASYNC_FILE_OPEN_ERROR = 0x80010002; // actual name unknown
@@ -88,6 +88,8 @@ public class pspiofilemgr {
 
     private String filepath; // current working directory on PC
     private UmdIsoReader iso;
+
+    private boolean asyncBusy;
 
     public static pspiofilemgr getInstance() {
         if (instance == null) {
@@ -114,6 +116,54 @@ public class pspiofilemgr {
 
         filelist = new HashMap<Integer, IoInfo>();
         dirlist = new HashMap<Integer, IoDirInfo>();
+
+        asyncBusy = false;
+    }
+
+    /** To properly emulate async io we cannot allow async io operations to
+     * complete immediately. For example a call to sceIoPollAsync must be
+     * preceeded by at least one context switch to return success, otherwise it
+     * returns async busy.
+     * TODO could make async io succeed based on at least one context switch
+     * (as it currently does) PLUS a certain amount of time passed. */
+    public void onContextSwitch() {
+        IoInfo found = null;
+
+        // This is all based on the assumption only 1 io op can be happening at a time
+        for (Iterator<IoInfo> it = filelist.values().iterator(); it.hasNext();) {
+            IoInfo info = it.next();
+            if (info.asyncPending) {
+                found = info;
+                break;
+            }
+        }
+
+        if (found != null) {
+            found.asyncPending = false;
+
+            if (found.cbid >= 0) {
+                ThreadMan.getInstance().pushIoCallback(found.cbid, found.notifyArg);
+            }
+
+            // Find threads waiting on this uid and wake them up
+            // TODO If the call was sceIoWaitAsyncCB we might need to make sure
+            // the callback is fully processed before waking the thread!
+            for (Iterator<SceKernelThreadInfo> it = ThreadMan.getInstance().iterator(); it.hasNext(); ) {
+                SceKernelThreadInfo thread = it.next();
+
+                if (thread.wait.waitingOnIo &&
+                    thread.wait.Io_id == found.uid) {
+                    // Untrack
+                    thread.wait.waitingOnIo = false;
+
+                    // Return success
+                    thread.cpuContext.gpr[2] = 0;
+
+                    // Wakeup
+                    ThreadMan.getInstance().changeThreadState(thread, PSP_THREAD_READY);
+                }
+            }
+        }
     }
 
     private String getDeviceFilePath(String pspfilename) {
@@ -198,34 +248,32 @@ public class pspiofilemgr {
         // TODO "block"/yield?
     }
 
-    /** if operation is still in progress return 1 and do not write to res. also calls to read/write/close will return PSP_ERROR_ASYNC_BUSY.
-     * if operating is done return 0, write to res and flush out the saved result. */
-    public void sceIoPollAsync(int uid, int res_addr) {
-        if (debug) Modules.log.debug("sceIoPollAsync - uid " + Integer.toHexString(uid) + " res:0x" + Integer.toHexString(res_addr));
+    /** if operation is still in progress return 1 and do not write to res.
+     * also calls to read/write/close will return PSP_ERROR_ASYNC_BUSY.
+     * if operation is done return 0, write to res and flush out the saved result. */
+    public void hleIoGetAsyncStat(int uid, int res_addr, boolean wait, boolean callbacks) {
+        if (debug) Modules.log.debug("hleIoGetAsyncStat(uid=" + Integer.toHexString(uid) + ",res=0x" + Integer.toHexString(res_addr) + ") wait=" + wait + " callbacks=" + callbacks);
 
         SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
         IoInfo info = filelist.get(uid);
         if (info == null) {
-            Modules.log.warn("sceIoPollAsync - unknown uid " + Integer.toHexString(uid));
-
-            // OLD
-            // Some games call sceIoPollAsync 2x after sceIoCloseAsync,
-            // returning 0 seems to work better than -1/"no async op" for these games.
-            //Emulator.getProcessor().cpu.gpr[2] = -1;
-            //Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NO_ASYNC_OP;
-            //Emulator.getProcessor().cpu.gpr[2] = 0;
-
+            Modules.log.warn("hleIoGetAsyncStat - unknown uid " + Integer.toHexString(uid));
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
         } else if (info.result == PSP_ERROR_NO_ASYNC_OP) {
-            // Don't write to res
+            Modules.log.debug("hleIoGetAsyncStat - PSP_ERROR_NO_ASYNC_OP");
+            wait = false;
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NO_ASYNC_OP;
+        } else if (info.asyncPending) {
+            // Need to wait for context switch before we can allow the good result through
+            Modules.log.debug("hleIoGetAsyncStat - 1 (busy)");
+            Emulator.getProcessor().cpu.gpr[2] = 1;
         } else {
             if (info.closePending) {
-                Modules.log.debug("sceIoPollAsync - file marked with closePending, calling sceIoClose");
+                Modules.log.debug("hleIoGetAsyncStat - file marked with closePending, calling sceIoClose");
                 sceIoClose(uid);
             }
 
-            // deferred error with sceIoOpenAsync
+            // Deferred error reporting from sceIoOpenAsync(filenotfound)
             if (info.result == PSP_ERROR_ASYNC_FILE_OPEN_ERROR) {
                 filelist.remove(info.uid);
                 SceUidManager.releaseUid(info.uid, "IOFileManager-File");
@@ -233,7 +281,7 @@ public class pspiofilemgr {
 
             Memory mem = Memory.getInstance();
             if (mem.isAddressGood(res_addr)) {
-                Modules.log.debug("sceIoPollAsync storing result 0x" + Long.toHexString(info.result));
+                Modules.log.debug("hleIoGetAsyncStat - storing result 0x" + Long.toHexString(info.result));
                 mem.write32(res_addr, (int)(info.result & 0xffffffffL));
                 mem.write32(res_addr + 4, (int)((info.result >> 32) & 0xffffffffL));
 
@@ -244,31 +292,50 @@ public class pspiofilemgr {
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
 
+        // TODO refactor so we can get logIoWaitAsync
         State.fileLogger.logIoPollAsync(Emulator.getProcessor().cpu.gpr[2], uid, res_addr);
+
+        if (info != null && wait) {
+            ThreadMan threadMan = ThreadMan.getInstance();
+            SceKernelThreadInfo current_thread = threadMan.getCurrentThread();
+
+            // Do callbacks?
+            current_thread.do_callbacks = callbacks;
+
+            // Go to wait state
+            int timeout = 0;
+            boolean forever = true;
+            threadMan.hleKernelThreadWait(current_thread.wait, timeout, forever);
+
+            // Wait on a specific file uid
+            current_thread.wait.waitingOnIo = true;
+            current_thread.wait.Io_id = info.uid;
+
+            threadMan.changeThreadState(current_thread, PSP_THREAD_WAITING);
+            threadMan.contextSwitch(threadMan.nextThread());
+        } else if (callbacks) {
+            ThreadMan.getInstance().yieldCurrentThreadCB();
+        }
+    }
+
+    public void sceIoPollAsync(int uid, int res_addr) {
+        if (debug) Modules.log.debug("sceIoPollAsync redirecting to hleIoGetAsyncStat");
+        hleIoGetAsyncStat(uid, res_addr, false, false);
     }
 
     public void sceIoGetAsyncStat(int uid, int poll, int res_addr) {
-        if (debug) Modules.log.debug("sceIoGetAsyncStat redirecting to sceIoPollAsync");
-        sceIoPollAsync(uid, res_addr);
-
-        if (poll == 0)
-            ThreadMan.getInstance().yieldCurrentThread();
+        if (debug) Modules.log.debug("sceIoGetAsyncStat poll=0x" + Integer.toHexString(poll) + " redirecting to hleIoGetAsyncStat");
+        hleIoGetAsyncStat(uid, res_addr, (poll == 0), false);
     }
 
     public void sceIoWaitAsync(int uid, int res_addr) {
-        if (debug) Modules.log.debug("sceIoWaitAsync redirecting to sceIoPollAsync");
-        sceIoPollAsync(uid, res_addr);
-
-        // wait = block, we currently load files immediately so emulate a yield instead
-        ThreadMan.getInstance().yieldCurrentThread();
+        if (debug) Modules.log.debug("sceIoWaitAsync redirecting to hleIoGetAsyncStat");
+        hleIoGetAsyncStat(uid, res_addr, true, false);
     }
 
     public void sceIoWaitAsyncCB(int uid, int res_addr) {
-        if (debug) Modules.log.debug("sceIoWaitAsyncCB redirecting to sceIoPollAsync");
-        sceIoPollAsync(uid, res_addr);
-
-        // wait = block, we currently load files immediately so emulate a yield instead
-        ThreadMan.getInstance().yieldCurrentThreadCB();
+        if (debug) Modules.log.debug("sceIoWaitAsyncCB redirecting to hleIoGetAsyncStat");
+        hleIoGetAsyncStat(uid, res_addr, true, true);
     }
 
     public void mkdirs(String dir) {
@@ -488,18 +555,41 @@ public class pspiofilemgr {
     public void sceIoOpenAsync(int filename_addr, int flags, int permissions) {
         if (debug) Modules.log.debug("sceIoOpenAsync redirecting to sceIoOpen");
         sceIoOpen(filename_addr, flags, permissions);
+        asyncBusy = true;
 
         // TODO refactor sceIoOpen into hleIoOpen and add more parameters
         int uid = Emulator.getProcessor().cpu.gpr[2];
         IoInfo info = filelist.get(uid);
         if (info != null) {
+            info.asyncPending = true;
             info.result = Emulator.getProcessor().cpu.gpr[2];
         } else {
             Modules.log.warn("sceIoOpenAsync file not found");
             // HACK
             info = new IoInfo(null, null, null, 0, 0);
             info.result = PSP_ERROR_ASYNC_FILE_OPEN_ERROR;
+            info.asyncPending = true;
             Emulator.getProcessor().cpu.gpr[2] = info.uid;
+        }
+    }
+
+    public void sceIoSetAsyncCallback(int uid, int cbid, int notifyArg) {
+        if (debug) Modules.log.debug("sceIoSetAsyncCallback - uid " + Integer.toHexString(uid) + " cbid " + Integer.toHexString(cbid) + " arg 0x" + Integer.toHexString(notifyArg));
+
+        SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
+        IoInfo info = filelist.get(uid);
+        if (info == null) {
+            Modules.log.warn("sceIoSetAsyncCallback - unknown uid " + Integer.toHexString(uid));
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
+        } else {
+            if (ThreadMan.getInstance().setIOCallback(cbid)) {
+                info.cbid = cbid;
+                info.notifyArg = notifyArg;
+                Emulator.getProcessor().cpu.gpr[2] = 0;
+            } else {
+                Modules.log.warn("sceIoSetAsyncCallback - not a callback uid " + Integer.toHexString(uid));
+                Emulator.getProcessor().cpu.gpr[2] = -1;
+            }
         }
     }
 
@@ -536,141 +626,179 @@ public class pspiofilemgr {
         if (info != null) {
             info.result = 0;
             info.closePending = true;
+            info.asyncPending = true;
             Emulator.getProcessor().cpu.gpr[2] = 0;
         } else {
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
         }
     }
 
-    public void sceIoWrite(int uid, int data_addr, int size) {
-        // this log message has been moved, we hide it when writing to stdout/stderr
-        //if (debug) Modules.log.debug("sceIoWrite - uid " + Integer.toHexString(uid) + " data " + Integer.toHexString(data_addr) + " size 0x" + Integer.toHexString(size));
-        data_addr &= 0x3fffffff; // remove kernel/cache bits
+    private int updateResult(IoInfo info, int result, boolean async) {
+        int newResult;
 
-        if (uid == 1) { // stdout
+        if (info == null) {
+            newResult = result;
+        } else if (async) {
+            if (info.asyncPending) {
+                // if result isn't PSP_ERROR_ASYNC_BUSY we probably continued
+                // with the function when we should have aborted early, this
+                // will be a programmer error.
+                if (result != PSP_ERROR_ASYNC_BUSY)
+                    throw new RuntimeException("oops HLE wasn't coded right");
+                newResult = result;
+            } else {
+                info.result = result;
+                info.asyncPending = true;
+                newResult = 0;
+            }
+        } else {
+            info.result = PSP_ERROR_NO_ASYNC_OP;
+            newResult = result;
+        }
+
+        return newResult;
+    }
+
+    private void hleIoWrite(int uid, int data_addr, int size, boolean async) {
+        IoInfo info = null;
+        int result;
+
+        if (uid == 1) {
+            // stdout
             String message = Utilities.stripNL(readStringNZ(data_addr, size));
             stdout.info(message);
-            Emulator.getProcessor().cpu.gpr[2] = size;
-        } else if (uid == 2) { // stderr
+            result = size;
+        } else if (uid == 2) {
+            // stderr
             String message = Utilities.stripNL(readStringNZ(data_addr, size));
             stderr.info(message);
-            Emulator.getProcessor().cpu.gpr[2] = size;
+            result = size;
         } else {
-            if (debug) Modules.log.debug("sceIoWrite - uid " + Integer.toHexString(uid) + " data " + Integer.toHexString(data_addr) + " size 0x" + Integer.toHexString(size));
+            if (debug) Modules.log.debug("hleIoWrite(uid=" + Integer.toHexString(uid) + ",data=0x" + Integer.toHexString(data_addr) + ",size=0x" + Integer.toHexString(size) + ") async=" + async);
 
             try {
                 SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
-                IoInfo info = filelist.get(uid);
+                info = filelist.get(uid);
                 if (info == null) {
-                    Modules.log.warn("sceIoWrite - unknown uid " + Integer.toHexString(uid));
-                    Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
+                    Modules.log.warn("hleIoWrite - unknown uid " + Integer.toHexString(uid));
+                    result = PSP_ERROR_BAD_FILE_DESCRIPTOR;
+                } else if (info.asyncPending) {
+                    Modules.log.warn("hleIoWrite - uid " + Integer.toHexString(uid) + " PSP_ERROR_ASYNC_BUSY");
+                    result = PSP_ERROR_ASYNC_BUSY;
                 } else if ((data_addr >= MemoryMap.START_RAM ) && (data_addr + size <= MemoryMap.END_RAM)) {
                     if ((info.flags & PSP_O_APPEND) == PSP_O_APPEND) {
-                        // seems to work ok
-                        //Modules.log.warn("sceIoWrite - untested append operation");
                         info.msFile.seek(info.msFile.length());
                     }
 
                     Utilities.write(info.msFile, data_addr, size);
-
-                    info.result = size;
-                    Emulator.getProcessor().cpu.gpr[2] = size;
+                    result = size;
                 } else {
-                    Modules.log.warn("sceIoWrite - data is outside of ram " + Integer.toHexString(data_addr));
-                    info.result = -1;
-                    Emulator.getProcessor().cpu.gpr[2] = -1;
+                    Modules.log.warn("hleIoWrite - uid " + Integer.toHexString(uid)
+                        + " data is outside of ram 0x" + Integer.toHexString(data_addr)
+                        + " - 0x" + Integer.toHexString(data_addr + size));
+                    result = -1;
                 }
             } catch(IOException e) {
                 e.printStackTrace();
-                Emulator.getProcessor().cpu.gpr[2] = -1;
+                result = -1;
             }
         }
+
+        Emulator.getProcessor().cpu.gpr[2] = updateResult(info, result, async);
 
         State.fileLogger.logIoWrite(Emulator.getProcessor().cpu.gpr[2], uid, data_addr, Emulator.getProcessor().cpu.gpr[6]);
     }
 
-    public void sceIoWriteAsync(int uid, int data_addr, int size) {
-        if (debug) Modules.log.debug("sceIoWriteAsync redirecting to sceIoWrite");
-        sceIoWrite(uid, data_addr, size);
-        // TODO allow returning error codes here like in read async?
-        Emulator.getProcessor().cpu.gpr[2] = 0;
+    public void sceIoWrite(int uid, int data_addr, int size) {
+        hleIoWrite(uid, data_addr, size, false);
     }
 
-    public void sceIoRead(int uid, int data_addr, int size) {
-        if (debug) Modules.log.debug("sceIoRead - uid " + Integer.toHexString(uid) + " data 0x" + Integer.toHexString(data_addr) + " size 0x" + Integer.toHexString(size));
-        data_addr &= 0x3fffffff; // remove kernel/cache bits
+    public void sceIoWriteAsync(int uid, int data_addr, int size) {
+        hleIoWrite(uid, data_addr, size, true);
+    }
+
+    public void hleIoRead(int uid, int data_addr, int size, boolean async) {
+        if (debug) Modules.log.debug("hleIoRead(uid=" + Integer.toHexString(uid) + ",data=0x" + Integer.toHexString(data_addr) + ",size=0x" + Integer.toHexString(size) + ") async=" + async);
+        IoInfo info = null;
+        int result;
 
         if (uid == 3) { // stdin
-            // TODO
-            Emulator.getProcessor().cpu.gpr[2] = 0;
+            // TODO?
+            Modules.log.warn("UNIMPLEMENTED:hleIoRead uid = stdin");
+            result = 0; // Fake
         } else {
             try {
                 SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
-                IoInfo info = filelist.get(uid);
+                info = filelist.get(uid);
                 if (info == null) {
-                    Modules.log.warn("sceIoRead - unknown uid " + Integer.toHexString(uid));
-                    Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
+                    Modules.log.warn("hleIoRead - unknown uid " + Integer.toHexString(uid));
+                    result = PSP_ERROR_BAD_FILE_DESCRIPTOR;
+                } else if (info.asyncPending) {
+                    Modules.log.warn("hleIoRead - uid " + Integer.toHexString(uid) + " PSP_ERROR_ASYNC_BUSY");
+                    result = PSP_ERROR_ASYNC_BUSY;
                 } else if ((data_addr >= MemoryMap.START_RAM ) && (data_addr + size <= MemoryMap.END_RAM)) {
                     // Using readFully for ms/umd compatibility, but now we must
                     // manually make sure it doesn't read off the end of the file.
                     if (info.readOnlyFile.getFilePointer() + size > info.readOnlyFile.length()) {
                         int oldSize = size;
                         size = (int)(info.readOnlyFile.length() - info.readOnlyFile.getFilePointer());
-                        Modules.log.debug("sceIoRead - clamping size old=" + oldSize + " new=" + size
+                        Modules.log.debug("hleIoRead - clamping size old=" + oldSize + " new=" + size
                             + " fp=" + info.readOnlyFile.getFilePointer() + " len=" + info.readOnlyFile.length());
                     }
 
                     Utilities.readFully(info.readOnlyFile, data_addr, size);
-
-                    info.result = size;
-                    Emulator.getProcessor().cpu.gpr[2] = size;
+                    result = size;
                 } else {
-                    Modules.log.warn("sceIoRead - data is outside of ram " + Integer.toHexString(data_addr));
-                    info.result = PSP_ERROR_FILE_READ_ERROR;
-                    Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_FILE_READ_ERROR;
+                    Modules.log.warn("hleIoRead - uid " + Integer.toHexString(uid)
+                        + " data is outside of ram 0x" + Integer.toHexString(data_addr)
+                        + " - 0x" + Integer.toHexString(data_addr + size));
+                    result = PSP_ERROR_FILE_READ_ERROR;
                 }
             } catch(IOException e) {
                 e.printStackTrace();
-                Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_FILE_READ_ERROR;
+                result = PSP_ERROR_FILE_READ_ERROR;
             } catch(Exception e) {
                 e.printStackTrace();
-                Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_FILE_READ_ERROR;
-                Modules.log.error("sceIoRead: Check other console for exception details. Press Run to continue.");
+                result = PSP_ERROR_FILE_READ_ERROR;
+
+                Modules.log.error("hleIoRead: Check other console for exception details. Press Run to continue.");
                 Emulator.PauseEmu();
             }
         }
 
+        Emulator.getProcessor().cpu.gpr[2] = updateResult(info, result, async);
+
         State.fileLogger.logIoRead(Emulator.getProcessor().cpu.gpr[2], uid, data_addr, Emulator.getProcessor().cpu.gpr[6]);
     }
 
+    public void sceIoRead(int uid, int data_addr, int size) {
+        hleIoRead(uid, data_addr, size, false);
+    }
+
     public void sceIoReadAsync(int uid, int data_addr, int size) {
-        if (debug) Modules.log.debug("sceIoReadAsync redirecting to sceIoRead");
-        sceIoRead(uid, data_addr, size);
-        if (Emulator.getProcessor().cpu.gpr[2] > 0) {
-            Emulator.getProcessor().cpu.gpr[2] = 0;
-        }
+        hleIoRead(uid, data_addr, size, true);
     }
 
     // TODO sceIoLseek with 64-bit return value
     public void sceIoLseek(int uid, long offset, int whence) {
         if (debug) Modules.log.debug("sceIoLseek - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Long.toHexString(offset) + ") whence " + getWhenceName(whence));
-        seek(uid, offset, whence, true);
+        seek(uid, offset, whence, true, false);
     }
 
     public void sceIoLseekAsync(int uid, long offset, int whence) {
         if (debug) Modules.log.debug("sceIoLseekAsync - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Long.toHexString(offset) + ") whence " + getWhenceName(whence));
-        seek(uid, offset, whence, true);
+        seek(uid, offset, whence, true, true);
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
     public void sceIoLseek32(int uid, int offset, int whence) {
         if (debug) Modules.log.debug("sceIoLseek32 - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
-        seek(uid, ((long)offset & 0xFFFFFFFFL), whence, false);
+        seek(uid, ((long)offset & 0xFFFFFFFFL), whence, false, false);
     }
 
     public void sceIoLseek32Async(int uid, int offset, int whence) {
         if (debug) Modules.log.debug("sceIoLseek32Async - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
-        seek(uid, ((long)offset & 0xFFFFFFFFL), whence, false);
+        seek(uid, ((long)offset & 0xFFFFFFFFL), whence, false, true);
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
@@ -684,7 +812,7 @@ public class pspiofilemgr {
     }
 
     // TODO check what happens with PSP_ERROR_BAD_FILE_DESCRIPTOR 32bit error code on 64bit mode
-    private void seek(int uid, long offset, int whence, boolean resultIs64bit) {
+    private void seek(int uid, long offset, int whence, boolean resultIs64bit, boolean async) {
         //if (debug) Modules.log.debug("seek - uid " + Integer.toHexString(uid) + " offset " + offset + " whence " + whence);
 
         if (uid == 1 || uid == 2 || uid == 3) { // stdio
@@ -733,7 +861,11 @@ public class pspiofilemgr {
                     }
                     long result = info.readOnlyFile.getFilePointer();
 
-                    info.result = result;
+                    if (async) {
+                        info.result = result;
+                        info.asyncPending = true;
+                    }
+
                     Emulator.getProcessor().cpu.gpr[2] = (int)(result & 0xFFFFFFFFL);
                     if (resultIs64bit)
                         Emulator.getProcessor().cpu.gpr[3] = (int)(result >> 32);
@@ -845,7 +977,7 @@ public class pspiofilemgr {
                     IoDirInfo info = new IoDirInfo(pcfilename, f.list());
                     Emulator.getProcessor().cpu.gpr[2] = info.uid;
                 } else {
-                    if (debug) Modules.log.warn("sceIoDopen not a directory!");
+                    if (debug) Modules.log.warn("sceIoDopen '" + pcfilename + "' not a directory! (could be missing)");
                     Emulator.getProcessor().cpu.gpr[2] = -1;
                 }
             }
@@ -1166,20 +1298,27 @@ public class pspiofilemgr {
     }
 
     class IoInfo {
+        // PSP settings
+        public final int flags;
+        public final int permissions;
+
         // Internal settings
         public final String filename;
         public final SeekableRandomFile msFile; // on memory stick, should either be identical to readOnlyFile or null
         public final SeekableDataInput readOnlyFile; // on memory stick or umd
         public final String mode;
 
-        // PSP settings
-        public final int flags;
-        public final int permissions;
 
         public final int uid;
         public long result; // The return value from the last operation on this file, used by sceIoWaitAsync
         public boolean closePending = false; // sceIoCloseAsync has been called on this file
+        public boolean asyncPending; // Thread has not switched since an async operation was called on this file
 
+        // Async callback
+        public int cbid = -1;
+        public int notifyArg = 0;
+
+        /** Memory stick version */
         public IoInfo(String filename, SeekableRandomFile f, String mode, int flags, int permissions) {
             this.filename = filename;
             this.msFile = f;
@@ -1191,6 +1330,7 @@ public class pspiofilemgr {
             filelist.put(uid, this);
         }
 
+        /** UMD version (read only) */
         public IoInfo(String filename, SeekableDataInput f, String mode, int flags, int permissions) {
             this.filename = filename;
             this.msFile = null;

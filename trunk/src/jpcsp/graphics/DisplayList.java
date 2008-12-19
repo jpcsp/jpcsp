@@ -95,7 +95,7 @@ public class DisplayList {
 
     //  HACK: This shouldn't exist, but I need to be sure a list
     // is complete before processing it (shash)
-    public boolean HasFinish () {
+    public boolean HasFinish() {
         boolean hasFinish = false;
         int currPC = start;
 
