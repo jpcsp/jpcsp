@@ -120,14 +120,15 @@ public class MutexManager {
                 // Failed, but it's ok, just wait a little
                 info.numWaitThreads++;
 
-                // Go to wait state
+                // Do callbacks?
                 current_thread.do_callbacks = do_callbacks;
 
-                // Wait on a specific semaphore
+                // Go to wait state
                 int timeout = 0;
                 boolean forever = true;
                 threadMan.hleKernelThreadWait(current_thread.wait, timeout, forever);
 
+                // Wait on a specific mutex
                 current_thread.wait.waitingOnMutex = true;
                 current_thread.wait.Mutex_id = uid;
 

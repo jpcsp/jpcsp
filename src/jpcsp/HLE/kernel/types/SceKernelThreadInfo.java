@@ -100,9 +100,15 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public final ThreadWaitInfo wait;
 
     // callbacks, only 1 of each type can be registered per thread
+    // TODO could be converted to an array, where the indices are set using constants
+    // for example: callbackRegistered[THREAD_UMD_CALLBACK] = ...
     public boolean umdCallbackRegistered;
     public boolean umdCallbackReady;
     public SceKernelCallbackInfo umdCallbackInfo;
+
+    public boolean ioCallbackRegistered;
+    public boolean ioCallbackReady;
+    public SceKernelCallbackInfo ioCallbackInfo;
 
     public SceKernelThreadInfo(String name, int entry_addr, int initPriority, int stackSize, int attr) {
         // Ignore 0 size from the idle threads (don't want them stealing space)
@@ -166,6 +172,9 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
 
         umdCallbackRegistered = false;
         umdCallbackReady = false;
+
+        ioCallbackRegistered = false;
+        ioCallbackReady = false;
     }
 
     public void saveContext() {
