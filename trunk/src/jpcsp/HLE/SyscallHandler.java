@@ -891,7 +891,7 @@ public class SyscallHandler {
 		 //sceUtilityCopyNetParam(0x220f),
 		// sceUtilitySetNetParam(0x2210);
 
-                case 0x33017:
+                case 0x30a7:
                     Managers.mutex.sceKernelCreateMutex(gpr[4], gpr[5], gpr[6], gpr[7]);
                     break;
                 case 0x3015:
