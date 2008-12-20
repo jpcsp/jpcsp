@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.Allegrex;
 
 
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 import jpcsp.HLE.SyscallHandler;
@@ -1407,12 +1409,18 @@ public void interpret(Processor processor, int insn) {
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRdRegister0()) {
 		context.prepareRdForStore();
-		// rd = (rs - rt) >>> 31
+		// rd = rs < rt ? 1 : 0
 		context.loadRs();
 		context.loadRt();
-		context.getMethodVisitor().visitInsn(Opcodes.ISUB);
-		context.loadImm(31);
-		context.getMethodVisitor().visitInsn(Opcodes.IUSHR);
+		MethodVisitor mv = context.getMethodVisitor();
+		Label ifLtLabel = new Label();
+		Label continueLabel = new Label();
+		mv.visitJumpInsn(Opcodes.IF_ICMPLT, ifLtLabel);
+		context.loadImm(0);
+		mv.visitJumpInsn(Opcodes.GOTO, continueLabel);
+		mv.visitLabel(ifLtLabel);
+		context.loadImm(1);
+		mv.visitLabel(continueLabel);
 		context.storeRd();
 	}
 }
@@ -1447,12 +1455,18 @@ public void interpret(Processor processor, int insn) {
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRtRegister0()) {
 		context.prepareRtForStore();
-		// rt = (rs - simm16) >>> 31
-		context.loadRs();
-		context.loadImm16(true);
-		context.getMethodVisitor().visitInsn(Opcodes.ISUB);
-		context.loadImm(31);
-		context.getMethodVisitor().visitInsn(Opcodes.IUSHR);
+        // rt = rs < simm16 ? 1 : 0
+        context.loadRs();
+        context.loadImm16(true);
+        MethodVisitor mv = context.getMethodVisitor();
+        Label ifLtLabel = new Label();
+        Label continueLabel = new Label();
+        mv.visitJumpInsn(Opcodes.IF_ICMPLT, ifLtLabel);
+        context.loadImm(0);
+        mv.visitJumpInsn(Opcodes.GOTO, continueLabel);
+        mv.visitLabel(ifLtLabel);
+        context.loadImm(1);
+        mv.visitLabel(continueLabel);
 		context.storeRt();
 	}
 }
@@ -1487,15 +1501,21 @@ public void interpret(Processor processor, int insn) {
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRdRegister0()) {
 		context.prepareRdForStore();
-		// rd = (((long) rs) & 0xFFFFFFFFL - ((long) rt) & 0xFFFFFFFFL) >>> 63
-		context.loadRs();
-		context.convertUnsignedIntToLong();
-		context.loadRt();
-		context.convertUnsignedIntToLong();
-		context.getMethodVisitor().visitInsn(Opcodes.LSUB);
-		context.loadImm(63);
-		context.getMethodVisitor().visitInsn(Opcodes.LUSHR);
-		context.getMethodVisitor().visitInsn(Opcodes.L2I);
+        // rd = rs < rt ? 1 : 0
+        context.loadRs();
+        context.convertUnsignedIntToLong();
+        context.loadRt();
+        context.convertUnsignedIntToLong();
+        MethodVisitor mv = context.getMethodVisitor();
+        Label ifLtLabel = new Label();
+        Label continueLabel = new Label();
+        mv.visitInsn(Opcodes.LCMP); // -1 if rs < rt, 0 if rs == rt, 1 if rs > rt
+        mv.visitJumpInsn(Opcodes.IFLT, ifLtLabel);
+        context.loadImm(0);
+        mv.visitJumpInsn(Opcodes.GOTO, continueLabel);
+        mv.visitLabel(ifLtLabel);
+        context.loadImm(1);
+        mv.visitLabel(continueLabel);
 		context.storeRd();
 	}
 }
@@ -1530,15 +1550,21 @@ public void interpret(Processor processor, int insn) {
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRtRegister0()) {
 		context.prepareRtForStore();
-		// rd = (((long) rs) & 0xFFFFFFFFL - ((long) imm16)) >>> 63
-		context.loadRs();
-		context.convertUnsignedIntToLong();
-		context.loadImm16(true);
+        // rt = rs < simm16 ? 1 : 0
+        context.loadRs();
         context.convertUnsignedIntToLong();
-		context.getMethodVisitor().visitInsn(Opcodes.LSUB);
-		context.loadImm(63);
-		context.getMethodVisitor().visitInsn(Opcodes.LUSHR);
-		context.getMethodVisitor().visitInsn(Opcodes.L2I);
+        context.loadImm16(true);
+        context.convertUnsignedIntToLong();
+        MethodVisitor mv = context.getMethodVisitor();
+        Label ifLtLabel = new Label();
+        Label continueLabel = new Label();
+        mv.visitInsn(Opcodes.LCMP); // -1 if rs < rt, 0 if rs == rt, 1 if rs > rt
+        mv.visitJumpInsn(Opcodes.IFLT, ifLtLabel);
+        context.loadImm(0);
+        mv.visitJumpInsn(Opcodes.GOTO, continueLabel);
+        mv.visitLabel(ifLtLabel);
+        context.loadImm(1);
+        mv.visitLabel(continueLabel);
 		context.storeRt();
 	}
 }
