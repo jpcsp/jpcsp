@@ -35,11 +35,12 @@ public class Texture {
 	private int clutMask;
 	private int clutNumBlocks;
 	private int hashCode;
+	private int mipmapLevels;
 	private boolean hashCodeComputed = false;
 	private int glId = -1;	// id created by glGenTextures
 	private boolean loaded = false;	// is the texture already loaded?
 
-	public Texture(int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks) {
+	public Texture(int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks, int mipmapLevels) {
 		this.addr = addr;
 		this.lineWidth = lineWidth;
 		this.width = width;
@@ -51,9 +52,10 @@ public class Texture {
 		this.clutShift = clutShift;
 		this.clutMask = clutMask;
 		this.clutNumBlocks = clutNumBlocks;
+		this.mipmapLevels = mipmapLevels;
 	}
 
-	private static int hashCode(int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks) {
+	private static int hashCode(int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks, int mipmapLevels) {
 	    //
 		// HashCode is computed as follows:
 	    // - XOR of pixel buffer
@@ -63,7 +65,7 @@ public class Texture {
 	    // (e.g. rotating the clut entries like in blend.pbp),
 	    // the address index (i) is added to the value itself.
 	    //
-		int hashCode = 0;
+		int hashCode = mipmapLevels;
 		Memory mem = Memory.getInstance();
 
 		if (addr != 0) {
@@ -112,16 +114,17 @@ public class Texture {
 		return hashCode;
 	}
 
+	@Override
 	public int hashCode() {
 		if (!hashCodeComputed) {
-			hashCode = hashCode(addr, lineWidth, width, height, pixelStorage, clutAddr, clutMode, clutStart, clutShift, clutMask, clutNumBlocks);
+			hashCode = hashCode(addr, lineWidth, width, height, pixelStorage, clutAddr, clutMode, clutStart, clutShift, clutMask, clutNumBlocks, mipmapLevels);
 			hashCodeComputed = true;
 		}
 
 		return hashCode;
 	}
 
-	public boolean equals(int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks) {
+	public boolean equals(int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks, int mipmapLevels) {
 		if (this.addr != addr ||
 			this.lineWidth != lineWidth ||
 			this.width != width ||
@@ -132,12 +135,13 @@ public class Texture {
 			this.clutStart != clutStart ||
 			this.clutShift != clutShift ||
 			this.clutMask != clutMask ||
-			this.clutNumBlocks != clutNumBlocks)
+			this.clutNumBlocks != clutNumBlocks ||
+			this.mipmapLevels != mipmapLevels)
 		{
 			return false;
 		}
 
-		int hashCode = hashCode(addr, lineWidth, width, height, pixelStorage, clutAddr, clutMode, clutStart, clutShift, clutMask, clutNumBlocks);
+		int hashCode = hashCode(addr, lineWidth, width, height, pixelStorage, clutAddr, clutMode, clutStart, clutShift, clutMask, clutNumBlocks, mipmapLevels);
 		if (hashCode != hashCode()) {
 			return false;
 		}
@@ -184,5 +188,9 @@ public class Texture {
 
 	public int getGlId() {
 		return glId;
+	}
+	
+	public int getMipmapLevels() {
+		return mipmapLevels;
 	}
 }

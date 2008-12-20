@@ -45,6 +45,7 @@ public class TextureCache {
 			return percentage(hits, totalHits);
 		}
 
+		@Override
 		public String toString() {
 			StringBuffer result = new StringBuffer();
 			result.append("TextureCache Statistics: ");
@@ -114,7 +115,7 @@ public class TextureCache {
         }
 	}
 
-	public Texture getTexture(int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks) {
+	public Texture getTexture(int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks, int mipmapLevels) {
 		statistics.totalHits++;
 		Texture texture = getTexture(addr);
 
@@ -123,7 +124,7 @@ public class TextureCache {
 			return texture;
 		}
 
-		if (texture.equals(addr, lineWidth, width, height, pixelStorage, clutAddr, clutMode, clutStart, clutShift, clutMask, clutNumBlocks)) {
+		if (texture.equals(addr, lineWidth, width, height, pixelStorage, clutAddr, clutMode, clutStart, clutShift, clutMask, clutNumBlocks, mipmapLevels)) {
 			statistics.successfulHits++;
 			return texture;
 		}
