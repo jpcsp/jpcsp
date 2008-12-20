@@ -1,3 +1,4 @@
+// usage: place a copy of test.txt with some text in it in the same dir as the binary
 
 #include <pspkernel.h>
 #include <pspdebug.h>
@@ -134,6 +135,49 @@ void test_pt2()
         async = -1;
         result = sceIoPollAsync(fd, &async);
         printf("sceIoPollAsync result %08x async %08x (%lld)\n", result, (int)(async & 0xFFFFFFFF), async);
+
+        // extra
+        result = sceIoCloseAsync(fd);
+        printf("sceIoCloseAsync result %08x\n", result);
+    }
+}
+
+void test_mercury()
+{
+    int result;
+    SceInt64 async;
+    int fd;
+
+    printf("SIMULATING MERCURY\n");
+
+    // for this test don't create this file! it's supposed to be missing
+    // 644 = 01204 = 0x284
+    fd = sceIoOpenAsync("filenotfound.txt", 1, 644);
+    printf("sceIoOpenAsync 0x%08x\n", fd);
+
+    if (fd >= 0)
+    {
+        async = -1;
+        result = sceIoWaitAsyncCB(fd, &async); // result = 0x80010016
+        printf("sceIoWaitAsyncCB result %08x async %08x (%lld)\n", result, (int)(async & 0xFFFFFFFF), async);
+
+        result = sceIoLseekAsync(fd, 0x0, PSP_SEEK_END);
+        printf("sceIoLseekAsync result %08x\n", result);
+
+        async = -1;
+        result = sceIoWaitAsyncCB(fd, &async);
+        printf("sceIoWaitAsyncCB result %08x async %08x (%lld)\n", result, (int)(async & 0xFFFFFFFF), async);
+
+        result = sceIoLseekAsync(fd, 0x0, PSP_SEEK_SET);
+        printf("sceIoLseekAsync result %08x\n", result);
+
+        async = -1;
+        result = sceIoWaitAsyncCB(fd, &async);
+        printf("sceIoWaitAsyncCB result %08x async %08x (%lld)\n", result, (int)(async & 0xFFFFFFFF), async);
+
+        async = -1;
+        result = sceIoWaitAsyncCB(fd, &async);
+        printf("sceIoWaitAsyncCB result %08x async %08x (%lld)\n", result, (int)(async & 0xFFFFFFFF), async);
 
         // extra
         result = sceIoCloseAsync(fd);
@@ -312,6 +356,7 @@ int io_thread(SceSize args, void *argp)
     //test_burnout();
     //test_toe();
     //test_pt2();
+    //test_mercury();
     //test_asyncresult();
     test_callback();
     //test_general();
