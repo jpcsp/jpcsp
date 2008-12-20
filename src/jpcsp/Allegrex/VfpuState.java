@@ -1362,7 +1362,8 @@ public class VfpuState extends FpuState {
     // group VFPU6   
     // VFPU6:VMMUL
     public void doVMMUL(int vsize, int vd, int vs, int vt) {
-        vs = vs ^ 32;
+        // you must do it for disasm, not for emulation !
+        //vs = vs ^ 32;
 
         // not sure :(
         for (int i = 0; i < vsize; ++i) {
@@ -1575,7 +1576,7 @@ public class VfpuState extends FpuState {
         int si = (imm5 >>> 2) & 3;
         int ci = (imm5 >>> 0) & 3;       
         
-        if ((imm5 & 16) != 0) {
+        if (((imm5 & 16) != 0)) {
             sa = 0.0 - sa; 
         }
 
