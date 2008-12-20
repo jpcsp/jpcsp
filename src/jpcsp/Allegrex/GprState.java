@@ -66,12 +66,17 @@ public class GprState {
     }
 
     public static final int signedCompare(int i, int j) {
-        return (i - j) >>> 31;
+        return (i < j) ? 1 : 0;
     }
 
     public static final int unsignedCompare(long i, long j) {
-        return (int)(((i & 0xffffffffL) - (j & 0xffffffffL)) >>> 63);
+        return ((i & 0xffffffffL) < (j & 0xffffffffL)) ? 1 : 0;
     }
+
+    // not sure about it
+    //public static final int unsignedCompare(int i, int j) {
+    //    return (i - j) >>> 31;
+    //}
 
     public final void doSLL(int rd, int rt, int sa) {
         if (rd != 0) {
