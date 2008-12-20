@@ -743,7 +743,7 @@ public class Common {
         int ci = (vt >>> 0) & 3;       
         String ca = " c", sa = " s";
         String codes[] = new String[4];
-        if ((vt & 16) == 1) {
+        if ((vt & 16) != 0) {
             sa = "-s"; 
         }
 
