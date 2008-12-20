@@ -41,6 +41,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
     private FileCommandModel fileCommandModel;
     private Thread refreshThread;
     private volatile boolean dirty;
+    private volatile boolean sortRequired;
 
     /** Creates new form FileLoggerFrame */
     public FileLoggerFrame() {
@@ -52,6 +53,18 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
 
         refreshThread = new Thread(this, "FileLogger");
         refreshThread.start();
+    }
+
+    @Override
+    public void setVisible(boolean visible) {
+        super.setVisible(visible);
+
+        synchronized(getInstance()) {
+            if (!dirty) {
+                dirty = true;
+                getInstance().notify();
+            }
+        }
     }
 
     /** This method is called from within the constructor to
@@ -121,6 +134,11 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
         Runnable refresher = new Runnable() {
             @Override
             public void run() {
+                if (sortRequired) {
+                    sortRequired = false;
+                    sortLists();
+                }
+
                 // Scroll to bottom of the tables
                 int max = jScrollPane1.getVerticalScrollBar().getMaximum();
                 jScrollPane1.getVerticalScrollBar().setValue(max);
@@ -143,7 +161,8 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
                     dirty = false;
                 }
 
-                SwingUtilities.invokeAndWait(refresher);
+                if (getInstance().isVisible())
+                    SwingUtilities.invokeAndWait(refresher);
 
                 // Cap update frequency
                 Thread.sleep(200);
@@ -433,7 +452,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
         if (result >= 0) {
             FileHandleInfo info = new FileHandleInfo(result, filename);
             fileHandleIdMap.put(result, info);
-            sortLists();
+            sortRequired = true;
         }
 
         // File Command list
