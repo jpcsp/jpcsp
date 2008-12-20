@@ -173,14 +173,14 @@ public class GeCommands {
     public final static int LT2 = 0x61;// 	LT2 	Light Type 2
     public final static int LT3 = 0x62;// 	LT3 	Light Type 3
     //SERVES FOR ALL KINDS OF LTX
-        public final static int LIGTH_DIRECTIONAL = 0x00;
-        public final static int LIGTH_POINT = 0x01;
-        public final static int LIGTH_SPOT = 0x02;
-        //LIGTH COMPONENT
-        public final static int LIGTH_AMBIENT_DIFFUSE = 0X00;
-        public final static int LIGTH_DIFFUSE_SPECULAR = 0X01;
-        public final static int LIGTH_UNKNOW1 = 0X02;
-        public final static int LIGTH_UNKNOW2 = 0X03;
+        public final static int LIGHT_DIRECTIONAL = 0x00;
+        public final static int LIGHT_POINT = 0x01;
+        public final static int LIGHT_SPOT = 0x02;
+        //LIGHT COMPONENT
+        public final static int LIGHT_AMBIENT_DIFFUSE = 0X00;
+        public final static int LIGHT_DIFFUSE_SPECULAR = 0X01;
+        public final static int LIGHT_UNKNOW1 = 0X02;
+        public final static int LIGHT_UNKNOW2 = 0X03;
     //END SERVES
     public final static int LXP0 = 0x63;// 	LXP0 	Light X Position 0
     public final static int LYP0 = 0x64;// 	LYP0 	Light Y Position 0
@@ -308,14 +308,14 @@ public class GeCommands {
         public final static int CMODE_FORMAT_16BIT_ABGR4444 = 0X02;
         public final static int CMODE_FORMAT_32BIT_ABGR8888 = 0X03;
     public final static int TFLT = 0xC6;// 	TFLT 	Texture Filter
-        public final static int TFLT_MAGNIFYING_FILTER_NEAREST = 0X00;
-        public final static int TFLT_MAGNIFYING_FILTER_LINEAR = 0X01;
-        public final static int TFLT_MAGNIFYING_FILTER_UNKNOW1 = 0X02;
-        public final static int TFLT_MAGNIFYING_FILTER_UNKNOW2 = 0X03;
-        public final static int TFLT_MAGNIFYING_FILTER_MIPMAP_NEAREST_NEAREST = 0X04;
-        public final static int TFLT_MAGNIFYING_FILTER_MIPMAP_NEAREST_LINEAR = 0X05;
-        public final static int TFLT_MAGNIFYING_FILTER_MIPMAP_LINEAR_NEAREST = 0X06;
-        public final static int TFLT_MAGNIFYING_FILTER_MIPMAP_LINEAR_LINEAR = 0X07;
+        public final static int TFLT_NEAREST = 0X00;
+        public final static int TFLT_LINEAR = 0X01;
+        public final static int TFLT_UNKNOW1 = 0X02;
+        public final static int TFLT_UNKNOW2 = 0X03;
+        public final static int TFLT_NEAREST_MIPMAP_NEAREST = 0X04;
+        public final static int TFLT_LINEAR_MIPMAP_NEAREST = 0X05;
+        public final static int TFLT_NEAREST_MIPMAP_LINEAR = 0X06;        
+        public final static int TFLT_LINEAR_MIPMAP_LINEAR = 0X07;
     public final static int TWRAP = 0xC7;// 	TWRAP 	Texture Wrapping
         public final static int TWRAP_WRAP_MODE_REPEAT = 0X00;
         public final static int TWRAP_WRAP_MODE_CLAMP = 0X01;

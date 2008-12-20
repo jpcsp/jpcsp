@@ -23,13 +23,15 @@ package jpcsp.HLE;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import javax.media.opengl.DebugGL;
 import java.nio.IntBuffer;
-
 import javax.media.opengl.GL;
 import javax.media.opengl.GLAutoDrawable;
 import javax.media.opengl.GLCanvas;
 import javax.media.opengl.GLCapabilities;
 import javax.media.opengl.GLEventListener;
+import javax.media.opengl.glu.GLU;
+
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
@@ -423,9 +425,10 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
             // Copy the current texture into memory
             temp.clear();
+            int pixelFormatGL = getPixelFormatGL(pixelformat);
             gl.glGetTexImage(
-                GL.GL_TEXTURE_2D, 0, GL.GL_RGBA,
-                getPixelFormatGL(pixelformat), temp);
+                GL.GL_TEXTURE_2D, 0, pixelFormatGL == GL.GL_UNSIGNED_SHORT_5_6_5_REV ? GL.GL_RGB : GL.GL_RGBA,
+                pixelFormatGL, temp);
 
             // Copy temp into pixels, temp is probably square and pixels is less,
             // a smaller rectangle, otherwise we could copy straight into pixels.
@@ -446,7 +449,13 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
     @Override
     public void init(GLAutoDrawable drawable) {
+    	// Use DebugGL to get exceptions when some OpenGL operation fails
+    	// Not safe to use in release mode since people could have a few exceptions
+    	// that remained silent when some operations fails but still output the
+    	// intended result
+        //drawable.setGL(new DebugGL(drawable.getGL()));        
         final GL gl = drawable.getGL();
+        VideoEngine.getEngine(gl, true, true); // Initialize shaders on startup
         gl.setSwapInterval(1);
     }
 
@@ -531,10 +540,14 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 	            // render the frame buffer.
 	            // But glDrawPixels is showing around 10% performance decrease
 	            // against glTexSubImage2D.
-	            gl.glTexSubImage2D(
+	            
+	            // Use format without alpha channel if the source buffer doesn't have one
+	            int pixelFormatGL = getPixelFormatGL(pixelformatGe);
+				gl.glTexSubImage2D(
 	                GL.GL_TEXTURE_2D, 0,
 	                0, 0, width, height,
-	                GL.GL_RGBA, getPixelFormatGL(pixelformatGe), pixelsGe);
+	                pixelFormatGL == GL.GL_UNSIGNED_SHORT_5_6_5_REV ? GL.GL_RGB : GL.GL_RGBA,
+	                pixelFormatGL, pixelsGe);
 	            drawFrameBuffer(gl, false, true);
             }
 
@@ -558,10 +571,12 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             // Render FB
             pixelsFb.clear();
             gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
+            int pixelFormatGL = getPixelFormatGL(pixelformatFb);
             gl.glTexSubImage2D(
                 GL.GL_TEXTURE_2D, 0,
                 0, 0, bufferwidthFb, height,
-                GL.GL_RGBA, getPixelFormatGL(pixelformatFb), pixelsFb);
+                pixelFormatGL == GL.GL_UNSIGNED_SHORT_5_6_5_REV ? GL.GL_RGB : GL.GL_RGBA,
+                pixelFormatGL, pixelsFb);
             drawFrameBuffer(gl, false, true);
 
             //swapBuffers();
