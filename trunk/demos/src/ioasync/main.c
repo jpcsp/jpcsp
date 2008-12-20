@@ -158,7 +158,7 @@ void test_mercury()
     if (fd >= 0)
     {
         async = -1;
-        result = sceIoWaitAsyncCB(fd, &async); // result = 0x80010016
+        result = sceIoWaitAsyncCB(fd, &async);
         printf("sceIoWaitAsyncCB result %08x async %08x (%lld)\n", result, (int)(async & 0xFFFFFFFF), async);
 
         result = sceIoLseekAsync(fd, 0x0, PSP_SEEK_END);
