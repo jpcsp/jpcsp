@@ -668,7 +668,7 @@ public class VfpuState extends FpuState {
         int m = (imm7 >> 2) & 7;
         int c = (imm7 >> 0) & 3;
 
-        gpr[rt] = Float.floatToRawIntBits(vpr[m][r][c]);
+        gpr[rt] = Float.floatToRawIntBits(vpr[m][c][r]);
     }
     // VFPU2:MFVC
     public void doMFVC(int rt, int imm7) {
