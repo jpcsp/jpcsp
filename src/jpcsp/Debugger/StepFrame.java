@@ -104,4 +104,12 @@ public class StepFrame {
         }
         return message;
     }
+
+    public boolean isJAL() {
+        return (asm.indexOf("jal") != -1);
+    }
+
+    public boolean isJRRA() {
+        return (asm.indexOf("jr") != -1) && (asm.indexOf("$ra") != -1);
+    }
 }

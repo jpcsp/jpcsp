@@ -296,7 +296,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
         logIoOpen(1, 0x08800000, "test1.txt", 0xFF, 0xFF, "rw");
 
         // file command table
-        logIoRead(0x0, 1, 0x08800000, 0x400);
+        logIoRead(0x0, 1, 0x08800000, 0x400, 0x0);
 
         System.err.println("test done");
     }
@@ -428,13 +428,6 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
                 ));
     }
 
-    public void logIoWaitAsyncCB(int result, int uid, int res_addr) {
-        logFileCommand(new FileCommandInfo(
-                uid, "poll async cb", result,
-                String.format("result=0x%08X", res_addr)
-                ));
-    }
-
     public void logIoOpen(int result, int filename_addr, String filename, int flags, int permissions, String mode) {
         // File handle list
         if (result >= 0) {
@@ -467,10 +460,10 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
                 ));
     }
 
-    public void logIoWrite(int result, int uid, int data_addr, int size) {
+    public void logIoWrite(int result, int uid, int data_addr, int size, int bytesWritten) {
         FileHandleInfo info = fileHandleIdMap.get(uid);
         if (result > 0 && info != null) {
-            info.bytesWritten += result;
+            info.bytesWritten += bytesWritten;
         }
 
         logFileCommand(new FileCommandInfo(
@@ -480,10 +473,10 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
                 ));
     }
 
-    public void logIoRead(int result, int uid, int data_addr, int size) {
+    public void logIoRead(int result, int uid, int data_addr, int size, int bytesRead) {
         FileHandleInfo info = fileHandleIdMap.get(uid);
         if (result > 0 && info != null) {
-            info.bytesRead += result;
+            info.bytesRead += bytesRead;
         }
 
         logFileCommand(new FileCommandInfo(

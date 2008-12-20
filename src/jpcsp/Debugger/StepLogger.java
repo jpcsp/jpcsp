@@ -88,9 +88,26 @@ public class StepLogger {
             // Don't bother printing on wdt hog, the log gets thrashed
             if (status != Emulator.EMU_STATUS_WDT_HOG &&
                 Processor.ENABLE_STEP_TRACE) {
+                int localDepth = 5;
+
+                out.println("Local depth: " + localDepth);
+                out.println();
+
                 for (i = 0; i < size; i++) {
                     out.println(frames[flushPosition].getMessage());
                     out.println();
+
+
+                    if (frames[flushPosition].isJAL()) {
+                        localDepth++;
+                        out.println("Local depth: " + localDepth);
+                        out.println();
+                    } else if (frames[flushPosition].isJRRA()) {
+                        localDepth--;
+                        out.println("Local depth: " + localDepth);
+                        out.println();
+                    }
+
                     flushPosition = (flushPosition + 1) % capacity;
                 }
             } else {
