@@ -7767,7 +7767,7 @@ public String disasm(int address, int insn) {
 	int two = (insn>>15)&1;
 	int vt = (insn>>16)&127;
 
-return Common.disasmVDMVSMVTM("VMMUL", 1+one+(two<<1), vd, vs, vt);
+return Common.disasmVDMVSMVTM("VMMUL", 1+one+(two<<1), vd, vs ^ 32, vt);
 }
 };
 public static final Instruction VHTFM2 = new Instruction(234) {
