@@ -1575,20 +1575,22 @@ public class VfpuState extends FpuState {
         int si = (imm5 >>> 2) & 3;
         int ci = (imm5 >>> 0) & 3;       
         
-        if ((imm5 & 16) == 1) {
+        if ((imm5 & 16) != 0) {
             sa = 0.0 - sa; 
         }
 
         if (si == ci) {
             for (i = 0; i < vsize; ++i) {
-                v3[i] = (ci == i) ? (float)ca : (float)sa;
+                v3[i] = (float)sa;
             }
         } else {
             for (i = 0; i < vsize; ++i) {
-                v3[i] = (ci == i) ? (float)ca : ((si == i) ? (float)sa : 0.0f);
+                v3[i] = (float)0.0;
             }
+            v3[si] = (float)sa;
         }
-        
+        v3[ci] = (float)ca;        
+
         saveVd(vsize, vd, v3);
     }
 
