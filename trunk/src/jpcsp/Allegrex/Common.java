@@ -20,7 +20,6 @@ import jpcsp.Allegrex.compiler.ICompilerContext;
 import jpcsp.util.Utilities;
 import jpcsp.Processor;
 
-
 /**
  *
  * @author hli
@@ -31,22 +30,22 @@ public class Common {
 
         private int m_count = 0;
         private int flags = 0;
-        public final static int FLAG_INTERPRETED      = (1 << 0);
-        public final static int FLAG_CANNOT_BE_SPLIT  = (1 << 1);
-        public final static int FLAG_HAS_DELAY_SLOT   = (1 << 2);
-        public final static int FLAG_IS_BRANCHING     = (1 << 3);
-        public final static int FLAG_IS_JUMPING       = (1 << 4);
-        public final static int FLAG_IS_CONDITIONAL   = (1 << 5);
+        public final static int FLAG_INTERPRETED = (1 << 0);
+        public final static int FLAG_CANNOT_BE_SPLIT = (1 << 1);
+        public final static int FLAG_HAS_DELAY_SLOT = (1 << 2);
+        public final static int FLAG_IS_BRANCHING = (1 << 3);
+        public final static int FLAG_IS_JUMPING = (1 << 4);
+        public final static int FLAG_IS_CONDITIONAL = (1 << 5);
         public final static int FLAG_STARTS_NEW_BLOCK = (1 << 6);
-        public final static int FLAG_ENDS_BLOCK       = (1 << 7);
+        public final static int FLAG_ENDS_BLOCK = (1 << 7);
         public final static int FLAGS_BRANCH_INSTRUCTION = FLAG_CANNOT_BE_SPLIT | FLAG_HAS_DELAY_SLOT | FLAG_IS_BRANCHING | FLAG_IS_CONDITIONAL;
-        public final static int FLAGS_LINK_INSTRUCTION   = FLAG_HAS_DELAY_SLOT | FLAG_STARTS_NEW_BLOCK | FLAG_IS_JUMPING;
+        public final static int FLAGS_LINK_INSTRUCTION = FLAG_HAS_DELAY_SLOT | FLAG_STARTS_NEW_BLOCK | FLAG_IS_JUMPING;
 
         public abstract void interpret(Processor processor, int insn);
 
         public void compile(ICompilerContext context, int insn) {
-        	flags |= FLAG_INTERPRETED;
-        	context.compileInterpreterInstruction();
+            flags |= FLAG_INTERPRETED;
+            context.compileInterpreterInstruction();
         }
 
         public abstract String disasm(int address, int insn);
@@ -91,26 +90,26 @@ public class Common {
         public Instruction() {
         }
 
-		public int getFlags() {
-			return flags;
-		}
+        public int getFlags() {
+            return flags;
+        }
 
-		public boolean hasFlags(int testFlags) {
-			return (flags & testFlags) == testFlags;
-		}
+        public boolean hasFlags(int testFlags) {
+            return (flags & testFlags) == testFlags;
+        }
 
-		private void appendFlagString(StringBuffer result, String flagString) {
-		    if (result.length() > 0) {
-		        result.append(" | ");
-		    }
-		    result.append(flagString);
-		}
+        private void appendFlagString(StringBuffer result, String flagString) {
+            if (result.length() > 0) {
+                result.append(" | ");
+            }
+            result.append(flagString);
+        }
 
-		private String flagsToString() {
-		    StringBuffer result = new StringBuffer();
-		    if (hasFlags(FLAG_INTERPRETED)) {
-		        appendFlagString(result, "FLAG_INTERPRETED");
-		    }
+        private String flagsToString() {
+            StringBuffer result = new StringBuffer();
+            if (hasFlags(FLAG_INTERPRETED)) {
+                appendFlagString(result, "FLAG_INTERPRETED");
+            }
             if (hasFlags(FLAG_CANNOT_BE_SPLIT)) {
                 appendFlagString(result, "FLAG_CANNOT_BE_SPLIT");
             }
@@ -134,9 +133,9 @@ public class Common {
             }
 
             return result.toString();
-		}
+        }
 
-		@Override
+        @Override
         public String toString() {
             return name() + "(" + flagsToString() + ")";
         }
@@ -180,7 +179,7 @@ public class Common {
 
         @Override
         public void compile(ICompilerContext context, int insn) {
-        	super.compile(context, insn);
+            super.compile(context, insn);
         }
 
         @Override
@@ -348,8 +347,7 @@ public class Common {
         }
     };
     public static String[][] vprMatNames = {
-        {
-        },
+        {},
         {
             "M000.p", "", "M020.p", "",
             "M100.p", "", "M120.p", "",
@@ -442,9 +440,7 @@ public class Common {
         "VFPU_PI_2", "VFPU_PI", "VFPU_E", "VFPU_LOG2E",
         "VFPU_LOG10E", "VFPU_LN2", "VFPU_LN10", "VFPU_2PI",
         "VFPU_PI_6", "VFPU_LOG10TWO", "VFPU_LOG2TEN", "VFPU_SQRT3_2"
-        
     };
-    
     public static String[] fcrNames = {
         "$fcsr0", "$fcsr1", "$fcsr2", "$fcsr3", "$fcsr4", "$fcsr5", "$fcsr6", "$fcsr7",
         "$fcsr8", "$fcsr9", "$fcsr10", "$fcsr11", "$fcsr12", "$fcsr13", "$fcsr14", "$fcsr15",
@@ -464,10 +460,10 @@ public class Common {
         ".q"
     };
     public static String[] vpfxNames = {
-    	"x",
-    	"y",
-    	"z",
-    	"w"
+        "x",
+        "y",
+        "z",
+        "w"
     };
     public static final String ccondsNames[] = {
         "c.f.s",
@@ -640,7 +636,7 @@ public class Common {
 
         // If we think the target is a stub, try and append the syscall name
         if (opname.equals("jal") && jump != 0 &&
-            jpcsp.Memory.getInstance().isAddressGood(jump + 4)) {
+                jpcsp.Memory.getInstance().isAddressGood(jump + 4)) {
             int nextOpcode = jpcsp.Memory.getInstance().read32(jump + 4);
             Instruction nextInsn = Decoder.instruction(nextOpcode);
             String secondTarget = nextInsn.disasm(jump + 4, nextOpcode);
@@ -727,7 +723,7 @@ public class Common {
     public static String disasmVD1VSVT(String opname, int vsize, int vd, int vs, int vt) {
         return String.format("%1$-10s %2$s, %3$s, %4$s", opname + vsuffix[vsize - 1], vprNames[0][vd], vprNames[vsize - 1][vs], vprNames[0][vt]);
     }
-    
+
     public static String disasmVCMP(String opname, int vsize, int vcode, int vs, int vt) {
         if ((vcode & ~4) == 0) {
             return String.format("%1$-10s %2$s", opname + vsuffix[vsize - 1], vcondNames[vcode]);
@@ -740,111 +736,113 @@ public class Common {
     public static String disasmVROT(String opname, int vsize, int vd, int vs, int vt) {
         int i;
         int si = (vt >>> 2) & 3;
-        int ci = (vt >>> 0) & 3;       
+        int ci = (vt >>> 0) & 3;
         String ca = " c", sa = " s";
         String codes[] = new String[4];
         if ((vt & 16) != 0) {
-            sa = "-s"; 
+            sa = "-s";
         }
 
         if (si == ci) {
             for (i = 0; i < vsize; ++i) {
-            	codes[i] = (ci == i) ? ca : sa;
+                codes[i] = (ci == i) ? ca : sa;
             }
         } else {
             for (i = 0; i < vsize; ++i) {
-            	codes[i] = (ci == i) ? ca : ((si == i) ? sa : " 0");
+                codes[i] = (ci == i) ? ca : ((si == i) ? sa : " 0");
             }
         }
 
-    	String rot = "[";
-    	
-    	i = 0;
-    	for(;;) {
-    		rot += codes[i++];
-    		if(i >= vsize)
-    			break;
-    		rot += ",";
-    	}
-    	rot += "]";
+        String rot = "[";
+
+        i = 0;
+        for (;;) {
+            rot += codes[i++];
+            if (i >= vsize) {
+                break;
+            }
+            rot += ",";
+        }
+        rot += "]";
         return String.format("%1$-10s %2$s, %3$s, %4$s", opname + vsuffix[vsize - 1], vprNames[vsize - 1][vd], vprNames[0][vs], rot);
     }
-    
+
     public static String disasmVDM(String opname, int vsize, int vd) {
         return String.format("%1$-10s %2$s", opname + vsuffix[vsize - 1], vprMatNames[vsize - 1][vd]);
     }
-    
-	public static String disasmVDMVSM(String opname, int vsize, int vd, int vs) {
-		return String.format("%1$-10s %2$s, %3$s", opname + vsuffix[vsize - 1], vprMatNames[vsize - 1][vd], vprMatNames[vsize - 1][vs]);
-	}
 
-	public static String disasmVDCST(String opname, int vsize, int vd, int cst) {
-		return String.format("%1$-10s %2$s, %3$s", opname + vsuffix[vsize - 1], vprNames[vsize - 1][vd], vfpuConstants[cst]);
-	}
+    public static String disasmVDMVSM(String opname, int vsize, int vd, int vs) {
+        return String.format("%1$-10s %2$s, %3$s", opname + vsuffix[vsize - 1], vprMatNames[vsize - 1][vd], vprMatNames[vsize - 1][vs]);
+    }
 
-	public static String disasmVDIIM(String opcode, int vsize, int vd, int imm16) {
-		return String.format("%1$-10s %2$s, 0x%3$04X", opcode + vsuffix[vsize - 1], vprNames[0][vd], imm16);
-	}
+    public static String disasmVDCST(String opname, int vsize, int vd, int cst) {
+        return String.format("%1$-10s %2$s, %3$s", opname + vsuffix[vsize - 1], vprNames[vsize - 1][vd], vfpuConstants[cst]);
+    }
 
-	public static String disasmVDFIM(String opcode, int vsize, int vd, int imm16) {
-		float s = ((imm16 >> 15) == 0) ? 1.0f : -1.0f;
+    public static String disasmVDIIM(String opcode, int vsize, int vd, int imm16) {
+        return String.format("%1$-10s %2$s, 0x%3$04X", opcode + vsuffix[vsize - 1], vprNames[0][vd], imm16);
+    }
+
+    public static String disasmVDFIM(String opcode, int vsize, int vd, int imm16) {
+        float s = ((imm16 >> 15) == 0) ? 1.0f : -1.0f;
         int e = ((imm16 >> 10) & 0x1f);
         int m = (e == 0) ? ((imm16 & 0x3ff) << 1) : ((imm16 & 0x3ff) | 0x400);
 
         s = s * ((float) m) / ((float) (1 << e)) / ((float) (1 << 41));
         return String.format("%1$-10s %2$s, %3$1.8f", opcode + vsuffix[vsize - 1], vprNames[0][vd], s);
-	}
+    }
 
-	public static String disasmVDMVSMVTM(String opname, int vsize, int vd, int vs, int vt) {
-		return String.format("%1$-10s %2$s, %3$s, %4$s", opname + vsuffix[vsize - 1], vprMatNames[vsize - 1][vd], vprMatNames[vsize - 1][vs], vprMatNames[vsize - 1][vt]);
-	}
-	
-	public static String disasmVDRS(String opname, int vd, int rt) {
-		return String.format("%1$-10s %2$s, %3$s", opname + vsuffix[0], gprNames[rt], vprNames[0][vd]);
-	}
-	
-	public static String disasmVPFX(String opname, int[] swz, boolean[] abs, boolean[] cst, boolean[] neg) {
-		String[] values = new String[4];
-		for (int i = 0; i < 4; ++i) {
-			if (cst[i]) {
-				switch (swz[i]) {
-				case 0:
-					values[i] = abs[i] ? "3" : "0";
-					break;
-				case 1:
-					values[i] = abs[i] ? "1/3" : "1";
-					break;
-				case 2:
-					values[i] = abs[i] ? "1/4" : "2";
-					break;
-				case 3:
-					values[i] = abs[i] ? "1/6" : "1/2";
-					break;
-				}
-			} else {
-				values[i] = abs[i] ? "|" + vpfxNames[swz[i]] + "|"
-						: vpfxNames[swz[i]];
-			}
+    public static String disasmVDMVSMVTM(String opname, int vsize, int vd, int vs, int vt) {
+        return String.format("%1$-10s %2$s, %3$s, %4$s", opname + vsuffix[vsize - 1], vprMatNames[vsize - 1][vd], vprMatNames[vsize - 1][vs], vprMatNames[vsize - 1][vt]);
+    }
 
-			if (neg[i])
-				values[i] = "-" + values[i];
-		}
-		
-		return String.format("%1$-10s [%2$s, %3$s, %4$s, %5$s]", opname, values[0], values[1], values[2], values[3]);
-	}
+    public static String disasmVDRS(String opname, int vd, int rt) {
+        return String.format("%1$-10s %2$s, %3$s", opname + vsuffix[0], gprNames[rt], vprNames[0][vd]);
+    }
 
-	public static String disasmVPFXD(String opname, int[] sat, int[] msk) {
-		String[] values = new String[4];
-		for (int i = 0; i < 4; ++i) {
-			if(msk[i] == 0) {
-				values[i] = sat[i] == 1 ? "0:1" : "-1:1";
-			} else
-				values[i] = "M";
-		}
-		return String.format("%1$-10s [%2$s, %3$s, %4$s, %5$s]", opname, values[0], values[1], values[2], values[3]);
-	}
-	
-	protected static Instruction[] m_instances = new Instruction[250];
+    public static String disasmVPFX(String opname, int[] swz, boolean[] abs, boolean[] cst, boolean[] neg) {
+        String[] values = new String[4];
+        for (int i = 0; i < 4; ++i) {
+            if (cst[i]) {
+                switch (swz[i]) {
+                    case 0:
+                        values[i] = abs[i] ? "3" : "0";
+                        break;
+                    case 1:
+                        values[i] = abs[i] ? "1/3" : "1";
+                        break;
+                    case 2:
+                        values[i] = abs[i] ? "1/4" : "2";
+                        break;
+                    case 3:
+                        values[i] = abs[i] ? "1/6" : "1/2";
+                        break;
+                }
+            } else {
+                values[i] = abs[i] ? "|" + vpfxNames[swz[i]] + "|"
+                        : vpfxNames[swz[i]];
+            }
+
+            if (neg[i]) {
+                values[i] = "-" + values[i];
+            }
+        }
+
+        return String.format("%1$-10s [%2$s, %3$s, %4$s, %5$s]", opname, values[0], values[1], values[2], values[3]);
+    }
+
+    public static String disasmVPFXD(String opname, int[] sat, int[] msk) {
+        String[] values = new String[4];
+        for (int i = 0; i < 4; ++i) {
+            if (msk[i] == 0) {
+                values[i] = sat[i] == 1 ? "0:1" : "-1:1";
+            } else {
+                values[i] = "M";
+            }
+        }
+        return String.format("%1$-10s [%2$s, %3$s, %4$s, %5$s]", opname, values[0], values[1], values[2], values[3]);
+    }
+    protected static Instruction[] m_instances = new Instruction[250];
 
     public static final Instruction[] instructions() {
         return m_instances;
