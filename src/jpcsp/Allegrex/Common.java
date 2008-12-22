@@ -562,7 +562,7 @@ public class Common {
             }
 
             if (opname.equals("nor")) {
-                return String.format("%2$s <=> not %1$s", gprNames[rd], s);
+                return String.format("%3$s <=> li %1$s, not %2$s", gprNames[rd], gprNames[rt], s);
             }
 
             if (opname.equals("sub")) {
@@ -581,7 +581,7 @@ public class Common {
             }
 
             if (opname.equals("nor")) {
-                return String.format("%2$s <=> not %1$s", gprNames[rd], gprNames[rs], s);
+                return String.format("%3$s <=> li %1$s, not %2$s", gprNames[rd], gprNames[rs], s);
             }
 
             return String.format("%3$s <=> move %1$s, %2$s", gprNames[rd], gprNames[rs], s);
