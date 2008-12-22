@@ -27,6 +27,7 @@ import jpcsp.Allegrex.Instructions;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.FpuState.Fcr31;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.memory.SafeFastMemory;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Label;
@@ -693,6 +694,11 @@ public class CompilerContext implements ICompilerContext {
 		if (RuntimeContext.memoryInt == null) {
 	        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "read32", "(I)I");
 		} else {
+            if (checkMemoryAccess()) {
+                mv.visitInsn(Opcodes.DUP);
+                mv.visitLdcInsn(codeInstruction.getAddress());
+                mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryRead32", "(II)V");
+            }
 			// memoryInt[(address & 0x3FFFFFFF) / 4] == memoryInt[(address << 2) >>> 4]
 			loadImm(2);
 			mv.visitInsn(Opcodes.ISHL);
@@ -719,6 +725,11 @@ public class CompilerContext implements ICompilerContext {
 		if (RuntimeContext.memoryInt == null) {
 	        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "read16", "(I)I");
 		} else {
+            if (checkMemoryAccess()) {
+                mv.visitInsn(Opcodes.DUP);
+                mv.visitLdcInsn(codeInstruction.getAddress());
+                mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryRead16", "(II)V");
+            }
 			// memoryInt[(address & 0x3FFFFFFF) / 4] == memoryInt[(address << 2) >>> 4]
 			loadImm(2);
 			mv.visitInsn(Opcodes.ISHL);
@@ -757,6 +768,11 @@ public class CompilerContext implements ICompilerContext {
 		if (RuntimeContext.memoryInt == null) {
 	        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "read8", "(I)I");
 		} else {
+            if (checkMemoryAccess()) {
+                mv.visitInsn(Opcodes.DUP);
+                mv.visitLdcInsn(codeInstruction.getAddress());
+                mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryRead8", "(II)V");
+            }
 			// memoryInt[(address & 0x3FFFFFFF) / 4] == memoryInt[(address << 2) >>> 4]
 			loadImm(2);
 			mv.visitInsn(Opcodes.ISHL);
@@ -793,6 +809,11 @@ public class CompilerContext implements ICompilerContext {
 		}
 
 		if (RuntimeContext.memoryInt != null) {
+	        if (checkMemoryAccess()) {
+	            mv.visitInsn(Opcodes.DUP);
+	            mv.visitLdcInsn(codeInstruction.getAddress());
+	            mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryWrite32", "(II)V");
+	        }
 			// memoryInt[(address & 0x3FFFFFFF) / 4] == memoryInt[(address << 2) >>> 4]
 			loadImm(2);
 			mv.visitInsn(Opcodes.ISHL);
@@ -818,6 +839,11 @@ public class CompilerContext implements ICompilerContext {
 				loadImm(offset);
 				mv.visitInsn(Opcodes.IADD);
 			}
+            if (checkMemoryAccess()) {
+                mv.visitInsn(Opcodes.DUP);
+                mv.visitLdcInsn(codeInstruction.getAddress());
+                mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryWrite32", "(II)V");
+            }
 			mv.visitInsn(Opcodes.SWAP);
 		}
 
@@ -857,5 +883,17 @@ public class CompilerContext implements ICompilerContext {
 
     public void setMethodMaxInstructions(int methodMaxInstructions) {
         this.methodMaxInstructions = methodMaxInstructions;
+    }
+
+    private boolean checkMemoryAccess() {
+        if (RuntimeContext.memoryInt == null) {
+            return false;
+        }
+
+        if (RuntimeContext.memory instanceof SafeFastMemory) {
+            return true;
+        }
+
+        return false;
     }
 }

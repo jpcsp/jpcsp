@@ -72,7 +72,7 @@ public abstract class Memory {
         return instance;
     }
 
-	protected void invalidMemoryAddress(int address, String prefix, int status) {
+	public void invalidMemoryAddress(int address, String prefix, int status) {
 		Memory.log.error(prefix +
 				" - Invalid memory address : " +
 	            Integer.toHexString(address) +
@@ -81,7 +81,7 @@ public abstract class Memory {
 		Emulator.PauseEmuWithStatus(status);
 	}
 
-	protected boolean read32AllowedInvalidAddress(int address) {
+	public boolean read32AllowedInvalidAddress(int address) {
         //
         // Ugly hack for programs using pspsdk :-(
         //
