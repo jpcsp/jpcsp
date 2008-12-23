@@ -285,6 +285,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         DisasmToolbar.setRollover(true);
 
         RunDebugger.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PlayIcon.png"))); // NOI18N
+        RunDebugger.setMnemonic('R');
         RunDebugger.setText("Run");
         RunDebugger.setFocusable(false);
         RunDebugger.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
@@ -298,6 +299,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         DisasmToolbar.add(RunDebugger);
 
         PauseDebugger.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PauseIcon.png"))); // NOI18N
+        PauseDebugger.setMnemonic('P');
         PauseDebugger.setText("Pause");
         PauseDebugger.setFocusable(false);
         PauseDebugger.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
@@ -327,6 +329,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         jButton2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StepOverIcon.png"))); // NOI18N
         jButton2.setText("Step Over");
+        jButton2.setEnabled(false);
         jButton2.setFocusable(false);
         jButton2.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
         jButton2.setIconTextGap(2);
@@ -335,14 +338,21 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         jButton3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StepOutIcon.png"))); // NOI18N
         jButton3.setText("Step Out");
+        jButton3.setEnabled(false);
         jButton3.setFocusable(false);
         jButton3.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
         jButton3.setIconTextGap(2);
         jButton3.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        jButton3.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton3ActionPerformed(evt);
+            }
+        });
         DisasmToolbar.add(jButton3);
         DisasmToolbar.add(jSeparator2);
 
         ResetToPCbutton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/ResetToPc.png"))); // NOI18N
+        ResetToPCbutton.setMnemonic('P');
         ResetToPCbutton.setText("Reset To PC");
         ResetToPCbutton.setFocusable(false);
         ResetToPCbutton.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
@@ -356,6 +366,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         DisasmToolbar.add(ResetToPCbutton);
 
         JumpToAddress.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/JumpTo.png"))); // NOI18N
+        JumpToAddress.setMnemonic('J');
         JumpToAddress.setText("Jump To");
         JumpToAddress.setFocusable(false);
         JumpToAddress.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
@@ -370,6 +381,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         DisasmToolbar.add(jSeparator4);
 
         AddBreakpoint.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/NewBreakpointIcon.png"))); // NOI18N
+        AddBreakpoint.setMnemonic('A');
         AddBreakpoint.setText("Add Break");
         AddBreakpoint.setFocusable(false);
         AddBreakpoint.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
@@ -383,6 +395,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         DisasmToolbar.add(AddBreakpoint);
 
         DeleteBreakpoint.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/DeleteBreakpointIcon.png"))); // NOI18N
+        DeleteBreakpoint.setMnemonic('D');
         DeleteBreakpoint.setText("Delete Break");
         DeleteBreakpoint.setFocusable(false);
         DeleteBreakpoint.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
@@ -397,6 +410,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         DisasmToolbar.add(DeleteBreakpoint);
 
         DeleteAllBreakpoints.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/DeleteAllBreakpointsIcon.png"))); // NOI18N
+        DeleteAllBreakpoints.setMnemonic('E');
         DeleteAllBreakpoints.setText("DeleteAll");
         DeleteAllBreakpoints.setFocusable(false);
         DeleteAllBreakpoints.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
@@ -411,6 +425,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         DisasmToolbar.add(jSeparator3);
 
         DumpCodeToText.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/Dump.png"))); // NOI18N
+        DumpCodeToText.setMnemonic('W');
         DumpCodeToText.setText("Dump Code");
         DumpCodeToText.setFocusable(false);
         DumpCodeToText.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
@@ -1187,6 +1202,10 @@ private void SetPCToCursorActionPerformed(java.awt.event.ActionEvent evt) {//GEN
         System.out.println("npc: " + Integer.toHexString(DebuggerPC + index * 4));
     }
 }//GEN-LAST:event_SetPCToCursorActionPerformed
+
+private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
+    // TODO add your handling code here:
+}//GEN-LAST:event_jButton3ActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton AddBreakpoint;

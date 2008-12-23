@@ -230,7 +230,7 @@ public class pspSysMem {
     private void free(SysMemInfo info)
     {
         // TODO
-        Modules.log.error("UNIMPLEMENT: pspSysMem.free(info) not implemented");
+        Modules.log.error("UNIMPLEMENT: pspSysMem.free(info) not implemented "+info);
     }
 
     public int maxFreeMemSize() {
@@ -366,6 +366,8 @@ public class pspSysMem {
             uid = SceUidManager.getNewUid("SysMem");
             blockList.put(uid, this);
         }
-
+        public String toString(){
+            return "SysMemInfo{ ouid="+uid+";partitionid="+partitionid+";name="+name+";type="+type+";size="+size+";addr="+addr+" }";
+        }
     }
 }
