@@ -1090,6 +1090,7 @@ public class VideoEngine {
              */
             case CMAT:
             	mat_flags = normalArgument & 7;
+                //isn't the log.debug("cmat " + mat_flags); ?
             	log.warn("cmat " + mat_flags);
             	break;
 
@@ -2400,9 +2401,29 @@ public class VideoEngine {
 
                 drawBezier(ucount, vcount);
                 break;
-
+            case CPE: //Clip Plane Enable
+                //uggly trying ... don't break any demo (that I've tested)
+                if(normalArgument != 0) {
+                    gl.glEnable(gl.GL_CLIP_PLANE0);
+                    gl.glEnable(gl.GL_CLIP_PLANE1);
+                    gl.glEnable(gl.GL_CLIP_PLANE2);
+                    gl.glEnable(gl.GL_CLIP_PLANE3);
+                    gl.glEnable(gl.GL_CLIP_PLANE4);
+                    gl.glEnable(gl.GL_CLIP_PLANE5);
+                    log("Clip Plane Enable (normal="+normalArgument+",float="+floatArgument+")");
+                }
+                else {
+                    gl.glDisable(gl.GL_CLIP_PLANE0);
+                    gl.glDisable(gl.GL_CLIP_PLANE1);
+                    gl.glDisable(gl.GL_CLIP_PLANE2);
+                    gl.glDisable(gl.GL_CLIP_PLANE3);
+                    gl.glDisable(gl.GL_CLIP_PLANE4);
+                    gl.glDisable(gl.GL_CLIP_PLANE5);
+                    log("Clip Plane Disable (normal="+normalArgument+",float="+floatArgument+")");
+                }
+                break;
             default:
-                log.warn("Unknown/unimplemented video command [ " + helper.getCommandString(command(instruction)) + " ]");
+                log.warn("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "](normal="+normalArgument+",float="+floatArgument+")");
         }
         commandStatistics[command].end();
     }

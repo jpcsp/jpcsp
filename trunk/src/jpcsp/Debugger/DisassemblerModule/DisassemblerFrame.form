@@ -81,6 +81,7 @@
   <AuxValues>
     <AuxValue name="FormSettings_autoResourcing" type="java.lang.Integer" value="0"/>
     <AuxValue name="FormSettings_autoSetComponentName" type="java.lang.Boolean" value="false"/>
+    <AuxValue name="FormSettings_generateFQN" type="java.lang.Boolean" value="true"/>
     <AuxValue name="FormSettings_generateMnemonicsCode" type="java.lang.Boolean" value="false"/>
     <AuxValue name="FormSettings_i18nAutoMode" type="java.lang.Boolean" value="false"/>
     <AuxValue name="FormSettings_layoutCodeTarget" type="java.lang.Integer" value="1"/>
@@ -153,6 +154,7 @@
             <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
               <Image iconType="3" name="/jpcsp/icons/PlayIcon.png"/>
             </Property>
+            <Property name="mnemonic" type="int" value="82"/>
             <Property name="text" type="java.lang.String" value="Run"/>
             <Property name="focusable" type="boolean" value="false"/>
             <Property name="horizontalTextPosition" type="int" value="4"/>
@@ -168,6 +170,7 @@
             <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
               <Image iconType="3" name="/jpcsp/icons/PauseIcon.png"/>
             </Property>
+            <Property name="mnemonic" type="int" value="80"/>
             <Property name="text" type="java.lang.String" value="Pause"/>
             <Property name="focusable" type="boolean" value="false"/>
             <Property name="horizontalTextPosition" type="int" value="4"/>
@@ -202,6 +205,7 @@
               <Image iconType="3" name="/jpcsp/icons/StepOverIcon.png"/>
             </Property>
             <Property name="text" type="java.lang.String" value="Step Over"/>
+            <Property name="enabled" type="boolean" value="false"/>
             <Property name="focusable" type="boolean" value="false"/>
             <Property name="horizontalTextPosition" type="int" value="4"/>
             <Property name="iconTextGap" type="int" value="2"/>
@@ -214,11 +218,15 @@
               <Image iconType="3" name="/jpcsp/icons/StepOutIcon.png"/>
             </Property>
             <Property name="text" type="java.lang.String" value="Step Out"/>
+            <Property name="enabled" type="boolean" value="false"/>
             <Property name="focusable" type="boolean" value="false"/>
             <Property name="horizontalTextPosition" type="int" value="4"/>
             <Property name="iconTextGap" type="int" value="2"/>
             <Property name="verticalTextPosition" type="int" value="3"/>
           </Properties>
+          <Events>
+            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jButton3ActionPerformed"/>
+          </Events>
         </Component>
         <Component class="javax.swing.JToolBar$Separator" name="jSeparator2">
         </Component>
@@ -227,6 +235,7 @@
             <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
               <Image iconType="3" name="/jpcsp/icons/ResetToPc.png"/>
             </Property>
+            <Property name="mnemonic" type="int" value="80"/>
             <Property name="text" type="java.lang.String" value="Reset To PC"/>
             <Property name="focusable" type="boolean" value="false"/>
             <Property name="horizontalTextPosition" type="int" value="4"/>
@@ -242,6 +251,7 @@
             <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
               <Image iconType="3" name="/jpcsp/icons/JumpTo.png"/>
             </Property>
+            <Property name="mnemonic" type="int" value="74"/>
             <Property name="text" type="java.lang.String" value="Jump To"/>
             <Property name="focusable" type="boolean" value="false"/>
             <Property name="horizontalTextPosition" type="int" value="4"/>
@@ -259,6 +269,7 @@
             <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
               <Image iconType="3" name="/jpcsp/icons/NewBreakpointIcon.png"/>
             </Property>
+            <Property name="mnemonic" type="int" value="65"/>
             <Property name="text" type="java.lang.String" value="Add Break"/>
             <Property name="focusable" type="boolean" value="false"/>
             <Property name="horizontalTextPosition" type="int" value="4"/>
@@ -274,6 +285,7 @@
             <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
               <Image iconType="3" name="/jpcsp/icons/DeleteBreakpointIcon.png"/>
             </Property>
+            <Property name="mnemonic" type="int" value="68"/>
             <Property name="text" type="java.lang.String" value="Delete Break"/>
             <Property name="focusable" type="boolean" value="false"/>
             <Property name="horizontalTextPosition" type="int" value="4"/>
@@ -290,6 +302,7 @@
             <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
               <Image iconType="3" name="/jpcsp/icons/DeleteAllBreakpointsIcon.png"/>
             </Property>
+            <Property name="mnemonic" type="int" value="69"/>
             <Property name="text" type="java.lang.String" value="DeleteAll"/>
             <Property name="focusable" type="boolean" value="false"/>
             <Property name="horizontalTextPosition" type="int" value="4"/>
@@ -307,6 +320,7 @@
             <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
               <Image iconType="3" name="/jpcsp/icons/Dump.png"/>
             </Property>
+            <Property name="mnemonic" type="int" value="87"/>
             <Property name="text" type="java.lang.String" value="Dump Code"/>
             <Property name="focusable" type="boolean" value="false"/>
             <Property name="horizontalTextPosition" type="int" value="4"/>
