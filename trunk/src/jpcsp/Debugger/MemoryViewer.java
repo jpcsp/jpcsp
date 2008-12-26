@@ -110,6 +110,7 @@ public class MemoryViewer extends javax.swing.JFrame {
         GoToButton = new javax.swing.JButton();
         GoToSP = new javax.swing.JButton();
         DumpRawRam = new javax.swing.JButton();
+        GoToButton1 = new javax.swing.JButton();
 
         setTitle("Memory Viewer");
         setResizable(false);
@@ -121,7 +122,7 @@ public class MemoryViewer extends javax.swing.JFrame {
 
         memoryview.setColumns(20);
         memoryview.setEditable(false);
-        memoryview.setFont(new java.awt.Font("Courier New", 0, 12)); // NOI18N
+        memoryview.setFont(new java.awt.Font("Courier New", 0, 12));
         memoryview.setRows(5);
         memoryview.addMouseWheelListener(new java.awt.event.MouseWheelListener() {
             public void mouseWheelMoved(java.awt.event.MouseWheelEvent evt) {
@@ -162,6 +163,13 @@ public class MemoryViewer extends javax.swing.JFrame {
             }
         });
 
+        GoToButton1.setText("Go to VRAM");
+        GoToButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                GoToButton1ActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -174,8 +182,10 @@ public class MemoryViewer extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(GoToButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(GoToButton1)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(GoToSP)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 209, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 114, Short.MAX_VALUE)
                         .addComponent(DumpRawRam))
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 646, Short.MAX_VALUE))
                 .addContainerGap())
@@ -188,7 +198,8 @@ public class MemoryViewer extends javax.swing.JFrame {
                     .addComponent(DumpRawRam)
                     .addComponent(AddressField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(GoToButton)
-                    .addComponent(GoToSP))
+                    .addComponent(GoToSP)
+                    .addComponent(GoToButton1))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 314, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
@@ -303,12 +314,19 @@ private void onKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_onKeyP
         GoToAddress();
 }//GEN-LAST:event_onKeyPressed
 
+private void GoToButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_GoToButton1ActionPerformed
+    // TODO add your handling code here:
+    startaddress = 0x04000000;
+    RefreshMemory();
+}//GEN-LAST:event_GoToButton1ActionPerformed
+
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTextField AddressField;
     private javax.swing.JButton DumpRawRam;
     private javax.swing.JButton GoToButton;
+    private javax.swing.JButton GoToButton1;
     private javax.swing.JButton GoToSP;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTextArea memoryview;
