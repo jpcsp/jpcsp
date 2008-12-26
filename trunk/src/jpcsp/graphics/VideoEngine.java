@@ -1530,6 +1530,9 @@ public class VideoEngine {
 
             case FBP:
                 // assign or OR lower 24-bits?
+                //acording with the psp documentation
+                //24 least significant bits of pointer (see FBW)
+                //http://hitmen.c02.at/files/yapspd/psp_doc/frames.html
                 fbp = normalArgument;
                 break;
             case FBW:
