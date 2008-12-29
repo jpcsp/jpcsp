@@ -31,7 +31,8 @@ public class SceKernelCallbackInfo {
     public final int callback_addr;
     public final int callback_arg_addr;
     public int notifyCount;
-    public int notifyArg;
+    public int notifyArg1;
+    public int notifyArg2;
 
     // internal variables
     public final int uid;
@@ -42,7 +43,8 @@ public class SceKernelCallbackInfo {
         this.callback_addr = callback_addr;
         this.callback_arg_addr = callback_arg_addr;
         this.notifyCount = 0;
-        this.notifyArg = 0;
+        this.notifyArg1 = 0;
+        this.notifyArg2 = 0;
 
         // internal state
         uid = SceUidManager.getNewUid("ThreadMan-callback");
@@ -65,7 +67,7 @@ public class SceKernelCallbackInfo {
         mem.write32(address + 40, callback_addr);
         mem.write32(address + 44, callback_arg_addr);
         mem.write32(address + 48, notifyCount);
-        mem.write32(address + 52, notifyArg);
+        mem.write32(address + 52, notifyArg2);
     }
 
     /** Call this to switch in the callback.
@@ -77,8 +79,8 @@ public class SceKernelCallbackInfo {
         CpuState cpu = new CpuState(parentContext);
 
         cpu.pc = cpu.npc = callback_addr;
-        cpu.gpr[4] = 1;
-        cpu.gpr[5] = notifyArg;
+        cpu.gpr[4] = notifyArg1;
+        cpu.gpr[5] = notifyArg2;
         cpu.gpr[6] = callback_arg_addr;
         cpu.gpr[31] = 0; // ra
 

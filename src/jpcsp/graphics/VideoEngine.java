@@ -37,6 +37,7 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Settings;
 import jpcsp.HLE.pspdisplay;
+import jpcsp.HLE.pspge;
 import jpcsp.graphics.textures.Texture;
 import jpcsp.graphics.textures.TextureCache;
 import jpcsp.util.DurationStatistics;
@@ -635,6 +636,13 @@ public class VideoEngine {
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(FINISH));
                 }
+                pspge.getInstance().triggerFinishCallback(actualList.callbackId, normalArgument);
+                break;
+            case SIGNAL:
+                if (log.isDebugEnabled()) {
+                    log(helper.getCommandString(SIGNAL));
+                }
+                pspge.getInstance().triggerSignalCallback(actualList.callbackId, normalArgument);
                 break;
             case BASE:
                 actualList.base = normalArgument << 8;

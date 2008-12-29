@@ -20,10 +20,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
+import java.util.HashMap;
 import java.util.Iterator;
+
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.kernel.types.SceKernelCallbackInfo;
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
+import jpcsp.HLE.kernel.types.pspGeCallbackData;
 import jpcsp.graphics.DisplayList;
 import jpcsp.graphics.VideoEngine;
 //import jpcsp.graphics.PspGeCallbackData;
@@ -31,14 +37,12 @@ import jpcsp.graphics.VideoEngine;
 public class pspge {
 
     private static pspge instance;
-    /*
-    private PspGeCallbackData cbdata;
-    private int cbid = -1;
-    */
 
     private int syncThreadId;
     public volatile boolean waitingForSync;
     public volatile boolean syncDone;
+    private HashMap<Integer, SceKernelCallbackInfo> signalCallbacks = new HashMap<Integer, SceKernelCallbackInfo>();
+    private HashMap<Integer, SceKernelCallbackInfo> finishCallbacks = new HashMap<Integer, SceKernelCallbackInfo>();
 
     public static pspge getInstance() {
         if (instance == null) {
@@ -189,30 +193,59 @@ public class pspge {
         }
     }
 
-    /* Not sure if this is correct, or even needed
     public void sceGeSetCallback(int cbdata_addr) {
-        // TODO list of callbacks, for now we allow only 1
-        if (cbid == -1) {
-            cbdata = new PspGeCallbackData(Emulator.getMemory(), cbdata_addr);
-            cbid = 1;
-            Emulator.getProcessor().gpr[2] = cbid;
-        } else {
-            System.out.println("sceGeSetCallback failed");
-            Emulator.getProcessor().gpr[2] = -1;
-        }
+        pspGeCallbackData cbdata = new pspGeCallbackData();
+        cbdata.read(Emulator.getMemory(), cbdata_addr);
+        int cbid = SceUidManager.getNewUid("pspge-callback");
+        VideoEngine.log.debug("sceGeSetCallback signalFunc=0x" + Integer.toHexString(cbdata.signalFunction)
+                              + ", signalArg=0x" + Integer.toHexString(cbdata.signalArgument)
+                              + ", finishFunc=0x" + Integer.toHexString(cbdata.finishFunction)
+                              + ", finishArg=0x" + Integer.toHexString(cbdata.finishArgument)
+                              + ", result cbid=" + cbid);
+
+        ThreadMan threadMan = ThreadMan.getInstance();
+        SceKernelCallbackInfo callbackSignal = threadMan.createCallback("GeCallbackSignal", cbdata.signalFunction, cbdata.signalArgument);
+        SceKernelCallbackInfo callbackFinish = threadMan.createCallback("GeCallbackFinish", cbdata.finishFunction, cbdata.finishArgument);
+        signalCallbacks.put(cbid, callbackSignal);
+        finishCallbacks.put(cbid, callbackFinish);
+        threadMan.setCallback(SceKernelThreadInfo.THREAD_CALLBACK_GE_SIGNAL, callbackSignal.uid);
+        threadMan.setCallback(SceKernelThreadInfo.THREAD_CALLBACK_GE_FINISH, callbackFinish.uid);
+
+        Emulator.getProcessor().cpu.gpr[2] = cbid;
     }
 
     public void sceGeUnsetCallback(int cbid) {
-        // TODO list of callbacks, for now we allow only 1
-        if (this.cbid == cbid) {
-            cbdata = null;
-            cbid = -1;
-            Emulator.getProcessor().gpr[2] = 0;
-        } else {
-            System.out.println("sceGeUnsetCallback failed");
-            Emulator.getProcessor().gpr[2] = -1;
+        VideoEngine.log.debug("sceGeUnsetCallback cbid=" + cbid);
+        ThreadMan threadMan = ThreadMan.getInstance();
+        SceKernelCallbackInfo callbackSignal = signalCallbacks.remove(cbid);
+        SceKernelCallbackInfo callbackFinish = finishCallbacks.remove(cbid);
+        if (callbackSignal != null) {
+            threadMan.clearCallback(SceKernelThreadInfo.THREAD_CALLBACK_GE_SIGNAL);
+            threadMan.deleteCallback(callbackSignal.uid);
+        }
+        if (callbackFinish != null) {
+            threadMan.clearCallback(SceKernelThreadInfo.THREAD_CALLBACK_GE_FINISH);
+            threadMan.deleteCallback(callbackFinish.uid);
+        }
+        Emulator.getProcessor().cpu.gpr[2] = 0;
+    }
+
+    private void triggerCallback(int cbid, int callbackNotifyArg1, int callbackIndex, HashMap<Integer, SceKernelCallbackInfo> callbacks) {
+        SceKernelCallbackInfo callback = callbacks.get(cbid);
+        if (callback != null) {
+            if (VideoEngine.log.isDebugEnabled()) {
+                VideoEngine.log.debug("Triggering callback " + callbackIndex + ", addr=0x" + Integer.toHexString(callback.callback_addr) + ", cbid=" + Integer.toHexString(cbid) + ", callback notify arg=0x" + Integer.toHexString(callbackNotifyArg1));
+            }
+            ThreadMan threadMan = ThreadMan.getInstance();
+            threadMan.pushCallback(callbackIndex, callback.uid, callbackNotifyArg1, callback.callback_arg_addr);
         }
     }
-    */
 
+    public void triggerFinishCallback(int cbid, int callbackNotifyArg1) {
+        triggerCallback(cbid, callbackNotifyArg1, SceKernelThreadInfo.THREAD_CALLBACK_GE_FINISH, finishCallbacks);
+    }
+
+    public void triggerSignalCallback(int cbid, int callbackNotifyArg1) {
+        triggerCallback(cbid, callbackNotifyArg1, SceKernelThreadInfo.THREAD_CALLBACK_GE_SIGNAL, signalCallbacks);
+    }
 }
