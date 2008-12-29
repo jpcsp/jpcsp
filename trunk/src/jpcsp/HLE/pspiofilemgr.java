@@ -177,7 +177,7 @@ public class pspiofilemgr {
             found.asyncPending = false;
 
             if (found.cbid >= 0) {
-                ThreadMan.getInstance().pushIoCallback(found.cbid, found.notifyArg);
+                ThreadMan.getInstance().pushCallback(SceKernelThreadInfo.THREAD_CALLBACK_IO, found.cbid, 1, found.notifyArg);
             }
 
             // Find threads waiting on this uid and wake them up
@@ -624,7 +624,7 @@ public class pspiofilemgr {
             Modules.log.warn("sceIoSetAsyncCallback - unknown uid " + Integer.toHexString(uid));
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
         } else {
-            if (ThreadMan.getInstance().setIOCallback(cbid)) {
+            if (ThreadMan.getInstance().setCallback(SceKernelThreadInfo.THREAD_CALLBACK_IO, cbid)) {
                 info.cbid = cbid;
                 info.notifyArg = notifyArg;
                 Emulator.getProcessor().cpu.gpr[2] = 0;

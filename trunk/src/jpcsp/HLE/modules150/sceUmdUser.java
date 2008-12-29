@@ -24,6 +24,7 @@ import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.Modules;
 
+import jpcsp.Emulator;
 import jpcsp.MemoryMap;
 import jpcsp.Memory;
 import jpcsp.Processor;
@@ -289,7 +290,10 @@ public class sceUmdUser implements HLEModule {
 
         if (SceUidManager.checkUidPurpose(uid, "ThreadMan-callback", false)) {
             UMDCallBackList.put(uid, uid);
-            ThreadMan.getInstance().setUMDCallback(uid);
+            if (!ThreadMan.getInstance().setCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, uid)) {
+                Modules.log.error("sceUmdRegisterUMDCallBack bad uid " + Integer.toHexString(uid));
+                Emulator.PauseEmu();
+            }
             cpu.gpr[2] = 0;
         } else {
             Modules.log.warn("sceUmdRegisterUMDCallBack not a callback uid");
@@ -313,7 +317,7 @@ public class sceUmdUser implements HLEModule {
                 Modules.log.warn("sceUmdUnRegisterUMDCallBack not a UMD callback uid");
                 cpu.gpr[2] = -1;
             } else {
-                ThreadMan.getInstance().clearUMDCallback();
+                ThreadMan.getInstance().clearCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD);
                 cpu.gpr[2] = 0;
             }
         }

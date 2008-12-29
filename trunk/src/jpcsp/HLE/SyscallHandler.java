@@ -555,14 +555,12 @@ public class SyscallHandler {
                     break;
 		// sceGeBreak(0x20fc),
 		// sceGeContinue(0x20fd),
-                /* ge callback
                 case 0x20fe:
                     pspge.getInstance().sceGeSetCallback(gpr[4]);
                     break;
                 case 0x20ff:
                     pspge.getInstance().sceGeUnsetCallback(gpr[4]);
                     break;
-                */
                /* case 0x2100:
                     psprtc.getInstance().sceRtcGetTickResolution();
                     break;

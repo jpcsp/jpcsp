@@ -16,20 +16,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import java.util.Arrays;
 import java.util.Comparator;
-import java.util.LinkedList;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
-import jpcsp.MemoryMap;
-import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.RuntimeContext;
-import jpcsp.HLE.Modules;
 import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.kernel.managers.SceUidManager;
-import static jpcsp.util.Utilities.*;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 
 /** Don't forget to call ThreadMan.threadMap.put(thread.uid, thread) after instantiating one of these. */
@@ -102,13 +96,14 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     // callbacks, only 1 of each type can be registered per thread
     // TODO could be converted to an array, where the indices are set using constants
     // for example: callbackRegistered[THREAD_UMD_CALLBACK] = ...
-    public boolean umdCallbackRegistered;
-    public boolean umdCallbackReady;
-    public SceKernelCallbackInfo umdCallbackInfo;
-
-    public boolean ioCallbackRegistered;
-    public boolean ioCallbackReady;
-    public SceKernelCallbackInfo ioCallbackInfo;
+    public final static int THREAD_CALLBACK_UMD       = 0;
+    public final static int THREAD_CALLBACK_IO        = 1;
+    public final static int THREAD_CALLBACK_GE_SIGNAL = 2;
+    public final static int THREAD_CALLBACK_GE_FINISH = 3;
+    public final static int THREAD_CALLBACK_SIZE      = 4;
+    public boolean[] callbackRegistered;
+    public boolean[] callbackReady;
+    public SceKernelCallbackInfo[] callbackInfo;
 
     public SceKernelThreadInfo(String name, int entry_addr, int initPriority, int stackSize, int attr) {
         // Ignore 0 size from the idle threads (don't want them stealing space)
@@ -170,11 +165,14 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
 
         wait = new ThreadWaitInfo();
 
-        umdCallbackRegistered = false;
-        umdCallbackReady = false;
-
-        ioCallbackRegistered = false;
-        ioCallbackReady = false;
+        callbackRegistered = new boolean[THREAD_CALLBACK_SIZE];
+        callbackReady = new boolean[THREAD_CALLBACK_SIZE];
+        callbackInfo = new SceKernelCallbackInfo[THREAD_CALLBACK_SIZE];
+        for (int i = 0; i < THREAD_CALLBACK_SIZE; i++) {
+            callbackRegistered[i] = false;
+            callbackReady[i] = false;
+            callbackInfo[i] = null;
+        }
     }
 
     public void saveContext() {
