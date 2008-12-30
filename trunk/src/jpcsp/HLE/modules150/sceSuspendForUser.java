@@ -60,6 +60,7 @@ public class sceSuspendForUser implements HLEModule {
         }
     }
 
+    private boolean volatileMemLocked = false;
 
     public void sceKernelPowerLock(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
@@ -87,53 +88,37 @@ public class sceSuspendForUser implements HLEModule {
 
     public void sceKernelVolatileMemLock(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        int paddr = cpu.gpr[5];
+        int psize = cpu.gpr[6];
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        Modules.log.debug("sceKernelVolatileMemLock paddr=0x" + Integer.toHexString(paddr) + ", psize=0x" + Integer.toHexString(psize));
 
-        Modules.log.warn("Unimplemented NID function sceKernelVolatileMemLock [0x3E0271D3]");
+        if (!volatileMemLocked && mem.isAddressGood(paddr) && mem.isAddressGood(psize)) {
+            mem.write32(paddr, 0x08400000); // Volatile mem is always at 0x08400000
+            mem.write32(psize,   0x400000); // Volatile mem size is 4Megs
 
-        cpu.gpr[2] = 0xDEADC0DE;
-
-        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+            cpu.gpr[2] = 0;
+            volatileMemLocked = true;
+        } else {
+            cpu.gpr[2] = -1;
+        }
     }
 
     public void sceKernelVolatileMemTryLock(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
-
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-        Modules.log.warn("Unimplemented NID function sceKernelVolatileMemTryLock [0xA14F40B2]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        Modules.log.debug("sceKernelVolatileMemTryLock - redirecting to sceKernelVolatileMemLock");
+        sceKernelVolatileMemLock(processor);
     }
 
     public void sceKernelVolatileMemUnlock(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
-
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-        Modules.log.warn("Unimplemented NID function sceKernelVolatileMemUnlock [0xA569E425]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        Modules.log.debug("sceKernelVolatileMemUnlock");
+        if (!volatileMemLocked) {
+            Modules.log.info("sceKernelVolatileMemUnlock - Volatile Memory was not locked!");
+        }
+        volatileMemLocked = false;
+        cpu.gpr[2] = 0;
     }
 
     public final HLEModuleFunction sceKernelPowerLockFunction = new HLEModuleFunction("sceSuspendForUser", "sceKernelPowerLock") {
