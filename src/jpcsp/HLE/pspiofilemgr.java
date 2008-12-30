@@ -298,7 +298,7 @@ public class pspiofilemgr {
             Modules.log.debug("hleIoGetAsyncStat - PSP_ERROR_NO_ASYNC_OP");
             wait = false;
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NO_ASYNC_OP;
-        } else if (info.asyncPending) {
+        } else if (info.asyncPending && !wait) {
             // Need to wait for context switch before we can allow the good result through
             Modules.log.debug("hleIoGetAsyncStat - 1 (busy)");
             Emulator.getProcessor().cpu.gpr[2] = 1;
@@ -306,6 +306,7 @@ public class pspiofilemgr {
             if (info.closePending) {
                 Modules.log.debug("hleIoGetAsyncStat - file marked with closePending, calling sceIoClose");
                 sceIoClose(uid);
+                wait = false;
             }
 
             // Deferred error reporting from sceIoOpenAsync(filenotfound)
