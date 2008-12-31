@@ -1338,7 +1338,7 @@ public class ThreadMan {
     private boolean checkThreadCallbacks(SceKernelThreadInfo thread) {
         boolean handled = false;
 
-        for (int i = 0; i < SceKernelThreadInfo.THREAD_CALLBACK_SIZE; i++) {
+        for (int i = 0; i < SceKernelThreadInfo.THREAD_CALLBACK_SIZE && !handled; i++) {
             if (thread.callbackRegistered[i] && thread.callbackReady[i]) {
                 Modules.log.debug("Entering callback index " + i + ", name:'" + thread.callbackInfo[i].name + "'"
                     + " PC:" + Integer.toHexString(thread.callbackInfo[i].callback_addr)
