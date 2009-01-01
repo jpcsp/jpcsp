@@ -44,6 +44,8 @@ public class sceSuspendForUser implements HLEModule {
             mm.addFunction(sceKernelVolatileMemUnlockFunction, 0xA569E425);
 
         }
+
+		volatileMemLocked = false;
     }
 
     @Override
@@ -60,7 +62,7 @@ public class sceSuspendForUser implements HLEModule {
         }
     }
 
-    private boolean volatileMemLocked = false;
+    private boolean volatileMemLocked;
 
     public void sceKernelPowerLock(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
@@ -81,7 +83,7 @@ public class sceSuspendForUser implements HLEModule {
     public void sceKernelPowerTick(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
 
-        Modules.log.debug("IGNORING:sceKernelPowerTick");
+        Modules.log.debug("IGNORING:sceKernelPowerTick(" + cpu.gpr[4] + ")");
 
         cpu.gpr[2] = 0;
     }

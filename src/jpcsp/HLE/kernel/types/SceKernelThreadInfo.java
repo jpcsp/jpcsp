@@ -94,8 +94,6 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public final ThreadWaitInfo wait;
 
     // callbacks, only 1 of each type can be registered per thread
-    // TODO could be converted to an array, where the indices are set using constants
-    // for example: callbackRegistered[THREAD_UMD_CALLBACK] = ...
     public final static int THREAD_CALLBACK_UMD       = 0;
     public final static int THREAD_CALLBACK_IO        = 1;
     public final static int THREAD_CALLBACK_GE_SIGNAL = 2;
@@ -132,7 +130,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         }
         gpReg_addr = Emulator.getProcessor().cpu.gpr[28]; // inherit gpReg // TODO addr into ModuleInfo struct?
         currentPriority = initPriority;
-        waitType = 0; // ?
+        waitType = 0; // not yet used by us
         waitId = 0; // ?
         wakeupCount = 0;
         exitStatus = ERROR_THREAD_IS_NOT_DORMANT;
