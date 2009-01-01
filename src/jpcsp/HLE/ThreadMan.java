@@ -1272,7 +1272,7 @@ public class ThreadMan {
         }
     }
 
-    /** Unregisters a callback by type and cbid. May not be the current thread.
+    /** Unregisters a callback by type and cbid. May not be on the current thread.
      * @param callbackType See SceKernelThreadInfo.
      * @param cbid The UID of the callback to unregister.
      * @return SceKernelCallbackInfo of the removed callback, or null if it
@@ -1377,7 +1377,7 @@ public class ThreadMan {
     private boolean checkThreadCallbacks(SceKernelThreadInfo thread) {
         boolean handled = false;
 
-        for (int i = 0; i < SceKernelThreadInfo.THREAD_CALLBACK_SIZE; i++) {
+        for (int i = 0; i < SceKernelThreadInfo.THREAD_CALLBACK_SIZE && !handled; i++) {
             if (thread.callbackRegistered[i] && thread.callbackReady[i]) {
                 Modules.log.debug("Entering callback type " + i + " name:'" + thread.callbackInfo[i].name + "'"
                     + " PC:" + Integer.toHexString(thread.callbackInfo[i].callback_addr)
