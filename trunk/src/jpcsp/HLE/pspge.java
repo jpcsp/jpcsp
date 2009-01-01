@@ -197,15 +197,19 @@ public class pspge {
         pspGeCallbackData cbdata = new pspGeCallbackData();
         cbdata.read(Emulator.getMemory(), cbdata_addr);
         int cbid = SceUidManager.getNewUid("pspge-callback");
-        VideoEngine.log.debug("sceGeSetCallback signalFunc=0x" + Integer.toHexString(cbdata.signalFunction)
+        Modules.log.debug("sceGeSetCallback signalFunc=0x" + Integer.toHexString(cbdata.signalFunction)
                               + ", signalArg=0x" + Integer.toHexString(cbdata.signalArgument)
                               + ", finishFunc=0x" + Integer.toHexString(cbdata.finishFunction)
                               + ", finishArg=0x" + Integer.toHexString(cbdata.finishArgument)
-                              + ", result cbid=" + cbid);
+                              + ", result cbid=" + Integer.toHexString(cbid));
 
+        // HACK using kernel callback mechanism to trigger the ge callback
+        // could be a bad idea since $a2 will get clobbered. ge callback has 2
+        // args, kernel callback has 3. setting the 3rd arg to 0x12121212 so we
+        // can detect errors caused by this more easily.
         ThreadMan threadMan = ThreadMan.getInstance();
-        SceKernelCallbackInfo callbackSignal = threadMan.createCallback("GeCallbackSignal", cbdata.signalFunction, cbdata.signalArgument);
-        SceKernelCallbackInfo callbackFinish = threadMan.createCallback("GeCallbackFinish", cbdata.finishFunction, cbdata.finishArgument);
+        SceKernelCallbackInfo callbackSignal = threadMan.hleKernelCreateCallback("GeCallbackSignal", cbdata.signalFunction, 0x12121212);
+        SceKernelCallbackInfo callbackFinish = threadMan.hleKernelCreateCallback("GeCallbackFinish", cbdata.finishFunction, 0x12121212);
         signalCallbacks.put(cbid, callbackSignal);
         finishCallbacks.put(cbid, callbackFinish);
         threadMan.setCallback(SceKernelThreadInfo.THREAD_CALLBACK_GE_SIGNAL, callbackSignal.uid);
@@ -215,17 +219,17 @@ public class pspge {
     }
 
     public void sceGeUnsetCallback(int cbid) {
-        VideoEngine.log.debug("sceGeUnsetCallback cbid=" + cbid);
+        Modules.log.debug("sceGeUnsetCallback cbid=" + cbid);
         ThreadMan threadMan = ThreadMan.getInstance();
         SceKernelCallbackInfo callbackSignal = signalCallbacks.remove(cbid);
         SceKernelCallbackInfo callbackFinish = finishCallbacks.remove(cbid);
         if (callbackSignal != null) {
-            threadMan.clearCallback(SceKernelThreadInfo.THREAD_CALLBACK_GE_SIGNAL);
-            threadMan.deleteCallback(callbackSignal.uid);
+            threadMan.clearCallback(SceKernelThreadInfo.THREAD_CALLBACK_GE_SIGNAL, callbackSignal.uid);
+            threadMan.hleKernelDeleteCallback(callbackSignal.uid);
         }
         if (callbackFinish != null) {
-            threadMan.clearCallback(SceKernelThreadInfo.THREAD_CALLBACK_GE_FINISH);
-            threadMan.deleteCallback(callbackFinish.uid);
+            threadMan.clearCallback(SceKernelThreadInfo.THREAD_CALLBACK_GE_FINISH, callbackFinish.uid);
+            threadMan.hleKernelDeleteCallback(callbackFinish.uid);
         }
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }
@@ -237,6 +241,8 @@ public class pspge {
                 VideoEngine.log.debug("Triggering callback " + callbackIndex + ", addr=0x" + Integer.toHexString(callback.callback_addr) + ", cbid=" + Integer.toHexString(cbid) + ", callback notify arg=0x" + Integer.toHexString(callbackNotifyArg1));
             }
             ThreadMan threadMan = ThreadMan.getInstance();
+
+            // HACK push GE callback using Kernel callback code
             threadMan.pushCallback(callbackIndex, callback.uid, callbackNotifyArg1, callback.callback_arg_addr);
         }
     }
