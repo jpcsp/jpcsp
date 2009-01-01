@@ -18,6 +18,20 @@ package jpcsp.HLE.kernel.types;
 
 public class SceKernelErrors {
 
+    public static final int ERROR_SAVEDATA_LOAD_NO_MEMSTICK = 0x80110301;
+    public static final int ERROR_SAVEDATA_LOAD_ACCESS_ERROR = 0x80110305;
+    public static final int ERROR_SAVEDATA_LOAD_DATA_BROKEN = 0x80110306;
+    public static final int ERROR_SAVEDATA_LOAD_NO_DATA = 0x80110307;
+    public static final int ERROR_SAVEDATA_LOAD_BAD_PARAMS = 0x80110308;
+
+    public static final int ERROR_SAVEDATA_SAVE_NO_MEMSTICK = 0x80110381;
+    public static final int ERROR_SAVEDATA_SAVE_NO_SPACE = 0x80110383;
+    public static final int ERROR_SAVEDATA_SAVE_MEMSTICK_PROTECTED = 0x80110384;
+    public static final int ERROR_SAVEDATA_SAVE_ACCESS_ERROR = 0x80110385;
+    public static final int ERROR_SAVEDATA_SAVE_BAD_PARAMS = 0x80110388;
+    public static final int ERROR_SAVEDATA_SAVE_NO_UMD = 0x80110389;
+    public static final int ERROR_SAVEDATA_SAVE_WRONG_UMD = 0x8011038a;
+    
     public final static int ERROR_UNKNOWN_UID = 0x800200cb;
     // some missing
 
