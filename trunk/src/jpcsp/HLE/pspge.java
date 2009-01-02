@@ -207,9 +207,13 @@ public class pspge {
         // could be a bad idea since $a2 will get clobbered. ge callback has 2
         // args, kernel callback has 3. setting the 3rd arg to 0x12121212 so we
         // can detect errors caused by this more easily.
+
+        // update: restored use of signal/finish arg, needs fixing properly, or
+        // checking on real psp (since it's possible pspsdk is wrong).
+
         ThreadMan threadMan = ThreadMan.getInstance();
-        SceKernelCallbackInfo callbackSignal = threadMan.hleKernelCreateCallback("GeCallbackSignal", cbdata.signalFunction, 0x12121212);
-        SceKernelCallbackInfo callbackFinish = threadMan.hleKernelCreateCallback("GeCallbackFinish", cbdata.finishFunction, 0x12121212);
+        SceKernelCallbackInfo callbackSignal = threadMan.hleKernelCreateCallback("GeCallbackSignal", cbdata.signalFunction, cbdata.signalArgument);
+        SceKernelCallbackInfo callbackFinish = threadMan.hleKernelCreateCallback("GeCallbackFinish", cbdata.finishFunction, cbdata.finishArgument);
         signalCallbacks.put(cbid, callbackSignal);
         finishCallbacks.put(cbid, callbackFinish);
         threadMan.setCallback(SceKernelThreadInfo.THREAD_CALLBACK_GE_SIGNAL, callbackSignal.uid);
