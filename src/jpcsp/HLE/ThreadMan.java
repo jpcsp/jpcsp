@@ -69,6 +69,7 @@ public class ThreadMan {
 
     private boolean USE_THREAD_BANLIST = false;
     private static final boolean LOG_CONTEXT_SWITCHING = false;
+    private static final boolean IGNORE_DELAY = false;
 
     // see sceKernelGetThreadmanIdList
     public final static int SCE_KERNEL_TMID_Thread             = 1;
@@ -304,7 +305,7 @@ public class ThreadMan {
     public void contextSwitch(SceKernelThreadInfo newthread) {
 
         if (insideCallback) {
-            Modules.log.warn("contextSwitch called from inside callback");
+            Modules.log.warn("contextSwitch called from inside callback. caller:" + getCallingFunction());
             //Emulator.PauseEmu();
         }
 
@@ -999,6 +1000,9 @@ public class ThreadMan {
         // Go to wait state, callbacks
         current_thread.do_callbacks = do_callbacks;
 
+        if (IGNORE_DELAY)
+            micros = 0;
+
         // Wait on a timeout only
         hleKernelThreadWait(current_thread.wait, micros, false);
 
@@ -1036,7 +1040,7 @@ public class ThreadMan {
             + " PC=" + Integer.toHexString(func_addr)
             + " name:'" + name
             + "' thread:'" + current_thread.name + "'");
-        
+
         return callback;
     }
 
@@ -1160,7 +1164,7 @@ public class ThreadMan {
             Modules.log.warn("sceKernelReferThreadStatus unknown uid=0x" + Integer.toHexString(uid));
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
         } else  {
-            //Modules.log.debug("sceKernelReferThreadStatus uid=0x" + Integer.toHexString(uid));
+            Modules.log.debug("sceKernelReferThreadStatus uid=0x" + Integer.toHexString(uid) + " addr=0x" + Integer.toHexString(addr));
             thread.write(Memory.getInstance(), addr);
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
@@ -1313,20 +1317,20 @@ public class ThreadMan {
     public void pushCallback(int callbackType, int notifyArg) {
         pushCallback(callbackType, -1, 1, notifyArg);
     }
-    
+
     /** @param cbid If cbid is -1, then push callback to all threads
      * if cbid is not -1 then only trigger that specific cbid provided it is
      * also of type callbackType. */
     public void pushCallback(int callbackType, int cbid, int notifyArg1, int notifyArg2) {
         boolean pushed = false;
-        
+
         // GE callback is currently using Kernel callback implementation
         // To reduce log spam we'll use the VideoEngine logger on the GE callbacks
         org.apache.log4j.Logger log = Modules.log;
         if (callbackType == THREAD_CALLBACK_GE_SIGNAL ||
             callbackType == THREAD_CALLBACK_GE_FINISH)
             log = jpcsp.graphics.VideoEngine.log;
-        
+
         for (Iterator<SceKernelThreadInfo> it = threadMap.values().iterator(); it.hasNext(); ) {
             SceKernelThreadInfo thread = it.next();
 
@@ -1338,7 +1342,7 @@ public class ThreadMan {
                         + ") thread:'" + thread.name
                         + "' already has callback pending (oldArg=0x" + Integer.toHexString(thread.callbackInfo[callbackType].notifyArg2)
                         + ",newArg=0x" + Integer.toHexString(notifyArg2) + ")";
-                    
+
                     if (thread.callbackInfo[callbackType].notifyArg1 == notifyArg1 &&
                         thread.callbackInfo[callbackType].notifyArg2 == notifyArg2) {
                         // args didn't change, probably not important so use debug instead of warn log level
@@ -1351,7 +1355,7 @@ public class ThreadMan {
                 thread.callbackReady[callbackType] = true;
                 thread.callbackInfo[callbackType].notifyArg1 = notifyArg1;
                 thread.callbackInfo[callbackType].notifyArg2 = notifyArg2;
-                
+
                 pushed = true;
             }
         }
