@@ -31,10 +31,12 @@ public class SceKernelErrors {
     public static final int ERROR_SAVEDATA_SAVE_BAD_PARAMS = 0x80110388;
     public static final int ERROR_SAVEDATA_SAVE_NO_UMD = 0x80110389;
     public static final int ERROR_SAVEDATA_SAVE_WRONG_UMD = 0x8011038a;
-    
+
     public final static int ERROR_UNKNOWN_UID = 0x800200cb;
     // some missing
-
+    public final static int ERROR_NO_MEMORY = 0x80020190;
+    public final static int ERROR_ILLEGAL_ATTR = 0x80020191;
+    // some missing
     public final static int ERROR_ILLEGAL_THREAD = 0x80020197;
     public final static int ERROR_NOT_FOUND_THREAD = 0x80020198;
     public final static int ERROR_NOT_FOUND_SEMAPHORE = 0x80020199;
@@ -61,6 +63,7 @@ public class SceKernelErrors {
     public final static int ERROR_EVENT_FLAG_NO_MULTI_PERM = 0x800201b0;
     // some missing
     public final static int ERROR_WAIT_DELETE = 0x800201b5;
+    public final static int ERROR_ILLEGAL_MEMBLOCK = 0x800201b6;
     // some missing
     public final static int ERROR_ILLEGAL_COUNT = 0x800201bd;
     // some missing

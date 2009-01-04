@@ -20,6 +20,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.pspSysMem;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
@@ -39,10 +40,17 @@ public class SceKernelFplInfo {
     // Internal info
     public final int uid;
     public final int partitionid;
-    public int[] blockAddress; // -1 = unallocated
+    public int[] blockAddress;
+    public boolean[] blockAllocated;
     // TODO public List<Integer> waitAllocateQueue; // For use when there are no free blocks
 
-    public SceKernelFplInfo(String name, int partitionid, int attr, int blockSize, int numBlocks) {
+    public static final int FPL_ATTR_MASK = 0x41FF; // anything outside this mask is illegal attr
+    public static final int FPL_ATTR_UNKNOWN = 0x100;
+    public static final int FPL_ATTR_ADDR_HIGH = 0x4000;
+
+    /** do not instantiate unless there is enough free mem.
+     * use the static helper function tryCreateFpl. */
+    private SceKernelFplInfo(String name, int partitionid, int attr, int blockSize, int numBlocks) {
         this.name = name;
         this.attr = attr;
         this.blockSize = blockSize;
@@ -54,9 +62,43 @@ public class SceKernelFplInfo {
         uid = SceUidManager.getNewUid("ThreadMan-Fpl");
         this.partitionid = partitionid;
         blockAddress = new int[numBlocks];
-        for (int i = 0; i < numBlocks; i++)
-            blockAddress[i] = -1;
+        blockAllocated = new boolean[numBlocks];
+        for (int i = 0; i < numBlocks; i++) {
+            blockAllocated[i] = false;
+        }
         // TODO waitAllocateQueue = new LinkedList<Integer>();
+
+        int memType = pspSysMem.PSP_SMEM_Low;
+        if ((attr & FPL_ATTR_ADDR_HIGH) == FPL_ATTR_ADDR_HIGH)
+            memType = pspSysMem.PSP_SMEM_High;
+
+        // Reserve psp memory
+        int alignedBlockSize = (blockSize + 3) & ~3; // 32-bit align
+        int totalFplSize = alignedBlockSize * numBlocks;
+        int addr = pspSysMem.getInstance().malloc(partitionid, memType, totalFplSize, 0);
+        if (addr == 0)
+            throw new RuntimeException("SceKernelFplInfo: not enough free mem");
+        pspSysMem.getInstance().addSysMemInfo(partitionid, "ThreadMan-Fpl", memType, totalFplSize, addr);
+
+        // Initialise the block addresses
+        for (int i = 0; i < numBlocks; i++) {
+            blockAddress[i] = addr + alignedBlockSize * i;
+        }
+    }
+
+    public static SceKernelFplInfo tryCreateFpl(String name, int partitionid, int attr, int blockSize, int numBlocks) {
+        SceKernelFplInfo info = null;
+        int alignedBlockSize = (blockSize + 3) & ~3; // 32-bit align
+        int totalFplSize = alignedBlockSize * numBlocks;
+        int maxFreeSize = pspSysMem.getInstance().maxFreeMemSize();
+
+        if (totalFplSize <= maxFreeSize) {
+            info = new SceKernelFplInfo(name, partitionid, attr, blockSize, numBlocks);
+        } else {
+            Modules.log.warn("tryCreateFpl not enough free mem (want=" + totalFplSize + ",free=" + maxFreeSize + ",diff=" + (totalFplSize - maxFreeSize) + ")");
+        }
+
+        return info;
     }
 
     public void read(Memory mem, int address) {
@@ -87,15 +129,14 @@ public class SceKernelFplInfo {
     }
 
     public boolean isBlockAllocated(int blockId) {
-        return (blockAddress[blockId] != -1);
+        return blockAllocated[blockId];
     }
 
     public void freeBlock(int blockId) {
         if (!isBlockAllocated(blockId))
             throw new IllegalArgumentException("Block " + blockId + " is not allocated");
 
-        pspSysMem.getInstance().free(blockAddress[blockId]);
-        blockAddress[blockId] = -1;
+        blockAllocated[blockId] = false;
         freeBlocks++;
     }
 
@@ -104,14 +145,10 @@ public class SceKernelFplInfo {
         if (isBlockAllocated(blockId))
             throw new IllegalArgumentException("Block " + blockId + " is already allocated");
 
-        int addr = pspSysMem.getInstance().malloc(partitionid, pspSysMem.PSP_SMEM_Low, blockSize, 0);
-        if (addr != 0) {
-            pspSysMem.getInstance().addSysMemInfo(partitionid, "ThreadMan-Fpl", pspSysMem.PSP_SMEM_Low, blockSize, addr);
-            blockAddress[blockId] = addr;
-            freeBlocks--;
-        }
+        blockAllocated[blockId] = true;
+        freeBlocks--;
 
-        return addr;
+        return blockAddress[blockId];
     }
 
     /** @return the block index or -1 on failure */

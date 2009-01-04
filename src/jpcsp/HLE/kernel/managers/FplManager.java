@@ -37,21 +37,20 @@ public class FplManager {
         // TODO waitAllocateQueue = new LinkedList<Integer>();
     }
 
-    // attr = alignment?
     // 8 byte opt, what is in it?
     public void sceKernelCreateFpl(int name_addr, int partitionid, int attr, int blocksize, int blocks, int opt_addr) {
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Processor.memory;
 
         String name = Utilities.readStringZ(name_addr);
-        Modules.log.debug("sceKernelCreateFpl(name=" + name
+        Modules.log.info("sceKernelCreateFpl(name=" + name
             + ",partition=" + partitionid
             + ",attr=0x" + Integer.toHexString(attr)
             + ",blocksize=0x" + Integer.toHexString(blocksize)
             + ",blocks=" + blocks
             + ",opt=0x" + Integer.toHexString(opt_addr) + ")");
 
-        if (attr != 0) Modules.log.warn("UNIMPLEMENTED:sceKernelCreateFpl attr value 0x" + Integer.toHexString(attr));
+        if (attr != 0) Modules.log.warn("PARTIAL:sceKernelCreateFpl attr value 0x" + Integer.toHexString(attr));
 
         if (mem.isAddressGood(opt_addr)) {
             int optsize = mem.read32(opt_addr);
@@ -59,9 +58,18 @@ public class FplManager {
                 + " (size=" + optsize + ")");
         }
 
-        SceKernelFplInfo info = new SceKernelFplInfo(name, partitionid, attr, blocksize, blocks);
-        fplMap.put(info.uid, info);
-        cpu.gpr[2] = info.uid;
+        if ((attr & ~SceKernelFplInfo.FPL_ATTR_MASK) != 0) {
+            Modules.log.warn("sceKernelCreateFpl bad attr value 0x" + Integer.toHexString(attr));
+            cpu.gpr[2] = ERROR_ILLEGAL_ATTR;
+        } else {
+            SceKernelFplInfo info = SceKernelFplInfo.tryCreateFpl(name, partitionid, attr, blocksize, blocks);
+            if (info != null) {
+                fplMap.put(info.uid, info);
+                cpu.gpr[2] = info.uid;
+            } else {
+                cpu.gpr[2] = ERROR_NO_MEMORY;
+            }
+        }
     }
 
     public void sceKernelDeleteFpl(int uid) {
@@ -76,14 +84,10 @@ public class FplManager {
         } else {
             if (info.freeBlocks < info.numBlocks) {
                 Modules.log.warn("sceKernelDeleteFpl " + (info.numBlocks - info.freeBlocks) + " unfreed blocks");
-
-                // Free blocks
-                for (int i = 0; i < info.numBlocks; i++) {
-                    if (info.isBlockAllocated(i)) {
-                        info.freeBlock(i);
-                    }
-                }
             }
+
+            // Free memory
+            pspSysMem.getInstance().free(info.blockAddress[0]);
 
             cpu.gpr[2] = 0;
         }
@@ -96,9 +100,6 @@ public class FplManager {
 
         if (info.freeBlocks == 0 || (block = info.findFreeBlock()) == -1) {
             Modules.log.warn("tryAllocateFpl no free blocks (numBlocks=" + info.numBlocks + ")");
-            return 0;
-        } else if (info.blockSize > pspSysMem.getInstance().maxFreeMemSize()) {
-            Modules.log.warn("tryAllocateFpl not enough free mem (want=" + info.blockSize + ",free=" + pspSysMem.getInstance().maxFreeMemSize() + ",diff=" + (info.blockSize - pspSysMem.getInstance().maxFreeMemSize()) + ")");
             return 0;
         } else {
             addr = info.allocateBlock(block);
@@ -169,7 +170,7 @@ public class FplManager {
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Processor.memory;
 
-        Modules.log.info("sceKernelAllocateFpl(uid=0x" + Integer.toHexString(uid)
+        Modules.log.debug("sceKernelAllocateFpl(uid=0x" + Integer.toHexString(uid)
             + ",data=0x" + Integer.toHexString(data_addr)
             + ",timeout=0x" + Integer.toHexString(timeout_addr) + ")");
 
@@ -180,9 +181,10 @@ public class FplManager {
         } else {
             int addr = tryAllocateFpl(info);
             if (addr == 0) {
-                // Alloc failed
-                mem.write32(data_addr, 0); // TODO still write on failure?
-                cpu.gpr[2] = -1; // TODO if we wakeup and manage to allocate set v0 = 0
+                // Alloc failed - don't write to data_addr, yet
+                cpu.gpr[2] = ERROR_WAIT_TIMEOUT; // TODO if we wakeup and manage to allocate set v0 = 0
+
+                Modules.log.warn("UNIMPLEMENTED:sceKernelAllocateFpl uid=0x" + Integer.toHexString(uid) + " wait");
 
                 /* TODO
                 // try allocate when something frees
@@ -231,9 +233,8 @@ public class FplManager {
         } else {
             int addr = tryAllocateFpl(info);
             if (addr == 0) {
-                // Alloc failed
-                mem.write32(data_addr, 0); // TODO still write on failure?
-                cpu.gpr[2] = -1;
+                // Alloc failed - don't write to data_addr
+                cpu.gpr[2] = ERROR_NO_MEMORY;
             } else {
                 // Alloc succeeded
                 mem.write32(data_addr, addr);
@@ -245,21 +246,18 @@ public class FplManager {
     public void sceKernelFreeFpl(int uid, int data_addr) {
         CpuState cpu = Emulator.getProcessor().cpu;
 
-        Modules.log.info("sceKernelFreeFpl(uid=0x" + Integer.toHexString(uid)
+        Modules.log.debug("sceKernelFreeFpl(uid=0x" + Integer.toHexString(uid)
             + ",data=0x" + Integer.toHexString(data_addr) + ")");
 
         SceKernelFplInfo info = fplMap.get(uid);
         if (info == null) {
             Modules.log.warn("sceKernelFreeFpl unknown uid=0x" + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_NOT_FOUND_FPOOL;
-        } else if (data_addr == 0) {
-            Modules.log.warn("sceKernelFreeFpl bad address 0x" + Integer.toHexString(data_addr));
-            cpu.gpr[2] = -1;
         } else {
             int block = info.findBlockByAddress(data_addr);
             if (block == -1) {
                 Modules.log.warn("sceKernelFreeFpl unknown block address=0x" + Integer.toHexString(data_addr));
-                cpu.gpr[2] = -1;
+                cpu.gpr[2] = ERROR_ILLEGAL_MEMBLOCK;
             } else {
                 info.freeBlock(block);
                 cpu.gpr[2] = 0;
@@ -271,7 +269,7 @@ public class FplManager {
     public void sceKernelCancelFpl(int uid, int pnum_addr) {
         CpuState cpu = Emulator.getProcessor().cpu;
 
-        Modules.log.info("sceKernelCancelFpl(uid=0x" + Integer.toHexString(uid)
+        Modules.log.warn("UNIMPLEMENTED:sceKernelCancelFpl(uid=0x" + Integer.toHexString(uid)
             + ",pnum=0x" + Integer.toHexString(pnum_addr) + ")");
 
         SceKernelFplInfo info = fplMap.get(uid);
