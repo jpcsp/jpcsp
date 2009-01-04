@@ -44,6 +44,7 @@ public class Emulator implements Runnable {
     private InstructionCounter instructionCounter;
     public static Logger log = Logger.getLogger("misc");
     private SceModule module;
+    private int firmwareVersion = 150;
 
     public Emulator(MainGUI gui) {
         Emulator.gui = gui;
@@ -158,7 +159,16 @@ public class Emulator implements Runnable {
         Loader.getInstance().reset();
         State.fileLogger.resetLogging();
 
-        jpcsp.HLE.modules.HLEModuleManager.getInstance().Initialise();
+        // Firmware version can be changed by calling setFirmwareVersion, but
+        // you have to do it before the loader reaches the "process imports" stage.
+
+        // TODO cleanup initialisation
+        // - load UMD calls setFirmwareVersion before initNewPsp., because PSF is read separate from BIN
+        // - load PBP calls initNewPsp before setFirmwareVersion, because PSF is embedded in PBP
+        // - load ELF/PRX only calls initNewPsp, because it doesn't have a PSF
+        // this means some stuff is initialised twice (but with different parameters)
+
+        jpcsp.HLE.modules.HLEModuleManager.getInstance().Initialise(firmwareVersion);
         jpcsp.HLE.kernel.Managers.reset();
         jpcsp.HLE.pspSysMem.getInstance().Initialise();
     }
@@ -312,5 +322,18 @@ public class Emulator implements Runnable {
     public void setInstructionCounter(InstructionCounter instructionCounter) {
         this.instructionCounter = instructionCounter;
         instructionCounter.setModule(module);
+    }
+
+    /** version in this format: ABB, where A = major and B = minor, for example 271 */
+    public void setFirmwareVersion(int firmwareVersion) {
+        this.firmwareVersion = firmwareVersion;
+
+        NIDMapper.getInstance().Initialise();
+        jpcsp.HLE.modules.HLEModuleManager.getInstance().Initialise(this.firmwareVersion);
+    }
+
+    /** version in this format: "A.BB", where A = major and B = minor, for example "2.71" */
+    public void setFirmwareVersion(String firmwareVersion) {
+        setFirmwareVersion(jpcsp.HLE.modules.HLEModuleManager.psfFirmwareVersionToInt(firmwareVersion));
     }
 }

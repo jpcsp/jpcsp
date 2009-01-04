@@ -297,7 +297,7 @@ public class sceUmdUser implements HLEModule {
 
         int uid = cpu.gpr[4];
         Modules.log.debug("sceUmdRegisterUMDCallBack SceUID=" + Integer.toHexString(uid));
-    
+
         if (ThreadMan.getInstance().setCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, uid)) {
             cpu.gpr[2] = 0;
         } else {
