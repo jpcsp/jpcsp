@@ -551,7 +551,7 @@ public class sceSasCore implements HLEModule {
 
         Modules.log.warn("Unimplemented NID function __sceSasRevEVOL [0xD5A229C9] " + makeLogParams(cpu));
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = 0;
 
     // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
     }
