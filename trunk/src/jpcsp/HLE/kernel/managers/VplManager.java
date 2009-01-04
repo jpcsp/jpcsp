@@ -136,7 +136,9 @@ public class VplManager {
             if (addr == 0) {
                 // Alloc failed
                 mem.write32(data_addr, 0); // TODO still write on failure?
-                cpu.gpr[2] = -1; // TODO if we wakeup and manage to allocate set v0 = 0
+                cpu.gpr[2] = ERROR_WAIT_TIMEOUT; // TODO if we wakeup and manage to allocate set v0 = 0
+
+                Modules.log.warn("UNIMPLEMENTED:sceKernelAllocateVpl uid=0x" + Integer.toHexString(uid) + " wait");
 
                 /* TODO
                 // try allocate when something frees
@@ -187,8 +189,8 @@ public class VplManager {
             int addr = tryAllocateVpl(info, size);
             if (addr == 0) {
                 // Alloc failed
-                mem.write32(data_addr, 0); // TODO still write on failure?
-                cpu.gpr[2] = -1;
+                //mem.write32(data_addr, 0); // don't write on failure, check
+                cpu.gpr[2] = ERROR_NO_MEMORY; // check
             } else {
                 // Alloc succeeded
                 mem.write32(data_addr, addr);
@@ -211,7 +213,7 @@ public class VplManager {
             int block = info.findBlockByAddress(data_addr);
             if (block == -1) {
                 Modules.log.warn("sceKernelFreeVpl unknown block=0x" + Integer.toHexString(data_addr));
-                cpu.gpr[2] = -1;
+                cpu.gpr[2] = ERROR_ILLEGAL_MEMBLOCK; // check
             } else {
                 pspSysMem.getInstance().free(data_addr);
                 info.blockAddress[block] = 0;
