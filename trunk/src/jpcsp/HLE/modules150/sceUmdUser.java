@@ -64,6 +64,7 @@ public class sceUmdUser implements HLEModule {
         }
 
         umdActivated = false;
+        umdDeactivateCalled = false;
     }
 
     @Override
@@ -97,12 +98,30 @@ public class sceUmdUser implements HLEModule {
 
     protected UmdIsoReader iso;
     protected boolean umdActivated;
+    protected boolean umdDeactivateCalled;
 
     // HLE helper functions
 
     public void setIsoReader(UmdIsoReader iso)
     {
         this.iso = iso;
+    }
+
+    /** note this value is NOT the same as that used in the activate/deactivate callback */
+    public int getUmdStat()
+    {
+        int stat;
+
+        if (iso != null) {
+            stat = PSP_UMD_PRESENT | PSP_UMD_INITED;
+            if (umdActivated) stat |= PSP_UMD_READY;
+        } else {
+            stat = PSP_UMD_NOT_PRESENT;
+            if (umdDeactivateCalled)
+                stat |= PSP_UMD_INITING;
+        }
+
+        return stat;
     }
 
     // Export functions
@@ -145,6 +164,7 @@ public class sceUmdUser implements HLEModule {
         cpu.gpr[2] = 0;
 
         umdActivated = false;
+        umdDeactivateCalled = true;
 
         int event = 0;
         if (iso != null) {
@@ -159,15 +179,15 @@ public class sceUmdUser implements HLEModule {
     public void sceUmdWaitDriveStat(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
-        int stat = cpu.gpr[4];
-        Modules.log.debug("sceUmdWaitDriveStat = 0x" + Integer.toHexString(stat));
-        cpu.gpr[2] = 0;
+        int wantedStat = cpu.gpr[4];
+        Modules.log.debug("sceUmdWaitDriveStat = 0x" + Integer.toHexString(wantedStat));
 
-        if (iso != null || stat == PSP_UMD_NOT_PRESENT) {
-            jpcsp.HLE.ThreadMan.getInstance().yieldCurrentThread();
+        int currentStat = getUmdStat();
+        if ((currentStat & wantedStat) == wantedStat) {
+            cpu.gpr[2] = 0;
         } else {
-            // UMD not mounted and never will be since we don't emulate
-            // inserting/removing a disc so block forever.
+            // TODO umd wait type
+            cpu.gpr[2] = -1;
             jpcsp.HLE.ThreadMan.getInstance().blockCurrentThread();
         }
     }
@@ -176,17 +196,19 @@ public class sceUmdUser implements HLEModule {
     public void sceUmdWaitDriveStatWithTimer(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
-        int stat = cpu.gpr[4];
-        int timeout = cpu.gpr[5];
-        Modules.log.debug("sceUmdWaitDriveStatWithTimer = 0x" + Integer.toHexString(stat) + " timeout = " + timeout);
-        cpu.gpr[2] = 0;
 
-        if (iso != null || stat == PSP_UMD_NOT_PRESENT) {
+        int wantedStat = cpu.gpr[4];
+        int timeout = cpu.gpr[5];
+        Modules.log.debug("sceUmdWaitDriveStatWithTimer stat = 0x" + Integer.toHexString(wantedStat) + " timeout = " + timeout);
+
+        int currentStat = getUmdStat();
+        if ((currentStat & wantedStat) == wantedStat) {
+            cpu.gpr[2] = 0;
             jpcsp.HLE.ThreadMan.getInstance().yieldCurrentThread();
         } else {
-            // UMD not mounted and never will be since we don't emulate
-            // inserting/removing a disc so block forever.
-            jpcsp.HLE.ThreadMan.getInstance().blockCurrentThread();
+            // TODO umd wait type
+            cpu.gpr[2] = -1;
+            jpcsp.HLE.ThreadMan.getInstance().yieldCurrentThread();
         }
     }
 
@@ -195,22 +217,19 @@ public class sceUmdUser implements HLEModule {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
 
-        int stat = cpu.gpr[4];
+        int wantedStat = cpu.gpr[4];
         int timeout = cpu.gpr[5];
-        Modules.log.debug("sceUmdWaitDriveStatCB stat = 0x" + Integer.toHexString(stat) + " timeout = " + timeout);
-        cpu.gpr[2] = 0;
+        Modules.log.debug("sceUmdWaitDriveStatCB stat = 0x" + Integer.toHexString(wantedStat) + " timeout = " + timeout);
 
-        if (iso != null || stat == PSP_UMD_NOT_PRESENT) {
-            // TODO are we supposed to block until drive stat becomes what the parameter is set to?
-            // Or are we supposed to "block" until psp finishes checking the
-            // drive status? which would just emulate as a yield.
+        int currentStat = getUmdStat();
+        if ((currentStat & wantedStat) == wantedStat) {
+            cpu.gpr[2] = 0;
             jpcsp.HLE.ThreadMan.getInstance().yieldCurrentThreadCB();
         } else {
-            // UMD not mounted and never will be since we don't emulate
-            // inserting/removing a disc so block forever.
-            jpcsp.HLE.ThreadMan.getInstance().blockCurrentThread();
+            // TODO umd wait type
+            cpu.gpr[2] = -1;
+            jpcsp.HLE.ThreadMan.getInstance().yieldCurrentThreadCB();
         }
-
     }
 
     public void sceUmdCancelWaitDriveStat(Processor processor) {
@@ -234,14 +253,7 @@ public class sceUmdUser implements HLEModule {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
 
-        int stat;
-        if (iso != null) {
-            stat = PSP_UMD_PRESENT | PSP_UMD_INITED;
-            if (umdActivated) stat |= PSP_UMD_READY;
-        } else {
-            stat = PSP_UMD_NOT_PRESENT;
-            // TODO after deactivate is called, stat |= PSP_UMD_INITING
-        }
+        int stat = getUmdStat();
 
         Modules.log.debug("sceUmdGetDriveStat return:0x" + Integer.toHexString(stat));
 
