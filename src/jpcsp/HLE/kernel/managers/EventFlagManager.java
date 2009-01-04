@@ -191,7 +191,7 @@ public class EventFlagManager {
                     }
                 } else {
                     // EventFlag was deleted
-                    Modules.log.warn("EventFlag deleted while we were waiting for it!");
+                    Modules.log.warn("EventFlag deleted while we were waiting for it! thread:" + Integer.toHexString(thread.uid) + "/'" + thread.name + "'");
 
                     // Untrack
                     thread.wait.waitingOnEventFlag = false;

@@ -32,7 +32,7 @@ public class NIDMapper {
 
     public void Initialise() {
         moduleToNidTable = new HashMap<String, HashMap<Integer, Integer>>();
-       nidToSyscall = new HashMap<Integer, Integer>();
+        nidToSyscall = new HashMap<Integer, Integer>();
         /*for(int i=0; i<syscalls.length; i++)
         {
                int syscall = syscalls[i][0];
@@ -60,10 +60,10 @@ public class NIDMapper {
      * we can trap and turn into a Java function call.
      * @param code The syscall code. This must come from the unallocated set.
      * @param nid The NID the syscall will map to. */
-    public void addSyscallNid(int code, int nid) {
+    public void addSyscallNid(int nid, int code) {
         nidToSyscall.put(nid, code);
     }
-    
+
     /** @param modulename Example: sceRtc
      * @param address Address of export (example: start of function). */
     public void addModuleNid(String modulename, int nid, int address) {

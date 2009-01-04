@@ -843,7 +843,7 @@ public class syscallsFirm15 {
                  sceKernelDeleteMutex(0x3015,0xf8170fbe),//2.70+
                  sceKernelUnlockMutex(0x3016,0x6b30100f),//2.70+
                  sceKernelLockMutex(0x3017,0xb011b11f),//2.70+
-                 
+
                  /*found in wipeout pure */
                  sceKernelIsCpuIntrEnable(0x3018,0xb55249d2),//1.00+
                  sceNetResolverInit(0x3019,0xf3370e61),//1.00+
