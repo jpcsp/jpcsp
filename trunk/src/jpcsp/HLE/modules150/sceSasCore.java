@@ -200,7 +200,7 @@ public class sceSasCore implements HLEModule {
         //int unk2 = cpu.gpr[6]; // unused or 1 or the return code from some other function (0xdeadc0de)
         //int unk3 = cpu.gpr[7]; // unused or 0, 1, 0x1000
 
-        Modules.log.warn("IGNORING:__sceSasRevType(type=" +  + ")" + makeLogParams(cpu));
+        Modules.log.warn("IGNORING:__sceSasRevType(type=" + type + ")" + makeLogParams(cpu));
 
         cpu.gpr[2] = 0;
     }
