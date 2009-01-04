@@ -132,9 +132,11 @@ public class sceSasCore implements HLEModule {
         /* put your own code here instead */
 
         int sasCore = cpu.gpr[4];
-        //int unk1 = cpu.gpr[5]; // 0
-        //int unk2 = cpu.gpr[6]; // 8
-        //int unk3 = cpu.gpr[7]; // 0
+        //int unk1 = cpu.gpr[5]; // 0, 2
+        //int unk2 = cpu.gpr[6]; // 8, f
+        //int unk3 = cpu.gpr[7]; // 0, 0x40000000
+        //int unk4 = cpu.gpr[8]; // 64
+        //int unk5 = cpu.gpr[9]; // 64
 
         Modules.log.warn("Unimplemented NID function __sceSasSetADSR [0x019B25EB] " + makeLogParams(cpu));
 
@@ -150,14 +152,13 @@ public class sceSasCore implements HLEModule {
 
         /* put your own code here instead */
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        int sasCore = cpu.gpr[4];
+        //int unk1 = cpu.gpr[5]; // 0
+        //int unk2 = cpu.gpr[6]; // 0
 
         Modules.log.warn("Unimplemented NID function __sceSasRevParam [0x267A6DD2] " + makeLogParams(cpu));
 
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
+        cpu.gpr[2] = 0;
     }
 
     // we could do some trickery in here too
@@ -234,7 +235,7 @@ public class sceSasCore implements HLEModule {
         /* put your own code here instead */
 
         int sasCore = cpu.gpr[4];
-        //int unk1 = cpu.gpr[5]; // 0 or 1 (probably channel number)
+        //int unk1 = cpu.gpr[5]; // 0, 1, 2 (probably channel select)
         //int unk2 = cpu.gpr[6]; // left channel volume 0 - 0x1000
         //int unk3 = cpu.gpr[7]; // right channel volume 0 - 0x1000
         // may be more parameters
