@@ -190,21 +190,19 @@ public class sceSasCore implements HLEModule {
 
         int sasCore = cpu.gpr[4];
 
-        // type, probably:
-        // -1 = any
+        // -1 = any?
         // 0 = ?
         // 1 = ?
         // 2 = ?
-        // stereo/mono?
-        //int unk1 = cpu.gpr[5];
-        //int unk2 = cpu.gpr[6]; // unused or 1 or the return code from some other function
+        // 3 = ?
+        // 4 = ?
+        int type = cpu.gpr[5];
+        //int unk2 = cpu.gpr[6]; // unused or 1 or the return code from some other function (0xdeadc0de)
         //int unk3 = cpu.gpr[7]; // unused or 0, 1, 0x1000
 
-        Modules.log.warn("Unimplemented NID function __sceSasRevType [0x33D4AB37] " + makeLogParams(cpu));
+        Modules.log.warn("IGNORING:__sceSasRevType(type=" +  + ")" + makeLogParams(cpu));
 
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
+        cpu.gpr[2] = 0;
     }
 
     public void __sceSasInit(Processor processor) {
