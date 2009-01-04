@@ -1558,10 +1558,10 @@ public class ThreadMan {
 
     private void ThreadMan_hleKernelWaitSema(int semaid, int signal, int timeout_addr, boolean do_callbacks)
     {
-        Modules.log.debug("hleKernelWaitSema id= 0x" + Integer.toHexString(semaid)
-            + " signal= " + signal
-            + " timeout= 0x" + Integer.toHexString(timeout_addr)
-            + " callbacks= " + do_callbacks);
+        Modules.log.debug("hleKernelWaitSema(id=0x" + Integer.toHexString(semaid)
+            + ",signal=" + signal
+            + ",timeout=0x" + Integer.toHexString(timeout_addr)
+            + ") callbacks= " + do_callbacks);
 
         if (signal <= 0) {
             Modules.log.warn("hleKernelWaitSema - bad signal " + signal);
@@ -1613,23 +1613,27 @@ public class ThreadMan {
                 // Success
                 Modules.log.debug("hleKernelWaitSema - '" + sema.name + "' fast check succeeded");
                 Emulator.getProcessor().cpu.gpr[2] = 0;
-                // TODO yield anyway?
-                //contextSwitch(nextThread());
+
+                if (do_callbacks) {
+                    yieldCurrentThreadCB();
+                } else {
+                    // TODO yield anyway?
+                    //yieldCurrentThread();
+                }
             }
         }
     }
 
     public void ThreadMan_sceKernelWaitSema(int semaid, int signal, int timeout_addr)
     {
-        Modules.log.debug("sceKernelWaitSema redirecting to hleKernelWaitSema(callbacks=false)");
+        //Modules.log.debug("sceKernelWaitSema redirecting to hleKernelWaitSema(callbacks=false)");
         ThreadMan_hleKernelWaitSema(semaid, signal, timeout_addr, false);
     }
 
     public void ThreadMan_sceKernelWaitSemaCB(int semaid, int signal, int timeout_addr)
     {
-        Modules.log.debug("sceKernelWaitSemaCB redirecting to hleKernelWaitSema(callbacks=true)");
+        //Modules.log.debug("sceKernelWaitSemaCB redirecting to hleKernelWaitSema(callbacks=true)");
         ThreadMan_hleKernelWaitSema(semaid, signal, timeout_addr, true);
-        checkCallbacks();
     }
 
     public void ThreadMan_sceKernelSignalSema(int semaid, int signal)
