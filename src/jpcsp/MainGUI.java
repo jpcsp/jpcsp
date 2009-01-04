@@ -775,6 +775,7 @@ public void loadUMD(File file) {
         setTitle(MetaInformation.FULL_NAME + " - " + params.getString("TITLE"));
         addRecentUMD(file, params.getString("TITLE"));
         String discid = params.getString("DISC_ID");
+        emulator.setFirmwareVersion(params.getString("PSP_SYSTEM_VER"));
 
         if ((discid != null && loadUnpackedUMD(discid + ".BIN")) ||
             loadUMD(iso, "PSP_GAME/SYSDIR/BOOT.BIN") ||

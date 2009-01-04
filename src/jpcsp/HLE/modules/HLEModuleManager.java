@@ -56,7 +56,10 @@ public class HLEModuleManager {
 
     private HashMap<String, List<HLEModule>> flash0prxMap;
 
-    /** The current firmware version we are using */
+    /** The current firmware version we are using
+     * was supposed to be one of pspSysMem.PSP_FIRMWARE_* but there's a mistake
+     * in the module autogen and now its an int in this format:
+     * ABB, where A = major and B = minor, for example 271 */
     private int firmwareVersion;
 
     // TODO add more modules here
@@ -90,7 +93,22 @@ public class HLEModuleManager {
         return instance;
     }
 
-    public void Initialise() {
+    /** (String)"2.71" to (int)271 */
+    public static int psfFirmwareVersionToInt(String firmwareVersion) {
+        int version = 150;
+
+        if (firmwareVersion != null) {
+            version = (int)(Float.parseFloat(firmwareVersion) * 100);
+
+            // HACK we started implementing stuff under 150 even if it existed in 100
+            if (version < 150)
+                version = 150;
+        }
+
+        return version;
+    }
+
+    public void Initialise(int firmwareVersion) {
         syscallCodeToFunction = new HashMap<Integer, HLEModuleFunction>();
 
         // Official syscalls start at 0x2000,
@@ -99,13 +117,13 @@ public class HLEModuleManager {
 
         hleThreadList = new ArrayList<HLEThread>();
 
-        // TODO use fw version from PSF, unless it's a banned PSF (such as used by pspsdk)
-        firmwareVersion = pspSysMem.PSP_FIRMWARE_150;
+        this.firmwareVersion = firmwareVersion;
         installDefaultModules();
         initialiseFlash0PRXMap();
     }
 
     private void installDefaultModules() {
+        Modules.log.debug("Loading HLE firmware up to version " + firmwareVersion);
         for (HLEModule module : defaultModules) {
             module.installModule(this, firmwareVersion);
         }

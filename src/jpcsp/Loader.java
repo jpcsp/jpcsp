@@ -107,6 +107,15 @@ public class Loader {
                 // probably kxploit stub
                 if (currentOffset == f.limit())
                     break;
+            } else {
+                loadPSF(module);
+            }
+
+            if (module.psf != null) {
+                Emulator.log.info("PBP meta data :\n" + module.psf);
+
+                if (!loadedFirstModule)
+                    Emulator.getInstance().setFirmwareVersion(module.psf.getString("PSP_SYSTEM_VER"));
             }
 
             f.position(currentOffset);
@@ -124,10 +133,6 @@ public class Loader {
             f.position(currentOffset);
             LoadUNK(f, module, baseAddress);
         } while(false);
-
-        loadPSF(module);
-        if(module.psf != null)
-            Emulator.log.info("PBP meta data :\n" + module.psf);
 
         return module;
     }
