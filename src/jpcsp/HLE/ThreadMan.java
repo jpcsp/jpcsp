@@ -55,6 +55,7 @@ public class ThreadMan {
     private ArrayList<SceKernelThreadInfo> waitingThreads;
     private ArrayList<SceKernelThreadInfo> toBeDeletedThreads;
     private SceKernelThreadInfo current_thread;
+    //private SceKernelThreadInfo real_current_thread; // for use with callbacks, check
     private SceKernelThreadInfo idle0, idle1;
     private int continuousIdleCycles; // watch dog timer - number of continuous cycles in any idle thread
     private int syscallFreeCycles; // watch dog timer - number of cycles since last syscall
@@ -225,6 +226,8 @@ public class ThreadMan {
                 if (insideCallback) {
                     // Callback has exited
                     Modules.log.debug("Callback exit detected");
+
+                    //current_thread = real_current_thread;
 
                     // Not sure which of these two to use
                     //Emulator.getProcessor().cpu = current_thread.cpuContext;
@@ -417,7 +420,7 @@ public class ThreadMan {
      * ready thread (which may be an idle thread if no other threads are ready). */
     public void yieldCurrentThread()
     {
-        if (LOG_CONTEXT_SWITCHING)
+        if (LOG_CONTEXT_SWITCHING && !isIdleThread(current_thread))
             Modules.log.debug("-------------------- yield SceUID=" + Integer.toHexString(current_thread.uid) + " name:'" + current_thread.name + "' caller:" + getCallingFunction());
 
         contextSwitch(nextThread());
@@ -431,7 +434,10 @@ public class ThreadMan {
 
         current_thread.do_callbacks = true;
         contextSwitch(nextThread());
-        checkCallbacks();
+
+        // The above context switch may have triggered an IO callback
+        if (!insideCallback)
+            checkCallbacks();
     }
 
     public void blockCurrentThread()
@@ -879,7 +885,7 @@ public class ThreadMan {
             Modules.log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " unknown thread");
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
         } else if (thread.status != PSP_THREAD_WAITING) {
-            Modules.log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " not sleeping/waiting (status=" + thread.status + ")");
+            Modules.log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "' not sleeping/waiting (status=" + thread.status + ")");
             Emulator.getProcessor().cpu.gpr[2] = ERROR_THREAD_IS_NOT_WAIT;
         } else if (isBannedThread(thread)) {
             Modules.log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "' banned, not waking up");
@@ -993,12 +999,12 @@ public class ThreadMan {
         wait.microTimeTimeout = Emulator.getClock().microTime() + micros;
 
         if (LOG_CONTEXT_SWITCHING && !isIdleThread(current_thread))
-            Modules.log.debug("hleKernelThreadWait micros=" + micros + " forever:" + forever + " thread:'" + current_thread.name + "' caller:" + getCallingFunction());
+            Modules.log.debug("-------------------- hleKernelThreadWait micros=" + micros + " forever:" + forever + " thread:'" + current_thread.name + "' caller:" + getCallingFunction());
     }
 
     private void hleKernelDelayThread(int micros, boolean do_callbacks) {
         // Go to wait state, callbacks
-        current_thread.do_callbacks = do_callbacks;
+        //current_thread.do_callbacks = do_callbacks;
 
         if (IGNORE_DELAY)
             micros = 0;
@@ -1009,7 +1015,14 @@ public class ThreadMan {
         changeThreadState(current_thread, PSP_THREAD_WAITING);
 
         Emulator.getProcessor().cpu.gpr[2] = 0;
-        contextSwitch(nextThread());
+
+        // should be contextSwitch(nextThread()) but we get more logging this way
+        // also current_thread.do_callbacks = do_callbacks;
+        if (do_callbacks) {
+            yieldCurrentThreadCB();
+        } else {
+            yieldCurrentThread();
+        }
     }
 
     /** wait the current thread for a certain number of microseconds */
@@ -1022,11 +1035,9 @@ public class ThreadMan {
         //if (micros > 10000)
         //    Modules.log.debug("sceKernelDelayThreadCB micros=" + micros + " current thread:'" + current_thread.name + "'");
 
-        hleKernelDelayThread(micros, true);
-
         // This check is required
         if (!insideCallback) {
-            checkCallbacks();
+            hleKernelDelayThread(micros, true);
         } else {
             Modules.log.warn("sceKernelDelayThreadCB called from inside callback!");
         }
@@ -1320,7 +1331,8 @@ public class ThreadMan {
 
     /** @param cbid If cbid is -1, then push callback to all threads
      * if cbid is not -1 then only trigger that specific cbid provided it is
-     * also of type callbackType. */
+     * also of type callbackType.
+     * ONLY call this from the main emulation thread, do not call from the GE thread! */
     public void pushCallback(int callbackType, int cbid, int notifyArg1, int notifyArg2) {
         boolean pushed = false;
 
@@ -1389,6 +1401,8 @@ public class ThreadMan {
 
                 // Callbacks can pre-empt, save the current thread's context
                 current_thread.saveContext();
+                //real_current_thread = current_thread;
+                //current_thread = thread;
 
                 insideCallback = true;
                 thread.callbackReady[i] = false;
@@ -1423,9 +1437,9 @@ public class ThreadMan {
      * insideCallback may become true after a call to checkCallbacks().
      */
     public void checkCallbacks() {
-        insideCallback = false;
+        //Modules.log.debug("checkCallbacks current thread is '" + current_thread.name + "' do_callbacks:" + current_thread.do_callbacks + " insideCallback:" + insideCallback + " caller:" + getCallingFunction());
 
-        //Modules.log.debug("checkCallbacks current thread is '" + current_thread.name + "' do_callbacks:" + current_thread.do_callbacks + " caller:" + getCallingFunction());
+        insideCallback = false;
 
         for (Iterator<SceKernelThreadInfo> it = threadMap.values().iterator(); it.hasNext(); ) {
             SceKernelThreadInfo thread = it.next();
@@ -1491,6 +1505,8 @@ public class ThreadMan {
 
         Memory mem = Memory.getInstance();
         if (mem.isAddressGood(option)) {
+            // The first int does not seem to be the size of the struct, found values:
+            // SSX On Tour: 0, 0x08B0F9E4, 0x0892E664, 0x08AF7257 (some values are used in more than one semaphore)
             int optsize = mem.read32(option);
             Modules.log.warn("UNIMPLEMENTED:sceKernelCreateSema option at 0x" + Integer.toHexString(option)
                 + " (size=" + optsize + ")");

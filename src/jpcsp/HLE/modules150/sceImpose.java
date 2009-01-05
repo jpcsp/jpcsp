@@ -21,6 +21,7 @@ package jpcsp.HLE.modules150;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.HLE.Modules;
 
 import jpcsp.Memory;
 import jpcsp.Processor;
@@ -34,7 +35,7 @@ public class sceImpose implements HLEModule {
 	@Override
 	public void installModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
-		
+
 			mm.addFunction(sceImposeHomeButtonFunction, 0x381BD9E7);
 			mm.addFunction(sceImposeSetHomePopupFunction, 0x5595A71A);
 			mm.addFunction(sceImposeGetHomePopupFunction, 0x0F341BE4);
@@ -43,14 +44,14 @@ public class sceImpose implements HLEModule {
 			mm.addFunction(sceImposeSetLanguageModeFunction, 0x36AA6E91);
 			mm.addFunction(sceImposeGetLanguageModeFunction, 0x24FD7BCF);
 			mm.addFunction(sceImposeGetBatteryIconStatusFunction, 0x8C943191);
-			
+
 		}
 	}
 
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) {
 		if (version >= 150) {
-		
+
 			mm.removeFunction(sceImposeHomeButtonFunction);
 			mm.removeFunction(sceImposeSetHomePopupFunction);
 			mm.removeFunction(sceImposeGetHomePopupFunction);
@@ -59,7 +60,7 @@ public class sceImpose implements HLEModule {
 			mm.removeFunction(sceImposeSetLanguageModeFunction);
 			mm.removeFunction(sceImposeGetLanguageModeFunction);
 			mm.removeFunction(sceImposeGetBatteryIconStatusFunction);
-			
+
 		}
 	}
 
@@ -67,13 +68,13 @@ public class sceImpose implements HLEModule {
 	public void sceImposeHomeButton(Processor processor) {
 	    CpuState cpu = processor.cpu; // New-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceImposeHomeButton [0x381BD9E7]");
+		Modules.log.warn("Unimplemented NID function sceImposeHomeButton [0x381BD9E7]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -83,13 +84,13 @@ public class sceImpose implements HLEModule {
 	public void sceImposeSetHomePopup(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceImposeSetHomePopup [0x5595A71A]");
+		Modules.log.warn("Unimplemented NID function sceImposeSetHomePopup [0x5595A71A]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -99,13 +100,13 @@ public class sceImpose implements HLEModule {
 	public void sceImposeGetHomePopup(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceImposeGetHomePopup [0x0F341BE4]");
+		Modules.log.warn("Unimplemented NID function sceImposeGetHomePopup [0x0F341BE4]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -115,13 +116,13 @@ public class sceImpose implements HLEModule {
 	public void sceImposeSetUMDPopup(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceImposeSetUMDPopup [0x72189C48]");
+		Modules.log.warn("Unimplemented NID function sceImposeSetUMDPopup [0x72189C48]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -131,13 +132,13 @@ public class sceImpose implements HLEModule {
 	public void sceImposeGetUMDPopup(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceImposeGetUMDPopup [0xE0887BC8]");
+		Modules.log.warn("Unimplemented NID function sceImposeGetUMDPopup [0xE0887BC8]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
@@ -147,34 +148,43 @@ public class sceImpose implements HLEModule {
 	public void sceImposeSetLanguageMode(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		Memory mem = Processor.memory;
-		
+
 		/* put your own code here instead */
 
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function sceImposeSetLanguageMode [0x36AA6E91]");
+		Modules.log.warn("Unimplemented NID function sceImposeSetLanguageMode [0x36AA6E91]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
 
-	public void sceImposeGetLanguageMode(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		Memory mem = Processor.memory;
-		
-		/* put your own code here instead */
+    public void sceImposeGetLanguageMode(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        Memory mem = Processor.memory;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        int lang_addr = cpu.gpr[4];
+        int button_addr = cpu.gpr[5];
 
-		System.out.println("Unimplemented NID function sceImposeGetLanguageMode [0x24FD7BCF]");
+        Modules.log.warn("PARTIAL:sceImposeGetLanguageMode(lang=0x" + Integer.toHexString(lang_addr)
+            + ",button=0x" + Integer.toHexString(button_addr) + ")");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+        if (mem.isAddressGood(lang_addr)) {
+            // TODO no idea what the valid values are
+            mem.write32(lang_addr, 0);
+        }
 
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
+        if (mem.isAddressGood(button_addr)) {
+            // one is cross the other is circle
+            // 0 - ?
+            // 1 - ?
+            mem.write32(button_addr, 0);
+        }
+
+        cpu.gpr[2] = 0;
+    }
 
 	public void sceImposeGetBatteryIconStatus(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
