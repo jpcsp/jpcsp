@@ -161,17 +161,26 @@ public class pspiofilemgr {
      * (as it currently does) PLUS a certain amount of time passed. */
     public void onContextSwitch() {
         IoInfo found = null;
+        int foundCount = 0;
 
         for (Iterator<IoInfo> it = filelist.values().iterator(); it.hasNext();) {
             IoInfo info = it.next();
-            if (info.asyncPending) {
+
+            if (info.asyncPending)
+                foundCount++;
+
+            if (info.asyncPending && found == null) {
                 found = info;
                 // This is based on the assumption only 1 IO op can be
                 // happening at a time, which is probably correct since the
                 // PSP_ERROR_ASYNC_BUSY error code exists.
-                break;
+                //break;
             }
+
         }
+
+        if (foundCount > 1)
+            Modules.log.warn("more than 1 io callback waiting to enter pending state!");
 
         if (found != null) {
             found.asyncPending = false;
@@ -1103,33 +1112,72 @@ public class pspiofilemgr {
 
             Memory mem = Memory.getInstance();
             if (mem.isAddressGood(indata_addr)) {
-                Modules.log.debug("sceIoDevctl *indata=0x" + Integer.toHexString(mem.read32(indata_addr)));
+                for (int i = 0; i < inlen; i += 4) {
+                    Modules.log.debug("sceIoDevctl indata[" + (i / 4) + "]=0x" + Integer.toHexString(mem.read32(indata_addr + i)));
+                }
             }
 
             if (mem.isAddressGood(outdata_addr)) {
-                Modules.log.debug("sceIoDevctl *outdata=0x" + Integer.toHexString(mem.read32(outdata_addr)));
+                for (int i = 0; i < outlen; i += 4) {
+                    Modules.log.debug("sceIoDevctl outdata[" + (i / 4) + "]=0x" + Integer.toHexString(mem.read32(outdata_addr + i)));
+                }
             }
         }
 
         switch(cmd) {
             case 0x01F20001:
-                Modules.log.warn("IGNORED: sceIoDevctl unhandled umd command " + String.format("0x%08X", cmd));
+            {
+                // TODO yield? (on psp blocks until disc spins up)
+                Modules.log.warn("sceIoDevctl " + String.format("0x%08X", cmd) + " unknown umd command (check disc type?)");
+                Memory mem = Memory.getInstance();
+                if (mem.isAddressGood(outdata_addr) && outlen >= 8) {
+                    // 2nd field
+                    // 0 = not inserted
+                    // 0x10 = inserted
+                    int result;
+
+                    if (iso == null)
+                        result = 0;
+                    else
+                        result = 0x10;
+
+                    mem.write32(outdata_addr + 4, result);
+                    Emulator.getProcessor().cpu.gpr[2] = 0;
+                } else {
+                    Emulator.getProcessor().cpu.gpr[2] = -1;
+                }
+                break;
+            }
+
+            case 0x02015804:
+                // register unknown type of ms callback
+                Modules.log.warn("IGNORED: sceIoDevctl " + String.format("0x%08X", cmd) + " unhandled ms command (register some kind of callback)");
                 Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
                 break;
 
-            case 0x02015804:
+
             case 0x02025801:
-                Modules.log.warn("IGNORED: sceIoDevctl unhandled ms command " + String.format("0x%08X", cmd));
-                Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
+            {
+                Modules.log.warn("sceIoDevctl " + String.format("0x%08X", cmd) + " unknown ms command (check fs type?)");
+                Memory mem = Memory.getInstance();
+                if (mem.isAddressGood(outdata_addr)) {
+                    // 1 = not inserted
+                    // 4 = inserted
+                    mem.write32(outdata_addr, 4);
+                    Emulator.getProcessor().cpu.gpr[2] = 0;
+                } else {
+                    Emulator.getProcessor().cpu.gpr[2] = -1;
+                }
                 break;
+            }
 
             case 0x02025806:
             {
                 Modules.log.debug("sceIoDevctl check ms inserted");
                 Memory mem = Memory.getInstance();
                 if (mem.isAddressGood(outdata_addr)) {
-                    // 0 = not inserted
                     // 1 = inserted
+                    // 2 = not inserted
                     mem.write32(outdata_addr, 1);
                     Emulator.getProcessor().cpu.gpr[2] = 0;
                 } else {
@@ -1148,9 +1196,9 @@ public class pspiofilemgr {
                 Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
                 break;
 
-
+            // this one may be a typo by the jpcsp team :P can anyone find a game that uses it?
             case 0x02415823:
-                Modules.log.warn("IGNORED: sceIoDevctl unhandled ms command " + String.format("0x%08X", cmd));
+                Modules.log.warn("IGNORED: sceIoDevctl " + String.format("0x%08X", cmd) + " unhandled ms command");
                 Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
                 break;
 
@@ -1183,12 +1231,12 @@ public class pspiofilemgr {
             }
 
             case 0x02425823:
-                Modules.log.warn("IGNORED: sceIoDevctl unhandled ms command " + String.format("0x%08X", cmd));
+                Modules.log.warn("IGNORED: sceIoDevctl " + String.format("0x%08X", cmd) + " unhandled ms command");
                 Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
                 break;
 
             default:
-                Modules.log.warn("sceIoDevctl unknown command " + String.format("0x%08X", cmd));
+                Modules.log.warn("sceIoDevctl " + String.format("0x%08X", cmd) + " unknown command");
                 Emulator.getProcessor().cpu.gpr[2] = -1; // Just fail for now
                 break;
         }
