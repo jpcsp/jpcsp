@@ -44,9 +44,9 @@ public class SceKernelFplInfo {
     public boolean[] blockAllocated;
     // TODO public List<Integer> waitAllocateQueue; // For use when there are no free blocks
 
-    public static final int FPL_ATTR_MASK = 0x41FF; // anything outside this mask is illegal attr
+    public static final int FPL_ATTR_MASK = 0x41FF; // anything outside this mask is an illegal attr
     public static final int FPL_ATTR_UNKNOWN = 0x100;
-    public static final int FPL_ATTR_ADDR_HIGH = 0x4000;
+    public static final int FPL_ATTR_ADDR_HIGH = 0x4000; // create() the fpl in hi-mem, but start alloc() from low addresses
 
     /** do not instantiate unless there is enough free mem.
      * use the static helper function tryCreateFpl. */

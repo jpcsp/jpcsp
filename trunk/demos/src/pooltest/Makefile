@@ -1,5 +1,5 @@
 TARGET = pooltest
-OBJS = main.o
+OBJS = main.o fpl.o
 
 INCDIR =
 CFLAGS = -O2 -G0 -Wall

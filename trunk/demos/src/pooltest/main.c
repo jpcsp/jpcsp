@@ -1,13 +1,5 @@
 
-#include <pspkernel.h>
-#include <pspdebug.h>
-#include <pspctrl.h>
-#include <pspdisplay.h>
-
-#include <sys/stat.h>
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
+#include "pooltest.h"
 
 PSP_MODULE_INFO("memory pool test", 0, 1, 0);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
@@ -15,11 +7,8 @@ PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 int CallbackThread(SceSize args, void *argp);
 int SetupCallbacks(void);
 
-/* Define printf, just to make typing easier */
-#define printf	pspDebugScreenPrintf
-
 int done = 0;
-int another_done = 0;
+int vpl_done = 0;
 
 void printMem()
 {
@@ -31,177 +20,158 @@ void printMem()
     printf("  mem max %08x total %08x\n", max, total);
 }
 
-void *fpl_wait_alloc(const char *threadname, int fpl)
-{
-    int result;
-    void *addr = (void*)-1;
 
-    printf("[%s] sceKernelAllocateFpl wait alloc...\n", threadname);
-    result = sceKernelAllocateFpl(fpl, &addr, 0x0);
-    printf("[%s] sceKernelAllocateFpl result=%08x addr=%p\n", threadname, result, addr);
-    printMem();
-
-    if (result != 0)
-        addr = 0;
-
-    return addr;
-}
-
-void *fpl_alloc(int fpl)
+void *vpl_alloc(int vpl, int size)
 {
     int result;
     unsigned int timeout = 1000000;
     void *addr = (void*)-1;
 
-    result = sceKernelAllocateFpl(fpl, &addr, &timeout);
-    printf("sceKernelAllocateFpl result=%08x addr=%p timeout=%d\n", result, addr, timeout);
+    result = sceKernelAllocateVpl(vpl, size, &addr, &timeout);
+    printf("sceKernelAllocateVpl result=%08x addr=%p timeout=%d\n", result, addr, timeout);
     printMem();
 
     if (result != 0)
         addr = 0;
+    else
+        printf("unk1 %08x unk2 %08x\n", ((int*)addr)[-2], ((int*)addr)[-1]);
 
     return addr;
 }
 
-void *fpl_try_alloc(int fpl)
+void *vpl_try_alloc(int vpl, int size)
 {
     int result;
     void *addr = (void*)-1;
 
-    result = sceKernelTryAllocateFpl(fpl, &addr);
-    printf("sceKernelTryAllocateFpl result=%08x addr=%p\n", result, addr);
+    result = sceKernelTryAllocateVpl(vpl, size, &addr);
+    printf("sceKernelTryAllocateVpl result=%08x addr=%p\n", result, addr);
     printMem();
 
     if (result != 0)
         addr = 0;
+    else
+        printf("unk1 %08x unk2 %08x\n", ((int*)addr)[-2], ((int*)addr)[-1]);
+
 
     return addr;
 }
 
-void fpl_refer(int fpl)
+void vpl_refer(int vpl)
 {
     int result;
-    SceKernelFplInfo info;
+    SceKernelVplInfo info;
     memset(&info, 0xEE, sizeof(info));
-    result = sceKernelReferFplStatus(fpl, &info);
+    result = sceKernelReferVplStatus(vpl, &info);
 
     if (result == 0)
     {
-        printf("size %08x %d\n", info.size, info.size);
-        printf("name '%s'\n", info.name);
-        printf("attr %08x\n", info.attr);
-        printf("blockSize %08x %d\n", info.blockSize, info.blockSize);
-        printf("freeBlocks %d\n", info.freeBlocks);
+        //printf("size     %08x %d\n", info.size, info.size); // 0x34/52
+        //printf("name '%s'\n", info.name); // ok
+        printf("attr     %08x\n", info.attr);
+        printf("poolSize %08x %d\n", info.poolSize, info.poolSize);
+        printf("freeSize %08x %d\n", info.freeSize, info.freeSize);
         printf("numWaitThreads %d\n", info.numWaitThreads);
     }
     else
     {
-        printf("sceKernelReferFplStatus %08x\n", result);
+        printf("sceKernelReferVplStatus %08x\n", result);
     }
 }
 
-// 200, 400, 800, 1000, 2000, 8000 not allowed
-#define FPL_ATTR_UNKNOWN1 0x00000001
-#define FPL_ATTR_UNKNOWN2 0x00000002
-#define FPL_ATTR_UNKNOWN3 0x00000004
-#define FPL_ATTR_UNKNOWN4 0x00000008
-#define FPL_ATTR_UNKNOWN5 0x00000010
-#define FPL_ATTR_UNKNOWN6 0x00000020
-#define FPL_ATTR_UNKNOWN7 0x00000040
-#define FPL_ATTR_UNKNOWN8 0x00000080
-#define FPL_ATTR_UNKNOWN9 0x00000100 // unknown
-#define FPL_ATTR_ADDR_HIGH 0x00004000 // hi-mem
-
-int another_thread(SceSize args, void *argp)
-{
-    int fpl = *(int*)argp;
-    void *addr = fpl_wait_alloc("another_thread", fpl);
-
-    if (addr)
-    {
-        printf("[another_thread] alloc success %p\n", addr);
-        sceKernelFreeFpl(fpl, addr);
-    }
-    else
-    {
-        printf("[another_thread] alloc failed\n");
-    }
-
-    another_done = 1;
-    return 0;
-}
-
-void fpl_test()
+void vpl_test()
 {
     int result;
-    int fpl;
-    int attr = 0x80;
+    int vpl;
 
-    //fpl = sceKernelCreateFpl("FPL", 2, attr, 0x1000, 1, 0x0);
-    fpl = sceKernelCreateFpl("FPL", 2, attr, 0x1, 1, 0x0);
-    //fpl = sceKernelCreateFpl("FPL", 2, attr, 0x4000000, 1, 0x0); // not enough free mem
-    printf("sceKernelCreateFpl(attr=%08x) %08x\n", attr, fpl);
-    if (fpl <= 0)
+    //vpl = sceKernelCreateVpl("VPL", 2, 0x0, 0x3000 + 0x20 + 0x08 * 3, 0x0); // size is rounded up 8-byte aligned
+    vpl = sceKernelCreateVpl("VPL", 2, 0x4000, 0x2000 + 0x20 + 0x08 * 2, 0x0); // size is rounded up 8-byte aligned
+    printf("sceKernelCreateVpl %08x\n", vpl);
+    if (vpl <= 0)
         return;
 
-    printMem(); // 256-byte aligned consumption (may be enforced by pspsysmem, not threadman/fpl)
-    fpl_refer(fpl);
+    printMem();
 
-    void *addr;
-    void *addr2;
+    // refer size is 32 bytes less than create size
+    // create(0x2000) -> 0x1fe0 (pool and free)
+    // 32 byte overhead (24-byte aligned to 32?)
+    vpl_refer(vpl);
 
-    addr = fpl_alloc(fpl);
+    void *addr1 = 0, *addr2 = 0, *addr3 = 0;
 
+    // 8 byte alignment
+    // 8 byte overhead per alloc
+    // even if freeSize matches sceKernelAllocateVpl size param, 8 more bytes are needed for it to succeed
+    // struct { void *header; int magic; } = (allocAddr - 0x8) = { firstAllocAddr - 0x20, 0x201 };
+    addr1 = vpl_alloc(vpl, 0x1000);
+    //vpl_refer(vpl);
+
+    addr2 = vpl_try_alloc(vpl, 0x1000);
+    //vpl_refer(vpl);
+
+    addr3 = vpl_try_alloc(vpl, 0x1000);
+    vpl_refer(vpl);
+
+    //sceKernelFreeVpl(vpl, addr2);
     if (0)
     {
-        // test multiple wait
-        int thid = sceKernelCreateThread("another_thread", another_thread, 0x20, 0x4000, 0, 0);
-        if (thid >= 0)
+        struct
         {
-            sceKernelStartThread(thid, 4, &fpl);
-        }
+            void *self1; // address "self - 1 byte", 0x881c507
+            int size; // size (from sceKernelCreateVpl, 0x2028) - 8 bytes, 0x2020
+            int unk1; // sceKernelCreateVpl(0x2028) -> 0x201, sceKernelCreateVpl(0x3038) -> 0x603
+            void *upperBound; // approx, 0x881e520 - sceKernelCreateVpl(0x2028) -> diff 0x2018, sceKernelCreateVpl(0x3038) -> diff 0x3028
+            void *unk3; // 0x881e520
+            int unk4; // sceKernelCreateVpl(0x2028) -> 0x200, sceKernelCreateVpl(0x3038) -> 0x201
+        } vplHeader;
 
-        addr2 = fpl_wait_alloc("user_main", fpl);
+        int *header = (int*)*((int*)addr1 - 2);
+        int i;
+        printf("header dump (int*)%p - 2 -> %p -> (header*)%p\n", addr1, ((int*)addr1 - 2), header);
+        for (i = 0; i < 6; i += 2)
+            printf("  %08x %08x\n", header[i + 0], header[i + 1]);
     }
-    else
-    {
-        addr2 = fpl_alloc(fpl); // 32-bit aligned
-        fpl_try_alloc(fpl);
-        //fpl_try_alloc(fpl);
-    }
-    fpl_refer(fpl);
 
-    if (addr)
+    if (addr1)
     {
-        result = sceKernelFreeFpl(fpl, addr); // ok
-        printf("sceKernelFreeFpl(addr) result=%08x\n", result);
-        printMem();
+        result = sceKernelFreeVpl(vpl, addr1);
+        printf("sceKernelFreeVpl(addr1) result=%08x\n", result);
+        vpl_refer(vpl);
+        //printMem();
 
-        //result = sceKernelFreeFpl(fpl, addr); // illegal mem block
-        //printf("sceKernelFreeFpl(addr) result=%08x\n", result);
+        //result = sceKernelFreeVpl(vpl, addr1); // illegal mem block
+        //printf("sceKernelFreeVpl(addr1) result=%08x\n", result);
         //printMem();
     }
 
     if (addr2)
     {
-        result = sceKernelFreeFpl(fpl, addr2); // ok
-        printf("sceKernelFreeFpl(addr2) result=%08x\n", result);
-        printMem();
+        result = sceKernelFreeVpl(vpl, addr2);
+        printf("sceKernelFreeVpl(addr2) result=%08x\n", result);
+        vpl_refer(vpl);
+        //printMem();
     }
 
-    //result = sceKernelFreeFpl(fpl, (void*)0x08A00000); // illegal mem block
-    //printf("sceKernelFreeFpl(0x08A00000) result=%08x\n", result);
+    if (addr3)
+    {
+        result = sceKernelFreeVpl(vpl, addr3);
+        printf("sceKernelFreeVpl(addr2) result=%08x\n", result);
+        //printMem();
+    }
+
+    //result = sceKernelFreeVpl(vpl, (void*)0x08A00000); // illegal mem block
+    //printf("sceKernelFreeVpl(0x08A00000) result=%08x\n", result);
     //printMem();
 
-    result = sceKernelDeleteFpl(fpl); // ok
-    printf("sceKernelDeleteFpl %08x\n", result);
+    result = sceKernelDeleteVpl(vpl);
+    printf("sceKernelDeleteVpl %08x\n", result);
     printMem();
 
-    result = sceKernelDeleteFpl(fpl); // not found fpl
-    printf("sceKernelDeleteFpl %08x\n", result);
-    printMem();
+    //result = sceKernelDeleteVpl(vpl); // not found vpool
+    //printf("sceKernelDeleteVpl %08x\n", result);
+    //printMem();
 
-    fpl_refer(fpl); // not found fpl
+    //vpl_refer(vpl); // not found vpool
 }
 
 int main(int argc, char *argv[])
@@ -222,7 +192,8 @@ int main(int argc, char *argv[])
 
     printMem();
 
-    fpl_test();
+    //fpl_test();
+    vpl_test();
 
     sceCtrlSetSamplingCycle(0);
     sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);

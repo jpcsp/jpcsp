@@ -19,6 +19,8 @@ package jpcsp.HLE.kernel.types;
 import java.util.LinkedList;
 import java.util.List;
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.Modules;
+import jpcsp.HLE.pspSysMem;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.util.Utilities;
@@ -36,28 +38,66 @@ public class SceKernelVplInfo {
     // Internal info
     public final int uid;
     public final int partitionid;
-    public int[] blockAddress;
-    public int[] blockSize;
-    public static final int numBlocks = 32; // TODO find a good size or use a list
-    public int freeBlocks;
+    // TODO need a proper malloc implementation, for now free will fail
+    public final int allocAddress;
+    public int freeLowAddress;
+    public int freeHighAddress;
 
-    public SceKernelVplInfo(String name, int partitionid, int attr, int poolSize) {
+    public static final int VPL_ATTR_MASK = 0x41FF; // anything outside this mask is an illegal attr
+    public static final int VPL_ATTR_UNKNOWN = 0x100;
+    public static final int VPL_ATTR_ADDR_HIGH = 0x4000; // create() the vpl in hi-mem, and start alloc() from high addresses
+
+    private SceKernelVplInfo(String name, int partitionid, int attr, int size) {
         this.name = name;
         this.attr = attr;
-        this.poolSize = poolSize;
+        this.poolSize = size - 32; // 32 byte overhead per VPL
 
         freeSize = poolSize;
-        freeBlocks = numBlocks;
         numWaitThreads = 0;
 
         uid = SceUidManager.getNewUid("ThreadMan-Vpl");
         this.partitionid = partitionid;
-        blockAddress = new int[numBlocks];
-        blockSize = new int[numBlocks];
-        for (int i = 0; i < numBlocks; i++) {
-            blockAddress[i] = 0;
-            blockSize[i] = 0;
+
+        int memType = pspSysMem.PSP_SMEM_Low;
+        if ((attr & VPL_ATTR_ADDR_HIGH) == VPL_ATTR_ADDR_HIGH)
+            memType = pspSysMem.PSP_SMEM_High;
+
+        // Reserve psp memory
+        int alignedSize = (size + 7) & ~7; // 8-byte align
+        int totalVplSize = alignedSize;
+        int addr = pspSysMem.getInstance().malloc(partitionid, memType, totalVplSize, 0);
+        if (addr == 0)
+            throw new RuntimeException("SceKernelVplInfo: not enough free mem");
+        pspSysMem.getInstance().addSysMemInfo(partitionid, "ThreadMan-Vpl", memType, totalVplSize, addr);
+
+        // 24 byte header, probably not necessary to mimick this
+        Memory mem = Memory.getInstance();
+        mem.write32(addr, addr - 1);
+        mem.write32(addr + 4, size - 8);
+        mem.write32(addr + 8, 0); // based on number of allocations
+        mem.write32(addr + 12, addr + size - 16);
+        mem.write32(addr + 16, 0); // based on allocations/fragmentation
+        mem.write32(addr + 20, 0); // based on created size? magic?
+
+        // 32 byte overhead per VPL
+        allocAddress = addr;
+        freeLowAddress = addr + 32;
+        freeHighAddress = addr + totalVplSize;
+    }
+
+    public static SceKernelVplInfo tryCreateVpl(String name, int partitionid, int attr, int size) {
+        SceKernelVplInfo info = null;
+        int alignedSize = (size + 7) & ~7; // 8-byte align
+        int totalVplSize = alignedSize;
+        int maxFreeSize = pspSysMem.getInstance().maxFreeMemSize();
+
+        if (totalVplSize <= maxFreeSize) {
+            info = new SceKernelVplInfo(name, partitionid, attr, size);
+        } else {
+            Modules.log.warn("tryCreateVpl not enough free mem (want=" + totalVplSize + ",free=" + maxFreeSize + ",diff=" + (totalVplSize - maxFreeSize) + ")");
         }
+
+        return info;
     }
 
     public void read(Memory mem, int address) {
@@ -85,16 +125,52 @@ public class SceKernelVplInfo {
         mem.write32(address + 48, numWaitThreads);
     }
 
-    /** @return the block index or -1 on failure */
-    public int findFreeBlock() {
-        return findBlockByAddress(0);
+    /** @return the address or 0 on failure */
+    public int tryAllocate(int size) {
+        int addr = 0;
+        // TODO proper malloc implementation
+        if (size + 8 <= freeSize) {
+
+            if ((attr & VPL_ATTR_ADDR_HIGH) == VPL_ATTR_ADDR_HIGH) {
+                addr = freeHighAddress - size;
+                freeHighAddress -= size + 8;
+            } else {
+                addr = freeLowAddress + 8;
+                freeLowAddress += size + 8;
+            }
+
+            // write block header
+            Memory mem = Memory.getInstance();
+            mem.write32(addr - 8, allocAddress);
+            mem.write32(addr - 4, 0); // magic?
+
+            freeSize -= size + 8;
+        }
+        return addr;
     }
 
-    /** @return the block index or -1 on failure */
-    public int findBlockByAddress(int addr) {
-        for (int i = 0; i < numBlocks; i++)
-            if (blockAddress[i] == addr)
-                return i;
-        return -1;
+    /** @return true on success */
+    public boolean free(int addr) {
+        Memory mem = Memory.getInstance();
+        if (mem.isAddressGood(addr - 8)) {
+            // check block header
+            int top = mem.read32(addr - 8);
+            if (top != allocAddress) {
+                Modules.log.warn("Free VPL 0x" + Integer.toHexString(addr) + " bad address");
+                return false;
+            } else {
+                // TODO free
+
+                //size = ...
+                //freeSize += size + 8;
+
+                Modules.log.error("UNIMPLEMENTED:Free VPL 0x" + Integer.toHexString(addr) + " not implemented");
+                return false;
+            }
+        } else {
+            // address is not in valid range
+            Modules.log.warn("Free VPL 0x" + Integer.toHexString(addr) + " bad address");
+            return false;
+        }
     }
 }

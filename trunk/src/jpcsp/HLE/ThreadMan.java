@@ -1676,6 +1676,7 @@ public class ThreadMan {
             Emulator.getProcessor().cpu.gpr[2] = ERROR_SEMA_OVERFLOW;
             // TODO clamp and continue anyway?
         } else {
+            boolean yield = false;
             Modules.log.debug("sceKernelSignalSema id=0x" + Integer.toHexString(semaid) + " name='" + sema.name + "' signal=" + signal);
 
             sema.currentCount += signal;
@@ -1708,6 +1709,9 @@ public class ThreadMan {
                     // Wakeup
                     changeThreadState(thread, PSP_THREAD_READY);
 
+                    if (thread.currentPriority < current_thread.currentPriority)
+                        yield = true;
+
                     // Adjust sema
                     sema.currentCount -= thread.wait.Semaphore_signal;
                     sema.numWaitThreads--;
@@ -1717,6 +1721,10 @@ public class ThreadMan {
             }
 
             Emulator.getProcessor().cpu.gpr[2] = 0;
+            if (yield) {
+                Modules.log.debug("sceKernelSignalSema yielding to thread with higher priority");
+                yieldCurrentThread();
+            }
         }
     }
 
