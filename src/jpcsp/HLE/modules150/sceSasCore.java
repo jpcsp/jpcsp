@@ -235,7 +235,7 @@ public class sceSasCore implements HLEModule {
         /* put your own code here instead */
 
         int sasCore = cpu.gpr[4];
-        //int unk1 = cpu.gpr[5]; // 0, 1, 2 (probably channel select)
+        int voice = cpu.gpr[5];
         //int unk2 = cpu.gpr[6]; // left channel volume 0 - 0x1000
         //int unk3 = cpu.gpr[7]; // right channel volume 0 - 0x1000
         // may be more parameters
@@ -327,9 +327,9 @@ public class sceSasCore implements HLEModule {
         /* put your own code here instead */
 
         int sasCore = cpu.gpr[4];
-        //int unk1 = cpu.gpr[5]; // 0 or 1 (probably channel number)
+        int voice = cpu.gpr[5];
         //int unk2 = cpu.gpr[6]; // 1
-        //int unk3 = cpu.gpr[7]; // 0x6e4
+        //int unk3 = cpu.gpr[7]; // 0x6e4/0x1000
         // may be more parameters
 
         Modules.log.warn("Unimplemented NID function __sceSasSetKeyOn [0x76F01ACA] " + makeLogParams(cpu));
@@ -364,9 +364,9 @@ public class sceSasCore implements HLEModule {
         /* put your own code here instead */
 
         int sasCore = cpu.gpr[4];
-        //int unk1 = cpu.gpr[5]; // 0 or 1
+        int voice = cpu.gpr[5];
         //int unk2 = cpu.gpr[6]; // heap address (may be uncached)
-        //int unk3 = cpu.gpr[7]; // some size 0x48d0/0x200 or unused
+        //int unk3 = cpu.gpr[7]; // some size 0x48d0/0x200/0x400 or unused
 
         Modules.log.warn("Unimplemented NID function __sceSasSetVoice [0x99944089] " + makeLogParams(cpu));
 
@@ -456,9 +456,9 @@ public class sceSasCore implements HLEModule {
         /* put your own code here instead */
 
         int sasCore = cpu.gpr[4];
-        //int unk1 = cpu.gpr[5]; // 0 or 1 (probably channel number)
-        //int unk2 = cpu.gpr[6]; // 0x6e4/0x800
-        //int unk3 = cpu.gpr[7]; // 0x6e4/0x800
+        int voice = cpu.gpr[5];
+        //int unk2 = cpu.gpr[6]; // 0x6e4/0x800/0x1000
+        //int unk3 = cpu.gpr[7]; // 0x6e4/0x800/0x1000
         // may be more parameters
 
         Modules.log.warn("Unimplemented NID function __sceSasSetPitch [0xAD84D37F] " + makeLogParams(cpu));
@@ -509,8 +509,11 @@ public class sceSasCore implements HLEModule {
 
         /* put your own code here instead */
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        int sasCore = cpu.gpr[4];
+        int voice = cpu.gpr[5];
+        //int unk1 = cpu.gpr[6]; // 0xff
+        //int unk2 = cpu.gpr[7]; // 0x1fc6
+        // may be more parameters
 
         Modules.log.warn("Unimplemented NID function __sceSasSetSimpleADSR [0xCBCD4F79] " + makeLogParams(cpu));
 

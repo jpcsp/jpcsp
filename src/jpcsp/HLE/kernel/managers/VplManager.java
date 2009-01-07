@@ -48,7 +48,7 @@ public class VplManager {
             + ",size=0x" + Integer.toHexString(size)
             + ",opt=0x" + Integer.toHexString(opt_addr) + ")");
 
-        if (attr != 0) Modules.log.warn("UNIMPLEMENTED:sceKernelCreateVpl attr value 0x" + Integer.toHexString(attr));
+        if (attr != 0) Modules.log.warn("PARTIAL:sceKernelCreateVpl attr value 0x" + Integer.toHexString(attr));
 
         if (mem.isAddressGood(opt_addr)) {
             int optsize = mem.read32(opt_addr);
@@ -56,9 +56,18 @@ public class VplManager {
                 + " (size=" + optsize + ")");
         }
 
-        SceKernelVplInfo info = new SceKernelVplInfo(name, partitionid, attr, size);
-        vplMap.put(info.uid, info);
-        cpu.gpr[2] = info.uid;
+        if ((attr & ~SceKernelVplInfo.VPL_ATTR_MASK) != 0) {
+            Modules.log.warn("sceKernelCreateVpl bad attr value 0x" + Integer.toHexString(attr));
+            cpu.gpr[2] = ERROR_ILLEGAL_ATTR;
+        } else {
+            SceKernelVplInfo info = SceKernelVplInfo.tryCreateVpl(name, partitionid, attr, size);
+            if (info != null) {
+                vplMap.put(info.uid, info);
+                cpu.gpr[2] = info.uid;
+            } else {
+                cpu.gpr[2] = ERROR_NO_MEMORY;
+            }
+        }
     }
 
     public void sceKernelDeleteVpl(int uid) {
@@ -71,19 +80,13 @@ public class VplManager {
             Modules.log.warn("sceKernelDeleteVpl unknown uid=0x" + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_NOT_FOUND_VPOOL;
         } else {
-            if (info.freeSize < info.poolSize) {
-                Modules.log.warn("sceKernelDeleteVpl " + (info.numBlocks - info.freeBlocks) + " unfreed mem");
 
-                // Free mem
-                for (int i = 0; i < info.numBlocks; i++) {
-                    int addr = info.blockAddress[i];
-                    if (addr != 0) {
-                        pspSysMem.getInstance().free(addr);
-                        info.blockAddress[i] = 0;
-                        info.freeBlocks++;
-                    }
-                }
+            if (info.freeSize < info.poolSize) {
+                Modules.log.warn("sceKernelDeleteVpl approx " + (info.poolSize - info.freeSize) + " unfreed bytes allocated");
             }
+
+            // Free memory
+            pspSysMem.getInstance().free(info.allocAddress);
 
             cpu.gpr[2] = 0;
         }
@@ -91,28 +94,14 @@ public class VplManager {
 
     /** @return the address of the allocated block or 0 if failed. */
     private int tryAllocateVpl(SceKernelVplInfo info, int size) {
-        int block;
         int addr = 0;
 
-        if (info.freeBlocks == 0 || (block = info.findFreeBlock()) == -1) {
-            // TODO increase block count or switch to using a list
-            Modules.log.warn("tryAllocateVpl no free blocks (numBlocks=" + info.numBlocks + ")");
-            return 0;
-        } else if (size > info.freeSize) {
-            Modules.log.warn("tryAllocateVpl not enough free pool mem (want=" + size + ",free=" + info.freeSize + ")");
-            return 0;
-        } else if (size > pspSysMem.getInstance().maxFreeMemSize()) {
-            Modules.log.warn("tryAllocateVpl not enough free sys mem (want=" + size + ",free=" + pspSysMem.getInstance().maxFreeMemSize() + ",diff=" + (size - pspSysMem.getInstance().maxFreeMemSize()) + ")");
-            return 0;
+        addr = info.tryAllocate(size);
+        if (addr == 0) {
+            // 8 byte overhead
+            Modules.log.warn("tryAllocateVpl not enough free pool mem (want=" + size + "+8,free=" + info.freeSize + ",diff=" + (size + 8 - info.freeSize) + ")");
         } else {
-            addr = pspSysMem.getInstance().malloc(info.partitionid, pspSysMem.PSP_SMEM_Low, size, 0);
-            if (addr != 0) {
-                pspSysMem.getInstance().addSysMemInfo(info.partitionid, "ThreadMan-Vpl", pspSysMem.PSP_SMEM_Low, size, addr);
-                info.blockAddress[block] = addr;
-                info.blockSize[block] = size;
-                info.freeBlocks--;
-                info.freeSize -= size;
-            }
+            Modules.log.debug("tryAllocateVpl allocated address 0x" + Integer.toHexString(addr));
         }
 
         return addr;
@@ -190,7 +179,7 @@ public class VplManager {
             if (addr == 0) {
                 // Alloc failed
                 //mem.write32(data_addr, 0); // don't write on failure, check
-                cpu.gpr[2] = ERROR_NO_MEMORY; // check
+                cpu.gpr[2] = ERROR_NO_MEMORY;
             } else {
                 // Alloc succeeded
                 mem.write32(data_addr, addr);
@@ -210,18 +199,12 @@ public class VplManager {
             Modules.log.warn("sceKernelFreeVpl unknown uid=0x" + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_NOT_FOUND_VPOOL;
         } else {
-            int block = info.findBlockByAddress(data_addr);
-            if (block == -1) {
-                Modules.log.warn("sceKernelFreeVpl unknown block=0x" + Integer.toHexString(data_addr));
-                cpu.gpr[2] = ERROR_ILLEGAL_MEMBLOCK; // check
-            } else {
-                pspSysMem.getInstance().free(data_addr);
-                info.blockAddress[block] = 0;
-                info.freeBlocks++;
-                info.freeSize += info.blockSize[block];
-                info.blockSize[block] = 0;
+            // TODO might need to rework this to get better error codes out of it
+            if (info.free(data_addr)) {
                 cpu.gpr[2] = 0;
                 // TODO onFreeVpl(info);
+            } else {
+                cpu.gpr[2] = ERROR_ILLEGAL_MEMBLOCK;
             }
         }
     }
@@ -229,7 +212,7 @@ public class VplManager {
     public void sceKernelCancelVpl(int uid, int pnum_addr) {
         CpuState cpu = Emulator.getProcessor().cpu;
 
-        Modules.log.info("sceKernelCancelVpl(uid=0x" + Integer.toHexString(uid)
+        Modules.log.warn("PARTIAL:sceKernelCancelVpl(uid=0x" + Integer.toHexString(uid)
             + ",pnum=0x" + Integer.toHexString(pnum_addr) + ")");
 
         SceKernelVplInfo info = vplMap.get(uid);
@@ -249,7 +232,7 @@ public class VplManager {
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Processor.memory;
 
-        Modules.log.info("sceKernelReferVplStatus(uid=0x" + Integer.toHexString(uid)
+        Modules.log.debug("sceKernelReferVplStatus(uid=0x" + Integer.toHexString(uid)
             + ",info=0x" + Integer.toHexString(info_addr) + ")");
 
         SceKernelVplInfo info = vplMap.get(uid);
