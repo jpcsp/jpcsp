@@ -87,8 +87,8 @@ public class Controller {
             case UP:        this.Buttons |= PSP_CTRL_UP; break;
             case LEFT:      this.Buttons |= PSP_CTRL_LEFT; break;
             case RIGHT:     this.Buttons |= PSP_CTRL_RIGHT; break;
-            case ANDOWN:    this.Ly = 0; break;
-            case ANUP:      this.Ly = (byte)255; break;
+            case ANDOWN:    this.Ly = (byte)255; break;
+            case ANUP:      this.Ly = 0; break;
             case ANLEFT:    this.Lx = 0; break;
             case ANRIGHT:   this.Lx = (byte)255; break;
 
