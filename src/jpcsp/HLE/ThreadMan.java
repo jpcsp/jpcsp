@@ -735,6 +735,7 @@ public class ThreadMan {
      * sgx-psp-at3-th, sgx-psp-pcm-th, sgx-psp-sas-th, snd_tick_timer_thread,
      * snd_stream_service_thread_1, SAS / Main Audio, AudioMixThread,
      * snd_stream_service_thread_0, sound_poll_thread, stream_sound_poll_thread,
+     * sndp thread
      *
      * keywords:
      * snd, sound, at3, atrac3, sas, wave, pcm, audio
@@ -1324,6 +1325,10 @@ public class ThreadMan {
         return oldInfo;
     }
 
+    public boolean isInsideCallback() {
+        return insideCallback;
+    }
+
     /** push callback to all threads */
     public void pushCallback(int callbackType, int notifyArg) {
         pushCallback(callbackType, -1, 1, notifyArg);
@@ -1577,7 +1582,7 @@ public class ThreadMan {
         Modules.log.debug("hleKernelWaitSema(id=0x" + Integer.toHexString(semaid)
             + ",signal=" + signal
             + ",timeout=0x" + Integer.toHexString(timeout_addr)
-            + ") callbacks= " + do_callbacks);
+            + ") callbacks=" + do_callbacks);
 
         if (signal <= 0) {
             Modules.log.warn("hleKernelWaitSema - bad signal " + signal);

@@ -22,6 +22,7 @@ package jpcsp.HLE;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
@@ -32,17 +33,19 @@ import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.pspGeCallbackData;
 import jpcsp.graphics.DisplayList;
 import jpcsp.graphics.VideoEngine;
-//import jpcsp.graphics.PspGeCallbackData;
 
 public class pspge {
 
     private static pspge instance;
+    private static final boolean DEFER_CALLBACKS = true;
 
     private int syncThreadId;
     public volatile boolean waitingForSync;
     public volatile boolean syncDone;
-    private HashMap<Integer, SceKernelCallbackInfo> signalCallbacks = new HashMap<Integer, SceKernelCallbackInfo>();
-    private HashMap<Integer, SceKernelCallbackInfo> finishCallbacks = new HashMap<Integer, SceKernelCallbackInfo>();
+    private HashMap<Integer, SceKernelCallbackInfo> signalCallbacks;
+    private HashMap<Integer, SceKernelCallbackInfo> finishCallbacks;
+    private volatile ConcurrentLinkedQueue<DeferredCallbackInfo> deferredSignalCallbackQueue;
+    private volatile ConcurrentLinkedQueue<DeferredCallbackInfo> deferredFinishCallbackQueue;
 
     public static pspge getInstance() {
         if (instance == null) {
@@ -62,18 +65,41 @@ public class pspge {
         syncThreadId = -1;
         waitingForSync = false;
         syncDone = false;
+
+        signalCallbacks = new HashMap<Integer, SceKernelCallbackInfo>();
+        finishCallbacks = new HashMap<Integer, SceKernelCallbackInfo>();
+
+        deferredSignalCallbackQueue = new ConcurrentLinkedQueue<DeferredCallbackInfo>();
+        deferredFinishCallbackQueue = new ConcurrentLinkedQueue<DeferredCallbackInfo>();
     }
 
+    /** call from main emulation thread */
     public void step() {
+        ThreadMan threadMan = ThreadMan.getInstance();
+
         if (waitingForSync) {
             if (syncDone) {
                 VideoEngine.log.debug("syncDone");
-                ThreadMan.getInstance().unblockThread(syncThreadId);
+                threadMan.unblockThread(syncThreadId);
                 waitingForSync = false;
                 syncDone = false;
             } else {
                 // I don't like this...
                 pspdisplay.getInstance().setDirty(true);
+            }
+        }
+
+        // Process deferred callbacks
+        // TODO if these callbacks block GE we have more work to do...
+        if (DEFER_CALLBACKS && !threadMan.isInsideCallback()) {
+            DeferredCallbackInfo info = deferredFinishCallbackQueue.poll();
+            if (info != null) {
+                triggerCallback(info.cbid, info.callbackNotifyArg1, SceKernelThreadInfo.THREAD_CALLBACK_GE_FINISH, finishCallbacks);
+            }
+
+            info = deferredSignalCallbackQueue.poll();
+            if (info != null) {
+                triggerCallback(info.cbid, info.callbackNotifyArg1, SceKernelThreadInfo.THREAD_CALLBACK_GE_SIGNAL, signalCallbacks);
             }
         }
     }
@@ -180,6 +206,9 @@ public class pspge {
 
                 // Don't block if there's nothing to block on
                 if (count > 0) {
+                    if (waitingForSync)
+                        VideoEngine.log.warn("sceGeDrawSync called again before previous call finished syncing");
+
                     waitingForSync = true;
                     syncThreadId = ThreadMan.getInstance().getCurrentThreadID();
                     ThreadMan.getInstance().blockCurrentThread();
@@ -208,7 +237,7 @@ public class pspge {
         // args, kernel callback has 3. setting the 3rd arg to 0x12121212 so we
         // can detect errors caused by this more easily.
 
-        // update: restored use of signal/finish arg, needs fixing properly, or
+        // update: restored use of 3rd, needs fixing properly, or
         // checking on real psp (since it's possible pspsdk is wrong).
 
         ThreadMan threadMan = ThreadMan.getInstance();
@@ -251,11 +280,30 @@ public class pspge {
         }
     }
 
+    /** safe to call from outside the main emulation thread */
     public void triggerFinishCallback(int cbid, int callbackNotifyArg1) {
-        triggerCallback(cbid, callbackNotifyArg1, SceKernelThreadInfo.THREAD_CALLBACK_GE_FINISH, finishCallbacks);
+        if (DEFER_CALLBACKS)
+            deferredFinishCallbackQueue.offer(new DeferredCallbackInfo(cbid, callbackNotifyArg1));
+        else
+            triggerCallback(cbid, callbackNotifyArg1, SceKernelThreadInfo.THREAD_CALLBACK_GE_FINISH, finishCallbacks);
+
     }
 
+    /** safe to call from outside the main emulation thread */
     public void triggerSignalCallback(int cbid, int callbackNotifyArg1) {
-        triggerCallback(cbid, callbackNotifyArg1, SceKernelThreadInfo.THREAD_CALLBACK_GE_SIGNAL, signalCallbacks);
+        if (DEFER_CALLBACKS)
+            deferredSignalCallbackQueue.offer(new DeferredCallbackInfo(cbid, callbackNotifyArg1));
+        else
+            triggerCallback(cbid, callbackNotifyArg1, SceKernelThreadInfo.THREAD_CALLBACK_GE_SIGNAL, signalCallbacks);
+    }
+
+    class DeferredCallbackInfo {
+        public final int cbid;
+        public final int callbackNotifyArg1;
+
+        public DeferredCallbackInfo(int cbid, int callbackNotifyArg1) {
+            this.cbid = cbid;
+            this.callbackNotifyArg1 = callbackNotifyArg1;
+        }
     }
 }

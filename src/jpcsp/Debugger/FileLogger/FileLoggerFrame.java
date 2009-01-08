@@ -223,7 +223,7 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
             FileHandleInfo info = fileHandleList.get(row);
             if (info != null) {
                 switch(col) {
-                    case 0: return String.format("0x%08X", info.fd);
+                    case 0: return String.format("0x%04X", info.fd);
                     case 1: return info.filename;
                     case 2: return info.bytesRead;
                     case 3: return info.bytesWritten;
