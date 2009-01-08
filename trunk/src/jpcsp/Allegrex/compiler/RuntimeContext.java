@@ -79,6 +79,10 @@ public class RuntimeContext {
 	private static volatile boolean reset = false;
 	private static DurationStatistics idleDuration = new DurationStatistics("Idle Time");
 	private static Map<Instruction, Integer> instructionTypeCounts = Collections.synchronizedMap(new HashMap<Instruction, Integer>());
+	private static SceKernelThreadInfo pendingCallbackThread = null;
+    private static SceKernelThreadInfo pendingCallbackReturnThread = null;
+	private static CpuState pendingCallbackCpuState = null;
+	private static boolean insideCallback = false;
 
 	public static void execute(Instruction insn, int opcode) {
 		insn.interpret(processor, opcode);
@@ -152,18 +156,40 @@ public class RuntimeContext {
 		return true;
     }
 
-    // TODO executeCallBack() has not yet been tested. Which application is using callbacks?
     public static void executeCallback(SceKernelThreadInfo thread) {
     	if (!isActive) {
     		return;
     	}
 
-    	SceKernelThreadInfo previousThread = currentThread;
+    	// The callback has to be exeucted by its thread
+    	if (thread == currentThread) {
+    	    // The current thread is the thread where the callback has to be executed.
+    	    // Execute the callback immediately
+    	    executeCallbackImmediately(Emulator.getProcessor().cpu);
+    	} else {
+    	    // Switch to the callback thread so that it can execute the callback.
+    	    pendingCallbackThread = thread;
+    	    pendingCallbackReturnThread = currentThread;
+    	    pendingCallbackCpuState = Emulator.getProcessor().cpu;
 
+            try {
+                switchThread(thread);
+                syncThread();
+                // The callback thread is switching back to us just after
+                // executing the callback.
+            } catch (StopThreadException e) {
+                // This exception is not expected at this point...
+                log.warn(e);
+            }
+    	}
+    }
+
+    private static void executeCallbackImmediately(CpuState cpu) {
+        insideCallback = true;
+        Emulator.getProcessor().cpu = cpu;
     	update();
-    	switchThread(thread);
 
-    	int pc = processor.cpu.pc;
+    	int pc = cpu.pc;
 
 		if (log.isDebugEnabled()) {
 			log.debug("Start of Callback 0x" + Integer.toHexString(pc));
@@ -178,19 +204,12 @@ public class RuntimeContext {
 		} catch (Exception e) {
 			log.error(e);
 		}
-    	processor.cpu.pc = newPc;
+    	cpu.pc = newPc;
 
 		if (log.isDebugEnabled()) {
 			log.debug("End of Callback 0x" + Integer.toHexString(pc));
 		}
-
-		switchThread(previousThread);
-		try {
-			syncThread();
-		} catch (StopThreadException e) {
-			// This exception is not expected at this point...
-			log.warn(e);
-		}
+		insideCallback = false;
     }
 
     private static void updateStaticVariables() {
@@ -208,10 +227,12 @@ public class RuntimeContext {
         updateStaticVariables();
 
         ThreadMan threadManager = ThreadMan.getInstance();
-		SceKernelThreadInfo newThread = threadManager.getCurrentThread();
-		if (newThread != null && newThread != currentThread) {
-			switchThread(newThread);
-		}
+        if (!insideCallback) {
+            SceKernelThreadInfo newThread = threadManager.getCurrentThread();
+            if (newThread != null && newThread != currentThread) {
+                switchThread(newThread);
+            }
+        }
 	}
 
     private static void switchThread(SceKernelThreadInfo threadInfo) {
@@ -302,7 +323,14 @@ public class RuntimeContext {
     			log.debug("Waiting to be scheduled...");
 				runtimeThread.suspendRuntimeExecution();
     			log.debug("Scheduled, restarting...");
-    			updateStaticVariables();
+                updateStaticVariables();
+
+    			if (pendingCallbackThread == RuntimeContext.currentThread) {
+    			    pendingCallbackThread = null;
+    			    executeCallbackImmediately(pendingCallbackCpuState);
+    			    switchThread(pendingCallbackReturnThread);
+    			    syncThread();
+    			}
     		}
     	}
     }
