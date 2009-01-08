@@ -156,35 +156,54 @@ public class RuntimeContext {
 		return true;
     }
 
-    public static void executeCallback(SceKernelThreadInfo thread) {
+    public static void executeCallback(SceKernelThreadInfo callbackThreadInfo) {
     	if (!isActive) {
     		return;
     	}
 
-    	// The callback has to be exeucted by its thread
-    	if (thread == currentThread) {
-    	    // The current thread is the thread where the callback has to be executed.
-    	    // Execute the callback immediately
-    	    executeCallbackImmediately(Emulator.getProcessor().cpu);
-    	} else {
-    	    // Switch to the callback thread so that it can execute the callback.
-    	    pendingCallbackThread = thread;
-    	    pendingCallbackReturnThread = currentThread;
-    	    pendingCallbackCpuState = Emulator.getProcessor().cpu;
+    	CpuState callbackCpuState = Emulator.getProcessor().cpu;
+        RuntimeThread callbackThread = threads.get(callbackThreadInfo);
 
+        // The callback has to be executed by its thread
+    	if (currentThread == null) {
+    	    // We are idle, execute the callback immediately
+    	    switchThread(callbackThreadInfo);
+            executeCallbackImmediately(callbackCpuState);
+            switchThread(null);
+            // Check if we are still idle
             try {
-                switchThread(thread);
-                syncThread();
-                // The callback thread is switching back to us just after
-                // executing the callback.
+                syncIdle();
             } catch (StopThreadException e) {
                 // This exception is not expected at this point...
                 log.warn(e);
             }
+    	} else if (Thread.currentThread() == callbackThread) {
+    	    // The current thread is the thread where the callback has to be executed.
+    	    // Execute the callback immediately
+    	    executeCallbackImmediately(callbackCpuState);
+    	} else {
+    	    // Switch to the callback thread so that it can execute the callback.
+    	    pendingCallbackThread = callbackThreadInfo;
+    	    pendingCallbackReturnThread = currentThread;
+    	    pendingCallbackCpuState = callbackCpuState;
+            // The callback thread is switching back to us just after
+            // executing the callback.
+            switchThread(callbackThreadInfo);
     	}
+
+    	try {
+            syncThread();
+        } catch (StopThreadException e) {
+            // This exception is not expected at this point...
+            log.warn(e);
+        }
     }
 
     private static void executeCallbackImmediately(CpuState cpu) {
+        if (cpu == null) {
+            return;
+        }
+
         insideCallback = true;
         Emulator.getProcessor().cpu = cpu;
     	update();
@@ -216,7 +235,9 @@ public class RuntimeContext {
 		emulator = Emulator.getInstance();
 		processor = Emulator.getProcessor();
 		cpu = processor.cpu;
-		gpr = processor.cpu.gpr;
+		if (cpu != null) {
+		    gpr = processor.cpu.gpr;
+		}
     }
 
     public static void update() {
