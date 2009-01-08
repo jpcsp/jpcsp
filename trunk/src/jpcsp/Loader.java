@@ -305,7 +305,11 @@ public class Loader {
             }
 
             module.baseAddress = baseAddress;
-            module.entry_addr = baseAddress + (int)elf.getHeader().getE_entry();
+            if (elf.getHeader().getE_entry() == 0xFFFFFFFFL) {
+                module.entry_addr = -1;
+            } else {
+                module.entry_addr = baseAddress + (int)elf.getHeader().getE_entry();
+            }
 
             // Note: baseAddress is 0 unless we are loading a PRX
             module.loadAddressLow = (baseAddress != 0) ? (int)baseAddress : 0x08900000;

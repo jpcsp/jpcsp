@@ -320,10 +320,15 @@ public class ModuleMgrForUser implements HLEModule {
         } else {
             // TODO check thread priority
             ThreadMan threadMan = ThreadMan.getInstance();
-            SceKernelThreadInfo thread = threadMan.hleKernelCreateThread(sceModule.modname,
-                sceModule.entry_addr, 0, 0x4000, sceModule.attribute, option_addr);
-            threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
-            cpu.gpr[2] = 0;
+            if (Memory.getInstance().isAddressGood(sceModule.entry_addr)) {
+                SceKernelThreadInfo thread = threadMan.hleKernelCreateThread(sceModule.modname,
+                        sceModule.entry_addr, 0, 0x4000, sceModule.attribute, option_addr);
+                threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
+                cpu.gpr[2] = 0;
+            } else {
+                Modules.log.warn("sceKernelStartModule - invalid entry address 0x" + Integer.toHexString(sceModule.entry_addr));
+                cpu.gpr[2] = -1;
+            }
         }
     }
 
