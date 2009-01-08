@@ -163,7 +163,7 @@ public class VideoEngine {
     private int[] gl_texture_id = new int[1];
     private int[] tmp_texture_buffer32 = new int[1024*1024];
     private short[] tmp_texture_buffer16 = new short[1024*1024];
-    private int[] unswizzle_buffer32 = new int[1024*1024];
+    //private int[] unswizzle_buffer32 = new int[1024*1024];
     private int tex_map_mode = TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV;
 
     private boolean listHasEnded;
@@ -552,6 +552,7 @@ public class VideoEngine {
 
     // UnSwizzling based on pspplayer
     // no longer used...
+    /*
     private Buffer unswizzleTexture32(int level) {
         int rowWidth = texture_buffer_width[level] * 4;
         int pitch = ( rowWidth - 16 ) / 4;
@@ -583,6 +584,7 @@ public class VideoEngine {
 
         return IntBuffer.wrap(unswizzle_buffer32);
     }
+    */
 
     // UnSwizzling based on pspplayer
     private Buffer unswizzleTextureFromMemory(int texaddr, int bytesPerPixel, int level) {
@@ -2415,21 +2417,21 @@ public class VideoEngine {
             case CPE: //Clip Plane Enable
                 //uggly trying ... don't break any demo (that I've tested)
                 if(normalArgument != 0) {
-                    gl.glEnable(gl.GL_CLIP_PLANE0);
-                    gl.glEnable(gl.GL_CLIP_PLANE1);
-                    gl.glEnable(gl.GL_CLIP_PLANE2);
-                    gl.glEnable(gl.GL_CLIP_PLANE3);
-                    gl.glEnable(gl.GL_CLIP_PLANE4);
-                    gl.glEnable(gl.GL_CLIP_PLANE5);
+                    gl.glEnable(GL.GL_CLIP_PLANE0);
+                    gl.glEnable(GL.GL_CLIP_PLANE1);
+                    gl.glEnable(GL.GL_CLIP_PLANE2);
+                    gl.glEnable(GL.GL_CLIP_PLANE3);
+                    gl.glEnable(GL.GL_CLIP_PLANE4);
+                    gl.glEnable(GL.GL_CLIP_PLANE5);
                     log("Clip Plane Enable (normal="+normalArgument+",float="+floatArgument+")");
                 }
                 else {
-                    gl.glDisable(gl.GL_CLIP_PLANE0);
-                    gl.glDisable(gl.GL_CLIP_PLANE1);
-                    gl.glDisable(gl.GL_CLIP_PLANE2);
-                    gl.glDisable(gl.GL_CLIP_PLANE3);
-                    gl.glDisable(gl.GL_CLIP_PLANE4);
-                    gl.glDisable(gl.GL_CLIP_PLANE5);
+                    gl.glDisable(GL.GL_CLIP_PLANE0);
+                    gl.glDisable(GL.GL_CLIP_PLANE1);
+                    gl.glDisable(GL.GL_CLIP_PLANE2);
+                    gl.glDisable(GL.GL_CLIP_PLANE3);
+                    gl.glDisable(GL.GL_CLIP_PLANE4);
+                    gl.glDisable(GL.GL_CLIP_PLANE5);
                     log("Clip Plane Disable (normal="+normalArgument+",float="+floatArgument+")");
                 }
                 break;
@@ -2889,27 +2891,30 @@ public class VideoEngine {
 	                    } else {
 	                        texture_type = GL.GL_UNSIGNED_BYTE;
 	                    }
-	
-	                    if (!texture_swizzle) {
-	                        // try and use ByteBuffer.wrap on the memory, taking note of vram/main ram
-	                        // speed difference is unnoticeable :(
-	                        Buffer pixels = mem.getBuffer(texaddr, texture_buffer_width[level] * texture_height[level] * 4);
-	                        if (pixels != null) {
-	                        	final_buffer = pixels;
-	                        } else {
-	                            VideoEngine.log.warn("tpsm 3 slow");
-	                            for (int i = 0; i < texture_buffer_width[level]*texture_height[level]; i++) {
-	                                tmp_texture_buffer32[i] = mem.read32(texaddr+i*4);
-	                            }
-	                            final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
-	                        }
-	                    } else {
-	                        final_buffer = unswizzleTextureFromMemory(texaddr, 4, level);
-	                    }
+
+	                    final_buffer = getTexture32BitBuffer(texaddr, level);
 	                    break;
 	                }
-	
-	                default: {
+
+                    case TPSM_PIXEL_STORAGE_MODE_DXT1: {
+                        texture_type = GL.GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+                        final_buffer = getTexture32BitBuffer(texaddr, level);
+                        break;
+                    }
+
+                    case TPSM_PIXEL_STORAGE_MODE_DXT3: {
+                        texture_type = GL.GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+                        final_buffer = getTexture32BitBuffer(texaddr, level);
+                        break;
+                    }
+
+                    case TPSM_PIXEL_STORAGE_MODE_DXT5: {
+                        texture_type = GL.GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+                        final_buffer = getTexture32BitBuffer(texaddr, level);
+                        break;
+                    }
+
+                    default: {
 	                    VideoEngine.log.warn("Unhandled texture storage " + texture_storage);
 	                    Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
 	                    break;
@@ -3319,5 +3324,29 @@ public class VideoEngine {
         pointAdd(bernsteinA, bernsteinA, bernsteinB);
         pointAdd(bernsteinC, bernsteinC, bernsteinD);
         pointAdd(result, bernsteinA, bernsteinC);
+    }
+
+    private Buffer getTexture32BitBuffer(int texaddr, int level) {
+        Buffer final_buffer = null;
+
+        if (!texture_swizzle) {
+            // try and use ByteBuffer.wrap on the memory, taking note of vram/main ram
+            // speed difference is unnoticeable :(
+            Memory mem = Memory.getInstance();
+            Buffer pixels = mem.getBuffer(texaddr, texture_buffer_width[level] * texture_height[level] * 4);
+            if (pixels != null) {
+                final_buffer = pixels;
+            } else {
+                VideoEngine.log.warn("tpsm 3 slow");
+                for (int i = 0; i < texture_buffer_width[level]*texture_height[level]; i++) {
+                    tmp_texture_buffer32[i] = mem.read32(texaddr+i*4);
+                }
+                final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
+            }
+        } else {
+            final_buffer = unswizzleTextureFromMemory(texaddr, 4, level);
+        }
+
+        return final_buffer;
     }
 }
