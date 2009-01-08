@@ -62,7 +62,6 @@ public class VideoEngine {
     private DurationStatistics statistics;
     private DurationStatistics[] commandStatistics;
 
-    // TODO these currently here for testing only
     private int fbp, fbw; // frame buffer pointer and width
     private int zbp, zbw; // depth buffer pointer and width
     private int psm; // pixel format
@@ -163,7 +162,6 @@ public class VideoEngine {
     private int[] gl_texture_id = new int[1];
     private int[] tmp_texture_buffer32 = new int[1024*1024];
     private short[] tmp_texture_buffer16 = new short[1024*1024];
-    //private int[] unswizzle_buffer32 = new int[1024*1024];
     private int tex_map_mode = TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV;
 
     private boolean listHasEnded;
@@ -175,7 +173,7 @@ public class VideoEngine {
     private FloatBuffer vboBuffer = BufferUtil.newFloatBuffer(vboBufferSize);
     private boolean useShaders = true;
     private int shaderProgram;
-    
+
     private static void log(String msg) {
         log.debug(msg);
         /*if (isDebugMode) {
@@ -197,7 +195,7 @@ public class VideoEngine {
     private VideoEngine(GL gl) {
     	this.gl = gl;
     	this.glu = new GLU();
-    	
+
         model_matrix[0] = model_matrix[5] = model_matrix[10] = model_matrix[15] = 1.f;
         view_matrix[0] = view_matrix[5] = view_matrix[10] = view_matrix[15] = 1.f;
         tex_envmap_matrix[0] = tex_envmap_matrix[5] = tex_envmap_matrix[10] = tex_envmap_matrix[15] = 1.f;
@@ -207,7 +205,7 @@ public class VideoEngine {
             gl.isFunctionAvailable("glBufferDataARB") &&
             gl.isFunctionAvailable("glDeleteBuffersARB") &&
             gl.isFunctionAvailable("glGenBuffers");
-        
+
         useShaders = Settings.getInstance().readBool("emu.useshaders") &&
 			gl.isFunctionAvailable("glCreateShader") &&
 			gl.isFunctionAvailable("glShaderSource") &&
@@ -222,12 +220,12 @@ public class VideoEngine {
         	VideoEngine.log.info("Using shaders");
         	loadShaders(gl);
         }
-        
+
         if(useVBO) {
             VideoEngine.log.info("Using VBO");
             buildVBO(gl);
         }
-        
+
         statistics = new DurationStatistics("VideoEngine Statistics");
         commandStatistics = new DurationStatistics[256];
         for (int i = 0; i < commandStatistics.length; i++) {
@@ -241,7 +239,7 @@ public class VideoEngine {
         gl.glBufferData(GL.GL_ARRAY_BUFFER, vboBufferSize *
                 BufferUtil.SIZEOF_FLOAT, vboBuffer, GL.GL_STREAM_DRAW);
     }
-    
+
     private void loadShaders(GL gl) {
     	int v = gl.glCreateShader(GL.GL_VERTEX_SHADER);
     	int f = gl.glCreateShader(GL.GL_FRAGMENT_SHADER);
@@ -258,7 +256,7 @@ public class VideoEngine {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
+
     	srcArray[0] = sb.toString();
     	gl.glShaderSource(v, 1, srcArray, null, 0);
     	gl.glCompileShader(v);
@@ -285,11 +283,11 @@ public class VideoEngine {
     	printProgramInfoLog(gl, shaderProgram);
     	gl.glValidateProgram(shaderProgram);
     	printProgramInfoLog(gl, shaderProgram);
-    	
+
     	for(Uniforms uniform : Uniforms.values())
     		uniform.allocateId(gl, shaderProgram);
         }
-    
+
     void printShaderInfoLog(GL gl, int obj)
 	{
 	    int[] infologLength = new int[1];
@@ -378,7 +376,7 @@ public class VideoEngine {
 
         if(useShaders)
         	gl.glUseProgram(0);
-        
+
         if (updated)
             jpcsp.HLE.pspge.getInstance().syncDone = true;
 
@@ -549,42 +547,6 @@ public class VideoEngine {
     private int getClutIndex(int index) {
         return ((tex_clut_start + index) >> tex_clut_shift) & tex_clut_mask;
     }
-
-    // UnSwizzling based on pspplayer
-    // no longer used...
-    /*
-    private Buffer unswizzleTexture32(int level) {
-        int rowWidth = texture_buffer_width[level] * 4;
-        int pitch = ( rowWidth - 16 ) / 4;
-        int bxc = rowWidth / 16;
-        int byc = texture_height[level] / 8;
-
-        int src = 0, ydest = 0;
-
-        for( int by = 0; by < byc; by++ )
-        {
-            int xdest = ydest;
-            for( int bx = 0; bx < bxc; bx++ )
-            {
-                int dest = xdest;
-                for( int n = 0; n < 8; n++ )
-                {
-                    unswizzle_buffer32[dest] = tmp_texture_buffer32[src];
-                    unswizzle_buffer32[dest+1] = tmp_texture_buffer32[src + 1];
-                    unswizzle_buffer32[dest+2] = tmp_texture_buffer32[src + 2];
-                    unswizzle_buffer32[dest+3] = tmp_texture_buffer32[src + 3];
-
-                    src     += 4;
-                    dest    += pitch+4;
-                }
-                xdest += (16/4);
-            }
-            ydest += (rowWidth * 8)/4;
-        }
-
-        return IntBuffer.wrap(unswizzle_buffer32);
-    }
-    */
 
     // UnSwizzling based on pspplayer
     private Buffer unswizzleTextureFromMemory(int texaddr, int bytesPerPixel, int level) {
@@ -1027,7 +989,7 @@ public class VideoEngine {
             /*
              * Light types
              */
-            	
+
             case LT0:
             case LT1:
             case LT2:
@@ -1264,7 +1226,8 @@ public class VideoEngine {
             case TBP6:
             case TBP7: {
             	int level = command - TBP0;
-                texture_base_pointer[level] = (actualList.base & 0xff000000) | normalArgument;
+                //texture_base_pointer[level] = (actualList.base & 0xff000000) | normalArgument;
+                texture_base_pointer[level] = (texture_base_pointer[level] & 0xff000000) | normalArgument;
                 if (log.isDebugEnabled()) {
                     log ("sceGuTexImage(level=" + level + ",X,X,X,lo(pointer=0x" + Integer.toHexString(texture_base_pointer[level]) + "))");
                 }
@@ -1351,7 +1314,7 @@ public class VideoEngine {
             }
 
             case TFLT: {
-            	log ("sceGuTexFilter(min, mag)");
+            	log ("sceGuTexFilter(min, mag) (mm#" + texture_num_mip_maps + ")");
 
             	switch ((normalArgument>>8) & 0xFF)
             	{
@@ -1425,12 +1388,12 @@ public class VideoEngine {
 
             case USCALE: {
             	tex_scale_x = floatArgument;
-            	log (String.format("sceGuTexScale(u=%.2f, X)", tex_scale_x));
+            	log ("sceGuTexScale(u=" + tex_scale_x + ", X)");
             	break;
             }
             case VSCALE: {
             	tex_scale_y = floatArgument;
-                log (String.format("sceGuTexScale(X, v=%.2f)", tex_scale_y));
+            	log ("sceGuTexScale(X, v=" + tex_scale_y + ")");
             	break;
             }
 
@@ -1648,7 +1611,7 @@ public class VideoEngine {
                         gl.glDrawArrays(prim_mapping[type], 0, numberOfVertex);
                         break;
 
-                        
+
                     case PRIM_SPRITES:
                         gl.glPushAttrib(GL.GL_ENABLE_BIT);
                         gl.glDisable(GL.GL_CULL_FACE);
@@ -2105,7 +2068,7 @@ public class VideoEngine {
             		// We need to tweak the Z values written to the depth buffer, but I think this is impossible to do properly
             		// without a fragment shader
             		if(!useShaders)
-            			gl.glClear(GL.GL_DEPTH_BUFFER_BIT);            		
+            			gl.glClear(GL.GL_DEPTH_BUFFER_BIT);
             		else {
             			gl.glUniform1f(Uniforms.zPos.getId(), zpos);
             			gl.glUniform1f(Uniforms.zScale.getId(), zscale);
@@ -2120,14 +2083,14 @@ public class VideoEngine {
             		gl.glDisable(GL.GL_STENCIL_TEST);
             		gl.glDisable(GL.GL_LIGHTING);
             		gl.glDisable(GL.GL_TEXTURE_2D);
-            		
+
             		if(useShaders) {
             			gl.glUniform1f(Uniforms.zPos.getId(), 0);
             			gl.glUniform1f(Uniforms.zScale.getId(), 0);
             			gl.glUniform1i(Uniforms.texEnable.getId(), 0);
             			gl.glUniform1i(Uniforms.lightingEnable.getId(), 0);
             		}
-            		
+
             		// TODO Add more disabling in clear mode, we also need to reflect the change to the internal GE registers
             		boolean color = false, alpha = false;
             		if((normalArgument & 0x100) != 0) color = true;
@@ -2668,12 +2631,12 @@ public class VideoEngine {
                 log(helper.getCommandString(TFLUSH) + " " + String.format("0x%08X", texture_base_pointer[0]) + ", buffer_width=" + texture_buffer_width[0] + " (" + texture_width[0] + "," + texture_height[0] + ")");
                 log(helper.getCommandString(TFLUSH) + " texture_storage=0x" + Integer.toHexString(texture_storage) + ", tex_clut_mode=0x" + Integer.toHexString(tex_clut_mode) + ", tex_clut_addr=" + String.format("0x%08X", tex_clut_addr) + ", texture_swizzle=" + texture_swizzle);
             }
-            
+
             Memory  mem = Memory.getInstance();
             Buffer  final_buffer = null;
             int     texture_type = 0;
             int     texclut = tex_clut_addr;
-            int     texaddr;            
+            int     texaddr;
 
             final int[] texturetype_mapping = {
                 GL.GL_UNSIGNED_SHORT_5_6_5_REV,
@@ -2684,14 +2647,14 @@ public class VideoEngine {
 
             int textureByteAlignment = 4;   // 32 bits
             int texture_format = GL.GL_RGBA;
-            
+
             for(int level = 0; level <= texture_num_mip_maps; ++level) {
 	            // Extract texture information with the minor conversion possible
 	            // TODO: Get rid of information copying, and implement all the available formats
 	            texaddr = texture_base_pointer[level];
 	            texaddr &= 0xFFFFFFF;
 	            texture_format = GL.GL_RGBA;
-	
+
 	            switch (texture_storage) {
 	                case TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED: {
 	                    switch (tex_clut_mode) {
@@ -2700,15 +2663,15 @@ public class VideoEngine {
 	                        case CMODE_FORMAT_16BIT_ABGR4444: {
 	                            if (texclut == 0)
 	                                return;
-	
+
 	                            texture_type = texturetype_mapping[tex_clut_mode];
 	                            textureByteAlignment = 2;  // 16 bits
-	
+
 	                            if (!texture_swizzle) {
 	                                for (int i = 0, j = 0; i < texture_buffer_width[level]*texture_height[level]; i += 2, j++) {
-	
+
 	                                    int index = mem.read8(texaddr+j);
-	
+
 	                                    tmp_texture_buffer16[i+1]   = (short)mem.read16(texclut + getClutIndex((index >> 4) & 0xF) * 2);
 	                                    tmp_texture_buffer16[i]     = (short)mem.read16(texclut + getClutIndex( index       & 0xF) * 2);
 	                                }
@@ -2718,21 +2681,21 @@ public class VideoEngine {
 	                                Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
 	                                break;
 	                            }
-	
+
 	                            break;
 	                        }
-	
+
 	                        case CMODE_FORMAT_32BIT_ABGR8888: {
 	                            if (texclut == 0)
 	                                return;
-	
+
 	                            texture_type = GL.GL_UNSIGNED_BYTE;
-	
+
 	                            if (!texture_swizzle) {
 	                                for (int i = 0, j = 0; i < texture_buffer_width[level]*texture_height[level]; i += 2, j++) {
-	
+
 	                                    int index = mem.read8(texaddr+j);
-	
+
 	                                    tmp_texture_buffer32[i+1]   = mem.read32(texclut + getClutIndex((index >> 4) & 0xF) * 4);
 	                                    tmp_texture_buffer32[i]     = mem.read32(texclut + getClutIndex( index       & 0xF) * 4);
 	                                }
@@ -2761,31 +2724,31 @@ public class VideoEngine {
 	                                }
 	                                final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
 	                            }
-	
+
 	                            break;
 	                        }
-	
+
 	                        default: {
 	                            VideoEngine.log.error("Unhandled clut4 texture mode " + tex_clut_mode);
 	                            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
 	                            break;
 	                        }
 	                    }
-	
+
 	                    break;
 	                }
 	                case TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED: {
-	
+
 	                    switch (tex_clut_mode) {
 	                        case CMODE_FORMAT_16BIT_BGR5650:
 	                        case CMODE_FORMAT_16BIT_ABGR5551:
 	                        case CMODE_FORMAT_16BIT_ABGR4444: {
 	                            if (texclut == 0)
 	                                return;
-	
+
 	                            texture_type = texturetype_mapping[tex_clut_mode];
 	                            textureByteAlignment = 2;  // 16 bits
-	
+
 	                            if (!texture_swizzle) {
 	                                for (int i = 0; i < texture_buffer_width[level]*texture_height[level]; i++) {
 	                                    int index = mem.read8(texaddr+i);
@@ -2807,16 +2770,16 @@ public class VideoEngine {
 	                                }
 	                                final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
 	                            }
-	
+
 	                            break;
 	                        }
-	
+
 	                        case CMODE_FORMAT_32BIT_ABGR8888: {
 	                            if (texclut == 0)
 	                                return;
-	
+
 	                            texture_type = GL.GL_UNSIGNED_BYTE;
-	
+
 	                            if (!texture_swizzle) {
 	                                for (int i = 0; i < texture_buffer_width[level]*texture_height[level]; i++) {
 	                                    int index = mem.read8(texaddr+i);
@@ -2839,26 +2802,26 @@ public class VideoEngine {
 	                                }
 	                                final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
 	                            }
-	
+
 	                            break;
 	                        }
-	
+
 	                        default: {
 	                            VideoEngine.log.error("Unhandled clut8 texture mode " + tex_clut_mode);
 	                            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
 	                            break;
 	                        }
 	                    }
-	
+
 	                    break;
 	                }
-	
+
 	                case TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650:
 	                case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551:
 	                case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444: {
 	                    texture_type = texturetype_mapping[texture_storage];
 	                    textureByteAlignment = 2;  // 16 bits
-	
+
 	                    if (!texture_swizzle) {
 	                        /* TODO replace the loop with 1 line to ShortBuffer.wrap
 	                         * but be careful of vram/mainram addresses
@@ -2871,20 +2834,20 @@ public class VideoEngine {
 	                            texaddr - MemoryMap.START_RAM + memory.mainmemory.arrayOffset(),
 	                            texture_width0 * texture_height0).slice();
 	                        */
-	
+
 	                        for (int i = 0; i < texture_buffer_width[level]*texture_height[level]; i++) {
 	                            int pixel = mem.read16(texaddr+i*2);
 	                            tmp_texture_buffer16[i] = (short)pixel;
 	                        }
-	
+
 	                        final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
 	                    } else {
 	                        final_buffer = unswizzleTextureFromMemory(texaddr, 2, level);
 	                    }
-	
+
 	                    break;
 	                }
-	
+
 	                case TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888: {
 	                    if (getOpenGLVersion(gl).compareTo("1.2") >= 0) {
 	                        texture_type = GL.GL_UNSIGNED_INT_8_8_8_8_REV;  // Only available from V1.2
@@ -2920,7 +2883,7 @@ public class VideoEngine {
 	                    break;
 	                }
 	            }
-	
+
 	            // Some textureTypes are only supported from OpenGL v1.2.
 	            // Try to convert to type supported in v1.
 	            if (getOpenGLVersion(gl).compareTo("1.2") < 0) {
@@ -2942,18 +2905,18 @@ public class VideoEngine {
 	                    texture_format = GL.GL_RGB;
 	                }
 	            }
-	
+
 	            if (texture_type == GL.GL_UNSIGNED_SHORT_5_6_5_REV) {
 	                texture_format = GL.GL_RGB;
 	            }
-	
+
 	            // Upload texture to openGL
 	            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, tex_min_filter);
 	            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_mag_filter);
 	            gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, textureByteAlignment);
 	            gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, texture_buffer_width[level]);
 	            checkTextureMinFilter();
-		            
+
 	            gl.glTexImage2D  (  GL.GL_TEXTURE_2D,
 	                                level,
 	                                texture_format,
@@ -2962,19 +2925,19 @@ public class VideoEngine {
 	                                texture_format,
 	                                texture_type,
 	                                final_buffer);
-	
+
 	            if (texture != null) {
 	                texture.setIsLoaded();
 	                if (log.isDebugEnabled()) {
 	                    log(helper.getCommandString(TFLUSH) + " Loaded texture " + texture.getGlId());
 	                }
-	            }	            
+	            }
             }
             if(texture_num_mip_maps != 0) {
             	for(int level = 0; level <= texture_num_mip_maps; ++level)
             		log(String.format("Mipmap PSP Texture level %d size %dx%d", level, texture_width[level], texture_height[level]));
 	            int maxLevel = (int) (Math.log(Math.max(texture_width[texture_num_mip_maps], texture_height[texture_num_mip_maps]) * (1 << texture_num_mip_maps))/Math.log(2));
-	            
+
 	            if(maxLevel != texture_num_mip_maps) {
 		            log(String.format("Generating mipmaps from level %d Size %dx%d to maxLevel %d", texture_num_mip_maps, texture_width[0], texture_height[0], maxLevel));
 		            // Build the other mipmaps level
