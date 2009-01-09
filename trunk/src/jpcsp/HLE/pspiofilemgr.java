@@ -126,6 +126,10 @@ public class pspiofilemgr {
     private String filepath; // current working directory on PC
     private UmdIsoReader iso;
 
+    public final static int PSP_MEMORYSTICK_STATE_INSERTED = 1;
+    public final static int PSP_MEMORYSTICK_STATE_EJECTED  = 2;
+    private int memoryStickState;
+
     public static pspiofilemgr getInstance() {
         if (instance == null) {
             instance = new pspiofilemgr();
@@ -151,6 +155,7 @@ public class pspiofilemgr {
 
         filelist = new HashMap<Integer, IoInfo>();
         dirlist = new HashMap<Integer, IoDirInfo>();
+        memoryStickState = PSP_MEMORYSTICK_STATE_INSERTED;
     }
 
     /** To properly emulate async io we cannot allow async io operations to
@@ -1176,9 +1181,7 @@ public class pspiofilemgr {
                 Modules.log.debug("sceIoDevctl check ms inserted");
                 Memory mem = Memory.getInstance();
                 if (mem.isAddressGood(outdata_addr)) {
-                    // 1 = inserted
-                    // 2 = not inserted
-                    mem.write32(outdata_addr, 1);
+                    mem.write32(outdata_addr, memoryStickState);
                     Emulator.getProcessor().cpu.gpr[2] = 0;
                 } else {
                     Emulator.getProcessor().cpu.gpr[2] = -1;
@@ -1186,15 +1189,37 @@ public class pspiofilemgr {
                 break;
             }
 
-            case 0x02415821: // register ms eject callback
-                Modules.log.debug("UNIMPLEMENTED: sceIoDevctl register ms eject callback");
-                Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
+            case 0x02415821: // register memorystick insert/eject callback
+            {
+                Modules.log.debug("sceIoDevctl register memorystick insert/eject callback");
+                Memory mem = Memory.getInstance();
+                ThreadMan threadMan = ThreadMan.getInstance();
+                if (mem.isAddressGood(indata_addr) && inlen == 4) {
+                    int cbid = mem.read32(indata_addr);
+                    threadMan.setCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid);
+                    // Trigger callback immediately
+                    threadMan.pushCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, memoryStickState);
+                    Emulator.getProcessor().cpu.gpr[2] = 0;  // Success
+                } else {
+                    Emulator.getProcessor().cpu.gpr[2] = -1; // Invalid parameters
+                }
                 break;
+            }
 
             case 0x02415822: // unregister ms eject callback
-                Modules.log.debug("UNIMPLEMENTED: sceIoDevctl unregister ms eject callback");
-                Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
+            {
+                Modules.log.debug("sceIoDevctl unregister memorystick insert/eject callback");
+                Memory mem = Memory.getInstance();
+                ThreadMan threadMan = ThreadMan.getInstance();
+                if (mem.isAddressGood(indata_addr) && inlen == 4) {
+                    int cbid = mem.read32(indata_addr);
+                    threadMan.clearCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid);
+                    Emulator.getProcessor().cpu.gpr[2] = 0;  // Success
+                } else {
+                    Emulator.getProcessor().cpu.gpr[2] = -1; // Invalid parameters
+                }
                 break;
+            }
 
             // this one may be a typo by the jpcsp team :P can anyone find a game that uses it?
             case 0x02415823:
