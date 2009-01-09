@@ -1402,7 +1402,11 @@ public class ThreadMan {
             if (thread.callbackRegistered[i] && thread.callbackReady[i]) {
                 Modules.log.debug("Entering callback type " + i + " name:'" + thread.callbackInfo[i].name + "'"
                     + " PC:" + Integer.toHexString(thread.callbackInfo[i].callback_addr)
-                    + " thread:'" + thread.name + "'");
+                    + " thread:'" + thread.name + "'"
+                    + " $a0:" + Integer.toHexString(thread.callbackInfo[i].notifyArg1)
+                    + " $a1:" + Integer.toHexString(thread.callbackInfo[i].notifyArg2)
+                    + " $a2:" + Integer.toHexString(thread.callbackInfo[i].callback_arg_addr)
+                    );
 
                 // Callbacks can pre-empt, save the current thread's context
                 current_thread.saveContext();
