@@ -700,51 +700,81 @@ public class RuntimeContext {
     	log.info(message);
     }
 
-    public static void checkMemoryRead32(int address, int pc) throws StopThreadException {
-        if (!memory.isAddressGood(address) && !memory.read32AllowedInvalidAddress(address)) {
+    public static int checkMemoryRead32(int address, int pc) throws StopThreadException {
+        int rawAddress = address & Memory.addressMask;
+        if (!memory.isRawAddressGood(rawAddress) && !memory.read32AllowedInvalidAddress(rawAddress)) {
             processor.cpu.pc = pc;
             memory.invalidMemoryAddress(address, "read32", Emulator.EMU_STATUS_MEM_READ);
             syncPause();
+
+            rawAddress = 0;
         }
+
+        return rawAddress;
     }
 
-    public static void checkMemoryRead16(int address, int pc) throws StopThreadException {
+    public static int checkMemoryRead16(int address, int pc) throws StopThreadException {
+        int rawAddress = address & Memory.addressMask;
         if (!memory.isAddressGood(address)) {
             processor.cpu.pc = pc;
             memory.invalidMemoryAddress(address, "read16", Emulator.EMU_STATUS_MEM_READ);
             syncPause();
+
+            rawAddress = 0;
         }
+
+        return rawAddress;
     }
 
-    public static void checkMemoryRead8(int address, int pc) throws StopThreadException {
+    public static int checkMemoryRead8(int address, int pc) throws StopThreadException {
+        int rawAddress = address & Memory.addressMask;
         if (!memory.isAddressGood(address)) {
             processor.cpu.pc = pc;
             memory.invalidMemoryAddress(address, "read8", Emulator.EMU_STATUS_MEM_READ);
             syncPause();
+
+            rawAddress = 0;
         }
+
+        return rawAddress;
     }
 
-    public static void checkMemoryWrite32(int address, int pc) throws StopThreadException {
+    public static int checkMemoryWrite32(int address, int pc) throws StopThreadException {
+        int rawAddress = address & Memory.addressMask;
         if (!memory.isAddressGood(address)) {
             processor.cpu.pc = pc;
             memory.invalidMemoryAddress(address, "write32", Emulator.EMU_STATUS_MEM_WRITE);
             syncPause();
+
+            rawAddress = 0;
         }
+
+        return rawAddress;
     }
 
-    public static void checkMemoryWrite16(int address, int pc) throws StopThreadException {
+    public static int checkMemoryWrite16(int address, int pc) throws StopThreadException {
+        int rawAddress = address & Memory.addressMask;
         if (!memory.isAddressGood(address)) {
             processor.cpu.pc = pc;
             memory.invalidMemoryAddress(address, "write16", Emulator.EMU_STATUS_MEM_WRITE);
             syncPause();
+
+            rawAddress = 0;
         }
+
+        return rawAddress;
     }
 
-    public static void checkMemoryWrite8(int address, int pc) throws StopThreadException {
+    public static int checkMemoryWrite8(int address, int pc) throws StopThreadException {
+        int rawAddress = address & Memory.addressMask;
         if (!memory.isAddressGood(address)) {
             processor.cpu.pc = pc;
             memory.invalidMemoryAddress(address, "write8", Emulator.EMU_STATUS_MEM_WRITE);
             syncPause();
+
+            rawAddress = 0;
         }
+
+        return rawAddress;
     }
 }

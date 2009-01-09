@@ -133,10 +133,14 @@ public class StandardMemory extends Memory {
     }
 
 	@Override
-    public boolean isAddressGood(int address)
-    {
+    public boolean isAddressGood(int address) {
         int index = map[address >>> PAGE_SHIFT];
         return (index != -1);
+    }
+
+    @Override
+    public boolean isRawAddressGood(int address) {
+        return isAddressGood(address);
     }
 
 	@Override
