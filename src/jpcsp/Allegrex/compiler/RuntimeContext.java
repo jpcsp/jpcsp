@@ -177,10 +177,18 @@ public class RuntimeContext {
                 // This exception is not expected at this point...
                 log.warn(e);
             }
-    	} else if (Thread.currentThread() == callbackThread) {
+    	} else if (Thread.currentThread() == callbackThread && currentThread == callbackThreadInfo) {
     	    // The current thread is the thread where the callback has to be executed.
     	    // Execute the callback immediately
     	    executeCallbackImmediately(callbackCpuState);
+        } else if (Thread.currentThread() == callbackThread && currentThread != callbackThreadInfo) {
+            // The current thread is the thread where the callback has to be executed,
+            // but the ThreadMan has already switched to another thread.
+            // Execute the callback immediately and restore the wanted thread.
+            SceKernelThreadInfo previousThread = currentThread;
+            switchThread(callbackThreadInfo);
+            executeCallbackImmediately(callbackCpuState);
+            switchThread(previousThread);
     	} else {
     	    // Switch to the callback thread so that it can execute the callback.
     	    pendingCallbackThread = callbackThreadInfo;
