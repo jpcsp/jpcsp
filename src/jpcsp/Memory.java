@@ -29,7 +29,7 @@ public abstract class Memory {
     public static Logger log = Logger.getLogger("memory");
     private static Memory instance = null;
     public static boolean useSafeMemory = true;
-	protected final int addressMask = 0x3FFFFFFF;
+	public static final int addressMask = 0x3FFFFFFF;
 
     public static Memory getInstance() {
         if (instance == null) {
@@ -150,6 +150,7 @@ public abstract class Memory {
 	public abstract boolean allocate();
 	public abstract void Initialise();
 	public abstract boolean isAddressGood(int address);
+    public abstract boolean isRawAddressGood(int address);
     public abstract int read8(int address);
     public abstract int read16(int address);
     public abstract int read32(int address);

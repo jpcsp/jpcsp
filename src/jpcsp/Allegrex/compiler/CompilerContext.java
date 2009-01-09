@@ -695,15 +695,17 @@ public class CompilerContext implements ICompilerContext {
 	        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "read32", "(I)I");
 		} else {
             if (checkMemoryAccess()) {
-                mv.visitInsn(Opcodes.DUP);
                 mv.visitLdcInsn(codeInstruction.getAddress());
-                mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryRead32", "(II)V");
+                mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryRead32", "(II)I");
+                loadImm(2);
+                mv.visitInsn(Opcodes.IUSHR);
+            } else {
+    			// memoryInt[(address & 0x3FFFFFFF) / 4] == memoryInt[(address << 2) >>> 4]
+    			loadImm(2);
+    			mv.visitInsn(Opcodes.ISHL);
+    			loadImm(4);
+    			mv.visitInsn(Opcodes.IUSHR);
             }
-			// memoryInt[(address & 0x3FFFFFFF) / 4] == memoryInt[(address << 2) >>> 4]
-			loadImm(2);
-			mv.visitInsn(Opcodes.ISHL);
-			loadImm(4);
-			mv.visitInsn(Opcodes.IUSHR);
 			mv.visitInsn(Opcodes.IALOAD);
 		}
 	}
@@ -726,15 +728,17 @@ public class CompilerContext implements ICompilerContext {
 	        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "read16", "(I)I");
 		} else {
             if (checkMemoryAccess()) {
-                mv.visitInsn(Opcodes.DUP);
                 mv.visitLdcInsn(codeInstruction.getAddress());
-                mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryRead16", "(II)V");
+                mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryRead16", "(II)I");
+                loadImm(1);
+                mv.visitInsn(Opcodes.IUSHR);
+            } else {
+    			// memoryInt[(address & 0x3FFFFFFF) / 4] == memoryInt[(address << 2) >>> 4]
+    			loadImm(2);
+    			mv.visitInsn(Opcodes.ISHL);
+    			loadImm(3);
+    			mv.visitInsn(Opcodes.IUSHR);
             }
-			// memoryInt[(address & 0x3FFFFFFF) / 4] == memoryInt[(address << 2) >>> 4]
-			loadImm(2);
-			mv.visitInsn(Opcodes.ISHL);
-			loadImm(3);
-			mv.visitInsn(Opcodes.IUSHR);
 			mv.visitInsn(Opcodes.DUP);
 			loadImm(1);
 			mv.visitInsn(Opcodes.IAND);
@@ -769,15 +773,15 @@ public class CompilerContext implements ICompilerContext {
 	        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "read8", "(I)I");
 		} else {
             if (checkMemoryAccess()) {
-                mv.visitInsn(Opcodes.DUP);
                 mv.visitLdcInsn(codeInstruction.getAddress());
-                mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryRead8", "(II)V");
+                mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryRead8", "(II)I");
+            } else {
+    			// memoryInt[(address & 0x3FFFFFFF) / 4] == memoryInt[(address << 2) >>> 4]
+    			loadImm(2);
+    			mv.visitInsn(Opcodes.ISHL);
+    			loadImm(2);
+    			mv.visitInsn(Opcodes.IUSHR);
             }
-			// memoryInt[(address & 0x3FFFFFFF) / 4] == memoryInt[(address << 2) >>> 4]
-			loadImm(2);
-			mv.visitInsn(Opcodes.ISHL);
-			loadImm(2);
-			mv.visitInsn(Opcodes.IUSHR);
 			mv.visitInsn(Opcodes.DUP);
 			loadImm(3);
 			mv.visitInsn(Opcodes.IAND);
@@ -810,15 +814,17 @@ public class CompilerContext implements ICompilerContext {
 
 		if (RuntimeContext.memoryInt != null) {
 	        if (checkMemoryAccess()) {
-	            mv.visitInsn(Opcodes.DUP);
 	            mv.visitLdcInsn(codeInstruction.getAddress());
-	            mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryWrite32", "(II)V");
+	            mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryWrite32", "(II)I");
+                loadImm(2);
+                mv.visitInsn(Opcodes.IUSHR);
+	        } else {
+    			// memoryInt[(address & 0x3FFFFFFF) / 4] == memoryInt[(address << 2) >>> 4]
+    			loadImm(2);
+    			mv.visitInsn(Opcodes.ISHL);
+    			loadImm(4);
+    			mv.visitInsn(Opcodes.IUSHR);
 	        }
-			// memoryInt[(address & 0x3FFFFFFF) / 4] == memoryInt[(address << 2) >>> 4]
-			loadImm(2);
-			mv.visitInsn(Opcodes.ISHL);
-			loadImm(4);
-			mv.visitInsn(Opcodes.IUSHR);
 		}
 
 		memWrite32prepared = true;
@@ -840,9 +846,8 @@ public class CompilerContext implements ICompilerContext {
 				mv.visitInsn(Opcodes.IADD);
 			}
             if (checkMemoryAccess()) {
-                mv.visitInsn(Opcodes.DUP);
                 mv.visitLdcInsn(codeInstruction.getAddress());
-                mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryWrite32", "(II)V");
+                mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryWrite32", "(II)I");
             }
 			mv.visitInsn(Opcodes.SWAP);
 		}
