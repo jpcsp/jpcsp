@@ -30,6 +30,7 @@ import jpcsp.Processor;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_CANNOT_BE_SPLIT;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_HAS_DELAY_SLOT;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_IS_JUMPING;
+import static jpcsp.Allegrex.Common.Instruction.FLAG_IS_BRANCHING;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_IS_CONDITIONAL;
 import static jpcsp.Allegrex.Common.Instruction.FLAG_ENDS_BLOCK;
 import static jpcsp.Allegrex.Common.Instruction.FLAGS_BRANCH_INSTRUCTION;
@@ -2602,7 +2603,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRSOFFSET("bgez", rs, (int)(short)imm16, address);
 }
 };
-public static final Instruction BGEZAL = new Instruction(76, FLAGS_LINK_INSTRUCTION | FLAG_IS_CONDITIONAL) {
+public static final Instruction BGEZAL = new Instruction(76, FLAGS_LINK_INSTRUCTION | FLAG_IS_CONDITIONAL | FLAG_IS_BRANCHING) {
 
 @Override
 public final String name() { return "BGEZAL"; }
@@ -2632,7 +2633,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRSOFFSET("bgezal", rs, (int)(short)imm16, address);
 }
 };
-public static final Instruction BGEZALL = new Instruction(77, FLAGS_LINK_INSTRUCTION | FLAG_IS_CONDITIONAL) {
+public static final Instruction BGEZALL = new Instruction(77, FLAGS_LINK_INSTRUCTION | FLAG_IS_CONDITIONAL | FLAG_IS_BRANCHING) {
 
 @Override
 public final String name() { return "BGEZALL"; }
@@ -2842,7 +2843,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRSOFFSET("bltz", rs, (int)(short)imm16, address);
 }
 };
-public static final Instruction BLTZAL = new Instruction(84, FLAGS_LINK_INSTRUCTION | FLAG_IS_CONDITIONAL) {
+public static final Instruction BLTZAL = new Instruction(84, FLAGS_LINK_INSTRUCTION | FLAG_IS_CONDITIONAL | FLAG_IS_BRANCHING) {
 
 @Override
 public final String name() { return "BLTZAL"; }
@@ -2872,7 +2873,7 @@ public String disasm(int address, int insn) {
 return Common.disasmRSOFFSET("bltzal", rs, (int)(short)imm16, address);
 }
 };
-public static final Instruction BLTZALL = new Instruction(85, FLAGS_LINK_INSTRUCTION | FLAG_IS_CONDITIONAL) {
+public static final Instruction BLTZALL = new Instruction(85, FLAGS_LINK_INSTRUCTION | FLAG_IS_CONDITIONAL | FLAG_IS_BRANCHING) {
 
 @Override
 public final String name() { return "BLTZALL"; }
@@ -3024,7 +3025,7 @@ public String disasm(int address, int insn) {
 return Common.disasmJUMP("j", imm26, address);
 }
 };
-public static final Instruction JAL = new Instruction(90, FLAGS_LINK_INSTRUCTION) {
+public static final Instruction JAL = new Instruction(90, FLAGS_LINK_INSTRUCTION | FLAG_IS_JUMPING) {
 
 @Override
 public final String name() { return "JAL"; }
