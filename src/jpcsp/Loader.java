@@ -513,6 +513,9 @@ public class Loader {
         shdr = elf.getSectionHeader(".bss");
         if (shdr != null && shdr.getSh_size() != 0)
             module.bss_size = (int)shdr.getSh_size();
+
+        module.segmentaddr[0] = module.loadAddressLow;
+        module.segmentsize[0] = module.loadAddressHigh - module.loadAddressLow;
     }
 
     private void LoadELFReserveMemory(SceModule module) {
