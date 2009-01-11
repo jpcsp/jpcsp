@@ -45,6 +45,9 @@ public class sceImpose implements HLEModule {
 			mm.addFunction(sceImposeGetLanguageModeFunction, 0x24FD7BCF);
 			mm.addFunction(sceImposeGetBatteryIconStatusFunction, 0x8C943191);
 
+            // TODO add to settings gui
+            languageMode_language = PSP_LANGUAGE_ENGLISH;
+            languageMode_button = PSP_CONFIRM_BUTTON_CROSS;
 		}
 	}
 
@@ -64,6 +67,17 @@ public class sceImpose implements HLEModule {
 		}
 	}
 
+    // TODO get all the language codes
+    public final static int PSP_LANGUAGE_JAPANESE = 0;
+    public final static int PSP_LANGUAGE_ENGLISH = 1;
+    public final static int PSP_LANGUAGE_FRENCH = 2;
+    public final static int PSP_LANGUAGE_KOREAN = 9;
+    private int languageMode_language;
+
+    // TODO check assignment
+    public final static int PSP_CONFIRM_BUTTON_CIRCLE = 0;
+    public final static int PSP_CONFIRM_BUTTON_CROSS = 1;
+    private int languageMode_button;
 
 	public void sceImposeHomeButton(Processor processor) {
 	    CpuState cpu = processor.cpu; // New-Style Processor
@@ -149,16 +163,24 @@ public class sceImpose implements HLEModule {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+        int lang = cpu.gpr[4];
+        int button = cpu.gpr[5];
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        String langStr;
+        switch(lang) {
+            case PSP_LANGUAGE_JAPANESE: langStr = "JAP"; break;
+            case PSP_LANGUAGE_ENGLISH: langStr = "ENG"; break;
+            case PSP_LANGUAGE_FRENCH: langStr = "FR"; break;
+            case PSP_LANGUAGE_KOREAN: langStr = "KOR"; break;
+            default: langStr = "PSP_LANGUAGE_UNKNOWN" + lang; break;
+        }
 
-		Modules.log.warn("Unimplemented NID function sceImposeSetLanguageMode [0x36AA6E91]");
+		Modules.log.debug("sceImposeSetLanguageMode(lang=" + lang + "(" + langStr + "),button=" + button + ")");
 
-		cpu.gpr[2] = 0xDEADC0DE;
+        languageMode_language = lang;
+        languageMode_button = button;
 
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+		cpu.gpr[2] = 0;
 	}
 
     public void sceImposeGetLanguageMode(Processor processor) {
@@ -168,19 +190,16 @@ public class sceImpose implements HLEModule {
         int lang_addr = cpu.gpr[4];
         int button_addr = cpu.gpr[5];
 
-        Modules.log.warn("PARTIAL:sceImposeGetLanguageMode(lang=0x" + Integer.toHexString(lang_addr)
-            + ",button=0x" + Integer.toHexString(button_addr) + ")");
+        Modules.log.debug("sceImposeGetLanguageMode(lang=0x" + Integer.toHexString(lang_addr)
+            + ",button=0x" + Integer.toHexString(button_addr) + ")"
+            + " returning lang=" + languageMode_language + " button=" + languageMode_button);
 
         if (mem.isAddressGood(lang_addr)) {
-            // TODO no idea what the valid values are
-            mem.write32(lang_addr, 0);
+            mem.write32(lang_addr, languageMode_language);
         }
 
         if (mem.isAddressGood(button_addr)) {
-            // one is cross the other is circle
-            // 0 - ?
-            // 1 - ?
-            mem.write32(button_addr, 0);
+            mem.write32(button_addr, languageMode_button);
         }
 
         cpu.gpr[2] = 0;

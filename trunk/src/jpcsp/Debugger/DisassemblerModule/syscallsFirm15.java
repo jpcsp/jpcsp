@@ -1013,10 +1013,20 @@ public class syscallsFirm15 {
                 sceMp3CheckStreamDataNeeded(0x30b3, 0xD0A56296), // 3.95+
                 sceMp3ReleaseMp3Handle(0x30b4, 0xF5478233), // 3.95+
 
-
-
-
-
+                scePsmfP_235D8787(0x30b5, 0x235D8787), // umd game only 2.60+
+                scePsmfP_9B71A274(0x30b6, 0x9B71A274), // umd game only 2.60+
+                scePsmfP_3D6D25A9(0x30b7, 0x3D6D25A9), // umd game only 2.60+
+                scePsmfP_E792CD94(0x30b8, 0xE792CD94), // umd game only 2.60+
+                scePsmfP_95A84EE5(0x30b9, 0x95A84EE5), // umd game only 2.60+
+                scePsmfP_3EA82A4B(0x30ba, 0x3EA82A4B), // umd game only 2.60+
+                scePsmfP_1078C008(0x30bb, 0x1078C008), // umd game only 2.60+
+                scePsmfP_A0B8CA55(0x30bc, 0xA0B8CA55), // umd game only 2.60+
+                scePsmfP_46F61F8B(0x30bd, 0x46F61F8B), // umd game only 2.60+
+                scePsmfP_B9848A74(0x30be, 0xB9848A74), // umd game only 2.60+
+                scePsmfP_F8EF08A6(0x30bf, 0xF8EF08A6), // umd game only 2.60+
+                scePsmfP_DF089680(0x30c0, 0xDF089680), // umd game only 2.60+
+                scePsmfP_1E57A8E7(0x30c1, 0x1E57A8E7), // umd game only 2.60+
+                scePsmfP_2BEB1569(0x30c2, 0x2BEB1569), // umd game only 2.60+
 
 
                 // We choose to start HLEModuleManager at 0x4000

@@ -23,10 +23,9 @@ import static jpcsp.HLE.modules150.sceCtrl.*;
 import java.awt.event.KeyEvent;
 import java.util.HashMap;
 
-// TODO check, Torch "In digital mode, the analog x & y is zero." http://forums.ps2dev.org/viewtopic.php?p=77013#77013
 public class Controller {
-    private byte Lx = 127;
-    private byte Ly = 127;
+    private byte Lx = (byte)128;
+    private byte Ly = (byte)128;
     private int Buttons = 0;
     private keyCode lastKey = keyCode.RELEASED;
     private long lastUpdate;
@@ -72,16 +71,6 @@ public class Controller {
         if (key == null || key == lastKey)
             return;
 
-        /* in digital mode, analoge keys behave as the digital keys (right?) */
-        if (sceCtrlModule.isModeDigital()) {
-            switch (key) {
-                case ANDOWN:    key = keyCode.DOWN; break;
-                case ANUP:      key = keyCode.UP; break;
-                case ANLEFT:    key = keyCode.LEFT; break;
-                case ANRIGHT:   key = keyCode.RIGHT; break;
-            }
-        }
-
         switch (key) {
             case DOWN:      this.Buttons |= PSP_CTRL_DOWN; break;
             case UP:        this.Buttons |= PSP_CTRL_UP; break;
@@ -118,15 +107,6 @@ public class Controller {
         keyCode key = keys.get(arg0.getKeyCode());
         if (key == null)
             return;
-
-        if (sceCtrlModule.isModeDigital()) {
-            switch (key) {
-                case ANDOWN:    key = keyCode.DOWN; break;
-                case ANUP:      key = keyCode.UP; break;
-                case ANLEFT:    key = keyCode.LEFT; break;
-                case ANRIGHT:   key = keyCode.RIGHT; break;
-            }
-        }
 
         switch (key) {
             case DOWN:      this.Buttons &= ~PSP_CTRL_DOWN; break;
