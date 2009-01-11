@@ -20,6 +20,7 @@ package jpcsp.HLE.modules150;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -34,10 +35,14 @@ public class sceCtrl implements HLEModule {
     private int uiPress;
     private int uiRelease;
 
-    private int TimeStamp; // TODO check what its meant to be
+    private int TimeStamp; // microseconds
     private byte Lx;
     private byte Ly;
     private int Buttons;
+
+    // IdleCancelThreshold
+    private int idlereset;
+    private int idleback;
 
     public final static int PSP_CTRL_SELECT = 0x000001;
     public final static int PSP_CTRL_START = 0x000008;
@@ -67,7 +72,7 @@ public class sceCtrl implements HLEModule {
     public final static int PSP_CTRL_MODE_ANALOG = 1;
 
     public boolean isModeDigital() {
-        if (mode == 0)
+        if (mode == PSP_CTRL_MODE_DIGITAL)
             return true;
         return false;
     }
@@ -77,10 +82,18 @@ public class sceCtrl implements HLEModule {
     {
         int oldButtons = this.Buttons;
 
-        this.TimeStamp++;
+        this.TimeStamp = (int)(System.currentTimeMillis() * 1000L) & 0x7FFFFFFF; // not sure if removing sign bit is required
         this.Lx = Lx;
         this.Ly = Ly;
         this.Buttons = Buttons;
+
+        if (isModeDigital())
+        {
+            // PSP_CTRL_MODE_DIGITAL
+            // moving the analog stick has no effect and always returns 128,128
+            this.Lx = (byte)128;
+            this.Ly = (byte)128;
+        }
 
         int changed = oldButtons ^ Buttons;
         int changed2 = oldButtons & Buttons;
@@ -132,6 +145,17 @@ public class sceCtrl implements HLEModule {
             mm.addFunction(sceCtrlClearRapidFireFunction, 0xA68FD260);
             mm.addFunction(sceCtrlSetRapidFireFunction, 0x6841BE1A);
 
+            uiMake = 0;
+            uiBreak = 0;
+            uiPress = 0;
+            uiRelease = ~uiPress;
+
+            Lx = (byte)128;
+            Ly = (byte)128;
+            Buttons = 0;
+
+            idlereset = -1;
+            idleback = -1;
         }
     }
 
@@ -180,14 +204,15 @@ public class sceCtrl implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
+    /** returns the previous state */
     public void sceCtrlSetSamplingMode(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        int a0 = cpu.gpr[4];
+        int newMode = cpu.gpr[4];
 
         cpu.gpr[2] = mode;
-        mode = a0;
+        mode = newMode;
     }
 
     public void sceCtrlGetSamplingMode(Processor processor) {
@@ -204,15 +229,15 @@ public class sceCtrl implements HLEModule {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        int a0 = cpu.gpr[4], a1 = cpu.gpr[5];
+        int pad_addr = cpu.gpr[4], count = cpu.gpr[5];
         int i;
 
-        for (i = 0; i < a1; i++) {
-            mem.write32(a0, TimeStamp);
-            mem.write32(a0 + 4, Buttons);
-            mem.write8(a0 + 8, Lx);
-            mem.write8(a0 + 9, Ly);
-            a0 += 16;
+        for (i = 0; i < count; i++) {
+            mem.write32(pad_addr, TimeStamp);
+            mem.write32(pad_addr + 4, Buttons);
+            mem.write8(pad_addr + 8, Lx);
+            mem.write8(pad_addr + 9, Ly);
+            pad_addr += 16;
         }
 
         cpu.gpr[2] = i;
@@ -222,15 +247,15 @@ public class sceCtrl implements HLEModule {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        int a0 = cpu.gpr[4], a1 = cpu.gpr[5];
+        int pad_addr = cpu.gpr[4], count = cpu.gpr[5];
         int i;
 
-        for (i = 0; i < a1; i++) {
-            mem.write32(a0, TimeStamp);
-            mem.write32(a0 + 4, ~Buttons);
-            mem.write8(a0 + 8, Lx);
-            mem.write8(a0 + 9, Ly);
-            a0 += 16;
+        for (i = 0; i < count; i++) {
+            mem.write32(pad_addr, TimeStamp);
+            mem.write32(pad_addr + 4, ~Buttons);
+            mem.write8(pad_addr + 8, Lx);
+            mem.write8(pad_addr + 9, Ly);
+            pad_addr += 16;
         }
 
         cpu.gpr[2] = i;
@@ -240,15 +265,15 @@ public class sceCtrl implements HLEModule {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        int a0 = cpu.gpr[4], a1 = cpu.gpr[5];
+        int pad_addr = cpu.gpr[4], count = cpu.gpr[5];
         int i;
 
-        for (i = 0; i < a1; i++) {
-            mem.write32(a0, TimeStamp);
-            mem.write32(a0 + 4, Buttons);
-            mem.write8(a0 + 8, Lx);
-            mem.write8(a0 + 9, Ly);
-            a0 += 16;
+        for (i = 0; i < count; i++) {
+            mem.write32(pad_addr, TimeStamp);
+            mem.write32(pad_addr + 4, Buttons);
+            mem.write8(pad_addr + 8, Lx);
+            mem.write8(pad_addr + 9, Ly);
+            pad_addr += 16;
         }
 
         cpu.gpr[2] = i;
@@ -259,15 +284,15 @@ public class sceCtrl implements HLEModule {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        int a0 = cpu.gpr[4], a1 = cpu.gpr[5];
+        int pad_addr = cpu.gpr[4], count = cpu.gpr[5];
         int i;
 
-        for (i = 0; i < a1; i++) {
-            mem.write32(a0, TimeStamp);
-            mem.write32(a0 + 4, ~Buttons);
-            mem.write8(a0 + 8, Lx);
-            mem.write8(a0 + 9, Ly);
-            a0 += 16;
+        for (i = 0; i < count; i++) {
+            mem.write32(pad_addr, TimeStamp);
+            mem.write32(pad_addr + 4, ~Buttons);
+            mem.write8(pad_addr + 8, Lx);
+            mem.write8(pad_addr + 9, Ly);
+            pad_addr += 16;
         }
 
         cpu.gpr[2] = i;
@@ -278,12 +303,12 @@ public class sceCtrl implements HLEModule {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        int a0 = cpu.gpr[4];
+        int latch_addr = cpu.gpr[4];
 
-        mem.write32(a0, uiMake);
-        mem.write32(a0 +4, uiBreak);
-        mem.write32(a0 +8, uiPress);
-        mem.write32(a0 +12, uiRelease);
+        mem.write32(latch_addr, uiMake);
+        mem.write32(latch_addr +4, uiBreak);
+        mem.write32(latch_addr +8, uiPress);
+        mem.write32(latch_addr +12, uiRelease);
         cpu.gpr[2] = 0;
     }
 
@@ -291,30 +316,25 @@ public class sceCtrl implements HLEModule {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        int a0 = cpu.gpr[4];
+        int latch_addr = cpu.gpr[4];
 
-        mem.write32(a0, uiMake);
-        mem.write32(a0 +4, uiBreak);
-        mem.write32(a0 +8, uiPress);
-        mem.write32(a0 +12, uiRelease);
+        mem.write32(latch_addr, uiMake);
+        mem.write32(latch_addr +4, uiBreak);
+        mem.write32(latch_addr +8, uiPress);
+        mem.write32(latch_addr +12, uiRelease);
         cpu.gpr[2] = 0;
     }
 
     public void sceCtrlSetIdleCancelThreshold(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        idlereset = cpu.gpr[4];
+        idleback = cpu.gpr[5];
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        Modules.log.debug("sceCtrlSetIdleCancelThreshold(idlereset=" + idlereset + ",idleback=" + idleback + ")");
 
-        System.out.println("Unimplemented NID function sceCtrlSetIdleCancelThreshold [0xA7144800]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        cpu.gpr[2] = 0;
     }
 
     public void sceCtrlGetIdleCancelThreshold(Processor processor) {
@@ -322,16 +342,22 @@ public class sceCtrl implements HLEModule {
         // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        int idlereset_addr = cpu.gpr[4];
+        int idleback_addr = cpu.gpr[5];
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        Modules.log.debug("sceCtrlGetIdleCancelThreshold(idlereset=0x" + Integer.toHexString(idlereset_addr)
+            + ",idleback=0x" + Integer.toHexString(idleback_addr) + ")"
+            + " returning idlereset=" + idlereset + " idleback=" + idleback);
 
-        System.out.println("Unimplemented NID function sceCtrlGetIdleCancelThreshold [0x687660FA]");
+        if (mem.isAddressGood(idlereset_addr)) {
+            mem.write32(idlereset_addr, idlereset);
+        }
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        if (mem.isAddressGood(idleback_addr)) {
+            mem.write32(idleback_addr, idleback);
+        }
 
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        cpu.gpr[2] = 0;
     }
 
     public void sceCtrl_348D99D4(Processor processor) {
@@ -344,7 +370,7 @@ public class sceCtrl implements HLEModule {
         // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
         // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-        System.out.println("Unimplemented NID function sceCtrl_348D99D4 [0x348D99D4]");
+        Modules.log.warn("Unimplemented NID function sceCtrl_348D99D4 [0x348D99D4]");
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -361,7 +387,7 @@ public class sceCtrl implements HLEModule {
         // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
         // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-        System.out.println("Unimplemented NID function sceCtrl_AF5960F3 [0xAF5960F3]");
+        Modules.log.warn("Unimplemented NID function sceCtrl_AF5960F3 [0xAF5960F3]");
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -378,7 +404,7 @@ public class sceCtrl implements HLEModule {
         // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
         // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-        System.out.println("Unimplemented NID function sceCtrlClearRapidFire [0xA68FD260]");
+        Modules.log.warn("Unimplemented NID function sceCtrlClearRapidFire [0xA68FD260]");
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -395,7 +421,7 @@ public class sceCtrl implements HLEModule {
         // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
         // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-        System.out.println("Unimplemented NID function sceCtrlSetRapidFire [0x6841BE1A]");
+        Modules.log.warn("Unimplemented NID function sceCtrlSetRapidFire [0x6841BE1A]");
 
         cpu.gpr[2] = 0xDEADC0DE;
 

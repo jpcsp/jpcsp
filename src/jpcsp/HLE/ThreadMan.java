@@ -726,7 +726,7 @@ public class ThreadMan {
 
     /** use lower case in this list */
     private final String[] threadNameBanList = new String[] {
-        "bgm thread", "sgx-psp-freq-thr"
+        "bgm thread", "sgx-psp-freq-thr", "sgx-psp-pcm-th", "ss playthread"
     };
     /* suspected sound thread names:
      * SndMain, SoundThread, At3Main, Atrac3PlayThread,
@@ -735,7 +735,7 @@ public class ThreadMan {
      * sgx-psp-at3-th, sgx-psp-pcm-th, sgx-psp-sas-th, snd_tick_timer_thread,
      * snd_stream_service_thread_1, SAS / Main Audio, AudioMixThread,
      * snd_stream_service_thread_0, sound_poll_thread, stream_sound_poll_thread,
-     * sndp thread
+     * sndp thread, Ss PlayThread
      *
      * keywords:
      * snd, sound, at3, atrac3, sas, wave, pcm, audio
@@ -752,7 +752,7 @@ public class ThreadMan {
             if (name.contains("snd") || name.contains("sound") ||
                 name.contains("at3") || name.contains("atrac") ||
                 name.contains("sas") || name.contains("wave") ||
-                name.contains("audio") || name.contains("sgx-psp-pcm-th")) {
+                name.contains("audio")) {
                 return true;
             }
 

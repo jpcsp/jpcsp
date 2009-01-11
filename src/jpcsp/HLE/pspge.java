@@ -237,7 +237,7 @@ public class pspge {
         // args, kernel callback has 3. setting the 3rd arg to 0x12121212 so we
         // can detect errors caused by this more easily.
 
-        // update: restored use of 3rd, needs fixing properly, or
+        // update: restored use of 3rd arg, needs fixing properly, or
         // checking on real psp (since it's possible pspsdk is wrong).
 
         ThreadMan threadMan = ThreadMan.getInstance();
@@ -280,7 +280,7 @@ public class pspge {
         }
     }
 
-    /** safe to call from outside the main emulation thread */
+    /** safe to call from outside the main emulation thread if DEFER_CALLBACKS is true */
     public void triggerFinishCallback(int cbid, int callbackNotifyArg1) {
         if (DEFER_CALLBACKS)
             deferredFinishCallbackQueue.offer(new DeferredCallbackInfo(cbid, callbackNotifyArg1));
@@ -289,7 +289,7 @@ public class pspge {
 
     }
 
-    /** safe to call from outside the main emulation thread */
+    /** safe to call from outside the main emulation thread if DEFER_CALLBACKS is true */
     public void triggerSignalCallback(int cbid, int callbackNotifyArg1) {
         if (DEFER_CALLBACKS)
             deferredSignalCallbackQueue.offer(new DeferredCallbackInfo(cbid, callbackNotifyArg1));
