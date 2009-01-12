@@ -54,8 +54,8 @@ public class SceModule {
     public int data_size;
     public int bss_size;
     public int nsegment; // ? maybe init/text/sceStub.text/fini
-    public int[] segmentaddr = new int[4]; // ?
-    public int[] segmentsize = new int[4]; // ?
+    public int[] segmentaddr = new int[4]; // static memory footprint of the module
+    public int[] segmentsize = new int[4]; // static memory footprint of the module
 
     // internal info
     public static final int size = 156;

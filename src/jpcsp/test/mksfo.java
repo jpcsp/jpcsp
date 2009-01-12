@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.test;
 
 import jpcsp.format.PSF;
+//import jpcsp.test.PSF;
 
 import java.nio.ByteBuffer;
 import java.io.FileOutputStream;
@@ -24,24 +25,26 @@ import java.io.IOException;
 
 
 import java.io.RandomAccessFile;
-//import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 public class mksfo {
-    public static void write(String filename) throws IOException {
-        ByteBuffer buffer = ByteBuffer.allocate(0x10000);
-        PSF psf = new PSF(0);
 
-        psf.put("DISC_VERSION", "1.00");
-        psf.put("DISC_ID", "UCJS10041");
-        psf.put("CATEGORY", "UG");
+    public static void makeUMDSFO(String filename, String discID, String discVersion, String systemVersion,
+        String title, int parentalLevel) throws IOException {
+
+        ByteBuffer buffer = ByteBuffer.allocate(0x10000);
+        PSF psf = new PSF();
+
         psf.put("BOOTABLE", 1);
-        psf.put("DISC_TOTAL", 1);
+        psf.put("CATEGORY", "UG");
+        psf.put("DISC_ID", discID, 16);
         psf.put("DISC_NUMBER", 1);
+        psf.put("DISC_TOTAL", 1);
+        psf.put("DISC_VERSION", discVersion);
+        psf.put("PARENTAL_LEVEL", parentalLevel);
+        psf.put("PSP_SYSTEM_VER", systemVersion);
         psf.put("REGION", 32768);
-        psf.put("PSP_SYSTEM_VER", "1.00");
-        psf.put("PARENTAL_LEVEL", 0);
-        psf.put("TITLE", "SFO Test");
+        psf.put("TITLE", title, 128);
 
         psf.write(buffer);
         byte[] data = new byte[(int)psf.size()];
@@ -53,8 +56,34 @@ public class mksfo {
         fos.close();
     }
 
-    public static void read(String filename) throws IOException {
-        PSF psf = new PSF(0);
+    public static void makePBPSFO(String filename, String discID, String discVersion, String systemVersion,
+        String title, int parentalLevel, int sharingId) throws IOException {
+
+        ByteBuffer buffer = ByteBuffer.allocate(0x10000);
+        PSF psf = new PSF();
+
+        psf.put("BOOTABLE", 1);
+        psf.put("CATEGORY", "MG");
+        psf.put("DISC_ID", discID, 16);
+        psf.put("DISC_VERSION", discVersion);
+        psf.put("PARENTAL_LEVEL", parentalLevel);
+        psf.put("PSP_SYSTEM_VER", systemVersion);
+        psf.put("REGION", 32768);
+        psf.put("SHARING_ID", sharingId);
+        psf.put("TITLE", title, 128);
+
+        psf.write(buffer);
+        byte[] data = new byte[(int)psf.size()];
+        buffer.position(0);
+        buffer.get(data);
+
+        FileOutputStream fos = new FileOutputStream(filename);
+        fos.write(data);
+        fos.close();
+    }
+
+    public static PSF read(String filename) throws IOException {
+        PSF psf = new PSF();
 
         RandomAccessFile raf = new RandomAccessFile(filename, "r");
         FileChannel channel = raf.getChannel();
@@ -64,10 +93,25 @@ public class mksfo {
         raf.close();
 
         System.out.println(psf);
+        return psf;
     }
 
     public static void main(String[] args) throws IOException {
-        write("PARAM.SFO");
+        // md5 af19370c300de05495705ec51a5d7dea
+        makeUMDSFO("PARAM.SFO", "UCES00002", "1.00", "1.00", "RIDGE RACER", 1);
+        System.out.println();
         read("PARAM.SFO");
+        System.out.println();
+        read("RIDGERACER.SFO");
+
+        // md5 f61a73a4d97d237ff522f132316d5eb4
+        //PSF psf = read("LocoRoco.SFO");
+        //System.out.println();
+        //makePBPSFO("PARAM.SFO", "UCJS10041", "1.00", "3.40", "LocoRoco™ ?????", 1, 0);
+        //makePBPSFO("PARAM.SFO", "UCJS10041", "1.00", "3.40", (String)psf.get("TITLE"), 1, 0);
+        //System.out.println();
+        //read("PARAM.SFO");
+
+        //read("SAVEDATA-TOE.SFO");
     }
 }

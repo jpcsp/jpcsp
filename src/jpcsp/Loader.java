@@ -208,7 +208,7 @@ public class Loader {
                 try {
                     FileChannel roChannel = new RandomAccessFile(psffile[0], "r").getChannel();
                     ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
-                    module.psf = new PSF(0);
+                    module.psf = new PSF();
                     module.psf.read(readbuffer);
                     roChannel.close();
                 } catch (IOException e) {
