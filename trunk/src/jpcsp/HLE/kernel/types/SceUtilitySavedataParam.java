@@ -87,16 +87,14 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 			title = readStringNZ(0x80);
 			savedataTitle = readStringNZ(0x80);
 			detail = readStringNZ(0x400);
-			parentalLevel = read8();
-			readUnknown(3);
+			parentalLevel = read32();
 		}
 
 		protected void write() {
 		    writeStringNZ(0x80, title);
             writeStringNZ(0x80, savedataTitle);
             writeStringNZ(0x400, detail);
-            write8((byte) parentalLevel);
-            writeUnknown(3);
+            write32(parentalLevel);
 		}
 
 		public int sizeof() {
@@ -291,7 +289,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
             fileInput.readFully(buffer);
             fileInput.close();
 
-            PSF psf = new PSF(0);
+            PSF psf = new PSF();
             psf.read(ByteBuffer.wrap(buffer));
 
             sfoParam.parentalLevel = (int) psf.getNumeric("PARENTAL_LEVEL");
@@ -354,11 +352,16 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 			return;
 		}
 
-		PSF psf = new PSF(0);
+		PSF psf = new PSF();
         psf.put("PARENTAL_LEVEL", sfoParam.parentalLevel);
-        psf.put("TITLE", sfoParam.title);
-        psf.put("SAVEDATA_DETAIL", sfoParam.detail);
-        psf.put("SAVEDATA_TITLE", sfoParam.savedataTitle);
+        psf.put("TITLE", sfoParam.title, 128);
+        psf.put("SAVEDATA_DETAIL", sfoParam.detail, 1024);
+        psf.put("SAVEDATA_TITLE", sfoParam.savedataTitle, 128);
+
+        // TODO ?
+        // SAVEDATA_FILE_LIST
+        // SAVEDATA_PARAMS
+        // SAVEDATA_DIRECTORY
 
         psf.write(fileOutput.getChannel().map(MapMode.READ_WRITE, 0, psf.size()));
 	}

@@ -497,10 +497,12 @@ public void loadFile(File file) {
         loadedFile = file;
 
         // Create a read-only memory-mapped file
-        FileChannel roChannel = new RandomAccessFile(file, "r").getChannel();
+        RandomAccessFile raf = new RandomAccessFile(file, "r");
+        FileChannel roChannel = raf.getChannel();
         ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
         SceModule module = emulator.load(pspifyFilename(file.getPath()), readbuffer);
         roChannel.close(); // doesn't seem to work properly :(
+        raf.close(); // still doesn't work properly :/
 
         PSF psf = module.psf;
         String title;
@@ -766,7 +768,7 @@ public void loadUMD(File file) {
         UmdIsoFile paramSfo = iso.getFile("PSP_GAME/param.sfo");
 
         //Emulator.log.debug("Loading param.sfo from UMD");
-        PSF params = new PSF(0);
+        PSF params = new PSF();
         byte[] sfo = new byte[(int)paramSfo.length()];
         paramSfo.read(sfo);
         ByteBuffer buf = ByteBuffer.wrap(sfo);

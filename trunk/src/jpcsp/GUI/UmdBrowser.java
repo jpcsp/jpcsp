@@ -155,7 +155,7 @@ public class UmdBrowser extends JDialog {
                             UmdIsoReader iso = new UmdIsoReader(programs[i].getPath());
                             UmdIsoFile paramSfo = iso.getFile("PSP_GAME/param.sfo");
 
-                            psfs[i] = new PSF(0);
+                            psfs[i] = new PSF();
                             byte[] sfo = new byte[(int)paramSfo.length()];
                             paramSfo.read(sfo);
                             ByteBuffer buf = ByteBuffer.wrap(sfo);
@@ -167,7 +167,10 @@ public class UmdBrowser extends JDialog {
                             icons[i] = new ImageIcon(icon0);
                         }
 				} catch (FileNotFoundException e) {
-					e.printStackTrace();
+                    // default icon
+                    icons[i] = new ImageIcon(getClass().getResource("/jpcsp/images/icon0.png"));
+
+					//e.printStackTrace();
 				} catch (IOException e) {
 					e.printStackTrace();
 				}

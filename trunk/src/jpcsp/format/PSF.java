@@ -14,379 +14,215 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.format;
 
-import static jpcsp.util.Utilities.readStringZ;
-import static jpcsp.util.Utilities.readUByte;
-import static jpcsp.util.Utilities.readUHalf;
-import static jpcsp.util.Utilities.readUWord;
-import static jpcsp.util.Utilities.writeWord;
-import static jpcsp.util.Utilities.writeHalf;
-import static jpcsp.util.Utilities.writeByte;
-import static jpcsp.util.Utilities.writeStringZ;
-
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
+import java.nio.charset.Charset;
+import java.util.LinkedList;
 
-import jpcsp.Emulator;
+import static jpcsp.util.Utilities.*;
 
-/**
- *
- * @author George
- */
 public class PSF {
-    private long p_offset_param_sfo; //offset of param.sfo in pbp
-    private final long psfident = 0x46535000;
+    private int psfOffset;
+    private int size;
 
-    private long fileidentify;
-    private long psfversion;
-    private long offsetkeytable;
-    private long offsetvaluetable;
-    private long numberofkeypairs;
+    private boolean sizeDirty;
+    private boolean valueTableOffsetDirty;
 
-     //index table
-     /*
-0 	1 	2 	ul16 Offset of the key name into the key table (in bytes)
-2 	2 	1 	4 Unknown, always 4. Maybe alignment requirement for the data?
-3 	3 	1 	ul8 Datatype of the value, see below.
-4 	7 	4 	ul32 Size of value data, in bytes
-8 	11 	4 	ul32 Size of value data plus padding, in bytes
-12 	15 	4 	ul32 Offset of the data value into the value table (in bytes) */
-    private int[] offset_keyname;
-    private byte[] alignment;
-    private byte[] datatype;
-    private long[] value_size;
-    private long[] value_size_padding;
-    private long[] offset_data_value;
-    private String[] keys;
+    private int ident;
+    private int version; // yapspd: 0x1100. actual: 0x0101.
+    private int keyTableOffset;
+    private int valueTableOffset;
+    private int indexEntryCount;
 
-    private HashMap<String, Object> map = new HashMap<String, Object>();
+    private LinkedList<PSFKeyValuePair> pairList;
 
-    public PSF(long p_offset_param_sfo)
-    {
-    	fileidentify = psfident;
-    	psfversion = 0x00000101;
-    	offsetkeytable = 5 * 4;
-    	offsetvaluetable = offsetkeytable;
-        this.p_offset_param_sfo = p_offset_param_sfo;
+    public final static int PSF_IDENT = 0x46535000;
+
+    public final static int PSF_DATA_TYPE_BINARY = 0;
+    public final static int PSF_DATA_TYPE_STRING = 2;
+    public final static int PSF_DATA_TYPE_INT32 = 4;
+
+    @Deprecated
+    public PSF(long psfOffset) {
+        this.psfOffset = (int)psfOffset;
+        size = 0;
+
+        sizeDirty = false;
+        valueTableOffsetDirty = false;
+
+        ident = PSF_IDENT;
+        version = 0x0101;
+
+        pairList = new LinkedList<PSFKeyValuePair>();
+
     }
 
+    public PSF() {
+        this(0);
+    }
+
+    /** f.position() is undefined after calling this */
     public void read(ByteBuffer f) throws IOException {
-        fileidentify = readUWord(f);
-        if(psfident != fileidentify)
-        {
-            Emulator.log.error("not current psf file!");
+        psfOffset = f.position();
+
+        ident = (int)readUWord(f);
+        if (ident != PSF_IDENT) {
+            System.out.println("Not a valid PSF file (ident=" + String.format("%08X", ident) + ")");
             return;
         }
-        psfversion = readUWord(f);
-        offsetkeytable = readUWord(f);
-        offsetvaluetable = readUWord(f);
-        numberofkeypairs = readUWord(f);
 
-        offset_keyname = new int[(int)numberofkeypairs];
-        alignment = new byte[(int)numberofkeypairs];
-        datatype = new byte[(int)numberofkeypairs];
-        value_size = new long[(int)numberofkeypairs];
-        value_size_padding = new long[(int)numberofkeypairs];
-        offset_data_value = new long[(int)numberofkeypairs];
-        keys = new String[(int)numberofkeypairs];
+        // header
+        version = (int)readUWord(f); // 0x0101
+        keyTableOffset = (int)readUWord(f);
+        valueTableOffset = (int)readUWord(f);
+        indexEntryCount = (int)readUWord(f);
 
-        /*System.out.println(psfversion);
-        System.out.println(offsetkeytable);
-        System.out.println(offsetvaluetable);
-        System.out.println(numberofkeypairs);*/
-        for(int i=0; i<numberofkeypairs; i++)
-        {
-            offset_keyname[i] = readUHalf(f);
-            alignment[i] = (byte)readUByte(f);
-            datatype[i]= (byte)readUByte(f);
-            value_size[i] = readUWord(f);
-            value_size_padding[i] =readUWord(f);
-            offset_data_value[i] = readUWord(f);
-            /* System.out.println(offset_keyname[i]);
-            System.out.println(alignment[i]);
-            System.out.println(datatype[i]);
-            System.out.println(value_size[i]);
-            System.out.println(value_size_padding[i]);
-            System.out.println(offset_data_value[i]);*/
+        // index table
+        for (int i = 0; i < indexEntryCount; i++) {
+            PSFKeyValuePair pair = new PSFKeyValuePair();
+            pair.read(f);
+            pairList.add(pair);
         }
-        String Key;
-        for(int i=0; i<numberofkeypairs; i++)
-        {
-            f.position((int)(p_offset_param_sfo + offsetkeytable+offset_keyname[i]));
-            Key = readStringZ(f);
-            keys[i] = Key;
-            if(datatype[i]==2)
-            {
-                // String may not be in english!
-                f.position((int)(p_offset_param_sfo + offsetvaluetable+offset_data_value[i]));
-                byte[] s = new byte[(int) value_size[i]];
-                f.get(s);
-                String value = new String(s, 0, s[s.length - 1] == '\0' ? s.length - 1 : s.length, "UTF-8");
-                map.put(Key, value);
-                //System.out.println(Key + " string = " + value);
-            }
-            else if(datatype[i]==4)
-            {
-                f.position((int)(p_offset_param_sfo + offsetvaluetable+offset_data_value[i]));
-                long value = readUWord(f);
-                map.put(Key, value);
-                //System.out.println(Key + " int = "  + value);
-            }
-            else if(datatype[i] == 0)
-            {
-                f.position((int)(p_offset_param_sfo + offsetvaluetable+offset_data_value[i]));
-                byte[] value = new byte[(int) value_size[i]];
-                f.get(value);
-                map.put(Key, value);
-                //System.out.println(Key + " = <binary data>");
-            }
-            else
-            {
-                Emulator.log.warn(Key + " UNIMPLEMENT DATATYPE " + datatype[i]);
+
+        // key/pairs
+        for (PSFKeyValuePair pair : pairList) {
+            f.position(psfOffset + keyTableOffset + pair.keyOffset);
+            pair.key = readStringZ(f);
+
+            f.position(psfOffset + valueTableOffset + pair.valueOffset);
+            switch(pair.dataType) {
+                case PSF_DATA_TYPE_BINARY:
+                    byte[] data = new byte[pair.dataSize];
+                    f.get(data);
+                    pair.data = data;
+
+                    //System.out.println(String.format("offset=%08X key='%s' binary packed [len=%d]",
+                    //    keyTableOffset + pair.keyOffset, pair.key, pair.dataSize));
+                    break;
+
+                case PSF_DATA_TYPE_STRING:
+                    // String may not be in english!
+                    byte[] s = new byte[pair.dataSize];
+                    f.get(s);
+                    // Strip trailing null character
+                    pair.data = new String(s, 0, s[s.length - 1] == '\0' ? s.length - 1 : s.length, "UTF-8");
+
+                    //System.out.println(String.format("offset=%08X key='%s' string '%s' [len=%d]",
+                    //    keyTableOffset + pair.keyOffset, pair.key, pair.data, pair.dataSize));
+                    break;
+
+                case PSF_DATA_TYPE_INT32:
+                    pair.data = (int)readUWord(f);
+
+                    //System.out.println(String.format("offset=%08X key='%s' int32 %08X %d [len=%d]",
+                    //    keyTableOffset + pair.keyOffset, pair.key, pair.data, pair.data, pair.dataSize));
+                    break;
+
+                default:
+                    System.out.println(String.format("offset=%08X key='%s' unhandled data type %d [len=%d]",
+                        keyTableOffset + pair.keyOffset, pair.key, pair.dataType, pair.dataSize));
+                    break;
             }
         }
+
+        calculateSize();
     }
 
+    // assumes we want to write at the start of the buffer, and that the current buffer position is 0
+    // doesn't handle psfOffset
     public void write(ByteBuffer f) {
-    	writeWord(f, fileidentify);
-    	writeWord(f, psfversion);
-    	writeWord(f, offsetkeytable);
-    	writeWord(f, offsetvaluetable);
-    	writeWord(f, numberofkeypairs);
+        if (indexEntryCount != pairList.size())
+            throw new RuntimeException("incremental size and actual size do not match! " + indexEntryCount + "/" + pairList.size());
 
-    	for (int i = 0; i < numberofkeypairs; i++) {
-    		writeHalf(f, offset_keyname[i]);
-    		writeByte(f, alignment[i]);
-    		writeByte(f, datatype[i]);
-    		writeWord(f, (int) value_size[i]);
-    		writeWord(f, (int) value_size_padding[i]);
-    		writeWord(f, (int) offset_data_value[i]);
-    	}
+        // position the key table after the index table and before the value table
+        keyTableOffset = 5 * 4 + indexEntryCount * 0x10;
 
-    	for (int i = 0; i < numberofkeypairs; i++) {
-    		f.position((int)(p_offset_param_sfo + offsetkeytable + offset_keyname[i]));
-    		writeStringZ(f, keys[i]);
-    		switch (datatype[i]) {
-	    		case 2:
-	                f.position((int)(p_offset_param_sfo + offsetvaluetable + offset_data_value[i]));
-	                writeStringZ(f, (String) map.get(keys[i]));
-	                break;
-	    		case 4:
-	                f.position((int)(p_offset_param_sfo + offsetvaluetable + offset_data_value[i]));
-	                writeWord(f, (Long) map.get(keys[i]));
-	                break;
-	    		case 0:
-	                f.position((int)(p_offset_param_sfo + offsetvaluetable + offset_data_value[i]));
-	    			f.put((byte[]) map.get(keys[i]));
-	    			break;
-				default:
-	                Emulator.log.warn(keys[i] + " UNIMPLEMENT DATATYPE " + datatype[i]);
-					break;
-    		}
-    	}
-    }
+        // position the value table after the key table
+        if (valueTableOffsetDirty) {
+            valueTableOffsetDirty = false;
+            valueTableOffset = keyTableOffset;
 
-    private long[] extendArray(long[] array, int extent) {
-    	long[] newArray;
-
-    	if (array == null) {
-    		newArray = new long[extent];
-    	} else {
-    		newArray = new long[array.length + extent];
-    		System.arraycopy(array, 0, newArray, 0, array.length);
-    	}
-
-    	return newArray;
-    }
-
-    private int[] extendArray(int[] array, int extent) {
-    	int[] newArray;
-
-    	if (array == null) {
-    		newArray = new int[extent];
-    	} else {
-    		newArray = new int[array.length + extent];
-    		System.arraycopy(array, 0, newArray, 0, array.length);
-    	}
-
-    	return newArray;
-    }
-
-    private byte[] extendArray(byte[] array, int extent) {
-    	byte[] newArray;
-
-    	if (array == null) {
-    		newArray = new byte[extent];
-    	} else {
-    		newArray = new byte[array.length + extent];
-    		System.arraycopy(array, 0, newArray, 0, array.length);
-    	}
-
-    	return newArray;
-    }
-
-    private String[] extendArray(String[] array, int extent) {
-    	String[] newArray;
-
-    	if (array == null) {
-    		newArray = new String[extent];
-    	} else {
-    		newArray = new String[array.length + extent];
-    		System.arraycopy(array, 0, newArray, 0, array.length);
-    	}
-
-    	return newArray;
-    }
-
-    private int nextKeyTableOffset() {
-    	int i = (int) numberofkeypairs;
-
-    	if (i == 0) {
-    		return 0;
-    	}
-
-    	return offset_keyname[i - 1] + keys[i - 1].length() + 1;
-    }
-
-    private long nextValueTableOffset() {
-    	int i = (int) numberofkeypairs;
-
-    	if (i == 0) {
-    		return 0;
-    	}
-
-    	return offset_data_value[i - 1] + value_size[i - 1] + value_size_padding[i - 1];
-    }
-
-    private void newKey(String key, int valueType, long valueLength) {
-    	final int extent = 1;
-    	offset_keyname     = extendArray(offset_keyname,     extent);
-    	alignment          = extendArray(alignment,          extent);
-    	datatype           = extendArray(datatype,           extent);
-    	value_size         = extendArray(value_size,         extent);
-    	value_size_padding = extendArray(value_size_padding, extent);
-    	offset_data_value  = extendArray(offset_data_value,  extent);
-    	keys               = extendArray(keys,               extent);
-    	offsetkeytable    += 16 * extent;
-    	offsetvaluetable  += 16 * extent;
-
-    	int i = (int) numberofkeypairs;
-    	offset_keyname[i] = nextKeyTableOffset();
-    	alignment[i] = 0;
-    	keys[i] = key;
-    	if (offsetvaluetable >= offsetkeytable) {
-    		offsetvaluetable += key.length() + 1;
-    	}
-
-    	datatype[i] = (byte) valueType;
-    	value_size[i] = valueLength;
-    	value_size_padding[i] = ((valueLength & 1) == 0 ? 0 : 1);
-    	offset_data_value[i] = nextValueTableOffset();
-
-    	if (offsetkeytable >= offsetvaluetable) {
-    		offsetkeytable += value_size[i] + value_size_padding[i];
-    	}
-
-    	numberofkeypairs += extent;
-    }
-
-    public void put(String key, String value) {
-    	newKey(key, 2, value.length() + 1);
-    	map.put(key, value);
-    }
-
-    public void put(String key, long value) {
-    	newKey(key, 4, 2);
-    	map.put(key, value);
-    }
-
-    public void put(String key, byte[] value) {
-    	newKey(key, 0, value.length);
-    	map.put(key, value);
-    }
-
-    public long size() {
-    	if (offsetkeytable >= offsetvaluetable) {
-    		return offsetkeytable + nextKeyTableOffset();
-    	} else {
-    		return offsetvaluetable + nextValueTableOffset();
-    	}
-    }
-
-    private boolean safeEquals(Object a, Object b) {
-        return (a == null && b == null) || (a != null && a.equals(b));
-    }
-
-    public boolean isLikelyHomebrew() {
-        boolean homebrew = false;
-
-        String disc_version = getString("DISC_VERSION");
-        String disc_id = getString("DISC_ID");
-        String category = getString("CATEGORY");
-        Long bootable = (Long)get("BOOTABLE");
-        Long region = (Long)get("REGION");
-        String psp_system_ver = getString("PSP_SYSTEM_VER");
-        Long parental_level = (Long)get("PARENTAL_LEVEL");
-
-        Long ref_one = new Long(1);
-        Long ref_region = new Long(32768);
-
-        if (safeEquals(disc_version, "1.00") &&
-            safeEquals(disc_id, "UCJS10041") && // loco roco demo, should not false positive since that demo has sys ver 3.40
-            safeEquals(category, "MG") &&
-            safeEquals(bootable, ref_one) &&
-            safeEquals(region, ref_region) &&
-            safeEquals(psp_system_ver, "1.00") &&
-            safeEquals(parental_level, ref_one)) {
-
-            if (map.size() == 8) {
-                homebrew = true;
-            } else if (map.size() == 9 &&
-                safeEquals(get("MEMSIZE"), ref_one)) {
-                // lua player hm 8
-                homebrew = true;
+            for (PSFKeyValuePair pair : pairList) {
+                // keys are not aligned
+                valueTableOffset += pair.key.length() + 1;
             }
-        } else if (map.size() == 4 &&
-            safeEquals(category, "MG") &&
-            safeEquals(bootable, ref_one) &&
-            safeEquals(region, ref_region)) {
-            homebrew = true;
+
+            // 32-bit align for data start
+            valueTableOffset = (valueTableOffset + 3) & ~3;
         }
 
-        return homebrew;
-    }
+        // header
+        writeWord(f, ident);
+        writeWord(f, version);
+        writeWord(f, keyTableOffset);
+        writeWord(f, valueTableOffset);
+        writeWord(f, indexEntryCount);
 
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        for(Map.Entry<String, Object> entry : map.entrySet()) {
-            sb.append(entry.getKey()).append(" = ");
-            if(entry.getValue() instanceof Array)
-                sb.append("<binary data>");
-            else
-                sb.append(entry.getValue());
-            sb.append('\n');
+        // index table
+        int keyRunningOffset = 0;
+        int valueRunningOffset = 0;
+
+        for (PSFKeyValuePair pair : pairList) {
+            // fixup offsets
+            pair.keyOffset = keyRunningOffset;
+            keyRunningOffset += pair.key.length() + 1;
+
+            pair.valueOffset = valueRunningOffset;
+            valueRunningOffset += pair.dataSizePadded;
+
+            pair.write(f);
+            System.out.println(pair);
         }
-        sb.append("probably homebrew? " + isLikelyHomebrew());
-        return sb.toString();
+
+        // key/value pairs
+
+        for (PSFKeyValuePair pair : pairList) {
+            f.position(keyTableOffset + pair.keyOffset);
+            writeStringZ(f, pair.key);
+
+            f.position(valueTableOffset + pair.valueOffset);
+            switch(pair.dataType) {
+                case PSF_DATA_TYPE_BINARY:
+                    f.put((byte[])pair.data);
+                    break;
+
+                case PSF_DATA_TYPE_STRING:
+                    String s = (String)pair.data;
+                    f.put(s.getBytes(Charset.forName("UTF-8")));
+                    writeByte(f, (byte)0);
+                    break;
+
+                case PSF_DATA_TYPE_INT32:
+                    writeWord(f, (Integer)pair.data);
+                    break;
+
+                default:
+                    System.out.println("not writing unhandled data type " + pair.dataType);
+                    break;
+            }
+        }
     }
 
     public Object get(String key) {
-        return map.get(key);
+        for (PSFKeyValuePair pair : pairList) {
+            if (pair.key.equals(key))
+                return pair.data;
+        }
+        return null;
     }
 
     public String getString(String key) {
-        return (String)map.get(key);
+        Object obj = get(key);
+        if (obj != null)
+            return (String)obj;
+        return null;
     }
 
-    // kxploit patcher tool adds "\nKXPloit Boot by PSP-DEV Team"
+    /** kxploit patcher tool adds "\nKXPloit Boot by PSP-DEV Team" */
     public String getPrintableString(String key) {
-        String rawString = (String)map.get(key);
+        String rawString = getString(key);
         StringBuffer sb = new StringBuffer();
         for (int i = 0; i < rawString.length(); i++) {
             char c = rawString.charAt(i);
@@ -398,7 +234,219 @@ public class PSF {
         return sb.toString();
     }
 
-    public long getNumeric(String key) {
-        return (Long)map.get(key);
+    public int getNumeric(String key) {
+        Object obj = get(key);
+        if (obj != null)
+            return (Integer)obj;
+        return 0;
+    }
+
+    public void put(String key, byte[] data) {
+        PSFKeyValuePair pair = new PSFKeyValuePair(key, PSF_DATA_TYPE_BINARY, data.length, data);
+        pairList.add(pair);
+
+        sizeDirty = true;
+        valueTableOffsetDirty = true;
+        indexEntryCount++;
+    }
+
+    public void put(String key, String data, int rawlen) {
+        byte[] b = (byte[])(data.getBytes(Charset.forName("UTF-8")));
+
+        //if (b.length != data.length())
+        //    System.out.println("put string '" + data + "' size mismatch. UTF-8=" + b.length + " regular=" + (data.length() + 1));
+
+        //PSFKeyValuePair pair = new PSFKeyValuePair(key, PSF_DATA_TYPE_STRING, data.length() + 1, rawlen, data);
+        PSFKeyValuePair pair = new PSFKeyValuePair(key, PSF_DATA_TYPE_STRING, b.length + 1, rawlen, data);
+        pairList.add(pair);
+
+        sizeDirty = true;
+        valueTableOffsetDirty = true;
+        indexEntryCount++;
+    }
+
+    public void put(String key, String data) {
+        byte[] b = (byte[])(data.getBytes(Charset.forName("UTF-8")));
+        //int rawlen = data.length() + 1;
+        int rawlen = b.length + 1;
+
+        put(key, data, rawlen + rawlen & ~3);
+    }
+
+    public void put(String key, int data) {
+        PSFKeyValuePair pair = new PSFKeyValuePair(key, PSF_DATA_TYPE_INT32, 4, data);
+        pairList.add(pair);
+
+        sizeDirty = true;
+        valueTableOffsetDirty = true;
+        indexEntryCount++;
+    }
+
+    private void calculateSize() {
+        sizeDirty = false;
+        size = 0;
+
+        for (PSFKeyValuePair pair : pairList) {
+            int keyHighBound = keyTableOffset + pair.keyOffset + pair.key.length() + 1;
+            int valueHighBound = valueTableOffset + pair.valueOffset + pair.dataSizePadded;
+            if (keyHighBound > size)
+                size = keyHighBound;
+            if (valueHighBound > size)
+                size = valueHighBound;
+        }
+    }
+
+    public int size() {
+        if (sizeDirty) {
+            calculateSize();
+        }
+
+        return size;
+    }
+
+    @Override
+    public String toString() {
+        StringBuffer sb = new StringBuffer();
+
+        /*
+        sb.append("header:\n");
+        sb.append(String.format("ident 0x%08X %d\n", ident, ident));
+        sb.append(String.format("version 0x%08X %d\n", version, version));
+        sb.append(String.format("keyTableOffset 0x%08X %d\n", keyTableOffset, keyTableOffset));
+        sb.append(String.format("valueTableOffset 0x%08X %d\n", valueTableOffset, valueTableOffset));
+        sb.append(String.format("indexEntryCount 0x%08X %d\n", indexEntryCount, indexEntryCount));
+
+        sb.append("\nentries:\n");
+        */
+        for (PSFKeyValuePair pair : pairList) {
+            sb.append(pair.toString() + "\n");
+        }
+
+        sb.append("probably homebrew? " + isLikelyHomebrew());
+
+        return sb.toString();
+    }
+
+    /** used by isLikelyHomebrew() */
+    private boolean safeEquals(Object a, Object b) {
+        return (a == null && b == null) || (a != null && a.equals(b));
+    }
+
+    public boolean isLikelyHomebrew() {
+        boolean homebrew = false;
+
+        String disc_version = getString("DISC_VERSION");
+        String disc_id = getString("DISC_ID");
+        String category = getString("CATEGORY");
+        Integer bootable = (Integer)get("BOOTABLE"); // don't use getNumeric, we also want to know if the entry exists or not
+        Integer region = (Integer)get("REGION");
+        String psp_system_ver = getString("PSP_SYSTEM_VER");
+        Integer parental_level = (Integer)get("PARENTAL_LEVEL");
+
+        Integer ref_one = new Integer(1);
+        Integer ref_region = new Integer(32768);
+
+        if (safeEquals(disc_version, "1.00") &&
+            safeEquals(disc_id, "UCJS10041") && // loco roco demo, should not false positive since that demo has sys ver 3.40
+            safeEquals(category, "MG") &&
+            safeEquals(bootable, ref_one) &&
+            safeEquals(region, ref_region) &&
+            safeEquals(psp_system_ver, "1.00") &&
+            safeEquals(parental_level, ref_one)) {
+
+            if (indexEntryCount == 8) {
+                homebrew = true;
+            } else if (indexEntryCount == 9 &&
+                safeEquals(get("MEMSIZE"), ref_one)) {
+                // lua player hm 8
+                homebrew = true;
+            }
+        } else if (indexEntryCount == 4 &&
+            safeEquals(category, "MG") &&
+            safeEquals(bootable, ref_one) &&
+            safeEquals(region, ref_region)) {
+            homebrew = true;
+        }
+
+        return homebrew;
+    }
+
+    public class PSFKeyValuePair {
+        // index table info
+        public int keyOffset;
+        public int unknown1;
+        public int dataType;
+        public int dataSize;
+        public int dataSizePadded;
+        public int valueOffset;
+
+        // key table info
+        public String key;
+
+        // data table info
+        public Object data;
+
+        public PSFKeyValuePair() {
+            this(null, 0, 0, null);
+        }
+
+        public PSFKeyValuePair(String key, int dataType, int dataSize, Object data) {
+            this(key, dataType, dataSize, dataSize + (dataSize & 3), data);
+        }
+
+        public PSFKeyValuePair(String key, int dataType, int dataSize, int dataSizePadded, Object data) {
+            this.key = key;
+            this.dataType = dataType;
+            this.dataSize = dataSize;
+            this.dataSizePadded = dataSizePadded;
+            this.data = data;
+
+            // yapspd: 4
+            unknown1 = 4;
+        }
+
+        /** only reads the index entry, since this class has doesn't know about the psf/key/value offsets */
+        public void read(ByteBuffer f) throws IOException {
+            // index table entry
+            keyOffset = (int)readUHalf(f);
+            unknown1 = (int)readUByte(f);
+            dataType = (int)readUByte(f);
+            dataSize = (int)readUWord(f);
+            dataSizePadded = (int)readUWord(f);
+            valueOffset = (int)readUWord(f);
+        }
+
+        /** only writes the index entry, since this class has doesn't know about the psf/key/value offsets */
+        public void write(ByteBuffer f) {
+            // index table entry
+            writeHalf(f, keyOffset);
+            writeByte(f, unknown1);
+            writeByte(f, dataType);
+            writeWord(f, dataSize);
+            writeWord(f, dataSizePadded);
+            writeWord(f, valueOffset);
+        }
+
+        @Override
+        public String toString() {
+            StringBuffer sb = new StringBuffer();
+
+            /*
+            sb.append("index entry:\n");
+            sb.append(String.format("keyOffset 0x%08X %d\n", keyOffset, keyOffset));
+            sb.append(String.format("unknown1 0x%08X %d\n", unknown1, unknown1));
+            sb.append(String.format("dataType 0x%08X %d\n", dataType, dataType));
+            sb.append(String.format("dataSize 0x%08X %d\n", dataSize, dataSize));
+            sb.append(String.format("dataSizePadding 0x%08X %d\n", dataSizePadding, dataSizePadding));
+            sb.append(String.format("valueOffset 0x%08X %d\n", valueOffset, valueOffset));
+            */
+
+            //sb.append(String.format("[offset=%08X] '%s' = [offset=%08X,len=%d,rawlen=%d] '" + data + "'",
+            //    keyOffset, key, valueOffset, dataSize, dataSizePadded));
+
+            sb.append(key + " = " + data);
+
+            return sb.toString();
+        }
     }
 }

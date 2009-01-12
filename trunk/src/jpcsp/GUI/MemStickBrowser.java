@@ -195,7 +195,7 @@ public class MemStickBrowser extends JDialog {
                         if(psffile.length > 0) {
                             FileChannel roChannel = new RandomAccessFile(psffile[0], "r").getChannel();
                             ByteBuffer readbuffer = roChannel.map(FileChannel.MapMode.READ_ONLY, 0, (int)roChannel.size());
-                            psfs[i] = new PSF(0);
+                            psfs[i] = new PSF();
                             psfs[i].read(readbuffer);
                             roChannel.close();
                         }
@@ -216,6 +216,10 @@ public class MemStickBrowser extends JDialog {
                         }
                         roChannel.close();
                     }
+
+                    // default icon
+                    if (icons[i] == null)
+                        icons[i] = new ImageIcon(getClass().getResource("/jpcsp/images/icon0.png"));
 
                     // Rescale over sized icons
                     if (icons[i] != null) {
