@@ -30,6 +30,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableColumnModel;
 import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.pspiofilemgr;
+import jpcsp.Settings;
 
 /**
  *
@@ -394,12 +395,14 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
 
     private List<FileCommandInfo> fileCommandList;
 
-    // TODO call from emulator
     public synchronized void resetLogging() {
         fileHandleIdMap = new HashMap<Integer, FileHandleInfo>();
         fileHandleList = new LinkedList<FileHandleInfo>();
 
         fileCommandList = new LinkedList<FileCommandInfo>();
+
+        // calling this will update the title based on whether logging is enabled
+        isLoggingDisabled();
 
         if (!dirty) {
             dirty = true;
@@ -414,8 +417,22 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
         Collections.sort(fileHandleList);
     }
 
+    private boolean isLoggingDisabled() {
+        if (!Settings.getInstance().readBool("emu.debug.enablefilelogger")) {
+            setTitle("File IO - LOGGING DISABLED");
+            return true;
+        } else {
+            setTitle("File IO");
+            return false;
+        }
+    }
+
+    /** Handles repeated commands */
     private FileCommandInfo lastFileCommand;
     private void logFileCommand(FileCommandInfo info) {
+        if (isLoggingDisabled())
+            return;
+
         if (lastFileCommand != null &&
                 info.equals(lastFileCommand)) {
             lastFileCommand.occurences++;
@@ -448,6 +465,9 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
     }
 
     public void logIoOpen(int result, int filename_addr, String filename, int flags, int permissions, String mode) {
+        if (isLoggingDisabled())
+            return;
+
         // File handle list
         if (result >= 0) {
             FileHandleInfo info = new FileHandleInfo(result, filename);
@@ -464,6 +484,9 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
     }
 
     public void logIoClose(int result, int uid) {
+        if (isLoggingDisabled())
+            return;
+
         // File handle list
         if (result >= 0) {
             FileHandleInfo info = fileHandleIdMap.get(uid);
