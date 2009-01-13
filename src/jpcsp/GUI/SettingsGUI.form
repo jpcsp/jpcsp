@@ -92,34 +92,40 @@
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
                           <Group type="102" alignment="0" attributes="0">
-                              <Component id="shadersCheck" min="-2" max="-2" attributes="0"/>
+                              <Component id="filelogCheck" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
                           </Group>
                           <Group type="103" alignment="0" groupAlignment="0" attributes="0">
                               <Group type="102" alignment="0" attributes="0">
-                                  <Group type="103" groupAlignment="0" attributes="0">
-                                      <Component id="umdBrowser" alignment="0" min="-2" max="-2" attributes="0"/>
-                                      <Component id="ClassicOpenDialogumd" alignment="0" min="-2" max="-2" attributes="0"/>
-                                  </Group>
+                                  <Component id="shadersCheck" min="-2" max="-2" attributes="0"/>
                                   <EmptySpace max="-2" attributes="0"/>
                               </Group>
-                              <Group type="102" alignment="1" attributes="0">
-                                  <Group type="103" groupAlignment="0" attributes="0">
-                                      <Component id="pbpunpackcheck" alignment="0" pref="384" max="32767" attributes="1"/>
-                                      <Component id="saveWindowPosCheck" alignment="0" pref="384" max="32767" attributes="1"/>
-                                      <Component id="openLogwindowCheck" alignment="0" pref="384" max="32767" attributes="1"/>
-                                      <Component id="snapConsoleCheck" alignment="0" pref="384" max="32767" attributes="1"/>
-                                      <Component id="compilerCheck" alignment="0" pref="384" max="32767" attributes="1"/>
+                              <Group type="103" alignment="0" groupAlignment="0" attributes="0">
+                                  <Group type="102" alignment="0" attributes="0">
+                                      <Group type="103" groupAlignment="0" attributes="0">
+                                          <Component id="umdBrowser" alignment="0" min="-2" max="-2" attributes="0"/>
+                                          <Component id="ClassicOpenDialogumd" alignment="0" min="-2" max="-2" attributes="0"/>
+                                      </Group>
+                                      <EmptySpace max="-2" attributes="0"/>
                                   </Group>
-                                  <EmptySpace min="-2" pref="216" max="-2" attributes="0"/>
-                              </Group>
-                              <Group type="102" alignment="0" attributes="0">
-                                  <Component id="jLabel1" min="-2" max="-2" attributes="0"/>
-                                  <EmptySpace max="-2" attributes="0"/>
-                                  <Component id="umdpath" min="-2" pref="175" max="-2" attributes="0"/>
-                                  <EmptySpace max="-2" attributes="0"/>
-                                  <Component id="jButton1" min="-2" pref="23" max="-2" attributes="0"/>
-                                  <EmptySpace pref="310" max="32767" attributes="0"/>
+                                  <Group type="102" alignment="1" attributes="0">
+                                      <Group type="103" groupAlignment="0" attributes="0">
+                                          <Component id="pbpunpackcheck" alignment="0" pref="384" max="32767" attributes="1"/>
+                                          <Component id="saveWindowPosCheck" alignment="0" pref="384" max="32767" attributes="1"/>
+                                          <Component id="openLogwindowCheck" alignment="0" pref="384" max="32767" attributes="1"/>
+                                          <Component id="snapConsoleCheck" alignment="0" pref="384" max="32767" attributes="1"/>
+                                          <Component id="compilerCheck" alignment="0" pref="384" max="32767" attributes="1"/>
+                                      </Group>
+                                      <EmptySpace min="-2" pref="216" max="-2" attributes="0"/>
+                                  </Group>
+                                  <Group type="102" alignment="0" attributes="0">
+                                      <Component id="jLabel1" min="-2" max="-2" attributes="0"/>
+                                      <EmptySpace max="-2" attributes="0"/>
+                                      <Component id="umdpath" min="-2" pref="175" max="-2" attributes="0"/>
+                                      <EmptySpace max="-2" attributes="0"/>
+                                      <Component id="jButton1" min="-2" pref="23" max="-2" attributes="0"/>
+                                      <EmptySpace pref="310" max="32767" attributes="0"/>
+                                  </Group>
                               </Group>
                           </Group>
                       </Group>
@@ -141,7 +147,9 @@
                       <Component id="compilerCheck" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="shadersCheck" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace min="-2" pref="29" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Component id="filelogCheck" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace min="-2" pref="6" max="-2" attributes="0"/>
                       <Component id="umdBrowser" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="ClassicOpenDialogumd" min="-2" max="-2" attributes="0"/>
@@ -219,6 +227,11 @@
             <Component class="javax.swing.JCheckBox" name="shadersCheck">
               <Properties>
                 <Property name="text" type="java.lang.String" value="Use shaders (highly experimental)"/>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="filelogCheck">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Enable file IO logging"/>
               </Properties>
             </Component>
           </SubComponents>
