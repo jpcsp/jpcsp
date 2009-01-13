@@ -168,8 +168,6 @@ class Firmware {
 
 public class ResolveUnmappedNIDs {
 
-    // sample:
-    //28453 [GUI] WARN  misc - Failed to map import at 0x088C35D8 [0xB9848A74] (attempt 1)
     public static HashMap<Integer, NIDInfo> parseLog(String filename) {
         LinkedHashMap<Integer, NIDInfo> nids = new LinkedHashMap<Integer, NIDInfo>();
 
@@ -183,14 +181,34 @@ public class ResolveUnmappedNIDs {
             {
                 String[] parts = line.split(" ");
                 if (parts.length >= 13) {
-                    int nid = (int)Long.parseLong(parts[12].substring(3, 11), 16);
-                    NIDInfo info = new NIDInfo(nid);
-                    nids.put(nid, info);
+                    // sample:
+                    //28453 [GUI] WARN  misc - Failed to map import at 0x088C35D8 [0xB9848A74] (attempt 1)
+                    try {
+                        int nid = (int)Long.parseLong(parts[12].substring(3, 11), 16);
+                        NIDInfo info = new NIDInfo(nid);
+                        nids.put(nid, info);
+                    } catch(Exception e) {
+                        //System.err.println(e.getMessage());
+                        //System.err.println("error near '" + parts[12] + "'");
+                    }
+                }
+
+                if (parts.length >= 14) {
+                    // sample:
+                    // 45605 [Emu] DEBUG misc - Mapped import at 0x09EAA2F4 to export at 0x09EA5278 [0xB58E61B7] (attempt 1)
+                    try {
+                        int nid = (int)Long.parseLong(parts[13].substring(3, 11), 16);
+                        NIDInfo info = new NIDInfo(nid);
+                        nids.put(nid, info);
+                    } catch(Exception e) {
+                        //System.err.println(e.getMessage());
+                        //System.err.println("error near '" + parts[13] + "'");
+                    }
                 }
             }
 
-			br.close();
-			fr.close();
+            br.close();
+            fr.close();
         } catch(FileNotFoundException e) {
             System.err.println("parseLog: File not found: " + filename);
         } catch(Exception e) {
