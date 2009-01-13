@@ -524,7 +524,9 @@ public void loadFile(File file) {
         jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(null);
         // TODO convert to tri-state disable/enable/auto, auto will use PSF.isLikelyHomebrew() to disable audio in homebrew
         boolean disableAudio = Settings.getInstance().readBool("emu.disablesceAudio");
-        jpcsp.HLE.Modules.sceAudioModule.setEnabled(!disableAudio);
+        jpcsp.HLE.Modules.sceAudioModule.setChReserveEnabled(!disableAudio);
+        boolean disableBlocking = Settings.getInstance().readBool("emu.disableblockingaudio");
+        jpcsp.HLE.Modules.sceAudioModule.setBlockingEnabled(!disableBlocking);
         boolean ignoreAudioThreads = Settings.getInstance().readBool("emu.ignoreaudiothreads");
         jpcsp.HLE.ThreadMan.getInstance().setThreadBanningEnabled(ignoreAudioThreads);
 
@@ -792,7 +794,11 @@ public void loadUMD(File file) {
             {
                 // no patch file found
                 boolean disableAudio = Settings.getInstance().readBool("emu.disablesceAudio");
-                jpcsp.HLE.Modules.sceAudioModule.setEnabled(!disableAudio);
+                jpcsp.HLE.Modules.sceAudioModule.setChReserveEnabled(!disableAudio);
+                
+                boolean disableBlocking = Settings.getInstance().readBool("emu.disableblockingaudio");
+                jpcsp.HLE.Modules.sceAudioModule.setBlockingEnabled(!disableBlocking);
+                
                 boolean ignoreAudioThreads = Settings.getInstance().readBool("emu.ignoreaudiothreads");
                 jpcsp.HLE.ThreadMan.getInstance().setThreadBanningEnabled(ignoreAudioThreads);
             }
@@ -836,8 +842,12 @@ public boolean checkAndInstallPatches(String filename)
 
         String disableAudio = patchSettings.getProperty("emu.disablesceAudio");
         if (disableAudio != null)
-            jpcsp.HLE.Modules.sceAudioModule.setEnabled(!(Integer.parseInt(disableAudio) != 0));
+            jpcsp.HLE.Modules.sceAudioModule.setChReserveEnabled(!(Integer.parseInt(disableAudio) != 0));
 
+        String disableBlocking = patchSettings.getProperty("emu.disableblockingaudio");
+        if (disableBlocking != null)
+            jpcsp.HLE.Modules.sceAudioModule.setBlockingEnabled(!(Integer.parseInt(disableBlocking) != 0));
+        
         String ignoreAudioThreads = patchSettings.getProperty("emu.ignoreaudiothreads");
         if (ignoreAudioThreads != null)
             jpcsp.HLE.ThreadMan.getInstance().setThreadBanningEnabled(Integer.parseInt(ignoreAudioThreads) != 0);

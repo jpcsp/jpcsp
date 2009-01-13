@@ -80,9 +80,6 @@ public class sceAudio implements HLEModule, HLEThread {
     @Override
     public void installModule(HLEModuleManager mm, int version) {
 
-        // put this here until we add it to the gui/loader
-        disableBlockingAudio = false;
-
         if (version >= 150) {
 
             mm.addFunction(sceAudioOutputFunction, 0x8C1009B2);
@@ -115,7 +112,8 @@ public class sceAudio implements HLEModule, HLEThread {
             mm.addFunction(sceAudioLoopbackTestFunction, 0xB61595C0);
             mm.addFunction(sceAudioSetVolumeOffsetFunction, 0x927AC32B);
 
-            if (!disableBlockingAudio)
+            // unfortunately we get here before setBlockingEnabled is called
+            //if (!disableBlockingAudio)
                 mm.addThread(this);
         }
 
@@ -131,7 +129,8 @@ public class sceAudio implements HLEModule, HLEThread {
     @Override
     public void uninstallModule(HLEModuleManager mm, int version) {
         if (version >= 150) {
-            if (!disableBlockingAudio)
+            // unfortunately addThread is called before setBlockingEnabled
+            //if (!disableBlockingAudio)
                 mm.removeThread(this);
 
             mm.removeFunction(sceAudioOutputFunction);
@@ -169,16 +168,21 @@ public class sceAudio implements HLEModule, HLEThread {
     protected boolean disableChReserve;
     protected boolean disableBlockingAudio;
 
-    // TODO rename setEnabled to setChReserveEnabled
-    // TODO add setBlockingEnabled
-    // TODO add emu.disableBlockingAudio to the settings GUI
-    public void setEnabled(boolean enabled) {
+    public void setChReserveEnabled(boolean enabled) {
         disableChReserve = !enabled;
         Modules.log.info("Audio ChReserve disabled: " + disableChReserve);
-        //Modules.log.info("Audio Blocking disabled: " + disableBlockingAudio);
     }
 
+    public void setBlockingEnabled(boolean enabled) {
+        disableBlockingAudio = !enabled;
+        Modules.log.info("Audio Blocking disabled: " + disableBlockingAudio);
+    }
+    
+    @Override
     public void step() {
+        if (disableBlockingAudio)
+            return;
+        
         for (int i = 0; i < 8; i++) {
             if (pspchannels[i].waitingThreadId >= 0) {
                 int len = hleAudioGetChannelRestLen(i);

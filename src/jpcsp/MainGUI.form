@@ -151,9 +151,6 @@
               <Properties>
                 <Property name="label" type="java.lang.String" value="File Log"/>
               </Properties>
-              <AccessibilityProperties>
-                <Property name="AccessibleContext.accessibleName" type="java.lang.String" value="File Log"/>
-              </AccessibilityProperties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="FileLogActionPerformed"/>
               </Events>

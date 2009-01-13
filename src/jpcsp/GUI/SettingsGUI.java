@@ -80,6 +80,9 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         enabled = Settings.getInstance().readBool("emu.mutesound");
         disableSoundCheck.setSelected(enabled);
         
+        enabled = Settings.getInstance().readBool("emu.disableblockingaudio");
+        disableBlockingAudioCheck.setSelected(enabled);
+        
         enabled = Settings.getInstance().readBool("emu.umdbrowser");
         if(enabled)
             umdBrowser.setSelected(true);
@@ -240,6 +243,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         disableSoundCheck = new javax.swing.JCheckBox();
         IgnoreAudioThreadsCheck = new javax.swing.JCheckBox();
         DisableSceAudioCheck = new javax.swing.JCheckBox();
+        disableBlockingAudioCheck = new javax.swing.JCheckBox();
         jPanel2 = new javax.swing.JPanel();
         disableGECheck = new javax.swing.JCheckBox();
         disableVBOCheck = new javax.swing.JCheckBox();
@@ -390,7 +394,9 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
 
         IgnoreAudioThreadsCheck.setText("Disable audio threads");
 
-        DisableSceAudioCheck.setText("Disable audio functions (not recommended)");
+        DisableSceAudioCheck.setText("Disable audio channels (not recommended)");
+
+        disableBlockingAudioCheck.setText("Disable audio blocking");
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -400,7 +406,8 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(disableSoundCheck)
                     .addComponent(IgnoreAudioThreadsCheck)
-                    .addComponent(DisableSceAudioCheck))
+                    .addComponent(DisableSceAudioCheck)
+                    .addComponent(disableBlockingAudioCheck))
                 .addContainerGap(40, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
@@ -411,7 +418,9 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                 .addComponent(IgnoreAudioThreadsCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(DisableSceAudioCheck)
-                .addContainerGap(190, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(disableBlockingAudioCheck)
+                .addContainerGap(167, Short.MAX_VALUE))
         );
 
         jPanel2.setBorder(javax.swing.BorderFactory.createTitledBorder("Video"));
@@ -442,7 +451,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
             compatibilityPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, compatibilityPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, 297, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
@@ -914,6 +923,8 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
    Settings.getInstance().writeBool("emu.disablesceAudio", DisableSceAudioCheck.isSelected());
    Settings.getInstance().writeBool("emu.ignoreaudiothreads",IgnoreAudioThreadsCheck.isSelected());
    Settings.getInstance().writeBool("emu.mutesound",disableSoundCheck.isSelected());
+   Settings.getInstance().writeBool("emu.disableblockingaudio",disableBlockingAudioCheck.isSelected());
+   
    if(umdBrowser.isSelected())
       Settings.getInstance().writeBool("emu.umdbrowser", true);
    else
@@ -1031,6 +1042,7 @@ private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.JPanel compatibilityPanel;
     private javax.swing.JCheckBox compilerCheck;
+    private javax.swing.JCheckBox disableBlockingAudioCheck;
     private javax.swing.JCheckBox disableGECheck;
     private javax.swing.JCheckBox disableSoundCheck;
     private javax.swing.JCheckBox disableVBOCheck;
