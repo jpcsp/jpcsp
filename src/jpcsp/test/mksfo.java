@@ -107,7 +107,7 @@ public class mksfo {
         // md5 f61a73a4d97d237ff522f132316d5eb4
         //PSF psf = read("LocoRoco.SFO");
         //System.out.println();
-        //makePBPSFO("PARAM.SFO", "UCJS10041", "1.00", "3.40", "LocoRoco™ ?????", 1, 0);
+        //makePBPSFO("PARAM.SFO", "UCJS10041", "1.00", "3.40", "LocoRoco? ?????", 1, 0);
         //makePBPSFO("PARAM.SFO", "UCJS10041", "1.00", "3.40", (String)psf.get("TITLE"), 1, 0);
         //System.out.println();
         //read("PARAM.SFO");
