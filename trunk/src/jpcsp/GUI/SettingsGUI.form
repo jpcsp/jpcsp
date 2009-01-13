@@ -250,7 +250,7 @@
               <Group type="103" groupAlignment="0" attributes="0">
                   <Group type="102" alignment="1" attributes="0">
                       <EmptySpace max="-2" attributes="0"/>
-                      <Component id="jPanel2" max="32767" attributes="0"/>
+                      <Component id="jPanel2" pref="297" max="32767" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="jPanel1" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
@@ -288,6 +288,7 @@
                               <Component id="disableSoundCheck" min="-2" max="-2" attributes="0"/>
                               <Component id="IgnoreAudioThreadsCheck" alignment="0" min="-2" max="-2" attributes="0"/>
                               <Component id="DisableSceAudioCheck" alignment="0" min="-2" max="-2" attributes="0"/>
+                              <Component id="disableBlockingAudioCheck" alignment="0" min="-2" max="-2" attributes="0"/>
                           </Group>
                           <EmptySpace pref="40" max="32767" attributes="0"/>
                       </Group>
@@ -301,7 +302,9 @@
                           <Component id="IgnoreAudioThreadsCheck" min="-2" max="-2" attributes="0"/>
                           <EmptySpace max="-2" attributes="0"/>
                           <Component id="DisableSceAudioCheck" min="-2" max="-2" attributes="0"/>
-                          <EmptySpace pref="190" max="32767" attributes="0"/>
+                          <EmptySpace max="-2" attributes="0"/>
+                          <Component id="disableBlockingAudioCheck" min="-2" max="-2" attributes="0"/>
+                          <EmptySpace pref="167" max="32767" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
@@ -319,7 +322,12 @@
                 </Component>
                 <Component class="javax.swing.JCheckBox" name="DisableSceAudioCheck">
                   <Properties>
-                    <Property name="text" type="java.lang.String" value="Disable audio functions (not recommended)"/>
+                    <Property name="text" type="java.lang.String" value="Disable audio channels (not recommended)"/>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JCheckBox" name="disableBlockingAudioCheck">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" value="Disable audio blocking"/>
                   </Properties>
                 </Component>
               </SubComponents>
