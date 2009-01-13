@@ -44,7 +44,6 @@ public class PSF {
     public final static int PSF_DATA_TYPE_STRING = 2;
     public final static int PSF_DATA_TYPE_INT32 = 4;
 
-    @Deprecated
     public PSF(long psfOffset) {
         this.psfOffset = (int)psfOffset;
         size = 0;
