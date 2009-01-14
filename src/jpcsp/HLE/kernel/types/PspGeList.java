@@ -64,10 +64,10 @@ public class PspGeList
     }
 
     public void pushSignalCallback(int arg) {
-        //pspge.getInstance().triggerSignalCallback(cbid, arg);
+        pspge.getInstance().triggerSignalCallback(cbid, arg);
     }
 
     public void pushFinishCallback(int arg) {
-        //pspge.getInstance().triggerFinishCallback(cbid, arg);
+        pspge.getInstance().triggerFinishCallback(cbid, arg);
     }
 }
