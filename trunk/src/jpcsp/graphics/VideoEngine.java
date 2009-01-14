@@ -673,16 +673,18 @@ public class VideoEngine {
                 break;
 
             case TME:
-                if (normalArgument != 0) {
-                	tex_enable = 1;
-                    gl.glEnable(GL.GL_TEXTURE_2D);
-                    if(useShaders) gl.glUniform1i(Uniforms.texEnable.getId(), 1);
-                    log("sceGuEnable(GU_TEXTURE_2D)");
-                } else {
-                	tex_enable = 0;
-                    gl.glDisable(GL.GL_TEXTURE_2D);
-                    if(useShaders) gl.glUniform1i(Uniforms.texEnable.getId(), 0);
-                    log("sceGuDisable(GU_TEXTURE_2D)");
+                if (!clearMode) {
+                    if (normalArgument != 0) {
+                    	tex_enable = 1;
+                        gl.glEnable(GL.GL_TEXTURE_2D);
+                        if(useShaders) gl.glUniform1i(Uniforms.texEnable.getId(), 1);
+                        log("sceGuEnable(GU_TEXTURE_2D)");
+                    } else {
+                    	tex_enable = 0;
+                        gl.glDisable(GL.GL_TEXTURE_2D);
+                        if(useShaders) gl.glUniform1i(Uniforms.texEnable.getId(), 0);
+                        log("sceGuDisable(GU_TEXTURE_2D)");
+                    }
                 }
                 break;
 
@@ -1827,16 +1829,19 @@ public class VideoEngine {
             	}
             	break;
             case ABE:
-                if(normalArgument != 0) {
-                    gl.glEnable(GL.GL_BLEND);
-                    log("sceGuEnable(GU_BLEND)");
-                }
-                else {
-                    gl.glDisable(GL.GL_BLEND);
-                    log("sceGuDisable(GU_BLEND)");
+                if (!clearMode) {
+                    if(normalArgument != 0) {
+                        gl.glEnable(GL.GL_BLEND);
+                        log("sceGuEnable(GU_BLEND)");
+                    }
+                    else {
+                        gl.glDisable(GL.GL_BLEND);
+                        log("sceGuDisable(GU_BLEND)");
+                    }
                 }
                 break;
              case ATE:
+                if (!clearMode) {
 	            	if(normalArgument != 0) {
 	            		gl.glEnable(GL.GL_ALPHA_TEST);
 	            		log("sceGuEnable(GL_ALPHA_TEST)");
@@ -1845,15 +1850,18 @@ public class VideoEngine {
 	            		 gl.glDisable(GL.GL_ALPHA_TEST);
 	                     log("sceGuDisable(GL_ALPHA_TEST)");
 	            	}
-	            	break;
-            case ZTE:
-                if(normalArgument != 0) {
-                    gl.glEnable(GL.GL_DEPTH_TEST);
-                    log("sceGuEnable(GU_DEPTH_TEST)");
                 }
-                else {
-                    gl.glDisable(GL.GL_DEPTH_TEST);
-                    log("sceGuDisable(GU_DEPTH_TEST)");
+	            break;
+            case ZTE:
+                if (!clearMode) {
+                    if(normalArgument != 0) {
+                        gl.glEnable(GL.GL_DEPTH_TEST);
+                        log("sceGuEnable(GU_DEPTH_TEST)");
+                    }
+                    else {
+                        gl.glDisable(GL.GL_DEPTH_TEST);
+                        log("sceGuDisable(GU_DEPTH_TEST)");
+                    }
                 }
                 break;
             case STE:
@@ -1973,12 +1981,7 @@ public class VideoEngine {
 	            	}
 
 	            	int referenceAlphaValue = (normalArgument >> 8) & 0xff;
-	            	// Based on pspplayer: disable ALPHA_TEST when reference alpha value is 0
-	            	if (referenceAlphaValue == 0) {
-	            		gl.glDisable(GL.GL_ALPHA_TEST);
-	            	} else {
-	            		gl.glAlphaFunc(func, referenceAlphaValue / 255.0f);
-	            	}
+            		gl.glAlphaFunc(func, referenceAlphaValue / 255.0f);
 	            	log ("sceGuAlphaFunc(" + func + "," + referenceAlphaValue + ")");
 
 	            	break;
@@ -2121,6 +2124,7 @@ public class VideoEngine {
             		gl.glDisable(GL.GL_STENCIL_TEST);
             		gl.glDisable(GL.GL_LIGHTING);
             		gl.glDisable(GL.GL_TEXTURE_2D);
+            		gl.glDisable(GL.GL_ALPHA_TEST);
 
             		if(useShaders) {
             			gl.glUniform1f(Uniforms.zPos.getId(), 0);
