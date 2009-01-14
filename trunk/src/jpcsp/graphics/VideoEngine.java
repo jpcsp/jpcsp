@@ -27,7 +27,6 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.media.opengl.GL;
@@ -160,6 +159,10 @@ public class VideoEngine {
     private int textureTx_pixelSize;
 
     private boolean clearMode;
+    private int depthFuncClearMode;
+
+    private int depthFunc2D;
+    private int depthFunc3D;
 
     // opengl needed information/buffers
     private int[] gl_texture_id = new int[1];
@@ -2033,35 +2036,51 @@ public class VideoEngine {
 
             case ZTST: {
 
-                int func = GL.GL_LESS;
+                depthFunc2D = GL.GL_LESS;
+                depthFunc3D = depthFunc2D;
 
-                if(useShaders) {
-                	switch (normalArgument & 0xFF) {
-	                    case ZTST_FUNCTION_NEVER_PASS_PIXEL: func = GL.GL_NEVER; break;
-	                    case ZTST_FUNCTION_ALWAYS_PASS_PIXEL: func = GL.GL_ALWAYS; break;
-	                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_EQUAL: func = GL.GL_EQUAL; break;
-	                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_ISNOT_EQUAL: func = GL.GL_NOTEQUAL; break;
-	                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS: func = GL.GL_LESS; break;
-	                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS_OR_EQUAL: func = GL.GL_LEQUAL; break;
-	                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER: func = GL.GL_GREATER; break;
-	                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER_OR_EQUAL: func = GL.GL_GEQUAL; break;
-                	}
-                } else {
-	                switch (normalArgument & 0xFF) {
-	                    case ZTST_FUNCTION_NEVER_PASS_PIXEL: func = GL.GL_NEVER; break;
-	                    case ZTST_FUNCTION_ALWAYS_PASS_PIXEL: func = GL.GL_ALWAYS; break;
-	                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_EQUAL: func = GL.GL_EQUAL; break;
-	                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_ISNOT_EQUAL: func = GL.GL_NOTEQUAL; break;
-	                    // TODO Remove this hack of depth test inversion and properly translate the GE commands
-	                    // But I guess we need to implement zscale first... which is about very difficult to do
-	                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS: func = GL.GL_GREATER; break;
-	                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS_OR_EQUAL: func = GL.GL_GEQUAL; break;
-	                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER: func = GL.GL_LESS; break;
-	                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER_OR_EQUAL: func = GL.GL_LEQUAL; break;
-	                }
+            	switch (normalArgument & 0xFF) {
+                    case ZTST_FUNCTION_NEVER_PASS_PIXEL:
+                        depthFunc2D = GL.GL_NEVER;
+                        depthFunc3D = GL.GL_NEVER;
+                        break;
+                    case ZTST_FUNCTION_ALWAYS_PASS_PIXEL:
+                        depthFunc2D = GL.GL_ALWAYS;
+                        depthFunc3D = GL.GL_ALWAYS;
+                        break;
+                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_EQUAL:
+                        depthFunc2D = GL.GL_EQUAL;
+                        depthFunc3D = GL.GL_EQUAL;
+                        break;
+                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_ISNOT_EQUAL:
+                        depthFunc2D = GL.GL_NOTEQUAL;
+                        depthFunc3D = GL.GL_NOTEQUAL;
+                        break;
+                    // TODO Remove this hack of depth test inversion for 3D and properly translate the GE commands
+                    // But I guess we need to implement zscale first... which is about very difficult to do
+                    // The depth is correctly handled for 2D drawing for not for 3D.
+                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS:
+                        depthFunc2D = GL.GL_LESS;
+                        depthFunc3D = GL.GL_GREATER;
+                        break;
+                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_LESS_OR_EQUAL:
+                        depthFunc2D = GL.GL_LEQUAL;
+                        depthFunc3D = GL.GL_GEQUAL;
+                        break;
+                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER:
+                        depthFunc2D = GL.GL_GREATER;
+                        depthFunc3D = GL.GL_LESS;
+                        break;
+                    case ZTST_FUNCTION_PASS_PX_WHEN_DEPTH_IS_GREATER_OR_EQUAL:
+                        depthFunc2D = GL.GL_GEQUAL;
+                        depthFunc3D = GL.GL_LEQUAL;
+                        break;
+            	}
+
+            	if (useShaders) {
+            	    // Shaders handle correctly the depth in 3D
+                    depthFunc3D = depthFunc2D;
                 }
-
-                gl.glDepthFunc(func);
 
                 log ("sceGuDepthFunc(" + normalArgument + ")");
                 break;
@@ -2103,14 +2122,15 @@ public class VideoEngine {
             case CLEAR:
             	if(clearMode && (normalArgument & 1) == 0) {
             		clearMode = false;
+            		depthFunc2D = depthFuncClearMode;
             		gl.glPopAttrib();
             		// TODO Remove this glClear
             		// We should not use it at all but demos won't work at all without it and our current implementation
             		// We need to tweak the Z values written to the depth buffer, but I think this is impossible to do properly
             		// without a fragment shader
-            		if(!useShaders)
-            			gl.glClear(GL.GL_DEPTH_BUFFER_BIT);
-            		else {
+            		if(!useShaders) {
+            			// gl.glClear(GL.GL_DEPTH_BUFFER_BIT);
+            		} else {
             			gl.glUniform1f(Uniforms.zPos.getId(), zpos);
             			gl.glUniform1f(Uniforms.zScale.getId(), zscale);
             			gl.glUniform1i(Uniforms.texEnable.getId(), tex_enable);
@@ -2144,6 +2164,8 @@ public class VideoEngine {
             			gl.glStencilOp(GL.GL_KEEP, GL.GL_KEEP, GL.GL_ZERO);
             		}
             		gl.glDepthMask((normalArgument & 0x400) != 0);
+            		depthFuncClearMode = depthFunc2D;
+            		depthFunc2D = GL.GL_ALWAYS;
             		gl.glColorMask(color, color, color, alpha);
                     if (log.isDebugEnabled()) {
                         log("clear mode : " + (normalArgument >> 8));
@@ -3000,13 +3022,14 @@ public class VideoEngine {
         gl.glPushMatrix ();
         gl.glLoadIdentity();
 
-        if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
+        if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
+            gl.glDepthFunc(depthFunc3D);
             gl.glLoadMatrixf(proj_uploaded_matrix, 0);
-        else {
-            // 2D mode shouldn't be affected by the depth buffer nor lighting
-        	gl.glOrtho(0.0, 480, 272, 0, -1.0, 1.0);
-            gl.glPushAttrib(GL.GL_DEPTH_BUFFER_BIT | GL.GL_LIGHTING_BIT);
-            gl.glDepthFunc(GL.GL_ALWAYS);
+        } else {
+            gl.glDepthFunc(depthFunc2D);
+            // 2D mode shouldn't be affected by the lighting
+        	gl.glOrtho(0.0, 480, 272, 0, Double.MAX_VALUE, Double.MIN_VALUE);
+            gl.glPushAttrib(GL.GL_LIGHTING_BIT);
             gl.glDisable(GL.GL_LIGHTING);
             if(useShaders) {
             	gl.glUniform1i(Uniforms.lightingEnable.getId(), 0);
