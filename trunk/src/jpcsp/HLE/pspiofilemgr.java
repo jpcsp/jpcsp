@@ -111,13 +111,16 @@ public class pspiofilemgr {
     public final static int PSP_ERROR_READ_ONLY = 0x8001001e;
     public final static int PSP_ERROR_NO_MEDIA = 0x8001007b;
 
-    public final static int PSP_ERROR_FILE_READ_ERROR     = 0x80020130;
-    public final static int PSP_ERROR_TOO_MANY_OPEN_FILES = 0x80020320;
-    public final static int PSP_ERROR_BAD_FILE_DESCRIPTOR = 0x80020323;
-    public final static int PSP_ERROR_NOCWD               = 0x8002032c; // TODO
-    public final static int PSP_ERROR_FILENAME_TOO_LONG   = 0x8002032d;
-    public final static int PSP_ERROR_ASYNC_BUSY          = 0x80020329;
-    public final static int PSP_ERROR_NO_ASYNC_OP         = 0x8002032a;
+    public final static int PSP_ERROR_FILE_READ_ERROR       = 0x80020130;
+    public final static int PSP_ERROR_TOO_MANY_OPEN_FILES   = 0x80020320;
+    public final static int PSP_ERROR_BAD_FILE_DESCRIPTOR   = 0x80020323;
+    public final static int PSP_ERROR_UNSUPPORTED_OPERATION = 0x80020325;
+    public final static int PSP_ERROR_NOCWD                 = 0x8002032c; // TODO
+    public final static int PSP_ERROR_FILENAME_TOO_LONG     = 0x8002032d;
+    public final static int PSP_ERROR_ASYNC_BUSY            = 0x80020329;
+    public final static int PSP_ERROR_NO_ASYNC_OP           = 0x8002032a;
+    public final static int PSP_ERROR_DEVCTL_BAD_PARAMS     = 0x80220081; // actual name unknown
+
 
 
     private HashMap<Integer, IoInfo> filelist;
@@ -126,8 +129,9 @@ public class pspiofilemgr {
     private String filepath; // current working directory on PC
     private UmdIsoReader iso;
 
-    public final static int PSP_MEMORYSTICK_STATE_INSERTED = 1;
-    public final static int PSP_MEMORYSTICK_STATE_EJECTED  = 2;
+    public final static int PSP_MEMORYSTICK_STATE_INSERTED  = 1;
+    public final static int PSP_MEMORYSTICK_STATE_EJECTED   = 2;
+    public final static int PSP_MEMORYSTICK_STATE_INSERTING = 4; // mscmhc0 0x02015804 only
     private int memoryStickState;
 
     public static pspiofilemgr getInstance() {
@@ -202,6 +206,8 @@ public class pspiofilemgr {
 
                 if (thread.wait.waitingOnIo &&
                     thread.wait.Io_id == found.uid) {
+                    Modules.log.debug("pspiofilemgr - onContextSwitch waking " + Integer.toHexString(thread.uid) + " thread:'" + thread.name + "'");
+
                     // Untrack
                     thread.wait.waitingOnIo = false;
 
@@ -306,19 +312,19 @@ public class pspiofilemgr {
         SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
         IoInfo info = filelist.get(uid);
         if (info == null) {
-            Modules.log.warn("hleIoGetAsyncStat - unknown uid " + Integer.toHexString(uid));
+            Modules.log.warn("hleIoGetAsyncStat - unknown uid " + Integer.toHexString(uid) + ", not waiting");
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
         } else if (info.result == PSP_ERROR_NO_ASYNC_OP) {
-            Modules.log.debug("hleIoGetAsyncStat - PSP_ERROR_NO_ASYNC_OP");
+            Modules.log.debug("hleIoGetAsyncStat - PSP_ERROR_NO_ASYNC_OP, not waiting");
             wait = false;
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NO_ASYNC_OP;
         } else if (info.asyncPending && !wait) {
             // Need to wait for context switch before we can allow the good result through
-            Modules.log.debug("hleIoGetAsyncStat - 1 (busy)");
+            Modules.log.debug("hleIoGetAsyncStat - poll return=1(busy), not waiting");
             Emulator.getProcessor().cpu.gpr[2] = 1;
         } else {
             if (info.closePending) {
-                Modules.log.debug("hleIoGetAsyncStat - file marked with closePending, calling sceIoClose");
+                Modules.log.debug("hleIoGetAsyncStat - file marked with closePending, calling sceIoClose, not waiting");
                 sceIoClose(uid);
                 wait = false;
             }
@@ -328,6 +334,16 @@ public class pspiofilemgr {
                 Modules.log.debug("hleIoGetAsyncStat - file not found, not waiting");
                 filelist.remove(info.uid);
                 SceUidManager.releaseUid(info.uid, "IOFileManager-File");
+                wait = false;
+            }
+
+            // This case happens when the game switches thread before calling waitAsync,
+            // example: sceIoReadAsync -> sceKernelDelayThread -> sceIoWaitAsync
+            // Technically we should wait at least some time, since tests show
+            // a load of sceKernelDelayThread before sceIoWaitAsync won't make
+            // the async io complete (maybe something to do with thread priorities).
+            if (!info.asyncPending) {
+                Modules.log.debug("hleIoGetAsyncStat - already context switched, not waiting");
                 wait = false;
             }
 
@@ -360,6 +376,8 @@ public class pspiofilemgr {
             // Go to wait state
             int timeout = 0;
             boolean forever = true;
+            //int timeout = 1000000;
+            //boolean forever = false;
             threadMan.hleKernelThreadWait(current_thread.wait, timeout, forever);
 
             // Wait on a specific file uid
@@ -370,6 +388,8 @@ public class pspiofilemgr {
             threadMan.contextSwitch(threadMan.nextThread());
         } else if (callbacks) {
             ThreadMan.getInstance().yieldCurrentThreadCB();
+        } else {
+            Modules.log.debug("hleIoGetAsyncStat - not context switching");
         }
     }
 
@@ -1154,18 +1174,59 @@ public class pspiofilemgr {
                 break;
             }
 
-            case 0x02015804:
-                // register unknown type of ms callback
-                Modules.log.warn("IGNORED: sceIoDevctl " + String.format("0x%08X", cmd) + " unhandled ms command (register some kind of callback)");
-                Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
-                break;
+            case 0x02015804: // register memory stick insert/eject callback (mscmhc0)
+            {
+                Modules.log.debug("sceIoDevctl register memorystick insert/eject callback (mscmhc0)");
+                Memory mem = Memory.getInstance();
+                ThreadMan threadMan = ThreadMan.getInstance();
 
+                if (!device.equals("mscmhc0:")) {
+                    Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_UNSUPPORTED_OPERATION;
+                } else if (mem.isAddressGood(indata_addr) && inlen == 4) {
+                    int cbid = mem.read32(indata_addr);
+                    if (threadMan.setCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid)) {
+                        // Trigger callback immediately
+                        threadMan.pushCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, memoryStickState);
+                        Emulator.getProcessor().cpu.gpr[2] = 0; // Success
+                    } else {
+
+                        Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_DEVCTL_BAD_PARAMS; // No such callback
+                    }
+                } else {
+                    Emulator.getProcessor().cpu.gpr[2] = -1; // Invalid parameters
+                }
+                break;
+            }
+
+            case 0x02015805: // unregister memory stick insert/eject callback (mscmhc0)
+            {
+                Modules.log.debug("sceIoDevctl unregister memorystick insert/eject callback (mscmhc0)");
+                Memory mem = Memory.getInstance();
+                ThreadMan threadMan = ThreadMan.getInstance();
+
+                if (!device.equals("mscmhc0:")) {
+                    Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_UNSUPPORTED_OPERATION;
+                } else if (mem.isAddressGood(indata_addr) && inlen == 4) {
+                    int cbid = mem.read32(indata_addr);
+                    if (threadMan.clearCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid) != null) {
+                        Emulator.getProcessor().cpu.gpr[2] = 0; // Success
+                    } else {
+                        Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_DEVCTL_BAD_PARAMS; // No such callback
+                    }
+                } else {
+                    Emulator.getProcessor().cpu.gpr[2] = -1; // Invalid parameters
+                }
+                break;
+            }
 
             case 0x02025801:
             {
                 Modules.log.warn("sceIoDevctl " + String.format("0x%08X", cmd) + " unknown ms command (check fs type?)");
                 Memory mem = Memory.getInstance();
-                if (mem.isAddressGood(outdata_addr)) {
+
+                if (!device.equals("mscmhc0:")) {
+                    Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_UNSUPPORTED_OPERATION;
+                } else if (mem.isAddressGood(outdata_addr)) {
                     // 1 = not inserted
                     // 4 = inserted
                     mem.write32(outdata_addr, 4);
@@ -1178,9 +1239,12 @@ public class pspiofilemgr {
 
             case 0x02025806:
             {
-                Modules.log.debug("sceIoDevctl check ms inserted");
+                Modules.log.debug("sceIoDevctl check ms inserted (mscmhc0)");
                 Memory mem = Memory.getInstance();
-                if (mem.isAddressGood(outdata_addr)) {
+
+                if (!device.equals("mscmhc0:")) {
+                    Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_UNSUPPORTED_OPERATION;
+                } else if (mem.isAddressGood(outdata_addr)) {
                     mem.write32(outdata_addr, memoryStickState);
                     Emulator.getProcessor().cpu.gpr[2] = 0;
                 } else {
@@ -1189,12 +1253,15 @@ public class pspiofilemgr {
                 break;
             }
 
-            case 0x02415821: // register memorystick insert/eject callback
+            case 0x02415821: // register memorystick insert/eject callback (fatms0)
             {
-                Modules.log.debug("sceIoDevctl register memorystick insert/eject callback");
+                Modules.log.debug("sceIoDevctl register memorystick insert/eject callback (fatms0)");
                 Memory mem = Memory.getInstance();
                 ThreadMan threadMan = ThreadMan.getInstance();
-                if (mem.isAddressGood(indata_addr) && inlen == 4) {
+
+                if (!device.equals("fatms0:")) {
+                    Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_DEVCTL_BAD_PARAMS;
+                } else if (mem.isAddressGood(indata_addr) && inlen == 4) {
                     int cbid = mem.read32(indata_addr);
                     threadMan.setCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid);
                     // Trigger callback immediately
@@ -1206,12 +1273,15 @@ public class pspiofilemgr {
                 break;
             }
 
-            case 0x02415822: // unregister ms eject callback
+            case 0x02415822: // unregister memorystick insert/eject callback (fatms0)
             {
-                Modules.log.debug("sceIoDevctl unregister memorystick insert/eject callback");
+                Modules.log.debug("sceIoDevctl unregister memorystick insert/eject callback (fatms0)");
                 Memory mem = Memory.getInstance();
                 ThreadMan threadMan = ThreadMan.getInstance();
-                if (mem.isAddressGood(indata_addr) && inlen == 4) {
+
+                if (!device.equals("fatms0:")) {
+                    Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_DEVCTL_BAD_PARAMS;
+                } else if (mem.isAddressGood(indata_addr) && inlen == 4) {
                     int cbid = mem.read32(indata_addr);
                     threadMan.clearCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid);
                     Emulator.getProcessor().cpu.gpr[2] = 0;  // Success
@@ -1256,9 +1326,20 @@ public class pspiofilemgr {
             }
 
             case 0x02425823:
-                Modules.log.warn("IGNORED: sceIoDevctl " + String.format("0x%08X", cmd) + " unhandled ms command");
-                Emulator.getProcessor().cpu.gpr[2] = 0; // Fake success
+            {
+                Modules.log.debug("sceIoDevctl check ms inserted (fatms0)");
+                Memory mem = Memory.getInstance();
+                if (!device.equals("fatms0:")) {
+                    Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_DEVCTL_BAD_PARAMS;
+                } else if (mem.isAddressGood(outdata_addr)) {
+                    // 0 = not inserted
+                    // 1 = inserted
+                    mem.write32(outdata_addr, 1);
+                } else {
+                    Emulator.getProcessor().cpu.gpr[2] = -1;
+                }
                 break;
+            }
 
             default:
                 Modules.log.warn("sceIoDevctl " + String.format("0x%08X", cmd) + " unknown command");
