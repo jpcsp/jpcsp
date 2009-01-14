@@ -656,7 +656,7 @@ public class sceUtility implements HLEModule {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
 
-        Modules.log.warn("PARTIAL:sceUtilityMsgDialogGetStatus return:" + msgdialog_status);
+        Modules.log.warn("PARTIAL:sceUtilityMsgDialogGetStatus return:" + Integer.toHexString(msgdialog_status));
 
         cpu.gpr[2] = msgdialog_status;
 

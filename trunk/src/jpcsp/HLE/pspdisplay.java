@@ -116,10 +116,10 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     private float texT;
 
     // fps counter variables
-    private long prevStatsTime = 0;
-    private long frameCount = 0;
-    private long actualframeCount = 0;
-    private long reportCount = 0;
+    private long prevStatsTime;
+    private long frameCount;
+    private long prevFrameCount;
+    private long reportCount;
     private double averageFPS = 0.0;
 
     private int vcount;
@@ -173,6 +173,12 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         setGeBufCalledAtLeastOnce = false;
         gotBadGeBufParams = false;
         gotBadFbBufParams = false;
+
+        prevStatsTime = 0;
+        frameCount = 0;
+        prevFrameCount = 0;
+        reportCount = 0;
+        averageFPS = 0.0;
 
         vcount = 0;
         accumulatedHcount = 0.0f;
@@ -230,7 +236,9 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         int topaddr, int bufferwidth, int pixelformat)
     {
         topaddr &= 0x3fffffff;
-        topaddr += MemoryMap.START_VRAM;
+        // testing
+        //if (topaddr < MemoryMap.START_VRAM)
+        //    topaddr += MemoryMap.START_VRAM;
         if (topaddr < MemoryMap.START_VRAM || topaddr >= MemoryMap.END_VRAM ||
             bufferwidth <= 0 || (bufferwidth & (bufferwidth - 1)) != 0 ||
             pixelformat < 0 || pixelformat > 3 ||
@@ -306,9 +314,9 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
         if (realElapsedTime > 1000L) {
             reportCount++;
-            int lastFPS = (int)(frameCount - actualframeCount);
+            int lastFPS = (int)(frameCount - prevFrameCount);
             averageFPS = (double)frameCount / reportCount;
-            actualframeCount = frameCount;
+            prevFrameCount = frameCount;
             prevStatsTime = timeNow;
 
             Emulator.setFpsTitle("averageFPS: " + String.format("%.1f", averageFPS) + " lastFPS: " + lastFPS);
@@ -453,9 +461,9 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     	// Not safe to use in release mode since people could have a few exceptions
     	// that remained silent when some operations fails but still output the
     	// intended result
-        //drawable.setGL(new DebugGL(drawable.getGL()));        
+        //drawable.setGL(new DebugGL(drawable.getGL()));
         final GL gl = drawable.getGL();
-        VideoEngine.getEngine(gl, true, true); // Initialize shaders on startup
+        VideoEngine.getInstance().setGL(gl); // Initialize shaders on startup
         gl.setSwapInterval(1);
     }
 
@@ -540,7 +548,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 	            // render the frame buffer.
 	            // But glDrawPixels is showing around 10% performance decrease
 	            // against glTexSubImage2D.
-	            
+
 	            // Use format without alpha channel if the source buffer doesn't have one
 	            int pixelFormatGL = getPixelFormatGL(pixelformatGe);
 				gl.glTexSubImage2D(
@@ -551,7 +559,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 	            drawFrameBuffer(gl, false, true);
             }
 
-            if (VideoEngine.getEngine(gl, true, true).update()) {
+            if (VideoEngine.getInstance().update()) {
                 // Update VRAM only if GE actually drew something
                 // Set texFb as the current texture
                 gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
