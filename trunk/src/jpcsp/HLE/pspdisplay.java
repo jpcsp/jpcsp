@@ -238,7 +238,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         topaddr &= 0x3fffffff;
         // testing
         //if (topaddr < MemoryMap.START_VRAM)
-        //    topaddr += MemoryMap.START_VRAM;
+        topaddr += MemoryMap.START_VRAM;
         if (topaddr < MemoryMap.START_VRAM || topaddr >= MemoryMap.END_VRAM ||
             bufferwidth <= 0 || (bufferwidth & (bufferwidth - 1)) != 0 ||
             pixelformat < 0 || pixelformat > 3 ||
