@@ -10,5 +10,7 @@
 	<classpathentry kind="lib" path="lib/jide-oss-2.3.1/jide-oss-2.3.1.jar"/>
 	<classpathentry kind="lib" path="lib/log4j-1.2.15.jar" sourcepath="F:/Documents and Settings/Orphis/Desktop/apache-log4j-1.2.15/apache-log4j-1.2.15/src/main/java"/>
 	<classpathentry kind="lib" path="lib/ASM/asm-all-3.1.jar"/>
+	<classpathentry kind="lib" path="lib/jaxen-1.1.1.jar"/>
+	<classpathentry kind="lib" path="lib/jdom1.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
