@@ -545,11 +545,9 @@ public class SyscallHandler {
                 case 0x20f9:
                     pspge.getInstance().sceGeListUpdateStallAddr(gpr[4], gpr[5]);
                     break;
-                /* ge sync
                 case 0x20fa:
                     pspge.getInstance().sceGeListSync(gpr[4], gpr[5]);
                     break;
-                */
                 case 0x20fb:
                     pspge.getInstance().sceGeDrawSync(gpr[4]);
                     break;

@@ -23,6 +23,7 @@ package jpcsp.HLE;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
+//import java.util.concurrent.Semaphore;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
@@ -31,6 +32,7 @@ import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelCallbackInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.pspGeCallbackData;
+import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.graphics.DisplayList;
 import jpcsp.graphics.VideoEngine;
 
@@ -44,8 +46,19 @@ public class pspge {
     public volatile boolean syncDone;
     private HashMap<Integer, SceKernelCallbackInfo> signalCallbacks;
     private HashMap<Integer, SceKernelCallbackInfo> finishCallbacks;
-    private volatile ConcurrentLinkedQueue<DeferredCallbackInfo> deferredSignalCallbackQueue;
-    private volatile ConcurrentLinkedQueue<DeferredCallbackInfo> deferredFinishCallbackQueue;
+
+    private ConcurrentLinkedQueue<PspGeList> listQueue;
+    private int listIdAllocator;
+
+    private ConcurrentLinkedQueue<DeferredCallbackInfo> deferredSignalCallbackQueue;
+    private ConcurrentLinkedQueue<DeferredCallbackInfo> deferredFinishCallbackQueue;
+
+
+    public final static int PSP_GE_LIST_DONE = 0;
+    public final static int PSP_GE_LIST_QUEUED = 1;
+    public final static int PSP_GE_LIST_DRAWING_DONE = 2;
+    public final static int PSP_GE_LIST_STALL_REACHED = 3;
+    public final static int PSP_GE_LIST_CANCEL_DONE = 4;
 
     public static pspge getInstance() {
         if (instance == null) {
@@ -69,6 +82,9 @@ public class pspge {
         signalCallbacks = new HashMap<Integer, SceKernelCallbackInfo>();
         finishCallbacks = new HashMap<Integer, SceKernelCallbackInfo>();
 
+        listQueue = new ConcurrentLinkedQueue<PspGeList>();
+        listIdAllocator = 0;
+
         deferredSignalCallbackQueue = new ConcurrentLinkedQueue<DeferredCallbackInfo>();
         deferredFinishCallbackQueue = new ConcurrentLinkedQueue<DeferredCallbackInfo>();
     }
@@ -77,6 +93,7 @@ public class pspge {
     public void step() {
         ThreadMan threadMan = ThreadMan.getInstance();
 
+        /* old
         if (waitingForSync) {
             if (syncDone) {
                 VideoEngine.log.debug("syncDone");
@@ -88,6 +105,11 @@ public class pspge {
                 pspdisplay.getInstance().setDirty(true);
             }
         }
+        */
+
+        // Hopefully we won't need this, setDirty is called from draw/list sync and when the user clicks Run (unpause)
+        //if (VideoEngine.getInstance().hasDrawLists())
+        //    pspdisplay.getInstance().setDirty(true);
 
         // Process deferred callbacks
         // TODO if these callbacks block GE we have more work to do...
@@ -112,22 +134,16 @@ public class pspge {
         Emulator.getProcessor().cpu.gpr[2] = MemoryMap.START_VRAM;
     }
 
-    public void sceGeListEnQueue(int list, int stall, int callbackId, int argument) {
+    public void sceGeListEnQueue(int list_addr, int stall_addr, int cbid, int arg_addr) {
+        /* old
         DisplayList.Lock();
 
-        /*
-        list 	- The head of the list to queue.
-        stall 	- The stall address. If NULL then no stall address set and the list is transferred immediately.
-        cbid 	- ID of the callback set by calling sceGeSetCallback
-        arg 	- Probably a parameter to the callbacks (to be confirmed)
-        */
-
         // remove uncache bit
-        list &= 0x3fffffff;
-        stall &= 0x3fffffff;
+        list_addr &= 0x3fffffff;
+        stall_addr &= 0x3fffffff;
 
-        if (Memory.getInstance().isAddressGood(list)) {
-            DisplayList displayList = new DisplayList(list, stall, callbackId, argument);
+        if (Memory.getInstance().isAddressGood(list_addr)) {
+            DisplayList displayList = new DisplayList(list_addr, stall_addr, cbid, arg_addr);
             DisplayList.addDisplayList(displayList);
             VideoEngine.log.debug("New list " + displayList.toString());
 
@@ -136,52 +152,174 @@ public class pspge {
 
             Emulator.getProcessor().cpu.gpr[2] = displayList.id;
         } else {
-            VideoEngine.log.error("sceGeListEnQueue bad address 0x" + Integer.toHexString(stall));
+            VideoEngine.log.error("sceGeListEnQueue bad address 0x" + Integer.toHexString(list_addr));
             Emulator.getProcessor().cpu.gpr[2] = -1;
         }
         DisplayList.Unlock();
+        */
+
+        VideoEngine.log.debug("sceGeListEnQueue(list=0x" + Integer.toHexString(list_addr)
+            + ",stall=0x" + Integer.toHexString(stall_addr)
+            + ",cbid=0x" + Integer.toHexString(cbid)
+            + ",arg=0x" + Integer.toHexString(arg_addr) + ") result id " + listIdAllocator);
+
+        PspGeList list = new PspGeList(list_addr, stall_addr, cbid, arg_addr);
+        list.id = listIdAllocator++;
+        listQueue.add(list);
+
+        Emulator.getProcessor().cpu.gpr[2] = list.id;
     }
 
-    public void sceGeListDeQueue(int qid) {
+    public void sceGeListDeQueue(int id) {
+        /* old
         DisplayList.Lock();
         // TODO if we render asynchronously, using another thread then we need to interupt it first
-        if (DisplayList.removeDisplayList(qid)) {
-            VideoEngine.log.debug("sceGeListDeQueue qid=" + qid);
+        if (DisplayList.removeDisplayList(id)) {
+            VideoEngine.log.debug("sceGeListDeQueue id=" + id);
             Emulator.getProcessor().cpu.gpr[2] = 0;
         } else {
-            VideoEngine.log.error("sceGeListDeQueue failed qid=" + qid);
+            VideoEngine.log.error("sceGeListDeQueue failed id=" + id);
             Emulator.getProcessor().cpu.gpr[2] = -1;
         }
         DisplayList.Unlock();
+        */
+
+        boolean found = false;
+
+        for (Iterator<PspGeList> it = listQueue.iterator(); it.hasNext(); ) {
+            PspGeList list = it.next();
+            if (list.id == id) {
+                it.remove();
+                VideoEngine.log.info("sceGeListDeQueue(id=" + id + ") ok");
+                Emulator.getProcessor().cpu.gpr[2] = 0;
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            VideoEngine.log.warn("sceGeListDeQueue(id=" + id + ") failed");
+            Emulator.getProcessor().cpu.gpr[2] = -1;
+        }
     }
 
-    public void sceGeListUpdateStallAddr(int qid, int stallAddress) {
+    public void sceGeListUpdateStallAddr(int id, int stall_addr) {
+        /* old
         DisplayList.Lock();
-        DisplayList displayList = DisplayList.getDisplayList(qid);
+        DisplayList displayList = DisplayList.getDisplayList(id);
         if (displayList != null) {
             // remove uncache bit
-            stallAddress &= 0x3fffffff;
+            stall_addr &= 0x3fffffff;
 
-            VideoEngine.log.trace("sceGeListUpdateStallAddr qid=" + qid
-                + " addr:" + String.format("%08x", stallAddress)
-                + " approx " + ((stallAddress - displayList.stallAddress) / 4) + " new commands");
+            VideoEngine.log.trace("sceGeListUpdateStallAddr id=" + id
+                + " addr:" + String.format("%08x", stall_addr)
+                + " approx " + ((stall_addr - displayList.stall_addr) / 4) + " new commands");
 
-            displayList.stallAddress = stallAddress;
-            if (displayList.pc != displayList.stallAddress) {
+            displayList.stall_addr = stall_addr;
+            if (displayList.pc != displayList.stall_addr) {
                 displayList.status = DisplayList.QUEUED;
                 pspdisplay.getInstance().setDirty(true);
             }
 
             Emulator.getProcessor().cpu.gpr[2] = 0;
         } else {
-            VideoEngine.log.error("sceGeListUpdateStallAddr qid="+ qid +" failed, no longer exists");
+            VideoEngine.log.error("sceGeListUpdateStallAddr id="+ id +" failed, no longer exists");
             Emulator.getProcessor().cpu.gpr[2] = -1;
         }
         DisplayList.Unlock();
+        */
+
+        boolean found = false;
+
+        for (Iterator<PspGeList> it = listQueue.iterator(); it.hasNext(); ) {
+            PspGeList list = it.next();
+            if (list.id == id) {
+                list.stall_addr = stall_addr;
+                if (list.currentStatus == PSP_GE_LIST_STALL_REACHED)
+                    list.currentStatus = PSP_GE_LIST_QUEUED;
+                VideoEngine.log.trace("sceGeListUpdateStallAddr(id=" + id + ",stall=0x" + Integer.toHexString(stall_addr) + ") ok");
+                Emulator.getProcessor().cpu.gpr[2] = 0;
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            VideoEngine.log.warn("sceGeListUpdateStallAddr(id=" + id + ",stall=0x" + Integer.toHexString(stall_addr) + ") failed");
+            Emulator.getProcessor().cpu.gpr[2] = -1;
+        }
     }
 
-    // TODO handle sync type
+    /** Called from VideoEngine */
+    public void hleGeListSyncDone(PspGeList list) {
+        VideoEngine.log.debug("list id=" + list.id + " current status " + list.currentStatus + " syncType " + list.syncStatus + " waking thread " + Integer.toHexString(list.thid) + " (0=no thread)");
+
+        if (list.thid != 0) {
+            ThreadMan.getInstance().unblockThread(list.thid);
+            list.thid = 0;
+        }
+
+        if (list.currentStatus == PSP_GE_LIST_DONE ||
+            list.currentStatus == PSP_GE_LIST_CANCEL_DONE) {
+            VideoEngine.log.debug("discarding list id=" + list.id);
+        } else {
+            listQueue.add(list);
+        }
+    }
+
+    /** @return true if the syncType is valid */
+    private boolean hleGeListSync(PspGeList list, int syncType) {
+        list.syncStatus = syncType;
+        pspdisplay.getInstance().setDirty(true);
+
+        if (syncType == PSP_GE_LIST_DONE) {
+            if (list.currentStatus == PSP_GE_LIST_QUEUED) {
+                list.currentStatus = PSP_GE_LIST_DRAWING_DONE;
+                VideoEngine.getInstance().pushDrawList(list);
+                VideoEngine.log.debug("hleGeListSync(id=" + list.id + ",syncType=" + syncType + ") ok");
+                return true;
+            } else {
+                VideoEngine.log.info("hleGeListSync(id=" + list.id + ",syncType=" + syncType + ") failed currentStatus=" + list.currentStatus);
+                return false;
+            }
+        } else {
+            VideoEngine.log.warn("hleGeListSync(id=" + list.id + ",syncType=" + syncType + ") unhandled syncType");
+            return false;
+        }
+    }
+
+    public void sceGeListSync(int id, int syncType) {
+        boolean found = false;
+
+        for (Iterator<PspGeList> it = listQueue.iterator(); it.hasNext(); ) {
+            PspGeList list = it.next();
+            if (list.id == id) {
+                ThreadMan threadMan = ThreadMan.getInstance();
+                Emulator.getProcessor().cpu.gpr[2] = 0;
+
+                if (hleGeListSync(list, syncType)) {
+                    list.thid = threadMan.getCurrentThreadID();
+                    VideoEngine.log.debug("sceGeListSync(id=" + id + ",syncType=" + syncType + ") blocking thread " + Integer.toHexString(list.thid));
+                    threadMan.blockCurrentThread();
+                    it.remove();
+                } else {
+                    threadMan.yieldCurrentThread();
+                    // delete on failed syncs it.remove();
+                }
+
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            VideoEngine.log.warn("sceGeListSync(id=" + id + ",syncType=" + syncType + ") failed");
+            Emulator.getProcessor().cpu.gpr[2] = -1;
+        }
+    }
+
     public void sceGeDrawSync(int syncType) {
+        /* old
         if (syncType == 0 || syncType == 1) {
             VideoEngine.log.debug("sceGeDrawSync syncType=" + syncType);
         } else {
@@ -219,6 +357,31 @@ public class pspge {
             }
         } else {
             ThreadMan.getInstance().yieldCurrentThread();
+        }
+        */
+
+        boolean wait = false;
+
+        PspGeList lastList = null;
+        for (Iterator<PspGeList> it = listQueue.iterator(); it.hasNext(); ) {
+            PspGeList list = it.next();
+            if (hleGeListSync(list, syncType)) {
+                lastList = list;
+                wait = true;
+                it.remove();
+            }
+            // delete on failed syncs it.remove();
+        }
+
+        ThreadMan threadMan = ThreadMan.getInstance();
+        Emulator.getProcessor().cpu.gpr[2] = 0;
+
+        if (wait && lastList != null) {
+            lastList.thid = threadMan.getCurrentThreadID();
+            VideoEngine.log.debug("sceGeDrawSync(syncType=" + syncType + ") blocking thread " + Integer.toHexString(lastList.thid) + " on list id=" + lastList.id);
+            threadMan.blockCurrentThread();
+        } else {
+            threadMan.yieldCurrentThread();
         }
     }
 

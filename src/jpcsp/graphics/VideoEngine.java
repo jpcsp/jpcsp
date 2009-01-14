@@ -28,6 +28,7 @@ import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.media.opengl.GL;
 import javax.media.opengl.GLException;
@@ -38,10 +39,12 @@ import jpcsp.Memory;
 import jpcsp.Settings;
 import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.pspge;
+import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.graphics.textures.Texture;
 import jpcsp.graphics.textures.TextureCache;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
+import static jpcsp.HLE.pspge.*;
 
 import org.apache.log4j.Logger;
 
@@ -165,14 +168,16 @@ public class VideoEngine {
     private int tex_map_mode = TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV;
 
     private boolean listHasEnded;
-    private boolean listHasFinished;
-    private DisplayList actualList; // The currently executing list
+    //private DisplayList currentList; // The currently executing list
+    private PspGeList currentList; // The currently executing list
     private boolean useVBO = true;
     private int[] vboBufferId = new int[1];
     private static final int vboBufferSize = 1024 * 1024;
     private FloatBuffer vboBuffer = BufferUtil.newFloatBuffer(vboBufferSize);
     private boolean useShaders = true;
     private int shaderProgram;
+
+    private ConcurrentLinkedQueue<PspGeList> drawListQueue;
 
     private static void log(String msg) {
         log.debug(msg);
@@ -181,25 +186,42 @@ public class VideoEngine {
         }*/
     }
 
-    public static VideoEngine getEngine(GL gl, boolean fullScreen, boolean hardwareAccelerate) {
+    public static VideoEngine getInstance() {
         if (instance == null) {
             helper = new GeCommands();
-            instance = new VideoEngine(gl);
+            instance = new VideoEngine();
         }
-        instance.setFullScreenShoot(fullScreen);
-        instance.setHardwareAcc(hardwareAccelerate);
-
         return instance;
     }
 
-    private VideoEngine(GL gl) {
-    	this.gl = gl;
-    	this.glu = new GLU();
-
+    private VideoEngine() {
         model_matrix[0] = model_matrix[5] = model_matrix[10] = model_matrix[15] = 1.f;
         view_matrix[0] = view_matrix[5] = view_matrix[10] = view_matrix[15] = 1.f;
         tex_envmap_matrix[0] = tex_envmap_matrix[5] = tex_envmap_matrix[10] = tex_envmap_matrix[15] = 1.f;
         light_pos[0][3] = light_pos[1][3] = light_pos[2][3] = light_pos[3][3] = 1.f;
+
+        statistics = new DurationStatistics("VideoEngine Statistics");
+        commandStatistics = new DurationStatistics[256];
+        for (int i = 0; i < commandStatistics.length; i++) {
+            commandStatistics[i] = new DurationStatistics(String.format("%-11s", helper.getCommandString(i)));
+        }
+
+        drawListQueue = new ConcurrentLinkedQueue<PspGeList>();
+    }
+
+    /** Called from pspge module */
+    public void pushDrawList(PspGeList list) {
+        drawListQueue.add(list);
+    }
+
+    public boolean hasDrawLists() {
+        return !drawListQueue.isEmpty();
+    }
+
+    public void setGL(GL gl) {
+    	this.gl = gl;
+    	this.glu = new GLU();
+
         useVBO = !Settings.getInstance().readBool("emu.disablevbo") && gl.isFunctionAvailable("glGenBuffersARB") &&
             gl.isFunctionAvailable("glBindBufferARB") &&
             gl.isFunctionAvailable("glBufferDataARB") &&
@@ -224,12 +246,6 @@ public class VideoEngine {
         if(useVBO) {
             VideoEngine.log.info("Using VBO");
             buildVBO(gl);
-        }
-
-        statistics = new DurationStatistics("VideoEngine Statistics");
-        commandStatistics = new DurationStatistics[256];
-        for (int i = 0; i < commandStatistics.length; i++) {
-            commandStatistics[i] = new DurationStatistics(String.format("%-11s", helper.getCommandString(i)));
         }
     }
 
@@ -342,21 +358,31 @@ public class VideoEngine {
     }
 
     /** call from GL thread
+     * TODO convert to a producer/consumer model. HLE pushes lists to GE when
+     * game calls sync on them. this way we dont need to keep iterating mostly
+     * not-ready lists in the GUI thread. also this new method should work with
+     * list and draw sync :)
      * @return true if an update was made
      */
     public boolean update() {
-        //System.err.println("update start");
+        boolean updated = false;
 
-        // Don't draw anything until we get sync signal
-        if (!jpcsp.HLE.pspge.getInstance().waitingForSync)
+        PspGeList list = drawListQueue.poll();
+        if (list == null)
             return false;
 
-        if(useShaders)
+        if (useShaders)
         	gl.glUseProgram(shaderProgram);
 
         statistics.start();
 
-        boolean updated = false;
+        do {
+            executeList(list);
+            list = drawListQueue.poll();
+        } while(list != null);
+        updated = true;
+
+        /* old
         DisplayList.Lock();
         Iterator<DisplayList> it = DisplayList.iterator();
         while(it.hasNext() && !Emulator.pause) {
@@ -373,50 +399,67 @@ public class VideoEngine {
             }
         }
         DisplayList.Unlock();
+        */
 
-        if(useShaders)
+        if (useShaders)
         	gl.glUseProgram(0);
 
+        /* old
         if (updated)
             jpcsp.HLE.pspge.getInstance().syncDone = true;
+        */
 
         statistics.end();
 
-        //System.err.println("update done");
         return updated;
     }
 
     // call from GL thread
-    private void executeList(DisplayList list) {
-        actualList = list;
+    // There is an issue here with Emulator.pause
+    // - We want to stop on errors
+    // - But user may also press pause button
+    //   - Either continue drawing to the end of the list (bad if the list contains an infinite loop)
+    //   - Or we want to be able to restart drawing when the user presses the run button
+    //private void executeList(DisplayList list) {
+    private void executeList(PspGeList list) {
+        currentList = list;
         listHasEnded = false;
-        listHasFinished = false;
 
-        log("executeList id " + list.id);
+        if (log.isDebugEnabled()) {
+            log("executeList id=" + list.id);
+        }
 
         Memory mem = Memory.getInstance();
-        while (!listHasEnded && !listHasFinished &&
-            actualList.pc != actualList.stallAddress && !Emulator.pause) {
-            int ins = mem.read32(actualList.pc);
-            actualList.pc += 4;
+        while (!listHasEnded &&
+                currentList.pc != currentList.stall_addr
+                && !Emulator.pause) {
+            int ins = mem.read32(currentList.pc);
+            currentList.pc += 4;
             executeCommand(ins);
         }
 
-        if (actualList.pc == actualList.stallAddress) {
-            actualList.status = DisplayList.STALL_REACHED;
+        if (currentList.pc == currentList.stall_addr) {
+            //currentList.status = DisplayList.STALL_REACHED;
+            currentList.currentStatus = PSP_GE_LIST_STALL_REACHED;
             if (log.isDebugEnabled()) {
-                log("list " + actualList.id + " stalled at " + String.format("%08x", actualList.stallAddress));
+                log("list id=" + currentList.id + " stalled at " + String.format("%08x", currentList.stall_addr));
             }
         }
 
-        if (listHasFinished) {
-            // List can still be updated
-            // TODO we should probably recycle lists if they never reach the end state
-            actualList.status = DisplayList.DRAWING_DONE;
+        if (Emulator.pause) {
+            VideoEngine.log.info("Emulator paused - cancelling current list id=" + currentList.id);
+            currentList.currentStatus = PSP_GE_LIST_CANCEL_DONE;
         }
+
         if (listHasEnded) {
-            // Now we can remove the list context
-            actualList.status = DisplayList.DONE;
+            currentList.currentStatus = PSP_GE_LIST_DONE;
+        }
+
+        if (list.currentStatus == list.syncStatus ||
+            list.currentStatus == PSP_GE_LIST_DONE ||
+            list.currentStatus == PSP_GE_LIST_STALL_REACHED ||
+            list.currentStatus == PSP_GE_LIST_CANCEL_DONE) {
+            pspge.getInstance().hleGeListSyncDone(list);
         }
     }
 
@@ -596,32 +639,31 @@ public class VideoEngine {
                 }
                 break;
             case FINISH:
-                listHasFinished = true;
                 if (log.isDebugEnabled()) {
-                    log(helper.getCommandString(FINISH));
+                    log(helper.getCommandString(FINISH) + " (hex="+Integer.toHexString(normalArgument)+",int="+normalArgument+",float="+floatArgument+")");
                 }
-                pspge.getInstance().triggerFinishCallback(actualList.callbackId, normalArgument);
+                currentList.pushFinishCallback(normalArgument);
                 break;
             case SIGNAL:
                 if (log.isDebugEnabled()) {
-                    log(helper.getCommandString(SIGNAL));
+                    log(helper.getCommandString(SIGNAL) + " (hex="+Integer.toHexString(normalArgument)+",int="+normalArgument+",float="+floatArgument+")");
                 }
-                pspge.getInstance().triggerSignalCallback(actualList.callbackId, normalArgument);
+                currentList.pushSignalCallback(normalArgument);
                 break;
             case BASE:
-                actualList.base = normalArgument << 8;
+                currentList.base = normalArgument << 8;
                 if (log.isDebugEnabled()) {
-                    log(helper.getCommandString(BASE) + " " + String.format("%08x", actualList.base));
+                    log(helper.getCommandString(BASE) + " " + String.format("%08x", currentList.base));
                 }
                 break;
             case IADDR:
-                vinfo.ptr_index = actualList.base | normalArgument;
+                vinfo.ptr_index = currentList.base | normalArgument;
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(IADDR) + " " + String.format("%08x", vinfo.ptr_index));
                 }
                 break;
             case VADDR:
-                vinfo.ptr_vertex = actualList.base | normalArgument;
+                vinfo.ptr_vertex = currentList.base | normalArgument;
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(VADDR) + " " + String.format("%08x", vinfo.ptr_vertex));
                 }
@@ -1226,7 +1268,7 @@ public class VideoEngine {
             case TBP6:
             case TBP7: {
             	int level = command - TBP0;
-                //texture_base_pointer[level] = (actualList.base & 0xff000000) | normalArgument;
+                //texture_base_pointer[level] = (currentList.base & 0xff000000) | normalArgument;
                 texture_base_pointer[level] = (texture_base_pointer[level] & 0xff000000) | normalArgument;
                 if (log.isDebugEnabled()) {
                     log ("sceGuTexImage(level=" + level + ",X,X,X,lo(pointer=0x" + Integer.toHexString(texture_base_pointer[level]) + "))");
@@ -1854,34 +1896,34 @@ public class VideoEngine {
                 break;
             case JUMP:
             {
-                int npc = (normalArgument | actualList.base) & 0xFFFFFFFC;
+                int npc = (normalArgument | currentList.base) & 0xFFFFFFFC;
                 //I guess it must be unsign as psp player emulator
                 if (log.isDebugEnabled()) {
-                    log(helper.getCommandString(JUMP) + " old PC:" + String.format("%08x", actualList.pc)
+                    log(helper.getCommandString(JUMP) + " old PC:" + String.format("%08x", currentList.pc)
                             + " new PC:" + String.format("%08x", npc));
                 }
-                actualList.pc = npc;
+                currentList.pc = npc;
                 break;
             }
             case CALL:
             {
-                actualList.stack[actualList.stackIndex++] = actualList.pc;
-                int npc = (normalArgument | actualList.base) & 0xFFFFFFFC;
+                currentList.stack[currentList.stackIndex++] = currentList.pc;
+                int npc = (normalArgument | currentList.base) & 0xFFFFFFFC;
                 if (log.isDebugEnabled()) {
-                    log(helper.getCommandString(CALL) + " old PC:" + String.format("%08x", actualList.pc)
+                    log(helper.getCommandString(CALL) + " old PC:" + String.format("%08x", currentList.pc)
                             + " new PC:" + String.format("%08x", npc));
                 }
-                actualList.pc = npc;
+                currentList.pc = npc;
                 break;
             }
             case RET:
             {
-                int npc = actualList.stack[--actualList.stackIndex];
+                int npc = currentList.stack[--currentList.stackIndex];
                 if (log.isDebugEnabled()) {
-                    log(helper.getCommandString(RET) + " old PC:" + String.format("%08x", actualList.pc)
+                    log(helper.getCommandString(RET) + " old PC:" + String.format("%08x", currentList.pc)
                             + " new PC:" + String.format("%08x", npc));
                 }
-                actualList.pc = npc;
+                currentList.pc = npc;
                 break;
             }
 
@@ -2386,7 +2428,7 @@ public class VideoEngine {
                     gl.glEnable(GL.GL_CLIP_PLANE3);
                     gl.glEnable(GL.GL_CLIP_PLANE4);
                     gl.glEnable(GL.GL_CLIP_PLANE5);
-                    log("Clip Plane Enable (normal="+normalArgument+",float="+floatArgument+")");
+                    log("Clip Plane Enable (int="+normalArgument+",float="+floatArgument+")");
                 }
                 else {
                     gl.glDisable(GL.GL_CLIP_PLANE0);
@@ -2395,11 +2437,11 @@ public class VideoEngine {
                     gl.glDisable(GL.GL_CLIP_PLANE3);
                     gl.glDisable(GL.GL_CLIP_PLANE4);
                     gl.glDisable(GL.GL_CLIP_PLANE5);
-                    log("Clip Plane Disable (normal="+normalArgument+",float="+floatArgument+")");
+                    log("Clip Plane Disable (int="+normalArgument+",float="+floatArgument+")");
                 }
                 break;
             default:
-                log.warn("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "](normal="+normalArgument+",float="+floatArgument+")");
+                log.warn("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "](int="+normalArgument+",float="+floatArgument+")");
         }
         commandStatistics[command].end();
     }
@@ -2507,27 +2549,6 @@ public class VideoEngine {
 		v.n[0] = nx;	v.n[1] = ny;	v.n[2] = nz;
 	}
 
-	public void setFullScreenShoot(boolean b) {
-    }
-
-    public void setLineSize(int linesize) {
-    }
-
-    public void setMode(int mode) {
-    }
-
-    public void setPixelSize(int pixelsize) {
-    }
-
-    public void setup(int mode, int xres, int yres) {
-    }
-
-    public void show() {
-    }
-
-    public void waitVBlank() {
-    }
-
     private void log(String commandString, float floatArgument) {
         if (log.isDebugEnabled()) {
             log(commandString+SPACE+floatArgument);
@@ -2546,9 +2567,6 @@ public class VideoEngine {
                 log(commandString+SPACE+String.format("%.1f %.1f %.1f %.1f", matrix[0 + y * 4], matrix[1 + y * 4], matrix[2 + y * 4], matrix[3 + y * 4]));
             }
         }
-    }
-
-    private void setHardwareAcc(boolean hardwareAccelerate) {
     }
 
     private String getOpenGLVersion(GL gl) {

@@ -231,6 +231,7 @@ public class Emulator implements Runnable {
             mainThread.start();
         }
 
+        jpcsp.HLE.pspdisplay.getInstance().setDirty(true);
         jpcsp.HLE.ThreadMan.getInstance().clearSyscallFreeCycles();
 
         gui.RefreshButtons();
