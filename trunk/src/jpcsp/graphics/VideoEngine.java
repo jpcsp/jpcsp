@@ -441,7 +441,7 @@ public class VideoEngine {
             //currentList.status = DisplayList.STALL_REACHED;
             currentList.currentStatus = PSP_GE_LIST_STALL_REACHED;
             if (log.isDebugEnabled()) {
-                log("list id=" + currentList.id + " stalled at " + String.format("%08x", currentList.stall_addr));
+                log("list id=" + currentList.id + " stalled at " + String.format("%08x", currentList.stall_addr) + " listHasEnded=" + listHasEnded);
             }
         }
 
