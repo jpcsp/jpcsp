@@ -358,10 +358,6 @@ public class VideoEngine {
     }
 
     /** call from GL thread
-     * TODO convert to a producer/consumer model. HLE pushes lists to GE when
-     * game calls sync on them. this way we dont need to keep iterating mostly
-     * not-ready lists in the GUI thread. also this new method should work with
-     * list and draw sync :)
      * @return true if an update was made
      */
     public boolean update() {

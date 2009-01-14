@@ -87,6 +87,8 @@ public class sceCtrl implements HLEModule {
         this.Ly = Ly;
         this.Buttons = Buttons;
 
+        //System.out.println("AN " + (int)(Lx & 0xFF) + " " + (int)(Ly & 0xFF) + " (" + TimeStamp + ")");
+
         if (isModeDigital())
         {
             // PSP_CTRL_MODE_DIGITAL
@@ -156,6 +158,8 @@ public class sceCtrl implements HLEModule {
 
             idlereset = -1;
             idleback = -1;
+
+            mode = PSP_CTRL_MODE_DIGITAL; // check initial mode
         }
     }
 
@@ -188,10 +192,12 @@ public class sceCtrl implements HLEModule {
         // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
-        int a0 = cpu.gpr[4];
+        int newCycle = cpu.gpr[4];
+
+        Modules.log.debug("sceCtrlSetSamplingCycle(cycle=" + newCycle + ") returning " + cycle);
 
         cpu.gpr[2] = cycle;
-        cycle = a0;
+        cycle = newCycle;
     }
 
     public void sceCtrlGetSamplingCycle(Processor processor) {
@@ -210,6 +216,8 @@ public class sceCtrl implements HLEModule {
         Memory mem = Processor.memory;
 
         int newMode = cpu.gpr[4];
+
+        Modules.log.debug("sceCtrlSetSamplingMode(mode=" + newMode + ") returning " + mode);
 
         cpu.gpr[2] = mode;
         mode = newMode;
@@ -306,9 +314,9 @@ public class sceCtrl implements HLEModule {
         int latch_addr = cpu.gpr[4];
 
         mem.write32(latch_addr, uiMake);
-        mem.write32(latch_addr +4, uiBreak);
-        mem.write32(latch_addr +8, uiPress);
-        mem.write32(latch_addr +12, uiRelease);
+        mem.write32(latch_addr + 4, uiBreak);
+        mem.write32(latch_addr + 8, uiPress);
+        mem.write32(latch_addr + 12, uiRelease);
         cpu.gpr[2] = 0;
     }
 
@@ -319,9 +327,9 @@ public class sceCtrl implements HLEModule {
         int latch_addr = cpu.gpr[4];
 
         mem.write32(latch_addr, uiMake);
-        mem.write32(latch_addr +4, uiBreak);
-        mem.write32(latch_addr +8, uiPress);
-        mem.write32(latch_addr +12, uiRelease);
+        mem.write32(latch_addr + 4, uiBreak);
+        mem.write32(latch_addr + 8, uiPress);
+        mem.write32(latch_addr + 12, uiRelease);
         cpu.gpr[2] = 0;
     }
 

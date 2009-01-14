@@ -18,7 +18,7 @@ package jpcsp.graphics;
 
 public class GeCommands {
 
-    private String[] commands;
+    private final String[] commands;
 
     public final static int NOP = 0x00; //	No Operation
     public final static int VADDR = 0x01; // 	Vertex List (BASE)
