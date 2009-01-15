@@ -30,6 +30,7 @@ int io_done = 0;
 
 char g_cwd[256];
 char g_read_buf[0x2F000];
+int g_mainthid;
 
 // Burnout
 void doubly_check_sync(int fd)
@@ -151,7 +152,7 @@ void test_mercury()
     printf("SIMULATING MERCURY\n");
 
     // for this test don't create this file! it's supposed to be missing
-    // 644 = 01204 = 0x284
+    // 644 = 01204 = 0x284 original developers got it wrong! (they should have used 0644)
     fd = sceIoOpenAsync("filenotfound.txt", 1, 644);
     printf("sceIoOpenAsync 0x%08x\n", fd);
 
@@ -183,6 +184,37 @@ void test_mercury()
         result = sceIoCloseAsync(fd);
         printf("sceIoCloseAsync result %08x\n", result);
     }
+}
+
+void test_kao()
+{
+    int result;
+    SceInt64 async;
+    int fd;
+
+    printf("SIMULATING KAO\n");
+    sceKernelSuspendThread(g_mainthid);
+
+    fd = sceIoOpen("test.txt", PSP_O_RDONLY, 0);
+    printf("sceIoOpen 0x%08x\n", fd);
+
+    if (fd >= 0)
+    {
+        result = sceIoReadAsync(fd, g_read_buf, 0x514e);
+        printf("sceIoReadAsync result %08x\n", result);
+
+        // jpcsp r898 would get stuck here
+        sceKernelDelayThreadCB(16666*10);
+
+        async = -1;
+        result = sceIoWaitAsync(fd, &async);
+        printf("sceIoWaitAsync result %08x async %08x (%lld)\n", result, (int)(async & 0xFFFFFFFF), async);
+
+        result = sceIoClose(fd);
+        printf("sceIoClose result %08x\n", result);
+    }
+
+    sceKernelResumeThread(g_mainthid);
 }
 
 // see what happens to the async result when an async is op is followed by a non-async op
@@ -261,7 +293,7 @@ void test_callback() {
     if (fd >= 0)
     {
         result = sceIoSetAsyncCallback(fd, cbid, callback_buf);
-        printf("sceIoSetAsyncCallback buf=%p 0x%08x\n", callback_buf, result);
+        printf("sceIoSetAsyncCallback buf=%p result=0x%08x\n", callback_buf, result);
 
         memset(callback_buf, 0xee, sizeof(callback_buf));
         callback_done = 0;
@@ -357,8 +389,10 @@ int io_thread(SceSize args, void *argp)
     //test_toe();
     //test_pt2();
     //test_mercury();
+    test_kao();
+
     //test_asyncresult();
-    test_callback();
+    //test_callback();
     //test_general();
 
     io_done = 1;
@@ -383,6 +417,8 @@ int main(int argc, char *argv[])
     printf("\n");
 
     SetupCallbacks();
+
+    g_mainthid = sceKernelGetThreadId();
 
     int thid = sceKernelCreateThread("io_thread", io_thread, 0x6f, 0x4000, 0, 0);
     if (thid >= 0)

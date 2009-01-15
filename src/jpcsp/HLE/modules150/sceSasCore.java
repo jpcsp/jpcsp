@@ -209,19 +209,25 @@ public class sceSasCore implements HLEModule {
     public void __sceSasInit(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
 
         // TODO there may be more parameters
         // PARTIAL:__sceSasInit 08a8bd00 00000100 00000020
         int sasCore = cpu.gpr[4];
 
         //Modules.log.debug("PARTIAL:__sceSasInit() " + makeLogParams(cpu));
-        Modules.log.debug("PARTIAL:__sceSasInit(sasCore=0x" + Integer.toHexString(sasCore) + ")");
+        Modules.log.debug("PARTIAL:__sceSasInit(sasCore=0x" + Integer.toHexString(sasCore) + ") " + makeLogParams(cpu));
 
         // we'll support only 1 sascore instance at a time, we can fix this later if needed
         if (sasCoreHandle != -1) {
             Modules.log.warn("UNIMPLEMENTED:__sceSasInit multiple instances not yet supported");
             cpu.gpr[2] = -1;
         } else {
+            // clobber this and see what happens :D
+            if (mem.isAddressGood(sasCore)) {
+                mem.write32(sasCore, 0x12121212);
+            }
+
             sasCoreHandle = sasCore;
             cpu.gpr[2] = 0;
         }
@@ -383,9 +389,10 @@ public class sceSasCore implements HLEModule {
         /* put your own code here instead */
 
         int sasCore = cpu.gpr[4];
-        //int unk1 = cpu.gpr[5]; // 0
-        //int unk2 = cpu.gpr[6]; // 8
+        int voice = cpu.gpr[5];
+        //int unk2 = cpu.gpr[6]; // 8/0xf
         //int unk3 = cpu.gpr[7]; // 0
+        // may be more parameters
 
         Modules.log.warn("Unimplemented NID function __sceSasSetADSRmode [0x9EC3676A] " + makeLogParams(cpu));
 
@@ -401,8 +408,9 @@ public class sceSasCore implements HLEModule {
 
         /* put your own code here instead */
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        int sasCore = cpu.gpr[4];
+        int voice = cpu.gpr[5];
+        // may be more parameters
 
         Modules.log.warn("Unimplemented NID function __sceSasSetKeyOff [0xA0CF2FA4] " + makeLogParams(cpu));
 
@@ -582,7 +590,7 @@ public class sceSasCore implements HLEModule {
         Memory mem = Processor.memory;
 
         int sasCore = cpu.gpr[4];
-        //int unk1 = cpu.gpr[5]; // set to 1
+        //int unk1 = cpu.gpr[5]; // 0, 1 (most common), 0x1f
         // 99% sure there are no more parameters
 
         Modules.log.warn("Unimplemented NID function __sceSasGetOutputmode [0xE175EF66] " + makeLogParams(cpu));

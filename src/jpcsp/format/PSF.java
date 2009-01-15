@@ -28,7 +28,7 @@ public class PSF {
     private int size;
 
     private boolean sizeDirty;
-    private boolean valueTableOffsetDirty;
+    private boolean tablesDirty;
 
     private int ident;
     private int version; // yapspd: 0x1100. actual: 0x0101.
@@ -48,8 +48,8 @@ public class PSF {
         this.psfOffset = (int)psfOffset;
         size = 0;
 
-        sizeDirty = false;
-        valueTableOffsetDirty = false;
+        sizeDirty = true;
+        tablesDirty = true;
 
         ident = PSF_IDENT;
         version = 0x0101;
@@ -126,6 +126,8 @@ public class PSF {
             }
         }
 
+        sizeDirty = true;
+        tablesDirty = false;
         calculateSize();
     }
 
@@ -135,21 +137,8 @@ public class PSF {
         if (indexEntryCount != pairList.size())
             throw new RuntimeException("incremental size and actual size do not match! " + indexEntryCount + "/" + pairList.size());
 
-        // position the key table after the index table and before the value table
-        keyTableOffset = 5 * 4 + indexEntryCount * 0x10;
-
-        // position the value table after the key table
-        if (valueTableOffsetDirty) {
-            valueTableOffsetDirty = false;
-            valueTableOffset = keyTableOffset;
-
-            for (PSFKeyValuePair pair : pairList) {
-                // keys are not aligned
-                valueTableOffset += pair.key.length() + 1;
-            }
-
-            // 32-bit align for data start
-            valueTableOffset = (valueTableOffset + 3) & ~3;
+        if (tablesDirty) {
+            calculateTables();
         }
 
         // header
@@ -160,28 +149,19 @@ public class PSF {
         writeWord(f, indexEntryCount);
 
         // index table
-        int keyRunningOffset = 0;
-        int valueRunningOffset = 0;
-
         for (PSFKeyValuePair pair : pairList) {
-            // fixup offsets
-            pair.keyOffset = keyRunningOffset;
-            keyRunningOffset += pair.key.length() + 1;
-
-            pair.valueOffset = valueRunningOffset;
-            valueRunningOffset += pair.dataSizePadded;
-
             pair.write(f);
-            System.out.println(pair);
         }
 
         // key/value pairs
 
         for (PSFKeyValuePair pair : pairList) {
             f.position(keyTableOffset + pair.keyOffset);
+            //System.err.println("PSF write key   fp=" + f.position() + " datalen=" + (pair.key.length() + 1) + " top=" + (f.position() + pair.key.length() + 1));
             writeStringZ(f, pair.key);
 
             f.position(valueTableOffset + pair.valueOffset);
+            //System.err.println("PSF write value fp=" + f.position() + " datalen=" + (pair.dataSizePadded) + " top=" + (f.position() + pair.dataSizePadded));
             switch(pair.dataType) {
                 case PSF_DATA_TYPE_BINARY:
                     f.put((byte[])pair.data);
@@ -245,7 +225,7 @@ public class PSF {
         pairList.add(pair);
 
         sizeDirty = true;
-        valueTableOffsetDirty = true;
+        tablesDirty = true;
         indexEntryCount++;
     }
 
@@ -260,7 +240,7 @@ public class PSF {
         pairList.add(pair);
 
         sizeDirty = true;
-        valueTableOffsetDirty = true;
+        tablesDirty = true;
         indexEntryCount++;
     }
 
@@ -277,13 +257,51 @@ public class PSF {
         pairList.add(pair);
 
         sizeDirty = true;
-        valueTableOffsetDirty = true;
+        tablesDirty = true;
         indexEntryCount++;
+    }
+
+    private void calculateTables() {
+        tablesDirty = false;
+
+        // position the key table after the index table and before the value table
+        // 20 byte PSF header
+        // 16 byte per index entry
+        keyTableOffset = 5 * 4 + indexEntryCount * 0x10;
+
+
+        // position the value table after the key table
+        valueTableOffset = keyTableOffset;
+
+        for (PSFKeyValuePair pair : pairList) {
+            // keys are not aligned
+            valueTableOffset += pair.key.length() + 1;
+        }
+
+        // 32-bit align for data start
+        valueTableOffset = (valueTableOffset + 3) & ~3;
+
+
+        // index table
+        int keyRunningOffset = 0;
+        int valueRunningOffset = 0;
+
+        for (PSFKeyValuePair pair : pairList) {
+            pair.keyOffset = keyRunningOffset;
+            keyRunningOffset += pair.key.length() + 1;
+
+            pair.valueOffset = valueRunningOffset;
+            valueRunningOffset += pair.dataSizePadded;
+        }
     }
 
     private void calculateSize() {
         sizeDirty = false;
         size = 0;
+
+        if (tablesDirty) {
+            calculateTables();
+        }
 
         for (PSFKeyValuePair pair : pairList) {
             int keyHighBound = keyTableOffset + pair.keyOffset + pair.key.length() + 1;
