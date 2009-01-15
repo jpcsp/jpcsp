@@ -353,7 +353,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		}
 
 		PSF psf = new PSF();
-        psf.put("PARENTAL_LEVEL", sfoParam.parentalLevel);
+        psf.put("PARENTAL_LEVEL", sfoParam.parentalLevel); // TODO sfoParam.parentalLevel & 0x3ff ? FF1 -> 1027 -> 3
         psf.put("TITLE", sfoParam.title, 128);
         psf.put("SAVEDATA_DETAIL", sfoParam.detail, 1024);
         psf.put("SAVEDATA_TITLE", sfoParam.savedataTitle, 128);
@@ -363,6 +363,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         // SAVEDATA_PARAMS
         // SAVEDATA_DIRECTORY
 
+        // TODO delete original file, size "map" cannot resize it smaller
         psf.write(fileOutput.getChannel().map(MapMode.READ_WRITE, 0, psf.size()));
 	}
 

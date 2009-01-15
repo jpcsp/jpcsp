@@ -432,6 +432,9 @@ public class sceUtility implements HLEModule {
                     sceUtilitySavedataParam.write(mem);
                 } catch (IOException e) {
                     sceUtilitySavedataParam.base.result = ERROR_SAVEDATA_LOAD_NO_DATA;
+                } catch (Exception e) {
+                    sceUtilitySavedataParam.base.result = ERROR_SAVEDATA_LOAD_NO_DATA;
+                    e.printStackTrace();
                 }
                 break;
 
@@ -456,6 +459,9 @@ public class sceUtility implements HLEModule {
                     sceUtilitySavedataParam.base.result = 0;
                 } catch (IOException e) {
                     sceUtilitySavedataParam.base.result = ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
+                } catch (Exception e) {
+                    sceUtilitySavedataParam.base.result = ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
+                    e.printStackTrace();
                 }
                 break;
 

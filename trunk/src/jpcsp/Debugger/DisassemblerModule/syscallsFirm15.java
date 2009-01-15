@@ -816,6 +816,7 @@ public class syscallsFirm15 {
                 sceNetApDialogDummyConnect(0x230a, 0x3811281E), // 1.00+
                 sceNetApDialogDummyGetState(0x230b, 0xCA9BE5BF), // 1.00+
                 sceNetApDialogDummyTerm(0x230c, 0xF213BE65), // 1.00+
+                sceParseHttpResponseHeader(0x230d, 0xAD7BFDEF), // 1.00+
 
                  /* FAKE MAPPING!! for Final Fantasy checks*/
                  ModuleMgrForUser_8F2DF740(0x3000,0x8f2df740), // fw 3.52 or less?
@@ -1013,26 +1014,40 @@ public class syscallsFirm15 {
                 sceMp3CheckStreamDataNeeded(0x30b3, 0xD0A56296), // 3.95+
                 sceMp3ReleaseMp3Handle(0x30b4, 0xF5478233), // 3.95+
 
-                scePsmfP_235D8787(0x30b5, 0x235D8787), // umd game only 2.60+
-                scePsmfP_9B71A274(0x30b6, 0x9B71A274), // umd game only 2.60+
-                scePsmfP_3D6D25A9(0x30b7, 0x3D6D25A9), // umd game only 2.60+
-                scePsmfP_E792CD94(0x30b8, 0xE792CD94), // umd game only 2.60+
-                scePsmfP_95A84EE5(0x30b9, 0x95A84EE5), // umd game only 2.60+
-                scePsmfP_3EA82A4B(0x30ba, 0x3EA82A4B), // umd game only 2.60+
-                scePsmfP_1078C008(0x30bb, 0x1078C008), // umd game only 2.60+
-                scePsmfP_A0B8CA55(0x30bc, 0xA0B8CA55), // umd game only 2.60+
-                scePsmfP_46F61F8B(0x30bd, 0x46F61F8B), // umd game only 2.60+
-                scePsmfP_B9848A74(0x30be, 0xB9848A74), // umd game only 2.60+
-                scePsmfP_F8EF08A6(0x30bf, 0xF8EF08A6), // umd game only 2.60+
-                scePsmfP_DF089680(0x30c0, 0xDF089680), // umd game only 2.60+
-                scePsmfP_1E57A8E7(0x30c1, 0x1E57A8E7), // umd game only 2.60+
-                scePsmfP_2BEB1569(0x30c2, 0x2BEB1569), // umd game only 2.60+
+                scePsmfPlayerCreate(0x30b5, 0x235D8787), // umd game only 2.60+
+                scePsmfPlayerDelete(0x30b6, 0x9B71A274), // umd game only 2.60+
+                scePsmfPlayerSetPsmf(0x30b7, 0x3D6D25A9), // umd game only 2.60+
+                scePsmfPlayerReleasePsmf(0x30b8, 0xE792CD94), // umd game only 2.60+
+                scePsmfPlayerStart(0x30b9, 0x95A84EE5), // umd game only 2.60+
+                scePsmfPlayer_3EA82A4B(0x30ba, 0x3EA82A4B), // umd game only 2.60+
+                scePsmfPlayerStop(0x30bb, 0x1078C008), // umd game only 2.60+
+                scePsmfPlayerUpdate(0x30bc, 0xA0B8CA55), // umd game only 2.60+
+                scePsmfPlayer_46F61F8B(0x30bd, 0x46F61F8B), // umd game only 2.60+
+                scePsmfPlayer_B9848A74(0x30be, 0xB9848A74), // umd game only 2.60+
+                scePsmfPlayer_F8EF08A6(0x30bf, 0xF8EF08A6), // umd game only 2.60+
+                scePsmfPlayer_DF089680(0x30c0, 0xDF089680), // umd game only 2.60+
+                scePsmfPlayer_1E57A8E7(0x30c1, 0x1E57A8E7), // umd game only 2.60+
+                scePsmfPlayer_2BEB1569(0x30c2, 0x2BEB1569), // umd game only 2.60+
 
+                sceKernelCreateLwMutex(0x30c3, 0x19CFF145), // 3.95+
+                sceKernelReferLwMutexStatusByID(0x30c4, 0x4C145944), // 3.95+
+                sceKernelDeleteLwMutex(0x30c5, 0x60107536), // 3.95+
+
+                sceKernelUnlockLwMutex(0x30c6, 0x15B6446B), // 3.95+
+                sceKernelLockLwMutexCB(0x30c7, 0x1FC64E09), // 3.95+
+                sceKernelLockLwMutex(0x30c8, 0xBEA46419), // 3.95+
+                sceKernelReferLwMutexStatus(0x30c9, 0xC1734599), // 3.95+
+                sceKernelTryLockLwMutex(0x30ca, 0xDC692EE3), // 3.95+
+
+                sceMp3GetSumDecodedSample(0x30cb, 0x354D27EA), // 3.95+
+                sceMp3GetBitRate(0x30cc, 0x87677E40), // 3.95+
+                sceMp3GetMaxOutputSample(0x30cd, 0x87C263D1), // 3.95+
+                sceMp3GetLoopNum(0x30ce, 0xD8F54A51), // 3.95+
 
                 // We choose to start HLEModuleManager at 0x4000
 
                 // CFW, we choose to start at 0x5000
-                kubridge_4C25EA72(0x5000, 0x5C25EA72),
+                kuKernelLoadModule(0x5000, 0x4C25EA72),
                 systemctrl_user_577AF198(0x5001, 0x577AF198),
                 systemctrl_user_75643FCA(0x5002, 0x75643FCA),
                 systemctrl_user_ABA7F1B0(0x5003, 0xABA7F1B0),

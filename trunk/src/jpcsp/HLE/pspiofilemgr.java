@@ -388,8 +388,6 @@ public class pspiofilemgr {
             threadMan.contextSwitch(threadMan.nextThread());
         } else if (callbacks) {
             ThreadMan.getInstance().yieldCurrentThreadCB();
-        } else {
-            Modules.log.debug("hleIoGetAsyncStat - not context switching");
         }
     }
 
