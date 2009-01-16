@@ -44,7 +44,12 @@ import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 import jpcsp.HLE.kernel.managers.*;
 import jpcsp.State;
 
-// TODO use file id's 3 to 31 inclusive
+// TODO use file id's starting at around 0
+// - saw one game check if it was between 0 and 31 inclusive
+// - psplink allows 3 - 63 inclusive
+// - without psplink its 3 - 12 inclusive
+
+// TODO use file id's 3 to 63 inclusive (last estimate was 3 - 31 inclusive, maybe it is increased by later fw or cfw removes a restriction)
 // TODO get std out/err/in from stdio module, it can be any number not just 1/2/3 BUT some old homebrew may expect it to be 1/2/3 (such as some versions of psplinkusb)
 public class pspiofilemgr {
     private static pspiofilemgr  instance;
@@ -268,6 +273,10 @@ public class pspiofilemgr {
                 Modules.log.warn("pspiofilemgr - remapping host0 to " + filepath);
                 filename = filename.replace("host0", filepath);
             }
+        } else if (device.equals("fatms0")) {
+            // might not be right but lets try it
+            Modules.log.warn("pspiofilemgr - remapping fatms0 to ms0");
+            filename = filename.replace("fatms0", "ms0");
         }
 
         //if (filename != null)
@@ -760,18 +769,36 @@ public class pspiofilemgr {
                 } else if (info.asyncPending) {
                     Modules.log.warn("hleIoWrite - uid " + Integer.toHexString(uid) + " PSP_ERROR_ASYNC_BUSY");
                     result = PSP_ERROR_ASYNC_BUSY;
-                } else if ((data_addr >= MemoryMap.START_RAM ) && (data_addr + size <= MemoryMap.END_RAM)) {
-                    if ((info.flags & PSP_O_APPEND) == PSP_O_APPEND) {
-                        info.msFile.seek(info.msFile.length());
-                    }
-
-                    Utilities.write(info.msFile, data_addr, size);
-                    result = size;
-                } else {
+                } else if ((data_addr < MemoryMap.START_RAM ) && (data_addr + size > MemoryMap.END_RAM)) {
                     Modules.log.warn("hleIoWrite - uid " + Integer.toHexString(uid)
                         + " data is outside of ram 0x" + Integer.toHexString(data_addr)
                         + " - 0x" + Integer.toHexString(data_addr + size));
                     result = -1;
+                } else {
+                    if ((info.flags & PSP_O_APPEND) == PSP_O_APPEND) {
+                        info.msFile.seek(info.msFile.length());
+                        info.position = info.msFile.length();
+                    }
+
+                    // if the position is off the end, pad with junk
+                    if (info.position > info.readOnlyFile.length()) {
+                        byte[] junk = new byte[512];
+                        int towrite = (int)(info.position - info.readOnlyFile.length());
+
+                        info.msFile.seek(info.msFile.length());
+                        while(towrite >= 512) {
+                            info.msFile.write(junk, 0, 512);
+                            towrite -= 512;
+                        }
+                        if (towrite > 0) {
+                            info.msFile.write(junk, 0, towrite);
+                        }
+                    }
+
+                    info.position += size;
+
+                    Utilities.write(info.msFile, data_addr, size);
+                    result = size;
                 }
             } catch(IOException e) {
                 e.printStackTrace();
@@ -809,9 +836,18 @@ public class pspiofilemgr {
                     Modules.log.warn("hleIoRead - unknown uid " + Integer.toHexString(uid));
                     result = PSP_ERROR_BAD_FILE_DESCRIPTOR;
                 } else if (info.asyncPending) {
+                    // Can't execute another operation until the previous one completed
                     Modules.log.warn("hleIoRead - uid " + Integer.toHexString(uid) + " PSP_ERROR_ASYNC_BUSY");
                     result = PSP_ERROR_ASYNC_BUSY;
-                } else if ((data_addr >= MemoryMap.START_RAM ) && (data_addr + size <= MemoryMap.END_RAM)) {
+                } else if ((data_addr < MemoryMap.START_RAM ) && (data_addr + size > MemoryMap.END_RAM)) {
+                    Modules.log.warn("hleIoRead - uid " + Integer.toHexString(uid)
+                        + " data is outside of ram 0x" + Integer.toHexString(data_addr)
+                        + " - 0x" + Integer.toHexString(data_addr + size));
+                    result = PSP_ERROR_FILE_READ_ERROR;
+                } else if (info.position >= info.readOnlyFile.length()) {
+                    // Allow seeking off the end of the file, just return 0 bytes read/written
+                    result = 0;
+                } else {
                     // Using readFully for ms/umd compatibility, but now we must
                     // manually make sure it doesn't read off the end of the file.
                     if (info.readOnlyFile.getFilePointer() + size > info.readOnlyFile.length()) {
@@ -821,13 +857,10 @@ public class pspiofilemgr {
                             + " fp=" + info.readOnlyFile.getFilePointer() + " len=" + info.readOnlyFile.length());
                     }
 
+                    info.position += size; // check - use clamping or not
+
                     Utilities.readFully(info.readOnlyFile, data_addr, size);
                     result = size;
-                } else {
-                    Modules.log.warn("hleIoRead - uid " + Integer.toHexString(uid)
-                        + " data is outside of ram 0x" + Integer.toHexString(data_addr)
-                        + " - 0x" + Integer.toHexString(data_addr + size));
-                    result = PSP_ERROR_FILE_READ_ERROR;
                 }
             } catch(IOException e) {
                 e.printStackTrace();
@@ -854,7 +887,6 @@ public class pspiofilemgr {
         hleIoRead(uid, data_addr, size, true);
     }
 
-    // TODO sceIoLseek with 64-bit return value
     public void sceIoLseek(int uid, long offset, int whence) {
         if (debug) Modules.log.debug("sceIoLseek - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Long.toHexString(offset) + ") whence " + getWhenceName(whence));
         seek(uid, offset, whence, true, false);
@@ -867,12 +899,14 @@ public class pspiofilemgr {
 
     public void sceIoLseek32(int uid, int offset, int whence) {
         if (debug) Modules.log.debug("sceIoLseek32 - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
-        seek(uid, ((long)offset & 0xFFFFFFFFL), whence, false, false);
+        //seek(uid, ((long)offset & 0xFFFFFFFFL), whence, false, false);
+        seek(uid, (long)offset, whence, false, false);
     }
 
     public void sceIoLseek32Async(int uid, int offset, int whence) {
         if (debug) Modules.log.debug("sceIoLseek32Async - uid " + Integer.toHexString(uid) + " offset " + offset + " (hex=0x" + Integer.toHexString(offset) + ") whence " + getWhenceName(whence));
-        seek(uid, ((long)offset & 0xFFFFFFFFL), whence, false, true);
+        //seek(uid, ((long)offset & 0xFFFFFFFFL), whence, false, true);
+        seek(uid, (long)offset, whence, false, true);
     }
 
     private String getWhenceName(int whence) {
@@ -884,6 +918,7 @@ public class pspiofilemgr {
         }
     }
 
+    // TODO refactor (no "return" midway) now we know better what to do
     private void seek(int uid, long offset, int whence, boolean resultIs64bit, boolean async) {
         //if (debug) Modules.log.debug("seek - uid " + Integer.toHexString(uid) + " offset " + offset + " whence " + whence);
 
@@ -902,45 +937,67 @@ public class pspiofilemgr {
                     // TODO check
                     Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
                     if (resultIs64bit)
-                        Emulator.getProcessor().cpu.gpr[3] = 0;
+                        Emulator.getProcessor().cpu.gpr[3] = -1;
                 } else if (info.asyncPending) {
                     Modules.log.warn("seek - uid " + Integer.toHexString(uid) + " PSP_ERROR_ASYNC_BUSY");
 
                     // TODO check
                     Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_ASYNC_BUSY;
                     if (resultIs64bit)
-                        Emulator.getProcessor().cpu.gpr[3] = 0;
+                        Emulator.getProcessor().cpu.gpr[3] = -1;
                 } else {
                     switch(whence) {
                         case PSP_SEEK_SET:
-                            if (offset > info.readOnlyFile.length()) {
-                                Modules.log.warn("seek - offset (0x" + Long.toHexString(offset) + ") longer than file length (0x" + Long.toHexString(info.readOnlyFile.length()) + ")!");
-                                Emulator.getProcessor().cpu.gpr[2] = -1;
-                                if (resultIs64bit)
-                                    Emulator.getProcessor().cpu.gpr[3] = -1;
-                                State.fileLogger.logIoSeek64(-1, uid, offset, whence);
-                                return;
-                            } else if (offset < 0) {
+                            if (offset < 0) {
                                 Modules.log.warn("SEEK_SET UID " + Integer.toHexString(uid) + " filename:'" + info.filename + "' offset=0x" + Long.toHexString(offset) + " (less than 0!)");
-                                Emulator.getProcessor().cpu.gpr[2] = -1;
+                                Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_INVALID_ARGUMENT;
                                 if (resultIs64bit)
                                     Emulator.getProcessor().cpu.gpr[3] = -1;
-                                State.fileLogger.logIoSeek64(-1, uid, offset, whence);
+                                State.fileLogger.logIoSeek64(PSP_ERROR_INVALID_ARGUMENT, uid, offset, whence);
                                 return;
+                            } else {
+                                info.position = offset;
+
+                                if (offset < info.readOnlyFile.length())
+                                    info.readOnlyFile.seek(offset);
                             }
-                            info.readOnlyFile.seek(offset);
                             break;
                         case PSP_SEEK_CUR:
-                            info.readOnlyFile.seek(info.readOnlyFile.getFilePointer() + offset);
+                            if (info.position + offset < 0) {
+                                Modules.log.warn("SEEK_CUR UID " + Integer.toHexString(uid) + " filename:'" + info.filename + "' newposition=0x" + Long.toHexString(info.position + offset) + " (less than 0!)");
+                                Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_INVALID_ARGUMENT;
+                                if (resultIs64bit)
+                                    Emulator.getProcessor().cpu.gpr[3] = -1;
+                                State.fileLogger.logIoSeek64(PSP_ERROR_INVALID_ARGUMENT, uid, offset, whence);
+                                return;
+                            } else {
+                                info.position += offset;
+
+                                if (info.position < info.readOnlyFile.length())
+                                    info.readOnlyFile.seek(info.position);
+                            }
                             break;
                         case PSP_SEEK_END:
-                            info.readOnlyFile.seek(info.readOnlyFile.length() + offset);
+                            if (info.readOnlyFile.length() + offset < 0) {
+                                Modules.log.warn("SEEK_END UID " + Integer.toHexString(uid) + " filename:'" + info.filename + "' newposition=0x" + Long.toHexString(info.position + offset) + " (less than 0!)");
+                                Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_INVALID_ARGUMENT;
+                                if (resultIs64bit)
+                                    Emulator.getProcessor().cpu.gpr[3] = -1;
+                                State.fileLogger.logIoSeek64(PSP_ERROR_INVALID_ARGUMENT, uid, offset, whence);
+                                return;
+                            } else {
+                                info.position = info.readOnlyFile.length() + offset;
+
+                                if (info.position < info.readOnlyFile.length())
+                                    info.readOnlyFile.seek(info.position);
+                            }
                             break;
                         default:
                             Modules.log.error("seek - unhandled whence " + whence);
                             break;
                     }
-                    long result = info.readOnlyFile.getFilePointer();
+                    //long result = info.readOnlyFile.getFilePointer();
+                    long result = info.position;
 
                     if (async) {
                         info.result = result;
@@ -1513,7 +1570,7 @@ public class pspiofilemgr {
         public final SeekableRandomFile msFile; // on memory stick, should either be identical to readOnlyFile or null
         public final SeekableDataInput readOnlyFile; // on memory stick or umd
         public final String mode;
-
+        public long position; // virtual position, beyond the end is allowed, before the start is an error
 
         public final int uid;
         public long result; // The return value from the last operation on this file, used by sceIoWaitAsync
