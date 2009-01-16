@@ -735,7 +735,7 @@ public class ThreadMan {
      * sgx-psp-at3-th, sgx-psp-pcm-th, sgx-psp-sas-th, snd_tick_timer_thread,
      * snd_stream_service_thread_1, SAS / Main Audio, AudioMixThread,
      * snd_stream_service_thread_0, sound_poll_thread, stream_sound_poll_thread,
-     * sndp thread, Ss PlayThread
+     * sndp thread, Ss PlayThread, SndSsThread
      *
      * keywords:
      * snd, sound, at3, atrac3, sas, wave, pcm, audio
@@ -1049,8 +1049,9 @@ public class ThreadMan {
         callbackMap.put(callback.uid, callback);
 
         Modules.log.debug("hleKernelCreateCallback SceUID=" + Integer.toHexString(callback.uid)
-            + " PC=" + Integer.toHexString(func_addr)
             + " name:'" + name
+            + " PC=" + Integer.toHexString(func_addr)
+            + " arg=" + Integer.toHexString(user_arg_addr)
             + "' thread:'" + current_thread.name + "'");
 
         return callback;
@@ -1639,11 +1640,15 @@ public class ThreadMan {
                 Modules.log.debug("hleKernelWaitSema - '" + sema.name + "' fast check succeeded");
                 Emulator.getProcessor().cpu.gpr[2] = 0;
 
-                if (do_callbacks) {
-                    yieldCurrentThreadCB();
+                if (!insideCallback) {
+                    if (do_callbacks) {
+                        yieldCurrentThreadCB();
+                    } else {
+                        // TODO yield anyway?
+                        //yieldCurrentThread();
+                    }
                 } else {
-                    // TODO yield anyway?
-                    //yieldCurrentThread();
+                    Modules.log.warn("hleKernelWaitSema called from inside callback!");
                 }
             }
         }

@@ -272,7 +272,9 @@ public class pspge {
         list.syncStatus = syncType;
         pspdisplay.getInstance().setDirty(true);
 
-        if (syncType == PSP_GE_LIST_DONE) {
+        // allow queued to behave the same as done, may need changing later
+        if (syncType == PSP_GE_LIST_DONE ||
+            syncType == PSP_GE_LIST_QUEUED) {
             if (list.currentStatus == PSP_GE_LIST_QUEUED) {
                 list.currentStatus = PSP_GE_LIST_DRAWING_DONE;
                 VideoEngine.getInstance().pushDrawList(list);
@@ -282,6 +284,9 @@ public class pspge {
                 VideoEngine.log.info("hleGeListSync(id=" + list.id + ",syncType=" + syncType + ") failed currentStatus=" + list.currentStatus);
                 return false;
             }
+        //} else if (syncType == PSP_GE_LIST_QUEUED) {
+        //    VideoEngine.log.info("hleGeListSync(id=" + list.id + ",syncType=" + syncType + ") ignoring syncType=1");
+        //    return false;
         } else {
             VideoEngine.log.warn("hleGeListSync(id=" + list.id + ",syncType=" + syncType + ") unhandled syncType");
             return false;
