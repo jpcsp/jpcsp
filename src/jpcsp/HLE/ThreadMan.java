@@ -726,7 +726,8 @@ public class ThreadMan {
 
     /** use lower case in this list */
     private final String[] threadNameBanList = new String[] {
-        "bgm thread", "sgx-psp-freq-thr", "sgx-psp-pcm-th", "ss playthread"
+        "bgm thread", "sgx-psp-freq-thr", "sgx-psp-pcm-th", "ss playthread",
+        "spcbgm", "scemainsamplebgmmp3"
     };
     /* suspected sound thread names:
      * SndMain, SoundThread, At3Main, Atrac3PlayThread,
@@ -735,7 +736,7 @@ public class ThreadMan {
      * sgx-psp-at3-th, sgx-psp-pcm-th, sgx-psp-sas-th, snd_tick_timer_thread,
      * snd_stream_service_thread_1, SAS / Main Audio, AudioMixThread,
      * snd_stream_service_thread_0, sound_poll_thread, stream_sound_poll_thread,
-     * sndp thread, Ss PlayThread, SndSsThread
+     * sndp thread, Ss PlayThread, SndSsThread, SPCBGM
      *
      * keywords:
      * snd, sound, at3, atrac3, sas, wave, pcm, audio
@@ -980,6 +981,7 @@ public class ThreadMan {
         hleKernelWaitThreadEnd(uid, micros, forever, false);
     }
 
+    // disabled in syscall handler for TOE
     public void ThreadMan_sceKernelWaitThreadEndCB(int uid, int timeout_addr) {
         Modules.log.debug("sceKernelWaitThreadEndCB redirecting to hleKernelWaitThreadEnd(callbacks=true)");
 

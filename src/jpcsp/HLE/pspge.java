@@ -52,6 +52,7 @@ public class pspge {
 
     private ConcurrentLinkedQueue<DeferredCallbackInfo> deferredSignalCallbackQueue;
     private ConcurrentLinkedQueue<DeferredCallbackInfo> deferredFinishCallbackQueue;
+    private ConcurrentLinkedQueue<Integer> deferredThreadWakeupQueue;
 
 
     public final static int PSP_GE_LIST_DONE = 0;
@@ -87,6 +88,7 @@ public class pspge {
 
         deferredSignalCallbackQueue = new ConcurrentLinkedQueue<DeferredCallbackInfo>();
         deferredFinishCallbackQueue = new ConcurrentLinkedQueue<DeferredCallbackInfo>();
+        deferredThreadWakeupQueue = new ConcurrentLinkedQueue<Integer>();
     }
 
     /** call from main emulation thread */
@@ -123,6 +125,11 @@ public class pspge {
             if (info != null) {
                 triggerCallback(info.cbid, info.callbackNotifyArg1, SceKernelThreadInfo.THREAD_CALLBACK_GE_SIGNAL, signalCallbacks);
             }
+        }
+
+        for (Integer thid = deferredThreadWakeupQueue.poll(); thid != null; thid = deferredThreadWakeupQueue.poll()) {
+            VideoEngine.log.debug("really waking thread " + Integer.toHexString(thid));
+            ThreadMan.getInstance().unblockThread(thid);
         }
     }
 
@@ -252,17 +259,33 @@ public class pspge {
 
     /** Called from VideoEngine */
     public void hleGeListSyncDone(PspGeList list) {
-        VideoEngine.log.debug("list id=" + list.id + " current status " + list.currentStatus + " syncType " + list.syncStatus + " waking thread " + Integer.toHexString(list.thid) + " (0=no thread)");
+        if (VideoEngine.log.isDebugEnabled()) {
+            String msg = "hleGeListSyncDone list id=" + list.id
+                + " current status " + list.currentStatus
+                + ", syncType " + list.syncStatus;
 
-        if (list.thid != 0) {
-            ThreadMan.getInstance().unblockThread(list.thid);
-            list.thid = 0;
+            if (list.currentStatus != PSP_GE_LIST_DONE &&
+                list.currentStatus != PSP_GE_LIST_CANCEL_DONE) {
+                msg += ", NOT discarding list";
+            } else {
+                msg += ", discarding list";
+            }
+
+            if (list.thid != 0) {
+                msg += ", waking thread " + Integer.toHexString(list.thid);
+            }
+
+            VideoEngine.log.debug(msg);
         }
 
-        if (list.currentStatus == PSP_GE_LIST_DONE ||
-            list.currentStatus == PSP_GE_LIST_CANCEL_DONE) {
-            VideoEngine.log.debug("discarding list id=" + list.id);
-        } else {
+        if (list.thid != 0) {
+            // things might go wrong if the thread already exists in the queue
+            deferredThreadWakeupQueue.add(list.thid);
+        }
+
+        if (list.currentStatus != PSP_GE_LIST_DONE &&
+            list.currentStatus != PSP_GE_LIST_CANCEL_DONE) {
+            // list probably stalled, add it back to our queue for reprocessing
             listQueue.add(list);
         }
     }
@@ -272,15 +295,18 @@ public class pspge {
         list.syncStatus = syncType;
         pspdisplay.getInstance().setDirty(true);
 
+        // try syncing to done -> ok, draw
         // allow queued to behave the same as done, may need changing later
         if (syncType == PSP_GE_LIST_DONE ||
             syncType == PSP_GE_LIST_QUEUED) {
+            // current status queued -> ok, draw
             if (list.currentStatus == PSP_GE_LIST_QUEUED) {
                 list.currentStatus = PSP_GE_LIST_DRAWING_DONE;
                 VideoEngine.getInstance().pushDrawList(list);
                 VideoEngine.log.debug("hleGeListSync(id=" + list.id + ",syncType=" + syncType + ") ok");
                 return true;
             } else {
+                // list probably ended, can't draw again
                 VideoEngine.log.info("hleGeListSync(id=" + list.id + ",syncType=" + syncType + ") failed currentStatus=" + list.currentStatus);
                 return false;
             }
@@ -288,6 +314,7 @@ public class pspge {
         //    VideoEngine.log.info("hleGeListSync(id=" + list.id + ",syncType=" + syncType + ") ignoring syncType=1");
         //    return false;
         } else {
+            // TODO allow PSP_GE_LIST_DRAWING_DONE(2) as a non-blocking sync ?
             VideoEngine.log.warn("hleGeListSync(id=" + list.id + ",syncType=" + syncType + ") unhandled syncType");
             return false;
         }
