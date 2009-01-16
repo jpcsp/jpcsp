@@ -19,10 +19,13 @@
 
 #include "pg.h"
 
-unsigned char* g_dataBuf = (unsigned char*)0x9100000;
-unsigned char* g_readIcon0 = (unsigned char*)0x9200000;
-unsigned char* g_readIcon1 = (unsigned char*)0x9300000;
-unsigned char* g_readPic1 = (unsigned char*)0x9400000;
+unsigned char g_dataBuf[0x100000];
+unsigned char g_readIcon0[100000];
+unsigned char g_readIcon1[100000];
+unsigned char g_readPic1[100000];
+unsigned char buffer1[20];
+unsigned char buffer2[64];
+unsigned char buffer3[28];
 
 char* g_gameName;
 char* g_saveName;
@@ -40,6 +43,8 @@ char* g_dataName;
 #define SEEK_SET    0
 #define SEEK_CUR    1
 #define SEEK_END    2
+
+#define FW15	0
 
 int y = 3;
 
@@ -136,23 +141,23 @@ int SetupCallbacks(void)
 typedef struct
 {
 	int size;
-	int unknown1;
-	int unknown2;
-	int unknown3;
-	int unknown4;
-	int unknown5;
-	int unknown6;
-	int unknown7;
+	int language;
+	int buttonSwap;
+	int graphicsThread;
+	int accessThread;
+	int fontThread;
+	int soundThread;
+	int result;
 	int unknown8;
 	int unknown9;
 	int unknown10;
 	int unknown11;
 	int mode;
 	int unknown12;
-	int unknown13;
+	int overwrite;
 	char gameNameAsciiZ[16];
 	char saveNameAsciiZ[24];
-	char dataDotBinAsciiZ[16];
+	char dataNameAsciiZ[16];
 	unsigned char* dataBuf;
 	int sizeOfDataBuf;
 	int sizeOfData;
@@ -172,7 +177,23 @@ typedef struct
 	unsigned char* readPic1Buf;
 	int sizeOfReadPic1Buf;
 	int sizeOfReadPic1;
-	unsigned char unknown17[0x18];
+	int unknown17;
+	unsigned char* readSnd0Buf;
+	int sizeOfReadSnd0Buf;
+	int sizeOfReadSnd0;
+	int unknown18;
+        unsigned char* newData;
+        int focus;
+	unsigned char unknown19[4];
+#if FW15
+	char unknown20[12];
+#else
+	unsigned char *ptr1;
+	unsigned char *ptr2;
+	unsigned char *ptr3;
+	char key[16];
+	char unknown20[20];
+#endif
 } SceUtilitySavedataParam;
 
 #define PARAMS_LEN (0x80 + 0x80 + 0x400 + 1)
@@ -203,22 +224,39 @@ typedef struct _ctrl_data
 void initSavedata(SceUtilitySavedataParam* savedata, int mode) {
 	memset(savedata, 0, sizeof(SceUtilitySavedataParam));
 	savedata->size = sizeof(SceUtilitySavedataParam);
-	savedata->unknown3 = 0x11;
-	savedata->unknown4 = 0x13;
-	savedata->unknown5 = 0x12;
-	savedata->unknown6 = 0x10;
-	savedata->unknown13 = 1;
+#if FW15
+	savedata->graphicsThread = 0x21;
+	savedata->accessThread = 0x23;
+	savedata->fontThread = 0x22;
+	savedata->soundThread = 0x20;
+#else
+	savedata->graphicsThread = 0x11;
+	savedata->accessThread = 0x13;
+	savedata->fontThread = 0x12;
+	savedata->soundThread = 0x10;
+	memset(buffer1, 0, sizeof(buffer1));
+	memset(buffer2, 0, sizeof(buffer2));
+	memset(buffer3, 0, sizeof(buffer3));
+	savedata->ptr1 = buffer1;
+	savedata->ptr2 = buffer2;
+	savedata->ptr3 = buffer3;
+	strcpy(buffer2, g_gameName);
+	strcpy(buffer2 + 16, g_saveName);
+	strncpy(savedata->key, "1234567890123456", 16);
+#endif
+	savedata->overwrite = 1;
 	savedata->mode = mode;
 	strcpy(savedata->gameNameAsciiZ, g_gameName);
 	strcpy(savedata->saveNameAsciiZ, g_saveName);
-	strcpy(savedata->dataDotBinAsciiZ, g_dataName);
+	strcpy(savedata->dataNameAsciiZ, g_dataName);
 	savedata->dataBuf = g_dataBuf;
-	savedata->sizeOfDataBuf = 0x100000;
+	savedata->sizeOfDataBuf = sizeof(g_dataBuf);
 }
 
 void mainImpl()
 {
-	int i, result;
+	int result, previousResult;
+	SceUtilitySavedataParam savedata;
 
 	// read info file
 	int fd = sceIoOpen("ms0:/savename.txt", O_RDONLY, 0);
@@ -255,7 +293,8 @@ void mainImpl()
 	strcpy(buf, "data name: ");
 	print(strcat(buf, g_dataName));
 	y++;
-	print("press 'x' for load or 'o' for update savedata");
+	print("press 'x' for load or 'o' for update savedata,");
+	print("press triangle for savedata mode 8");
 	y++;
 
 	sceCtrlSetSamplingCycle(0); 
@@ -270,13 +309,15 @@ void mainImpl()
 		} else if (ctrl.buttons & CTRL_CIRCLE) { 
 			update = 1;
 			break;
-		} 
+		} else if (ctrl.buttons & CTRL_TRIANGLE) {
+			update = 2;
+			break;
+		}
 		sceDisplayWaitVblankStart();
 	}
 
 	// write savedata or update
-	if (update) {
-		SceUtilitySavedataParam savedata;
+	if (update == 1) {
 		initSavedata(&savedata, 1);
 
 		// load extracted data
@@ -305,31 +346,42 @@ void mainImpl()
 			printHex(result);
 			return;
 		}
+		previousResult = -1;
 		while (1) {
 			result = sceUtilitySavedataGetStatus();
+			if (result != previousResult) {
+				print("sceUtilitySavedataGetStatus result:");
+				printHex(result);
+				previousResult = result;
+			}
 			if (result == 3) break;
 			sceUtilitySavedataUpdate(1);
 			sceDisplayWaitVblankStart();
 		}
-	} else {
+	} else if (update == 0) {
 		// load savedata
 		print("loading savedata...");
-		SceUtilitySavedataParam savedata;
 		initSavedata(&savedata, 0);
 		savedata.readIcon0Buf = g_readIcon0;
-		savedata.sizeOfReadIcon0Buf = 0x100000;
+		savedata.sizeOfReadIcon0Buf = sizeof(g_readIcon0);
 		savedata.readIcon1Buf = g_readIcon1;
-		savedata.sizeOfReadIcon1Buf = 0x100000;
+		savedata.sizeOfReadIcon1Buf = sizeof(g_readIcon1);
 		savedata.readPic1Buf = g_readPic1;
-		savedata.sizeOfReadPic1Buf = 0x100000;
+		savedata.sizeOfReadPic1Buf = sizeof(g_readPic1);
 		result = sceUtilitySavedataInitStart(savedata);
 		if (result) {
 			print("sceUtilitySavedataInitStart failed");
 			printHex(result);
 			return;
 		}
+		previousResult = -1;
 		while (1) {
 			result = sceUtilitySavedataGetStatus();
+			if (result != previousResult) {
+				print("sceUtilitySavedataGetStatus result:");
+				printHex(result);
+				previousResult = result;
+			}
 			if (result == 3) break;
 			sceUtilitySavedataUpdate(1);
 			sceDisplayWaitVblankStart();
@@ -351,16 +403,100 @@ void mainImpl()
 		}
 		sceIoWrite(fd, g_dataBuf, savedata.sizeOfData);	
 		sceIoClose(fd);
+		fd = sceIoOpen("ms0:/savedata.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/savedata.bin");
+			return;
+		}
+		sceIoWrite(fd, savedata, sizeof(savedata));
+		sceIoClose(fd);
+	} else if (update == 2) {
+		// Test savedata mode 8
+		print("loading savedata with mode 8...");
+		initSavedata(&savedata, 8);
+		/* savedata.sizeOfDataBuf = 0x1000; */
+		savedata.sizeOfData = savedata.sizeOfDataBuf;
+		result = sceUtilitySavedataInitStart(savedata);
+		if (result) {
+			print("sceUtilitySavedataInitStart failed");
+			printHex(result);
+			return;
+		}
+		previousResult = -1;
+		while (1) {
+			result = sceUtilitySavedataGetStatus();
+			if (result != previousResult) {
+				print("sceUtilitySavedataGetStatus result:");
+				printHex(result);
+				previousResult = result;
+			}
+			if (result == 3) break;
+			sceUtilitySavedataUpdate(1);
+			sceDisplayWaitVblankStart();
+		}
+
+		// write data
+		print("writing savedata structure...");
+		fd = sceIoOpen("ms0:/savedata.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/savedata.bin");
+			return;
+		}
+		sceIoWrite(fd, savedata, sizeof(savedata));
+		sceIoClose(fd);
+#if FW15
+#else
+		char buffer[100];
+		sprintf(buffer, "Free space: %s", buffer1 + 12);
+		print(buffer);
+		sprintf(buffer, "Required space1: %s", buffer3 + 8);
+		print(buffer);
+		sprintf(buffer, "Required space2: %s", buffer3 + 20);
+		print(buffer);
+		fd = sceIoOpen("ms0:/buffer1.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/buffer1.bin");
+			return;
+		}
+		sceIoWrite(fd, buffer1, sizeof(buffer1));
+		sceIoClose(fd);
+
+		fd = sceIoOpen("ms0:/buffer2.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/buffer2.bin");
+			return;
+		}
+		sceIoWrite(fd, buffer2, sizeof(buffer2));
+		sceIoClose(fd);
+
+		fd = sceIoOpen("ms0:/buffer3.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/buffer3.bin");
+			return;
+		}
+		sceIoWrite(fd, buffer3, sizeof(buffer3));
+		sceIoClose(fd);
+#endif
 	}
+
 	sceUtilitySavedataShutdownStart();
+	previousResult = -1;
 	while (1) {
 		result = sceUtilitySavedataGetStatus();
+		if (result != previousResult) {
+			print("sceUtilitySavedataGetStatus result:");
+			printHex(result);
+			previousResult = result;
+		}
 		if (result == 4) break;
 		sceUtilitySavedataUpdate(1);
 		sceDisplayWaitVblankStart();
 	}
 	y++;
 	print("operation successful");
+
+	print("savedata.result:");
+	printHex(savedata.result);
 }
 
 int xmain(int ra)
@@ -373,8 +509,9 @@ int xmain(int ra)
 
 	mainImpl();
 	
-	pgWaitVn(200);
+	pgWaitVn(500);
 	sceKernelExitGame();
 
 	return 0;
 }
+
