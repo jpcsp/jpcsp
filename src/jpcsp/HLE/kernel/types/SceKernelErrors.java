@@ -23,6 +23,7 @@ public class SceKernelErrors {
     public static final int ERROR_SAVEDATA_LOAD_DATA_BROKEN = 0x80110306;
     public static final int ERROR_SAVEDATA_LOAD_NO_DATA = 0x80110307;
     public static final int ERROR_SAVEDATA_LOAD_BAD_PARAMS = 0x80110308;
+    public static final int ERROR_SAVEDATA_MODE8_NO_DATA = 0x801103c7;
 
     public static final int ERROR_SAVEDATA_SAVE_NO_MEMSTICK = 0x80110381;
     public static final int ERROR_SAVEDATA_SAVE_NO_SPACE = 0x80110383;

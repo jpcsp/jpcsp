@@ -27,13 +27,12 @@ import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.pspiofilemgr;
+import jpcsp.util.Utilities;
 
 import jpcsp.Memory;
 import jpcsp.Processor;
 
 import jpcsp.Allegrex.CpuState; // New-Style Processor
-import jpcsp.MemoryMap;
-import static jpcsp.util.Utilities.*;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 
 public class sceUtility implements HLEModule {
@@ -175,6 +174,8 @@ public class sceUtility implements HLEModule {
 
     protected int savedata_status;
     protected int savedata_mode; //hacky should be done better
+    public static final int memoryStickSectorSizeKb = 32;
+    public static final int memoryStickFreeSpaceKb = 1024;  // 1MB free
 
     protected int msgdialog_status;
     protected SceUtilityMsgDialogParams msgdialog_params;
@@ -386,7 +387,14 @@ public class sceUtility implements HLEModule {
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
 
-    public void sceUtilitySavedataInitStart(Processor processor) {
+	private int computeMemoryStickRequiredSpaceKb(int sizeByte) {
+	    int sizeKb = (sizeByte + 1023) / 1024;
+	    int sizeSector = (sizeKb + memoryStickSectorSizeKb - 1) / memoryStickSectorSizeKb;
+
+	    return sizeSector * memoryStickSectorSizeKb;
+	}
+
+	public void sceUtilitySavedataInitStart(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         Memory mem = Processor.memory;
 
@@ -471,10 +479,43 @@ public class sceUtility implements HLEModule {
                 sceUtilitySavedataParam.base.result = ERROR_SAVEDATA_SAVE_NO_MEMSTICK;
                 break;
 
-            case 8:
-                // TODO http://code.google.com/p/jpcsp/issues/detail?id=51
-                Modules.log.warn("IGNORING:sceUtilitySavedataInitStart mode 8");
-                sceUtilitySavedataParam.base.result = 0;
+            case SceUtilitySavedataParam.MODE_TRYSAVE:
+                Modules.log.warn("PARTIAL:sceUtilitySavedataInitStart mode 8");
+                if (sceUtilitySavedataParam.isPresent(pspiofilemgr.getInstance())) {
+                    sceUtilitySavedataParam.base.result = 0;
+                } else {
+                    sceUtilitySavedataParam.base.result = ERROR_SAVEDATA_MODE8_NO_DATA;
+                }
+                int buffer1Addr = sceUtilitySavedataParam.buffer1Addr;
+                if (mem.isAddressGood(buffer1Addr)) {
+                    String memoryStickFreeSpaceKbString = String.format("%d KB", memoryStickFreeSpaceKb);
+
+                    mem.write32(buffer1Addr +  0, memoryStickSectorSizeKb * 1024);
+                    mem.write32(buffer1Addr +  4, memoryStickFreeSpaceKb / memoryStickSectorSizeKb);
+                    mem.write32(buffer1Addr +  8, memoryStickFreeSpaceKb);
+                    Utilities.writeStringNZ(mem, buffer1Addr +  12, 8, memoryStickFreeSpaceKbString);
+
+                    Modules.log.debug("Memory Stick Free Space = " + memoryStickFreeSpaceKbString);
+                }
+                int buffer3Addr = sceUtilitySavedataParam.buffer3Addr;
+                if (mem.isAddressGood(buffer3Addr)) {
+                    int memoryStickRequiredSpaceKb = 0;
+                    memoryStickRequiredSpaceKb += memoryStickSectorSizeKb; // Assume 1 sector for SFO-Params
+                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(sceUtilitySavedataParam.dataSize);
+                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(sceUtilitySavedataParam.icon0FileData.bufSize);
+                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(sceUtilitySavedataParam.icon1FileData.bufSize);
+                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(sceUtilitySavedataParam.pic1FileData.bufSize);
+                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(sceUtilitySavedataParam.snd0FileData.bufSize);
+                    String memoryStickRequiredSpaceKbString = String.format("%d KB", memoryStickRequiredSpaceKb);
+
+                    mem.write32(buffer3Addr +  0, memoryStickRequiredSpaceKb / memoryStickSectorSizeKb);
+                    mem.write32(buffer3Addr +  4, memoryStickRequiredSpaceKb);
+                    Utilities.writeStringNZ(mem, buffer3Addr +  8, 8, memoryStickRequiredSpaceKbString);
+                    mem.write32(buffer3Addr + 16, memoryStickRequiredSpaceKb);
+                    Utilities.writeStringNZ(mem, buffer3Addr + 20, 8, memoryStickRequiredSpaceKbString);
+
+                    Modules.log.debug("Memory Stick Required Space = " + memoryStickRequiredSpaceKbString);
+                }
                 break;
 
             default:

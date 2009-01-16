@@ -16,7 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.nio.ByteBuffer;
@@ -24,7 +23,6 @@ import java.nio.channels.FileChannel.MapMode;
 import java.util.Vector;
 
 import jpcsp.Memory;
-import jpcsp.HLE.Modules;
 import jpcsp.HLE.pspiofilemgr;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.filesystems.SeekableRandomFile;
@@ -51,6 +49,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		public final static int MODE_LISTSAVE = 5;
 		public final static int MODE_LISTDELETE = 6;
 		public final static int MODE_DELETE = 7;
+		public final static int MODE_TRYSAVE = 8;
 	public int focus;
 		public final static int FOCUS_UNKNOWN = 0;
 		public final static int FOCUS_FIRSTLIST = 1;	// First in list
@@ -67,7 +66,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 	public int saveNameListAddr;
 	int dataBuf;
 	int dataBufSize;
-	int dataSize;
+	public int dataSize;
 	public PspUtilitySavedataSFOParam sfoParam;
 	public PspUtilitySavedataFileData icon0FileData;
 	public PspUtilitySavedataFileData icon1FileData;
@@ -75,6 +74,9 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 	public PspUtilitySavedataFileData snd0FileData;
 	int newDataAddr;
 	public PspUtilitySavedataListSaveNewData newData;
+	public int buffer1Addr;
+	public int buffer2Addr;
+	public int buffer3Addr;
 	public String key;		// encrypt/decrypt key for save with firmware >= 2.00
 
 	public class PspUtilitySavedataSFOParam extends pspAbstractMemoryMappedStructure {
@@ -205,7 +207,10 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 			newData = null;
 		}
 		focus = read32();
-		readUnknown(16);
+		readUnknown(4);
+		buffer1Addr = read32();
+        buffer2Addr = read32();
+        buffer3Addr = read32();
 		key = readStringNZ(16);
 	}
 
@@ -237,7 +242,10 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 			newData.write(mem, newDataAddr);
 		}
 		write32(focus);
-		writeUnknown(16);
+		writeUnknown(4);
+		write32(buffer1Addr);
+        write32(buffer2Addr);
+        write32(buffer3Addr);
 		writeStringNZ(16, key);
 	}
 
@@ -258,12 +266,30 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		// From Firmware 2.0, the data file is encrypted using the kirk chip.
 		// Encrypted files cannot be loaded.
 		// TODO Detect and reject an encrypted data file.
-		dataSize           = loadFile(mem, fileManager, path, fileName,      dataBuf,           dataBufSize);
+		dataSize = loadFile(mem, fileManager, path, fileName, dataBuf, dataBufSize);
         safeLoad(mem, fileManager, icon0FileName, icon0FileData);
         safeLoad(mem, fileManager, icon1FileName, icon1FileData);
         safeLoad(mem, fileManager, pic1FileName, pic1FileData);
         safeLoad(mem, fileManager, snd0FileName, snd0FileData);
 		loadPsf(mem, fileManager, path, paramSfoFileName, sfoParam);
+	}
+
+	public boolean isPresent(pspiofilemgr fileManager) {
+	    if (fileName == null || fileName.length() <= 0) {
+	        return false;
+	    }
+
+	    String path = savedataPath + gameName + saveName + "/";
+	    try {
+            SeekableDataInput fileInput = getDataInput(fileManager, path, fileName);
+            if (fileInput != null) {
+                fileInput.close();
+                return true;
+            }
+	    } catch (IOException e) {
+	    }
+
+        return false;
 	}
 
 	private SeekableDataInput getDataInput(pspiofilemgr fileManager, String path, String name) {
