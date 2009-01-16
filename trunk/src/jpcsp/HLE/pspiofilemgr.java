@@ -48,8 +48,6 @@ import jpcsp.State;
 // - saw one game check if it was between 0 and 31 inclusive
 // - psplink allows 3 - 63 inclusive
 // - without psplink its 3 - 12 inclusive
-
-// TODO use file id's 3 to 63 inclusive (last estimate was 3 - 31 inclusive, maybe it is increased by later fw or cfw removes a restriction)
 // TODO get std out/err/in from stdio module, it can be any number not just 1/2/3 BUT some old homebrew may expect it to be 1/2/3 (such as some versions of psplinkusb)
 public class pspiofilemgr {
     private static pspiofilemgr  instance;
@@ -116,8 +114,10 @@ public class pspiofilemgr {
     public final static int PSP_ERROR_READ_ONLY = 0x8001001e;
     public final static int PSP_ERROR_NO_MEDIA = 0x8001007b;
 
+
     public final static int PSP_ERROR_FILE_READ_ERROR       = 0x80020130;
     public final static int PSP_ERROR_TOO_MANY_OPEN_FILES   = 0x80020320;
+    public final static int PSP_ERROR_NO_SUCH_DEVICE   = 0x80020321; // also means device isn't available/mounted, such as ms not in
     public final static int PSP_ERROR_BAD_FILE_DESCRIPTOR   = 0x80020323;
     public final static int PSP_ERROR_UNSUPPORTED_OPERATION = 0x80020325;
     public final static int PSP_ERROR_NOCWD                 = 0x8002032c; // TODO
@@ -1353,12 +1353,15 @@ public class pspiofilemgr {
                 break;
 
             case 0x02425818: // Free space on ms
+            // use PSP_ERROR_NO_SUCH_DEVICE if ms is not in
             {
-                int maxClusters = 512; // TODO fix these settings
-                int freeClusters = 512;
-                int maxSectors = 512;
-                int sectorSize = 512;
-                int sectorCount = 512;
+                // 32mb empty formatted mem stick
+                int sectorSize = 0x200;
+                int sectorCount = 0x08;
+                int maxClusters = (32000000 * 95 / 100) / (sectorSize * sectorCount); // reserve 5% for fs house keeping
+                int freeClusters = maxClusters;
+                int maxSectors = 512; // TODO
+
                 Memory mem = Memory.getInstance();
                 if (mem.isAddressGood(indata_addr) && inlen >= 4) {
                     int addr = mem.read32(indata_addr);

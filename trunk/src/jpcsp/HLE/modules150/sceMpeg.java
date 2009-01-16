@@ -185,6 +185,11 @@ public class sceMpeg implements HLEModule {
         return -1;
     }
 
+    protected int endianSwap(int x) {
+        return (x << 24) | ((x << 8) &  0xFF0000) | ((x >> 8) &  0xFF00) | ((x >> 24) &  0xFF);
+    }
+
+
     public void sceMpegQueryStreamOffset(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
@@ -204,8 +209,8 @@ public class sceMpeg implements HLEModule {
         } else if (mem.isAddressGood(buffer_addr) && mem.isAddressGood(offset_addr)) {
             int magic = mem.read32(buffer_addr);
             int version = mem.read32(buffer_addr + 4);
-            int offset = mem.read32(buffer_addr + 8);
-            int size = mem.read32(buffer_addr + 12);
+            int offset = endianSwap(mem.read32(buffer_addr + 8));
+            int size = endianSwap(mem.read32(buffer_addr + 12));
             Modules.log.debug(String.format("sceMpegQueryStreamOffset magic=0x%08X"
                 + " version=0x%08X offset=0x%08X size=0x%08X", magic, version, offset, size));
 
@@ -237,8 +242,8 @@ public class sceMpeg implements HLEModule {
         if (mem.isAddressGood(buffer_addr) && mem.isAddressGood(size_addr)) {
             int magic = mem.read32(buffer_addr);
             int version = mem.read32(buffer_addr + 4);
-            int offset = mem.read32(buffer_addr + 8);
-            int size = mem.read32(buffer_addr + 12);
+            int offset = endianSwap(mem.read32(buffer_addr + 8));
+            int size = endianSwap(mem.read32(buffer_addr + 12));
             Modules.log.debug(String.format("sceMpegQueryStreamSize magic=0x%08X"
                 + " version=0x%08X offset=0x%08X size=0x%08X", magic, version, offset, size));
 
@@ -328,6 +333,7 @@ public class sceMpeg implements HLEModule {
         if (mem.isAddressGood(mpeg) && mem.isAddressGood(data) && mem.isAddressGood(ringbuffer_addr)) {
             mpegUid = SceUidManager.getNewUid("sceMpeg-Mpeg");
             mem.write32(mpeg, mpegUid);
+            Modules.log.warn("sceMpegCreate assigned uid " + Integer.toHexString(mpegUid));
 
             // update the ring buffer
             SceMpegRingbuffer ringbuffer = new SceMpegRingbuffer(mem, ringbuffer_addr);
@@ -357,8 +363,9 @@ public class sceMpeg implements HLEModule {
 
         Modules.log.warn("PARTIAL:sceMpegDelete(mpeg=0x" + Integer.toHexString(mpeg) + ")");
 
-        if (getMpegUid(mpeg) != mpegUid) {
-            Modules.log.warn("sceMpegDelete bad mpeg handle 0x" + Integer.toHexString(mpeg));
+        int uid = getMpegUid(mpeg);
+        if (uid != mpegUid) {
+            Modules.log.warn("sceMpegDelete bad mpeg handle 0x" + Integer.toHexString(mpeg) + " uid=" + Integer.toHexString(uid));
             cpu.gpr[2] = -1;
         } else {
             cpu.gpr[2] = 0;
@@ -1034,13 +1041,18 @@ public class sceMpeg implements HLEModule {
             + ",numPackets=" + numPackets
             + ",available=" + available + ")");
 
-        if (enableMpeg) {
-            SceMpegRingbuffer ringbuffer = new SceMpegRingbuffer(mem, ringbuffer_addr);
-            ringbuffer.packetsFree -= numPackets;
-            ringbuffer.write(mem, ringbuffer_addr);
-        }
+        if (numPackets < 0) {
+            Modules.log.warn("sceMpegRingbufferPut numPackets=" + numPackets + " (less than 0!)");
+            cpu.gpr[2] = 0; // check
+        } else {
+            if (enableMpeg) {
+                SceMpegRingbuffer ringbuffer = new SceMpegRingbuffer(mem, ringbuffer_addr);
+                ringbuffer.packetsFree -= numPackets;
+                ringbuffer.write(mem, ringbuffer_addr);
+            }
 
-        cpu.gpr[2] = numPackets;
+            cpu.gpr[2] = numPackets;
+        }
     }
 
     // TODO return in bytes or packets?
