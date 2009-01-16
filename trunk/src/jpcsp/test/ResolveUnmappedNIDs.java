@@ -171,38 +171,24 @@ public class ResolveUnmappedNIDs {
     public static HashMap<Integer, NIDInfo> parseLog(String filename) {
         LinkedHashMap<Integer, NIDInfo> nids = new LinkedHashMap<Integer, NIDInfo>();
 
-        try
-        {
+        try {
             FileReader fr = new FileReader(filename);
             BufferedReader br = new BufferedReader(fr);
             String line;
 
-            while((line = br.readLine()) != null)
-            {
+            while((line = br.readLine()) != null) {
                 String[] parts = line.split(" ");
-                if (parts.length >= 13) {
-                    // sample:
-                    //28453 [GUI] WARN  misc - Failed to map import at 0x088C35D8 [0xB9848A74] (attempt 1)
-                    try {
-                        int nid = (int)Long.parseLong(parts[12].substring(3, 11), 16);
-                        NIDInfo info = new NIDInfo(nid);
-                        nids.put(nid, info);
-                    } catch(Exception e) {
-                        //System.err.println(e.getMessage());
-                        //System.err.println("error near '" + parts[12] + "'");
-                    }
-                }
-
-                if (parts.length >= 14) {
-                    // sample:
-                    // 45605 [Emu] DEBUG misc - Mapped import at 0x09EAA2F4 to export at 0x09EA5278 [0xB58E61B7] (attempt 1)
-                    try {
-                        int nid = (int)Long.parseLong(parts[13].substring(3, 11), 16);
-                        NIDInfo info = new NIDInfo(nid);
-                        nids.put(nid, info);
-                    } catch(Exception e) {
-                        //System.err.println(e.getMessage());
-                        //System.err.println("error near '" + parts[13] + "'");
+                for (int i = 10; i < parts.length; i++) {
+                    if (parts[i].startsWith("[0x")) {
+                        try {
+                            int nid = (int)Long.parseLong(parts[i].substring(3, 11), 16);
+                            NIDInfo info = new NIDInfo(nid);
+                            nids.put(nid, info);
+                        } catch(Exception e) {
+                            //System.err.println(e.getMessage());
+                            //System.err.println("error near '" + parts[i] + "'");
+                        }
+                        break;
                     }
                 }
             }
