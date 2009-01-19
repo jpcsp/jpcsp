@@ -201,7 +201,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
                 + " NPC:" + Integer.toHexString(cpuContext.npc));
         }
         */
-       // RuntimeContext.update();
+        RuntimeContext.update();
     }
 
     /** For use in the scheduler */
