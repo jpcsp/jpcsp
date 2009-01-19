@@ -51,7 +51,7 @@ import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 public class ThreadMan {
     private static ThreadMan instance;
     private HashMap<Integer, SceKernelThreadInfo> threadMap;
-    private HashMap<Integer, SceKernelSemaphoreInfo> semalist;
+    private HashMap<Integer, SceKernelSemaInfo> semalist;
     private ArrayList<SceKernelThreadInfo> waitingThreads;
     private ArrayList<SceKernelThreadInfo> toBeDeletedThreads;
     private SceKernelThreadInfo current_thread;
@@ -112,7 +112,7 @@ public class ThreadMan {
         //Modules.log.debug("ThreadMan: Initialise entry:0x" + Integer.toHexString(entry_addr));
 
         threadMap = new HashMap<Integer, SceKernelThreadInfo>();
-        semalist = new HashMap<Integer, SceKernelSemaphoreInfo>();
+        semalist = new HashMap<Integer, SceKernelSemaInfo>();
         waitingThreads = new ArrayList<SceKernelThreadInfo>();
         toBeDeletedThreads = new ArrayList<SceKernelThreadInfo>();
         statistics = new Statistics();
@@ -1524,7 +1524,7 @@ public class ThreadMan {
                 + " (size=" + optsize + ")");
         }
 
-        SceKernelSemaphoreInfo sema = new SceKernelSemaphoreInfo(name, attr, initVal, maxVal);
+        SceKernelSemaInfo sema = new SceKernelSemaInfo(name, attr, initVal, maxVal);
 
         Emulator.getProcessor().cpu.gpr[2] = sema.uid;
     }
@@ -1540,7 +1540,7 @@ public class ThreadMan {
         }
 
         SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
-        SceKernelSemaphoreInfo sema = semalist.remove(semaid);
+        SceKernelSemaInfo sema = semalist.remove(semaid);
         if (sema == null) {
             Modules.log.warn("sceKernelDeleteSema - unknown uid 0x" + Integer.toHexString(semaid));
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
@@ -1572,7 +1572,7 @@ public class ThreadMan {
 
     /** May modify sema.currentCount
      * @return true on success */
-    private boolean tryWaitSemaphore(SceKernelSemaphoreInfo sema, int signal)
+    private boolean tryWaitSemaphore(SceKernelSemaInfo sema, int signal)
     {
         boolean success = false;
 
@@ -1604,7 +1604,7 @@ public class ThreadMan {
         }
 
         SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
-        SceKernelSemaphoreInfo sema = semalist.get(semaid);
+        SceKernelSemaInfo sema = semalist.get(semaid);
         if (sema == null) {
             Modules.log.warn("hleKernelWaitSema - unknown uid 0x" + Integer.toHexString(semaid));
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
@@ -1683,7 +1683,7 @@ public class ThreadMan {
         }
 
         SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
-        SceKernelSemaphoreInfo sema = semalist.get(semaid);
+        SceKernelSemaInfo sema = semalist.get(semaid);
         if (sema == null) {
             Modules.log.warn("sceKernelSignalSema - unknown uid 0x" + Integer.toHexString(semaid));
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
@@ -1762,7 +1762,7 @@ public class ThreadMan {
         }
 
         SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
-        SceKernelSemaphoreInfo sema = semalist.get(semaid);
+        SceKernelSemaInfo sema = semalist.get(semaid);
         if (sema == null) {
             Modules.log.warn("sceKernelPollSema - unknown uid 0x" + Integer.toHexString(semaid));
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
@@ -1785,7 +1785,7 @@ public class ThreadMan {
         }
 
         SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
-        SceKernelSemaphoreInfo sema = semalist.get(semaid);
+        SceKernelSemaInfo sema = semalist.get(semaid);
         if (sema == null) {
             Modules.log.warn("sceKernelCancelSema - unknown uid 0x" + Integer.toHexString(semaid));
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
@@ -1824,7 +1824,7 @@ public class ThreadMan {
         }
 
         SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
-        SceKernelSemaphoreInfo sema = semalist.get(semaid);
+        SceKernelSemaInfo sema = semalist.get(semaid);
         if (sema == null) {
             Modules.log.warn("sceKernelReferSemaStatus - unknown uid 0x" + Integer.toHexString(semaid));
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
@@ -1834,7 +1834,7 @@ public class ThreadMan {
         }
     }
 
-    private class SceKernelSemaphoreInfo
+    private class SceKernelSemaInfo
     {
         private final String name;
         private final int attr;
@@ -1845,7 +1845,7 @@ public class ThreadMan {
 
         private final int uid;
 
-        public SceKernelSemaphoreInfo(String name, int attr, int initCount, int maxCount)
+        public SceKernelSemaInfo(String name, int attr, int initCount, int maxCount)
         {
             this.name = name;
             this.attr = attr;
@@ -1861,18 +1861,12 @@ public class ThreadMan {
         public void write(Memory mem, int address)
         {
             mem.write32(address, 56); // size
-
-            int i, len = name.length();
-            for (i = 0; i < 32 && i < len; i++)
-                mem.write8(address + 4 + i, (byte)name.charAt(i));
-            for (; i < 32; i++)
-                mem.write8(address + 4 + i, (byte)0);
-
+            writeStringNZ(mem, address + 4, 32, name);
             mem.write32(address + 36, attr);
             mem.write32(address + 40, initCount);
             mem.write32(address + 44, currentCount);
             mem.write32(address + 48, maxCount);
-            mem.write32(address + 48, numWaitThreads);
+            mem.write32(address + 52, numWaitThreads);
         }
     }
 
