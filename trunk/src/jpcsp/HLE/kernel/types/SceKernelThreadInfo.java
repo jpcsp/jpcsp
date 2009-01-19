@@ -201,7 +201,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
                 + " NPC:" + Integer.toHexString(cpuContext.npc));
         }
         */
-        RuntimeContext.update();
+       // RuntimeContext.update();
     }
 
     /** For use in the scheduler */
@@ -211,7 +211,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     }
 
     public void write(Memory mem, int address) {
-        mem.write32(address, 106); // size
+        mem.write32(address, 104); // size
 
         int i, len = name.length();
         for (i = 0; i < 32 && i < len; i++)
@@ -229,11 +229,11 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         mem.write32(address + 64, currentPriority);
         mem.write32(address + 68, waitType);
         mem.write32(address + 72, waitId);
-        mem.write32(address + 78, wakeupCount);
-        mem.write32(address + 82, exitStatus);
-        mem.write64(address + 86, runClocks);
-        mem.write32(address + 94, intrPreemptCount);
-        mem.write32(address + 98, threadPreemptCount);
-        mem.write32(address + 102, releaseCount);
+        mem.write32(address + 76, wakeupCount);
+        mem.write32(address + 80, exitStatus);
+        mem.write64(address + 84, runClocks);
+        mem.write32(address + 92, intrPreemptCount);
+        mem.write32(address + 96, threadPreemptCount);
+        mem.write32(address + 100, releaseCount);
     }
 }
