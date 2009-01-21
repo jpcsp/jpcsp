@@ -94,15 +94,21 @@ public class MduState extends GprState {
     }
 
     public final void doDIV(int rs, int rt) {
-        int lo = gpr[rs] / gpr[rt];
-        int hi = gpr[rs] % gpr[rt];
-        hilo = (((long) hi) << 32) | (((long) lo) & 0xffffffffL);
+        // According to MIPS spec., result is unpredictable when dividing by zero.
+        if (gpr[rt] != 0) {
+            int lo = gpr[rs] / gpr[rt];
+            int hi = gpr[rs] % gpr[rt];
+            hilo = (((long) hi) << 32) | (((long) lo) & 0xffffffffL);
+        }
     }
 
     public final void doDIVU(int rs, int rt) {
-        long x = ((long) gpr[rs]) & 0xffffffffL;
-        long y = ((long) gpr[rt]) & 0xffffffffL;
-        hilo = ((x % y) << 32) | ((x / y) & 0xffffffffL);
+        // According to MIPS spec., result is unpredictable when dividing by zero.
+        if (gpr[rt] != 0) {
+            long x = ((long) gpr[rs]) & 0xffffffffL;
+            long y = ((long) gpr[rt]) & 0xffffffffL;
+            hilo = ((x % y) << 32) | ((x / y) & 0xffffffffL);
+        }
     }   
 
     public final void doMADD(int rs, int rt) {
