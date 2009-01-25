@@ -89,15 +89,16 @@ public class SystemTimeManager {
     }
 
     public void sceKernelGetSystemTimeWide() {
-        long systemTime = System.nanoTime();
+        long systemTime = System.nanoTime() / 1000L;
         Modules.log.debug("sceKernelGetSystemTimeWide ret:" + systemTime);
         Emulator.getProcessor().cpu.gpr[2] = (int)(systemTime & 0xffffffffL);
         Emulator.getProcessor().cpu.gpr[3] = (int)((systemTime >> 32) & 0xffffffffL);
     }
 
     //private int timeLow = 0;
+    // microseconds
     public void sceKernelGetSystemTimeLow() {
-        long systemTime = System.nanoTime();
+        long systemTime = System.nanoTime() / 1000L;
         int low = (int)(systemTime & 0x7fffffffL); // check, don't use msb?
         //int low = timeLow; timeLow += 10;
         //Modules.log.debug("sceKernelGetSystemTimeLow return:" + low);
