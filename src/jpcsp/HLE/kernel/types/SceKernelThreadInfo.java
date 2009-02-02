@@ -76,7 +76,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public int gpReg_addr;
     public final int initPriority;
     public int currentPriority;
-    public int waitType;
+    public int waitType; // 3 = sema
     public int waitId;
     public int wakeupCount;
     public int exitStatus;

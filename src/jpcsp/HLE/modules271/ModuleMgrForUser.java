@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.HLE.modules200;
+package jpcsp.HLE.modules271;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -36,16 +36,15 @@ import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.HLE.kernel.types.*;
 import jpcsp.HLE.kernel.managers.*;
 
-public class sceUmdUser extends jpcsp.HLE.modules150.sceUmdUser {
+public class ModuleMgrForUser extends jpcsp.HLE.modules150.ModuleMgrForUser {
 
     @Override
     public void installModule(HLEModuleManager mm, int version) {
         super.installModule(mm, version);
 
-        if (version >= 200) {
+        if (version >= 271) {
 
-            mm.addFunction(sceUmdReplaceProhibitFunction, 0x87533940);
-            mm.addFunction(sceUmdReplacePermitFunction, 0xCBE9F02A);
+            mm.addFunction(ModuleMgrForUser_FEF27DC1Function, 0xFEF27DC1);
 
         }
     }
@@ -54,55 +53,34 @@ public class sceUmdUser extends jpcsp.HLE.modules150.sceUmdUser {
     public void uninstallModule(HLEModuleManager mm, int version) {
         super.uninstallModule(mm, version);
 
-        if (version >= 200) {
+        if (version >= 271) {
 
-            mm.removeFunction(sceUmdReplaceProhibitFunction);
-            mm.removeFunction(sceUmdReplacePermitFunction);
+            mm.removeFunction(ModuleMgrForUser_FEF27DC1Function);
 
         }
     }
 
     // Export functions
 
-    public void sceUmdReplaceProhibit(Processor processor) {
+    public void ModuleMgrForUser_FEF27DC1(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        Modules.log.warn("UNIMPLEMENTED:sceUmdReplaceProhibit");
-
-        cpu.gpr[2] = 0;
-    }
-
-    public void sceUmdReplacePermit(Processor processor) {
-        CpuState cpu = processor.cpu;
-
-        Modules.log.warn(String.format("UNIMPLEMENTED:sceUmdReplacePermit"
+        Modules.log.warn(String.format("UNIMPLEMENTED:ModuleMgrForUser_FEF27DC1"
             + " %08X %08X %08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
 
         cpu.gpr[2] = 0;
     }
 
-    public final HLEModuleFunction sceUmdReplaceProhibitFunction = new HLEModuleFunction("sceUmdUser", "sceUmdReplaceProhibit") {
+    public final HLEModuleFunction ModuleMgrForUser_FEF27DC1Function = new HLEModuleFunction("ModuleMgrForUser", "ModuleMgrForUser_FEF27DC1") {
 
         @Override
         public final void execute(Processor processor) {
-            sceUmdReplaceProhibit(processor);
+            ModuleMgrForUser_FEF27DC1(processor);
         }
 
         @Override
         public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdReplaceProhibit(processor);";
-        }
-    };
-    public final HLEModuleFunction sceUmdReplacePermitFunction = new HLEModuleFunction("sceUmdUser", "sceUmdReplacePermit") {
-
-        @Override
-        public final void execute(Processor processor) {
-            sceUmdReplacePermit(processor);
-        }
-
-        @Override
-        public final String compiledString() {
-            return "jpcsp.HLE.Modules.sceUmdUserModule.sceUmdReplacePermit(processor);";
+            return "jpcsp.HLE.Modules.ModuleMgrForUserModule.ModuleMgrForUser_FEF27DC1(processor);";
         }
     };
 }
