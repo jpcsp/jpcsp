@@ -140,7 +140,7 @@ public class sceSasCore implements HLEModule {
 
         Modules.log.warn("Unimplemented NID function __sceSasSetADSR [0x019B25EB] "
             + String.format("%08x %08x %08x %08x %08x %08x",
-            cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[9], cpu.gpr[10]));
+            cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -340,7 +340,7 @@ public class sceSasCore implements HLEModule {
 
         Modules.log.warn("Unimplemented NID function __sceSasSetKeyOn [0x76F01ACA] "
             + String.format("%08x %08x %08x %08x %08x %08x",
-            cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[9], cpu.gpr[10]));
+            cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -378,7 +378,7 @@ public class sceSasCore implements HLEModule {
 
         Modules.log.warn("Unimplemented NID function __sceSasSetVoice [0x99944089] "
             + String.format("%08x %08x %08x %08x %08x %08x",
-            cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[9], cpu.gpr[10]));
+            cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -400,7 +400,7 @@ public class sceSasCore implements HLEModule {
 
         Modules.log.warn("Unimplemented NID function __sceSasSetADSRmode [0x9EC3676A] "
             + String.format("%08x %08x %08x %08x %08x %08x",
-            cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[9], cpu.gpr[10]));
+            cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -477,7 +477,7 @@ public class sceSasCore implements HLEModule {
 
         Modules.log.warn("Unimplemented NID function __sceSasSetPitch [0xAD84D37F] "
             + String.format("%08x %08x %08x %08x %08x %08x",
-            cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[9], cpu.gpr[10]));
+            cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -533,7 +533,7 @@ public class sceSasCore implements HLEModule {
 
         Modules.log.warn("Unimplemented NID function __sceSasSetSimpleADSR [0xCBCD4F79] "
             + String.format("%08x %08x %08x %08x %08x %08x",
-            cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[9], cpu.gpr[10]));
+            cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
