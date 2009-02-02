@@ -345,7 +345,7 @@ public class pspge {
         }
 
         if (!found) {
-            VideoEngine.log.warn("sceGeListSync(id=" + id + ",syncType=" + syncType + ") failed");
+            VideoEngine.log.warn("sceGeListSync(id=" + id + ",syncType=" + syncType + ") failed (list not found)");
             Emulator.getProcessor().cpu.gpr[2] = -1;
         }
     }

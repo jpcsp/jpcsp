@@ -51,7 +51,6 @@ import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 public class ThreadMan {
     private static ThreadMan instance;
     private HashMap<Integer, SceKernelThreadInfo> threadMap;
-    private HashMap<Integer, SceKernelSemaInfo> semalist;
     private ArrayList<SceKernelThreadInfo> waitingThreads;
     private ArrayList<SceKernelThreadInfo> toBeDeletedThreads;
     private SceKernelThreadInfo current_thread;
@@ -105,6 +104,13 @@ public class ThreadMan {
         return threadMap.values().iterator();
     }
 
+    public Iterator<SceKernelThreadInfo> iteratorByPriority() {
+        Collection<SceKernelThreadInfo> c = threadMap.values();
+        List<SceKernelThreadInfo> list = new LinkedList<SceKernelThreadInfo>(c);
+        Collections.sort(list, idle0); // We need an instance of SceKernelThreadInfo for the comparator, so we use idle0
+        return list.iterator();
+    }
+
     /** call this when resetting the emulator
      * @param entry_addr entry from ELF header
      * @param attr from sceModuleInfo ELF section header */
@@ -112,7 +118,6 @@ public class ThreadMan {
         //Modules.log.debug("ThreadMan: Initialise entry:0x" + Integer.toHexString(entry_addr));
 
         threadMap = new HashMap<Integer, SceKernelThreadInfo>();
-        semalist = new HashMap<Integer, SceKernelSemaInfo>();
         waitingThreads = new ArrayList<SceKernelThreadInfo>();
         toBeDeletedThreads = new ArrayList<SceKernelThreadInfo>();
         statistics = new Statistics();
@@ -1052,9 +1057,9 @@ public class ThreadMan {
 
         Modules.log.debug("hleKernelCreateCallback SceUID=" + Integer.toHexString(callback.uid)
             + " name:'" + name
-            + " PC=" + Integer.toHexString(func_addr)
+            + "' PC=" + Integer.toHexString(func_addr)
             + " arg=" + Integer.toHexString(user_arg_addr)
-            + "' thread:'" + current_thread.name + "'");
+            + " thread:'" + current_thread.name + "'");
 
         return callback;
     }
@@ -1503,370 +1508,6 @@ public class ThreadMan {
             return p;
         } else {
             return 0;
-        }
-    }
-
-    // ------------------------- Semaphore -------------------------
-
-    public void ThreadMan_sceKernelCreateSema(int name_addr, int attr, int initVal, int maxVal, int option)
-    {
-        String name = readStringNZ(name_addr, 32);
-        Modules.log.debug("sceKernelCreateSema name= " + name + " attr= 0x" + Integer.toHexString(attr) + " initVal= " + initVal + " maxVal= "+ maxVal + " option= 0x" + Integer.toHexString(option));
-
-        if (attr != 0) Modules.log.warn("UNIMPLEMENTED:sceKernelCreateSema attr value 0x" + Integer.toHexString(attr));
-
-        Memory mem = Memory.getInstance();
-        if (mem.isAddressGood(option)) {
-            // The first int does not seem to be the size of the struct, found values:
-            // SSX On Tour: 0, 0x08B0F9E4, 0x0892E664, 0x08AF7257 (some values are used in more than one semaphore)
-            int optsize = mem.read32(option);
-            Modules.log.warn("UNIMPLEMENTED:sceKernelCreateSema option at 0x" + Integer.toHexString(option)
-                + " (size=" + optsize + ")");
-        }
-
-        SceKernelSemaInfo sema = new SceKernelSemaInfo(name, attr, initVal, maxVal);
-
-        Emulator.getProcessor().cpu.gpr[2] = sema.uid;
-    }
-
-    public void ThreadMan_sceKernelDeleteSema(int semaid)
-    {
-        Modules.log.debug("sceKernelDeleteSema id=0x" + Integer.toHexString(semaid));
-
-        if (semaid <= 0) {
-            Modules.log.warn("sceKernelDeleteSema bad id=0x" + Integer.toHexString(semaid));
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_UNKNOWN_UID;
-            return;
-        }
-
-        SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
-        SceKernelSemaInfo sema = semalist.remove(semaid);
-        if (sema == null) {
-            Modules.log.warn("sceKernelDeleteSema - unknown uid 0x" + Integer.toHexString(semaid));
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
-        } else {
-            if (sema.numWaitThreads > 0) {
-                Modules.log.warn("sceKernelDeleteSema numWaitThreads " + sema.numWaitThreads);
-
-                // Find threads waiting on this sema and wake them up
-                for (Iterator<SceKernelThreadInfo> it = threadMap.values().iterator(); it.hasNext(); ) {
-                    SceKernelThreadInfo thread = it.next();
-
-                    if (thread.wait.waitingOnSemaphore &&
-                        thread.wait.Semaphore_id == semaid) {
-                        // Untrack
-                        thread.wait.waitingOnSemaphore = false;
-
-                        // Return WAIT_DELETE
-                        thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
-
-                        // Wakeup
-                        changeThreadState(thread, PSP_THREAD_READY);
-                    }
-                }
-            }
-
-            Emulator.getProcessor().cpu.gpr[2] = 0;
-        }
-    }
-
-    /** May modify sema.currentCount
-     * @return true on success */
-    private boolean tryWaitSemaphore(SceKernelSemaInfo sema, int signal)
-    {
-        boolean success = false;
-
-        if (sema.currentCount >= signal) {
-            sema.currentCount -= signal;
-            success = true;
-        }
-
-        return success;
-    }
-
-    private void ThreadMan_hleKernelWaitSema(int semaid, int signal, int timeout_addr, boolean do_callbacks)
-    {
-        Modules.log.debug("hleKernelWaitSema(id=0x" + Integer.toHexString(semaid)
-            + ",signal=" + signal
-            + ",timeout=0x" + Integer.toHexString(timeout_addr)
-            + ") callbacks=" + do_callbacks);
-
-        if (signal <= 0) {
-            Modules.log.warn("hleKernelWaitSema - bad signal " + signal);
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_ILLEGAL_COUNT;
-            return;
-        }
-
-        if (semaid <= 0) {
-            Modules.log.warn("hleKernelWaitSema bad id=0x" + Integer.toHexString(semaid));
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_UNKNOWN_UID;
-            return;
-        }
-
-        SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
-        SceKernelSemaInfo sema = semalist.get(semaid);
-        if (sema == null) {
-            Modules.log.warn("hleKernelWaitSema - unknown uid 0x" + Integer.toHexString(semaid));
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
-        } else {
-            Memory mem = Memory.getInstance();
-            int micros = 0;
-            if (mem.isAddressGood(timeout_addr)) {
-                micros = mem.read32(timeout_addr);
-            }
-
-            if (!tryWaitSemaphore(sema, signal))
-            {
-                // Failed, but it's ok, just wait a little
-                Modules.log.debug("hleKernelWaitSema - '" + sema.name + "' fast check failed");
-                sema.numWaitThreads++;
-
-                // Do callbacks?
-                current_thread.do_callbacks = do_callbacks;
-
-                // Go to wait state
-                hleKernelThreadWait(current_thread.wait, micros, (timeout_addr == 0));
-
-                // Wait on a specific semaphore
-                current_thread.wait.waitingOnSemaphore = true;
-                current_thread.wait.Semaphore_id = semaid;
-                current_thread.wait.Semaphore_signal = signal;
-
-                changeThreadState(current_thread, PSP_THREAD_WAITING);
-
-                contextSwitch(nextThread());
-            }
-            else
-            {
-                // Success
-                Modules.log.debug("hleKernelWaitSema - '" + sema.name + "' fast check succeeded");
-                Emulator.getProcessor().cpu.gpr[2] = 0;
-
-                if (!insideCallback) {
-                    if (do_callbacks) {
-                        yieldCurrentThreadCB();
-                    } else {
-                        // TODO yield anyway?
-                        //yieldCurrentThread();
-                    }
-                } else {
-                    Modules.log.warn("hleKernelWaitSema called from inside callback!");
-                }
-            }
-        }
-    }
-
-    public void ThreadMan_sceKernelWaitSema(int semaid, int signal, int timeout_addr)
-    {
-        //Modules.log.debug("sceKernelWaitSema redirecting to hleKernelWaitSema(callbacks=false)");
-        ThreadMan_hleKernelWaitSema(semaid, signal, timeout_addr, false);
-    }
-
-    public void ThreadMan_sceKernelWaitSemaCB(int semaid, int signal, int timeout_addr)
-    {
-        //Modules.log.debug("sceKernelWaitSemaCB redirecting to hleKernelWaitSema(callbacks=true)");
-        ThreadMan_hleKernelWaitSema(semaid, signal, timeout_addr, true);
-    }
-
-    public void ThreadMan_sceKernelSignalSema(int semaid, int signal)
-    {
-        if (signal <= 0) {
-            Modules.log.warn("sceKernelSignalSema - id=0x" + Integer.toHexString(semaid) + " bad signal " + signal);
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_ILLEGAL_COUNT;
-            return;
-        }
-
-        if (semaid <= 0) {
-            Modules.log.warn("sceKernelSignalSema bad id=0x" + Integer.toHexString(semaid));
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_UNKNOWN_UID;
-            return;
-        }
-
-        SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
-        SceKernelSemaInfo sema = semalist.get(semaid);
-        if (sema == null) {
-            Modules.log.warn("sceKernelSignalSema - unknown uid 0x" + Integer.toHexString(semaid));
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
-        } else if (sema.currentCount + signal > sema.maxCount) {
-            Modules.log.warn("sceKernelSignalSema - overflow uid 0x" + Integer.toHexString(semaid) + " name='" + sema.name + "' signal=" + signal + " current=" + sema.currentCount + " max=" + sema.maxCount);
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_SEMA_OVERFLOW;
-            // TODO clamp and continue anyway?
-        } else {
-            boolean yield = false;
-            Modules.log.debug("sceKernelSignalSema id=0x" + Integer.toHexString(semaid) + " name='" + sema.name + "' signal=" + signal);
-
-            sema.currentCount += signal;
-
-            // For each thread (sorted by priority),
-            // if the thread is waiting on this semaphore,
-            // and signal <= currentCount,
-            // then wake up the thread and adjust currentCount.
-            // repeat for all remaining threads or until currentCount = 0.
-            Collection<SceKernelThreadInfo> c = threadMap.values();
-            List<SceKernelThreadInfo> list = new LinkedList<SceKernelThreadInfo>(c);
-            Collections.sort(list, idle0); // We need an instance of SceKernelThreadInfo for the comparator, so we use idle0
-            Iterator<SceKernelThreadInfo> it = list.iterator();
-            while(it.hasNext()) {
-                SceKernelThreadInfo thread = it.next();
-
-                if (thread.wait.waitingOnSemaphore &&
-                    thread.wait.Semaphore_id == semaid &&
-                    thread.wait.Semaphore_signal <= sema.currentCount) {
-
-                    Modules.log.debug("sceKernelSignalSema waking thread 0x" + Integer.toHexString(thread.uid)
-                        + " name:'" + thread.name + "'");
-
-                    // Untrack
-                    thread.wait.waitingOnSemaphore = false;
-
-                    // Return success
-                    thread.cpuContext.gpr[2] = 0;
-
-                    // Wakeup
-                    changeThreadState(thread, PSP_THREAD_READY);
-
-                    if (thread.currentPriority < current_thread.currentPriority)
-                        yield = true;
-
-                    // Adjust sema
-                    sema.currentCount -= thread.wait.Semaphore_signal;
-                    sema.numWaitThreads--;
-                    if (sema.currentCount == 0)
-                        break;
-                }
-            }
-
-            Emulator.getProcessor().cpu.gpr[2] = 0;
-            if (yield) {
-                Modules.log.debug("sceKernelSignalSema yielding to thread with higher priority");
-                yieldCurrentThread();
-            }
-        }
-    }
-
-    /** This is attempt to signal the sema and always return immediately */
-    public void ThreadMan_sceKernelPollSema(int semaid, int signal)
-    {
-        Modules.log.debug("sceKernelPollSema id= 0x" + Integer.toHexString(semaid) + " signal= " + signal);
-
-        if (signal <= 0) {
-            Modules.log.warn("sceKernelPollSema - bad signal " + signal);
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_ILLEGAL_COUNT;
-            return;
-        }
-
-        if (semaid <= 0) {
-            Modules.log.warn("sceKernelPollSema bad id=0x" + Integer.toHexString(semaid));
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_UNKNOWN_UID;
-            return;
-        }
-
-        SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
-        SceKernelSemaInfo sema = semalist.get(semaid);
-        if (sema == null) {
-            Modules.log.warn("sceKernelPollSema - unknown uid 0x" + Integer.toHexString(semaid));
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
-        } else if (sema.currentCount - signal < 0) {
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_SEMA_ZERO;
-        } else {
-            sema.currentCount -= signal;
-            Emulator.getProcessor().cpu.gpr[2] = 0;
-        }
-    }
-
-    public void ThreadMan_sceKernelCancelSema(int semaid)
-    {
-        Modules.log.debug("sceKernelCancelSema id= 0x" + Integer.toHexString(semaid));
-
-        if (semaid <= 0) {
-            Modules.log.warn("sceKernelCancelSema bad id=0x" + Integer.toHexString(semaid));
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_UNKNOWN_UID;
-            return;
-        }
-
-        SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
-        SceKernelSemaInfo sema = semalist.get(semaid);
-        if (sema == null) {
-            Modules.log.warn("sceKernelCancelSema - unknown uid 0x" + Integer.toHexString(semaid));
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
-        } else {
-            sema.numWaitThreads = 0;
-
-            // Find threads waiting on this sema and wake them up
-            for (Iterator<SceKernelThreadInfo> it = threadMap.values().iterator(); it.hasNext(); ) {
-                SceKernelThreadInfo thread = it.next();
-
-                if (thread.wait.waitingOnSemaphore &&
-                    thread.wait.Semaphore_id == semaid) {
-                    // Untrack
-                    thread.wait.waitingOnSemaphore = false;
-
-                    // Return WAIT_CANCELLED
-                    thread.cpuContext.gpr[2] = ERROR_WAIT_CANCELLED;
-
-                    // Wakeup
-                    changeThreadState(thread, PSP_THREAD_READY);
-                }
-            }
-
-            Emulator.getProcessor().cpu.gpr[2] = 0;
-        }
-    }
-
-    public void ThreadMan_sceKernelReferSemaStatus(int semaid, int addr)
-    {
-        Modules.log.debug("sceKernelReferSemaStatus id= 0x" + Integer.toHexString(semaid) + " addr= 0x" + Integer.toHexString(addr));
-
-        if (semaid <= 0) {
-            Modules.log.warn("sceKernelReferSemaStatus bad id=0x" + Integer.toHexString(semaid));
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_UNKNOWN_UID;
-            return;
-        }
-
-        SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
-        SceKernelSemaInfo sema = semalist.get(semaid);
-        if (sema == null) {
-            Modules.log.warn("sceKernelReferSemaStatus - unknown uid 0x" + Integer.toHexString(semaid));
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
-        } else {
-            sema.write(Memory.getInstance(), addr);
-            Emulator.getProcessor().cpu.gpr[2] = 0;
-        }
-    }
-
-    private class SceKernelSemaInfo
-    {
-        private final String name;
-        private final int attr;
-        private final int initCount;
-        private int currentCount;
-        private final int maxCount;
-        private int numWaitThreads;
-
-        private final int uid;
-
-        public SceKernelSemaInfo(String name, int attr, int initCount, int maxCount)
-        {
-            this.name = name;
-            this.attr = attr;
-            this.initCount = initCount;
-            this.currentCount = initCount;
-            this.maxCount = maxCount;
-            this.numWaitThreads = 0;
-
-            uid = SceUidManager.getNewUid("ThreadMan-sema");
-            semalist.put(uid, this);
-        }
-
-        public void write(Memory mem, int address)
-        {
-            mem.write32(address, 56); // size
-            writeStringNZ(mem, address + 4, 32, name);
-            mem.write32(address + 36, attr);
-            mem.write32(address + 40, initCount);
-            mem.write32(address + 44, currentCount);
-            mem.write32(address + 48, maxCount);
-            mem.write32(address + 52, numWaitThreads);
         }
     }
 

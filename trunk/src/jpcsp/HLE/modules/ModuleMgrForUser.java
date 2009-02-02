@@ -18,15 +18,15 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules;
 
-public class ModuleMgrForUser extends jpcsp.HLE.modules150.ModuleMgrForUser {
+public class ModuleMgrForUser extends jpcsp.HLE.modules271.ModuleMgrForUser {
 	@Override
 	public final String getName() { return "ModuleMgrForUser"; }
-	
+
 	@Override
 	public void installModule(HLEModuleManager mm, int version) {
 		super.installModule(mm, version);
 	}
-	
+
 	@Override
 	public void uninstallModule(HLEModuleManager mm, int version) {
 		super.installModule(mm, version);

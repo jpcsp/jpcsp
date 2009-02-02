@@ -100,28 +100,28 @@ public class SyscallHandler {
 		// sceKernelDelaySysClockThreadCB(0x201f),
 
                 case 0x2020:
-                    ThreadMan.getInstance().ThreadMan_sceKernelCreateSema(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
+                    Managers.semas.sceKernelCreateSema(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
                     break;
                 case 0x2021:
-                    ThreadMan.getInstance().ThreadMan_sceKernelDeleteSema(gpr[4]);
+                    Managers.semas.sceKernelDeleteSema(gpr[4]);
                     break;
                 case 0x2022:
-                    ThreadMan.getInstance().ThreadMan_sceKernelSignalSema(gpr[4], gpr[5]);
+                    Managers.semas.sceKernelSignalSema(gpr[4], gpr[5]);
                     break;
                 case 0x2023:
-                    ThreadMan.getInstance().ThreadMan_sceKernelWaitSema(gpr[4], gpr[5], gpr[6]);
+                    Managers.semas.sceKernelWaitSema(gpr[4], gpr[5], gpr[6]);
                     break;
                 case 0x2024:
-                    ThreadMan.getInstance().ThreadMan_sceKernelWaitSemaCB(gpr[4], gpr[5], gpr[6]);
+                    Managers.semas.sceKernelWaitSemaCB(gpr[4], gpr[5], gpr[6]);
                     break;
                 case 0x2025:
-                    ThreadMan.getInstance().ThreadMan_sceKernelPollSema(gpr[4], gpr[5]);
+                    Managers.semas.sceKernelPollSema(gpr[4], gpr[5]);
                     break;
                 case 0x2026:
-                    ThreadMan.getInstance().ThreadMan_sceKernelCancelSema(gpr[4]); // not in pspsdk, params guessed
+                    Managers.semas.sceKernelCancelSema(gpr[4]); // not in pspsdk, params guessed
                     break;
                 case 0x2027:
-                    ThreadMan.getInstance().ThreadMan_sceKernelReferSemaStatus(gpr[4], gpr[5]);
+                    Managers.semas.sceKernelReferSemaStatus(gpr[4], gpr[5]);
                     break;
 
                 case 0x2028:

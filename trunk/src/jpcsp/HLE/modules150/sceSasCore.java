@@ -132,13 +132,15 @@ public class sceSasCore implements HLEModule {
         /* put your own code here instead */
 
         int sasCore = cpu.gpr[4];
-        //int unk1 = cpu.gpr[5]; // 0, 2
+        int voice = cpu.gpr[5];
         //int unk2 = cpu.gpr[6]; // 8, f
         //int unk3 = cpu.gpr[7]; // 0, 0x40000000
         //int unk4 = cpu.gpr[8]; // 64
         //int unk5 = cpu.gpr[9]; // 64
 
-        Modules.log.warn("Unimplemented NID function __sceSasSetADSR [0x019B25EB] " + makeLogParams(cpu));
+        Modules.log.warn("Unimplemented NID function __sceSasSetADSR [0x019B25EB] "
+            + String.format("%08x %08x %08x %08x %08x %08x",
+            cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[9], cpu.gpr[10]));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -177,7 +179,7 @@ public class sceSasCore implements HLEModule {
         Modules.log.debug("IGNORING:__sceSasGetPauseFlag(sasCore=0x" + Integer.toHexString(sasCore) + ") " + makeLogParams(cpu));
 
         if (isSasHandleGood(sasCore, "__sceSasGetPauseFlag", cpu)) {
-            // Fake all channels NOT paused
+            // Fake all voices NOT paused
             cpu.gpr[2] = 0x0;
         }
     }
@@ -242,8 +244,8 @@ public class sceSasCore implements HLEModule {
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
-        //int unk2 = cpu.gpr[6]; // left channel volume 0 - 0x1000
-        //int unk3 = cpu.gpr[7]; // right channel volume 0 - 0x1000
+        int left = cpu.gpr[6]; // left channel volume 0 - 0x1000
+        int right = cpu.gpr[7]; // right channel volume 0 - 0x1000
         // may be more parameters
 
         Modules.log.warn("Unimplemented NID function __sceSasSetVolume [0x440CA7D8] " + makeLogParams(cpu));
@@ -301,7 +303,7 @@ public class sceSasCore implements HLEModule {
         Modules.log.debug("IGNORING:__sceSasGetEndFlag(sasCore=0x" + Integer.toHexString(sasCore) + ") " + makeLogParams(cpu));
 
         if (isSasHandleGood(sasCore, "__sceSasGetEndFlag", cpu)) {
-            // Fake all channels finished
+            // Fake all voices finished
             cpu.gpr[2] = 0xFFFFFFFF;
         }
     }
@@ -314,15 +316,13 @@ public class sceSasCore implements HLEModule {
         /* put your own code here instead */
 
         int sasCore = cpu.gpr[4];
-        int channel = cpu.gpr[5];
-        //int unk1 = cpu.gpr[6]; // set to 1
+        int voice = cpu.gpr[5];
+        int unk1 = cpu.gpr[6]; // set to 1
         // 99% sure there are no more parameters
 
-        Modules.log.warn("Unimplemented NID function __sceSasGetEnvelopeHeight [0x74AE582A] " + makeLogParams(cpu));
+        Modules.log.warn("IGNORING:__sceSasGetEnvelopeHeight(sasCore=0x" + Integer.toHexString(sasCore) + ",voice=" + voice + ",unk1=0x" + Integer.toHexString(unk1) + ")");
 
         cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
     }
 
     public void __sceSasSetKeyOn(Processor processor) {
@@ -334,11 +334,13 @@ public class sceSasCore implements HLEModule {
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
-        //int unk2 = cpu.gpr[6]; // 1
-        //int unk3 = cpu.gpr[7]; // 0x6e4/0x1000
-        // may be more parameters
+        //int unk2 = cpu.gpr[6]; // on? 1
+        // 99% sure there are no more parameters
+        //int unk3 = cpu.gpr[7]; // 0x1000/0x6e4/0x3ad
 
-        Modules.log.warn("Unimplemented NID function __sceSasSetKeyOn [0x76F01ACA] " + makeLogParams(cpu));
+        Modules.log.warn("Unimplemented NID function __sceSasSetKeyOn [0x76F01ACA] "
+            + String.format("%08x %08x %08x %08x %08x %08x",
+            cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[9], cpu.gpr[10]));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -372,9 +374,11 @@ public class sceSasCore implements HLEModule {
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
         //int unk2 = cpu.gpr[6]; // heap address (may be uncached)
-        //int unk3 = cpu.gpr[7]; // some size 0x48d0/0x200/0x400 or unused
+        //int unk3 = cpu.gpr[7]; // some size 0x48d0/0x4860/0x1240/0x400/0x200 or unused
 
-        Modules.log.warn("Unimplemented NID function __sceSasSetVoice [0x99944089] " + makeLogParams(cpu));
+        Modules.log.warn("Unimplemented NID function __sceSasSetVoice [0x99944089] "
+            + String.format("%08x %08x %08x %08x %08x %08x",
+            cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[9], cpu.gpr[10]));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -394,7 +398,9 @@ public class sceSasCore implements HLEModule {
         //int unk3 = cpu.gpr[7]; // 0
         // may be more parameters
 
-        Modules.log.warn("Unimplemented NID function __sceSasSetADSRmode [0x9EC3676A] " + makeLogParams(cpu));
+        Modules.log.warn("Unimplemented NID function __sceSasSetADSRmode [0x9EC3676A] "
+            + String.format("%08x %08x %08x %08x %08x %08x",
+            cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[9], cpu.gpr[10]));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -469,7 +475,9 @@ public class sceSasCore implements HLEModule {
         //int unk3 = cpu.gpr[7]; // 0x6e4/0x800/0x1000
         // may be more parameters
 
-        Modules.log.warn("Unimplemented NID function __sceSasSetPitch [0xAD84D37F] " + makeLogParams(cpu));
+        Modules.log.warn("Unimplemented NID function __sceSasSetPitch [0xAD84D37F] "
+            + String.format("%08x %08x %08x %08x %08x %08x",
+            cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[9], cpu.gpr[10]));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -523,7 +531,9 @@ public class sceSasCore implements HLEModule {
         //int unk2 = cpu.gpr[7]; // 0x1fc6
         // may be more parameters
 
-        Modules.log.warn("Unimplemented NID function __sceSasSetSimpleADSR [0xCBCD4F79] " + makeLogParams(cpu));
+        Modules.log.warn("Unimplemented NID function __sceSasSetSimpleADSR [0xCBCD4F79] "
+            + String.format("%08x %08x %08x %08x %08x %08x",
+            cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[9], cpu.gpr[10]));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -550,21 +560,15 @@ public class sceSasCore implements HLEModule {
     public void __sceSasRevEVOL(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
 
         int sasCore = cpu.gpr[4];
-        // left/right channel volume?
-        //int unk1 = cpu.gpr[5]; // left channel volume 0 - 0x1000
-        //int unk2 = cpu.gpr[6]; // right channel volume 0 - 0x1000
-        // 99% sure there are no more parameters
+        int left = cpu.gpr[5]; // left channel volume 0 - 0x1000
+        int right = cpu.gpr[6]; // right channel volume 0 - 0x1000
 
-        Modules.log.warn("Unimplemented NID function __sceSasRevEVOL [0xD5A229C9] " + makeLogParams(cpu));
+        Modules.log.debug("IGNORING:__sceSasRevEVOL("
+            + String.format("sasCore=0x%08x,left=0x%04x,right=0x%04x)", sasCore, left, right));
 
         cpu.gpr[2] = 0;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
     }
 
     public void __sceSasSetSteepWave(Processor processor) {
@@ -620,21 +624,18 @@ public class sceSasCore implements HLEModule {
     public void __sceSasRevVON(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
 
         int sasCore = cpu.gpr[4];
-        //int unk1 = cpu.gpr[5]; // set to 1
-        //int unk2 = cpu.gpr[6]; // 0 or 1
+        int unk1 = cpu.gpr[5]; // set to 1
+        int unk2 = cpu.gpr[6]; // 0 or 1
         // 99% sure there are no more parameters
 
-        Modules.log.warn("Unimplemented NID function __sceSasRevVON [0xF983B186] " + makeLogParams(cpu));
+        Modules.log.debug("IGNORING:__sceSasRevVON("
+            + String.format("sasCore=0x%08x,unk1=0x%x,unk2=0x%x)", sasCore, unk1, unk2));
 
         cpu.gpr[2] = 0;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
     }
+
     public final HLEModuleFunction __sceSasSetADSRFunction = new HLEModuleFunction("sceSasCore", "__sceSasSetADSR") {
 
         @Override
