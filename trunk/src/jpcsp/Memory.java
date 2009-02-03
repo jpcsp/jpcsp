@@ -30,6 +30,7 @@ public abstract class Memory {
     private static Memory instance = null;
     public static boolean useSafeMemory = true;
 	public static final int addressMask = 0x3FFFFFFF;
+	private boolean ignoreInvalidMemoryAccess = false;
 
     public static Memory getInstance() {
         if (instance == null) {
@@ -73,12 +74,17 @@ public abstract class Memory {
     }
 
 	public void invalidMemoryAddress(int address, String prefix, int status) {
-		Memory.log.error(prefix +
-				" - Invalid memory address : " +
-	            Integer.toHexString(address) +
-	            " PC=" +
-	            Integer.toHexString(Emulator.getProcessor().cpu.pc));
-		Emulator.PauseEmuWithStatus(status);
+	    String message = String.format("%s - Invalid memory address : 0x%X PC=%08X",
+	                                   prefix,
+	                                   address,
+	                                   Emulator.getProcessor().cpu.pc);
+
+	    if (ignoreInvalidMemoryAccess) {
+	        Memory.log.warn("IGNORED: " + message);
+	    } else {
+	        Memory.log.error(message);
+	        Emulator.PauseEmuWithStatus(status);
+	    }
 	}
 
 	public boolean read32AllowedInvalidAddress(int address) {
@@ -188,5 +194,13 @@ public abstract class Memory {
     }
 
     public void save(ByteBuffer buffer) {
+    }
+
+    public boolean isIgnoreInvalidMemoryAccess() {
+        return ignoreInvalidMemoryAccess;
+    }
+
+    public void setIgnoreInvalidMemoryAccess(boolean ignoreInvalidMemoryAccess) {
+        this.ignoreInvalidMemoryAccess = ignoreInvalidMemoryAccess;
     }
 }

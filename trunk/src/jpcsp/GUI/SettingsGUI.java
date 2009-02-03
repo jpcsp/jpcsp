@@ -62,6 +62,9 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         enabled = Settings.getInstance().readBool("emu.useshaders");
         shadersCheck.setSelected(enabled);
         
+        enabled = Settings.getInstance().readBool("emu.ignoreInvalidMemoryAccess");
+        invalidMemoryCheck.setSelected(enabled);
+        
         enabled = Settings.getInstance().readBool("emu.debug.enablefilelogger");
         filelogCheck.setSelected(enabled);
         
@@ -237,6 +240,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         jLabel1 = new javax.swing.JLabel();
         jButton1 = new javax.swing.JButton();
         shadersCheck = new javax.swing.JCheckBox();
+        invalidMemoryCheck = new javax.swing.JCheckBox();
         filelogCheck = new javax.swing.JCheckBox();
         compatibilityPanel = new javax.swing.JPanel();
         jPanel1 = new javax.swing.JPanel();
@@ -319,6 +323,8 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
 
         shadersCheck.setText("Use shaders (highly experimental)");
 
+        invalidMemoryCheck.setText("Ignore Invalid Memory access (not recommended)");
+
         filelogCheck.setText("Enable file IO logging");
 
         javax.swing.GroupLayout generalPanelLayout = new javax.swing.GroupLayout(generalPanel);
@@ -347,7 +353,8 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                                     .addComponent(saveWindowPosCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 384, Short.MAX_VALUE)
                                     .addComponent(openLogwindowCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 384, Short.MAX_VALUE)
                                     .addComponent(snapConsoleCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 384, Short.MAX_VALUE)
-                                    .addComponent(compilerCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 384, Short.MAX_VALUE))
+                                    .addComponent(compilerCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 384, Short.MAX_VALUE)
+                                    .addComponent(invalidMemoryCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 384, Short.MAX_VALUE))
                                 .addGap(216, 216, 216))
                             .addGroup(generalPanelLayout.createSequentialGroup()
                                 .addComponent(jLabel1)
@@ -372,6 +379,8 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                 .addComponent(compilerCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(shadersCheck)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(invalidMemoryCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(filelogCheck)
                 .addGap(6, 6, 6)
@@ -917,6 +926,7 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
    Settings.getInstance().writeBool("gui.snapLogwindow", snapConsoleCheck.isSelected());
    Settings.getInstance().writeBool("emu.compiler", compilerCheck.isSelected());
    Settings.getInstance().writeBool("emu.useshaders", shadersCheck.isSelected());
+   Settings.getInstance().writeBool("emu.ignoreInvalidMemoryAccess", invalidMemoryCheck.isSelected());
    Settings.getInstance().writeBool("emu.debug.enablefilelogger", filelogCheck.isSelected());
    Settings.getInstance().writeBool("emu.disablege", disableGECheck.isSelected());
    Settings.getInstance().writeBool("emu.disablevbo", disableVBOCheck.isSelected());
@@ -1083,6 +1093,7 @@ private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.JCheckBox pbpunpackcheck;
     private javax.swing.JCheckBox saveWindowPosCheck;
     private javax.swing.JCheckBox shadersCheck;
+    private javax.swing.JCheckBox invalidMemoryCheck;
     private javax.swing.JCheckBox snapConsoleCheck;
     private javax.swing.JRadioButton umdBrowser;
     private javax.swing.JTextField umdpath;

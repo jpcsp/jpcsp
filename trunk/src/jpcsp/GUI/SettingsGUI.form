@@ -229,6 +229,11 @@
                 <Property name="text" type="java.lang.String" value="Use shaders (highly experimental)"/>
               </Properties>
             </Component>
+            <Component class="javax.swing.JCheckBox" name="invalidMemoryCheck">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Ignore Invalid Memory access (not recommended)"/>
+              </Properties>
+            </Component>
             <Component class="javax.swing.JCheckBox" name="filelogCheck">
               <Properties>
                 <Property name="text" type="java.lang.String" value="Enable file IO logging"/>

@@ -801,6 +801,9 @@ public void loadUMD(File file) {
                 
                 boolean ignoreAudioThreads = Settings.getInstance().readBool("emu.ignoreaudiothreads");
                 jpcsp.HLE.ThreadMan.getInstance().setThreadBanningEnabled(ignoreAudioThreads);
+
+                boolean ignoreInvalidMemoryAccess = Settings.getInstance().readBool("emu.ignoreInvalidMemoryAccess");
+                Memory.getInstance().setIgnoreInvalidMemoryAccess(ignoreInvalidMemoryAccess);
             }
 
             if (instructioncounter != null)
@@ -851,6 +854,10 @@ public boolean checkAndInstallPatches(String filename)
         String ignoreAudioThreads = patchSettings.getProperty("emu.ignoreaudiothreads");
         if (ignoreAudioThreads != null)
             jpcsp.HLE.ThreadMan.getInstance().setThreadBanningEnabled(Integer.parseInt(ignoreAudioThreads) != 0);
+
+        String ignoreInvalidMemoryAccess = patchSettings.getProperty("emu.ignoreInvalidMemoryAccess");
+        if (ignoreInvalidMemoryAccess != null)
+            Memory.getInstance().setIgnoreInvalidMemoryAccess(Integer.parseInt(ignoreInvalidMemoryAccess) != 0);
     } catch (IOException e) {
         e.printStackTrace();
     }
