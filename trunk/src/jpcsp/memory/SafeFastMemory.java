@@ -20,6 +20,8 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 import jpcsp.Emulator;
+import jpcsp.Memory;
+import jpcsp.MemoryMap;
 
 public class SafeFastMemory extends FastMemory {
 	//
@@ -57,8 +59,13 @@ public class SafeFastMemory extends FastMemory {
             	return 0;
             }
 
-            invalidMemoryAddress(address, "read32", Emulator.EMU_STATUS_MEM_READ);
-			return 0;
+            int normalizedAddress = normalizeAddress(address);
+            if (isAddressGood(normalizedAddress)) {
+                address = normalizedAddress;
+            } else {
+                invalidMemoryAddress(address, "read32", Emulator.EMU_STATUS_MEM_READ);
+                return 0;
+            }
 		}
 
 		return super.read32(address);
@@ -137,8 +144,15 @@ public class SafeFastMemory extends FastMemory {
 	@Override
 	public IntBuffer getBuffer(int address, int length) {
 		if (!isAddressGood(address, length)) {
-			invalidMemoryAddress(address, "getBuffer", Emulator.EMU_STATUS_MEM_READ);
-			return null;
+		    if (isAddressGood(address) && address >= MemoryMap.START_VRAM && address <= MemoryMap.END_VRAM) {
+		        // Accept loading a texture e.g. at address 0x4154000 with length 0x100000
+		        // The address 0x42xxxxx should map to 0x40xxxxx but we ignore this here
+		        // because we cannot build a buffer starting at 0x4154000 and ending
+		        // at 0x4054000.
+		    } else {
+		        invalidMemoryAddress(address, "getBuffer", Emulator.EMU_STATUS_MEM_READ);
+		        return null;
+		    }
 		}
 
 		return super.getBuffer(address, length);
