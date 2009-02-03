@@ -61,6 +61,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     }
 
     private static final boolean useGlReadPixels = true;
+    private boolean onlyGEGraphics = false;
 
     // PspDisplayPixelFormats enum
     public static final int PSP_DISPLAY_PIXEL_FORMAT_565  = 0;
@@ -534,6 +535,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             //copyScreenToPixels(gl, pixelsFb, bufferwidthFb, pixelformatFb);
 
             drawFrameBuffer(gl, false, true);
+        } else if (onlyGEGraphics) {
+            VideoEngine.getInstance().update();
         } else {
             // Render GE
             gl.glViewport(0, 0, width, height);
@@ -784,5 +787,14 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         }
 
         return false;
+    }
+
+    public boolean isOnlyGEGraphics() {
+        return onlyGEGraphics;
+    }
+
+    public void setOnlyGEGraphics(boolean onlyGEGraphics) {
+        this.onlyGEGraphics = onlyGEGraphics;
+        VideoEngine.log.info("Only GE Graphics: " + onlyGEGraphics);
     }
 }
