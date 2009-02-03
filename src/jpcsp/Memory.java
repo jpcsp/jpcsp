@@ -166,7 +166,14 @@ public abstract class Memory {
     public abstract void memcpy(int destination, int source, int length);
 
     protected int normalizeAddress(int address) {
-    	return address & addressMask;
+    	address = address & addressMask;
+
+    	// Test on a PSP: 0x4200000 is equivalent to 0x4000000
+    	if ((address & 0xFF000000) == MemoryMap.START_VRAM) {
+    	    address &= 0xFF1FFFFF;
+    	}
+
+    	return address;
     }
 
     protected boolean areOverlapping(int destination, int source, int length) {

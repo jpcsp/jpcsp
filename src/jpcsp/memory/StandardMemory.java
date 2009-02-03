@@ -109,6 +109,10 @@ public class StandardMemory extends Memory {
             map[0x00000 + page + i] = (INDEX_VRAM + i) << PAGE_SHIFT;
             map[0x40000 + page + i] = (INDEX_VRAM + i) << PAGE_SHIFT;
             map[0x80000 + page + i] = (INDEX_VRAM + i) << PAGE_SHIFT;
+            // Test on a PSP: 0x4200000 is equivalent to 0x4000000
+            map[0x00000 + 0x200 + page + i] = (INDEX_VRAM + i) << PAGE_SHIFT;
+            map[0x40000 + 0x200 + page + i] = (INDEX_VRAM + i) << PAGE_SHIFT;
+            map[0x80000 + 0x200 + page + i] = (INDEX_VRAM + i) << PAGE_SHIFT;
         }
 
         page = START_RAM >>> PAGE_SHIFT;
