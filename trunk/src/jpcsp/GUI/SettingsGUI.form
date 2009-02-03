@@ -234,6 +234,11 @@
                 <Property name="text" type="java.lang.String" value="Ignore Invalid Memory access (not recommended)"/>
               </Properties>
             </Component>
+            <Component class="javax.swing.JCheckBox" name="onlyGEGraphicsCheck">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Only GE Graphics (experimental)"/>
+              </Properties>
+            </Component>
             <Component class="javax.swing.JCheckBox" name="filelogCheck">
               <Properties>
                 <Property name="text" type="java.lang.String" value="Enable file IO logging"/>

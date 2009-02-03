@@ -790,6 +790,10 @@ public void loadUMD(File file) {
 
             pspiofilemgr.getInstance().setIsoReader(iso);
             jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(iso);
+
+            boolean onlyGEGraphics = Settings.getInstance().readBool("emu.onlyGEGraphics");
+            pspdisplay.getInstance().setOnlyGEGraphics(onlyGEGraphics);
+
             if (!checkAndInstallPatches(discid + ".patch"))
             {
                 // no patch file found
@@ -858,6 +862,10 @@ public boolean checkAndInstallPatches(String filename)
         String ignoreInvalidMemoryAccess = patchSettings.getProperty("emu.ignoreInvalidMemoryAccess");
         if (ignoreInvalidMemoryAccess != null)
             Memory.getInstance().setIgnoreInvalidMemoryAccess(Integer.parseInt(ignoreInvalidMemoryAccess) != 0);
+
+        String onlyGEGraphics = patchSettings.getProperty("emu.onlyGEGraphics");
+        if (onlyGEGraphics != null)
+            pspdisplay.getInstance().setOnlyGEGraphics(Integer.parseInt(onlyGEGraphics) != 0);
     } catch (IOException e) {
         e.printStackTrace();
     }
