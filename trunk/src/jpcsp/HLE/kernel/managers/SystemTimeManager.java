@@ -76,7 +76,7 @@ public class SystemTimeManager {
         Modules.log.debug("sceKernelGetSystemTime pointer=0x" + Integer.toHexString(time_addr));
         Memory mem = Memory.getInstance();
         if (mem.isAddressGood(time_addr)) {
-            long systemTime = System.nanoTime();
+            long systemTime = System.nanoTime() / 1000L;
             int low = (int)(systemTime & 0xffffffffL);
             int hi = (int)((systemTime >> 32) & 0xffffffffL);
 
