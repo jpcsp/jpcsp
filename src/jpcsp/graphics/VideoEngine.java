@@ -1193,11 +1193,12 @@ public class VideoEngine {
                 }
 
                 if (texture_upload_y < 4) {
-                    if (texture_upload_x < 4) {
+                    if (texture_upload_x < 3) {
                         texture_matrix[texture_upload_x + texture_upload_y * 4] = floatArgument;
 
                         texture_upload_x++;
-                        if (texture_upload_x == 4) {
+                        if (texture_upload_x == 3) {
+                            texture_matrix[texture_upload_x + texture_upload_y * 4] = (texture_upload_y == 3) ? 1.0f : 0.0f;
                             texture_upload_x = 0;
                             texture_upload_y++;
                             if (texture_upload_y == 4) {
