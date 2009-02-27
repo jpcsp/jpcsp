@@ -133,6 +133,18 @@ public class sceUmdUser implements HLEModule {
         cpu.gpr[2] = (iso != null) ? 1 : 0;
     }
 
+    private int getUmdCallbackEvent() {
+        int event = 0;
+        if (iso != null) {
+            event = PSP_UMD_PRESENT | PSP_UMD_READY;
+            umdActivated = true;
+        } else {
+            event = PSP_UMD_NOT_PRESENT;
+        }
+
+        return event;
+    }
+
     public void sceUmdActivate(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
@@ -143,14 +155,7 @@ public class sceUmdUser implements HLEModule {
         Modules.log.debug("sceUmdActivate unit = " + unit + " drive = " + drive);
         cpu.gpr[2] = 0;
 
-        int event = 0;
-        if (iso != null) {
-            event = PSP_UMD_PRESENT | PSP_UMD_READY;
-            umdActivated = true;
-        } else {
-            event = PSP_UMD_NOT_PRESENT;
-        }
-        ThreadMan.getInstance().pushCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, event);
+        ThreadMan.getInstance().pushCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, getUmdCallbackEvent());
     }
 
     public void sceUmdDeactivate(Processor processor) {
@@ -298,7 +303,10 @@ public class sceUmdUser implements HLEModule {
         int uid = cpu.gpr[4];
         Modules.log.debug("sceUmdRegisterUMDCallBack SceUID=" + Integer.toHexString(uid));
 
-        if (ThreadMan.getInstance().setCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, uid)) {
+        ThreadMan threadMan = ThreadMan.getInstance();
+        if (threadMan.setCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, uid)) {
+            // Trigger callback immediately
+            threadMan.pushCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, getUmdCallbackEvent());
             cpu.gpr[2] = 0;
         } else {
             cpu.gpr[2] = -1;
