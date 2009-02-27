@@ -234,15 +234,17 @@ public class SemaManager {
         if (sema == null) {
             Modules.log.warn("sceKernelSignalSema - unknown uid 0x" + Integer.toHexString(semaid));
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
-        } else if (sema.currentCount + signal > sema.maxCount) {
-            Modules.log.warn("sceKernelSignalSema - overflow uid 0x" + Integer.toHexString(semaid) + " name='" + sema.name + "' signal=" + signal + " current=" + sema.currentCount + " max=" + sema.maxCount);
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_SEMA_OVERFLOW;
-            // TODO clamp and continue anyway?
+//        } else if (sema.currentCount + signal > sema.maxCount) {
+//            Modules.log.warn("sceKernelSignalSema - overflow uid 0x" + Integer.toHexString(semaid) + " name='" + sema.name + "' signal=" + signal + " current=" + sema.currentCount + " max=" + sema.maxCount);
+//            Emulator.getProcessor().cpu.gpr[2] = ERROR_SEMA_OVERFLOW;
+//            // TODO clamp and continue anyway?
         } else {
             boolean yield = false;
             Modules.log.debug("sceKernelSignalSema id=0x" + Integer.toHexString(semaid) + " name='" + sema.name + "' signal=" + signal);
 
             sema.currentCount += signal;
+            if (sema.currentCount > sema.maxCount)
+                sema.currentCount = sema.maxCount;
 
             // For each thread (sorted by priority),
             // if the thread is waiting on this semaphore,
@@ -278,6 +280,8 @@ public class SemaManager {
                     sema.numWaitThreads--;
                     if (sema.currentCount == 0)
                         break;
+                } else if (thread.status == PSP_THREAD_READY && thread.currentPriority < currentThreadCurrentPriority) {
+                    yield = true;
                 }
             }
 

@@ -744,7 +744,7 @@ public class ThreadMan {
      * sndp thread, Ss PlayThread, SndSsThread, SPCBGM
      *
      * keywords:
-     * snd, sound, at3, atrac3, sas, wave, pcm, audio
+     * snd, sound, at3, atrac3, sas, wave, pcm, audio, mpeg
      *
      * false positives:
      * pcm: SPCMain (Skate Park City Main)
@@ -758,7 +758,7 @@ public class ThreadMan {
             if (name.contains("snd") || name.contains("sound") ||
                 name.contains("at3") || name.contains("atrac") ||
                 name.contains("sas") || name.contains("wave") ||
-                name.contains("audio")) {
+                name.contains("audio") || name.contains("mpeg")) {
                 return true;
             }
 
@@ -808,7 +808,9 @@ public class ThreadMan {
 
         // Start thread immediately
         changeThreadState(thread, PSP_THREAD_READY);
-        contextSwitch(thread);
+        if (current_thread.currentPriority >= thread.initPriority) {
+            contextSwitch(thread);
+        }
     }
 
     public void ThreadMan_sceKernelStartThread(int uid, int len, int data_addr) {
