@@ -1358,7 +1358,8 @@ public class pspiofilemgr {
                 // 32mb empty formatted mem stick
                 int sectorSize = 0x200;
                 int sectorCount = 0x08;
-                int maxClusters = (32000000 * 95 / 100) / (sectorSize * sectorCount); // reserve 5% for fs house keeping
+                // Perform operation using long integers to avoid overflow
+                int maxClusters = (int) ((32000000 * 95L / 100) / (sectorSize * sectorCount)); // reserve 5% for fs house keeping
                 int freeClusters = maxClusters;
                 int maxSectors = 512; // TODO
 
