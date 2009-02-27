@@ -1287,7 +1287,10 @@ public class VideoEngine {
             case TSIZE6:
             case TSIZE7: {
             	int level = command - TSIZE0;
-            	texture_height[level] = 1 << ((normalArgument>>8) & 0xFF);
+            	// Astonishia Story is using normalArgument = 0x1804
+            	// -> use texture_height = 1 << 0x08 (and not 1 << 0x18)
+            	//        texture_width  = 1 << 0x04
+            	texture_height[level] = 1 << ((normalArgument>>8) & 0x0F);
             	texture_width[level]  = 1 << ((normalArgument   ) & 0xFF);
                 if (log.isDebugEnabled()) {
                     log ("sceGuTexImage(level=" + level + ",width=" + texture_width[level] + ",height=" + texture_height[level] + ",X,0)");
