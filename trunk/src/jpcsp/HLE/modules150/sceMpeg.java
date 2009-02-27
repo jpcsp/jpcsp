@@ -755,6 +755,13 @@ public class sceMpeg implements HLEModule {
                     }
                 }
 
+                if (mpegRingbuffer != null) {
+                    if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets) {
+                        mpegRingbuffer.packetsFree++;
+                        mpegRingbuffer.write(mem, mpegRingbufferAddr);
+                    }
+                }
+
                 if (isFakeAuHandle(au)) {
                     int type = getFakeAuType(au);
                     switch(type) {
