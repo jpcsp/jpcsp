@@ -59,6 +59,7 @@ import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.pspiofilemgr;
 import jpcsp.HLE.kernel.types.SceModule;
+import jpcsp.HLE.pspSysMem;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PSF;
@@ -522,13 +523,20 @@ public void loadFile(File file) {
         pspiofilemgr.getInstance().setfilepath(findpath);
         pspiofilemgr.getInstance().setIsoReader(null);
         jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(null);
-        // TODO convert to tri-state disable/enable/auto, auto will use PSF.isLikelyHomebrew() to disable audio in homebrew
-        boolean disableAudio = Settings.getInstance().readBool("emu.disablesceAudio");
-        jpcsp.HLE.Modules.sceAudioModule.setChReserveEnabled(!disableAudio);
-        boolean disableBlocking = Settings.getInstance().readBool("emu.disableblockingaudio");
-        jpcsp.HLE.Modules.sceAudioModule.setBlockingEnabled(!disableBlocking);
-        boolean ignoreAudioThreads = Settings.getInstance().readBool("emu.ignoreaudiothreads");
-        jpcsp.HLE.ThreadMan.getInstance().setThreadBanningEnabled(ignoreAudioThreads);
+
+        String pspsystemver = psf.getString("PSP_SYSTEM_VER");
+        if (!isHomebrew && pspsystemver != null) {
+            emulator.setFirmwareVersion(pspsystemver);
+        }
+        
+        // use regular settings first
+        installCompatibilitySettings();
+        
+        String discid = psf.getString("DISC_ID");
+        if (!isHomebrew && discid != null) {
+            // override with patch file (allows incomplete patch files)
+            installCompatibilityPatches(discid + ".patch");
+        }
 
         if (instructioncounter != null)
             instructioncounter.RefreshWindow();
@@ -570,7 +578,6 @@ private void addRecentFile(File file, String title) {
 private void addRecentUMD(File file, String title) {
     try {
         String s = file.getCanonicalPath();
-        int pos;
         for (int i = 0; i < recentUMD.size(); ++i) {
             if (recentUMD.get(i).path.equals(s))
                 recentUMD.remove(i--);
@@ -791,24 +798,11 @@ public void loadUMD(File file) {
             pspiofilemgr.getInstance().setIsoReader(iso);
             jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(iso);
 
-            boolean onlyGEGraphics = Settings.getInstance().readBool("emu.onlyGEGraphics");
-            pspdisplay.getInstance().setOnlyGEGraphics(onlyGEGraphics);
+            // use regular settings first
+            installCompatibilitySettings();
 
-            if (!checkAndInstallPatches(discid + ".patch"))
-            {
-                // no patch file found
-                boolean disableAudio = Settings.getInstance().readBool("emu.disablesceAudio");
-                jpcsp.HLE.Modules.sceAudioModule.setChReserveEnabled(!disableAudio);
-                
-                boolean disableBlocking = Settings.getInstance().readBool("emu.disableblockingaudio");
-                jpcsp.HLE.Modules.sceAudioModule.setBlockingEnabled(!disableBlocking);
-                
-                boolean ignoreAudioThreads = Settings.getInstance().readBool("emu.ignoreaudiothreads");
-                jpcsp.HLE.ThreadMan.getInstance().setThreadBanningEnabled(ignoreAudioThreads);
-
-                boolean ignoreInvalidMemoryAccess = Settings.getInstance().readBool("emu.ignoreInvalidMemoryAccess");
-                Memory.getInstance().setIgnoreInvalidMemoryAccess(ignoreInvalidMemoryAccess);
-            }
+            // override with patch file (allows incomplete patch files)
+            installCompatibilityPatches(discid + ".patch");
 
             if (instructioncounter != null)
                 instructioncounter.RefreshWindow();
@@ -832,8 +826,29 @@ public void loadUMD(File file) {
     }
 }
 
+private void installCompatibilitySettings()
+{
+    boolean onlyGEGraphics = Settings.getInstance().readBool("emu.onlyGEGraphics");
+    pspdisplay.getInstance().setOnlyGEGraphics(onlyGEGraphics);
+
+    boolean disableAudio = Settings.getInstance().readBool("emu.disablesceAudio");
+    jpcsp.HLE.Modules.sceAudioModule.setChReserveEnabled(!disableAudio);
+
+    boolean disableBlocking = Settings.getInstance().readBool("emu.disableblockingaudio");
+    jpcsp.HLE.Modules.sceAudioModule.setBlockingEnabled(!disableBlocking);
+
+    boolean ignoreAudioThreads = Settings.getInstance().readBool("emu.ignoreaudiothreads");
+    jpcsp.HLE.ThreadMan.getInstance().setThreadBanningEnabled(ignoreAudioThreads);
+
+    boolean ignoreInvalidMemoryAccess = Settings.getInstance().readBool("emu.ignoreInvalidMemoryAccess");
+    Memory.getInstance().setIgnoreInvalidMemoryAccess(ignoreInvalidMemoryAccess);
+
+    boolean disableReservedThreadMemory = Settings.getInstance().readBool("emu.disablereservedthreadmemory");
+    jpcsp.HLE.pspSysMem.getInstance().setDisableReservedThreadMemory(disableReservedThreadMemory);
+}
+
 /** @return true if a patch file was found */
-public boolean checkAndInstallPatches(String filename)
+public boolean installCompatibilityPatches(String filename)
 {
     File patchfile = new File("patches/" + filename);
     if (!patchfile.exists())
@@ -844,7 +859,7 @@ public boolean checkAndInstallPatches(String filename)
 
     Properties patchSettings= new Properties();
     try {
-        Emulator.log.info("Loading patch file");
+        Emulator.log.info("Overriding previous settings with patch file");
         patchSettings.load(new BufferedInputStream(new FileInputStream(patchfile)));
 
         String disableAudio = patchSettings.getProperty("emu.disablesceAudio");
@@ -854,7 +869,7 @@ public boolean checkAndInstallPatches(String filename)
         String disableBlocking = patchSettings.getProperty("emu.disableblockingaudio");
         if (disableBlocking != null)
             jpcsp.HLE.Modules.sceAudioModule.setBlockingEnabled(!(Integer.parseInt(disableBlocking) != 0));
-        
+
         String ignoreAudioThreads = patchSettings.getProperty("emu.ignoreaudiothreads");
         if (ignoreAudioThreads != null)
             jpcsp.HLE.ThreadMan.getInstance().setThreadBanningEnabled(Integer.parseInt(ignoreAudioThreads) != 0);
@@ -866,6 +881,11 @@ public boolean checkAndInstallPatches(String filename)
         String onlyGEGraphics = patchSettings.getProperty("emu.onlyGEGraphics");
         if (onlyGEGraphics != null)
             pspdisplay.getInstance().setOnlyGEGraphics(Integer.parseInt(onlyGEGraphics) != 0);
+        
+        String disableReservedThreadMemory = patchSettings.getProperty("emu.disablereservedthreadmemory");
+        if (disableReservedThreadMemory != null)
+            pspSysMem.getInstance().setDisableReservedThreadMemory(Integer.parseInt(disableReservedThreadMemory) != 0);
+        
     } catch (IOException e) {
         e.printStackTrace();
     }
