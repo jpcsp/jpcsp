@@ -90,6 +90,7 @@ public class sceMpeg implements HLEModule {
         }
 
         mpegUid = -1;
+        mpegRingbuffer = null;
     }
 
     @Override
@@ -333,7 +334,7 @@ public class sceMpeg implements HLEModule {
         if (mem.isAddressGood(mpeg) && mem.isAddressGood(data) && mem.isAddressGood(ringbuffer_addr)) {
             mpegUid = SceUidManager.getNewUid("sceMpeg-Mpeg");
             mem.write32(mpeg, mpegUid);
-            Modules.log.warn("sceMpegCreate assigned uid " + Integer.toHexString(mpegUid));
+            Modules.log.debug("sceMpegCreate assigned uid " + Integer.toHexString(mpegUid));
 
             // update the ring buffer
             SceMpegRingbuffer ringbuffer = new SceMpegRingbuffer(mem, ringbuffer_addr);
@@ -818,7 +819,7 @@ public class sceMpeg implements HLEModule {
             Modules.log.warn("sceMpegAvcDecodeMode bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
         } else if (mem.isAddressGood(mode_addr)) {
-            int unk = mem.read32(mode_addr);
+            int unk = mem.read32(mode_addr); // castlevania x: -1
             int mode = mem.read32(mode_addr + 4);
 
             Modules.log.debug("sceMpegAvcDecodeMode unk=0x" + Integer.toHexString(unk)
@@ -1101,6 +1102,9 @@ public class sceMpeg implements HLEModule {
     public void sceMpegNextAvcRpAu(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
+
+        //int mpeg = cpu.gpr[4];
+        //int stream_addr = cpu.gpr[5];
 
         Modules.log.warn("UNIMPLEMENTED:sceMpegNextAvcRpAu "
             + String.format("%08X %08X %08X %08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]));

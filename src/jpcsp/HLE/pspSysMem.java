@@ -28,6 +28,7 @@ import java.util.Iterator;
 import jpcsp.Emulator;
 import jpcsp.GeneralJpcspException;
 import jpcsp.MemoryMap;
+import jpcsp.Settings;
 import static jpcsp.util.Utilities.*;
 
 import jpcsp.HLE.kernel.managers.*;
@@ -239,8 +240,10 @@ public class pspSysMem {
         // to 0x09ffffff for stacks, but stacks are allowed to go below that
         // (if there's free space of course).
         int heapTopGuard = heapTop;
-        if (heapTopGuard > 0x09f00000)
-            heapTopGuard = 0x09f00000;
+        if (!Settings.getInstance().readBool("emu.disablereservedthreadmemory")) {
+            if (heapTopGuard > 0x09f00000)
+                heapTopGuard = 0x09f00000;
+        }
         int maxFree = heapTopGuard - heapBottom - 64; // don't forget our alignment padding!
 
         // TODO Something not quite right here...
@@ -367,7 +370,7 @@ public class pspSysMem {
             blockList.put(uid, this);
         }
         public String toString(){
-            return "SysMemInfo{ ouid="+uid+";partitionid="+partitionid+";name="+name+";type="+type+";size="+size+";addr="+addr+" }";
+            return "SysMemInfo{ uid="+Integer.toHexString(uid)+";partitionid="+partitionid+";name="+name+";type="+type+";size="+size+";addr="+addr+" }";
         }
     }
 }

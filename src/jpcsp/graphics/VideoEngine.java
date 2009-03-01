@@ -445,11 +445,12 @@ public class VideoEngine {
             }
         }
 
-        if (Emulator.pause) {
+        if (Emulator.pause && !listHasEnded) {
             VideoEngine.log.info("Emulator paused - cancelling current list id=" + currentList.id);
             currentList.currentStatus = PSP_GE_LIST_CANCEL_DONE;
         }
 
+        // takes priority over PSP_GE_LIST_STALL_REACHED
         if (listHasEnded) {
             currentList.currentStatus = PSP_GE_LIST_DONE;
         }
