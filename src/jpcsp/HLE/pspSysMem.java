@@ -28,7 +28,6 @@ import java.util.Iterator;
 import jpcsp.Emulator;
 import jpcsp.GeneralJpcspException;
 import jpcsp.MemoryMap;
-import jpcsp.Settings;
 import static jpcsp.util.Utilities.*;
 
 import jpcsp.HLE.kernel.managers.*;
@@ -42,7 +41,9 @@ public class pspSysMem {
 
     private static HashMap<Integer, SysMemInfo> blockList;
     private int heapTop, heapBottom;
-
+    
+    private boolean disableReservedThreadMemory = false;
+    
     // PspSysMemBlockTypes
     public static final int PSP_SMEM_Low = 0;
     public static final int PSP_SMEM_High = 1;
@@ -87,6 +88,11 @@ public class pspSysMem {
         heapTop = MemoryMap.END_RAM;
     }
 
+    public void setDisableReservedThreadMemory(boolean disableReservedThreadMemory) {
+        this.disableReservedThreadMemory = disableReservedThreadMemory;
+        Modules.log.info("Reserving thread memory: " + !disableReservedThreadMemory);
+    }
+    
     // Allocates to 64-byte alignment
     // TODO use the partitionid
     public int malloc(int partitionid, int type, int size, int addr)
@@ -240,7 +246,7 @@ public class pspSysMem {
         // to 0x09ffffff for stacks, but stacks are allowed to go below that
         // (if there's free space of course).
         int heapTopGuard = heapTop;
-        if (!Settings.getInstance().readBool("emu.disablereservedthreadmemory")) {
+        if (!disableReservedThreadMemory) {
             if (heapTopGuard > 0x09f00000)
                 heapTopGuard = 0x09f00000;
         }
@@ -369,6 +375,8 @@ public class pspSysMem {
             uid = SceUidManager.getNewUid("SysMem");
             blockList.put(uid, this);
         }
+
+        @Override
         public String toString(){
             return "SysMemInfo{ uid="+Integer.toHexString(uid)+";partitionid="+partitionid+";name="+name+";type="+type+";size="+size+";addr="+addr+" }";
         }
