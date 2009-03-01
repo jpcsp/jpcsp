@@ -732,7 +732,7 @@ public class ThreadMan {
     /** use lower case in this list */
     private final String[] threadNameBanList = new String[] {
         "bgm thread", "sgx-psp-freq-thr", "sgx-psp-pcm-th", "ss playthread",
-        "spcbgm", "scemainsamplebgmmp3"
+        "spcbgm", "scemainsamplebgmmp3", "se thread"
     };
     /* suspected sound thread names:
      * SndMain, SoundThread, At3Main, Atrac3PlayThread,
@@ -741,7 +741,7 @@ public class ThreadMan {
      * sgx-psp-at3-th, sgx-psp-pcm-th, sgx-psp-sas-th, snd_tick_timer_thread,
      * snd_stream_service_thread_1, SAS / Main Audio, AudioMixThread,
      * snd_stream_service_thread_0, sound_poll_thread, stream_sound_poll_thread,
-     * sndp thread, Ss PlayThread, SndSsThread, SPCBGM
+     * sndp thread, Ss PlayThread, SndSsThread, SPCBGM, SE Thread
      *
      * keywords:
      * snd, sound, at3, atrac3, sas, wave, pcm, audio, mpeg
