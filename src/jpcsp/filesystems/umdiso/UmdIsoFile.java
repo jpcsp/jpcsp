@@ -313,9 +313,11 @@ public class UmdIsoFile extends SeekableInputStream {
 			totalLength += n;
 		}
 
-		checkSectorAvailable();
-		int lastSector = readInternal(b, off, len);
-		totalLength += lastSector;
+		if (len > 0) {
+    		checkSectorAvailable();
+    		int lastSector = readInternal(b, off, len);
+    		totalLength += lastSector;
+		}
 
 		return totalLength;
 	}
