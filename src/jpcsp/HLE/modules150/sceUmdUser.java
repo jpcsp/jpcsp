@@ -306,7 +306,7 @@ public class sceUmdUser implements HLEModule {
         ThreadMan threadMan = ThreadMan.getInstance();
         if (threadMan.setCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, uid)) {
             // Trigger callback immediately
-            threadMan.pushCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, getUmdCallbackEvent());
+            threadMan.pushCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, getUmdCallbackEvent());
             cpu.gpr[2] = 0;
         } else {
             cpu.gpr[2] = -1;
