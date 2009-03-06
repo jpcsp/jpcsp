@@ -256,6 +256,7 @@ public class ThreadMan {
                 if (continuousIdleCycles > WDT_THREAD_IDLE_CYCLES) {
                     Modules.log.info("Watch dog timer - pausing emulator (idle)");
                     Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_WDT_IDLE);
+                    continuousIdleCycles = 0;
                 }
             } else {
                 continuousIdleCycles = 0;
