@@ -831,6 +831,7 @@ public class ThreadMan {
             contextSwitch(nextThread());
         } else {
             Modules.log.debug("sceKernelStartThread redirecting to hleKernelStartThread");
+            Emulator.getProcessor().cpu.gpr[2] = 0;
             hleKernelStartThread(thread, len, data_addr, thread.gpReg_addr);
         }
     }

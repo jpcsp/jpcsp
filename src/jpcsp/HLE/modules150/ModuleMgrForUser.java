@@ -325,8 +325,8 @@ public class ModuleMgrForUser implements HLEModule {
                         sceModule.entry_addr, 0, 0x4000, sceModule.attribute, option_addr);
                 // override inherited module id with the new module we are starting
                 thread.moduleid = sceModule.modid;
-                threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
                 cpu.gpr[2] = 0;
+                threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
             } else {
                 Modules.log.warn("sceKernelStartModule - invalid entry address 0x" + Integer.toHexString(sceModule.entry_addr));
                 cpu.gpr[2] = -1;
@@ -450,28 +450,28 @@ public class ModuleMgrForUser implements HLEModule {
         }
     }
 
-	public void sceKernelGetModuleId(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
+    public void sceKernelGetModuleId(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
 
         int moduleid = ThreadMan.getInstance().getCurrentThread().moduleid;
 
         Modules.log.debug("sceKernelGetModuleId returning 0x" + Integer.toHexString(moduleid));
 
-		cpu.gpr[2] = moduleid;
-	}
+        cpu.gpr[2] = moduleid;
+    }
 
 	public void sceKernelGetModuleIdByAddress(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 
         int addr = cpu.gpr[4];
-        Modules.log.debug("sceKernelGetModuleIdByAddress(addr=0x" + Integer.toHexString(addr) + ")");
 
         SceModule module = Managers.modules.getModuleByAddress(addr);
         if (module != null) {
+            Modules.log.debug("sceKernelGetModuleIdByAddress(addr=0x" + Integer.toHexString(addr) + ") returning 0x" + Integer.toHexString(module.modid));
             cpu.gpr[2] = module.modid;
         } else {
-            Modules.log.warn("sceKernelGetModuleIdByAddress module not found");
+            Modules.log.warn("sceKernelGetModuleIdByAddress(addr=0x" + Integer.toHexString(addr) + ") module not found");
             cpu.gpr[2] = -1;
         }
 	}
