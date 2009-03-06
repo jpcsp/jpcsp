@@ -524,18 +524,22 @@ public void loadFile(File file) {
         pspiofilemgr.getInstance().setIsoReader(null);
         jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(null);
 
-        String pspsystemver = psf.getString("PSP_SYSTEM_VER");
-        if (!isHomebrew && pspsystemver != null) {
-            emulator.setFirmwareVersion(pspsystemver);
+        if (psf != null) {
+            String pspsystemver = psf.getString("PSP_SYSTEM_VER");
+            if (!isHomebrew && pspsystemver != null) {
+                emulator.setFirmwareVersion(pspsystemver);
+            }
         }
         
         // use regular settings first
         installCompatibilitySettings();
-        
-        String discid = psf.getString("DISC_ID");
-        if (!isHomebrew && discid != null) {
-            // override with patch file (allows incomplete patch files)
-            installCompatibilityPatches(discid + ".patch");
+
+        if (psf != null) {
+            String discid = psf.getString("DISC_ID");
+            if (!isHomebrew && discid != null) {
+                // override with patch file (allows incomplete patch files)
+                installCompatibilityPatches(discid + ".patch");
+            }
         }
 
         if (instructioncounter != null)
