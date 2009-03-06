@@ -56,7 +56,6 @@ public class VideoEngine {
     private GL gl;
     private GLU glu;
     public static Logger log = Logger.getLogger("ge");
-    public static final boolean isDebugMode = true;
     public static final boolean useTextureCache = true;
     private static GeCommands helper;
     private VertexInfo vinfo = new VertexInfo();
@@ -157,6 +156,11 @@ public class VideoEngine {
     private int textureTx_dx;
     private int textureTx_dy;
     private int textureTx_pixelSize;
+
+    private float[] dfix_color = new float[4];
+    private float[] sfix_color = new float[4];
+    private int blend_src;
+    private int blend_dst;
 
     private boolean clearMode;
     private int depthFuncClearMode;
@@ -500,91 +504,78 @@ public class VideoEngine {
     	return GL.GL_KEEP;
     }
 
-    //hack based on pspplayer
-    private int getBlendSrc (int pspSrc)
-    {
-    	switch(pspSrc)
-    	{
-	    	case 0x0:
-	    		return GL.GL_DST_COLOR;
-
-	    	case 0x1:
-	    		return GL.GL_ONE_MINUS_DST_COLOR;
-
-	    	case 0x2:
-	    		return GL.GL_SRC_ALPHA;
-
-	    	case 0x3:
-	    		return GL.GL_ONE_MINUS_SRC_ALPHA;
-
-	    	case 0x4:
-	    		return GL.GL_DST_ALPHA;
-
-	    	case 0x5:
-	    		return GL.GL_ONE_MINUS_DST_ALPHA;
-
-	    	case 0x6:
-	    		return GL.GL_SRC_ALPHA;
-
-	    	case 0x7:
-	    		return GL.GL_ONE_MINUS_SRC_ALPHA;
-
-	    	case 0x8:
-	    		return GL.GL_DST_ALPHA;
-
-	    	case 0x9:
-	    		return GL.GL_ONE_MINUS_DST_ALPHA;
-
-	    	case 0xa:
-	    		return GL.GL_SRC_ALPHA;
-
-    	}
-
-    	VideoEngine.log.error("Unhandled alpha blend src used " + pspSrc);
-        Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
-    	return GL.GL_DST_COLOR;
+    private int getBlendFix(float[] fix_color) {
+        if (fix_color[0] == 0 && fix_color[1] == 0 && fix_color[2] == 0) {
+            return GL.GL_ZERO;
+        } else if (fix_color[0] == 1 && fix_color[1] == 1 && fix_color[2] == 1) {
+            return GL.GL_ONE;
+        } else {
+            return GL.GL_CONSTANT_COLOR;
+        }
     }
 
-    private int getBlendOp (int pspOP) {
-    	switch (pspOP) {
-		    case ALPHA_SOURCE_COLOR:
-		    	return GL.GL_SRC_COLOR;
+    private float[] getBlendColor(int gl_blend_src, int gl_blend_dst) {
+        float[] blend_color = null;
+        if (gl_blend_src == GL.GL_CONSTANT_COLOR) {
+            blend_color = sfix_color;
+            if (gl_blend_dst == GL.GL_CONSTANT_COLOR) {
+                log.warn("UNSUPPORTED: Both SFIX and DFIX are not supported");
+            }
+        } else if (gl_blend_dst == GL.GL_CONSTANT_COLOR) {
+            blend_color = dfix_color;
+        }
 
-		    case ALPHA_ONE_MINUS_SOURCE_COLOR:
-		    	return GL.GL_ONE_MINUS_SRC_COLOR;
+        return blend_color;
+    }
 
-		    case ALPHA_SOURCE_ALPHA:
-		    	return GL.GL_SRC_ALPHA;
+    // hack partially based on pspplayer
+    private void setBlendFunc() {
+        int gl_blend_src = GL.GL_SRC_COLOR;
+        switch(blend_src) {
+        case  0: gl_blend_src = GL.GL_DST_COLOR;           break;
+        case  1: gl_blend_src = GL.GL_ONE_MINUS_DST_COLOR; break;
+        case  2: gl_blend_src = GL.GL_SRC_ALPHA;           break;
+        case  3: gl_blend_src = GL.GL_ONE_MINUS_SRC_ALPHA; break;
+        case  4: gl_blend_src = GL.GL_DST_ALPHA;           break;
+        case  5: gl_blend_src = GL.GL_ONE_MINUS_DST_ALPHA; break;
+        case  6: gl_blend_src = GL.GL_SRC_ALPHA;           break;
+        case  7: gl_blend_src = GL.GL_ONE_MINUS_SRC_ALPHA; break;
+        case  8: gl_blend_src = GL.GL_DST_ALPHA;           break;
+        case  9: gl_blend_src = GL.GL_ONE_MINUS_DST_ALPHA; break;
+        case 10: gl_blend_src = getBlendFix(sfix_color);   break;
+        default:
+            VideoEngine.log.error("Unhandled alpha blend src used " + blend_src);
+            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
+        }
 
-		    case ALPHA_ONE_MINUS_SOURCE_ALPHA:
-	    		return GL.GL_ONE_MINUS_SRC_ALPHA;
+        int gl_blend_dst = GL.GL_DST_COLOR;
+        switch(blend_dst) {
+        case  0: gl_blend_dst = GL.GL_SRC_COLOR;           break;
+        case  1: gl_blend_dst = GL.GL_ONE_MINUS_SRC_COLOR; break;
+        case  2: gl_blend_dst = GL.GL_SRC_ALPHA;           break;
+        case  3: gl_blend_dst = GL.GL_ONE_MINUS_SRC_ALPHA; break;
+        case  4: gl_blend_dst = GL.GL_DST_ALPHA;           break;
+        case  5: gl_blend_dst = GL.GL_ONE_MINUS_DST_ALPHA; break;
+        case  6: gl_blend_dst = GL.GL_SRC_ALPHA;           break;
+        case  7: gl_blend_dst = GL.GL_ONE_MINUS_SRC_ALPHA; break;
+        case  8: gl_blend_dst = GL.GL_DST_ALPHA;           break;
+        case  9: gl_blend_dst = GL.GL_ONE_MINUS_DST_ALPHA; break;
+        case 10: gl_blend_dst = getBlendFix(dfix_color);   break;
+        default:
+            VideoEngine.log.error("Unhandled alpha blend dst used " + blend_dst);
+            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
+        }
 
-			// hacks based on pspplayer
-		    case ALPHA_DESTINATION_COLOR:
-		    	return GL.GL_DST_ALPHA;
+        try {
+            float[] blend_color = getBlendColor(gl_blend_src, gl_blend_dst);
+            if (blend_color != null) {
+                gl.glBlendColor(blend_color[0], blend_color[1], blend_color[2], blend_color[3]);
+            }
 
-		    case ALPHA_ONE_MINUS_DESTINATION_COLOR:
-		    	return GL.GL_ONE_MINUS_DST_ALPHA;
-
-		    case ALPHA_DESTINATION_ALPHA:
-		    	return GL.GL_SRC_ALPHA;
-
-		    case ALPHA_ONE_MINUS_DESTINATION_ALPHA:
-		    	return GL.GL_ONE_MINUS_SRC_ALPHA;
-
-		    case 0x8:
-		    	return GL.GL_DST_ALPHA;
-
-		    case 0x9:
- 		    	return GL.GL_ONE_MINUS_DST_ALPHA;
-
-		    case 0xa:
-		    	return GL.GL_ONE_MINUS_SRC_ALPHA;
-    	}
-
-    	VideoEngine.log.error("Unhandled alpha blend op used " + pspOP);
-        Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
-    	return GL.GL_ONE;
+            gl.glBlendFunc(gl_blend_src, gl_blend_dst);
+        } catch (GLException e) {
+            log.warn("VideoEngine: " + e.getMessage());
+        }
     }
 
     private int getClutIndex(int index) {
@@ -1709,11 +1700,10 @@ public class VideoEngine {
             }
 
             case ALPHA: {
-
                 int blend_mode = GL.GL_FUNC_ADD;
-                int src = getBlendSrc( normalArgument        & 0xF);
-                int dst = getBlendOp((normalArgument >> 4 ) & 0xF);
-                int op  =            (normalArgument >> 8 ) & 0xF;
+                blend_src =  normalArgument        & 0xF;
+                blend_dst = (normalArgument >> 4 ) & 0xF;
+                int op    = (normalArgument >> 8 ) & 0xF;
 
             	switch (op) {
 	            	case ALPHA_SOURCE_BLEND_OPERATION_ADD:
@@ -1748,13 +1738,12 @@ public class VideoEngine {
 
             	try {
             		gl.glBlendEquation(blend_mode);
-                	gl.glBlendFunc(src, dst);
             	} catch (GLException e) {
             		log.warn("VideoEngine: " + e.getMessage());
             	}
 
             	if (log.isDebugEnabled()) {
-            	    log("sceGuBlendFunc(op=" + op + ", src=" + (normalArgument & 0xF) + ", dst=" + ((normalArgument >> 4) & 0xF) + ")");
+            	    log("sceGuBlendFunc(op=" + op + ", src=" + blend_src + ", dst=" + blend_dst + ")");
             	}
             	break;
             }
@@ -2467,6 +2456,27 @@ public class VideoEngine {
                     log("Clip Plane Disable (int="+normalArgument+",float="+floatArgument+")");
                 }
                 break;
+
+            case DFIX:
+                dfix_color[0] = ((normalArgument      ) & 255) / 255.f;
+                dfix_color[1] = ((normalArgument >>  8) & 255) / 255.f;
+                dfix_color[2] = ((normalArgument >> 16) & 255) / 255.f;
+                dfix_color[3] = 1.f;
+                if (log.isDebugEnabled()) {
+                    log(String.format("%s : 0x%08X", helper.getCommandString(command), normalArgument));
+                }
+                break;
+
+            case SFIX:
+                sfix_color[0] = ((normalArgument      ) & 255) / 255.f;
+                sfix_color[1] = ((normalArgument >>  8) & 255) / 255.f;
+                sfix_color[2] = ((normalArgument >> 16) & 255) / 255.f;
+                sfix_color[3] = 1.f;
+                if (log.isDebugEnabled()) {
+                    log(String.format("%s : 0x%08X", helper.getCommandString(command), normalArgument));
+                }
+                break;
+
             default:
                 log.warn("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "](int="+normalArgument+",float="+floatArgument+")");
         }
@@ -3020,6 +3030,11 @@ public class VideoEngine {
 	}
 
     private boolean initRendering() {
+        /*
+         * Apply Blending
+         */
+        setBlendFunc();
+
         /*
          * Defer transformations until primitive rendering
          */
