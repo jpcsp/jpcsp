@@ -27,6 +27,7 @@ import jpcsp.HLE.kernel.managers.*;
 import jpcsp.format.DeferredStub;
 import jpcsp.format.PSF;
 import jpcsp.format.PSPModuleInfo;
+import jpcsp.util.Utilities;
 
 /** After initialising an instance please call .write() at least once. */
 public class SceModule {
@@ -120,13 +121,7 @@ public class SceModule {
         mem.write16(address + 4, attribute);
         mem.write8(address + 6, version[0]);
         mem.write8(address + 7, version[1]);
-
-        int i;
-        for (i = 0; i < 28 && i < modname.length(); i++)
-            mem.write8(address + 8 + i, (byte)modname.charAt(i));
-        for (; i < 28; i++)
-            mem.write8(address + 8 + i, (byte)0);
-
+        Utilities.writeStringNZ(mem, address + 8, 28, modname);
         mem.write32(address + 36, unknown1);
         mem.write32(address + 40, unknown2);
         mem.write32(address + 44, modid);

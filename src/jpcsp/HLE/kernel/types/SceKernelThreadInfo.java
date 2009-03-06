@@ -25,6 +25,7 @@ import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
+import jpcsp.util.Utilities;
 
 /** Don't forget to call ThreadMan.threadMap.put(thread.uid, thread) after instantiating one of these. */
 public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
@@ -87,6 +88,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
 
     // internal variables
     public final int uid;
+    public int moduleid;
     public CpuState cpuContext;
     public boolean do_delete;
     public boolean do_callbacks;
@@ -212,13 +214,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
 
     public void write(Memory mem, int address) {
         mem.write32(address, 104); // size
-
-        int i, len = name.length();
-        for (i = 0; i < 32 && i < len; i++)
-            mem.write8(address + 4 + i, (byte)name.charAt(i));
-        for (; i < 32; i++)
-            mem.write8(address + 4 + i, (byte)0);
-
+        Utilities.writeStringNZ(mem, address + 4, 32, name);
         mem.write32(address + 36, attr);
         mem.write32(address + 40, status);
         mem.write32(address + 44, entry_addr);
