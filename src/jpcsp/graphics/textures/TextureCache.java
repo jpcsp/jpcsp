@@ -92,7 +92,7 @@ public class TextureCache {
 		Integer addr = new Integer(texture.getAddr());
 		Texture previousTexture = cache.get(addr);
 		if (previousTexture != null) {
-		    previousTexture.setLoaded(false);
+		    previousTexture.deleteTexture(gl);
 		} else {
 			// Check if the cache is not growing too large
 			if (cache.size() >= cacheMaxSize) {
