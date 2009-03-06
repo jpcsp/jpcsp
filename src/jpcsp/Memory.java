@@ -202,5 +202,6 @@ public abstract class Memory {
 
     public void setIgnoreInvalidMemoryAccess(boolean ignoreInvalidMemoryAccess) {
         this.ignoreInvalidMemoryAccess = ignoreInvalidMemoryAccess;
+        Memory.log.info("Ignore invalid memory access: " + ignoreInvalidMemoryAccess);
     }
 }
