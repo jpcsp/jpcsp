@@ -828,6 +828,8 @@ public void loadUMD(File file) {
 
 private void installCompatibilitySettings()
 {
+    Emulator.log.info("Loading global compatibility settings");
+
     boolean onlyGEGraphics = Settings.getInstance().readBool("emu.onlyGEGraphics");
     pspdisplay.getInstance().setOnlyGEGraphics(onlyGEGraphics);
 
