@@ -137,7 +137,6 @@ public class sceUmdUser implements HLEModule {
         int event = 0;
         if (iso != null) {
             event = PSP_UMD_PRESENT | PSP_UMD_READY;
-            umdActivated = true;
         } else {
             event = PSP_UMD_NOT_PRESENT;
         }
@@ -153,6 +152,8 @@ public class sceUmdUser implements HLEModule {
         int unit = cpu.gpr[4]; // should be always 1
         String drive = readStringZ(cpu.gpr[5]);
         Modules.log.debug("sceUmdActivate unit = " + unit + " drive = " + drive);
+
+        umdActivated = true;
         cpu.gpr[2] = 0;
 
         ThreadMan.getInstance().pushCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, getUmdCallbackEvent());
