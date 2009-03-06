@@ -1301,7 +1301,7 @@ public class VideoEngine {
             }
 
             case TPSM:
-            	texture_storage = normalArgument;
+            	texture_storage = normalArgument & 0xFF; // saw a game send 0x105
                 if (log.isDebugEnabled()) {
                     log ("sceGuTexMode(tpsm=" + texture_storage + ",X,X,X)");
                 }
