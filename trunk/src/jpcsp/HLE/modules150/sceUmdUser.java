@@ -136,7 +136,12 @@ public class sceUmdUser implements HLEModule {
     private int getUmdCallbackEvent() {
         int event = 0;
         if (iso != null) {
-            event = PSP_UMD_PRESENT | PSP_UMD_READY;
+            event = PSP_UMD_PRESENT;
+
+            if (umdActivated)
+                event |= PSP_UMD_READY;
+            else
+                event |= PSP_UMD_INITED;
         } else {
             event = PSP_UMD_NOT_PRESENT;
         }
@@ -172,13 +177,7 @@ public class sceUmdUser implements HLEModule {
         umdActivated = false;
         umdDeactivateCalled = true;
 
-        int event = 0;
-        if (iso != null) {
-            event = PSP_UMD_PRESENT | PSP_UMD_INITED;
-        } else {
-            event = PSP_UMD_INITING;
-        }
-        ThreadMan.getInstance().pushCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, event);
+        ThreadMan.getInstance().pushCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, getUmdCallbackEvent());
     }
 
     /** wait until drive stat reaches a0 */
