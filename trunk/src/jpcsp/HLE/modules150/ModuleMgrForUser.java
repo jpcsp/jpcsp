@@ -323,6 +323,8 @@ public class ModuleMgrForUser implements HLEModule {
             if (Memory.getInstance().isAddressGood(sceModule.entry_addr)) {
                 SceKernelThreadInfo thread = threadMan.hleKernelCreateThread(sceModule.modname,
                         sceModule.entry_addr, 0, 0x4000, sceModule.attribute, option_addr);
+                // override inherited module id with the new module we are starting
+                thread.moduleid = sceModule.modid;
                 threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
                 cpu.gpr[2] = 0;
             } else {
@@ -451,18 +453,12 @@ public class ModuleMgrForUser implements HLEModule {
 	public void sceKernelGetModuleId(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
 		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+        int moduleid = ThreadMan.getInstance().getCurrentThread().moduleid;
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        Modules.log.debug("sceKernelGetModuleId returning 0x" + Integer.toHexString(moduleid));
 
-		System.out.println("Unimplemented NID function sceKernelGetModuleId [0xF0A26395]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+		cpu.gpr[2] = moduleid;
 	}
 
 	public void sceKernelGetModuleIdByAddress(Processor processor) {

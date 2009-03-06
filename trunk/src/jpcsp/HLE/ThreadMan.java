@@ -114,7 +114,7 @@ public class ThreadMan {
     /** call this when resetting the emulator
      * @param entry_addr entry from ELF header
      * @param attr from sceModuleInfo ELF section header */
-    public void Initialise(int entry_addr, int attr, String pspfilename) {
+    public void Initialise(int entry_addr, int attr, String pspfilename, int moduleid) {
         //Modules.log.debug("ThreadMan: Initialise entry:0x" + Integer.toHexString(entry_addr));
 
         threadMap = new HashMap<Integer, SceKernelThreadInfo>();
@@ -133,6 +133,7 @@ public class ThreadMan {
 
         // Create a thread the program will run inside
         current_thread = new SceKernelThreadInfo("root", entry_addr, 0x20, 0x4000, attr);
+        current_thread.moduleid = moduleid;
         threadMap.put(current_thread.uid, current_thread);
 
         // Set user mode bit if kernel mode bit is not present
@@ -633,6 +634,10 @@ public class ThreadMan {
 
         SceKernelThreadInfo thread = new SceKernelThreadInfo(name, entry_addr, initPriority, stackSize, attr);
         threadMap.put(thread.uid, thread);
+
+        // inherit module id
+        if (current_thread != null)
+            thread.moduleid = current_thread.moduleid;
 
         Modules.log.debug("hleKernelCreateThread SceUID=" + Integer.toHexString(thread.uid)
             + " name:'" + thread.name

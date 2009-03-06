@@ -20,6 +20,7 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.util.Utilities;
 
 import jpcsp.HLE.kernel.managers.SceUidManager;
 
@@ -56,13 +57,7 @@ public class SceKernelCallbackInfo {
 
     public void write(Memory mem, int address) {
         mem.write32(address, size);
-
-        int i, len = name.length();
-        for (i = 0; i < 32 && i < len; i++)
-            mem.write8(address + 4 + i, (byte)name.charAt(i));
-        for (; i < 32; i++)
-            mem.write8(address + 4 + i, (byte)0);
-
+        Utilities.writeStringNZ(mem, address + 4, 32, name);
         mem.write32(address + 36, threadId);
         mem.write32(address + 40, callback_addr);
         mem.write32(address + 44, callback_arg_addr);
