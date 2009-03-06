@@ -124,13 +124,28 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         this.stackSize = stackSize;
         this.attr = attr;
 
+        uid = SceUidManager.getNewUid("ThreadMan-thread");
         status = PSP_THREAD_SUSPEND;
+
+        // setup the stack
         stack_addr = ThreadMan.getInstance().mallocStack(stackSize);
+        int k0 = stack_addr + stackSize - 0x100; // setup k0
+        Memory mem = Memory.getInstance();
         if (stack_addr != 0 &&
             stackSize > 0 &&
             (attr & PSP_THREAD_ATTR_NO_FILLSTACK) != PSP_THREAD_ATTR_NO_FILLSTACK) {
-            Memory.getInstance().memset(stack_addr, (byte)0xFF, stackSize);
+            mem.memset(stack_addr, (byte)0xFF, stackSize);
+
+            // setup k0
+            mem.memset(k0, (byte)0x0, 0x100);
+            mem.write32(k0 + 0xc0, stack_addr);
+            mem.write32(k0 + 0xca, uid);
+            mem.write32(k0 + 0xf8, 0xffffffff);
+            mem.write32(k0 + 0xfc, 0xffffffff);
+
+            mem.write32(stack_addr, uid);
         }
+
         gpReg_addr = Emulator.getProcessor().cpu.gpr[28]; // inherit gpReg // TODO addr into ModuleInfo struct?
         currentPriority = initPriority;
         waitType = 0; // not yet used by us
@@ -143,7 +158,6 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         releaseCount = 0;
 
         // internal state
-        uid = SceUidManager.getNewUid("ThreadMan-thread");
 
         // Inherit context
         //cpuContext = new CpuState();
@@ -154,9 +168,8 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         cpuContext.pc = entry_addr;
         cpuContext.npc = entry_addr; // + 4;
 
-        // sp, 512 byte padding at the top for user data, this will get re-jigged when we call start thread
-        cpuContext.gpr[29] = stack_addr + stackSize - 512;
-        cpuContext.gpr[26] = cpuContext.gpr[29]; // k0 mirrors initial sp (almost)
+        cpuContext.gpr[29] = stack_addr + stackSize - 0x100;
+        cpuContext.gpr[26] = k0;
 
         // We'll hook "jr ra" where ra = 0 as the thread exiting
         cpuContext.gpr[31] = 0; // ra
