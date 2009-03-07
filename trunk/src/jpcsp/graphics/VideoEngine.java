@@ -519,7 +519,13 @@ public class VideoEngine {
         if (gl_blend_src == GL.GL_CONSTANT_COLOR) {
             blend_color = sfix_color;
             if (gl_blend_dst == GL.GL_CONSTANT_COLOR) {
-                log.warn("UNSUPPORTED: Both SFIX and DFIX are not supported");
+                if (sfix_color[0] != dfix_color[0] ||
+                    sfix_color[1] != dfix_color[1] ||
+                    sfix_color[2] != dfix_color[2] ||
+                    sfix_color[3] != dfix_color[3]
+                    ) {
+                    log.warn("UNSUPPORTED: Both different SFIX and DFIX are not supported");
+                }
             }
         } else if (gl_blend_dst == GL.GL_CONSTANT_COLOR) {
             blend_color = dfix_color;
