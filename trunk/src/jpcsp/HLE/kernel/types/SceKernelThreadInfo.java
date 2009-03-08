@@ -131,10 +131,11 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         stack_addr = ThreadMan.getInstance().mallocStack(stackSize);
         int k0 = stack_addr + stackSize - 0x100; // setup k0
         Memory mem = Memory.getInstance();
-        if (stack_addr != 0 &&
-            stackSize > 0 &&
-            (attr & PSP_THREAD_ATTR_NO_FILLSTACK) != PSP_THREAD_ATTR_NO_FILLSTACK) {
-            mem.memset(stack_addr, (byte)0xFF, stackSize);
+        if (stack_addr != 0 && stackSize > 0) {
+            // set stack to 0xFF
+            if ((attr & PSP_THREAD_ATTR_NO_FILLSTACK) != PSP_THREAD_ATTR_NO_FILLSTACK) {
+                mem.memset(stack_addr, (byte)0xFF, stackSize);
+            }
 
             // setup k0
             mem.memset(k0, (byte)0x0, 0x100);
