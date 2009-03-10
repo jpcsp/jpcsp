@@ -45,6 +45,7 @@ import static jpcsp.util.Utilities.*;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.*;
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.modules.sceUmdUser;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 
@@ -365,6 +366,7 @@ public class ThreadMan {
         syscallFreeCycles = 0;
 
         pspiofilemgr.getInstance().onContextSwitch();
+        Modules.sceUmdUserModule.onContextSwitch();
 
         RuntimeContext.update();
     }
