@@ -46,4 +46,8 @@ public class ThreadWaitInfo {
     // IO
     public boolean waitingOnIo;
     public int Io_id;
+
+    // UMD
+    public boolean waitingOnUmd;
+    public int wantedUmdStat;
 }
