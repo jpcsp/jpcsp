@@ -32,7 +32,11 @@ public class UmdIsoFile extends SeekableInputStream {
         startSectorNumber = startSector;
         currentSectorNumber = startSectorNumber;
         currentOffset = 0;
-        currentSector = reader.readSector(startSector);
+        if (lengthInBytes == 0) {
+        	currentSector = null;
+        } else {
+        	currentSector = reader.readSector(startSector);
+        }
         maxOffset = lengthInBytes;
         sectorOffset = 0;
         internalReader = reader;
