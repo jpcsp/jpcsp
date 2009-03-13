@@ -89,10 +89,6 @@ public class EventFlagManager {
         }
     }
 
-    //public SceKernelEventFlagInfo get(int uid) {
-    //    return eventMap.get(uid);
-    //}
-
     public void sceKernelCreateEventFlag(int name_addr, int attr, int initPattern, int option)
     {
         String name = readStringZ(name_addr);
