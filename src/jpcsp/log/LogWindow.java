@@ -32,11 +32,7 @@ import org.apache.log4j.xml.DOMConfigurator;
 
 public class LogWindow extends JFrame {
 
-	/**
-	 *
-	 */
-    String[] loglevels = {"ALL","DEBUG","ERROR","FATAL","INFO","OFF","TRACE","WARN" };
-	private static final long serialVersionUID = 9105338140096798954L;
+    private String[] loglevels = {"ALL","TRACE","DEBUG","INFO","WARN","ERROR","FATAL","OFF" };
 	private JTextPane textPane;
 
 	public LogWindow() {
@@ -119,28 +115,29 @@ public class LogWindow extends JFrame {
         JComboBox loglevelcombo = new JComboBox(loglevels);
         final Logger rootLogger = Logger.getRootLogger();
         Level getlevelfromconfig = rootLogger.getLevel();
+
         if(getlevelfromconfig.equals(Level.ALL))   loglevelcombo.setSelectedIndex(0);
-        if(getlevelfromconfig.equals(Level.DEBUG)) loglevelcombo.setSelectedIndex(1);
-        if(getlevelfromconfig.equals(Level.ERROR)) loglevelcombo.setSelectedIndex(2);
-        if(getlevelfromconfig.equals(Level.FATAL)) loglevelcombo.setSelectedIndex(3);
-        if(getlevelfromconfig.equals(Level.INFO))  loglevelcombo.setSelectedIndex(4);
-        if(getlevelfromconfig.equals(Level.OFF))   loglevelcombo.setSelectedIndex(5);
-        if(getlevelfromconfig.equals(Level.TRACE)) loglevelcombo.setSelectedIndex(6);
-        if(getlevelfromconfig.equals(Level.WARN))  loglevelcombo.setSelectedIndex(7);
-        
+        if(getlevelfromconfig.equals(Level.TRACE)) loglevelcombo.setSelectedIndex(1);
+        if(getlevelfromconfig.equals(Level.DEBUG)) loglevelcombo.setSelectedIndex(2);
+        if(getlevelfromconfig.equals(Level.INFO))  loglevelcombo.setSelectedIndex(3);
+        if(getlevelfromconfig.equals(Level.WARN))  loglevelcombo.setSelectedIndex(4);
+        if(getlevelfromconfig.equals(Level.ERROR)) loglevelcombo.setSelectedIndex(5);
+        if(getlevelfromconfig.equals(Level.FATAL)) loglevelcombo.setSelectedIndex(6);
+        if(getlevelfromconfig.equals(Level.OFF))   loglevelcombo.setSelectedIndex(7);
+
         loglevelcombo.addItemListener(new ItemListener(){
             @Override
             public void itemStateChanged(ItemEvent itemEvent){
                if (itemEvent.getStateChange() == ItemEvent.SELECTED)
                {
                    if(itemEvent.getItem().equals("ALL"))   rootLogger.setLevel(Level.ALL);
+                   if(itemEvent.getItem().equals("TRACE")) rootLogger.setLevel(Level.TRACE);
                    if(itemEvent.getItem().equals("DEBUG")) rootLogger.setLevel(Level.DEBUG);
+                   if(itemEvent.getItem().equals("WARN"))  rootLogger.setLevel(Level.WARN);
+                   if(itemEvent.getItem().equals("INFO"))  rootLogger.setLevel(Level.INFO);
                    if(itemEvent.getItem().equals("ERROR")) rootLogger.setLevel(Level.ERROR);
                    if(itemEvent.getItem().equals("FATAL")) rootLogger.setLevel(Level.FATAL);
-                   if(itemEvent.getItem().equals("INFO"))  rootLogger.setLevel(Level.INFO);
                    if(itemEvent.getItem().equals("OFF"))   rootLogger.setLevel(Level.OFF);
-                   if(itemEvent.getItem().equals("TRACE")) rootLogger.setLevel(Level.TRACE);
-                   if(itemEvent.getItem().equals("WARN"))  rootLogger.setLevel(Level.WARN);
                }}});
 
 

@@ -194,7 +194,7 @@ public class sceCtrl implements HLEModule {
 
         int newCycle = cpu.gpr[4];
 
-        Modules.log.debug("sceCtrlSetSamplingCycle(cycle=" + newCycle + ") returning " + cycle);
+        Modules.log.trace("sceCtrlSetSamplingCycle(cycle=" + newCycle + ") returning " + cycle);
 
         cpu.gpr[2] = cycle;
         cycle = newCycle;
@@ -217,7 +217,7 @@ public class sceCtrl implements HLEModule {
 
         int newMode = cpu.gpr[4];
 
-        Modules.log.debug("sceCtrlSetSamplingMode(mode=" + newMode + ") returning " + mode);
+        Modules.log.trace("sceCtrlSetSamplingMode(mode=" + newMode + ") returning " + mode);
 
         cpu.gpr[2] = mode;
         mode = newMode;
