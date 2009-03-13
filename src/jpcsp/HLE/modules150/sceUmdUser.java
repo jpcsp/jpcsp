@@ -180,6 +180,7 @@ public class sceUmdUser implements HLEModule {
         }
     }
 
+    /** Don't call this unless thread.wait.waitingOnUmd == true */
     public void onThreadWaitTimeout(SceKernelThreadInfo thread) {
         Modules.log.info("UMD stat timedout");
 
