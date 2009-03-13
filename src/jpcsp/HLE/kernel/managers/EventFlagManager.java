@@ -45,9 +45,53 @@ public class EventFlagManager {
         eventMap = new HashMap<Integer, SceKernelEventFlagInfo>();
     }
 
-    public SceKernelEventFlagInfo get(int uid) {
-        return eventMap.get(uid);
+    /** Don't call this unless thread.wait.waitingOnEventFlag == true
+     * @return true if the thread was waiting on a valid event flag */
+    private boolean removeWaitingThread(SceKernelThreadInfo thread) {
+        // Untrack
+        thread.wait.waitingOnEventFlag = false;
+
+        // Update numWaitThreads
+        SceKernelEventFlagInfo event = eventMap.get(thread.wait.EventFlag_id);
+        if (event != null) {
+            event.numWaitThreads--;
+
+            if (event.numWaitThreads < 0) {
+                Modules.log.warn("removing waiting thread " + Integer.toHexString(thread.uid)
+                    + ", event " + Integer.toHexString(event.uid) + " numWaitThreads underflowed");
+                event.numWaitThreads = 0;
+            }
+
+            return true;
+        }
+
+        return false;
     }
+
+    /** Don't call this unless thread.wait.waitingOnEventFlag == true */
+    public void onThreadWaitTimeout(SceKernelThreadInfo thread) {
+        // Untrack
+        if (removeWaitingThread(thread)) {
+            // Return WAIT_TIMEOUT
+            thread.cpuContext.gpr[2] = ERROR_WAIT_TIMEOUT;
+        } else {
+            Modules.log.warn("EventFlag deleted while we were waiting for it! (timeout expired)");
+
+            // Return WAIT_DELETE
+            thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
+        }
+    }
+
+    public void onThreadDeleted(SceKernelThreadInfo thread) {
+        if (thread.wait.waitingOnEventFlag) {
+            // decrement numWaitThreads
+            removeWaitingThread(thread);
+        }
+    }
+
+    //public SceKernelEventFlagInfo get(int uid) {
+    //    return eventMap.get(uid);
+    //}
 
     public void sceKernelCreateEventFlag(int name_addr, int attr, int initPattern, int option)
     {

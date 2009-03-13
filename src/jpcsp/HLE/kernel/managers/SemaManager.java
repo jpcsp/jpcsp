@@ -49,6 +49,50 @@ public class SemaManager {
         semaMap = new HashMap<Integer, SceKernelSemaInfo>();
     }
 
+    /** Don't call this unless thread.wait.waitingOnSemaphore == true
+     * @return true if the thread was waiting on a valid sema */
+    private boolean removeWaitingThread(SceKernelThreadInfo thread) {
+        // Untrack
+        thread.wait.waitingOnSemaphore = false;
+
+        // Update numWaitThreads
+        SceKernelSemaInfo sema = semaMap.get(thread.wait.Semaphore_id);
+        if (sema != null) {
+            sema.numWaitThreads--;
+
+            if (sema.numWaitThreads < 0) {
+                Modules.log.warn("removing waiting thread " + Integer.toHexString(thread.uid)
+                    + ", sema " + Integer.toHexString(sema.uid) + " numWaitThreads underflowed");
+                sema.numWaitThreads = 0;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /** Don't call this unless thread.wait.waitingOnSemaphore == true */
+    public void onThreadWaitTimeout(SceKernelThreadInfo thread) {
+        // Untrack
+        if (removeWaitingThread(thread)) {
+            // Return WAIT_TIMEOUT
+            thread.cpuContext.gpr[2] = ERROR_WAIT_TIMEOUT;
+        } else {
+            Modules.log.warn("Sema deleted while we were waiting for it! (timeout expired)");
+
+            // Return WAIT_DELETE
+            thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
+        }
+    }
+
+    public void onThreadDeleted(SceKernelThreadInfo thread) {
+        if (thread.wait.waitingOnSemaphore) {
+            // decrement numWaitThreads
+            removeWaitingThread(thread);
+        }
+    }
+
     public void sceKernelCreateSema(int name_addr, int attr, int initVal, int maxVal, int option)
     {
         String name = readStringNZ(name_addr, 32);

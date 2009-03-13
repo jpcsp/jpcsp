@@ -511,24 +511,17 @@ public class ThreadMan {
 
         // EventFlag
         else if (thread.wait.waitingOnEventFlag) {
-            //Modules.log.debug("EventFlag timedout");
+            Managers.eventFlags.onThreadWaitTimeout(thread);
+        }
 
-            // Untrack
-            thread.wait.waitingOnEventFlag = false;
+        // Sema
+        else if (thread.wait.waitingOnSemaphore) {
+            Managers.semas.onThreadWaitTimeout(thread);
+        }
 
-            // Update numWaitThreads
-            SceKernelEventFlagInfo event = Managers.eventFlags.get(thread.wait.EventFlag_id);
-            if (event != null) {
-                event.numWaitThreads--;
-
-                // Return WAIT_TIMEOUT
-                thread.cpuContext.gpr[2] = ERROR_WAIT_TIMEOUT;
-            } else {
-                Modules.log.warn("EventFlag deleted while we were waiting for it! (timeout expired)");
-
-                // Return WAIT_DELETE
-                thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
-            }
+        // UMD stat
+        else if (thread.wait.waitingOnUmd) {
+            Modules.sceUmdUserModule.onThreadWaitTimeout(thread);
         }
 
         // TODO mutex timeout, if it has one
@@ -551,6 +544,11 @@ public class ThreadMan {
         SceUidManager.releaseUid(thread.uid, "ThreadMan-thread");
 
         // TODO remove from wait object reference count, example: sema.numWaitThreads--
+        Managers.eventFlags.onThreadDeleted(thread);
+        Managers.semas.onThreadDeleted(thread);
+        Modules.sceUmdUserModule.onThreadDeleted(thread);
+        // TODO blocking audio?
+        // TODO async io?
 
         statistics.addThreadStatistics(thread);
     }
