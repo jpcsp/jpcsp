@@ -1026,6 +1026,14 @@ public class VideoEngine {
             	gl.glLightf(GL.GL_LIGHT3, GL.GL_QUADRATIC_ATTENUATION, floatArgument);
             	break;
 
+            case LMODE: {
+                int lightmode = (normalArgument != 0) ? GL.GL_SEPARATE_SPECULAR_COLOR : GL.GL_SINGLE_COLOR;
+                gl.glLightModeli(GL.GL_LIGHT_MODEL_COLOR_CONTROL, lightmode);
+                if (log.isDebugEnabled()) {
+                    VideoEngine.log.info("sceGuLightMode( " + ((normalArgument != 0) ? "GU_SEPARATE_SPECULAR_COLOR" : "GU_SINGLE_COLOR"));
+                }
+                break;
+            }
 
             /*
              * Light types
