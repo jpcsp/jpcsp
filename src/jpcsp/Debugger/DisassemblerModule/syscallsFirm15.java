@@ -1044,6 +1044,20 @@ public class syscallsFirm15 {
                 sceMp3GetMaxOutputSample(0x30cd, 0x87C263D1), // 3.95+
                 sceMp3GetLoopNum(0x30ce, 0xD8F54A51), // 3.95+
 
+                sceMpegQueryUserdataEsSize(0x30cf, 0xC45C99CC), // 2.71+
+                sceMpegQueryUserdataEsSize_vsh(0x30cf, 0x01977054), // 2.71+ fiddled so the syscall is the same as the non-vsh version
+                sceUtilityGetNetParamLatestID(0x30d0, 0x4FED24D8), // 2.00+
+
+                sceAtracSetAA3DataAndGetID(0x30d1, 0x5622B7C1), // 2.71+
+                sceUtilityScreenshotInitStart(0x30d2, 0x0251B134), // 3.95+
+                sceUtilityScreenshotUpdate(0x30d3, 0xAB083EA9), // 3.95+
+                sceUtilityScreenshotGetStatus(0x30d4, 0xD81957B7), // 3.95+
+                sceUtilityScreenshotShutdownStart(0x30d5, 0xF9E0008C), // 3.95+
+                inflateEnd(0x30d6, 0x461C7724), // 2.71+
+                inflateInit_(0x30d7, 0x18CB51AB), // 2.71+
+                inflate(0x30d8, 0x216D1BF1), // 2.71+
+
+
                 // We choose to start HLEModuleManager at 0x4000
 
                 // CFW, we choose to start at 0x5000

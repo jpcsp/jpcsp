@@ -154,13 +154,13 @@ public class VertexInfo {
             case 1:
                 v.t[0] = (byte)mem.read8(addr); addr += 1;
                 v.t[1] = (byte)mem.read8(addr); addr += 1;
-                VideoEngine.log.trace("texture type 1 " + v.t[0] + ", " + v.t[1] + "");
+                VideoEngine.log.trace("texture type 1 " + v.t[0] + ", " + v.t[1] + " transform2D=" + transform2D);
                 break;
             case 2:
             	addr = (addr + 1) & ~1;
                 v.t[0] = (short)mem.read16(addr); addr += 2;
                 v.t[1] = (short)mem.read16(addr); addr += 2;
-                VideoEngine.log.trace("texture type 2 " + v.t[0] + ", " + v.t[1] + "");
+                VideoEngine.log.trace("texture type 2 " + v.t[0] + ", " + v.t[1] + " transform2D=" + transform2D);
                 break;
             case 3:
             	addr = (addr + 3) & ~3;
@@ -228,14 +228,14 @@ public class VertexInfo {
                 v.n[0] = (byte)mem.read8(addr); addr += 1;
                 v.n[1] = (byte)mem.read8(addr); addr += 1;
                 v.n[2] = (byte)mem.read8(addr); addr += 1;
-                VideoEngine.log.warn("normal type 1 " + v.n[0] + ", " + v.n[1] + ", " + v.n[2] + "");
+                VideoEngine.log.warn("normal type 1 " + v.n[0] + ", " + v.n[1] + ", " + v.n[2] + " transform2D=" + transform2D);
                 break;
             case 2:
             	addr = (addr + 1) & ~1;
                 v.n[0] = (short)mem.read16(addr); addr += 2;
                 v.n[1] = (short)mem.read16(addr); addr += 2;
                 v.n[2] = (short)mem.read16(addr); addr += 2;
-                VideoEngine.log.warn("normal type 2 " + v.n[0] + ", " + v.n[1] + ", " + v.n[2] + "");
+                VideoEngine.log.warn("normal type 2 " + v.n[0] + ", " + v.n[1] + ", " + v.n[2] + " transform2D=" + transform2D);
                 break;
             case 3:
             	addr = (addr + 3) & ~3;
@@ -251,21 +251,21 @@ public class VertexInfo {
                 v.p[0] = (byte)mem.read8(addr); addr += 1;
                 v.p[1] = (byte)mem.read8(addr); addr += 1;
                 v.p[2] = (byte)mem.read8(addr); addr += 1;
-                VideoEngine.log.trace("vertex type 1 " + v.p[0] + ", " + v.p[1] + ", " + v.p[2] + "");
+                VideoEngine.log.trace("vertex type 1 " + v.p[0] + ", " + v.p[1] + ", " + v.p[2] + " transform2D=" + transform2D);
                 break;
             case 2:
             	addr = (addr + 1) & ~1;
                 v.p[0] = (short)mem.read16(addr); addr += 2;
                 v.p[1] = (short)mem.read16(addr); addr += 2;
                 v.p[2] = (short)mem.read16(addr); addr += 2;
-                VideoEngine.log.trace("vertex type 2 " + v.p[0] + ", " + v.p[1] + ", " + v.p[2] + "");
+                VideoEngine.log.trace("vertex type 2 " + v.p[0] + ", " + v.p[1] + ", " + v.p[2] + " transform2D=" + transform2D);
                 break;
             case 3: // GU_VERTEX_32BITF
             	addr = (addr + 3) & ~3;
                 v.p[0] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
                 v.p[1] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
                 v.p[2] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-                VideoEngine.log.trace("vertex type 3 " + v.p[0] + ", " + v.p[1] + ", " + v.p[2] + "");
+                VideoEngine.log.trace("vertex type 3 " + v.p[0] + ", " + v.p[1] + ", " + v.p[2] + " transform2D=" + transform2D);
                 break;
         }
 
