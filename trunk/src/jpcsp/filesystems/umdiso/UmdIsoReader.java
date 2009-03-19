@@ -213,7 +213,8 @@ public class UmdIsoReader {
                 {
                     break;
                 }
-                //do nothing
+                // skip the path "."
+                i++;
             }
             else if(path[i].compareTo("..")==0)
             {
