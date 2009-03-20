@@ -7,6 +7,7 @@ package jpcsp.Allegrex;
 import jpcsp.Memory;
 
 import java.util.Arrays;
+import java.util.Random;
 
 /**
  * Vectorial Floating Point Unit, handles scalar, vector and matrix operations.
@@ -39,6 +40,8 @@ public class VfpuState extends FpuState {
         (float) Math.sqrt(3.0) / 2.0f
     };
 
+    private static Random rnd;
+    
     public class Vcr {
 
         public class PfxSrc /* $128, $129 */ {
@@ -994,19 +997,38 @@ public class VfpuState extends FpuState {
     }
     // VFPU4:VRNDS
     public void doVRNDS(int vsize, int vs) {
-        doUNK("Unimplemented VRNDS");
+        // temporary solution
+        if (vsize != 1) {
+            doUNK("Only supported VRNDS.S");
+            return;
+        }
+        
+        loadVs(1, vs);
+        rnd.setSeed(Float.floatToRawIntBits(v1[0]));
     }
-    // VFPU4:VRNDS
+    // VFPU4:VRNDI
     public void doVRNDI(int vsize, int vd) {
-        doUNK("Unimplemented VRNDS");
+        // temporary solution
+        for (int i = 0; i < vsize; ++i) {
+            v3[i] = Float.intBitsToFloat(rnd.nextInt());
+        }
+        saveVd(vsize, vd, v3);
     }
-    // VFPU4:VRNDS
+    // VFPU4:VRNDF1
     public void doVRNDF1(int vsize, int vd) {
-        doUNK("Unimplemented VRNDS");
+        // temporary solution
+        for (int i = 0; i < vsize; ++i) {
+            v3[i] = rnd.nextFloat()*2.0f;
+        }
+        saveVd(vsize, vd, v3);
     }
-    // VFPU4:VRNDS
+    // VFPU4:VRNDF2
     public void doVRNDF2(int vsize, int vd) {
-        doUNK("Unimplemented VRNDS");
+        // temporary solution
+        for (int i = 0; i < vsize; ++i) {
+            v3[i] = (1.0f + rnd.nextFloat())*2.0f;
+        }
+        saveVd(vsize, vd, v3);
     }
     // VFPU4:VF2H
     public void doVF2H(int vsize, int vd, int vs) {
