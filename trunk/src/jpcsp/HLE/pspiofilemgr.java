@@ -582,8 +582,14 @@ public class pspiofilemgr {
                     } else {
                         // open file
                         try {
-                            UmdIsoFile file = iso.getFile(trimUmdPrefix(pcfilename));
+                        	String trimmedFileName = trimUmdPrefix(pcfilename);
+                            UmdIsoFile file = iso.getFile(trimmedFileName);
                             IoInfo info = new IoInfo(filename, file, mode, flags, permissions);
+                            if (trimmedFileName != null && trimmedFileName.length() == 0) {
+                            	// Opening "umd0:" is allowing to read the whole UMD
+                            	// per sectors.
+                            	info.sectorBlockMode = true;
+                            }
                             //info.result = info.uid;
                             info.result = PSP_ERROR_NO_ASYNC_OP;
                             Emulator.getProcessor().cpu.gpr[2] = info.uid;
@@ -848,7 +854,12 @@ public class pspiofilemgr {
                     // Allow seeking off the end of the file, just return 0 bytes read/written
                     result = 0;
                 } else {
-                    // Using readFully for ms/umd compatibility, but now we must
+					if (info.sectorBlockMode) {
+                		// In sectorBlockMode, the size is a number of sectors
+						size *= UmdIsoFile.sectorLength;
+					}
+
+					// Using readFully for ms/umd compatibility, but now we must
                     // manually make sure it doesn't read off the end of the file.
                     if (info.readOnlyFile.getFilePointer() + size > info.readOnlyFile.length()) {
                         int oldSize = size;
@@ -861,6 +872,9 @@ public class pspiofilemgr {
 
                     Utilities.readFully(info.readOnlyFile, data_addr, size);
                     result = size;
+                    if (info.sectorBlockMode) {
+                    	result /= UmdIsoFile.sectorLength;
+                    }
                 }
             } catch(IOException e) {
                 e.printStackTrace();
@@ -946,7 +960,12 @@ public class pspiofilemgr {
                     if (resultIs64bit)
                         Emulator.getProcessor().cpu.gpr[3] = -1;
                 } else {
-                    switch(whence) {
+                	if (info.sectorBlockMode) {
+                		// In sectorBlockMode, the offset is a sector number
+                		offset *= UmdIsoFile.sectorLength;
+                	}
+
+                	switch(whence) {
                         case PSP_SEEK_SET:
                             if (offset < 0) {
                                 Modules.log.warn("SEEK_SET UID " + Integer.toHexString(uid) + " filename:'" + info.filename + "' offset=0x" + Long.toHexString(offset) + " (less than 0!)");
@@ -998,6 +1017,9 @@ public class pspiofilemgr {
                     }
                     //long result = info.readOnlyFile.getFilePointer();
                     long result = info.position;
+                    if (info.sectorBlockMode) {
+                    	result /= UmdIsoFile.sectorLength;
+                    }
 
                     if (async) {
                         info.result = result;
@@ -1575,6 +1597,7 @@ public class pspiofilemgr {
         public final SeekableDataInput readOnlyFile; // on memory stick or umd
         public final String mode;
         public long position; // virtual position, beyond the end is allowed, before the start is an error
+        public boolean sectorBlockMode;
 
         public final int uid;
         public long result; // The return value from the last operation on this file, used by sceIoWaitAsync
@@ -1593,6 +1616,7 @@ public class pspiofilemgr {
             this.mode = mode;
             this.flags = flags;
             this.permissions = permissions;
+            this.sectorBlockMode = false;
             uid = SceUidManager.getNewUid("IOFileManager-File");
             filelist.put(uid, this);
         }
@@ -1605,6 +1629,7 @@ public class pspiofilemgr {
             this.mode = mode;
             this.flags = flags;
             this.permissions = permissions;
+            this.sectorBlockMode = false;
             uid = SceUidManager.getNewUid("IOFileManager-File");
             filelist.put(uid, this);
         }
