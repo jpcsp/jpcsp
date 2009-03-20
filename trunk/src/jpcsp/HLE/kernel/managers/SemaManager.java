@@ -95,7 +95,13 @@ public class SemaManager {
 
     public void sceKernelCreateSema(int name_addr, int attr, int initVal, int maxVal, int option)
     {
-        String name = readStringNZ(name_addr, 32);
+    	String name;
+    	if (name_addr == 0) {
+            Modules.log.info("sceKernelCreateSema name address is 0! Assuming empty name");
+    		name = "";
+    	} else {
+    		name = readStringNZ(name_addr, 32);
+    	}
         Modules.log.debug("sceKernelCreateSema name= " + name + " attr= 0x" + Integer.toHexString(attr) + " initVal= " + initVal + " maxVal= "+ maxVal + " option= 0x" + Integer.toHexString(option));
 
         if (attr != 0) Modules.log.warn("UNIMPLEMENTED:sceKernelCreateSema attr value 0x" + Integer.toHexString(attr));
