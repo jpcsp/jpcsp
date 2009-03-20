@@ -25,6 +25,10 @@ package jpcsp.HLE;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
+
 import jpcsp.Emulator;
 import jpcsp.GeneralJpcspException;
 import jpcsp.MemoryMap;
@@ -40,6 +44,7 @@ public class pspSysMem {
     private static pspSysMem instance;
 
     private static HashMap<Integer, SysMemInfo> blockList;
+    private static List<SysMemInfo> freeBlockList;
     private int heapTop, heapBottom;
     
     private boolean disableReservedThreadMemory = false;
@@ -82,6 +87,7 @@ public class pspSysMem {
     public void Initialise()
     {
         blockList = new HashMap<Integer, SysMemInfo>();
+        freeBlockList = new LinkedList<SysMemInfo>();
 
         // The loader should do the first malloc which will set the heapBottom corectly
         heapBottom = 0x08400000; //MemoryMap.START_RAM; //0x08900000;
@@ -234,10 +240,36 @@ public class pspSysMem {
         }
     }
 
+    private void cleanupFreeBlockList() {
+    	boolean changed;
+    	do {
+    		changed = false;
+	    	for (ListIterator<SysMemInfo> lit = freeBlockList.listIterator(); lit.hasNext(); ) {
+	    		SysMemInfo info = lit.next();
+	    		if (info.addr == heapTop + 1) {
+	    			heapTop += info.size;
+	    			lit.remove();
+	    			changed = true;
+	    		} else if (info.addr + info.size == heapBottom) {
+	    			heapBottom -= info.size;
+	    			lit.remove();
+	    			changed = true;
+	    		}
+	    	}
+    	} while (changed);
+    }
+
     private void free(SysMemInfo info)
     {
-        // TODO
-        Modules.log.error("UNIMPLEMENT: pspSysMem.free(info) not implemented "+info);
+    	freeBlockList.add(info);
+    	cleanupFreeBlockList();
+    	if (freeBlockList.isEmpty()) {
+    		Modules.log.info("pspSysMem.free(info) successful (all blocks released)");
+    	} else if (!freeBlockList.contains(info)) {
+    		Modules.log.info("PARTIAL: pspSysMem.free(info) successful (" + freeBlockList.size() + " block(s) pending)");
+    	} else {
+    		Modules.log.warn("PARTIAL: pspSysMem.free(info) partially implemented "+info);
+    	}
     }
 
     public int maxFreeMemSize() {
