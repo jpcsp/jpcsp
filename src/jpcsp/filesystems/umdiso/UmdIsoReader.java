@@ -263,6 +263,11 @@ public class UmdIsoReader {
     			throw new IOException("File '" + filePath + "': Invalid Start Sector");
     		}
         }
+        else if (filePath != null && filePath.length() == 0)
+        {
+        	fileStart = 0;
+        	fileLength = numSectors * 2048;
+        }
         else
         {
 	        Iso9660File info = getFileEntry(filePath);
