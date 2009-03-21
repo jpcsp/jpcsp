@@ -288,7 +288,8 @@ public class pspiofilemgr {
     private boolean isUmdPath(String deviceFilePath) {
         //return deviceFilePath.toLowerCase().startsWith("disc0/"); // old
         return deviceFilePath.toLowerCase().startsWith("disc0") ||
-            deviceFilePath.toLowerCase().startsWith("umd0");
+            deviceFilePath.toLowerCase().startsWith("umd0") ||
+            deviceFilePath.toLowerCase().startsWith("umd1");
     }
 
     // TODO fix this slash thing properly, must be caused by poor handling in some other function
@@ -300,6 +301,10 @@ public class pspiofilemgr {
         if (pcfilename.toLowerCase().startsWith("umd0/"))
             return pcfilename.substring(5);
         if (pcfilename.toLowerCase().startsWith("umd0"))
+            return pcfilename.substring(4);
+        if (pcfilename.toLowerCase().startsWith("umd1/"))
+            return pcfilename.substring(5);
+        if (pcfilename.toLowerCase().startsWith("umd1"))
             return pcfilename.substring(4);
         return pcfilename;
     }
