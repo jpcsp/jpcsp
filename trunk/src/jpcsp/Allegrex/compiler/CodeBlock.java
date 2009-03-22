@@ -271,6 +271,9 @@ public class CodeBlock {
         boolean skipNextInstruction = false;
         for (CodeInstruction codeInstruction : codeInstructions) {
             if (skipNextInstruction) {
+            	if (codeInstruction.isBranchTarget()) {
+            		context.compileDelaySlotAsBranchTarget(codeInstruction);
+            	}
                 skipNextInstruction = false;
             } else {
                 codeInstruction.compile(context, mv);

@@ -116,6 +116,10 @@ public class CodeInstruction {
     	return label != null;
     }
 
+    public void forceNewLabel() {
+    	label = new Label();
+    }
+
     protected void startCompile(CompilerContext context, MethodVisitor mv) {
         if (Compiler.log.isDebugEnabled()) {
             Compiler.log.debug("CodeInstruction.compile " + toString());
