@@ -38,6 +38,9 @@ import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
 import javax.swing.SwingUtilities;
+import javax.swing.event.ListSelectionListener;
+import javax.swing.event.ListSelectionEvent;
+
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Settings;
@@ -46,6 +49,7 @@ import jpcsp.Allegrex.Instructions.*;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Common.Instruction;
+import static jpcsp.Allegrex.Common.gprNames;
 import jpcsp.util.*;
 
 /**
@@ -54,11 +58,16 @@ import jpcsp.util.*;
  */
 public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOwner{
     private int DebuggerPC;
+    private int SelectedPC;
     private Emulator emu;
     private DefaultListModel listmodel = new DefaultListModel();
     private ArrayList<Integer> breakpoints = new ArrayList<Integer>();
     private volatile boolean wantStep;
     private int gpi, gpo;
+
+    private int selectedRegCount;
+    private Color[] selectedRegColors = new Color[] { new Color(128, 255, 255), new Color(255, 255, 128), new Color(128, 255, 128) };
+    private String[] selectedRegNames = new String[selectedRegColors.length];
 
     /** Creates new form DisassemblerFrame */
     public DisassemblerFrame(Emulator emu) {
@@ -76,30 +85,96 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 DisassemblerFrame.this.customizeStyledLabel(this, text);
             }
         });
+        disasmList.addListSelectionListener(new ListSelectionListener() {
+            public void valueChanged(ListSelectionEvent e) {
+                if (!e.getValueIsAdjusting()) {
+                    String text = (String)disasmList.getSelectedValue();
+                    if (text != null) {
+                        SelectedPC = DebuggerPC + disasmList.getSelectedIndex() * 4;
+                        //System.err.println("DebuggerPC " + Integer.toHexString(DebuggerPC));
+                        //System.err.println("getSelectedIndex " + disasmList.getSelectedIndex());
+                        //System.err.println("SelectedPC " + Integer.toHexString(SelectedPC));
+                        DisassemblerFrame.this.updateSelectedRegisters(text);
+                        DisassemblerFrame.this.disasmList.repaint();
+                    }
+                }
+            }
+        });
 
         RefreshDebugger(true);
         wantStep = false;
     }
 
     private void customizeStyledLabel(StyledLabel label, String text) {
-        if(text.startsWith("<*>"))//breakpoint!
+        if(text.startsWith("<*>"))
         {
+            //breakpoint
             label.addStyleRange(new StyleRange(0, 3, Font.BOLD, Color.RED));
         }
         if(text.contains(String.format("%08X:", Emulator.getProcessor().cpu.pc)))
         {
-            label.addStyleRange(new StyleRange(3, -1, Font.BOLD, Color.BLACK));
+            // TODO highlight entire line except for breakpoint highlighted registers
+            // it seems the longest style overrides any shorter styles (such as the register highlighting)
+
+            // highlight: entire line, except gutter
+            //label.addStyleRange(new StyleRange(3, -1, Font.BOLD, Color.BLACK));
+
+            // highlight: address, raw opcode, opcode. no operands.
+            int length = 32;
+            if (length > text.length() - 3)
+                    length = text.length() - 3;
+
+            label.addStyleRange(new StyleRange(3, length, Font.BOLD, Color.BLACK));
+            // testing label.addStyleRange(new StyleRange(3, length, Font.PLAIN, Color.RED, Color.GREEN, 0));
+
+            // highlight gutter if there is no breakpoint
+            if(!text.startsWith("<*>"))
+            {
+                label.addStyleRange(new StyleRange(0, 3, Font.BOLD, Color.BLACK, Color.YELLOW, 0));
+            }
         }
         if(text.contains(" ["))
         {
+            // syscall highlighting
             int find = text.indexOf(" [");
             label.addStyleRange(new StyleRange(find, -1, Font.PLAIN, Color.BLUE));
         }
         if(text.contains("<=>"))
         {
-           int find = text.indexOf("<=>");
-           label.addStyleRange(new StyleRange(find, -1, Font.PLAIN, Color.GRAY));
+            // alias highlighting
+            int find = text.indexOf("<=>");
+            label.addStyleRange(new StyleRange(find, -1, Font.PLAIN, Color.GRAY));
         }
+
+        // register highlighting, clobbers "text" variable
+        boolean keepgoing;
+        int lastfind = 0;
+        do {
+            keepgoing = false;
+
+            // find register in disassembly
+            int find = text.indexOf("$");
+            if (find != -1) {
+                String regName = text.substring(find);
+                for (int i = 0; i < gprNames.length; i++) {
+                    // we still need to check every possible register because a tracked register may not be the first operand
+                    if (regName.startsWith(gprNames[i])) {
+                        // check for tracked register
+                        for (int j = 0; j < selectedRegCount; j++) {
+                            if (regName.startsWith(selectedRegNames[j])) {
+                                label.addStyleRange(new StyleRange(lastfind + find, 3, Font.PLAIN, Color.BLACK, selectedRegColors[j], 0));
+                            }
+                        }
+
+                        // move on to the remainder of the disassembled line
+                        keepgoing = true;
+                        lastfind += find + 3;
+                        text = text.substring(find + 3);
+                        break;
+                    }
+                }
+            }
+        } while (keepgoing);
     }
 
     /** Delete breakpoints and reset to PC */
@@ -122,42 +197,95 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         CpuState cpu = Emulator.getProcessor().cpu;
         int pc;
         int cnt;
+
         if (moveToPC) {
             DebuggerPC = cpu.pc;
         }
+
         ViewTooltips.unregister(disasmList);
         synchronized(listmodel) {
-	        listmodel.clear();
+            listmodel.clear();
 
-	        for (pc = DebuggerPC , cnt = 0; pc < (DebuggerPC + 0x00000094); pc += 0x00000004, cnt++) {
-	            if (Memory.getInstance().isAddressGood(pc)) {
-	                int opcode = Memory.getInstance().read32(pc);
+            for (pc = DebuggerPC, cnt = 0; pc < (DebuggerPC + 0x00000094); pc += 0x00000004, cnt++) {
+                if (Memory.getInstance().isAddressGood(pc)) {
+                    int opcode = Memory.getInstance().read32(pc);
 
-	                Instruction insn = Decoder.instruction(opcode);
+                    Instruction insn = Decoder.instruction(opcode);
 
-	                if(breakpoints.indexOf(pc)!=-1) {
-	                    listmodel.addElement(String.format("<*>%08X:[%08X]: %s", pc, opcode, insn.disasm(pc, opcode)));
-	                } else {
-	                    listmodel.addElement(String.format("   %08X:[%08X]: %s", pc, opcode, insn.disasm(pc, opcode)));
-	                }
-	            } else {
-	                listmodel.addElement(String.format("   %08x: invalid address", pc));
-	            }
-	        }
+                    String line;
+                    if(breakpoints.indexOf(pc) != -1) {
+                        line = String.format("<*>%08X:[%08X]: %s", pc, opcode, insn.disasm(pc, opcode));
+                    } else if (pc == cpu.pc) {
+                        line = String.format("-->%08X:[%08X]: %s", pc, opcode, insn.disasm(pc, opcode));
+                    } else {
+                        line = String.format("   %08X:[%08X]: %s", pc, opcode, insn.disasm(pc, opcode));
+                    }
+                    listmodel.addElement(line);
+
+                    // update register highlighting
+                    if (pc == cpu.pc) {
+                        updateSelectedRegisters(line);
+                    }
+
+                } else {
+                    listmodel.addElement(String.format("   %08x: invalid address", pc));
+                }
+            }
         }
         ViewTooltips.register(disasmList);
-    //refreshregisters
+
+        // refresh registers
+        // gpr
         jTable1.setValueAt(Integer.toHexString(cpu.pc), 0, 1);
         jTable1.setValueAt(Integer.toHexString(cpu.getHi()), 1, 1);
         jTable1.setValueAt(Integer.toHexString(cpu.getLo()), 2, 1);
         for (int i = 0; i < 32; i++) {
             jTable1.setValueAt(Integer.toHexString(cpu.gpr[i]), 3 + i, 1);
         }
+
+        // fpr
         for (int i = 0; i < 32; i++) {
             jTable3.setValueAt(cpu.fpr[i], i, 1);
         }
+
+        // vfpu
         VfpuFrame.getInstance().updateRegisters(cpu);
     }
+
+    private void updateSelectedRegisters(String text) {
+        boolean keepgoing;
+        selectedRegCount = 0; // clear tracked registers
+        do {
+            keepgoing = false;
+
+            // find register in disassembly
+            int find = text.indexOf("$");
+            if (find != -1) {
+                String regName = text.substring(find);
+                for (int i = 0; i < gprNames.length; i++) {
+                    if (regName.startsWith(gprNames[i])) {
+                        // check if we are already tracking this register
+                        boolean found = false;
+                        for (int j = 0; j < selectedRegCount && !found; j++) {
+                            found = regName.startsWith(selectedRegNames[j]);
+                        }
+
+                        // start tracking this register
+                        if (!found) {
+                            selectedRegNames[selectedRegCount] = gprNames[i];
+                            selectedRegCount++;
+                        }
+
+                        // move on to the remainder of the disassembled line
+                        keepgoing = true;
+                        text = text.substring(find + 3);
+                        break;
+                    }
+                }
+            }
+        } while (keepgoing && selectedRegCount < selectedRegColors.length);
+    }
+
     /** This method is called from within the constructor to
      * initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is
@@ -786,50 +914,58 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
     }// </editor-fold>//GEN-END:initComponents
 
 private void disasmListKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_disasmListKeyPressed
-    if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_DOWN && disasmList.getSelectedIndex() == disasmList.getLastVisibleIndex()) {
-        DebuggerPC += 4;
-        RefreshDebugger(false);
-        evt.consume();
-        disasmList.setSelectedIndex(disasmList.getLastVisibleIndex());
-    } else if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_UP && disasmList.getSelectedIndex() == 0) {
-        DebuggerPC -= 4;
-        RefreshDebugger(false);
-        evt.consume();
-        disasmList.setSelectedIndex(0);
-    } else if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_PAGE_UP && disasmList.getSelectedIndex() == 0) {
-        DebuggerPC -= 0x00000094;
-        RefreshDebugger(false);
-        evt.consume();
-        disasmList.setSelectedIndex(0);
-    } else if (evt.getKeyCode() == java.awt.event.KeyEvent.VK_PAGE_DOWN && disasmList.getSelectedIndex() == disasmList.getLastVisibleIndex()) {
-        DebuggerPC += 0x00000094;
-        RefreshDebugger(false);
-        evt.consume();
-        disasmList.setSelectedIndex(disasmList.getLastVisibleIndex());
+    int keyCode = evt.getKeyCode();
+
+    switch (keyCode) {
+        case java.awt.event.KeyEvent.VK_DOWN:
+            DebuggerPC += 4;
+            RefreshDebugger(false);
+            updateSelectedIndex();
+            evt.consume();
+            break;
+
+        case java.awt.event.KeyEvent.VK_UP:
+            DebuggerPC -= 4;
+            RefreshDebugger(false);
+            updateSelectedIndex();
+            evt.consume();
+            break;
+
+        case java.awt.event.KeyEvent.VK_PAGE_UP:
+            DebuggerPC -= 0x00000094;
+            RefreshDebugger(false);
+            updateSelectedIndex();
+            evt.consume();
+            break;
+
+        case java.awt.event.KeyEvent.VK_PAGE_DOWN:
+            DebuggerPC += 0x00000094;
+            RefreshDebugger(false);
+            updateSelectedIndex();
+            evt.consume();
+            break;
     }
 }//GEN-LAST:event_disasmListKeyPressed
 
 private void disasmListMouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GEN-FIRST:event_disasmListMouseWheelMoved
     if (evt.getWheelRotation() < 0) {
+        DebuggerPC -= 4;
+        RefreshDebugger(false);
+        updateSelectedIndex();
         evt.consume();
-        if (disasmList.getSelectedIndex() == 0 || disasmList.getSelectedIndex() == -1) {
-            DebuggerPC -= 4;
-            RefreshDebugger(false);
-            disasmList.setSelectedIndex(0);
-        } else {
-            disasmList.setSelectedIndex(disasmList.getSelectedIndex() - 1);
-        }
     } else {
+        DebuggerPC += 4;
+        RefreshDebugger(false);
+        updateSelectedIndex();
         evt.consume();
-        if (disasmList.getSelectedIndex() == disasmList.getLastVisibleIndex()) {
-            DebuggerPC += 4;
-            RefreshDebugger(false);
-            disasmList.setSelectedIndex(disasmList.getLastVisibleIndex());
-        } else {
-            disasmList.setSelectedIndex(disasmList.getSelectedIndex() + 1);
-        }
     }
 }//GEN-LAST:event_disasmListMouseWheelMoved
+
+private void updateSelectedIndex() {
+    if (SelectedPC >= DebuggerPC && SelectedPC < DebuggerPC + 0x00000094) {
+        disasmList.setSelectedIndex((SelectedPC - DebuggerPC) / 4);
+    }
+}
 
 private void ResetToPCbuttonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetToPCbuttonActionPerformed
     RefreshDebugger(true);
