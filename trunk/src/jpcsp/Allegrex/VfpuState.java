@@ -168,6 +168,7 @@ public class VfpuState extends FpuState {
     public VfpuState() {
         vpr = new float[8][4][4]; // [matrix][column][row]
         vcr = new Vcr();
+        rnd = new Random();
     }
 
     public void copy(VfpuState that) {
