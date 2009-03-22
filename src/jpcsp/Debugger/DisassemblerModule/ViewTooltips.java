@@ -17,7 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.Debugger.DisassemblerModule;
 
 /* The contents of this file are subject to the terms of the Common Development and Distribution License (the License). You may not use this file except in compliance with the License. You can obtain a copy of the License at http://www.netbeans.org/cddl.html or http://www.netbeans.org/cddl.txt. When distributing Covered Code, include this CDDL Header Notice in each file and include the License file at http://www.netbeans.org/cddl.txt. If applicable, add the following below the CDDL Header, with the fields enclosed by brackets [] replaced by your own identifying information: "Portions Copyrighted [year] [name of copyright owner]" Copyright 2006 Sun Microsystems, all rights reserved. */
-   
+
 
 import java.awt.Color;
 import java.awt.Component;
@@ -85,9 +85,9 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
     /** Nobody should instantiate this */
     private ViewTooltips() {
     }
-    
+
     /**
-     * Register a child of a JScrollPane (only JList or JTree supported 
+     * Register a child of a JScrollPane (only JList or JTree supported
      * for now) which should show helper tooltips.  Should be called
      * from the component's addNotify() method.
      */
@@ -97,9 +97,9 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
         }
         INSTANCE.attachTo (comp);
     }
-    
+
     /**
-     * Unregister a child of a JScrollPane (only JList or JTree supported 
+     * Unregister a child of a JScrollPane (only JList or JTree supported
      * for now) which should show helper tooltips. Should be called
      * from the component's removeNotify() method.
      */
@@ -118,7 +118,7 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
         comp.addMouseMotionListener (this);
         refcount++;
     }
-    
+
     /** Stop listening to mouse motion on the passed component */
     private int detachFrom (JComponent comp) {
         assert comp instanceof JTree || comp instanceof JList;
@@ -126,11 +126,11 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
         comp.removeMouseListener (this);
         return refcount--;
     }
-    
+
     public void mouseMoved(MouseEvent e) {
         Point p = e.getPoint();
         JComponent comp = (JComponent) e.getSource();
-        JScrollPane jsp = (JScrollPane) 
+        JScrollPane jsp = (JScrollPane)
             SwingUtilities.getAncestorOfClass(JScrollPane.class, comp);
         if (jsp != null) {
             p = SwingUtilities.convertPoint (comp, p, jsp);
@@ -149,9 +149,9 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
     public void mouseExited(MouseEvent e) {
         hide();
     }
-    
+
     /** Shows the appropriate popups given the state of the scroll pane and
-     * its view. 
+     * its view.
      * @param view The scroll pane owning the component the event happened on
      * @param pt The point at which the mouse event happened, in the coordinate
      *  space of the scroll pane.
@@ -165,7 +165,7 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
             assert false : "Bad component type registered: " + view.getViewport().getView();
         }
     }
-    
+
     private void showJList (JScrollPane view, Point pt) {
         JList list = (JList) view.getViewport().getView();
         Point p = SwingUtilities.convertPoint(view, pt.x, pt.y, list);
@@ -174,28 +174,44 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
             hide();
             return;
         }
-        Rectangle bds = list.getCellBounds(row, 
+        Rectangle bds = list.getCellBounds(row,
                 row);
         //GetCellBounds returns a width that is the
         //full component width;  we want only what
         //the renderer really needs.
         ListCellRenderer ren = list.getCellRenderer();
-        Dimension rendererSize = 
-                ren.getListCellRendererComponent(list, 
-                list.getModel().getElementAt(row), 
+        Dimension rendererSize =
+                ren.getListCellRendererComponent(list,
+                list.getModel().getElementAt(row),
                 row, false, false).getPreferredSize();
-        
-        bds.width = rendererSize.width;
-        if (bds == null || !bds.contains(p)) {
+
+        // fix for possible npe spotted by SCO
+        // http://jpcsp.org/forum/viewtopic.php?p=3387#p3387
+        if (bds == null) {
             hide();
             return;
         }
+
+        bds.width = rendererSize.width;
+
+        if (!bds.contains(p)) {
+            hide();
+            return;
+        }
+
+        //bds.width = rendererSize.width;
+        //if (bds == null || !bds.contains(p)) {
+        //    hide();
+        //    return;
+        //}
+        // end "fix for possible npe spotted by SCO"
+
         if (setCompAndRow (list, row)) {
             Rectangle visible = getShowingRect (view);
             Rectangle[] rects = getRects (bds, visible);
             if (rects.length > 0) {
                 ensureOldPopupsHidden();
-                painter.configure(list.getModel().getElementAt(row), 
+                painter.configure(list.getModel().getElementAt(row),
                         view, list, row);
                 showPopups (rects, bds, visible, list, view);
             } else {
@@ -203,7 +219,7 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
             }
         }
     }
-    
+
     private void showJTree (JScrollPane view, Point pt) {
         JTree tree = (JTree) view.getViewport().getView();
         Point p = SwingUtilities.convertPoint(view, pt.x, pt.y, tree);
@@ -219,7 +235,7 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
             Rectangle[] rects = getRects (bds, visible);
             if (rects.length > 0) {
                 ensureOldPopupsHidden();
-                painter.configure(path.getLastPathComponent(), 
+                painter.configure(path.getLastPathComponent(),
                         view, tree, path, row);
                 showPopups (rects, bds, visible, tree, view);
             } else {
@@ -227,7 +243,7 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
             }
         }
     }
-    
+
     /**
      * Set the currently shown component and row, returning true if they are
      * not the same as the last known values.
@@ -239,7 +255,7 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
         this.row = row;
         return (rowChanged || compChanged);
     }
-    
+
     /**
      * Hide all popups and discard any references to the components the
      * popups were showing for.
@@ -253,7 +269,7 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
         inner = null;
         row = -1;
     }
-    
+
     private void ensureOldPopupsHidden() {
         for (int i=0; i < popups.length; i++) {
             if (popups[i] != null) {
@@ -280,7 +296,7 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
         if (pane.getBorder() != null) {
             ins3 = pane.getBorder().getBorderInsets(pane);
         }
-        
+
         Rectangle r = pane.getViewportBorderBounds();
         r.translate(-r.x, -r.y);
         r.width -= ins1.left + ins1.right;
@@ -294,7 +310,7 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
         r = SwingUtilities.convertRectangle(pane.getViewport(), r, pane);
         return r;
     }
-    
+
     /**
      * Fetches an array or rectangles representing the non-overlapping
      * portions of a cell rect against the visible portion of the component.
@@ -344,7 +360,7 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
             }
             if (pos.x > 0) { //Mac OS will reposition off-screen popups to x=0,
                 //so don't try to show them
-                popups[i] = getPopupFactory().getPopup(view, 
+                popups[i] = getPopupFactory().getPopup(view,
                         part, pos.x, pos.y);
                 popups[i].show();
                 shown = true;
@@ -356,28 +372,28 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
             setHideComponent (null, null); //clear references
         }
     }
-    
+
     private static PopupFactory getPopupFactory() {
 //        if ((Utilities.getOperatingSystem() & Utilities.OS_MAC) != 0 ) {
-//            
+//
 //            // See ide/applemenu/src/org/netbeans/modules/applemenu/ApplePopupFactory
-//            // We have a custom PopupFactory that will consistently use 
+//            // We have a custom PopupFactory that will consistently use
 //            // lightweight popups on Mac OS, since HW popups get a drop
 //            // shadow.  By default, popups returned when a heavyweight popup
 //            // is needed (SDI mode) are no-op popups, since some hacks
 //            // are necessary to make it really work.
-//            
+//
 //            // To enable heavyweight popups which have no drop shadow
 //            // *most* of the time on mac os, run with
 //            // -J-Dnb.explorer.hw.completions=true
-//            
-//            // To enable heavyweight popups which have no drop shadow 
+//
+//            // To enable heavyweight popups which have no drop shadow
 //            // *ever* on mac os, you need to put the cocoa classes on the
-//            // classpath - modify netbeans.conf to add 
+//            // classpath - modify netbeans.conf to add
 //            // System/Library/Java on the bootclasspath.  *Then*
-//            // run with the above line switch and 
+//            // run with the above line switch and
 //            // -J-Dnb.explorer.hw.cocoahack=true
-//            
+//
 //            PopupFactory result = (PopupFactory) Lookup.getDefault().lookup (
 //                    PopupFactory.class);
 //            return result == null ? PopupFactory.getSharedInstance() : result;
@@ -385,7 +401,7 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
             return PopupFactory.getSharedInstance();
 //        }
     }
-    
+
     private Hider hider = null;
     /**
      * Set a component (JList or JTree) which should be listened to, such that if
@@ -407,7 +423,7 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
             hider = null;
         }
     }
-    
+
     /**
      * A JComponent which creates a BufferedImage of a cell renderer and can
      * produce clones of itself that display subrectangles of that cell
@@ -416,17 +432,17 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
     private static final class ImgComp extends JComponent {
         private BufferedImage img;
         private Dimension d = null;
-        
+
         private Color bg = Color.WHITE;
         private JScrollPane comp = null;
-        
+
         private Object node = null;
-        
+
         private AffineTransform at = AffineTransform.getTranslateInstance(0d, 0d);
         boolean isRight = false;
-        
+
         ImgComp() {}
-        
+
         /**
          * Create a clone with a specified backing image
          */
@@ -436,13 +452,13 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
             d = new Dimension (off.width, off.height);
             isRight = right;
         }
-        
+
         public ImgComp getPartial (Rectangle bds, boolean right) {
             assert img != null;
             return new ImgComp (img, bds, right);
-        }        
-        
-        /** Configures a tree cell renderer and sets up sizing and the 
+        }
+
+        /** Configures a tree cell renderer and sets up sizing and the
          * backing image from it */
         public boolean configure (Object nd, JScrollPane tv, JTree tree, TreePath path, int row) {
             boolean sameVn = setLastRendereredObject(nd);
@@ -460,8 +476,8 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
             }
             return true;
         }
-        
-        /** Configures a list cell renderer and sets up sizing and the 
+
+        /** Configures a list cell renderer and sets up sizing and the
          * backing image from it */
         public boolean configure (Object nd, JScrollPane tv, JList list, int row) {
             boolean sameVn = setLastRendereredObject(nd);
@@ -476,13 +492,13 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
             }
             return true;
         }
-        
+
         private boolean setLastRenderedScrollPane (JScrollPane comp) {
             boolean result = comp != this.comp;
             this.comp = comp;
             return result;
         }
-        
+
         private boolean setLastRendereredObject (Object nd) {
             boolean result = node != nd;
             if (result) {
@@ -490,44 +506,44 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
             }
             return result;
         }
-        
+
         void clear() {
             comp = null;
             node = null;
         }
-        
+
         /**
          * Set the cell renderer we will proxy.
          */
         public void setComponent (Component jc) {
             Dimension d = jc.getPreferredSize();
-            BufferedImage nue = new BufferedImage (d.width, d.height + 2, 
+            BufferedImage nue = new BufferedImage (d.width, d.height + 2,
                     BufferedImage.TYPE_INT_ARGB_PRE);
             SwingUtilities.paintComponent(nue.getGraphics(), jc, this, 0, 0, d.width, d.height + 2);
             setImage (nue);
         }
-        
+
         public Rectangle getBounds() {
             Dimension dd = getPreferredSize();
             return new Rectangle (0, 0, dd.width, dd.height);
         }
-        
+
         private void setImage(BufferedImage img) {
             this.img = img;
             d = null;
         }
-        
+
         public Dimension getPreferredSize() {
             if (d == null) {
                 d = new Dimension (img.getWidth(), img.getHeight());
             }
             return d;
         }
-        
+
         public Dimension getSize() {
             return getPreferredSize();
         }
-        
+
         public void paint (Graphics g) {
             g.setColor (bg);
             g.fillRect (0, 0, d.width, d.height);
@@ -542,23 +558,23 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
                 g.drawLine (d.width-1, 0, d.width-1, d.height-1);
             }
         }
-        
+
         public void firePropertyChange (String s, Object a, Object b) {}
         public void invalidate() {}
         public void validate() {}
         public void revalidate() {}
     }
-    
+
     /**
      * A listener that listens to just about everything in the known universe
      * and hides all currently displayed popups if anything happens.
      */
     private static final class Hider implements ChangeListener, PropertyChangeListener, TreeModelListener, TreeSelectionListener, HierarchyListener, HierarchyBoundsListener, ListSelectionListener, ListDataListener, ComponentListener {
         private final JTree tree;
-        
+
         private JScrollPane pane;
         private final JList list;
-        
+
         public Hider (JComponent comp, JScrollPane pane) {
             if (comp instanceof JTree) {
                 this.tree = (JTree) comp;
@@ -571,11 +587,11 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
             this.pane = pane;
             attach();
         }
-        
+
         private boolean isListeningTo (JComponent comp) {
             return !detached && (comp == list || comp == tree);
         }
-        
+
         private void attach() {
             if (tree != null) {
                 tree.getModel().addTreeModelListener(this);
@@ -600,7 +616,7 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
             }
             KeyboardFocusManager.getCurrentKeyboardFocusManager().addPropertyChangeListener(this);
         }
-        
+
         private boolean detached = false;
         private void detach() {
             KeyboardFocusManager.getCurrentKeyboardFocusManager().removePropertyChangeListener(this);
@@ -627,45 +643,45 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
             }
             detached = true;
         }
-        
+
         private void change() {
             if (ViewTooltips.INSTANCE != null) {
                 ViewTooltips.INSTANCE.hide();
             }
             detach();
         }
-        
+
         public void propertyChange(PropertyChangeEvent evt) {
             change();
         }
         public void treeNodesChanged(TreeModelEvent e) {
             change();
         }
-        
+
         public void treeNodesInserted(TreeModelEvent e) {
             change();
         }
-        
+
         public void treeNodesRemoved(TreeModelEvent e) {
             change();
         }
-        
+
         public void treeStructureChanged(TreeModelEvent e) {
             change();
         }
-        
+
         public void hierarchyChanged(HierarchyEvent e) {
             change();
         }
-        
+
         public void valueChanged(TreeSelectionEvent e) {
             change();
         }
-        
+
         public void ancestorMoved(HierarchyEvent e) {
             change();
         }
-        
+
         public void ancestorResized(HierarchyEvent e) {
             change();
         }
@@ -673,35 +689,35 @@ public final class ViewTooltips extends MouseAdapter implements MouseMotionListe
         public void stateChanged(ChangeEvent e) {
             change();
         }
-        
+
         public void valueChanged(ListSelectionEvent e) {
             change();
         }
-        
+
         public void intervalAdded(ListDataEvent e) {
             change();
         }
-        
+
         public void intervalRemoved(ListDataEvent e) {
             change();
         }
-        
+
         public void contentsChanged(ListDataEvent e) {
             change();
         }
-        
+
         public void componentResized(ComponentEvent e) {
             change();
         }
-        
+
         public void componentMoved(ComponentEvent e) {
             change();
         }
-        
+
         public void componentShown(ComponentEvent e) {
             change();
         }
-        
+
         public void componentHidden(ComponentEvent e) {
             change();
         }

@@ -611,6 +611,8 @@ public class Common {
                 return String.format("%2$s <=> li %1$s, 0", gprNames[rt], s);
             } else if (opname.matches("slti")) {
                 return String.format("%3$s <=> li %1$s, %2$d", gprNames[rt], ((0 < imm16) ? 1 : 0), s);
+            } else if (opname.matches("addiu")) {
+                return String.format("%3$s <=> li %1$s, %2$d", gprNames[rt], imm16, s);
             }
 
         }
@@ -635,7 +637,7 @@ public class Common {
         int jump = (opcode_address & 0xf0000000) | ((uimm26 & 0x3ffffff) << 2);
 
         // If we think the target is a stub, try and append the syscall name
-        if (opname.equals("jal") && jump != 0 &&
+        if ((opname.equals("jal") || opname.equals("j")) && jump != 0 &&
                 jpcsp.Memory.getInstance().isAddressGood(jump + 4)) {
             int nextOpcode = jpcsp.Memory.getInstance().read32(jump + 4);
             Instruction nextInsn = Decoder.instruction(nextOpcode);
