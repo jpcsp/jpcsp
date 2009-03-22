@@ -26,14 +26,13 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 //import java.util.concurrent.Semaphore;
 
 import jpcsp.Emulator;
-import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelCallbackInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.pspGeCallbackData;
 import jpcsp.HLE.kernel.types.PspGeList;
-import jpcsp.graphics.DisplayList;
+
 import jpcsp.graphics.VideoEngine;
 
 public class pspge {
@@ -72,9 +71,7 @@ public class pspge {
     }
 
     public void Initialise() {
-        DisplayList.Lock();
-        DisplayList.Initialise();
-        DisplayList.Unlock();
+
 
         syncThreadId = -1;
         waitingForSync = false;
