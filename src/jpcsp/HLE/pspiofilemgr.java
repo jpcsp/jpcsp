@@ -528,7 +528,7 @@ public class pspiofilemgr {
 
     public void sceIoOpen(int filename_addr, int flags, int permissions) {
         String filename = readStringZ(filename_addr);
-        if (debug) Modules.log.debug("sceIoOpen filename = " + filename + " flags = " + Integer.toHexString(flags) + " permissions = 0" + Integer.toOctalString(permissions));
+        if (debug) Modules.log.info("sceIoOpen filename = " + filename + " flags = " + Integer.toHexString(flags) + " permissions = 0" + Integer.toOctalString(permissions));
 
         if (debug) {
             if ((flags & PSP_O_RDONLY) == PSP_O_RDONLY) Modules.log.debug("PSP_O_RDONLY");
@@ -600,7 +600,7 @@ public class pspiofilemgr {
                             Emulator.getProcessor().cpu.gpr[2] = info.uid;
                             if (debug) Modules.log.debug("sceIoOpen assigned uid = 0x" + Integer.toHexString(info.uid));
                         } catch(FileNotFoundException e) {
-                            if (debug) Modules.log.debug("sceIoOpen - umd file not found (ok to ignore this message, debug purpose only)");
+                            if (debug) Modules.log.warn("sceIoOpen - umd file not found (ok to ignore this message, debug purpose only)");
                             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_FILE_NOT_FOUND;
                         } catch(IOException e) {
                             Modules.log.error("sceIoOpen - error opening umd media: " + e.getMessage());
@@ -637,7 +637,7 @@ public class pspiofilemgr {
             }
         } catch(FileNotFoundException e) {
             // To be expected under mode="r" and file doesn't exist
-            if (debug) Modules.log.debug("sceIoOpen - file not found (ok to ignore this message, debug purpose only)");
+            if (debug) Modules.log.warn("sceIoOpen - file not found (ok to ignore this message, debug purpose only)");
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_FILE_NOT_FOUND;
         }
 
@@ -659,9 +659,10 @@ public class pspiofilemgr {
             info.asyncPending = true;
             info.result = Emulator.getProcessor().cpu.gpr[2];
         } else {
-            Modules.log.warn("sceIoOpenAsync file not found");
-            // HACK
-            info = new IoInfo(null, null, null, 0, 0);
+            Modules.log.debug("sceIoOpenAsync - file not found (ok to ignore this message, debug purpose only)");
+            // For async we still need to make and return a file handle even if we couldn't open the file,
+            // this is so the game can query on the handle (wait/async stat/io callback).
+            info = new IoInfo(readStringZ(filename_addr), null, null, flags, permissions);
             info.result = PSP_ERROR_FILE_NOT_FOUND & 0xffffffffL;
             //info.asyncPending = true;
             Emulator.getProcessor().cpu.gpr[2] = info.uid;
@@ -1123,11 +1124,11 @@ public class pspiofilemgr {
                             IoDirInfo info = new IoDirInfo(pcfilename, filenames);
                             Emulator.getProcessor().cpu.gpr[2] = info.uid;
                         } else {
-                            if (debug) Modules.log.warn("sceIoDopen not a umd directory!");
+                            if (debug) Modules.log.warn("sceIoDopen '" + isofilename + "' not a umd directory!");
                             Emulator.getProcessor().cpu.gpr[2] = -1;
                         }
                     } catch(FileNotFoundException e) {
-                        Modules.log.warn("sceIoDopen - umd file not found");
+                        Modules.log.warn("sceIoDopen - '" + isofilename + "' umd file not found");
                         Emulator.getProcessor().cpu.gpr[2] = -1;
                     } catch(IOException e) {
                         Modules.log.warn("sceIoDopen - umd io error: " + e.getMessage());
@@ -1519,7 +1520,7 @@ public class pspiofilemgr {
                             stat.setReserved(0, startSector);
                         }
                     } catch(FileNotFoundException e) {
-                        Modules.log.warn("stat - umd file not found");
+                        Modules.log.warn("stat - '" + isofilename + "' umd file not found");
                     } catch(IOException e) {
                         Modules.log.warn("stat - umd io error: " + e.getMessage());
                     }
