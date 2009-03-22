@@ -91,9 +91,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                     String text = (String)disasmList.getSelectedValue();
                     if (text != null) {
                         SelectedPC = DebuggerPC + disasmList.getSelectedIndex() * 4;
-                        //System.err.println("DebuggerPC " + Integer.toHexString(DebuggerPC));
-                        //System.err.println("getSelectedIndex " + disasmList.getSelectedIndex());
-                        //System.err.println("SelectedPC " + Integer.toHexString(SelectedPC));
                         DisassemblerFrame.this.updateSelectedRegisters(text);
                         DisassemblerFrame.this.disasmList.repaint();
                     }
