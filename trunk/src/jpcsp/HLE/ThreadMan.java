@@ -747,10 +747,11 @@ public class ThreadMan {
      * sgx-psp-at3-th, sgx-psp-pcm-th, sgx-psp-sas-th, snd_tick_timer_thread,
      * snd_stream_service_thread_1, SAS / Main Audio, AudioMixThread,
      * snd_stream_service_thread_0, sound_poll_thread, stream_sound_poll_thread,
-     * sndp thread, Ss PlayThread, SndSsThread, SPCBGM, SE Thread
+     * sndp thread, Ss PlayThread, SndSsThread, SPCBGM, SE Thread,
+     * FMOD Software Mixer thread
      *
      * keywords:
-     * snd, sound, at3, atrac3, sas, wave, pcm, audio, mpeg
+     * snd, sound, at3, atrac3, sas, wave, pcm, audio, mpeg, fmod
      *
      * false positives:
      * pcm: SPCMain (Skate Park City Main)
@@ -764,7 +765,8 @@ public class ThreadMan {
             if (name.contains("snd") || name.contains("sound") ||
                 name.contains("at3") || name.contains("atrac") ||
                 name.contains("sas") || name.contains("wave") ||
-                name.contains("audio") || name.contains("mpeg")) {
+                name.contains("audio") || name.contains("mpeg") ||
+                name.contains("fmod")) {
                 return true;
             }
 

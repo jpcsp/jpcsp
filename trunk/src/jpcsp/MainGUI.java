@@ -357,7 +357,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         DebugMenu.add(InstructionCounter);
 
-        FileLog.setLabel("File Log");
+        FileLog.setText("File Log");
         FileLog.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 FileLogActionPerformed(evt);
@@ -530,7 +530,7 @@ public void loadFile(File file) {
                 emulator.setFirmwareVersion(pspsystemver);
             }
         }
-        
+
         // use regular settings first
         installCompatibilitySettings();
 
@@ -887,11 +887,11 @@ public boolean installCompatibilityPatches(String filename)
         String onlyGEGraphics = patchSettings.getProperty("emu.onlyGEGraphics");
         if (onlyGEGraphics != null)
             pspdisplay.getInstance().setOnlyGEGraphics(Integer.parseInt(onlyGEGraphics) != 0);
-        
+
         String disableReservedThreadMemory = patchSettings.getProperty("emu.disablereservedthreadmemory");
         if (disableReservedThreadMemory != null)
             pspSysMem.getInstance().setDisableReservedThreadMemory(Integer.parseInt(disableReservedThreadMemory) != 0);
-        
+
     } catch (IOException e) {
         e.printStackTrace();
     }
@@ -1008,6 +1008,55 @@ public void setMainTitle(String message)
     }
 }
 
+private void printUsage() {
+    System.err.println("Usage: java -Xmx512m -jar jpcsp.jar [OPTIONS]");
+    System.err.println();
+    System.err.println("  -d, --debugger             Open debugger at start.");
+    System.err.println("  -f, --loadfile FILE        Load a file.");
+    System.err.println("                               Example: ms0/PSP/GAME/pspsolitaire/EBOOT.PBP");
+    System.err.println("  -u, --loadumd FILE         Load a UMD. Example: umdimages/cube.iso");
+    System.err.println("  -r, --run                  Run loaded file or umd. Use with -f or -u option.");
+}
+
+private void processArgs(String[] args) {
+    int i = 0;
+    while(i < args.length) {
+        if (args[i].equals("-d") || args[i].equals("--debugger")) {
+            i++;
+            // hack: reuse this function
+            EnterDebuggerActionPerformed(null);
+        } else if (args[i].equals("-f") || args[i].equals("--loadfile")) {
+            i++;
+            if (i < args.length) {
+                File file = new File(args[i]);
+                if(file.exists())
+                    loadFile(file);
+                i++;
+            } else {
+                printUsage();
+                break;
+            }
+        } else if (args[i].equals("-u") || args[i].equals("--loadumd")) {
+            i++;
+            if (i < args.length) {
+                File file = new File(args[i]);
+                if(file.exists())
+                    loadUMD(file);
+                i++;
+            } else {
+                printUsage();
+                break;
+            }
+        } else if (args[i].equals("-r") || args[i].equals("--run")) {
+            i++;
+            RunEmu();
+        } else {
+            printUsage();
+            break;
+        }
+    }
+}
+
     /**
     * @param args the command line arguments
     */
@@ -1017,14 +1066,21 @@ public void setMainTitle(String message)
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        // final copy of args for use in inner class
+        final String[] fargs = args;
+
         java.awt.EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
                 Thread.currentThread().setName("GUI");
                 MainGUI maingui = new MainGUI();
                 maingui.setVisible(true);
+
                 if (Settings.getInstance().readBool("gui.openLogwindow"))
                     maingui.consolewin.setVisible(true);
+
+                maingui.processArgs(fargs);
             }
         });
     }
@@ -1118,13 +1174,12 @@ public void setMainTitle(String message)
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			File file = new File(path);
-            if(file.exists())
+            if(file.exists()) {
             	if(type == TYPE_UMD)
             		loadUMD(file);
             	else
             		loadFile(file);
+            }
 		}
-
-
     }
 }

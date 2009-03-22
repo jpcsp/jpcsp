@@ -86,9 +86,9 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         {
             label.addStyleRange(new StyleRange(0, 3, Font.BOLD, Color.RED));
         }
-        if(text.startsWith(String.format("   %08X", Emulator.getProcessor().cpu.pc)))
+        if(text.contains(String.format("%08X:", Emulator.getProcessor().cpu.pc)))
         {
-            label.addStyleRange(new StyleRange(0, -1, Font.BOLD, Color.BLACK));
+            label.addStyleRange(new StyleRange(3, -1, Font.BOLD, Color.BLACK));
         }
         if(text.contains(" ["))
         {
@@ -117,7 +117,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             }
         });
     }
-    
+
     public void RefreshDebugger(boolean moveToPC) {
         CpuState cpu = Emulator.getProcessor().cpu;
         int pc;

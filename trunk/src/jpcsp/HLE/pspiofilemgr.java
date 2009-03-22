@@ -67,7 +67,7 @@ public class pspiofilemgr {
     public final static int PSP_O_EXCL     = 0x0800;
     public final static int PSP_O_UNKNOWN1 = 0x4000; // something async?
     public final static int PSP_O_NOWAIT   = 0x8000;
-    public final static int PSP_O_UNKNOWN2 = 0xf0000; // seen on Wipeout Pure
+    public final static int PSP_O_UNKNOWN2 = 0xf0000; // seen on Wipeout Pure and Infected
 
     public final static int PSP_SEEK_SET  = 0;
     public final static int PSP_SEEK_CUR  = 1;
@@ -1168,15 +1168,24 @@ public class pspiofilemgr {
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
         } else if (info.hasNext()) {
             String filename = info.next();
-            Modules.log.debug("sceIoDread uid=" + Integer.toHexString(uid)
-                + " #" + info.printableposition
-                + " dir='" + info.path
-                + "', file='" + filename + "'");
 
             SceIoStat stat = stat(info.path + "/" + filename);
             if (stat != null) {
                 SceIoDirent dirent = new SceIoDirent(stat, filename);
                 dirent.write(Memory.getInstance(), dirent_addr);
+
+                if ((stat.attr & 0x10) == 0x10) {
+                    Modules.log.debug("sceIoDread uid=" + Integer.toHexString(uid)
+                        + " #" + info.printableposition
+                        + " dir='" + info.path
+                        + "', dir='" + filename + "'");
+                } else {
+                    Modules.log.debug("sceIoDread uid=" + Integer.toHexString(uid)
+                        + " #" + info.printableposition
+                        + " dir='" + info.path
+                        + "', file='" + filename + "'");
+                }
+
                 Emulator.getProcessor().cpu.gpr[2] = 1; // TODO "> 0", so number of files remaining or 1 is ok?
             } else {
                 Modules.log.warn("sceIoDread uid=" + Integer.toHexString(uid) + " stat failed (" + info.path + "/" + filename + ")");
