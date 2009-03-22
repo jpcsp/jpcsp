@@ -655,7 +655,7 @@ public class Common {
         return String.format("%1$-10s %2$s, %4$d(%3$s)", opname, gprNames[rt], gprNames[rs], ((int) (short) imm));
     }
 
-    public static String disasmCODEIMMRS(String opname, int code, int rs, int imm) {
+    public static String disasmCODEIMMRS(String opname, int code, int imm, int rs) {
         return String.format("%1$-10s 0x%2$02X, %4$d(%3$s)", opname, code, gprNames[rs], ((int) (short) imm));
     }
 
