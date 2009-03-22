@@ -901,4 +901,12 @@ public class CompilerContext implements ICompilerContext {
 
         return false;
     }
+
+    public void compileDelaySlotAsBranchTarget(CodeInstruction codeInstruction) {
+    	Label afterDelaySlot = new Label();
+    	mv.visitJumpInsn(Opcodes.GOTO, afterDelaySlot);
+    	codeInstruction.forceNewLabel();
+    	codeInstruction.compile(this, mv);
+    	mv.visitLabel(afterDelaySlot);
+    }
 }
