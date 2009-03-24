@@ -1064,7 +1064,7 @@ public class VideoEngine {
             case LXD0: case LXD1: case LXD2: case LXD3:
             case LYD0: case LYD1: case LYD2: case LYD3:
             case LZD0: case LZD1: case LZD2: case LZD3: {
-                int lnum = (command - LXD0) / 4;
+                int lnum = (command - LXD0) / 3;
                 int dircomponent = (command - LXD0) % 3;
                 light_dir[lnum][dircomponent] = floatArgument;
 
@@ -1074,6 +1074,14 @@ public class VideoEngine {
                     // TODO any other gl command required to set light type to spot light?
                     // TODO move to initRendering()?
                     gl.glLightfv(GL.GL_LIGHT0 + lnum, GL.GL_SPOT_DIRECTION, light_dir[lnum], 0);
+
+                    if (log.isDebugEnabled()) {
+                        VideoEngine.log.debug("sceGuLightSpot(" + lnum
+                            + ", direction = {" + light_dir[lnum][0]
+                            + ", " + light_dir[lnum][1]
+                            + ", " + light_dir[lnum][2]
+                            + "}, X, X)");
+                    }
                 }
                 break;
             }
