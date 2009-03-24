@@ -67,6 +67,10 @@ public class VideoEngine {
     private int zbp, zbw; // depth buffer pointer and width
     private int psm; // pixel format
 
+    private int region_x1, region_y1, region_x2, region_y2;
+    private int region_width, region_height; // derived
+    private int scissor_x, scissor_y, scissor_width, scissor_height;
+
     private boolean proj_upload_start;
     private int proj_upload_x;
     private int proj_upload_y;
@@ -103,6 +107,7 @@ public class VideoEngine {
     private float[] tex_envmap_matrix = new float[4*4];
 
     private float[][] light_pos = new float[4][4];
+    private float[][] light_dir = new float[4][3];
 
     private int[] light_enabled = new int[4];
     private int[] light_type = new int[4];
@@ -635,41 +640,62 @@ public class VideoEngine {
                     log(helper.getCommandString(END));
                 }
                 break;
+
             case FINISH:
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(FINISH) + " (hex="+Integer.toHexString(normalArgument)+",int="+normalArgument+",float="+floatArgument+")");
                 }
                 currentList.pushFinishCallback(normalArgument);
                 break;
+
             case SIGNAL:
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(SIGNAL) + " (hex="+Integer.toHexString(normalArgument)+",int="+normalArgument+",float="+floatArgument+")");
                 }
                 currentList.pushSignalCallback(normalArgument);
                 break;
+
             case BASE:
                 currentList.base = normalArgument << 8;
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(BASE) + " " + String.format("%08x", currentList.base));
                 }
                 break;
+
             case IADDR:
                 vinfo.ptr_index = currentList.base | normalArgument;
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(IADDR) + " " + String.format("%08x", vinfo.ptr_index));
                 }
                 break;
+
             case VADDR:
                 vinfo.ptr_vertex = currentList.base | normalArgument;
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(VADDR) + " " + String.format("%08x", vinfo.ptr_vertex));
                 }
                 break;
+
             case VTYPE:
                 vinfo.processType(normalArgument);
                 transform_mode = (normalArgument >> 23) & 0x1;
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(VTYPE) + " " + vinfo.toString());
+                }
+                break;
+
+            case REGION1:
+                region_x1 = normalArgument & 0x3ff;
+                region_y1 = normalArgument >> 10;
+                break;
+
+            case REGION2:
+                region_x2 = normalArgument & 0x3ff;
+                region_y2 = normalArgument >> 10;
+                region_width = (region_x2 + 1) - region_x1;
+                region_height = (region_y2 + 1) - region_y1;
+                if (log.isDebugEnabled()) {
+                    log("drawRegion(" + region_x1 + "," + region_y2 + "," + region_width + "," + region_height + ")");
                 }
                 break;
 
@@ -1030,7 +1056,24 @@ public class VideoEngine {
                 int lightmode = (normalArgument != 0) ? GL.GL_SEPARATE_SPECULAR_COLOR : GL.GL_SINGLE_COLOR;
                 gl.glLightModeli(GL.GL_LIGHT_MODEL_COLOR_CONTROL, lightmode);
                 if (log.isDebugEnabled()) {
-                    VideoEngine.log.info("sceGuLightMode( " + ((normalArgument != 0) ? "GU_SEPARATE_SPECULAR_COLOR" : "GU_SINGLE_COLOR"));
+                    VideoEngine.log.info("sceGuLightMode(" + ((normalArgument != 0) ? "GU_SEPARATE_SPECULAR_COLOR" : "GU_SINGLE_COLOR") + ")");
+                }
+                break;
+            }
+
+            case LXD0: case LXD1: case LXD2: case LXD3:
+            case LYD0: case LYD1: case LYD2: case LYD3:
+            case LZD0: case LZD1: case LZD2: case LZD3: {
+                int lnum = (command - LXD0) / 4;
+                int dircomponent = (command - LXD0) % 3;
+                light_dir[lnum][dircomponent] = floatArgument;
+
+                if ((command == LZD0 || command == LZD1 ||
+                     command == LZD2 || command == LZD3) &&
+                    light_type[lnum] == LIGHT_DIRECTIONAL) {
+                    // TODO any other gl command required to set light type to spot light?
+                    // TODO move to initRendering()?
+                    gl.glLightfv(GL.GL_LIGHT0 + lnum, GL.GL_SPOT_DIRECTION, light_dir[lnum], 0);
                 }
                 break;
             }
@@ -1471,6 +1514,13 @@ public class VideoEngine {
             	break;
             }
 
+            case TBIAS: {
+                int mode = normalArgument & 0xFFFF;
+                float bias = (normalArgument >> 16) / 16.0f;
+                VideoEngine.log.warn("Unimplemented sceGuTexLevelMode(mode=" + mode + ",bias=" + bias + ")");
+                break;
+            }
+
             case TFUNC:
            		gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, (normalArgument & 0x10000) != 0 ? 1.0f : 2.0f);
            		int env_mode = GL.GL_MODULATE;
@@ -1480,7 +1530,7 @@ public class VideoEngine {
 	           		case 2: env_mode = GL.GL_BLEND; break;
 	           		case 3: env_mode = GL.GL_REPLACE; break;
 	           		case 4: env_mode = GL.GL_ADD; break;
-           			default: VideoEngine.log.warn("Unimplemented tfunc mode");
+           			default: VideoEngine.log.warn("Unimplemented tfunc mode " + (normalArgument & 7));
            		}
            		if(useShaders) gl.glUniform1i(Uniforms.texEnvMode.getId(), normalArgument & 7);
            		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, env_mode);
@@ -2094,37 +2144,55 @@ public class VideoEngine {
                 break;
             }
 
-            case NEARZ : {
-	            	nearZ = (normalArgument & 0xFFFF) / (float) 0xFFFF;
-	            }
-	            break;
+            case SCISSOR1:
+                scissor_x = normalArgument & 0x3ff;
+                scissor_y = normalArgument >> 10; // & 0x3ff?
+                break;
 
-	        case FARZ : {
-	        		farZ = (normalArgument & 0xFFFF) / (float) 0xFFFF;
-	        		/* I really think we don't need this...*/
-	        		/*if (nearZ > farZ) {
-	        			// swap nearZ and farZ
-	        			float temp = nearZ;
-	        			nearZ = farZ;
-	        			farZ = temp;
-	        		}*/
+            case SCISSOR2:
+                scissor_width = 1 + (normalArgument & 0x3ff);
+                scissor_height = 1 + (normalArgument >> 10); // & 0x3ff?
 
-	        		gl.glDepthRange(nearZ, farZ);
-	        		if (log.isDebugEnabled()) {
-	        		    log.debug("sceGuDepthRange("+ nearZ + " ," + farZ + ")");
-	        		}
-	            }
-	            break;
+                // TODO this is not entirely accurate because the region coords could change while the scissor coords stay constant
+                // can we keep gl scissor on all the time at no performance loss?
+                if (scissor_x != 0 || scissor_y != 0 || scissor_width != region_width || scissor_height != region_height) {
+                    gl.glEnable(GL.GL_SCISSOR_TEST);
+                    gl.glScissor(scissor_x, scissor_y, scissor_width, scissor_height);
+                    log("sceGuScissor(" + scissor_x + "," + scissor_y + "," + scissor_width + "," + scissor_height + ")");
+                    log("sceGuEnable(GU_SCISSOR_TEST)");
+                } else {
+                    gl.glDisable(GL.GL_SCISSOR_TEST);
+                    log("sceGuDisable(GU_SCISSOR_TEST)");
+                }
+                break;
+
+            case NEARZ:
+                nearZ = (normalArgument & 0xFFFF) / (float) 0xFFFF;
+                break;
+
+            case FARZ:
+                farZ = (normalArgument & 0xFFFF) / (float) 0xFFFF;
+                /* I really think we don't need this...*/
+                /*if (nearZ > farZ) {
+                    // swap nearZ and farZ
+                    float temp = nearZ;
+                    nearZ = farZ;
+                    farZ = temp;
+                }*/
+
+                gl.glDepthRange(nearZ, farZ);
+                if (log.isDebugEnabled()) {
+                    log.debug("sceGuDepthRange("+ nearZ + ", " + farZ + ")");
+                }
+                break;
 
             case SOP: {
+                int fail  = getStencilOp( normalArgument        & 0xFF);
+                int zfail = getStencilOp((normalArgument >>  8) & 0xFF);
+                int zpass = getStencilOp((normalArgument >> 16) & 0xFF);
 
-            	int fail  = getStencilOp  (normalArgument & 0xFF);
-            	int zfail = getStencilOp ((normalArgument>> 8) & 0xFF);
-            	int zpass = getStencilOp ((normalArgument>>16) & 0xFF);
-
-            	gl.glStencilOp(fail, zfail, zpass);
-
-            	break;
+                gl.glStencilOp(fail, zfail, zpass);
+                break;
             }
 
             case CLEAR:
@@ -2303,7 +2371,7 @@ public class VideoEngine {
                     log(helper.getCommandString(TRXKICK) + " in Ge Address space");
 
 	            	if (textureTx_pixelSize == TRXKICK_16BIT_TEXEL_SIZE) {
-	                    log("Unsupported 16bit for video command [ " + helper.getCommandString(command(instruction)) + " ]");
+	                    log.warn("Unsupported 16bit for video command [ " + helper.getCommandString(command(instruction)) + " ]");
 	            		break;
 	            	}
 
@@ -2411,7 +2479,7 @@ public class VideoEngine {
             			break;
             		}
             		default: {
-                        log(helper.getCommandString(TWRAP) + " unknown wrap mode " + wrapModeS);
+                        log.warn(helper.getCommandString(TWRAP) + " unknown wrap mode " + wrapModeS);
             		}
             	}
 
@@ -2425,7 +2493,7 @@ public class VideoEngine {
 	        			break;
 	        		}
 	        		default: {
-	                    log(helper.getCommandString(TWRAP) + " unknown wrap mode " + wrapModeT);
+	                    log.warn(helper.getCommandString(TWRAP) + " unknown wrap mode " + wrapModeT);
 	        		}
             	}
             	break;
