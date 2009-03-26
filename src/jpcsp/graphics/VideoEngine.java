@@ -52,6 +52,20 @@ import com.sun.opengl.util.BufferUtil;
 public class VideoEngine {
     private final int[] prim_mapping = new int[] { GL.GL_POINTS, GL.GL_LINES, GL.GL_LINE_STRIP, GL.GL_TRIANGLES, GL.GL_TRIANGLE_STRIP, GL.GL_TRIANGLE_FAN, GL.GL_QUADS };
 
+    public final static String[] psm_names = new String[] {
+        "PSM_5650",
+        "PSM_5551",
+        "PSM_4444",
+        "PSM_8888",
+        "PSM_4BIT_INDEXED",
+        "PSM_8BIT_INDEXED",
+        "PSM_16BIT_INDEXED",
+        "PSM_32BIT_INDEXED",
+        "PSM_DXT1",
+        "PSM_DXT3",
+        "PSM_DXT5"
+    };
+
     private static VideoEngine instance;
     private GL gl;
     private GLU glu;
@@ -70,6 +84,7 @@ public class VideoEngine {
     private int region_x1, region_y1, region_x2, region_y2;
     private int region_width, region_height; // derived
     private int scissor_x, scissor_y, scissor_width, scissor_height;
+    private int offset_x, offset_y;
 
     private boolean proj_upload_start;
     private int proj_upload_x;
@@ -695,7 +710,7 @@ public class VideoEngine {
                 region_width = (region_x2 + 1) - region_x1;
                 region_height = (region_y2 + 1) - region_y1;
                 if (log.isDebugEnabled()) {
-                    log("drawRegion(" + region_x1 + "," + region_y2 + "," + region_width + "," + region_height + ")");
+                    log("drawRegion(" + region_x1 + "," + region_y1 + "," + region_width + "," + region_height + ")");
                 }
                 break;
 
@@ -1076,7 +1091,7 @@ public class VideoEngine {
                     gl.glLightfv(GL.GL_LIGHT0 + lnum, GL.GL_SPOT_DIRECTION, light_dir[lnum], 0);
 
                     if (log.isDebugEnabled()) {
-                        VideoEngine.log.debug("sceGuLightSpot(" + lnum
+                        log("sceGuLightSpot(" + lnum
                             + ", direction = {" + light_dir[lnum][0]
                             + ", " + light_dir[lnum][1]
                             + ", " + light_dir[lnum][2]
@@ -1162,8 +1177,9 @@ public class VideoEngine {
              */
             case CMAT:
             	mat_flags = normalArgument & 7;
-                //isn't the log.debug("cmat " + mat_flags); ?
-            	log.warn("cmat " + mat_flags);
+                if (log.isDebugEnabled()) {
+                    log("sceGuColorMaterial " + mat_flags);
+                }
             	break;
 
             case AMA:
@@ -1313,7 +1329,7 @@ public class VideoEngine {
                 texture_base_pointer[level] = (texture_base_pointer[level] & 0x00ffffff) | ((normalArgument << 8) & 0xff000000);
                 texture_buffer_width[level] = normalArgument & 0xffff;
                 if (log.isDebugEnabled()) {
-                    log ("sceGuTexImage(level=" + level + ",X,X,texWidth=" + texture_buffer_width[level] + ",hi(pointer=0x" + Integer.toHexString(texture_base_pointer[level]) + "))");
+                    log ("sceGuTexImage(level=" + level + ", X, X, texBufferWidth=" + texture_buffer_width[level] + ", hi(pointer=0x" + Integer.toHexString(texture_base_pointer[level]) + "))");
                 }
                 break;
             }
@@ -1330,7 +1346,7 @@ public class VideoEngine {
                 //texture_base_pointer[level] = (currentList.base & 0xff000000) | normalArgument;
                 texture_base_pointer[level] = (texture_base_pointer[level] & 0xff000000) | normalArgument;
                 if (log.isDebugEnabled()) {
-                    log ("sceGuTexImage(level=" + level + ",X,X,X,lo(pointer=0x" + Integer.toHexString(texture_base_pointer[level]) + "))");
+                    log ("sceGuTexImage(level=" + level + ", X, X, X, lo(pointer=0x" + Integer.toHexString(texture_base_pointer[level]) + "))");
                 }
                 break;
             }
@@ -1350,7 +1366,7 @@ public class VideoEngine {
             	texture_height[level] = 1 << ((normalArgument>>8) & 0x0F);
             	texture_width[level]  = 1 << ((normalArgument   ) & 0xFF);
                 if (log.isDebugEnabled()) {
-                    log ("sceGuTexImage(level=" + level + ",width=" + texture_width[level] + ",height=" + texture_height[level] + ",X,0)");
+                    log ("sceGuTexImage(level=" + level + ", width=" + texture_width[level] + ", height=" + texture_height[level] + ", X, X)");
                 }
             	break;
             }
@@ -1360,7 +1376,7 @@ public class VideoEngine {
                 int a2 = (normalArgument>>8) & 0xFF;
             	texture_swizzle 	 = ((normalArgument    ) & 0xFF) != 0;
             	if (log.isDebugEnabled()) {
-            	    log ("sceGuTexMode(X,mipmaps=" + texture_num_mip_maps + ",a2=" + a2 + ",swizzle=" + texture_swizzle + ")");
+            	    log ("sceGuTexMode(X, mipmaps=" + texture_num_mip_maps + ", a2=" + a2 + ", swizzle=" + texture_swizzle + ")");
             	}
             	break;
             }
@@ -1368,7 +1384,7 @@ public class VideoEngine {
             case TPSM:
             	texture_storage = normalArgument & 0xFF; // saw a game send 0x105
                 if (log.isDebugEnabled()) {
-                    log ("sceGuTexMode(tpsm=" + texture_storage + ",X,X,X)");
+                    log ("sceGuTexMode(tpsm=" + texture_storage + "(" + getPsmName(texture_storage) + "), X, X, X)");
                 }
             	break;
 
@@ -1402,7 +1418,7 @@ public class VideoEngine {
                 tex_clut_mask   = (normalArgument >> 8) & 0xFF;
                 tex_clut_start  = (normalArgument >> 16) & 0xFF;
                 if (log.isDebugEnabled()) {
-                    log ("sceGuClutMode(cpsm=" + tex_clut_mode + ", shift=" + tex_clut_shift + ", mask=0x" + Integer.toHexString(tex_clut_mask) + ", start=" + tex_clut_start + ")");
+                    log ("sceGuClutMode(cpsm=" + tex_clut_mode + "(" + getPsmName(tex_clut_mode) + "), shift=" + tex_clut_shift + ", mask=0x" + Integer.toHexString(tex_clut_mask) + ", start=" + tex_clut_start + ")");
                 }
                 break;
             }
@@ -1432,7 +1448,7 @@ public class VideoEngine {
 	            	}
 
 	            	default: {
-	            		log ("Unknown magnifiying filter " + ((normalArgument>>8) & 0xFF));
+	            		log.warn("Unknown magnifiying filter " + ((normalArgument>>8) & 0xFF));
 	            		break;
 	            	}
             	}
@@ -1465,7 +1481,7 @@ public class VideoEngine {
 	            	}
 
 	            	default: {
-	            		log ("Unknown minimizing filter " + (normalArgument & 0xFF));
+	            		log.warn("Unknown minimizing filter " + (normalArgument & 0xFF));
 	            		break;
 	            	}
             	}
@@ -1480,32 +1496,42 @@ public class VideoEngine {
              */
             case UOFFSET: {
             	tex_translate_x = floatArgument;
-            	log ("sceGuTexOffset(float u, X)");
+                // only log in VOFFSET, assume the commands are always paired
+                //if (log.isDebugEnabled()) {
+                //    log ("sceGuTexOffset(u=" + tex_translate_x + ", X)");
+                //}
             	break;
             }
-
             case VOFFSET: {
             	tex_translate_y = floatArgument;
-            	log ("sceGuTexOffset(X, float v)");
+                if (log.isDebugEnabled()) {
+                    log ("sceGuTexOffset(u=" + tex_translate_x + ", v=" + tex_translate_y + ")");
+                }
             	break;
             }
 
             case USCALE: {
             	tex_scale_x = floatArgument;
-            	log ("sceGuTexScale(u=" + tex_scale_x + ", X)");
+                // only log in VSCALE, assume the commands are always paired
+                //if (log.isDebugEnabled()) {
+                //    log ("sceGuTexScale(u=" + tex_scale_x + ", X)");
+                //}
             	break;
             }
             case VSCALE: {
             	tex_scale_y = floatArgument;
-            	log ("sceGuTexScale(X, v=" + tex_scale_y + ")");
+                if (log.isDebugEnabled()) {
+                    log ("sceGuTexScale(u=" + tex_scale_x + ", v=" + tex_scale_y + ")");
+                }
             	break;
             }
 
-            case TMAP: {
-            	log ("sceGuTexMapMode(mode, X, X)");
+            case TMAP:
             	tex_map_mode = normalArgument & 3;
+                if (log.isDebugEnabled()) {
+                    log ("sceGuTexMapMode(mode=" + tex_map_mode + ", X, X)");
+                }
             	break;
-            }
 
             case TEXTURE_ENV_MAP_MATRIX: {
             	log ("sceGuTexMapMode(X, column1, column2)");
@@ -1525,7 +1551,7 @@ public class VideoEngine {
             case TBIAS: {
                 int mode = normalArgument & 0xFFFF;
                 float bias = (normalArgument >> 16) / 16.0f;
-                VideoEngine.log.warn("Unimplemented sceGuTexLevelMode(mode=" + mode + ",bias=" + bias + ")");
+                log.warn("Unimplemented sceGuTexLevelMode(mode=" + mode + ", bias=" + bias + ")");
                 break;
             }
 
@@ -1557,7 +1583,10 @@ public class VideoEngine {
             	tex_env_color[2] = ((normalArgument >> 16) & 255) / 255.f;
             	tex_env_color[3] = 1.f;
             	gl.glTexEnvfv(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_COLOR, tex_env_color, 0);
-            	log("tec");
+
+                if (log.isDebugEnabled()) {
+                    log(String.format("sceGuTexEnvColor %08X (no alpha)", normalArgument));
+                }
             	break;
 
             /*
@@ -1600,20 +1629,21 @@ public class VideoEngine {
                     log(helper.getCommandString(ZPOS), floatArgument);
                 }
                 break;
-            // sceGuOffset, can we discard these settings? it's only for clipping?
+
+            // sceGuOffset, can we discard these settings? it's only for clipping? (fiveofhearts)
             case OFFSETX:
-                if (log.isDebugEnabled()) {
-                    log("sceGuOffset x = " + (normalArgument >> 4));
-                }
+                offset_x = normalArgument >> 4;
                 break;
             case OFFSETY:
-                if (log.isDebugEnabled()) {
-                    log("sceGuOffset y = " + (normalArgument >> 4));
-                }
+                offset_y = normalArgument >> 4;
+
+                //if (log.isDebugEnabled()) {
+                    log.info("sceGuOffset(x=" + offset_x + ",y=" + offset_y + ")");
+                //}
                 break;
 
             case FBP:
-                // assign or OR lower 24-bits?
+                // assign or OR lower 24-bits? depends if it's always followed by fbw
                 //acording with the psp documentation
                 //24 least significant bits of pointer (see FBW)
                 //http://hitmen.c02.at/files/yapspd/psp_doc/frames.html
@@ -1645,7 +1675,7 @@ public class VideoEngine {
             case PSM:
                 psm = normalArgument;
                 if (log.isDebugEnabled()) {
-                    log("psm=" + normalArgument);
+                    log("psm=" + normalArgument + "(" + getPsmName(normalArgument) + ")");
                 }
                 break;
 
@@ -1824,7 +1854,7 @@ public class VideoEngine {
                 int SETTED_MODEL = (normalArgument != 0) ? GL.GL_SMOOTH : GL.GL_FLAT;
                 gl.glShadeModel(SETTED_MODEL);
                 if (log.isDebugEnabled()) {
-                    log(helper.getCommandString(SHADE) + " " + ((normalArgument != 0) ? "smooth" : "flat"));
+                    log("sceGuShadeModel(" + ((normalArgument != 0) ? "smooth" : "flat") + ")");
                 }
                 break;
             }
@@ -1882,7 +1912,10 @@ public class VideoEngine {
 	            	fog_color[2] = ((normalArgument >> 16) & 255) / 255.f;
 	            	fog_color[3] = 1.f;
 	            	gl.glFogfv(GL.GL_FOG_COLOR, fog_color, 0);
-	            	log("FCOL");
+
+                    if (log.isDebugEnabled()) {
+                        log(String.format("sceGuFog(X, X, color=%08X) (no alpha)", normalArgument));
+                    }
 	            break;
             case FFAR:
             	fog_far = floatArgument;
@@ -2094,9 +2127,11 @@ public class VideoEngine {
             			break;
             	}
 
-            	gl.glStencilFunc (func, ((normalArgument>>8) & 0xff), (normalArgument>>16) & 0xff);
+                int ref  = (normalArgument >>  8) & 0xff;
+                int mask = (normalArgument >> 16) & 0xff;
+            	gl.glStencilFunc (func, ref, mask);
 
-            	log ("sceGuStencilFunc(func, ref, mask)");
+            	log ("sceGuStencilFunc(func=" + (normalArgument & 0xFF) + ", ref=" + ref + ", mask=" + mask + ")");
             	break;
             }
 
@@ -2163,14 +2198,19 @@ public class VideoEngine {
 
                 // TODO this is not entirely accurate because the region coords could change while the scissor coords stay constant
                 // can we keep gl scissor on all the time at no performance loss?
+                log("sceGuScissor(" + scissor_x + "," + scissor_y + "," + scissor_width + "," + scissor_height + ")");
+
+                // disable until we fix it (fiveofhearts)
                 if (scissor_x != 0 || scissor_y != 0 || scissor_width != region_width || scissor_height != region_height) {
-                    gl.glEnable(GL.GL_SCISSOR_TEST);
-                    gl.glScissor(scissor_x, scissor_y, scissor_width, scissor_height);
-                    log("sceGuScissor(" + scissor_x + "," + scissor_y + "," + scissor_width + "," + scissor_height + ")");
-                    log("sceGuEnable(GU_SCISSOR_TEST)");
+                    //gl.glEnable(GL.GL_SCISSOR_TEST);
+                    //gl.glScissor(scissor_x, scissor_y, scissor_width, scissor_height);
+                    // invert y
+                    //gl.glScissor(scissor_x, 272 - scissor_y - scissor_height, scissor_width, scissor_height);
+
+                    //log.info("sceGuEnable(GU_SCISSOR_TEST) y-coord " + (272 - scissor_y - scissor_height) + "-" + scissor_height);
                 } else {
-                    gl.glDisable(GL.GL_SCISSOR_TEST);
-                    log("sceGuDisable(GU_SCISSOR_TEST)");
+                    //gl.glDisable(GL.GL_SCISSOR_TEST);
+                    //log.info("sceGuDisable(GU_SCISSOR_TEST)");
                 }
                 break;
 
@@ -2229,6 +2269,7 @@ public class VideoEngine {
             		gl.glDisable(GL.GL_LIGHTING);
             		gl.glDisable(GL.GL_TEXTURE_2D);
             		gl.glDisable(GL.GL_ALPHA_TEST);
+                    // TODO disable: fog, logic op, scissor?
 
             		if(useShaders) {
             			gl.glUniform1f(Uniforms.zPos.getId(), 0);
@@ -2403,6 +2444,7 @@ public class VideoEngine {
                     gl.glDisable(GL.GL_LIGHTING);
                     gl.glDisable(GL.GL_LOGIC_OP);
                     gl.glDisable(GL.GL_STENCIL_TEST);
+                    //gl.glDisable(GL.GL_SCISSOR_TEST);
 
 	            	gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, bpp);
 	            	gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, lineWidth);
@@ -3062,6 +3104,10 @@ public class VideoEngine {
 	            gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, texture_buffer_width[level]);
 	            checkTextureMinFilter();
 
+                // apparently this still works, but I think we should log it just incase (fiveofhearts)
+                if (texture_width[level] > texture_buffer_width[level])
+                    log.warn(helper.getCommandString(TFLUSH) + " w > tbw : w=" + texture_width[level] + " tbw=" + texture_buffer_width[level]);
+
 	            gl.glTexImage2D  (  GL.GL_TEXTURE_2D,
 	                                level,
 	                                texture_format,
@@ -3462,5 +3508,11 @@ public class VideoEngine {
         }
 
         return final_buffer;
+    }
+
+    public final static String getPsmName(final int psm) {
+        return (psm >= 0 && psm < psm_names.length)
+            ? psm_names[psm % psm_names.length]
+            : "PSM_UNKNOWN" + psm;
     }
 }
