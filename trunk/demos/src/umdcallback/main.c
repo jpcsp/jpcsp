@@ -15,6 +15,7 @@
 PSP_MODULE_INFO("umd callback test", 0, 1, 0);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 
+int sceUmdDeactivate(int unit, const char *drive);
 int sceUmdGetErrorStat();
 int sceUmdGetDriveStat();
 int sceUmdRegisterUMDCallBack(int cbid);
@@ -53,6 +54,7 @@ int main(int argc, char *argv[])
     SceCtrlData pad;
     int result;
     int oldButtons = 0;
+    int cbid = -1;
 
     // clear log file
     FILE *f = fopen("dump.txt", "w");
@@ -69,6 +71,8 @@ int main(int argc, char *argv[])
     printf("Up - sceUmdGetErrorStat\n");
     printf("Down - sceUmdGetDriveStat\n");
     printf("Cross - Delay CB\n");
+    printf("Circle - sceUmdDeactivate\n");
+    printf("Square - sceKernelReferCallbackStatus\n");
 
     SetupCallbacks();
 
@@ -76,8 +80,40 @@ int main(int argc, char *argv[])
     sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
 
     {
-        int cbid = sceKernelCreateCallback("UMD Callback", umd_callback, (void*)0x34343434);
-        sceUmdRegisterUMDCallBack(cbid);
+#if 0
+        result = sceUmdActivate(1, "disc0:");
+        printf("sceUmdActivate(1) result %08x\n", result);
+
+        result = sceUmdWaitDriveStatCB(0x2, NULL);
+        printf("sceUmdWaitDriveStatCB(0x2) result %08x\n", result);
+#endif
+
+        cbid = sceKernelCreateCallback("UMD Callback", umd_callback, (void*)0x34343434);
+        result = sceUmdRegisterUMDCallBack(cbid);
+        printf("sceUmdRegisterUMDCallBack result %08x\n", result);
+
+        // check if sceUmdRegisterUMDCallBack generates a callback event
+        // if you enable this also enable sceDisplayWaitVblankCB in the mainloop, just to make sure
+        // result: no event generated
+#if 0
+        sceKernelDelayThreadCB(0);
+        sceKernelDelayThreadCB(1);
+        sceKernelDelayThreadCB(16666);
+#endif
+
+#if ffcc
+        result = sceUmdCheckMedium(0);
+        printf("sceUmdCheckMedium result %08x\n", result);
+
+        result = sceUmdWaitDriveStatCB(0x2, NULL);
+        printf("sceUmdWaitDriveStatCB(0x2) result %08x\n", result);
+
+        result = sceUmdActivate(1, "disc0:");
+        printf("sceUmdActivate(1) result %08x\n", result);
+
+        result = sceUmdWaitDriveStatCB(0x20, NULL);
+        printf("sceUmdWaitDriveStatCB(0x20) result %08x\n", result);
+#endif
     }
 
     while(!done)
@@ -104,8 +140,29 @@ int main(int argc, char *argv[])
             printf("sceUmdActivate result %08x\n", result);
 
             //result = sceUmdWaitDriveStatCB(0x20, NULL); // umd in
-            result = sceUmdWaitDriveStatCB(0x1, NULL); // umd not in
-            printf("sceUmdWaitDriveStatCB result %08x\n", result);
+//            result = sceUmdWaitDriveStatCB(0x1, NULL); // umd not in
+//            printf("sceUmdWaitDriveStatCB result %08x\n", result);
+        }
+
+        if (buttonDown & PSP_CTRL_CIRCLE)
+        {
+            result = sceUmdDeactivate(1, "disc0:");
+            printf("sceUmdDeactivate result %08x\n", result);
+        }
+
+        if (buttonDown & PSP_CTRL_SQUARE)
+        {
+            SceKernelCallbackInfo info;
+            memset(&info, 0xee, sizeof(info));
+            info.size = sizeof(info);
+            result = sceKernelReferCallbackStatus(cbid, &info);
+            printf("sceKernelReferCallbackStatus result %08x\n", result);
+            printf("  size %d (%d)\n", info.size, sizeof(info));
+            printf("  name '%s'\n", info.name);
+            printf("  threadId %08x (%08x)\n", info.threadId, sceKernelGetThreadId());
+            printf("  callback %p common %p\n", info.callback, info.common);
+            printf("  notifyCount %08x\n", info.notifyCount);
+            printf("  notifyArg %08x\n", info.notifyArg);
         }
 
         if (buttonDown & PSP_CTRL_UP)
@@ -125,7 +182,8 @@ int main(int argc, char *argv[])
             done = 1;
 
         oldButtons = pad.Buttons;
-        sceDisplayWaitVblank();
+        sceDisplayWaitVblank(); // only catch callback when we press X (sceKernelDelayThreadCB)
+        //sceDisplayWaitVblankCB(); // catch all callback events
     }
 
     sceKernelExitGame();

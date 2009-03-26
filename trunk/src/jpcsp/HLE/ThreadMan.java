@@ -55,7 +55,7 @@ public class ThreadMan {
     private ArrayList<SceKernelThreadInfo> waitingThreads;
     private ArrayList<SceKernelThreadInfo> toBeDeletedThreads;
     private SceKernelThreadInfo current_thread;
-    private SceKernelThreadInfo real_current_thread; // for use with callbacks, check
+    private SceKernelThreadInfo real_current_thread; // for use with callbacks
     private SceKernelThreadInfo idle0, idle1;
     private int continuousIdleCycles; // watch dog timer - number of continuous cycles in any idle thread
     private int syscallFreeCycles; // watch dog timer - number of cycles since last syscall
@@ -1478,10 +1478,6 @@ public class ThreadMan {
                 // Set the callback to run with the thread context it was registered from
                 thread.callbackInfo[i].startContext(thread);
                 handled = true;
-
-                // testing
-                //if (i != 3)
-                //    Emulator.PauseEmu();
             }
         }
 
