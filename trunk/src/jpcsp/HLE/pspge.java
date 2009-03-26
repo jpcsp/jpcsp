@@ -468,7 +468,7 @@ public class pspge {
             ThreadMan threadMan = ThreadMan.getInstance();
 
             // HACK push GE callback using Kernel callback code
-            threadMan.pushCallback(callbackIndex, callback.uid, callbackNotifyArg1, callback.callback_arg_addr);
+            threadMan.pushGeCallback(callbackIndex, callback.uid, callbackNotifyArg1, callback.callback_arg_addr);
         }
     }
 

@@ -32,8 +32,7 @@ public class SceKernelCallbackInfo {
     public final int callback_addr;
     public final int callback_arg_addr;
     public int notifyCount;
-    public int notifyArg1;
-    public int notifyArg2;
+    public int notifyArg;
 
     // internal variables
     public final int uid;
@@ -44,8 +43,7 @@ public class SceKernelCallbackInfo {
         this.callback_addr = callback_addr;
         this.callback_arg_addr = callback_arg_addr;
         this.notifyCount = 0;
-        this.notifyArg1 = 0;
-        this.notifyArg2 = 0;
+        this.notifyArg = 0;
 
         // internal state
         uid = SceUidManager.getNewUid("ThreadMan-callback");
@@ -62,22 +60,25 @@ public class SceKernelCallbackInfo {
         mem.write32(address + 40, callback_addr);
         mem.write32(address + 44, callback_arg_addr);
         mem.write32(address + 48, notifyCount);
-        mem.write32(address + 52, notifyArg2);
+        mem.write32(address + 52, notifyArg);
     }
 
     /** Call this to switch in the callback.
      * Sets up a copy of the parent thread's context for the callback to run in.
-     * @param cpu Should be the cpuContext from the thread this callback belongs to.
      * @param thread the thread this callback belongs to.
      */
-    public void startContext(CpuState parentContext, SceKernelThreadInfo thread) {
-        CpuState cpu = new CpuState(parentContext);
+    public void startContext(SceKernelThreadInfo thread) {
+        CpuState cpu = new CpuState(thread.cpuContext);
 
         cpu.pc = cpu.npc = callback_addr;
-        cpu.gpr[4] = notifyArg1;
-        cpu.gpr[5] = notifyArg2;
+        cpu.gpr[4] = notifyCount;
+        cpu.gpr[5] = notifyArg;
         cpu.gpr[6] = callback_arg_addr;
         cpu.gpr[31] = 0; // ra
+
+        // clear the counter and the arg
+        notifyCount = 0;
+        notifyArg = 0;
 
         Emulator.getProcessor().cpu = cpu;
 
