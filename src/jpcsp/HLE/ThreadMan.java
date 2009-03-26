@@ -55,7 +55,7 @@ public class ThreadMan {
     private ArrayList<SceKernelThreadInfo> waitingThreads;
     private ArrayList<SceKernelThreadInfo> toBeDeletedThreads;
     private SceKernelThreadInfo current_thread;
-    //private SceKernelThreadInfo real_current_thread; // for use with callbacks, check
+    private SceKernelThreadInfo real_current_thread; // for use with callbacks, check
     private SceKernelThreadInfo idle0, idle1;
     private int continuousIdleCycles; // watch dog timer - number of continuous cycles in any idle thread
     private int syscallFreeCycles; // watch dog timer - number of cycles since last syscall
@@ -234,7 +234,7 @@ public class ThreadMan {
                     // Callback has exited
                     Modules.log.debug("Callback exit detected");
 
-                    //current_thread = real_current_thread;
+                    current_thread = real_current_thread;
 
                     // Not sure which of these two to use
                     //Emulator.getProcessor().cpu = current_thread.cpuContext;
@@ -747,8 +747,8 @@ public class ThreadMan {
      * sgx-psp-at3-th, sgx-psp-pcm-th, sgx-psp-sas-th, snd_tick_timer_thread,
      * snd_stream_service_thread_1, SAS / Main Audio, AudioMixThread,
      * snd_stream_service_thread_0, sound_poll_thread, stream_sound_poll_thread,
-     * sndp thread, Ss PlayThread, SndSsThread, SPCBGM, SE Thread,
-     * FMOD Software Mixer thread
+     * sndp thread, SndpThread, Ss PlayThread, SndSsThread, SPCBGM,
+     * SE Thread, FMOD Software Mixer thread
      *
      * keywords:
      * snd, sound, at3, atrac3, sas, wave, pcm, audio, mpeg, fmod
@@ -1348,48 +1348,34 @@ public class ThreadMan {
 
     /** push callback to all threads */
     public void pushCallback(int callbackType, int notifyArg) {
-        pushCallback(callbackType, -1, 1, notifyArg);
+        pushCallback(callbackType, -1, notifyArg);
     }
 
     /** @param cbid If cbid is -1, then push callback to all threads
      * if cbid is not -1 then only trigger that specific cbid provided it is
-     * also of type callbackType.
-     * ONLY call this from the main emulation thread, do not call from the GE thread! */
-    public void pushCallback(int callbackType, int cbid, int notifyArg1, int notifyArg2) {
+     * also of type callbackType. */
+    public void pushCallback(int callbackType, int cbid, int notifyArg) {
         boolean pushed = false;
-
-        // GE callback is currently using Kernel callback implementation
-        // To reduce log spam we'll use the VideoEngine logger on the GE callbacks
-        org.apache.log4j.Logger log = Modules.log;
-        if (callbackType == THREAD_CALLBACK_GE_SIGNAL ||
-            callbackType == THREAD_CALLBACK_GE_FINISH)
-            log = jpcsp.graphics.VideoEngine.log;
 
         for (Iterator<SceKernelThreadInfo> it = threadMap.values().iterator(); it.hasNext(); ) {
             SceKernelThreadInfo thread = it.next();
+            SceKernelCallbackInfo cb = thread.callbackInfo[callbackType];
 
             if (thread.callbackRegistered[callbackType] &&
-                (cbid == -1 || thread.callbackInfo[callbackType].uid == cbid)) {
-                if (thread.callbackReady[callbackType]) {
-                    // TODO behaviour may be undefined - example: terminate this thread, but continue other threads as normal
-                    String msg = "pushCallback(type=" + callbackType
-                        + ") thread:'" + thread.name
-                        + "' already has callback pending (oldArg=0x" + Integer.toHexString(thread.callbackInfo[callbackType].notifyArg2)
-                        + ",newArg=0x" + Integer.toHexString(notifyArg2) + ")";
+                (cbid == -1 || cb.uid == cbid)) {
 
-                    if (thread.callbackInfo[callbackType].notifyArg1 == notifyArg1 &&
-                        thread.callbackInfo[callbackType].notifyArg2 == notifyArg2) {
-                        // args didn't change, probably not important so use debug instead of warn log level
-                        log.debug(msg);
-                    } else {
-                        log.warn(msg);
-                    }
+                if (cb.notifyCount != 0) {
+                    Modules.log.warn("pushCallback(type=" + callbackType
+                        + ") thread:'" + thread.name
+                        + "' overwriting previous notifyArg 0x" + Integer.toHexString(cb.notifyArg)
+                        + " -> 0x" + Integer.toHexString(notifyArg)
+                        + ", newCount=" + (cb.notifyCount + 1));
                 }
 
-                thread.callbackReady[callbackType] = true;
-                thread.callbackInfo[callbackType].notifyArg1 = notifyArg1;
-                thread.callbackInfo[callbackType].notifyArg2 = notifyArg2;
+                cb.notifyCount++; // keep increasing this until we actually enter the callback
+                cb.notifyArg = notifyArg;
 
+                thread.callbackReady[callbackType] = true;
                 pushed = true;
             }
         }
@@ -1399,14 +1385,70 @@ public class ThreadMan {
             // except those registered to the current thread. The app must explictly
             // call sceKernelCheckCallback or a waitCB function to do that.
             if (!insideCallback) {
-                log.debug("pushCallback(type=" + callbackType + ") calling checkCallbacks");
+                Modules.log.debug("pushCallback(type=" + callbackType + ") calling checkCallbacks");
                 checkCallbacks();
             } else {
-                log.error("pushCallback(type=" + callbackType + ") called while inside another callback!");
+                Modules.log.error("pushCallback(type=" + callbackType + ") called while inside another callback!");
                 Emulator.PauseEmu();
             }
         } else {
-            log.warn("pushCallback(type=" + callbackType + ") no registered callbacks to push");
+            Modules.log.warn("pushCallback(type=" + callbackType + ") no registered callbacks to push");
+        }
+    }
+
+    /** @param cbid If cbid is -1, then push callback to all threads
+     * if cbid is not -1 then only trigger that specific cbid provided it is
+     * also of type callbackType.
+     * TODO test GE callbacks more thoroughly, they probably match generic callbacks
+     * and don't need this special case code.
+     */
+    public void pushGeCallback(int callbackType, int cbid, int notifyCount, int notifyArg) {
+        boolean pushed = false;
+
+        // GE callback is currently using Kernel callback implementation
+        // To reduce log spam we'll use the VideoEngine logger on the GE callbacks
+        if (callbackType != THREAD_CALLBACK_GE_SIGNAL &&
+            callbackType != THREAD_CALLBACK_GE_FINISH) {
+            jpcsp.graphics.VideoEngine.log.error("pushGeCallback - you should use pushCallback for non-GE events");
+        }
+
+        for (Iterator<SceKernelThreadInfo> it = threadMap.values().iterator(); it.hasNext(); ) {
+            SceKernelThreadInfo thread = it.next();
+            SceKernelCallbackInfo cb = thread.callbackInfo[callbackType];
+
+            if (thread.callbackRegistered[callbackType] &&
+                (cbid == -1 || cb.uid == cbid)) {
+
+                if (cb.notifyCount != 0) {
+                    jpcsp.graphics.VideoEngine.log.warn("pushGeCallback(type=" + callbackType
+                        + ") thread:'" + thread.name
+                        + "' overwriting previous notifyArg 0x" + Integer.toHexString(cb.notifyArg)
+                        + " -> 0x" + Integer.toHexString(notifyArg)
+                        + "' overwriting previous notifyCount " + cb.notifyCount
+                        + " -> " + notifyCount);
+                }
+
+                cb.notifyCount = notifyCount;
+                cb.notifyArg = notifyArg;
+
+                thread.callbackReady[callbackType] = true;
+                pushed = true;
+            }
+        }
+
+        if (pushed) {
+            // Enter callbacks immediately,
+            // except those registered to the current thread. The app must explictly
+            // call sceKernelCheckCallback or a waitCB function to do that.
+            if (!insideCallback) {
+                jpcsp.graphics.VideoEngine.log.debug("pushCallback(type=" + callbackType + ") calling checkCallbacks");
+                checkCallbacks();
+            } else {
+                jpcsp.graphics.VideoEngine.log.error("pushCallback(type=" + callbackType + ") called while inside another callback!");
+                Emulator.PauseEmu();
+            }
+        } else {
+            jpcsp.graphics.VideoEngine.log.warn("pushCallback(type=" + callbackType + ") no registered callbacks to push");
         }
     }
 
@@ -1420,22 +1462,26 @@ public class ThreadMan {
                 Modules.log.debug("Entering callback type " + i + " name:'" + thread.callbackInfo[i].name + "'"
                     + " PC:" + Integer.toHexString(thread.callbackInfo[i].callback_addr)
                     + " thread:'" + thread.name + "'"
-                    + " $a0:" + Integer.toHexString(thread.callbackInfo[i].notifyArg1)
-                    + " $a1:" + Integer.toHexString(thread.callbackInfo[i].notifyArg2)
+                    + " $a0:" + Integer.toHexString(thread.callbackInfo[i].notifyCount)
+                    + " $a1:" + Integer.toHexString(thread.callbackInfo[i].notifyArg)
                     + " $a2:" + Integer.toHexString(thread.callbackInfo[i].callback_arg_addr)
                     );
 
                 // Callbacks can pre-empt, save the current thread's context
                 current_thread.saveContext();
-                //real_current_thread = current_thread;
-                //current_thread = thread;
+                // Incase something like sceKernelReferThreadStatus is called inside the callback
+                real_current_thread = current_thread; // save current thread
+                current_thread = thread; // run callback in the thread it belongs to
 
                 insideCallback = true;
                 thread.callbackReady[i] = false;
                 // Set the callback to run with the thread context it was registered from
-                thread.callbackInfo[i].startContext(thread.cpuContext, thread);
-                thread.callbackInfo[i].notifyCount++;
+                thread.callbackInfo[i].startContext(thread);
                 handled = true;
+
+                // testing
+                //if (i != 3)
+                //    Emulator.PauseEmu();
             }
         }
 

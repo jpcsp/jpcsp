@@ -114,12 +114,12 @@ public class sceUmdUser implements HLEModule {
         int stat;
 
         if (iso != null) {
-            stat = PSP_UMD_PRESENT | PSP_UMD_INITED;
-            if (umdActivated) stat |= PSP_UMD_READY;
+            stat = PSP_UMD_PRESENT | PSP_UMD_INITED; // return 0x12
+            if (umdActivated) stat |= PSP_UMD_READY; // return 0x32
         } else {
-            stat = PSP_UMD_NOT_PRESENT;
+            stat = PSP_UMD_NOT_PRESENT; // return 0x1
             if (umdDeactivateCalled)
-                stat |= PSP_UMD_INITING;
+                stat |= PSP_UMD_INITING; // return 0x9
         }
 
         return stat;
@@ -131,11 +131,14 @@ public class sceUmdUser implements HLEModule {
             event = PSP_UMD_PRESENT;
 
             if (umdActivated)
-                event |= PSP_UMD_READY;
+                event |= PSP_UMD_READY; // return 0x22
             else
-                event |= PSP_UMD_INITED;
+                event |= PSP_UMD_INITED; // return 0x12
         } else {
             event = PSP_UMD_NOT_PRESENT;
+
+            if (!umdActivated && umdDeactivateCalled)
+                event = PSP_UMD_INITING;
         }
 
         return event;
