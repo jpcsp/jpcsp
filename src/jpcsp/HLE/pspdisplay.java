@@ -196,14 +196,16 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     public void step(boolean immediately) {
         long now = System.currentTimeMillis();
         if (immediately || now - lastUpdate > 1000 / 60) {
-            if (refreshRequired) {
-                display();
-                refreshRequired = false;
-            }
+        	if (VideoEngine.getInstance().hasDrawLists()) {
+	            if (refreshRequired) {
+	                display();
+	                refreshRequired = false;
+	            }
+	            lastUpdate = now;
+        	}
             vcount++;
             accumulatedHcount += 286.15f;
             currentHcount += 0.15f;
-            lastUpdate = now;
         }
     }
 
