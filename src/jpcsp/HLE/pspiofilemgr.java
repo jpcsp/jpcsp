@@ -200,7 +200,7 @@ public class pspiofilemgr {
             found.asyncPending = false;
 
             if (found.cbid >= 0) {
-                ThreadMan.getInstance().pushCallback(SceKernelThreadInfo.THREAD_CALLBACK_IO, found.cbid, 1, found.notifyArg);
+                ThreadMan.getInstance().pushCallback(SceKernelThreadInfo.THREAD_CALLBACK_IO, found.cbid, found.notifyArg);
             }
 
             // Find threads waiting on this uid and wake them up
