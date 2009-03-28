@@ -35,6 +35,7 @@ import javax.media.opengl.glu.GLU;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
+import jpcsp.MemoryMap;
 import jpcsp.Settings;
 import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.pspge;
@@ -207,6 +208,7 @@ public class VideoEngine {
     private int shaderProgram;
 
     private ConcurrentLinkedQueue<PspGeList> drawListQueue;
+    private boolean somethingDisplayed;
 
     private static void log(String msg) {
         log.debug(msg);
@@ -401,6 +403,7 @@ public class VideoEngine {
 
         statistics.start();
         TextureCache.getInstance().resetTextureAlreadyHashed();
+        somethingDisplayed = false;
 
         do {
             executeList(list);
@@ -1689,7 +1692,7 @@ public class VideoEngine {
                 if (log.isDebugEnabled()) {
                     log("fbp=" + Integer.toHexString(fbp) + ", fbw=" + fbw);
                 }
-                pspdisplay.getInstance().hleDisplaySetGeBuf(gl, fbp, fbw, psm);
+                pspdisplay.getInstance().hleDisplaySetGeBuf(gl, fbp, fbw, psm, somethingDisplayed);
                 break;
 
             case ZBP:
@@ -1716,6 +1719,8 @@ public class VideoEngine {
             {
                 int numberOfVertex = normalArgument & 0xFFFF;
                 int type = ((normalArgument >> 16) & 0x7);
+
+                somethingDisplayed = true;
 
                 loadTexture();
 
@@ -2798,7 +2803,8 @@ public class VideoEngine {
             return;
 
         Texture texture;
-        if (!useTextureCache) {
+        int tex_addr = texture_base_pointer[0] & Memory.addressMask;
+        if (!useTextureCache || (tex_addr >= MemoryMap.START_VRAM && tex_addr <= MemoryMap.END_VRAM)) {
             texture = null;
 
             // Generate a texture id if we don't have one
