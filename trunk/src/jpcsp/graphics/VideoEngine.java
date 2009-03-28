@@ -86,6 +86,8 @@ public class VideoEngine {
     private int region_width, region_height; // derived
     private int scissor_x, scissor_y, scissor_width, scissor_height;
     private int offset_x, offset_y;
+    private int viewport_width, viewport_height; // derived from xyscale
+    private int viewport_cx, viewport_cy;
 
     private boolean proj_upload_start;
     private int proj_upload_x;
@@ -710,6 +712,9 @@ public class VideoEngine {
                 currentList.base = normalArgument << 8;
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(BASE) + " " + String.format("%08x", currentList.base));
+                }
+                if ((currentList.base & 0x00FFFFFF) != 0) {
+                    log.warn(helper.getCommandString(BASE) + " has lower bits set " + String.format("%08x", currentList.base));
                 }
                 break;
 
@@ -1629,32 +1634,39 @@ public class VideoEngine {
              *
              */
             case XSCALE:
-                if (log.isDebugEnabled()) {
-                    log("sceGuViewport width = " + (floatArgument * 2));
-                }
+                viewport_width = (int)(floatArgument * 2);
                 break;
             case YSCALE:
-                if (log.isDebugEnabled()) {
-                    log("sceGuViewport height = " + (- floatArgument * 2));
+                viewport_height = (int)(-floatArgument * 2);
+
+                if (viewport_width != 480 || viewport_height != 272) {
+                    log.warn("sceGuViewport(X, X, w=" + viewport_width + ", h=" + viewport_height + ") non-standard dimensions");
+                } else if (log.isDebugEnabled()) {
+                    log.debug("sceGuViewport(X, X, w=" + viewport_width + ", h=" + viewport_height + ")");
                 }
+
+                pspdisplay.getInstance().hleDisplaySetGeMode(viewport_width, viewport_height);
                 break;
+
             case ZSCALE:
             	zscale = floatArgument / 65535.f;
             	if(useShaders) gl.glUniform1f(Uniforms.zScale.getId(), zscale);
                 if (log.isDebugEnabled()) {
-                    log(helper.getCommandString(ZSCALE), floatArgument);
+                    log(helper.getCommandString(ZSCALE) + " " + floatArgument);
                 }
                 break;
 
             // sceGuViewport cx/cy, can we discard these settings? it's only for clipping?
             case XPOS:
-                if (log.isDebugEnabled()) {
-                    log("sceGuViewport cx = " + floatArgument);
-                }
+                viewport_cx = (int)floatArgument;
                 break;
             case YPOS:
-                if (log.isDebugEnabled()) {
-                    log("sceGuViewport cy = " + floatArgument);
+                viewport_cy = (int)floatArgument;
+
+                if (viewport_cx != 2048 || viewport_cy != 2048) {
+                    log.warn("Unimplemented sceGuViewport(cx=" + viewport_cx + ", cy=" + viewport_cy + ", X, X) non-standard dimensions");
+                } else {
+                    log.warn("Unimplemented sceGuViewport(cx=" + viewport_cx + ", cy=" + viewport_cy + ", X, X)");
                 }
                 break;
 
@@ -1672,10 +1684,7 @@ public class VideoEngine {
                 break;
             case OFFSETY:
                 offset_y = normalArgument >> 4;
-
-                //if (log.isDebugEnabled()) {
-                    log.info("sceGuOffset(x=" + offset_x + ",y=" + offset_y + ")");
-                //}
+                log.warn("Unimplemented sceGuOffset(x=" + offset_x + ",y=" + offset_y + ")");
                 break;
 
             case FBP:
@@ -2856,8 +2865,17 @@ public class VideoEngine {
         // Load the texture if not yet loaded
         if (texture == null || !texture.isLoaded()) {
             if (log.isDebugEnabled()) {
-                log(helper.getCommandString(TFLUSH) + " " + String.format("0x%08X", texture_base_pointer[0]) + ", buffer_width=" + texture_buffer_width[0] + " (" + texture_width[0] + "," + texture_height[0] + ")");
-                log(helper.getCommandString(TFLUSH) + " texture_storage=0x" + Integer.toHexString(texture_storage) + ", tex_clut_mode=0x" + Integer.toHexString(tex_clut_mode) + ", tex_clut_addr=" + String.format("0x%08X", tex_clut_addr) + ", texture_swizzle=" + texture_swizzle);
+                log(helper.getCommandString(TFLUSH)
+                    + " " + String.format("0x%08X", texture_base_pointer[0])
+                    + ", buffer_width=" + texture_buffer_width[0]
+                    + " (" + texture_width[0] + "," + texture_height[0] + ")");
+
+                log(helper.getCommandString(TFLUSH)
+                    + " texture_storage=0x" + Integer.toHexString(texture_storage)
+                    + "(" + getPsmName(texture_storage)
+                    + "), tex_clut_mode=0x" + Integer.toHexString(tex_clut_mode)
+                    + ", tex_clut_addr=" + String.format("0x%08X", tex_clut_addr)
+                    + ", texture_swizzle=" + texture_swizzle);
             }
 
             Memory  mem = Memory.getInstance();
@@ -3149,9 +3167,13 @@ public class VideoEngine {
 	            gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, texture_buffer_width[level]);
 	            checkTextureMinFilter();
 
-                // apparently this still works, but I think we should log it just incase (fiveofhearts)
-                if (texture_width[level] > texture_buffer_width[level])
+                // apparently w > tbw still works, but I think we should log it just incase (fiveofhearts)
+                // update: seems some games are using tbw greater AND less than w, now I haven't got a clue what the meaning of the 2 variables are
+                if (texture_width[level] > texture_buffer_width[level]) {
                     log.warn(helper.getCommandString(TFLUSH) + " w > tbw : w=" + texture_width[level] + " tbw=" + texture_buffer_width[level]);
+                } else if (texture_width[level] < texture_buffer_width[level]) {
+                    log.warn(helper.getCommandString(TFLUSH) + " w < tbw : w=" + texture_width[level] + " tbw=" + texture_buffer_width[level]);
+                }
 
 	            gl.glTexImage2D  (  GL.GL_TEXTURE_2D,
 	                                level,

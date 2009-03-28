@@ -240,6 +240,16 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         refreshRequired = dirty;
     }
 
+    public void hleDisplaySetGeMode(int width, int height) {
+        if (width == 0 || height == 0) {
+            Modules.log.warn("hleDisplaySetGeMode(" + width + "," + height + ") bad params");
+        } else {
+            Modules.log.debug("hleDisplaySetGeMode(width=" + width + ",height=" + height + ")");
+            widthGe = width;
+            heightGe = height;
+        }
+    }
+
     public void hleDisplaySetGeBuf(GL gl,
         int topaddr, int bufferwidth, int pixelformat, boolean copyGEToMemory)
     {
@@ -341,6 +351,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             // The safe option is to set it to go from topaddrGe to MemoryMap.END_VRAM
             // everytime, but we could be wasting time copying unnecessary pixels around.
             // For now use height but clamp it to the valid area (fiveofhearts)
+            // update: I think we can get it from XSCALE/YSCALE GE command/sceGuViewport/hleDisplaySetGeMode
             if (bottomaddrGe > MemoryMap.END_VRAM + 1) {
                 // We can probably remove this message since it's allowed on
                 // real PSP but it's interesting to see what games do it.
