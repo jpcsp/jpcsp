@@ -39,8 +39,10 @@ public class Texture {
 	private boolean hashCodeComputed = false;
 	private int glId = -1;	// id created by glGenTextures
 	private boolean loaded = false;	// is the texture already loaded?
+	private TextureCache textureCache;
 
-	public Texture(int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks, int mipmapLevels) {
+	public Texture(TextureCache textureCache, int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks, int mipmapLevels) {
+		this.textureCache = textureCache;
 		this.addr = addr;
 		this.lineWidth = lineWidth;
 		this.width = width;
@@ -105,8 +107,8 @@ public class Texture {
 				}
 			} else {
 				int clutNumEntries = clutNumBlocks * 16;
-				for (int i = clutStart; i < clutNumEntries; i++) {
-					hashCode ^= mem.read16(clutAddr + i * 2) + i;
+				for (int i = clutStart; i < clutNumEntries; i += 2) {
+					hashCode ^= mem.read32(clutAddr + i * 2) + i;
 				}
 			}
 		}
@@ -141,9 +143,14 @@ public class Texture {
 			return false;
 		}
 
-		int hashCode = hashCode(addr, lineWidth, width, height, pixelStorage, clutAddr, clutMode, clutStart, clutShift, clutMask, clutNumBlocks, mipmapLevels);
-		if (hashCode != hashCode()) {
-			return false;
+		// Do not compute the hashCode of the new texture if it has already
+		// been checked during this display cycle
+		if (!textureCache.textureAlreadyHashed(addr)) {
+			int hashCode = hashCode(addr, lineWidth, width, height, pixelStorage, clutAddr, clutMode, clutStart, clutShift, clutMask, clutNumBlocks, mipmapLevels);
+			if (hashCode != hashCode()) {
+				return false;
+			}
+			textureCache.setTextureAlreadyHashed(addr);
 		}
 
 		return true;

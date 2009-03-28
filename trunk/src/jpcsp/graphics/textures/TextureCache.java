@@ -16,9 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.textures;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 import javax.media.opengl.GL;
 
@@ -28,6 +30,9 @@ public class TextureCache {
 	private static TextureCache instance = null;
 	private LinkedHashMap<Integer, Texture> cache;
 	public Statistics statistics = new Statistics();
+	// Remember which textures have already been hashed during one display
+	// (for applications reusing the same texture multiple times in one display)
+	private Set<Integer> textureAlreadyHashed;
 
 	public class Statistics {
 		public long totalHits = 0;			// Number of times a texture was searched
@@ -78,6 +83,7 @@ public class TextureCache {
 		// - the LinkedList is based on access-order for LRU
 		//
 		cache = new LinkedHashMap<Integer, Texture>((int) (cacheMaxSize / cacheLoadFactor) + 1, cacheLoadFactor, true);
+		textureAlreadyHashed = new HashSet<Integer>();
 	}
 
 	public boolean hasTexture(int addr) {
@@ -131,5 +137,17 @@ public class TextureCache {
 
 		statistics.changedHits++;
 		return null;
+	}
+
+	public void resetTextureAlreadyHashed() {
+		textureAlreadyHashed.clear();
+	}
+
+	public boolean textureAlreadyHashed(int addr) {
+		return textureAlreadyHashed.contains(addr);
+	}
+
+	public void setTextureAlreadyHashed(int addr) {
+		textureAlreadyHashed.add(addr);
 	}
 }
