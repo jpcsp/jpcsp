@@ -448,6 +448,9 @@ public class VideoEngine {
         currentList = list;
         listHasEnded = false;
 
+        if (pspdisplay.FBWdebug) {
+            log.info("executeList id=" + list.id);
+        } else
         if (log.isDebugEnabled()) {
             log("executeList id=" + list.id);
         }
@@ -483,6 +486,11 @@ public class VideoEngine {
             list.currentStatus == PSP_GE_LIST_DONE ||
             list.currentStatus == PSP_GE_LIST_STALL_REACHED ||
             list.currentStatus == PSP_GE_LIST_CANCEL_DONE) {
+
+            if (pspdisplay.FBWdebug) {
+                log.info("sync done id=" + list.id);
+            }
+
             pspge.getInstance().hleGeListSyncDone(list);
         }
     }
@@ -1656,7 +1664,7 @@ public class VideoEngine {
                 if (log.isDebugEnabled()) {
                     log("fbp=" + Integer.toHexString(fbp) + ", fbw=" + fbw);
                 }
-                jpcsp.HLE.pspdisplay.getInstance().hleDisplaySetGeBuf(fbp, fbw, psm);
+                pspdisplay.getInstance().hleDisplaySetGeBuf(gl, fbp, fbw, psm);
                 break;
 
             case ZBP:

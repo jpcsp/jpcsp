@@ -61,6 +61,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     }
 
     private static final boolean useGlReadPixels = true;
+    public static boolean FBWdebug = false; // Remove this variable we fix FBW
     private boolean onlyGEGraphics = false;
 
     // PspDisplayPixelFormats enum
@@ -196,7 +197,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     public void step(boolean immediately) {
         long now = System.currentTimeMillis();
         if (immediately || now - lastUpdate > 1000 / 60) {
-        	if (VideoEngine.getInstance().hasDrawLists()) {
+        	if (!onlyGEGraphics || VideoEngine.getInstance().hasDrawLists()) {
 	            if (refreshRequired) {
 	                display();
 	                refreshRequired = false;
@@ -235,7 +236,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         refreshRequired = dirty;
     }
 
-    public void hleDisplaySetGeBuf(
+    public void hleDisplaySetGeBuf(GL gl,
         int topaddr, int bufferwidth, int pixelformat)
     {
         topaddr &= 0x3fffffff;
@@ -275,6 +276,35 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                     + "," + pixelformat + ")");
             }
 
+            if (FBWdebug) {
+                // flush contents of gl viewport to the ge draw buffer in psp
+                // vram before updating the ge draw buffer pointer.
+                Modules.log.info(String.format("hleDisplaySetGeBuf old %08X new %08X changed:width="
+                    + (this.bufferwidthGe != bufferwidth) + ",psm=" + (this.pixelformatGe != pixelformat),
+                    this.topaddrGe, topaddr));
+
+                if (false) {
+                    copyScreenToPixels(gl, pixelsGe, bufferwidthGe, pixelformatGe);
+                }
+
+                // copyScreenToPixels + flip it upside down
+                if (true) {
+                    // Set texFb as the current texture
+                    gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
+
+                    // Copy screen to the current texture
+                    gl.glCopyTexSubImage2D(
+                        GL.GL_TEXTURE_2D, 0,
+                        0, 0, 0, 0, width, height);
+
+                    // Re-render GE/current texture upside down
+                    drawFrameBuffer(gl, true, true);
+
+                    // Save GE/current texture to vram
+                    copyScreenToPixels(gl, pixelsGe, bufferwidthGe, pixelformatGe);
+                }
+            }
+
             this.topaddrGe     = topaddr;
             this.bufferwidthGe = bufferwidth;
             this.pixelformatGe = pixelformat;
@@ -282,6 +312,23 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             bottomaddrGe =
                 topaddr + bufferwidthGe * height *
                 getPixelFormatBytes(pixelformatGe);
+
+            // This is kind of interesting, we don't actually know the height
+            // of the buffer, we're only guessing it matches the display height,
+            // even then developers might be sneaky.
+            // The safe option is to set it to go from topaddrGe to MemoryMap.END_VRAM
+            // everytime, but we could be wasting time copying unnecessary pixels around.
+            // For now use height but clamp it to the valid area (fiveofhearts)
+            if (bottomaddrGe > MemoryMap.END_VRAM + 1) {
+                // We can probably remove this message since it's allowed on
+                // real PSP but it's interesting to see what games do it.
+                Modules.log.warn("clamping ge buf top=" + Integer.toHexString(topaddrGe)
+                    + " bottom=" + Integer.toHexString(bottomaddrGe)
+                    + " w=" + bufferwidthGe
+                    + " bpp=" + (getPixelFormatBytes(pixelformatGe) * 8));
+                bottomaddrGe = MemoryMap.END_VRAM + 1;
+            }
+
             pixelsGe = getPixels(topaddrGe, bottomaddrGe);
         }
 
@@ -340,6 +387,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, texSrc0Alpha[texStackIndex]);
     }
 
+    /** @param first : true  = draw as psp size
+     *                 false = draw as window size */
     private void drawFrameBuffer(final GL gl, boolean first, boolean invert) {
         gl.glPushAttrib(GL.GL_ALL_ATTRIB_BITS);
 
@@ -355,6 +404,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         gl.glDisable(GL.GL_LIGHTING);
         gl.glDisable(GL.GL_LOGIC_OP);
         gl.glDisable(GL.GL_STENCIL_TEST);
+        //gl.glDisable(GL.GL_SCISSOR_TEST);
 
         pushTexEnv(gl);
         gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, 1.0f);
@@ -412,7 +462,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         // Using glReadPixels instead of glGetTexImage is showing
         // between 7 and 13% performance increase.
         // But glReadPixels seems only to work correctly with 32bit pixels...
-        if (useGlReadPixels && pixelformat == PSP_DISPLAY_PIXEL_FORMAT_8888) {
+        if (!FBWdebug && useGlReadPixels && pixelformat == PSP_DISPLAY_PIXEL_FORMAT_8888) {
             gl.glMatrixMode(GL.GL_PROJECTION);
             gl.glPushMatrix();
             gl.glLoadIdentity();
@@ -420,8 +470,9 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             int bufferStep = bufferwidth * getPixelFormatBytes(pixelformat);
             int pixelFormatGL = getPixelFormatGL(pixelformat);
             // Y-Axis on PSP is flipped against OpenGL, so we have to copy row by row
+            // TODO take pixels.limit() into account (avoiding crash with FBWdebug flag)
             for (int y = 0, bufferPos = 0; y < height; y++, bufferPos += bufferStep) {
-            	Utilities.bytePositionBuffer(pixels, bufferPos);
+            	Utilities.bytePositionBuffer(pixels, bufferPos); // this uses reflection -> slow(?)
                 gl.glReadPixels(0, y, width, 1, GL.GL_RGBA, pixelFormatGL, pixels);
             }
             gl.glPopMatrix();
@@ -444,15 +495,16 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             // Copy temp into pixels, temp is probably square and pixels is less,
             // a smaller rectangle, otherwise we could copy straight into pixels.
             temp.clear();
-            int limit = temp.limit();
-            temp.limit(pixels.limit());
             pixels.clear();
+            temp.limit(pixels.limit());
             if (temp instanceof ByteBuffer) {
                 ((ByteBuffer) pixels).put((ByteBuffer) temp);
             } else if (temp instanceof IntBuffer) {
                 ((IntBuffer) pixels).put((IntBuffer) temp);
+            } else {
+                throw new RuntimeException("unhandled buffer type");
             }
-            temp.limit(limit);
+            // We only use "temp" buffer in this function, its limit() will get restored on the next call to clear()
         }
     }
 
@@ -524,7 +576,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         }
 
         if (disableGE) {
-            // TODO: Use texture rectangles, as NPOT give problems with ATI drivers
+            // TODO: Use texture rectangles, as NPOT give problems with ATI drivers (shash.clp)
             pixelsFb.clear();
             gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
             gl.glTexSubImage2D(
@@ -561,6 +613,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 	                0, 0, width, height,
 	                pixelFormatGL == GL.GL_UNSIGNED_SHORT_5_6_5_REV ? GL.GL_RGB : GL.GL_RGBA,
 	                pixelFormatGL, pixelsGe);
+
+                // why is 2nd param not set to "true" here? (fiveofhearts)
 	            drawFrameBuffer(gl, false, true);
             }
 
@@ -641,6 +695,9 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
             refreshRequired = true;
 
+            if (mode != 0)
+                Modules.log.warn("UNIMPLEMENTED:sceDisplaySetMode mode=" + mode);
+
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
     }
@@ -692,6 +749,12 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                 Utilities.makePow2(height) != Utilities.makePow2(this.height))
             {
                 createTex = true;
+            }
+
+            if (FBWdebug) {
+                Modules.log.info(String.format("sceDisplaySetFrameBuf old %08X new %08X changed:width="
+                    + (this.bufferwidthFb != bufferwidth) + ",psm=" + (this.pixelformatFb != pixelformat),
+                    this.topaddrFb, topaddr));
             }
 
             this.topaddrFb     = topaddr;
@@ -776,7 +839,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     public boolean isGeAddress(int address) {
         address &= 0x3FFFFFFF;
         if (address >= topaddrGe && address < bottomaddrGe) {
-        	return true;
+            return true;
         }
 
         return false;
@@ -785,7 +848,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     public boolean isFbAddress(int address) {
         address &= 0x3FFFFFFF;
         if (address >= topaddrFb && address < bottomaddrFb) {
-        	return true;
+            return true;
         }
 
         return false;
