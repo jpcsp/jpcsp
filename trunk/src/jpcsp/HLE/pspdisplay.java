@@ -85,6 +85,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     private int mode;
     private int width;
     private int height;
+    private int widthGe;
+    private int heightGe;
 
     // current framebuffer settings
     private int topaddrFb;
@@ -166,6 +168,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
         pixelsFb = getPixels(topaddrFb, bottomaddrFb);
 
+        widthGe       = 480;
+        heightGe      = 272;
         topaddrGe     = topaddrFb;
         bufferwidthGe = bufferwidthFb;
         pixelformatGe = pixelformatFb;
@@ -237,12 +241,13 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     }
 
     public void hleDisplaySetGeBuf(GL gl,
-        int topaddr, int bufferwidth, int pixelformat)
+        int topaddr, int bufferwidth, int pixelformat, boolean copyGEToMemory)
     {
         topaddr &= 0x3fffffff;
-        // testing
-        //if (topaddr < MemoryMap.START_VRAM)
-        topaddr += MemoryMap.START_VRAM;
+        // We can get the address relative to 0 or already relative to START_VRAM
+        if (topaddr < MemoryMap.START_VRAM) {
+        	topaddr += MemoryMap.START_VRAM;
+        }
         if (topaddr < MemoryMap.START_VRAM || topaddr >= MemoryMap.END_VRAM ||
             bufferwidth <= 0 || (bufferwidth & (bufferwidth - 1)) != 0 ||
             pixelformat < 0 || pixelformat > 3 ||
@@ -284,7 +289,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                     this.topaddrGe, topaddr));
 
                 if (false) {
-                    copyScreenToPixels(gl, pixelsGe, bufferwidthGe, pixelformatGe);
+                    copyScreenToPixels(gl, pixelsGe, bufferwidthGe, pixelformatGe, width, height);
                 }
 
                 // copyScreenToPixels + flip it upside down
@@ -295,14 +300,31 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                     // Copy screen to the current texture
                     gl.glCopyTexSubImage2D(
                         GL.GL_TEXTURE_2D, 0,
-                        0, 0, 0, 0, width, height);
+                        0, 0, 0, 0, widthGe, heightGe);
 
                     // Re-render GE/current texture upside down
-                    drawFrameBuffer(gl, true, true);
+                    drawFrameBuffer(gl, true, true, width, height);
 
                     // Save GE/current texture to vram
-                    copyScreenToPixels(gl, pixelsGe, bufferwidthGe, pixelformatGe);
+                    copyScreenToPixels(gl, pixelsGe, bufferwidthGe, pixelformatGe, width, height);
                 }
+            }
+
+            if (copyGEToMemory && this.topaddrGe != topaddr) {
+            	VideoEngine.log.debug("Copy GE Screen to Memory");
+
+            	// Set texFb as the current texture
+                gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
+
+                // Copy screen to the current texture
+                gl.glCopyTexSubImage2D(
+                    GL.GL_TEXTURE_2D, 0,
+                    0, 0, 0, 0, widthGe, heightGe);
+
+                // Re-render GE/current texture upside down
+                drawFrameBuffer(gl, true, true, widthGe, heightGe);
+
+                copyScreenToPixels(gl, pixelsGe, bufferwidthGe, pixelformatGe, widthGe, heightGe);
             }
 
             this.topaddrGe     = topaddr;
@@ -310,7 +332,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             this.pixelformatGe = pixelformat;
 
             bottomaddrGe =
-                topaddr + bufferwidthGe * height *
+                topaddr + bufferwidthGe * heightGe *
                 getPixelFormatBytes(pixelformatGe);
 
             // This is kind of interesting, we don't actually know the height
@@ -389,7 +411,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
     /** @param first : true  = draw as psp size
      *                 false = draw as window size */
-    private void drawFrameBuffer(final GL gl, boolean first, boolean invert) {
+    private void drawFrameBuffer(final GL gl, boolean first, boolean invert, int width, int height) {
         gl.glPushAttrib(GL.GL_ALL_ATTRIB_BITS);
 
         if (first)
@@ -458,7 +480,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         popTexEnv(gl);
     }
 
-    private void copyScreenToPixels(GL gl, Buffer pixels, int bufferwidth, int pixelformat) {
+    private void copyScreenToPixels(GL gl, Buffer pixels, int bufferwidth, int pixelformat, int width, int height) {
         // Using glReadPixels instead of glGetTexImage is showing
         // between 7 and 13% performance increase.
         // But glReadPixels seems only to work correctly with 32bit pixels...
@@ -588,7 +610,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             //drawFrameBuffer(gl, false, false);
             //copyScreenToPixels(gl, pixelsFb, bufferwidthFb, pixelformatFb);
 
-            drawFrameBuffer(gl, false, true);
+            drawFrameBuffer(gl, false, true, width, height);
         } else if (onlyGEGraphics) {
             VideoEngine.getInstance().update();
         } else {
@@ -615,7 +637,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 	                pixelFormatGL, pixelsGe);
 
                 // why is 2nd param not set to "true" here? (fiveofhearts)
-	            drawFrameBuffer(gl, false, true);
+	            drawFrameBuffer(gl, false, true, width, height);
             }
 
             if (VideoEngine.getInstance().update()) {
@@ -629,10 +651,10 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                     0, 0, 0, 0, width, height);
 
                 // Re-render GE/current texture upside down
-                drawFrameBuffer(gl, true, true);
+                drawFrameBuffer(gl, true, true, width, height);
 
                 // Save GE/current texture to vram
-                copyScreenToPixels(gl, pixelsGe, bufferwidthGe, pixelformatGe);
+                copyScreenToPixels(gl, pixelsGe, bufferwidthGe, pixelformatGe, width, height);
             }
 
             // Render FB
@@ -644,7 +666,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                 0, 0, bufferwidthFb, height,
                 pixelFormatGL == GL.GL_UNSIGNED_SHORT_5_6_5_REV ? GL.GL_RGB : GL.GL_RGBA,
                 pixelFormatGL, pixelsFb);
-            drawFrameBuffer(gl, false, true);
+            drawFrameBuffer(gl, false, true, width, height);
 
             //swapBuffers();
         }
