@@ -502,16 +502,20 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             gl.glOrtho(0.0, width, height, 0.0, -1.0, 1.0);
             int bufferStep = bufferwidth * getPixelFormatBytes(pixelformat);
             int pixelFormatGL = getPixelFormatGL(pixelformat);
+            int widthToRead = Math.min(width, bufferwidth);
             // Y-Axis on PSP is flipped against OpenGL, so we have to copy row by row
             // TODO take pixels.limit() into account (avoiding crash with FBWdebug flag)
             for (int y = 0, bufferPos = 0; y < height; y++, bufferPos += bufferStep) {
             	Utilities.bytePositionBuffer(pixels, bufferPos); // this uses reflection -> slow(?)
-                gl.glReadPixels(0, y, width, 1, GL.GL_RGBA, pixelFormatGL, pixels);
+                gl.glReadPixels(0, y, widthToRead, 1, GL.GL_RGBA, pixelFormatGL, pixels);
             }
             gl.glPopMatrix();
         } else {
             // Set texFb as the current texture
             gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
+
+            gl.glPixelStorei(GL.GL_PACK_ALIGNMENT, getPixelFormatBytes(pixelformat));
+            gl.glPixelStorei(GL.GL_PACK_ROW_LENGTH, bufferwidth);
 
             // Copy screen to the current texture
             gl.glCopyTexSubImage2D(
