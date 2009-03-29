@@ -710,10 +710,12 @@ public class RuntimeContext {
 
     public static int checkMemoryRead32(int address, int pc) throws StopThreadException {
         int rawAddress = address & Memory.addressMask;
-        if (!memory.isRawAddressGood(rawAddress) && !memory.read32AllowedInvalidAddress(rawAddress)) {
-            processor.cpu.pc = pc;
-            memory.invalidMemoryAddress(address, "read32", Emulator.EMU_STATUS_MEM_READ);
-            syncPause();
+        if (!memory.isRawAddressGood(rawAddress)) {
+        	if (!memory.read32AllowedInvalidAddress(rawAddress)) {
+	            processor.cpu.pc = pc;
+	            memory.invalidMemoryAddress(address, "read32", Emulator.EMU_STATUS_MEM_READ);
+	            syncPause();
+        	}
 
             rawAddress = 0;
         }

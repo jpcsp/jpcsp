@@ -145,7 +145,8 @@ public abstract class Memory {
         //              return 0;
         //          }
         //
-        if (address >= 0x8f800020 && address <= 0x8f8001ac) {
+        if ((address >= 0x8f800020 && address <= 0x8f8001ac) ||
+        	(address >= 0x0f800020 && address <= 0x0f8001ac)) { // Accept also masked address
         	Memory.log.debug("read32 - ignoring pspSdkInstallNoPlainModuleCheckPatch");
             return true;
         }
