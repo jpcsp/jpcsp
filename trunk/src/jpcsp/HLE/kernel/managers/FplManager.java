@@ -43,8 +43,8 @@ public class FplManager {
         Memory mem = Processor.memory;
 
         String name = Utilities.readStringZ(name_addr);
-        Modules.log.info("sceKernelCreateFpl(name=" + name
-            + ",partition=" + partitionid
+        Modules.log.info("sceKernelCreateFpl(name='" + name
+            + "',partition=" + partitionid
             + ",attr=0x" + Integer.toHexString(attr)
             + ",blocksize=0x" + Integer.toHexString(blocksize)
             + ",blocks=" + blocks
@@ -56,14 +56,22 @@ public class FplManager {
             int optsize = mem.read32(opt_addr);
             Modules.log.warn("UNIMPLEMENTED:sceKernelCreateFpl option at 0x" + Integer.toHexString(opt_addr)
                 + " (size=" + optsize + ")");
+
+            for (int i = 4; i < optsize && i < 200; i += 4) {
+                Modules.log.debug(String.format("opt[%d] = %08X", (i / 4), mem.read32(opt_addr + i)));
+            }
         }
 
         if ((attr & ~SceKernelFplInfo.FPL_ATTR_MASK) != 0) {
             Modules.log.warn("sceKernelCreateFpl bad attr value 0x" + Integer.toHexString(attr));
             cpu.gpr[2] = ERROR_ILLEGAL_ATTR;
+        } else if (blocksize == 0) {
+            Modules.log.warn("sceKernelCreateFpl bad blocksize, cannot be 0");
+            cpu.gpr[2] = -1; // TODO find the correct error code, also check if we should perform this check in VPL manager too
         } else {
             SceKernelFplInfo info = SceKernelFplInfo.tryCreateFpl(name, partitionid, attr, blocksize, blocks);
             if (info != null) {
+                Modules.log.debug("sceKernelCreateFpl assigned uid " + Integer.toHexString(info.uid));
                 fplMap.put(info.uid, info);
                 cpu.gpr[2] = info.uid;
             } else {
@@ -74,16 +82,18 @@ public class FplManager {
 
     public void sceKernelDeleteFpl(int uid) {
         CpuState cpu = Emulator.getProcessor().cpu;
-
-        Modules.log.info("sceKernelDeleteFpl(uid=0x" + Integer.toHexString(uid) + ")");
+        String msg = "sceKernelDeleteFpl(uid=0x" + Integer.toHexString(uid) + ")";
 
         SceKernelFplInfo info = fplMap.remove(uid);
         if (info == null) {
-            Modules.log.warn("sceKernelDeleteFpl unknown uid=0x" + Integer.toHexString(uid));
+            Modules.log.warn(msg + " unknown uid");
             cpu.gpr[2] = ERROR_NOT_FOUND_FPOOL;
         } else {
+            msg += " '" + info.name + "'";
+            Modules.log.debug(msg);
+
             if (info.freeBlocks < info.numBlocks) {
-                Modules.log.warn("sceKernelDeleteFpl " + (info.numBlocks - info.freeBlocks) + " unfreed blocks");
+                Modules.log.warn(msg + " " + (info.numBlocks - info.freeBlocks) + " unfreed blocks, continuing");
             }
 
             // Free memory
@@ -246,19 +256,21 @@ public class FplManager {
     public void sceKernelFreeFpl(int uid, int data_addr) {
         CpuState cpu = Emulator.getProcessor().cpu;
 
-        Modules.log.debug("sceKernelFreeFpl(uid=0x" + Integer.toHexString(uid)
-            + ",data=0x" + Integer.toHexString(data_addr) + ")");
+        String msg = "sceKernelFreeFpl(uid=0x" + Integer.toHexString(uid)
+            + ",data=0x" + Integer.toHexString(data_addr) + ")";
 
         SceKernelFplInfo info = fplMap.get(uid);
         if (info == null) {
-            Modules.log.warn("sceKernelFreeFpl unknown uid=0x" + Integer.toHexString(uid));
+            Modules.log.warn(msg + " unknown uid");
             cpu.gpr[2] = ERROR_NOT_FOUND_FPOOL;
         } else {
+            msg += " '" + info.name + "'";
             int block = info.findBlockByAddress(data_addr);
             if (block == -1) {
-                Modules.log.warn("sceKernelFreeFpl unknown block address=0x" + Integer.toHexString(data_addr));
+                Modules.log.warn(msg + " unknown block address=0x" + Integer.toHexString(data_addr));
                 cpu.gpr[2] = ERROR_ILLEGAL_MEMBLOCK;
             } else {
+                Modules.log.debug(msg);
                 info.freeBlock(block);
                 cpu.gpr[2] = 0;
                 // TODO onFreeFpl(info);

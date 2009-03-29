@@ -524,13 +524,6 @@ public void loadFile(File file) {
         pspiofilemgr.getInstance().setIsoReader(null);
         jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(null);
 
-        if (psf != null) {
-            String pspsystemver = psf.getString("PSP_SYSTEM_VER");
-            if (!isHomebrew && pspsystemver != null) {
-                emulator.setFirmwareVersion(pspsystemver);
-            }
-        }
-
         // use regular settings first
         installCompatibilitySettings();
 

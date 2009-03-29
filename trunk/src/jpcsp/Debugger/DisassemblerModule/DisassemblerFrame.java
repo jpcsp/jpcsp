@@ -220,7 +220,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                     listmodel.addElement(line);
 
                     // update register highlighting
-                    if (pc == cpu.pc) {
+                    if (pc == SelectedPC) {
                         updateSelectedRegisters(line);
                     }
 
