@@ -170,7 +170,7 @@ public class Emulator implements Runnable {
 
         jpcsp.HLE.modules.HLEModuleManager.getInstance().Initialise(firmwareVersion);
         jpcsp.HLE.kernel.Managers.reset();
-        jpcsp.HLE.pspSysMem.getInstance().Initialise();
+        jpcsp.HLE.pspSysMem.getInstance().Initialise(firmwareVersion);
     }
 
     @Override
@@ -325,15 +325,16 @@ public class Emulator implements Runnable {
         instructionCounter.setModule(module);
     }
 
-    /** version in this format: ABB, where A = major and B = minor, for example 271 */
+    /** @param firmwareVersion : in this format: ABB, where A = major and B = minor, for example 271 */
     public void setFirmwareVersion(int firmwareVersion) {
         this.firmwareVersion = firmwareVersion;
 
         NIDMapper.getInstance().Initialise();
         jpcsp.HLE.modules.HLEModuleManager.getInstance().Initialise(this.firmwareVersion);
+        jpcsp.HLE.pspSysMem.getInstance().setFirmwareVersion(this.firmwareVersion);
     }
 
-    /** version in this format: "A.BB", where A = major and B = minor, for example "2.71" */
+    /** @param firmwareVersion : in this format: "A.BB", where A = major and B = minor, for example "2.71" */
     public void setFirmwareVersion(String firmwareVersion) {
         setFirmwareVersion(jpcsp.HLE.modules.HLEModuleManager.psfFirmwareVersionToInt(firmwareVersion));
     }

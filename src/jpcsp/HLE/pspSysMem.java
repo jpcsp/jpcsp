@@ -46,9 +46,10 @@ public class pspSysMem {
     private static HashMap<Integer, SysMemInfo> blockList;
     private static List<SysMemInfo> freeBlockList;
     private int heapTop, heapBottom;
-    
+    private int firmwareVersion = PSP_FIRMWARE_150;
+
     private boolean disableReservedThreadMemory = false;
-    
+
     // PspSysMemBlockTypes
     public static final int PSP_SMEM_Low = 0;
     public static final int PSP_SMEM_High = 1;
@@ -84,7 +85,8 @@ public class pspSysMem {
         return instance;
     }
 
-    public void Initialise()
+    /** @param firmwareVersion : in this format: ABB, where A = major and B = minor, for example 271 */
+    public void Initialise(int firmwareVersion)
     {
         blockList = new HashMap<Integer, SysMemInfo>();
         freeBlockList = new LinkedList<SysMemInfo>();
@@ -92,13 +94,15 @@ public class pspSysMem {
         // The loader should do the first malloc which will set the heapBottom corectly
         heapBottom = 0x08400000; //MemoryMap.START_RAM; //0x08900000;
         heapTop = MemoryMap.END_RAM;
+
+        setFirmwareVersion(firmwareVersion);
     }
 
     public void setDisableReservedThreadMemory(boolean disableReservedThreadMemory) {
         this.disableReservedThreadMemory = disableReservedThreadMemory;
         Modules.log.info("Reserving thread memory: " + !disableReservedThreadMemory);
     }
-    
+
     // Allocates to 64-byte alignment
     // TODO use the partitionid
     public int malloc(int partitionid, int type, int size, int addr)
@@ -266,9 +270,9 @@ public class pspSysMem {
     	if (freeBlockList.isEmpty()) {
     		Modules.log.info("pspSysMem.free(info) successful (all blocks released)");
     	} else if (!freeBlockList.contains(info)) {
-    		Modules.log.info("PARTIAL: pspSysMem.free(info) successful (" + freeBlockList.size() + " block(s) pending)");
+    		Modules.log.info("PARTIAL: pspSysMem.free(info) successful (" + freeBlockList.size() + " block(s) still pending)");
     	} else {
-    		Modules.log.warn("PARTIAL: pspSysMem.free(info) partially implemented "+info);
+    		Modules.log.warn("PARTIAL: pspSysMem.free(info) partially implemented " + info);
     	}
     }
 
@@ -282,11 +286,15 @@ public class pspSysMem {
             if (heapTopGuard > 0x09f00000)
                 heapTopGuard = 0x09f00000;
         }
-        int maxFree = heapTopGuard - heapBottom - 64; // don't forget our alignment padding!
+        // include 64 byte alignment padding used in allocations
+        // round down to 4 byte alignment (shouldn't need this if the 64 byte thing was working properly, TODO investigate)
+        int maxFree = (heapTopGuard - heapBottom - 64) & ~3;
 
         // TODO Something not quite right here...
-        if (maxFree < 0)
+        if (maxFree < 0) {
+            Modules.log.warn("pspSysMem maxFree < 0 (" + maxFree + ") maybe overflow");
             maxFree = 0;
+        }
 
         return maxFree;
     }
@@ -362,7 +370,7 @@ public class pspSysMem {
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_ILLEGAL_CHUNK_ID;
         } else {
             free(info);
-            Modules.log.warn("UNIMPLEMENT:sceKernelFreePartitionMemory SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "'");
+            Modules.log.warn("PARTIAL:sceKernelFreePartitionMemory SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "'");
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
     }
@@ -380,12 +388,20 @@ public class pspSysMem {
         }
     }
 
+    /** @param firmwareVersion : in this format: ABB, where A = major and B = minor, for example 271 */
+    public void setFirmwareVersion(int firmwareVersion)
+    {
+        int major = firmwareVersion / 100;
+        int minor = (firmwareVersion / 10) % 10;
+        int revision = firmwareVersion % 10;
+        this.firmwareVersion = (major << 24) | (minor << 16) | (revision << 8) | 0x10;
+        Modules.log.debug(String.format("pspSysMem firmware version 0x%08X", this.firmwareVersion));
+    }
+
     public void sceKernelDevkitVersion()
     {
-        // Return 1.5 for now
-        int version = PSP_FIRMWARE_150;
-        Modules.log.debug("sceKernelDevkitVersion return:0x" + Integer.toHexString(version));
-        Emulator.getProcessor().cpu.gpr[2] = version;
+        Modules.log.debug("sceKernelDevkitVersion return:0x" + Integer.toHexString(firmwareVersion));
+        Emulator.getProcessor().cpu.gpr[2] = firmwareVersion;
     }
 
     class SysMemInfo {
