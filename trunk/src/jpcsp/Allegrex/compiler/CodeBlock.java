@@ -148,6 +148,7 @@ public class CodeBlock {
         mv.visitCode();
         mv.visitVarInsn(Opcodes.ILOAD, 1);
         mv.visitVarInsn(Opcodes.ILOAD, 2);
+        mv.visitVarInsn(Opcodes.ILOAD, 3);
         mv.visitMethodInsn(Opcodes.INVOKESTATIC, getClassName(), context.getStaticExecMethodName(), context.getStaticExecMethodDesc());
         mv.visitInsn(Opcodes.IRETURN);
         mv.visitMaxs(0, 0);
