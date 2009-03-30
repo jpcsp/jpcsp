@@ -1578,8 +1578,12 @@ public class VideoEngine {
             	log ("sceGuTexMapMode(X, column1, column2)");
 
             	if (normalArgument != 0) {
-            		int column0 =  normalArgument     & 0xFF,
-            			column1 = (normalArgument>>8) & 0xFF;
+            		// Some games give column0=0x1B (Hot Wheels Ultimate Racing)
+            		// TODO Check if our interpretation is correct. Masking with 0x03 for now.
+            		//int column0 =  normalArgument     & 0xFF,
+            		//	column1 = (normalArgument>>8) & 0xFF;
+            		int column0 =  normalArgument     & 0x03,
+            			column1 = (normalArgument>>8) & 0x03;
 
             		for (int i = 0; i < 3; i++) {
             			tex_envmap_matrix [i+0] = light_pos[column0][i];
