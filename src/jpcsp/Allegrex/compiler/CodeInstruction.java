@@ -211,7 +211,7 @@ public class CodeInstruction {
 
     private int getBranchingOpcodeCall0(CompilerContext context, MethodVisitor mv) {
         compileDelaySlot(context, mv);
-        context.visitCall(getBranchingTo(), getAddress() + 8, 31);
+        context.visitCall(getBranchingTo(), getAddress() + 8, 31, false);
 
         return Opcodes.NOP;
     }
@@ -237,7 +237,7 @@ public class CodeInstruction {
         compileDelaySlot(context, mv);
         CodeInstruction afterDelaySlotCodeInstruction = getAfterDelaySlotCodeInstruction(context);
         context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction.getLabel());
-        context.visitCall(getBranchingTo(), getAddress() + 8, 31);
+        context.visitCall(getBranchingTo(), getAddress() + 8, 31, true);
 
         return Opcodes.NOP;
     }
@@ -247,7 +247,7 @@ public class CodeInstruction {
         CodeInstruction afterDelaySlotCodeInstruction = getAfterDelaySlotCodeInstruction(context);
         context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction.getLabel());
         compileDelaySlot(context, mv);
-        context.visitCall(getBranchingTo(), getAddress() + 8, 31);
+        context.visitCall(getBranchingTo(), getAddress() + 8, 31, true);
 
         return Opcodes.NOP;
     }
@@ -284,6 +284,22 @@ public class CodeInstruction {
 
     private int getBranchingOpcodeBC1L(CompilerContext context, MethodVisitor mv, int branchingOpcode, int notBranchingOpcode) {
     	context.loadFcr31c();
+        CodeInstruction afterDelaySlotCodeInstruction = getAfterDelaySlotCodeInstruction(context);
+        context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction.getLabel());
+        compileDelaySlot(context, mv);
+
+        return Opcodes.GOTO;
+    }
+
+    private int getBranchingOpcodeBV(CompilerContext context, MethodVisitor mv, int branchingOpcode, int notBranchingOpcode) {
+    	context.loadVcrCc();
+        compileDelaySlot(context, mv);
+
+        return branchingOpcode;
+    }
+
+    private int getBranchingOpcodeBVL(CompilerContext context, MethodVisitor mv, int branchingOpcode, int notBranchingOpcode) {
+    	context.loadVcrCc();
         CodeInstruction afterDelaySlotCodeInstruction = getAfterDelaySlotCodeInstruction(context);
         context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction.getLabel());
         compileDelaySlot(context, mv);
@@ -338,10 +354,16 @@ public class CodeInstruction {
             branchingOpcode = getBranchingOpcodeBC1(context, mv, Opcodes.IFNE, Opcodes.IFEQ);
         } else if (insn == Instructions.BC1TL) {
             branchingOpcode = getBranchingOpcodeBC1L(context, mv, Opcodes.IFNE, Opcodes.IFEQ);
+        } else if (insn == Instructions.BVF) {
+            branchingOpcode = getBranchingOpcodeBV(context, mv, Opcodes.IFEQ, Opcodes.IFNE);
+        } else if (insn == Instructions.BVT) {
+            branchingOpcode = getBranchingOpcodeBV(context, mv, Opcodes.IFNE, Opcodes.IFEQ);
+        } else if (insn == Instructions.BVFL) {
+            branchingOpcode = getBranchingOpcodeBVL(context, mv, Opcodes.IFEQ, Opcodes.IFNE);
+        } else if (insn == Instructions.BVTL) {
+            branchingOpcode = getBranchingOpcodeBVL(context, mv, Opcodes.IFNE, Opcodes.IFEQ);
         } else if (insn == Instructions.BC1F || insn == Instructions.BC1FL ||
-                   insn == Instructions.BC1T || insn == Instructions.BC1TL ||
-                   insn == Instructions.BVF  || insn == Instructions.BVFL  ||
-                   insn == Instructions.BVT  || insn == Instructions.BVTL  ) {
+                   insn == Instructions.BC1T || insn == Instructions.BC1TL ) {
             Compiler.log.error("Unimplemented Instruction " + insn.disasm(getAddress(), getOpcode()));
         } else {
             Compiler.log.error("CodeInstruction.getBranchingOpcode: unknown instruction " + insn.disasm(getAddress(), getOpcode()));

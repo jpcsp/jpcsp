@@ -595,7 +595,11 @@ public class Common {
     }
 
     public static String disasmRSRTOFFSET(String opname, int rs, int rt, int simm16, int opcode_address) {
-        return String.format("%1$-10s %2$s, %3$s, 0x%4$08X", opname, gprNames[rs], gprNames[rt], ((int) (short) simm16) * 4 + opcode_address + 4);
+    	if (rs == rt && opname.equals("beq")) {
+    		return String.format("%1$-10s 0x%2$08X", "b", ((int) (short) simm16) * 4 + opcode_address + 4);
+    	}
+
+    	return String.format("%1$-10s %2$s, %3$s, 0x%4$08X", opname, gprNames[rs], gprNames[rt], ((int) (short) simm16) * 4 + opcode_address + 4);
     }
 
     public static String disasmOFFSET(String opname, int simm16, int opcode_address) {
@@ -844,6 +848,11 @@ public class Common {
         }
         return String.format("%1$-10s [%2$s, %3$s, %4$s, %5$s]", opname, values[0], values[1], values[2], values[3]);
     }
+    public static String disasmVCCOFFSET(String opname, int vcc, int simm16, int opcode_address) {
+        return String.format("%1$-10s %2$d, 0x%3$08X", opname, vcc, ((int) (short) simm16) * 4 + opcode_address + 4);
+    }
+
+
     protected static Instruction[] m_instances = new Instruction[250];
 
     public static final Instruction[] instructions() {

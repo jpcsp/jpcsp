@@ -3250,7 +3250,7 @@ public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int imm3 = (insn>>18)&7;
 
-return "Unimplemented BVF";
+	return Common.disasmVCCOFFSET("bvf", imm3, imm16, address);
 }
 };
 public static final Instruction BVT = new Instruction(98, FLAGS_BRANCH_INSTRUCTION) {
@@ -3280,7 +3280,7 @@ public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int imm3 = (insn>>18)&7;
 
-return "Unimplemented BVT";
+	return Common.disasmVCCOFFSET("bvt", imm3, imm16, address);
 }
 };
 public static final Instruction BVFL = new Instruction(99, FLAGS_BRANCH_INSTRUCTION) {
@@ -3310,7 +3310,7 @@ public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int imm3 = (insn>>18)&7;
 
-return "Unimplemented BVFL";
+	return Common.disasmVCCOFFSET("bvfl", imm3, imm16, address);
 }
 };
 public static final Instruction BVTL = new Instruction(100, FLAGS_BRANCH_INSTRUCTION) {
@@ -3340,7 +3340,7 @@ public String disasm(int address, int insn) {
 	int imm16 = (insn>>0)&65535;
 	int imm3 = (insn>>18)&7;
 
-return "Unimplemented BVTL";
+	return Common.disasmVCCOFFSET("bvtl", imm3, imm16, address);
 }
 };
 public static final Instruction LB = new Instruction(101) {

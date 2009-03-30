@@ -547,6 +547,7 @@ public class ThreadMan {
         Managers.eventFlags.onThreadDeleted(thread);
         Managers.semas.onThreadDeleted(thread);
         Modules.sceUmdUserModule.onThreadDeleted(thread);
+        RuntimeContext.onThreadDeleted(thread);
         // TODO blocking audio?
         // TODO async io?
 

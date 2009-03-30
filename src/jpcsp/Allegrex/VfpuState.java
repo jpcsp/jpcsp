@@ -694,23 +694,33 @@ public class VfpuState extends FpuState {
 
     // VFPU2:BVF
     public boolean doBVF(int imm3, int simm16) {
-        doUNK("Unimplemented BVF");
+        npc = (!vcr.cc[imm3]) ? branchTarget(pc, simm16) : (pc + 4);
         return true;
     }
     // VFPU2:BVT
     public boolean doBVT(int imm3, int simm16) {
-        doUNK("Unimplemented BVT");
+        npc = (vcr.cc[imm3]) ? branchTarget(pc, simm16) : (pc + 4);
         return true;
     }
     // VFPU2:BVFL
     public boolean doBVFL(int imm3, int simm16) {
-        doUNK("Unimplemented BVFL");
-        return true;
+    	if (!vcr.cc[imm3]) {
+    		npc = branchTarget(pc, simm16);
+    		return true;
+    	} else {
+    		pc = pc + 4;
+    	}
+        return false;
     }
     // VFPU2:BVTL
     public boolean doBVTL(int imm3, int simm16) {
-        doUNK("Unimplemented BVTL");
-        return true;
+    	if (vcr.cc[imm3]) {
+    		npc = branchTarget(pc, simm16);
+    		return true;
+    	} else {
+    		pc = pc + 4;
+    	}
+        return false;
     }
     // group VFPU3
 
@@ -1306,15 +1316,15 @@ public class VfpuState extends FpuState {
     // VFPU4:VSRT3
     public void doVSRT3(int vsize, int vd, int vs) {
         if (vsize != 4) {
-            doUNK("Only supported VSRT3.Q");
+            doUNK("Only supported VSRT3.Q (vsize=" + vsize + ")");
             return;
         }
 
         loadVs(4, vs);
         float x = v1[0];
-        float y = v1[0];
-        float z = v1[0];
-        float w = v1[0];
+        float y = v1[1];
+        float z = v1[2];
+        float w = v1[3];
         v3[0] = Math.max(x, y);
         v3[1] = Math.min(x, y);
         v3[2] = Math.max(z, w);
@@ -1330,9 +1340,9 @@ public class VfpuState extends FpuState {
 
         loadVs(4, vs);
         float x = v1[0];
-        float y = v1[0];
-        float z = v1[0];
-        float w = v1[0];
+        float y = v1[1];
+        float z = v1[2];
+        float w = v1[3];
         v3[0] = Math.max(x, w);
         v3[1] = Math.max(y, z);
         v3[2] = Math.min(y, z);

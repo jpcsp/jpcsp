@@ -96,7 +96,7 @@ public class RuntimeContext {
             throw new RuntimeException("Cannot find executable");
         }
 
-		int returnValue = executable.exec(returnAddress, isJump);
+		int returnValue = executable.exec(returnAddress, returnAddress, isJump);
 
         if (log.isDebugEnabled()) {
         	log.debug("RuntimeContext.jumpCall returning 0x" + Integer.toHexString(returnValue));
@@ -128,8 +128,8 @@ public class RuntimeContext {
 		execute(insn, opcode);
 	}
 
-    public static void debugCodeBlockStart(int address, int returnAddress, boolean isJump) {
-    	log.debug("Starting CodeBlock 0x" + Integer.toHexString(address) + ", returnAddress=0x" + Integer.toHexString(returnAddress) + ", isJump=" + isJump);
+    public static void debugCodeBlockStart(int address, int returnAddress, int alternativeReturnAddress, boolean isJump) {
+    	log.debug("Starting CodeBlock 0x" + Integer.toHexString(address) + ", returnAddress=0x" + Integer.toHexString(returnAddress) + ", alternativeReturnAddress=0x" + Integer.toHexString(alternativeReturnAddress) + ", isJump=" + isJump);
     }
 
     public static void debugCodeBlockEnd(int address, int returnAddress) {
@@ -225,7 +225,7 @@ public class RuntimeContext {
     	IExecutable executable = getExecutable(pc);
         int newPc = 0;
 		try {
-			newPc = executable.exec(0, false);
+			newPc = executable.exec(0, 0, false);
 		} catch (StopThreadException e) {
 			// Ignore exception
 		} catch (Exception e) {
@@ -481,27 +481,29 @@ public class RuntimeContext {
 		thread.setInSyscall(false);
     	try {
     		updateStaticVariables();
-    		executable.exec(0, false);
+    		executable.exec(0, 0, false);
     	} catch (StopThreadException e) {
     		// Ignore Exception
     	} catch (Exception e) {
     		e.printStackTrace();
     		log.error(e);
 		}
-		thread.setInSyscall(true);
 
-		ThreadMan threadManager = ThreadMan.getInstance();
 		SceKernelThreadInfo threadInfo = thread.getThreadInfo();
+    	if (!thread.getThreadInfo().do_delete) {
+    		thread.setInSyscall(true);
 
-		threadInfo.exitStatus = gpr[2];
-		threadManager.changeThreadState(threadInfo, SceKernelThreadInfo.PSP_THREAD_STOPPED);
-		threadManager.contextSwitch(threadManager.nextThread());
+			ThreadMan threadManager = ThreadMan.getInstance();
+			threadInfo.exitStatus = gpr[2];
+			threadManager.changeThreadState(threadInfo, SceKernelThreadInfo.PSP_THREAD_STOPPED);
+			threadManager.contextSwitch(threadManager.nextThread());
 
-		try {
-			sync();
-		} catch (StopThreadException e) {
-    		// Ignore Exception
-		}
+			try {
+				sync();
+			} catch (StopThreadException e) {
+	    		// Ignore Exception
+			}
+    	}
 
 		threads.remove(threadInfo);
 		toBeStoppedThreads.remove(threadInfo);
@@ -615,6 +617,17 @@ public class RuntimeContext {
 		}
 
 		return threadList;
+    }
+
+    public static void onThreadDeleted(SceKernelThreadInfo thread) {
+    	RuntimeThread runtimeThread = threads.get(thread);
+    	if (runtimeThread != null) {
+    		log.debug("Deleting Thread " + thread.name);
+    		toBeStoppedThreads.put(thread, runtimeThread);
+    		if (runtimeThread.isInSyscall()) {
+    			runtimeThread.continueRuntimeExecution();
+    		}
+    	}
     }
 
     private static void stopAllThreads() {
