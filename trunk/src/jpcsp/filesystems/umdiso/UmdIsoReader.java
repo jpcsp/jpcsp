@@ -7,6 +7,7 @@ package jpcsp.filesystems.umdiso;
 
 import java.io.*;
 import java.util.Date;
+import java.util.HashMap;
 
 import jpcsp.filesystems.umdiso.iso9660.*;
 import jpcsp.util.Utilities;
@@ -21,6 +22,8 @@ import org.bolet.jgz.*;
 public class UmdIsoReader {
 
     RandomAccessFile fileReader;
+    private HashMap<String, Iso9660File> fileCache = new HashMap<String, Iso9660File>();
+    private HashMap<String, Iso9660Directory> dirCache = new HashMap<String, Iso9660Directory>();
 
     enum FileFormat {
         Uncompressed,
@@ -198,12 +201,31 @@ public class UmdIsoReader {
 
     private Iso9660File getFileEntry(String filePath) throws IOException, FileNotFoundException
     {
+        Iso9660File info;
+
+        info = fileCache.get(filePath);
+        if (info != null) {
+        	return info;
+        }
+
+        int parentDirectoryIndex = filePath.lastIndexOf('/');
+        if (parentDirectoryIndex >= 0) {
+        	String parentDirectory = filePath.substring(0, parentDirectoryIndex);
+        	Iso9660Directory dir = dirCache.get(parentDirectory);
+        	if (dir != null) {
+        		int index = dir.getFileIndex(filePath.substring(parentDirectoryIndex + 1));
+        		info = dir.getEntryByIndex(index);
+        		if (info != null) {
+        			fileCache.put(filePath, info);
+        			return info;
+        		}
+        	}
+        }
+
         Iso9660Directory dir = new Iso9660Handler(this);
 
         String[] path = filePath.split("[\\/]");
 
-        Iso9660File info = null;
-        
         // walk through path
         for(int i=0;i<path.length;)
         {
@@ -229,9 +251,18 @@ public class UmdIsoReader {
                 if((info.getProperties()&2)==2) // if it's a directory
                 {
                     dir  = new Iso9660Directory(this, info.getLBA(), info.getSize());
+                    String dirPath = path[0];
+                    for (int j = 1; j <= i; j++) {
+                    	dirPath += "/" + path[j];
+                    }
+                    dirCache.put(dirPath, dir);
                 }
                 i++;
             }
+        }
+
+        if (info != null) {
+        	fileCache.put(filePath, info);
         }
 
         return info;
