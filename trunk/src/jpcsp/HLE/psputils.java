@@ -23,6 +23,8 @@ package jpcsp.HLE;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Random;
+
+import jpcsp.Clock;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.State;
@@ -85,8 +87,9 @@ public class psputils {
         Memory mem = Memory.getInstance();
 
         if (mem.isAddressGood(tp)) {
-            int tv_sec = (int)(Calendar.getInstance().getTimeInMillis() / 1000);
-            int tv_usec = (int)((System.nanoTime() / 1000) % 1000000);
+        	Clock.TimeNanos currentTimeNano = Emulator.getClock().currentTimeNanos();
+            int tv_sec = currentTimeNano.seconds;
+            int tv_usec = currentTimeNano.millis * 1000 + currentTimeNano.micros;
             mem.write32(tp, tv_sec);
             mem.write32(tp + 4, tv_usec);
         }

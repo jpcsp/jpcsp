@@ -26,6 +26,7 @@ import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
 
@@ -125,7 +126,7 @@ public class sceRtc implements HLEModule {
 	}
 
     protected long hleGetCurrentTick() {
-        return System.currentTimeMillis() * 1000L;
+    	return Emulator.getClock().microTime();
     }
 
     public void sceRtcGetTickResolution(Processor processor) {
