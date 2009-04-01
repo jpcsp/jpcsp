@@ -19,6 +19,7 @@ package jpcsp;
 public class Clock {
 	private long baseNanos;
 	private long pauseNanos;
+	private long baseTimeMillis;
 	private boolean isPaused;
 
 	public Clock() {
@@ -42,6 +43,7 @@ public class Clock {
 
 	public synchronized void reset() {
 		baseNanos = System.nanoTime();
+		baseTimeMillis = System.currentTimeMillis();
 
 		// Start with a paused Clock
 		pauseNanos = baseNanos;
@@ -66,5 +68,30 @@ public class Clock {
 
 	public long microTime() {
 		return nanoTime() / 1000;
+	}
+
+	public long currentTimeMillis() {
+		return baseTimeMillis + milliTime();
+	}
+
+	public TimeNanos currentTimeNanos() {
+		long nanoTime = nanoTime();
+		long currentTimeMillis = baseTimeMillis + (nanoTime / 1000000);
+
+		// Be careful that subsequent calls always return ascending values
+		TimeNanos timeNano = new TimeNanos();
+		timeNano.nanos = ((int) nanoTime) % 1000;
+		timeNano.micros = (((int) nanoTime) / 1000) % 1000;
+		timeNano.millis = ((int) currentTimeMillis) % 1000;
+		timeNano.seconds = (int) (currentTimeMillis / 1000);
+
+		return timeNano;
+	}
+
+	public class TimeNanos {
+		public int seconds;
+		public int millis;
+		public int micros;
+		public int nanos;
 	}
 }
