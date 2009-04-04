@@ -3173,11 +3173,13 @@ public class VideoEngine {
 
                 // apparently w > tbw still works, but I think we should log it just incase (fiveofhearts)
                 // update: seems some games are using tbw greater AND less than w, now I haven't got a clue what the meaning of the 2 variables are
+                /*
                 if (texture_width[level] > texture_buffer_width[level]) {
                     log.warn(helper.getCommandString(TFLUSH) + " w > tbw : w=" + texture_width[level] + " tbw=" + texture_buffer_width[level]);
                 } else if (texture_width[level] < texture_buffer_width[level]) {
                     log.warn(helper.getCommandString(TFLUSH) + " w < tbw : w=" + texture_width[level] + " tbw=" + texture_buffer_width[level]);
                 }
+                */
 
 	            gl.glTexImage2D  (  GL.GL_TEXTURE_2D,
 	                                level,
@@ -3564,7 +3566,8 @@ public class VideoEngine {
             // try and use ByteBuffer.wrap on the memory, taking note of vram/main ram
             // speed difference is unnoticeable :(
             Memory mem = Memory.getInstance();
-            Buffer pixels = mem.getBuffer(texaddr, texture_buffer_width[level] * texture_height[level] * 4);
+            int bufferlen = Math.max(texture_width[level], texture_buffer_width[level]) * texture_height[level] * 4;
+            Buffer pixels = mem.getBuffer(texaddr, bufferlen);
             if (pixels != null) {
                 final_buffer = pixels;
             } else {

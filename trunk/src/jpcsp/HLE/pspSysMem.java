@@ -395,7 +395,7 @@ public class pspSysMem {
         int minor = (firmwareVersion / 10) % 10;
         int revision = firmwareVersion % 10;
         this.firmwareVersion = (major << 24) | (minor << 16) | (revision << 8) | 0x10;
-        Modules.log.debug(String.format("pspSysMem firmware version 0x%08X", this.firmwareVersion));
+        //Modules.log.debug(String.format("pspSysMem firmware version 0x%08X", this.firmwareVersion));
     }
 
     public void sceKernelDevkitVersion()
