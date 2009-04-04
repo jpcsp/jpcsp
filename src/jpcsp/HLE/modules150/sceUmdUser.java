@@ -107,6 +107,13 @@ public class sceUmdUser implements HLEModule {
 
     public void setIsoReader(UmdIsoReader iso) {
         this.iso = iso;
+
+        // I'd rather not enable this because we already caught some thread issues that would have been hidden if this was enabled (fiveofhearts)
+        //if (iso == null) {
+        //    umdActivated = false;
+        //} else {
+        //    umdActivated = true;
+        //}
     }
 
     /** note this value is NOT the same as that used in the activate/deactivate callback */
@@ -114,6 +121,11 @@ public class sceUmdUser implements HLEModule {
         int stat;
 
         if (iso != null) {
+            // hack for MGS:PO, see setIsoReader()
+            if (!umdActivated && ThreadMan.getInstance().getCurrentThread().name.equals("Main")) {
+                umdActivated = true;
+            }
+
             stat = PSP_UMD_PRESENT | PSP_UMD_INITED; // return 0x12
             if (umdActivated) stat |= PSP_UMD_READY; // return 0x32
         } else {
