@@ -84,7 +84,8 @@ public class VideoEngine {
 
     private int region_x1, region_y1, region_x2, region_y2;
     private int region_width, region_height; // derived
-    private int scissor_x, scissor_y, scissor_width, scissor_height;
+    private int scissor_x1, scissor_y1, scissor_x2, scissor_y2;
+    private int scissor_width, scissor_height; // derived
     private int offset_x, offset_y;
     private int viewport_width, viewport_height; // derived from xyscale
     private int viewport_cx, viewport_cy;
@@ -456,9 +457,6 @@ public class VideoEngine {
         currentList = list;
         listHasEnded = false;
 
-        if (pspdisplay.FBWdebug) {
-            log.info("executeList id=" + list.id);
-        } else
         if (log.isDebugEnabled()) {
             log("executeList id=" + list.id);
         }
@@ -494,11 +492,6 @@ public class VideoEngine {
             list.currentStatus == PSP_GE_LIST_DONE ||
             list.currentStatus == PSP_GE_LIST_STALL_REACHED ||
             list.currentStatus == PSP_GE_LIST_CANCEL_DONE) {
-
-            if (pspdisplay.FBWdebug) {
-                log.info("sync done id=" + list.id);
-            }
-
             pspge.getInstance().hleGeListSyncDone(list);
         }
     }
@@ -2239,29 +2232,38 @@ public class VideoEngine {
             }
 
             case SCISSOR1:
-                scissor_x = normalArgument & 0x3ff;
-                scissor_y = normalArgument >> 10; // & 0x3ff?
+                scissor_x1 = normalArgument & 0x3ff;
+                scissor_y1 = normalArgument >> 10; // & 0x3ff?
                 break;
 
             case SCISSOR2:
-                scissor_width = 1 + (normalArgument & 0x3ff);
-                scissor_height = 1 + (normalArgument >> 10); // & 0x3ff?
+                scissor_x2 = normalArgument & 0x3ff;
+                scissor_y2 = normalArgument >> 10; // & 0x3ff?
+                scissor_width = 1 + scissor_x2 - scissor_x1;
+                scissor_height = 1 + scissor_y2 - scissor_y1;
 
-                // TODO this is not entirely accurate because the region coords could change while the scissor coords stay constant
-                // can we keep gl scissor on all the time at no performance loss?
-                log("sceGuScissor(" + scissor_x + "," + scissor_y + "," + scissor_width + "," + scissor_height + ")");
+                // scissor enable/disable is determined by the scissor area matching the region area,
+                // there's a problem if the region coords change while the scissor coords stay constant.
+                // TODO
+                // - as a workaround can we keep gl scissor on all the time at no performance loss?
+                // - or we can just put extra checks in the region commands
+                if (log.isDebugEnabled()) {
+                    log("sceGuScissor(" + scissor_x1 + "," + scissor_y1 + "," + scissor_width + "," + scissor_height + ")");
+                }
 
-                // disable until we fix it (fiveofhearts)
-                if (scissor_x != 0 || scissor_y != 0 || scissor_width != region_width || scissor_height != region_height) {
-                    //gl.glEnable(GL.GL_SCISSOR_TEST);
-                    //gl.glScissor(scissor_x, scissor_y, scissor_width, scissor_height);
-                    // invert y
-                    //gl.glScissor(scissor_x, 272 - scissor_y - scissor_height, scissor_width, scissor_height);
+                if (scissor_x1 != 0 || scissor_y1 != 0 || scissor_width != region_width || scissor_height != region_height) {
+                    gl.glEnable(GL.GL_SCISSOR_TEST);
+                    // old: gl.glScissor(scissor_x, scissor_y, scissor_width, scissor_height);
+                    // invert y coord (for open gl?)
+                    // TODO replace 272 with viewport_height?
+                    gl.glScissor(scissor_x1, 272 - scissor_y1 - scissor_height, scissor_width, scissor_height);
 
-                    //log.info("sceGuEnable(GU_SCISSOR_TEST) y-coord " + (272 - scissor_y - scissor_height) + "-" + scissor_height);
+                    if (log.isDebugEnabled()) {
+                        log("sceGuEnable(GU_SCISSOR_TEST) actual y-coord " + (272 - scissor_y1 - scissor_height) + " (inverted)");
+                    }
                 } else {
-                    //gl.glDisable(GL.GL_SCISSOR_TEST);
-                    //log.info("sceGuDisable(GU_SCISSOR_TEST)");
+                    gl.glDisable(GL.GL_SCISSOR_TEST);
+                    log("sceGuDisable(GU_SCISSOR_TEST)");
                 }
                 break;
 
@@ -2495,7 +2497,7 @@ public class VideoEngine {
                     gl.glDisable(GL.GL_LIGHTING);
                     gl.glDisable(GL.GL_LOGIC_OP);
                     gl.glDisable(GL.GL_STENCIL_TEST);
-                    //gl.glDisable(GL.GL_SCISSOR_TEST);
+                    gl.glDisable(GL.GL_SCISSOR_TEST);
 
 	            	gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, bpp);
 	            	gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, lineWidth);

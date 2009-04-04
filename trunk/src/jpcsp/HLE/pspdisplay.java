@@ -61,7 +61,6 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     }
 
     private static final boolean useGlReadPixels = true;
-    public static boolean FBWdebug = false; // Remove this variable we fix FBW
     private boolean onlyGEGraphics = false;
 
     // PspDisplayPixelFormats enum
@@ -291,35 +290,6 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                     + "," + pixelformat + ")");
             }
 
-            if (FBWdebug) {
-                // flush contents of gl viewport to the ge draw buffer in psp
-                // vram before updating the ge draw buffer pointer.
-                Modules.log.info(String.format("hleDisplaySetGeBuf old %08X new %08X changed:width="
-                    + (this.bufferwidthGe != bufferwidth) + ",psm=" + (this.pixelformatGe != pixelformat),
-                    this.topaddrGe, topaddr));
-
-                if (false) {
-                    copyScreenToPixels(gl, pixelsGe, bufferwidthGe, pixelformatGe, width, height);
-                }
-
-                // copyScreenToPixels + flip it upside down
-                if (true) {
-                    // Set texFb as the current texture
-                    gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
-
-                    // Copy screen to the current texture
-                    gl.glCopyTexSubImage2D(
-                        GL.GL_TEXTURE_2D, 0,
-                        0, 0, 0, 0, widthGe, heightGe);
-
-                    // Re-render GE/current texture upside down
-                    drawFrameBuffer(gl, true, true, width, height);
-
-                    // Save GE/current texture to vram
-                    copyScreenToPixels(gl, pixelsGe, bufferwidthGe, pixelformatGe, width, height);
-                }
-            }
-
             if (copyGEToMemory && this.topaddrGe != topaddr) {
             	VideoEngine.log.debug("Copy GE Screen to Memory");
 
@@ -437,7 +407,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         gl.glDisable(GL.GL_LIGHTING);
         gl.glDisable(GL.GL_LOGIC_OP);
         gl.glDisable(GL.GL_STENCIL_TEST);
-        //gl.glDisable(GL.GL_SCISSOR_TEST);
+        gl.glDisable(GL.GL_SCISSOR_TEST);
 
         pushTexEnv(gl);
         gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, 1.0f);
@@ -495,7 +465,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         // Using glReadPixels instead of glGetTexImage is showing
         // between 7 and 13% performance increase.
         // But glReadPixels seems only to work correctly with 32bit pixels...
-        if (!FBWdebug && useGlReadPixels && pixelformat == PSP_DISPLAY_PIXEL_FORMAT_8888) {
+        if (useGlReadPixels && pixelformat == PSP_DISPLAY_PIXEL_FORMAT_8888) {
             gl.glMatrixMode(GL.GL_PROJECTION);
             gl.glPushMatrix();
             gl.glLoadIdentity();
@@ -504,7 +474,6 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             int pixelFormatGL = getPixelFormatGL(pixelformat);
             int widthToRead = Math.min(width, bufferwidth);
             // Y-Axis on PSP is flipped against OpenGL, so we have to copy row by row
-            // TODO take pixels.limit() into account (avoiding crash with FBWdebug flag)
             for (int y = 0, bufferPos = 0; y < height; y++, bufferPos += bufferStep) {
             	Utilities.bytePositionBuffer(pixels, bufferPos); // this uses reflection -> slow(?)
                 gl.glReadPixels(0, y, widthToRead, 1, GL.GL_RGBA, pixelFormatGL, pixels);
@@ -788,7 +757,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                 createTex = true;
             }
 
-            if (FBWdebug) {
+            if (false) {
                 Modules.log.info(String.format("sceDisplaySetFrameBuf old %08X new %08X changed:width="
                     + (this.bufferwidthFb != bufferwidth) + ",psm=" + (this.pixelformatFb != pixelformat),
                     this.topaddrFb, topaddr));
