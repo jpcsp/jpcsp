@@ -1425,7 +1425,7 @@ public class ThreadMan {
                         + ") thread:'" + thread.name
                         + "' overwriting previous notifyArg 0x" + Integer.toHexString(cb.notifyArg)
                         + " -> 0x" + Integer.toHexString(notifyArg)
-                        + "' overwriting previous notifyCount " + cb.notifyCount
+                        + " overwriting previous notifyCount " + cb.notifyCount
                         + " -> " + notifyCount);
                 }
 
