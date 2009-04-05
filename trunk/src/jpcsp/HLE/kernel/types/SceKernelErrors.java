@@ -69,4 +69,6 @@ public class SceKernelErrors {
     public final static int ERROR_ILLEGAL_COUNT = 0x800201bd;
     // some missing
     public final static int ERROR_MUTEX_LOCKED = 0x800201c4; // 2.71+
+
+    public final static int ERROR_AUDIO_CHANNEL_BUSY = 0x80260002;
 }
