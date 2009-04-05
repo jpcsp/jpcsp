@@ -80,9 +80,9 @@ public class Clock {
 
 		// Be careful that subsequent calls always return ascending values
 		TimeNanos timeNano = new TimeNanos();
-		timeNano.nanos = ((int) nanoTime) % 1000;
-		timeNano.micros = (((int) nanoTime) / 1000) % 1000;
-		timeNano.millis = ((int) currentTimeMillis) % 1000;
+		timeNano.nanos = (int) (nanoTime % 1000);
+		timeNano.micros = (int) ((nanoTime / 1000) % 1000);
+		timeNano.millis = (int) (currentTimeMillis % 1000);
 		timeNano.seconds = (int) (currentTimeMillis / 1000);
 
 		return timeNano;
