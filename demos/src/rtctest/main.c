@@ -21,7 +21,7 @@ int CallbackThread(SceSize args, void *argp);
 int SetupCallbacks(void);
 
 int done = 0;
-void *fbp0;		// frame buffer
+void *fbp0;        // frame buffer
 
 unsigned int frames = 0;
 unsigned int totalfps = 0, totalseconds = 0;
@@ -70,7 +70,7 @@ void printGetDayOfWeek()
 {
     int i;
 
-    printf("sceRtcGetDayOfWeek\n");
+    printf("sceRtcGetDayOfWeek, 2008-01-07 is a monday (yyyy-mm-dd)\n");
     for (i = 0; i < 7; i++)
     {
         int number = sceRtcGetDayOfWeek(2008, 1, 7 + i);
@@ -94,34 +94,115 @@ void printGetDaysInMonth()
     printf("%d, %d, %d, %d\n", days[8], days[9], days[10], days[11]);
 }
 
+void printSetTick()
+{
+    pspTime psptime;
+    u64 tick;
+
+    memset(&psptime, 0xee, sizeof(psptime));
+    printf("0xee -> %04d-%02d-%02d %02d:%02d:%02d %d\n",
+        psptime.year, psptime.month, psptime.day,
+        psptime.hour, psptime.minutes, psptime.seconds,
+        (unsigned int)psptime.microseconds);
+
+    printf("sceRtcSetTick\n");
+
+    tick = 4901191089332944926LL;
+    memset(&psptime, 0, sizeof(psptime));
+    sceRtcSetTick(&psptime, &tick);
+    printf("%lld -> %04d-%02d-%02d %02d:%02d:%02d %d\n",
+        tick,
+        psptime.year, psptime.month, psptime.day,
+        psptime.hour, psptime.minutes, psptime.seconds,
+        (unsigned int)psptime.microseconds);
+
+    tick = 63366462245000000LL;
+    memset(&psptime, 0, sizeof(psptime));
+    sceRtcSetTick(&psptime, &tick);
+    printf("  %lld -> %04d-%02d-%02d %02d:%02d:%02d %d\n",
+        tick,
+        psptime.year, psptime.month, psptime.day,
+        psptime.hour, psptime.minutes, psptime.seconds,
+        (unsigned int)psptime.microseconds);
+}
+
+void printGetTick()
+{
+    pspTime psptime;
+    u64 tick;
+
+    printf("sceRtcGetTick\n");
+
+    memset(&psptime, 0, sizeof(psptime));
+    sceRtcGetTick(&psptime, &tick);
+    printf("0 -> %lld\n", tick);
+
+    psptime.year = 1970;
+    psptime.month = 1;
+    psptime.day = 1;
+    psptime.hour = 0;
+    psptime.minutes = 0;
+    psptime.seconds = 0;
+    psptime.microseconds = 0;
+    sceRtcGetTick(&psptime, &tick);
+    printf("1970-01-01 00:00:00 -> %lld\n", tick);
+
+    psptime.seconds = 1;
+    sceRtcGetTick(&psptime, &tick);
+    printf("1970-01-01 00:00:01 -> %lld\n", tick);
+
+    psptime.hour = 1;
+    psptime.seconds = 0;
+    sceRtcGetTick(&psptime, &tick);
+    printf("1970-01-01 00:01:00 -> %lld\n", tick);
+
+    psptime.year = 2009;
+    psptime.month = 1;
+    psptime.day = 2;
+    psptime.hour = 3;
+    psptime.minutes = 4;
+    psptime.seconds = 5;
+    psptime.microseconds = 0;
+    sceRtcGetTick(&psptime, &tick);
+    printf("2009-01-02 03:04:05 -> %lld\n", tick);
+}
+
 int main(int argc, char **argv)
 {
-	SceCtrlData pad;
+    SceCtrlData pad;
     int oldButtons = 0;
     int useVblank = 1;
 
-	pspDebugScreenInit();
-	if (argc > 0) {
-		printf("Bootpath: %s\n", argv[0]);
-	}
+    pspDebugScreenInit();
+    if (argc > 0) {
+        printf("Bootpath: %s\n", argv[0]);
+    }
 
     printf("Triangle - Exit\n");
     printf("Square - Toggle vblank (60 fps limit)\n");
     printf("\n");
 
-	SetupCallbacks();
+    SetupCallbacks();
 
-	sceCtrlSetSamplingCycle(0);
-	sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
+    sceCtrlSetSamplingCycle(0);
+    sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
 
     sceRtcGetCurrentTick( &fpsTickLast );
-	tickResolution = sceRtcGetTickResolution();
+    tickResolution = sceRtcGetTickResolution();
 
     printGetDayOfWeek();
     printf("\n");
+
     printGetDaysInMonth();
     printf("\n");
-    printf("tickResolution: %d", (int)tickResolution);
+
+    printSetTick();
+    printf("\n");
+
+    printGetTick();
+    printf("\n");
+
+    printf("sceRtcGetTickResolution: %d", (int)tickResolution);
 
     while(!done)
     {
@@ -145,8 +226,8 @@ int main(int argc, char **argv)
         fbp0 = sceGuSwapBuffers();
     }
 
-	sceKernelExitGame();	// Quits Application
-	return 0;
+    sceKernelExitGame();    // Quits Application
+    return 0;
 }
 
 int exit_callback(int arg1, int arg2, void *common)

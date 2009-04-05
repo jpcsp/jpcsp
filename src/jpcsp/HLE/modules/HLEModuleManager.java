@@ -54,7 +54,7 @@ public class HLEModuleManager {
 
     private List<HLEThread> hleThreadList;
 
-    private HashMap<String, List<HLEModule>> flash0prxMap;
+    //private HashMap<String, List<HLEModule>> flash0prxMap;
 
     /** The current firmware version we are using
      * was supposed to be one of pspSysMem.PSP_FIRMWARE_* but there's a mistake
@@ -64,7 +64,7 @@ public class HLEModuleManager {
 
     // TODO add more modules here
     private HLEModule[] defaultModules = new HLEModule[] {
-        new Sample(), // For testing purposes
+        Modules.SampleModule, // For testing purposes
         Modules.StdioForUserModule,
         Modules.sceUmdUserModule,
         Modules.scePowerModule,
@@ -80,6 +80,7 @@ public class HLEModuleManager {
         Modules.sceImposeModule,
         Modules.sceSuspendForUserModule,
         Modules.sceDmacModule,
+        Modules.sceHprmModule, // check if loaded by default
 
         // HACK: we should only load this when the game tries to load sc_sascore.prx,
         // or if the firmware version has it built in.
@@ -119,7 +120,7 @@ public class HLEModuleManager {
 
         this.firmwareVersion = firmwareVersion;
         installDefaultModules();
-        initialiseFlash0PRXMap();
+        //initialiseFlash0PRXMap();
     }
 
     private void installDefaultModules() {
@@ -132,7 +133,7 @@ public class HLEModuleManager {
     // TODO add here modules in flash that aren't loaded by default
     // We could add all modules but I think we just need the unloaded ones (fiveofhearts)
     private void initialiseFlash0PRXMap() {
-        flash0prxMap = new HashMap<String, List<HLEModule>>();
+        //flash0prxMap = new HashMap<String, List<HLEModule>>();
         /* TODO
         List<HLEModule> prx;
 

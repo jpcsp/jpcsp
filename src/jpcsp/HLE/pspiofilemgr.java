@@ -228,6 +228,7 @@ public class pspiofilemgr {
 
     private String getDeviceFilePath(String pspfilename) {
         //Modules.log.debug("getDeviceFilePath filepath='" + filepath + "' pspfilename='" + pspfilename + "'");
+        pspfilename = pspfilename.replaceAll("\\\\", "/");
         String device = filepath; // must not end with /
         String path = pspfilename;
         String filename = null;

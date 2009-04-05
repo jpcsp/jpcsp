@@ -66,8 +66,10 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
     private int gpi, gpo;
 
     private int selectedRegCount;
-    private Color[] selectedRegColors = new Color[] { new Color(128, 255, 255), new Color(255, 255, 128), new Color(128, 255, 128) };
+    private final Color[] selectedRegColors = new Color[] { new Color(128, 255, 255), new Color(255, 255, 128), new Color(128, 255, 128) };
     private String[] selectedRegNames = new String[selectedRegColors.length];
+    private final Color selectedAddressColor = new Color(255, 128, 255);
+    private String selectedAddress;
 
     /** Creates new form DisassemblerFrame */
     public DisassemblerFrame(Emulator emu) {
@@ -82,16 +84,25 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 String text = getText();
                 setBorder(BorderFactory.createEmptyBorder(0, 2, 0, 2));
                 setIcon(null);
+                // highlight the selected line
+                if (index == disasmListGetSelectedIndex()) {
+                    setBackground(Color.LIGHT_GRAY);
+                }
                 DisassemblerFrame.this.customizeStyledLabel(this, text);
             }
         });
         disasmList.addListSelectionListener(new ListSelectionListener() {
             public void valueChanged(ListSelectionEvent e) {
                 if (!e.getValueIsAdjusting()) {
+                    // this is the only place we can use disasmList.getSelectedValue(),
+                    // all other places should go through disasmListGetSelectedValue()
                     String text = (String)disasmList.getSelectedValue();
                     if (text != null) {
+                        // this is the only place we can use disasmList.getSelectedIndex(),
+                        // all other places should go through disasmListGetSelectedIndex()
                         SelectedPC = DebuggerPC + disasmList.getSelectedIndex() * 4;
                         DisassemblerFrame.this.updateSelectedRegisters(text);
+                        DisassemblerFrame.this.disasmList.clearSelection();
                         DisassemblerFrame.this.disasmList.repaint();
                     }
                 }
@@ -103,16 +114,15 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
     }
 
     private void customizeStyledLabel(StyledLabel label, String text) {
-        if(text.startsWith("<*>"))
-        {
-            //breakpoint
+        // breakpoint
+        if (text.startsWith("<*>")) {
             label.addStyleRange(new StyleRange(0, 3, Font.BOLD, Color.RED));
         }
-        if(text.contains(String.format("%08X:", Emulator.getProcessor().cpu.pc)))
-        {
-            // TODO highlight entire line except for breakpoint highlighted registers
-            // it seems the longest style overrides any shorter styles (such as the register highlighting)
 
+        // PC line highlighting
+        // TODO highlight entire line except for breakpoint highlighted registers
+        // it seems the longest style overrides any shorter styles (such as the register highlighting)
+        if (text.contains(String.format("%08X:", Emulator.getProcessor().cpu.pc))) {
             // highlight: entire line, except gutter
             //label.addStyleRange(new StyleRange(3, -1, Font.BOLD, Color.BLACK));
 
@@ -130,17 +140,37 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 label.addStyleRange(new StyleRange(0, 3, Font.BOLD, Color.BLACK, Color.YELLOW, 0));
             }
         }
-        if(text.contains(" ["))
-        {
-            // syscall highlighting
+
+        // selected line highlighting
+        /* moved to cell renderer, we can highlight the entire line independantly of StyleRange
+        else if (text.contains(String.format("%08X:", SelectedPC))) {
+            // highlight gutter if there is no breakpoint
+            if(!text.startsWith("<*>"))
+            {
+                label.addStyleRange(new StyleRange(0, 3, Font.BOLD, Color.BLACK, Color.LIGHT_GRAY, 0));
+            }
+        }
+        */
+
+        // syscall highlighting
+        if (text.contains(" [")) {
             int find = text.indexOf(" [");
             label.addStyleRange(new StyleRange(find, -1, Font.PLAIN, Color.BLUE));
         }
-        if(text.contains("<=>"))
-        {
-            // alias highlighting
+
+        // alias highlighting
+        if (text.contains("<=>")) {
             int find = text.indexOf("<=>");
             label.addStyleRange(new StyleRange(find, -1, Font.PLAIN, Color.GRAY));
+        }
+
+        // address highlighting
+        if (selectedAddress != null && text.contains("0x" + selectedAddress)) {
+            int find = text.indexOf("0x" + selectedAddress);
+            label.addStyleRange(new StyleRange(find, 10, Font.PLAIN, Color.BLACK, selectedAddressColor, 0));
+        } else if (selectedAddress != null && text.contains(selectedAddress)) {
+            int find = text.indexOf(selectedAddress);
+            label.addStyleRange(new StyleRange(find, 8, Font.PLAIN, Color.BLACK, selectedAddressColor, 0));
         }
 
         // register highlighting, clobbers "text" variable
@@ -251,6 +281,16 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
     private void updateSelectedRegisters(String text) {
         boolean keepgoing;
+
+        // selected address (highlight constant branch/jump addresses)
+        {
+            selectedAddress = null;
+            int find = text.indexOf(" 0x");
+            if (find != -1 && text.charAt(find + 7) != ' ') {
+                selectedAddress = text.substring(find + 3, find + 3 + 8);
+            }
+        }
+
         selectedRegCount = 0; // clear tracked registers
         do {
             keepgoing = false;
@@ -964,6 +1004,18 @@ private void updateSelectedIndex() {
     }
 }
 
+/** replacement for disasmList.getSelectedIndex() because there is no longer a selected index,
+ * we don't want the blue highlight from the operating system/look and feel, we want our own. */
+private int disasmListGetSelectedIndex() {
+    return (SelectedPC - DebuggerPC) / 4;
+}
+
+/** replacement for disasmList.getSelectedValue() because there is no longer a selected index,
+ * we don't want the blue highlight from the operating system/look and feel, we want our own. */
+private Object disasmListGetSelectedValue() {
+    return disasmList.getModel().getElementAt(disasmListGetSelectedIndex());
+}
+
 private void ResetToPCbuttonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetToPCbuttonActionPerformed
     RefreshDebugger(true);
 }//GEN-LAST:event_ResetToPCbuttonActionPerformed
@@ -1045,7 +1097,7 @@ private void DumpCodeToTextActionPerformed(java.awt.event.ActionEvent evt) {//GE
 
 //Following methods are for the JPopmenu in Jlist
 private void CopyAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CopyAddressActionPerformed
-    String value = (String)disasmList.getSelectedValue();
+    String value = (String)disasmListGetSelectedValue();
     String address = value.substring(3, 11);
     StringSelection stringSelection = new StringSelection( address);
     Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
@@ -1053,14 +1105,14 @@ private void CopyAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
 }//GEN-LAST:event_CopyAddressActionPerformed
 
 private void CopyAllActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CopyAllActionPerformed
-String value = (String)disasmList.getSelectedValue();
+    String value = (String)disasmListGetSelectedValue();
     StringSelection stringSelection = new StringSelection( value);
     Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
     clipboard.setContents(stringSelection, this);
 }//GEN-LAST:event_CopyAllActionPerformed
 
 private void BranchOrJumpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_BranchOrJumpActionPerformed
-String value = (String)disasmList.getSelectedValue();
+    String value = (String)disasmListGetSelectedValue();
     int address = value.indexOf("0x");
     if(address==-1)
     {
@@ -1085,15 +1137,17 @@ String value = (String)disasmList.getSelectedValue();
     @Override
 public void lostOwnership( Clipboard aClipboard, Transferable aContents) {
      //do nothing
- }
+}
+
 private void disasmListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_disasmListMouseClicked
 
        BranchOrJump.setEnabled(false);
        SetPCToCursor.setEnabled(false);
-       if (SwingUtilities.isRightMouseButton(evt) && !disasmList.isSelectionEmpty() && disasmList.locationToIndex(evt.getPoint()) == disasmList.getSelectedIndex())
+
+        if (SwingUtilities.isRightMouseButton(evt) && disasmList.locationToIndex(evt.getPoint()) == disasmListGetSelectedIndex())
        {
            //check if we can enable branch or jump address copy
-           String line = (String)disasmList.getSelectedValue();
+           String line = (String)disasmListGetSelectedValue();
            int finddot = line.indexOf("]:");
            String opcode = line.substring(finddot+3,line.length());
            if(opcode.startsWith("b") || opcode.startsWith("j"))//it is definately a branch or jump opcode
@@ -1102,7 +1156,7 @@ private void disasmListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:
            }
 
            //check if we should enable set pc to cursor
-           int addr = DebuggerPC + disasmList.getSelectedIndex() * 4;
+           int addr = DebuggerPC + disasmListGetSelectedIndex() * 4;
            if (Memory.getInstance().isAddressGood(addr)) {
                SetPCToCursor.setEnabled(true);
            }
@@ -1112,13 +1166,13 @@ private void disasmListMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:
 }//GEN-LAST:event_disasmListMouseClicked
 
 private void AddBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AddBreakpointActionPerformed
-    String value =(String)disasmList.getSelectedValue();
+    String value =(String)disasmListGetSelectedValue();
     if (value != null) {
         try {
             String address = value.substring(3, 11);
             int addr = Utilities.parseAddress(address);
             if(!breakpoints.contains(addr))
-            	breakpoints.add(addr);
+                breakpoints.add(addr);
             RefreshDebugger(false);
         } catch(NumberFormatException e) {
             // Ignore it, probably already a breakpoint there
@@ -1141,7 +1195,7 @@ public void DeleteAllBreakpoints() {
 }
 
 private void DeleteBreakpointActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DeleteBreakpointActionPerformed
-          String value =(String)disasmList.getSelectedValue();
+          String value =(String)disasmListGetSelectedValue();
           if(value != null)
           {
             boolean breakpointexists = value.startsWith("<*>");
@@ -1325,7 +1379,7 @@ private void jToggleButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GE
 }//GEN-LAST:event_jToggleButton8ActionPerformed
 
 private void SetPCToCursorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SetPCToCursorActionPerformed
-    int index = disasmList.getSelectedIndex();
+    int index = disasmListGetSelectedIndex();
     if (index != -1) {
         Emulator.getProcessor().cpu.pc = DebuggerPC + index * 4;
         RefreshDebugger(true);
