@@ -502,7 +502,9 @@ public class SyscallHandler {
                 case 0x20e0:
                     pspSysMem.getInstance().sceKernelGetBlockHeadAddr(gpr[4]);
                     break;
-		// SysMemUserForUser_13A5ABEF(0x20e1),
+                case 0x20e1:
+                    pspSysMem.getInstance().sceKernelPrintf(gpr[4]);
+                    break;
                 case 0x20e2:
                     pspSysMem.getInstance().sceKernelDevkitVersion();
                     break;

@@ -388,6 +388,15 @@ public class pspSysMem {
         }
     }
 
+    /** may need to implement format string parsing */
+    public void sceKernelPrintf(int string_addr)
+    {
+        String msg = readStringNZ(string_addr, 256);
+        Modules.log.info("sceKernelPrintf(string_addr=0x" + Integer.toHexString(string_addr)
+            + ") '" + msg + "'");
+        Emulator.getProcessor().cpu.gpr[2] = 0;
+    }
+
     /** @param firmwareVersion : in this format: ABB, where A = major and B = minor, for example 271 */
     public void setFirmwareVersion(int firmwareVersion)
     {

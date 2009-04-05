@@ -18,17 +18,17 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules;
 
-public class sceUtility extends jpcsp.HLE.modules352.sceUtility {
-	@Override
-	public final String getName() { return "sceUtility"; }
+public class sceHprm extends jpcsp.HLE.modules150.sceHprm {
+    @Override
+    public final String getName() { return "sceHprm"; }
 
-	@Override
-	public void installModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
-	}
+    @Override
+    public void installModule(HLEModuleManager mm, int version) {
+        super.installModule(mm, version);
+    }
 
-	@Override
-	public void uninstallModule(HLEModuleManager mm, int version) {
-		super.installModule(mm, version);
-	}
+    @Override
+    public void uninstallModule(HLEModuleManager mm, int version) {
+        super.installModule(mm, version);
+    }
 }

@@ -76,7 +76,7 @@ public class ScePspDateTime {
     /** @param microseconds */
     public static ScePspDateTime fromMicros(long micros) {
         Calendar cal = Calendar.getInstance();
-        Date date = new Date(micros / 1000000L);
+        Date date = new Date(micros / 1000L);
         cal.setTime(date);
 
         int year = cal.get(Calendar.YEAR);
