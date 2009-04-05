@@ -458,6 +458,10 @@ public class ThreadMan {
         contextSwitch(nextThread());
     }
 
+    public SceKernelThreadInfo getThreadById(int uid) {
+        return threadMap.get(uid);
+    }
+
     public void unblockThread(int uid)
     {
         if (SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", false)) {

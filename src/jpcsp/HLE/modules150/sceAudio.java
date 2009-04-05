@@ -28,6 +28,8 @@ import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.ThreadMan;
+import jpcsp.HLE.kernel.types.SceKernelErrors;
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
@@ -45,6 +47,9 @@ public class sceAudio implements HLEModule, HLEThread {
         public SourceDataLine outputDataLine;
         public int waitingThreadId;
         public long referenceFramePosition;
+        public int waitingAudioDataAddr;
+        public int waitingVolumeLeft;
+        public int waitingVolumeRight;
 
         public pspChannelInfo()
         {
@@ -182,14 +187,24 @@ public class sceAudio implements HLEModule, HLEThread {
     public void step() {
         if (disableBlockingAudio)
             return;
-        
+
         for (int i = 0; i < 8; i++) {
             if (pspchannels[i].waitingThreadId >= 0) {
-                int len = hleAudioGetChannelRestLen(i);
-                if (len == 0) {
+                if (hleAudioIsNonBlockingWritePossible(i)) {
                     //Modules.log.info("Audio step - unblocking thread");
-                    ThreadMan.getInstance().unblockThread(pspchannels[i].waitingThreadId);
+                	ThreadMan threadMan = ThreadMan.getInstance();
+                	int waitingThreadId = pspchannels[i].waitingThreadId;
+                	SceKernelThreadInfo waitingThread = threadMan.getThreadById(waitingThreadId);
+                	if (waitingThread != null) {
+	                	if (pspchannels[i].waitingAudioDataAddr != 0) {
+	        	            sceAudioChangeChannelVolume(i, pspchannels[i].waitingVolumeLeft, pspchannels[i].waitingVolumeRight);
+	        	            int ret = doAudioOutput(i, pspchannels[i].waitingAudioDataAddr);
+	        	            waitingThread.cpuContext.gpr[2] = ret;
+	                	}
+	                	threadMan.unblockThread(waitingThreadId);
+                	}
                     pspchannels[i].waitingThreadId = -1;
+                    pspchannels[i].waitingAudioDataAddr = 0;
                 }
             }
         }
@@ -208,7 +223,22 @@ public class sceAudio implements HLEModule, HLEThread {
                     pspchannels[channel].outputDataLine = AudioSystem.getSourceDataLine(format);
                     if (!Settings.getInstance().readBool("emu.mutesound"))
                     {
-                        pspchannels[channel].outputDataLine.open(format);
+                    	int sampleSize = 4 * pspchannels[channel].allocatedSamples;
+                    	//
+                    	// The PSP is using a buffer equal to the sampleSize.
+                    	// However, the Java sound system is not nicely handling buffer
+                    	// underflows, causing discontinuities in the audio
+                    	// that are perceived as "clicks".
+                    	//
+                    	// So, allocate a large buffer: 10 times the sampleSize is an
+                    	// empirical value.
+                    	// This has the disadvantage to introduce a small delay when playing
+                    	// a new sound: a PSP application is typically sending continuously
+                    	// sound data, even when nothing can be heard ("0" values are sent).
+                    	// And we have first to play these buffered blanks before hearing
+                    	// the real sound itself.
+                    	int bufferSize = sampleSize * 10;
+                        pspchannels[channel].outputDataLine.open(format, bufferSize);
                     }
                     sceAudioChangeChannelVolume(channel,pspchannels[channel].leftVolume,pspchannels[channel].rightVolume);
                 }
@@ -216,7 +246,6 @@ public class sceAudio implements HLEModule, HLEThread {
                 {
                     System.out.println("Exception trying to create channel output line. Channel " + channel + " will be silent.");
                     pspchannels[channel].outputDataLine = null;
-                    channel=-1;
                 }
             }
 
@@ -229,24 +258,19 @@ public class sceAudio implements HLEModule, HLEThread {
 
                 byte[] data = new byte[bytes];
 
-                /*
-                for(int i=0;i<bytes;i++)
-                {
-                    data[i] = (byte)Memory.getInstance().read8(pvoid_buf+i);
-                }
-                 */
-
                 // process audio volumes ourselves for now
+                int nsamples = pspchannels[channel].allocatedSamples;
+                int leftVolume = pspchannels[channel].leftVolume;
+                int rightVolume = pspchannels[channel].rightVolume;
                 if(channels == 1)
                 {
-                    int nsamples = pspchannels[channel].allocatedSamples;
                     for(int i=0;i<nsamples;i++)
                     {
-                        short lval = (short)Memory.getInstance().read16(pvoid_buf+i);
+                        short lval = (short)Memory.getInstance().read16(pvoid_buf+i*2);
                         short rval = lval;
 
-                        lval = (short)((((int)lval)*pspchannels[channel].leftVolume)>>16);
-                        rval = (short)((((int)rval)*pspchannels[channel].rightVolume)>>16);
+                        lval = (short)((((int)lval) * leftVolume ) >> 16);
+                        rval = (short)((((int)rval) * rightVolume) >> 16);
 
                         data[i*4+0] = (byte)(lval);
                         data[i*4+1] = (byte)(lval>>8);
@@ -256,14 +280,13 @@ public class sceAudio implements HLEModule, HLEThread {
                 }
                 else
                 {
-                    int nsamples = pspchannels[channel].allocatedSamples;
                     for(int i=0;i<nsamples;i++)
                     {
-                        short lval = (short)Memory.getInstance().read16(pvoid_buf+i*2);
-                        short rval = (short)Memory.getInstance().read16(pvoid_buf+i*2+1);
+                        short lval = (short)Memory.getInstance().read16(pvoid_buf+i*4);
+                        short rval = (short)Memory.getInstance().read16(pvoid_buf+i*4+2);
 
-                        lval = (short)((((int)lval)*pspchannels[channel].leftVolume)>>16);
-                        rval = (short)((((int)rval)*pspchannels[channel].rightVolume)>>16);
+                        lval = (short)((((int)lval) * leftVolume ) >> 16);
+                        rval = (short)((((int)rval) * rightVolume) >> 16);
 
                         data[i*4+0] = (byte)(lval);
                         data[i*4+1] = (byte)(lval>>8);
@@ -272,12 +295,11 @@ public class sceAudio implements HLEModule, HLEThread {
                     }
                 }
 
-
                 pspchannels[channel].referenceFramePosition = pspchannels[channel].outputDataLine.getLongFramePosition();
                 pspchannels[channel].outputDataLine.write(data, 0, data.length);
                 pspchannels[channel].outputDataLine.start();
 
-                ret = 0;
+                ret = nsamples;
             }
         }
 
@@ -411,7 +433,7 @@ public class sceAudio implements HLEModule, HLEThread {
 
     public void sceAudioOutput(Processor processor) {
         CpuState cpu = processor.cpu;
-        Memory mem = processor.memory;
+        Memory mem = Processor.memory;
 
         int channel = cpu.gpr[4], vol = cpu.gpr[5], pvoid_buf = cpu.gpr[6];
 
@@ -419,14 +441,18 @@ public class sceAudio implements HLEModule, HLEThread {
             Modules.log.warn("sceAudioOutput bad pointer " + String.format("0x%08X", pvoid_buf));
             cpu.gpr[2] = -1;
         } else {
-            sceAudioChangeChannelVolume(channel, vol, vol);
-            cpu.gpr[2] = doAudioOutput(channel, pvoid_buf);
+        	if (hleAudioIsNonBlockingWritePossible(channel)) {
+                sceAudioChangeChannelVolume(channel, vol, vol);
+                cpu.gpr[2] = doAudioOutput(channel, pvoid_buf);
+        	} else {
+        		cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_CHANNEL_BUSY;
+        	}
         }
     }
 
     public void sceAudioOutputBlocking(Processor processor) {
         CpuState cpu = processor.cpu;
-        Memory mem = processor.memory;
+        Memory mem = Processor.memory;
 
         int channel = cpu.gpr[4], vol = cpu.gpr[5], pvoid_buf = cpu.gpr[6];
 
@@ -434,67 +460,62 @@ public class sceAudio implements HLEModule, HLEThread {
             Modules.log.warn("sceAudioOutputBlocking bad pointer " + String.format("0x%08X", pvoid_buf));
             cpu.gpr[2] = -1;
         } else {
-            int ret = -1;
-
-            sceAudioChangeChannelVolume(channel, vol, vol);
-            ret = doAudioOutput(channel, pvoid_buf);
-
-            //if (ret>=0) {
-            //    ret = doAudioFlush(channel);
-            //}
-            //Modules.log.info("sceAudioOutputBlocking - blocking thread");
-            pspchannels[channel].waitingThreadId = ThreadMan.getInstance().getCurrentThreadID();
-
-            cpu.gpr[2] = ret;
-
-            if (!disableBlockingAudio)
-                ThreadMan.getInstance().blockCurrentThread();
-            else
-                ThreadMan.getInstance().yieldCurrentThread();
+        	ThreadMan threadMan = ThreadMan.getInstance();
+            if (hleAudioIsNonBlockingWritePossible(channel) || disableBlockingAudio) {
+	            sceAudioChangeChannelVolume(channel, vol, vol);
+	            cpu.gpr[2] = doAudioOutput(channel, pvoid_buf);
+	            //threadMan.yieldCurrentThread();
+            } else {
+	            pspchannels[channel].waitingThreadId = threadMan.getCurrentThreadID();
+	            pspchannels[channel].waitingAudioDataAddr = pvoid_buf;
+	            pspchannels[channel].waitingVolumeLeft  = vol;
+	            pspchannels[channel].waitingVolumeRight = vol;
+	            threadMan.blockCurrentThread();
+            }
         }
     }
 
     public void sceAudioOutputPanned(Processor processor) {
         CpuState cpu = processor.cpu;
-        Memory mem = processor.memory;
+        Memory mem = Processor.memory;
 
         int channel = cpu.gpr[4], leftvol = cpu.gpr[5], rightvol = cpu.gpr[6], pvoid_buf = cpu.gpr[7];
-        int ret = -1;
 
         if (!mem.isAddressGood(pvoid_buf)) {
             Modules.log.warn("sceAudioOutputPanned bad pointer " + String.format("0x%08X", pvoid_buf));
             cpu.gpr[2] = -1;
         } else {
-            sceAudioChangeChannelVolume(channel, leftvol, rightvol);
-            ret = doAudioOutput(channel,pvoid_buf);
-            cpu.gpr[2] = ret;
+        	if (hleAudioIsNonBlockingWritePossible(channel)) {
+                sceAudioChangeChannelVolume(channel, leftvol, rightvol);
+                cpu.gpr[2] = doAudioOutput(channel, pvoid_buf);
+        	} else {
+        		cpu.gpr[2] = SceKernelErrors.ERROR_AUDIO_CHANNEL_BUSY;
+        	}
         }
     }
 
     public void sceAudioOutputPannedBlocking(Processor processor) {
         CpuState cpu = processor.cpu;
-        Memory mem = processor.memory;
+        Memory mem = Processor.memory;
 
         int channel = cpu.gpr[4], leftvol = cpu.gpr[5], rightvol = cpu.gpr[6], pvoid_buf = cpu.gpr[7];
-        int ret = -1;
 
         if (!mem.isAddressGood(pvoid_buf)) {
             Modules.log.warn("sceAudioOutputPannedBlocking bad pointer " + String.format("0x%08X", pvoid_buf));
             cpu.gpr[2] = -1;
         } else {
-            sceAudioChangeChannelVolume(channel, leftvol, rightvol);
-            ret = doAudioOutput(channel,pvoid_buf);
-
-            //if (ret>=0) ret = doAudioFlush(channel);
-            //Modules.log.info("sceAudioOutputBlocking - blocking thread");
-            pspchannels[channel].waitingThreadId = ThreadMan.getInstance().getCurrentThreadID();
-
-            cpu.gpr[2] = ret;
-
-            if (!disableBlockingAudio)
-                ThreadMan.getInstance().blockCurrentThread();
-            else
-                ThreadMan.getInstance().yieldCurrentThread();
+        	ThreadMan threadMan = ThreadMan.getInstance();
+            if (hleAudioIsNonBlockingWritePossible(channel) || disableBlockingAudio) {
+	            sceAudioChangeChannelVolume(channel, leftvol, rightvol);
+	            cpu.gpr[2] = doAudioOutput(channel, pvoid_buf);
+	            //threadMan.yieldCurrentThread();
+            } else {
+	            pspchannels[channel].waitingThreadId = threadMan.getCurrentThreadID();
+	            pspchannels[channel].waitingAudioDataAddr = pvoid_buf;
+	            pspchannels[channel].waitingVolumeLeft  = leftvol;
+	            pspchannels[channel].waitingVolumeRight = rightvol;
+	            threadMan.blockCurrentThread();
+            }
         }
     }
 
@@ -762,6 +783,19 @@ public class sceAudio implements HLEModule, HLEThread {
         System.out.println("Unimplemented NID function sceAudioPollInputEnd [0xA633048E]");
 
         cpu.gpr[2] = -1;
+    }
+
+    protected boolean hleAudioIsNonBlockingWritePossible(int channel) {
+    	boolean isNonBlocking = true;
+
+    	if (pspchannels[channel].outputDataLine != null) {
+    		SourceDataLine outputDataLine = pspchannels[channel].outputDataLine;
+    		int available = outputDataLine.available();
+    		int required = pspchannels[channel].allocatedSamples * 4;
+    		isNonBlocking = (available >= required);
+        }
+
+        return isNonBlocking;
     }
 
     protected int hleAudioGetChannelRestLen(int channel) {
