@@ -1024,7 +1024,7 @@ public class ThreadMan {
             Modules.log.debug("-------------------- hleKernelThreadWait micros=" + micros + " forever:" + forever + " thread:'" + current_thread.name + "' caller:" + getCallingFunction());
     }
 
-    private void hleKernelDelayThread(int micros, boolean do_callbacks) {
+    public void hleKernelDelayThread(int micros, boolean do_callbacks) {
         // Go to wait state, callbacks
         //current_thread.do_callbacks = do_callbacks;
 
