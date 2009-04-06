@@ -17,6 +17,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Control;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.SourceDataLine;
+
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.modules.HLEModule;
@@ -69,6 +75,10 @@ public class sceSasCore implements HLEModule {
         }
 
         sasCoreHandle = -1;
+        voices = new pspVoiceInfo[32];
+        for (int i = 0; i < voices.length; i++) {
+        	voices[i] = new pspVoiceInfo();
+        }
     }
 
     @Override
@@ -106,7 +116,24 @@ public class sceSasCore implements HLEModule {
         }
     }
 
+    protected class pspVoiceInfo {
+    	public SourceDataLine outputDataLine;
+    	public int leftVolumne;
+    	public int rightVolume;
+    	public short[] samples;
+    	public int loopMode;
+
+    	public pspVoiceInfo() {
+    		outputDataLine = null;
+    		leftVolumne = 0x8000;
+    		rightVolume = 0x8000;
+    		samples = null;
+    		loopMode = 0;
+    	}
+    }
+
     protected int sasCoreHandle;
+    protected pspVoiceInfo[] voices;
 
     protected String makeLogParams(CpuState cpu) {
         return String.format("%08x %08x %08x %08x",
@@ -120,6 +147,16 @@ public class sceSasCore implements HLEModule {
             return true;
 
         Modules.log.warn(functionName + " bad sasCore handle 0x" + Integer.toHexString(sasCore));
+        cpu.gpr[2] = -1;
+        return false;
+    }
+
+    protected boolean isVoiceNumberGood(int voice, String functionName, CpuState cpu) {
+    	if (voice >= 0 && voice < voices.length) {
+    		return true;
+    	}
+
+        Modules.log.warn(functionName + " bad voice number " + voice);
         cpu.gpr[2] = -1;
         return false;
     }
@@ -236,23 +273,19 @@ public class sceSasCore implements HLEModule {
     }
 
     public void __sceSasSetVolume(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
+        CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
-        int left = cpu.gpr[6]; // left channel volume 0 - 0x1000
-        int right = cpu.gpr[7]; // right channel volume 0 - 0x1000
-        // may be more parameters
+        int leftVolume = cpu.gpr[6]; // left channel volume 0 - 0x1000
+        int rightVolume = cpu.gpr[7]; // right channel volume 0 - 0x1000
 
-        Modules.log.warn("Unimplemented NID function __sceSasSetVolume [0x440CA7D8] " + makeLogParams(cpu));
+        if (isSasHandleGood(sasCore, "__sceSasSetVolume", cpu) && isVoiceNumberGood(voice, "__sceSasSetVolume", cpu)) {
+	        voices[voice].leftVolumne = leftVolume << 3;	// 0 - 0x8000
+	        voices[voice].rightVolume = rightVolume << 3;	// 0 - 0x8000
 
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
+	        cpu.gpr[2] = 0;
+        }
     }
 
     // 50A14DFC
@@ -326,25 +359,39 @@ public class sceSasCore implements HLEModule {
     }
 
     public void __sceSasSetKeyOn(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
+        CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
-        //int unk2 = cpu.gpr[6]; // on? 1
-        // 99% sure there are no more parameters
-        //int unk3 = cpu.gpr[7]; // 0x1000/0x6e4/0x3ad
+        int flag = cpu.gpr[6];
 
-        Modules.log.warn("Unimplemented NID function __sceSasSetKeyOn [0x76F01ACA] "
-            + String.format("%08x %08x %08x %08x %08x %08x",
-            cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]));
+        Modules.log.warn("PARTIAL __sceSasSetKeyOn [0x76F01ACA] "
+            + String.format("sasCore=%08x, voice=%d flag=%x",
+            sasCore, voice, flag));
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        SourceDataLine outputDataLine = voices[voice].outputDataLine;
+        if (outputDataLine == null) {
+        	try {
+        		AudioFormat format = new AudioFormat(48000, 16, 2, true, false);
+        		outputDataLine = AudioSystem.getSourceDataLine(format);
+        		voices[voice].outputDataLine = outputDataLine;
+        		if (voices[voice].samples != null) {
+        			outputDataLine.open(format, voices[voice].samples.length * 4);
+        		} else {
+        			outputDataLine.open(format);
+        		}
+			} catch (LineUnavailableException e) {
+				Modules.log.error("__sceSasSetKeyOn: " + e.toString());
+			}
+        }
 
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
+        if (voices[voice].samples != null) {
+        	byte[] buffer = encodeSamples(voice);
+        	outputDataLine.write(buffer, 0, buffer.length);
+        	outputDataLine.start();
+        }
+
+		cpu.gpr[2] = 0;
     }
 
     public void __sceSasSetPause(Processor processor) {
@@ -364,25 +411,109 @@ public class sceSasCore implements HLEModule {
     // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
     }
 
+    protected byte[] encodeSamples(int voice) {
+    	int leftVolume = voices[voice].leftVolumne;
+    	int rightVolume = voices[voice].rightVolume;
+    	short[] samples = voices[voice].samples;
+    	int numSamples = samples.length;
+        byte[] buffer = new byte[numSamples * 4];
+        for (int i = 0; i < numSamples; i++) {
+        	short sample = samples[i];
+        	short lval = (short) ((sample * leftVolume ) >> 16);
+        	short rval = (short) ((sample * rightVolume) >> 16);
+        	buffer[i*4+0] = (byte) (lval);
+        	buffer[i*4+1] = (byte) (lval >> 8);
+        	buffer[i*4+2] = (byte) (rval);
+        	buffer[i*4+3] = (byte) (rval >> 8);
+        }
+
+        return buffer;
+    }
+
+    protected short[] decodeSamples(Processor processor, int vagAddr, int size) {
+    	Memory mem = Processor.memory;
+
+    	// Based on vgmstream
+        short[] samples = new short[size / 16 * 28];
+        int numSamples = 0;
+
+        int[] unpackedSamples = new int[28];
+        int hist1 = 0;
+        int hist2 = 0;
+        final double[][] VAG_f = { 
+        		{   0.0       ,   0.0 },
+        		{  60.0 / 64.0,   0.0 },
+        		{ 115.0 / 64.0, -52.0 / 64.0 },
+        		{  98.0 / 64.0, -55.0 / 64.0 },
+        		{ 122.0 / 64.0, -60.0 / 64.0 }
+        		};
+        for (int i = 0; i <= (size - 16); ) {
+        	int n = mem.read8(vagAddr + i);
+        	i++;
+        	int predict_nr = n >> 4;
+        	int shift_factor = n & 0x0F;
+        	int flag = mem.read8(vagAddr + i);
+        	i++;
+        	if (flag == 0x07) {
+        		break;	// End of stream flag
+        	}
+        	for (int j = 0; j < 28; j += 2) {
+        		int d = mem.read8(vagAddr + i);
+        		i++;
+        		int s = (short) ((d & 0x0F) << 12);
+        		unpackedSamples[j] = s >> shift_factor;
+        		s = (short) ((d & 0xF0) << 8);
+        		unpackedSamples[j + 1] = s >> shift_factor;
+        	}
+
+        	for (int j = 0; j < 28; j++) {
+        		int sample = (int) (unpackedSamples[j] + hist1 * VAG_f[predict_nr][0] + hist2 * VAG_f[predict_nr][1]);
+        		hist2 = hist1;
+        		hist1 = sample;
+
+        		if (sample < -32768) {
+        			samples[numSamples] = -32768;
+        		} else if (sample > 0x7FFF) {
+        			samples[numSamples] = 0x7FFF;
+        		} else {
+        			samples[numSamples] = (short) sample;
+        		}
+        		numSamples++;
+        	}
+        }
+
+        if (samples.length != numSamples) {
+        	short[] resizedSamples = new short[numSamples];
+        	for (int i = 0; i < numSamples; i++) {
+        		resizedSamples[i] = samples[i];
+        	}
+        	samples = resizedSamples;
+        }
+
+        return samples;
+    }
+
     public void __sceSasSetVoice(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
-
-        /* put your own code here instead */
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
-        //int unk2 = cpu.gpr[6]; // heap address (may be uncached)
-        //int unk3 = cpu.gpr[7]; // some size 0x48d0/0x4860/0x1240/0x400/0x200 or unused
+        int vagAddr = cpu.gpr[6];
+        int size = cpu.gpr[7];
+        int loopmode = cpu.gpr[8];
 
-        Modules.log.warn("Unimplemented NID function __sceSasSetVoice [0x99944089] "
-            + String.format("%08x %08x %08x %08x %08x %08x",
-            cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]));
+        Modules.log.info("PARTIAL __sceSasSetVoice "
+            + String.format("sasCore=0x%08x voice=%d vagAddr=0x%08x size=0x%08x loopmode=%d",
+            sasCore, voice, vagAddr, size, loopmode));
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        if (isSasHandleGood(sasCore, "__sceSasSetVoice", cpu) && isVoiceNumberGood(voice, "__sceSasSetVoice", cpu)) {
+            voices[voice].samples = decodeSamples(processor, vagAddr, size);
+            voices[voice].loopMode = loopmode;
 
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
+            cpu.gpr[2] = 0;
+        }
+
     }
 
     public void __sceSasSetADSRmode(Processor processor) {
@@ -456,9 +587,13 @@ public class sceSasCore implements HLEModule {
 
         if (isSasHandleGood(sasCore, "__sceSasCore", cpu)) {
             // noxa/pspplayer blocks in __sceSasCore
-            // some games protect __sceSasCore with locks, suggesting it may context switch
-            ThreadMan.getInstance().yieldCurrentThread();
+            // some games protect __sceSasCore with locks, suggesting it may context switch.
+        	// Games seems to run better when delaying the thread instead of just yielding.
+        	ThreadMan.getInstance().hleKernelDelayThread(1000000, false);
+        	// ThreadMan.getInstance().yieldCurrentThread();
             cpu.gpr[2] = 0;
+        } else {
+        	cpu.gpr[2] = -1;
         }
     }
 
