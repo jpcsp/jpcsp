@@ -192,10 +192,12 @@ public class sceSasCore implements HLEModule {
         /* put your own code here instead */
 
         int sasCore = cpu.gpr[4];
-        //int unk1 = cpu.gpr[5]; // 0
-        //int unk2 = cpu.gpr[6]; // 0
+        int unk1 = cpu.gpr[5]; // 0, 64
+        int unk2 = cpu.gpr[6]; // 0, 64
+        // 99% sure there are no more parameters
 
-        Modules.log.warn("Unimplemented NID function __sceSasRevParam [0x267A6DD2] " + makeLogParams(cpu));
+        Modules.log.warn("IGNORING:__sceSasRevParam("
+            + String.format("sasCore=0x%08x,unk1=0x%x,unk2=0x%x)", sasCore, unk1, unk2));
 
         cpu.gpr[2] = 0;
     }
@@ -208,7 +210,7 @@ public class sceSasCore implements HLEModule {
         Memory mem = Processor.memory;
 
         int sasCore = cpu.gpr[4];
-        //int unk1 = cpu.gpr[5]; // set to 1
+        //int unk1 = cpu.gpr[5]; // set to 1, if this matches __sceSasSetPause then it's a voice bitfield
         //int unk2 = cpu.gpr[6]; // looks like a heap address, but so far 0x10000 aligned
         // 99% sure there are no more parameters
         // probably matches __sceSasGetEndFlag
@@ -236,6 +238,8 @@ public class sceSasCore implements HLEModule {
         // 2 = ?
         // 3 = ?
         // 4 = ?
+        // 5 = ?
+        // 6 = ?
         int type = cpu.gpr[5];
         //int unk2 = cpu.gpr[6]; // unused or 1 or the return code from some other function (0xdeadc0de)
         //int unk3 = cpu.gpr[7]; // unused or 0, 1, 0x1000
@@ -358,12 +362,13 @@ public class sceSasCore implements HLEModule {
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
+    // I think this means start playing this channel, key off would then mean stop or pause the playback (fiveofhearts)
     public void __sceSasSetKeyOn(Processor processor) {
         CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
-        int flag = cpu.gpr[6];
+        int flag = cpu.gpr[6]; // on? 1, probably not because __sceSasSetKeyOff exists
 
         Modules.log.warn("PARTIAL __sceSasSetKeyOn [0x76F01ACA] "
             + String.format("sasCore=%08x, voice=%d flag=%x",
@@ -396,19 +401,17 @@ public class sceSasCore implements HLEModule {
 
     public void __sceSasSetPause(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         /* put your own code here instead */
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        int sasCore = cpu.gpr[4];
+        int voice_bit = cpu.gpr[5]; // bitfield instead of index, example: 0x08 is voice 3
+        int pause = cpu.gpr[6]; // 0
 
         Modules.log.warn("Unimplemented NID function __sceSasSetPause [0x787D04D5] " + makeLogParams(cpu));
 
         cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
     }
 
     protected byte[] encodeSamples(int voice) {
@@ -440,7 +443,7 @@ public class sceSasCore implements HLEModule {
         int[] unpackedSamples = new int[28];
         int hist1 = 0;
         int hist2 = 0;
-        final double[][] VAG_f = { 
+        final double[][] VAG_f = {
         		{   0.0       ,   0.0 },
         		{  60.0 / 64.0,   0.0 },
         		{ 115.0 / 64.0, -52.0 / 64.0 },
@@ -499,7 +502,7 @@ public class sceSasCore implements HLEModule {
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
-        int vagAddr = cpu.gpr[6];
+        int vagAddr = cpu.gpr[6]; // may have uncached bit set
         int size = cpu.gpr[7];
         int loopmode = cpu.gpr[8];
 
@@ -547,7 +550,7 @@ public class sceSasCore implements HLEModule {
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
-        // may be more parameters
+        // may be more parameters, unlikely
 
         Modules.log.warn("Unimplemented NID function __sceSasSetKeyOff [0xA0CF2FA4] " + makeLogParams(cpu));
 
@@ -606,9 +609,9 @@ public class sceSasCore implements HLEModule {
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
-        //int unk2 = cpu.gpr[6]; // 0x6e4/0x800/0x1000
-        //int unk3 = cpu.gpr[7]; // 0x6e4/0x800/0x1000
-        // may be more parameters
+        //int unk2 = cpu.gpr[6]; // 0x6e4/0x800/0x1000/0x2000 large values may be clamped
+        //int unk3 = cpu.gpr[7]; // 0x6e4/0x800/0x1000/0x2000
+        // probably no more parameters
 
         Modules.log.warn("Unimplemented NID function __sceSasSetPitch [0xAD84D37F] "
             + String.format("%08x %08x %08x %08x %08x %08x",
@@ -664,7 +667,7 @@ public class sceSasCore implements HLEModule {
         int voice = cpu.gpr[5];
         //int unk1 = cpu.gpr[6]; // 0xff
         //int unk2 = cpu.gpr[7]; // 0x1fc6
-        // may be more parameters
+        // doesn't look like any more parameters, they look like error codes
 
         Modules.log.warn("Unimplemented NID function __sceSasSetSimpleADSR [0xCBCD4F79] "
             + String.format("%08x %08x %08x %08x %08x %08x",
@@ -734,6 +737,7 @@ public class sceSasCore implements HLEModule {
 
         Modules.log.warn("Unimplemented NID function __sceSasGetOutputmode [0xE175EF66] " + makeLogParams(cpu));
 
+        // beq t0 (t0=1)
         cpu.gpr[2] = 0xDEADC0DE;
 
     // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
