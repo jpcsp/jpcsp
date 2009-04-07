@@ -294,6 +294,7 @@ public class ModuleMgrForUser implements HLEModule {
     public void sceKernelStartModule(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
 
         int uid = cpu.gpr[4];
         int argsize = cpu.gpr[5];
@@ -320,12 +321,16 @@ public class ModuleMgrForUser implements HLEModule {
         } else {
             // TODO check thread priority
             ThreadMan threadMan = ThreadMan.getInstance();
-            if (Memory.getInstance().isAddressGood(sceModule.entry_addr)) {
+            if (mem.isAddressGood(sceModule.entry_addr)) {
+                if (mem.isAddressGood(status_addr)) {
+                    mem.write32(status_addr, 0); // TODO set to return value of the thread (when it exits, of course)
+                }
+
                 SceKernelThreadInfo thread = threadMan.hleKernelCreateThread(sceModule.modname,
-                        sceModule.entry_addr, 0, 0x4000, sceModule.attribute, option_addr);
+                        sceModule.entry_addr, 0x20, 0x4000, sceModule.attribute, option_addr);
                 // override inherited module id with the new module we are starting
                 thread.moduleid = sceModule.modid;
-                cpu.gpr[2] = 0;
+                cpu.gpr[2] = sceModule.modid; // return the module id
                 threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
             } else {
                 Modules.log.warn("sceKernelStartModule - invalid entry address 0x" + Integer.toHexString(sceModule.entry_addr));
@@ -334,22 +339,29 @@ public class ModuleMgrForUser implements HLEModule {
         }
     }
 
-	public void sceKernelStopModule(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+    public void sceKernelStopModule(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        // Processor cpu = processor; // Old-Style Processor
+        Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+        int uid = cpu.gpr[4];
+        int argsize = cpu.gpr[5];
+        int argp_addr = cpu.gpr[6];
+        int status_addr = cpu.gpr[7]; // TODO
+        int option_addr = cpu.gpr[8]; // SceKernelSMOption
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        Modules.log.warn("UNIMPLEMENTED:sceKernelStopModule(uid=0x" + Integer.toHexString(uid)
+            + ",argsize=" + argsize
+            + ",argp=0x" + Integer.toHexString(argp_addr)
+            + ",status=0x" + Integer.toHexString(status_addr)
+            + ",option=0x" + Integer.toHexString(option_addr) + ")");
 
-		System.out.println("Unimplemented NID function sceKernelStopModule [0xD1FF982A]");
+        if (mem.isAddressGood(status_addr)) {
+            mem.write32(status_addr, 0); // TODO set to return value of the thread (when it exits, of course)
+        }
 
-		cpu.gpr[2] = 0xDEADC0DE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
-	}
+        cpu.gpr[2] = 0xDEADC0DE;
+    }
 
     public void sceKernelUnloadModule(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
@@ -383,6 +395,8 @@ public class ModuleMgrForUser implements HLEModule {
         // TODO see if the current thread belongs to the root module,
         // we can get root module from Emulator.getInstance().module.
         // If it is not the from root module do not pause the emulator!
+        // compare ThreadMan.getInstance().getCurrentThread().modid
+        // terminate delete thread?
 
         Modules.log.info("Program exit detected (sceKernelSelfStopUnloadModule)");
         Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_OK);
