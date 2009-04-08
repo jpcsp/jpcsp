@@ -833,6 +833,10 @@ private void installCompatibilitySettings()
     boolean disableAudio = Settings.getInstance().readBool("emu.disablesceAudio");
     jpcsp.HLE.Modules.sceAudioModule.setChReserveEnabled(!disableAudio);
 
+    boolean audioMuted = Settings.getInstance().readBool("emu.mutesound");
+    jpcsp.HLE.Modules.sceAudioModule.setAudioMuted(audioMuted);
+    jpcsp.HLE.Modules.sceSasCoreModule.setAudioMuted(audioMuted);
+
     boolean disableBlocking = Settings.getInstance().readBool("emu.disableblockingaudio");
     jpcsp.HLE.Modules.sceAudioModule.setBlockingEnabled(!disableBlocking);
 

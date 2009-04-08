@@ -172,6 +172,7 @@ public class sceAudio implements HLEModule, HLEThread {
 
     protected boolean disableChReserve;
     protected boolean disableBlockingAudio;
+    protected boolean audioMuted;
 
     public void setChReserveEnabled(boolean enabled) {
         disableChReserve = !enabled;
@@ -182,7 +183,12 @@ public class sceAudio implements HLEModule, HLEThread {
         disableBlockingAudio = !enabled;
         Modules.log.info("Audio Blocking disabled: " + disableBlockingAudio);
     }
-    
+
+    public void setAudioMuted(boolean muted) {
+    	audioMuted = muted;
+    	Modules.log.info("Audio muted: " + audioMuted);
+    }
+
     @Override
     public void step() {
         if (disableBlockingAudio)
@@ -221,7 +227,7 @@ public class sceAudio implements HLEModule, HLEThread {
                 try {
                     AudioFormat format = new AudioFormat(sampleRate, 16, 2, true, false);
                     pspchannels[channel].outputDataLine = AudioSystem.getSourceDataLine(format);
-                    if (!Settings.getInstance().readBool("emu.mutesound"))
+                    if (!audioMuted)
                     {
                     	int sampleSize = 4 * pspchannels[channel].allocatedSamples;
                     	//
