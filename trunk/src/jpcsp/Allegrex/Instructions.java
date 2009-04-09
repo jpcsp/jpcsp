@@ -4708,7 +4708,7 @@ public void interpret(Processor processor, int insn) {
 	int rt = (insn>>16)&31;
 
 
-                processor.cpu.doCFC1(rt, c1cr);
+                processor.cpu.doCTC1(rt, c1cr);
             
 }
 @Override
