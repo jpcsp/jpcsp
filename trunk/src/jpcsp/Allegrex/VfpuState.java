@@ -1822,7 +1822,7 @@ public class VfpuState extends FpuState {
             }
         }
 
-        memory.write32(gpr[rs] + simm14_a16, Float.floatToRawIntBits(vpr[m][s][i]));
+        memory.write32(gpr[rs] + simm14_a16, Float.floatToRawIntBits(vpr[m][i][s]));
     }
 
     // LSU:LVQ
