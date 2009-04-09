@@ -79,6 +79,11 @@ public class sceSasCore implements HLEModule {
         for (int i = 0; i < voices.length; i++) {
         	voices[i] = new pspVoice();
         }
+
+        VoicesCheckerThread voicesCheckerThread = new VoicesCheckerThread(500);
+        voicesCheckerThread.setDaemon(true);
+        voicesCheckerThread.setName("sceSasCore Voices Checker");
+        voicesCheckerThread.start();
     }
 
     @Override
@@ -125,6 +130,8 @@ public class sceSasCore implements HLEModule {
     	public int loopMode;
     	public int pitch;
     	public final int NORMAL_PITCH = 0x1000;
+    	public byte[] buffer;
+    	public int bufferIndex;
 
     	public pspVoice() {
     		outputDataLine = null;
@@ -133,6 +140,8 @@ public class sceSasCore implements HLEModule {
     		samples = null;
     		loopMode = 0;
     		pitch = NORMAL_PITCH;
+    		buffer = null;
+    		bufferIndex = 0;
     	}
 
     	float getSampleRate() {
@@ -141,8 +150,15 @@ public class sceSasCore implements HLEModule {
 
     	public void init() {
     		float wantedSampleRate = getSampleRate();
-            if (outputDataLine == null || wantedSampleRate != outputDataLineSampleRate) {
-            	if (outputDataLine != null) {
+    		int wantedBufferSize = 0;
+    		if (samples != null) {
+    			wantedBufferSize = samples.length * 4;
+    		} else {
+    			wantedBufferSize = outputDataLine.getBufferSize();
+    		}
+
+    		if (outputDataLine == null || wantedSampleRate != outputDataLineSampleRate || wantedBufferSize > outputDataLine.getBufferSize()) {
+    			if (outputDataLine != null) {
             		outputDataLine.close();
             		outputDataLine = null;
             	}
@@ -152,8 +168,8 @@ public class sceSasCore implements HLEModule {
             		outputDataLine = AudioSystem.getSourceDataLine(format);
             		outputDataLineSampleRate = wantedSampleRate;
             		if (!audioMuted) {
-	            		if (samples != null) {
-	            			outputDataLine.open(format, samples.length * 4);
+	            		if (wantedBufferSize > 0) {
+	            			outputDataLine.open(format, wantedBufferSize);
 	            		} else {
 	            			outputDataLine.open(format);
 	            		}
@@ -168,8 +184,11 @@ public class sceSasCore implements HLEModule {
     		init();
 
             if (samples != null) {
-            	byte[] buffer = encodeSamples();
-            	outputDataLine.write(buffer, 0, buffer.length);
+            	outputDataLine.stop();
+            	buffer = encodeSamples();
+            	int length = Math.min(outputDataLine.getBufferSize(), buffer.length);
+            	bufferIndex = length;
+            	outputDataLine.write(buffer, 0, length);
             	outputDataLine.start();
             }
 
@@ -182,6 +201,26 @@ public class sceSasCore implements HLEModule {
     		}
 
     		return 0;	// TODO Check the return value
+    	}
+
+    	public boolean IsEnded() {
+    		if (outputDataLine == null) {
+    			return true;
+    		}
+
+    		if (!outputDataLine.isRunning()) {
+    			return true;
+    		}
+
+    		if (buffer != null && bufferIndex < buffer.length) {
+    			return false;
+    		}
+
+    		if (outputDataLine.available() >= outputDataLine.getBufferSize()) {
+    			return true;
+    		}
+
+    		return false;
     	}
 
     	private byte[] encodeSamples() {
@@ -199,6 +238,46 @@ public class sceSasCore implements HLEModule {
 
             return buffer;
         }
+
+    	public void check() {
+    		if (outputDataLine == null || !outputDataLine.isActive() || buffer == null) {
+    			return;
+    		}
+
+    		if (bufferIndex < buffer.length) {
+    			int length = Math.min(outputDataLine.available(), buffer.length - bufferIndex);
+    			if (length > 0) {
+    				outputDataLine.write(buffer, bufferIndex, length);
+    				bufferIndex += length;
+    			}
+    		} else if (IsEnded()) {
+    			outputDataLine.stop();
+    		}
+    	}
+    }
+
+    protected class VoicesCheckerThread extends Thread {
+    	private long delayMillis;
+
+    	public VoicesCheckerThread(long delayMillis) {
+    		this.delayMillis = delayMillis;
+    	}
+
+    	@Override
+		public void run() {
+			while (true) {
+				for (int i = 0; i < voices.length; i++) {
+					voices[i].check();
+				}
+
+				try {
+					sleep(delayMillis);
+				} catch (InterruptedException e) {
+					// Ignore the Exception
+				}
+			}
+		}
+    	
     }
 
     protected int sasCoreUid;
@@ -420,12 +499,16 @@ public class sceSasCore implements HLEModule {
         int sasCore = cpu.gpr[4];
         // 99% sure there are no more parameters
 
-        Modules.log.debug("IGNORING:__sceSasGetEndFlag(sasCore=0x" + Integer.toHexString(sasCore) + ")");
-
         if (isSasHandleGood(sasCore, "__sceSasGetEndFlag", cpu)) {
         	// Returns a 32 bits bitfield (tested using "if (result & (1 << n))")
-            // Fake all voices finished
-            cpu.gpr[2] = 0xFFFFFFFF;
+        	int endFlag = 0;
+        	for (int i = 0; i < voices.length; i++) {
+        		if (voices[i].IsEnded()) {
+        			endFlag |= (1 << i);
+        		}
+        	}
+            Modules.log.info("__sceSasGetEndFlag(sasCore=0x" + Integer.toHexString(sasCore) + "): 0x" + Integer.toHexString(endFlag));
+            cpu.gpr[2] = endFlag;
         }
     }
 
@@ -483,6 +566,11 @@ public class sceSasCore implements HLEModule {
     	// Based on vgmstream
         short[] samples = new short[size / 16 * 28];
         int numSamples = 0;
+
+        int headerCheck = mem.read32(vagAddr);
+        if ((headerCheck & 0x00FFFFFF) == 0x00474156)	{ // VAGx
+        	vagAddr += 0x30;	// Skip the VAG header
+        }
 
         int[] unpackedSamples = new int[28];
         int hist1 = 0;
