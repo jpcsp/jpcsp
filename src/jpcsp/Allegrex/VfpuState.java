@@ -1359,7 +1359,31 @@ public class VfpuState extends FpuState {
     }
     // VFPU4:VT4444
     public void doVT4444(int vsize, int vd, int vs) {
-        doUNK("Unimplemented VT4444");
+        loadVs(4, vs);
+        int i0 = Float.floatToRawIntBits(v1[0]);
+        int i1 = Float.floatToRawIntBits(v1[1]);
+        int i2 = Float.floatToRawIntBits(v1[2]);
+        int i3 = Float.floatToRawIntBits(v1[3]);
+        int o0 = 0, o1 = 0;
+        o0 |= ((i0>> 4)&15) >> 0;
+        o0 |= ((i0>>12)&15) >> 4;
+        o0 |= ((i0>>20)&15) >> 8;
+        o0 |= ((i0>>28)&15) >>12;
+        o0 |= ((i1>> 4)&15) >>16;
+        o0 |= ((i1>>12)&15) >>20;
+        o0 |= ((i1>>20)&15) >>24;
+        o0 |= ((i1>>28)&15) >>28;
+        o1 |= ((i2>> 4)&15) >> 0;
+        o1 |= ((i2>>12)&15) >> 4;
+        o1 |= ((i2>>20)&15) >> 8;
+        o1 |= ((i2>>28)&15) >>12;
+        o1 |= ((i3>> 4)&15) >>16;
+        o1 |= ((i3>>12)&15) >>20;
+        o1 |= ((i3>>20)&15) >>24;
+        o1 |= ((i3>>28)&15) >>28;
+        v3[0] = Float.intBitsToFloat(o0);
+        v3[1] = Float.intBitsToFloat(o1);
+        saveVd(2, vd, v3);
     }
     // VFPU4:VT5551
     public void doVT5551(int vsize, int vd, int vs) {
