@@ -24,7 +24,7 @@
   <logger name="misc" />
 
   <root>
-    <level value ="debug" />
+    <level value ="off" />
     <appender-ref ref="JpcspAppender" />
     <appender-ref ref="HTMLAppender" />
   </root>
