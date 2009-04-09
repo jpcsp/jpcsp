@@ -218,10 +218,9 @@ public class FpuState extends BcuState {
     public void doCCONDS(int fs, int ft, int cond) {
         float x = fpr[fs];
         float y = fpr[ft];
-        boolean unordered = ((cond & 1) != 0) && (Float.isNaN(x) || Float.isNaN(y));
 
-        if (unordered) {
-            fcr31.c = true;
+        if (Float.isNaN(x) || Float.isNaN(y)) {
+        	fcr31.c = (cond & 1) != 0;
         } else {
             boolean equal = ((cond & 2) != 0) && (x == y);
             boolean less = ((cond & 4) != 0) && (x < y);
