@@ -515,8 +515,8 @@ public class Decoder {
         jpcsp.Allegrex.Instructions.VSCL,
         jpcsp.Allegrex.Common.UNK,
         jpcsp.Allegrex.Instructions.VHDP,
-        jpcsp.Allegrex.Instructions.VDET,
         jpcsp.Allegrex.Instructions.VCRS,
+        jpcsp.Allegrex.Instructions.VDET,
         jpcsp.Allegrex.Common.UNK,
     };
     public static final Instruction table_10[] = {
@@ -1273,7 +1273,17 @@ public class Decoder {
             }
         },
         jpcsp.Allegrex.Instructions.VMSCL,
-        jpcsp.Allegrex.Instructions.VQMUL,
+        new STUB() {
+
+            @Override
+            public Instruction instance(int insn) {
+                if ((insn & 0x00000080) == 0x00000000) {
+                    return jpcsp.Allegrex.Instructions.VCRSP;
+                } else {
+                    return jpcsp.Allegrex.Instructions.VQMUL;
+                }
+            }
+        },       
         jpcsp.Allegrex.Common.UNK,
         new STUB() {
 

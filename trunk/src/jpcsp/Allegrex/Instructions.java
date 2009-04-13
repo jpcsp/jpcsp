@@ -5115,42 +5115,7 @@ public String disasm(int address, int insn) {
 return Common.disasmVD1VSVT("vhdp", 1+one+(two<<1), vd, vs, vt);
 }
 };
-public static final Instruction VDET = new Instruction(157) {
-
-@Override
-public final String name() { return "VDET"; }
-
-@Override
-public final String category() { return "VFPU"; }
-
-@Override
-public void interpret(Processor processor, int insn) {
-	int vd = (insn>>0)&127;
-	int one = (insn>>7)&1;
-	int vs = (insn>>8)&127;
-	int two = (insn>>15)&1;
-	int vt = (insn>>16)&127;
-
-
-                processor.cpu.doVDET(1 + one + (two<<1), vd, vs, vt);
-            
-}
-@Override
-public void compile(ICompilerContext context, int insn) {
-	super.compile(context, insn);
-}
-@Override
-public String disasm(int address, int insn) {
-	int vd = (insn>>0)&127;
-	int one = (insn>>7)&1;
-	int vs = (insn>>8)&127;
-	int two = (insn>>15)&1;
-	int vt = (insn>>16)&127;
-
-return Common.disasmVD1VSVT("vdet", 1+one+(two<<1), vd, vs, vt);
-}
-};
-public static final Instruction VCRS = new Instruction(158) {
+public static final Instruction VCRS = new Instruction(157) {
 
 @Override
 public final String name() { return "VCRS"; }
@@ -5183,6 +5148,41 @@ public String disasm(int address, int insn) {
 	int vt = (insn>>16)&127;
 
 return Common.disasmVDVSVT("vcrs", 1+one+(two<<1), vd, vs, vt);
+}
+};
+public static final Instruction VDET = new Instruction(158) {
+
+@Override
+public final String name() { return "VDET"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
+@Override
+public void interpret(Processor processor, int insn) {
+	int vd = (insn>>0)&127;
+	int one = (insn>>7)&1;
+	int vs = (insn>>8)&127;
+	int two = (insn>>15)&1;
+	int vt = (insn>>16)&127;
+
+
+                processor.cpu.doVDET(1 + one + (two<<1), vd, vs, vt);
+            
+}
+@Override
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
+}
+@Override
+public String disasm(int address, int insn) {
+	int vd = (insn>>0)&127;
+	int one = (insn>>7)&1;
+	int vs = (insn>>8)&127;
+	int two = (insn>>15)&1;
+	int vt = (insn>>16)&127;
+
+return Common.disasmVD1VSVT("vdet", 1+one+(two<<1), vd, vs, vt);
 }
 };
 public static final Instruction MFV = new Instruction(159) {
@@ -7992,7 +7992,38 @@ public String disasm(int address, int insn) {
 return "Unimplemented VMSCL";
 }
 };
-public static final Instruction VQMUL = new Instruction(241) {
+public static final Instruction VCRSP = new Instruction(241) {
+
+@Override
+public final String name() { return "VCRSP"; }
+
+@Override
+public final String category() { return "VFPU"; }
+
+@Override
+public void interpret(Processor processor, int insn) {
+	int vd = (insn>>0)&127;
+	int vs = (insn>>8)&127;
+	int vt = (insn>>16)&127;
+
+
+                processor.cpu.doVCRSP(vd, vs, vt);
+            
+}
+@Override
+public void compile(ICompilerContext context, int insn) {
+	super.compile(context, insn);
+}
+@Override
+public String disasm(int address, int insn) {
+	int vd = (insn>>0)&127;
+	int vs = (insn>>8)&127;
+	int vt = (insn>>16)&127;
+
+return Common.disasmVDVSVT("VCRSP", 3, vd, vs, vt);
+}
+};
+public static final Instruction VQMUL = new Instruction(242) {
 
 @Override
 public final String name() { return "VQMUL"; }
@@ -8023,7 +8054,7 @@ public String disasm(int address, int insn) {
 return Common.disasmVDVSVT("VQMUL", 4, vd, vs, vt);
 }
 };
-public static final Instruction VMMOV = new Instruction(242) {
+public static final Instruction VMMOV = new Instruction(243) {
 
 @Override
 public final String name() { return "VMMOV"; }
@@ -8056,7 +8087,7 @@ public String disasm(int address, int insn) {
 return Common.disasmVDMVSM("VMMOV", 1+one+(two<<1), vd, vs);
 }
 };
-public static final Instruction VMIDT = new Instruction(243) {
+public static final Instruction VMIDT = new Instruction(244) {
 
 @Override
 public final String name() { return "VMIDT"; }
@@ -8087,7 +8118,7 @@ public String disasm(int address, int insn) {
 	return Common.disasmVDM("VMIDT", 1+one+(two<<1), vd);
 }
 };
-public static final Instruction VMZERO = new Instruction(244) {
+public static final Instruction VMZERO = new Instruction(245) {
 
 @Override
 public final String name() { return "VMZERO"; }
@@ -8118,7 +8149,7 @@ public String disasm(int address, int insn) {
 return Common.disasmVDM("VMZERO", 1+one+(two<<1), vd);
 }
 };
-public static final Instruction VMONE = new Instruction(245) {
+public static final Instruction VMONE = new Instruction(246) {
 
 @Override
 public final String name() { return "VMONE"; }
@@ -8149,7 +8180,7 @@ public String disasm(int address, int insn) {
 return Common.disasmVDM("VMONE", 1+one+(two<<1), vd);
 }
 };
-public static final Instruction VROT = new Instruction(246) {
+public static final Instruction VROT = new Instruction(247) {
 
 @Override
 public final String name() { return "VROT"; }
@@ -8184,7 +8215,7 @@ public String disasm(int address, int insn) {
 return Common.disasmVROT("VROT", 1+one+(two<<1), vd, vs, imm5);
 }
 };
-public static final Instruction VNOP = new Instruction(247) {
+public static final Instruction VNOP = new Instruction(248) {
 
 @Override
 public final String name() { return "VNOP"; }
@@ -8208,7 +8239,7 @@ public String disasm(int address, int insn) {
 return "vnop";
 }
 };
-public static final Instruction VFLUSH = new Instruction(248) {
+public static final Instruction VFLUSH = new Instruction(249) {
 
 @Override
 public final String name() { return "VFLUSH"; }
@@ -8232,7 +8263,7 @@ public String disasm(int address, int insn) {
 return "vflush";
 }
 };
-public static final Instruction VSYNC = new Instruction(249) {
+public static final Instruction VSYNC = new Instruction(250) {
 
 @Override
 public final String name() { return "VSYNC"; }
