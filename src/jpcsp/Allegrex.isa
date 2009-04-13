@@ -3773,23 +3773,7 @@ group root
             disasm = `return Common.disasmVD1VSVT("vhdp", 1+one+(two<<1), vd, vs, vt);`
         }
  
-        op VDET(011001:101:vt:two:vs:one:vd)
-        {
-            name=`VDET`
-
-            category=`VFPU`
-
-            interpret = `
-                processor.cpu.doVDET(1 + one + (two<<1), vd, vs, vt);
-            `
-
-            compile = `
-            `
-
-            disasm = `return Common.disasmVD1VSVT("vdet", 1+one+(two<<1), vd, vs, vt);`
-        }
- 
-        op VCRS(011001:110:vt:two:vs:one:vd)
+        op VCRS(011001:101:vt:two:vs:one:vd)
         {
             name=`VCRS`
 
@@ -3805,6 +3789,22 @@ group root
             disasm = `return Common.disasmVDVSVT("vcrs", 1+one+(two<<1), vd, vs, vt);`
         }
 
+        op VDET(011001:110:vt:two:vs:one:vd)
+        {
+            name=`VDET`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVDET(1 + one + (two<<1), vd, vs, vt);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVD1VSVT("vdet", 1+one+(two<<1), vd, vs, vt);`
+        }
+ 
     }
 
     group VFPU2
@@ -5207,6 +5207,22 @@ return Common.disasmVPFX("VPFXT", swz, abs, cst, neg);`
             `
 
             disasm = `return "Unimplemented VMSCL";`
+        }
+
+        op VCRSP(111100:101:vt:1:vs:0:vd)
+        {
+            name=`VCRSP`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVCRSP(vd, vs, vt);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVSVT("VCRSP", 1+one+(two<<1), vd, vs, vt);`
         }
 
         op VQMUL(111100:101:vt:1:vs:1:vd)

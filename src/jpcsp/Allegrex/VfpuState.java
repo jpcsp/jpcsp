@@ -1387,11 +1387,55 @@ public class VfpuState extends FpuState {
     }
     // VFPU4:VT5551
     public void doVT5551(int vsize, int vd, int vs) {
-        doUNK("Unimplemented VT4444");
+        loadVs(4, vs);
+        int i0 = Float.floatToRawIntBits(v1[0]);
+        int i1 = Float.floatToRawIntBits(v1[1]);
+        int i2 = Float.floatToRawIntBits(v1[2]);
+        int i3 = Float.floatToRawIntBits(v1[3]);
+        int o0 = 0, o1 = 0;
+        o0 |= ((i0>> 3)&31) >> 0;
+        o0 |= ((i0>>11)&31) >> 5;
+        o0 |= ((i0>>19)&31) >>11;
+        o0 |= ((i0>>31)& 1) >>15;
+        o0 |= ((i1>> 3)&31) >>16;
+        o0 |= ((i1>>11)&31) >>21;
+        o0 |= ((i1>>19)&31) >>26;
+        o0 |= ((i1>>31)& 1) >>31;
+        o1 |= ((i2>> 3)&31) >> 0;
+        o1 |= ((i2>>11)&31) >> 5;
+        o1 |= ((i2>>19)&31) >>11;
+        o1 |= ((i2>>31)& 1) >>15;
+        o1 |= ((i3>> 3)&31) >>16;
+        o1 |= ((i3>>11)&31) >>21;
+        o1 |= ((i3>>19)&31) >>26;
+        o1 |= ((i3>>31)& 1) >>31;
+        v3[0] = Float.intBitsToFloat(o0);
+        v3[1] = Float.intBitsToFloat(o1);
+        saveVd(2, vd, v3);
     }
     // VFPU4:VT5650
     public void doVT5650(int vsize, int vd, int vs) {
-        doUNK("Unimplemented VT5650");
+        loadVs(4, vs);
+        int i0 = Float.floatToRawIntBits(v1[0]);
+        int i1 = Float.floatToRawIntBits(v1[1]);
+        int i2 = Float.floatToRawIntBits(v1[2]);
+        int i3 = Float.floatToRawIntBits(v1[3]);
+        int o0 = 0, o1 = 0;
+        o0 |= ((i0>> 3)&31) >> 0;
+        o0 |= ((i0>>10)&63) >> 5;
+        o0 |= ((i0>>19)&31) >>11;
+        o0 |= ((i1>> 3)&31) >>16;
+        o0 |= ((i1>>11)&63) >>21;
+        o0 |= ((i1>>19)&31) >>27;
+        o1 |= ((i2>> 3)&31) >> 0;
+        o1 |= ((i2>>11)&63) >> 5;
+        o1 |= ((i2>>19)&31) >>11;
+        o1 |= ((i3>> 3)&31) >>16;
+        o1 |= ((i3>>11)&63) >>21;
+        o1 |= ((i3>>19)&31) >>27;
+        v3[0] = Float.intBitsToFloat(o0);
+        v3[1] = Float.intBitsToFloat(o1);
+        saveVd(2, vd, v3);
     }
     // VFPU4:VCST
     public void doVCST(int vsize, int vd, int imm5) {
@@ -1749,6 +1793,18 @@ public class VfpuState extends FpuState {
         for (int i = 0; i < vsize; ++i) {
             this.doVSCL(vsize, vd + i, vs + i, vt);
         }
+    }
+
+    // VFPU6:VCRSP
+    public void doVCRSP(int vd, int vs, int vt) {
+        loadVs(3, vs);
+        loadVt(3, vt);
+
+        v3[0] = +v1[1] * v2[2] - v1[2] * v2[1];
+        v3[1] = +v1[2] * v2[0] - v1[0] * v2[2];
+        v3[2] = +v1[0] * v2[1] - v1[1] * v2[0];
+
+        saveVd(3, vd, v3);
     }
 
     // VFPU6:VQMUL
