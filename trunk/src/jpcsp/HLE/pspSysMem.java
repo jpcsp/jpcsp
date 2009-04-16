@@ -413,6 +413,20 @@ public class pspSysMem {
         Emulator.getProcessor().cpu.gpr[2] = firmwareVersion;
     }
 
+    /** 3.52+ */
+    public void sceKernelGetModel()
+    {
+        int result = 0; // <= 0 original, 1 slim
+
+        if (firmwareVersion < 0x03050210) {
+            Modules.log.debug("sceKernelGetModel called with fw less than 3.52 loaded");
+        } else {
+            Modules.log.debug("sceKernelGetModel ret:" + result);
+        }
+
+        Emulator.getProcessor().cpu.gpr[2] = result;
+    }
+
     class SysMemInfo {
         public final int uid;
         public final int partitionid;

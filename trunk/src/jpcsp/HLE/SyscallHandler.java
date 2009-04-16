@@ -508,6 +508,9 @@ public class SyscallHandler {
                 case 0x20e2:
                     pspSysMem.getInstance().sceKernelDevkitVersion();
                     break;
+                case 0x30e8:
+                    pspSysMem.getInstance().sceKernelGetModel();
+                    break;
 		// sceKernelPowerLock(0x20e3),
 		// sceKernelPowerUnlock(0x20e4),
 		// sceKernelPowerTick(0x20e5),
@@ -914,10 +917,13 @@ public class SyscallHandler {
                     Managers.mutex.sceKernelReferMutexStatus(gpr[4], gpr[5]);
                     break;
 
-                case 0xfffff: // special code for unmapped imports
-                    Modules.log.error(String.format("Unmapped import @ 0x%08X", Emulator.getProcessor().cpu.pc));
+                case 0xfffff: { // special code for unmapped imports
+                    CpuState cpu = Emulator.getProcessor().cpu;
+                    Modules.log.error(String.format("Unmapped import @ 0x%08X - %08x %08x %08x",
+                        cpu.pc, cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
                     Emulator.PauseEmu();
                     break;
+                }
 
                 default:
                 {
