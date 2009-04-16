@@ -483,17 +483,17 @@ public class syscallsFirm15 {
        RegOpenRegistry(0x21ca,0x92e41280),
        RegCloseRegistry(0x21cb,0xfa8a5739),
        RegRemoveRegistry(0x21cc,0xdeda92bf),
-       Reg_1D8A762E(0x21cd,0x1d8a762e),
-       Reg_0CAE832B(0x21ce,0x0cae832b),
+       sceRegOpenCategory(0x21cd,0x1d8a762e),
+       sceRegCloseCategory(0x21ce,0x0cae832b),
        RegFlushRegistry(0x21cf,0x39461b4d),
-       sceReg_0D69BF40(0x21d0,0x0d69bf40),
+       sceRegFlushCategory(0x21d0,0x0d69bf40),
        sceRegCreateKey(0x21d1,0x57641a81),
        sceRegSetKeyValue(0x21d2,0x17768e14),
        sceRegGetKeyInfo(0x21d3,0xd4475aa8),
        sceRegGetKeyValue(0x21d4,0x28a8e98a),
        sceRegGetKeysNum(0x21d5,0x2c0db9dd),
        sceRegGetKeys(0x21d6,0x2d211135),
-       sceReg_4CA16893(0x21d7,0x4ca16893),
+       sceRegRemoveCategory(0x21d7,0x4ca16893),
        sceRegRemoveKey(0x21d8,0x3615bc87),
        sceRegKickBackDiscover(0x21d9,0xc5768d02),
        sceRegGetKeyValueByName(0x21da,0x30be0259),
@@ -590,10 +590,10 @@ public class syscallsFirm15 {
        sceNetGetMallocStat(0x2231,0xCC393E48),
        /* InterruptManagerForKernel */
        	sceKernelCpuSuspendIntr(0x2232,0x092968F4),
-	sceKernelCpuResumeIntr(0x2233,0x5F10D406),
-	sceKernelCpuResumeIntrWithSync(0x2234,0x3B84732D),
+        sceKernelCpuResumeIntr(0x2233,0x5F10D406),
+        sceKernelCpuResumeIntrWithSync(0x2234,0x3B84732D),
         sceKernelIsIntrContext(0x2235,0xFE28C6D9),
-	InterruptManagerForKernel_53991063(0x2236,0x53991063),
+        InterruptManagerForKernel_53991063(0x2236,0x53991063),
         sceKernelGetInterruptExitCount(0x2237,0x468BC716),
 	ReturnToThread(0x2238,0x43CD40EF),
 	SaveThreadContext(0x2239,0x85F7766D),
@@ -773,35 +773,35 @@ public class syscallsFirm15 {
                  sceNetAdhocMatchingGetPoolMaxAlloc(0x22e2,0x40F8F435),
                  /*sceSasCore doesn't exist in firmware as default 2.70 and highter has that but
                   * many games ask for that so we load anyway.. */
-                sceSasCore_A3589D81(0x22e3,0xA3589D81),
-                sceSasCore_50A14DFC(0x22e4,0x50A14DFC),
-                sceSasCore_68A46B95(0x22e5,0x68A46B95),
-                sceSasCore_440CA7D8(0x22e6,0x440CA7D8),
-                sceSasCore_AD84D37F(0x22e7,0xAD84D37F),
-                sceSasCore_99944089(0x22e8,0x99944089),
-                sceSasCore_B7660A23(0x22e9,0xB7660A23),
-                sceSasCore_019B25EB(0x22ea,0x019B25EB),
-                sceSasCore_9EC3676A(0x22eb,0x9EC3676A),
-                sceSasCore_5F9529F6(0x22ec,0x5F9529F6),
-                sceSasCore_74AE582A(0x22ed,0x74AE582A),
-                sceSasCore_CBCD4F79(0x22ee,0xCBCD4F79),
-                sceSasCore_42778A9F(0x22ef,0x42778A9F),
-                sceSasCore_A0CF2FA4(0x22f1,0xA0CF2FA4),
-                sceSasCore_76F01ACA(0x22f2,0x76F01ACA),
-                sceSasCore_F983B186(0x22f3,0xF983B186),
-                sceSasCore_D5A229C9(0x22f4,0xD5A229C9),
-                sceSasCore_33D4AB37(0x22f5,0x33D4AB37),
-                sceSasCore_267A6DD2(0x22f6,0x267A6DD2),
-                sceSasCore_2c8e6ab3(0x22f7,0x2c8e6ab3),
-                sceSasCore_787d04d5(0x22f8,0x787d04d5),
-                sceSasCore_a232cbe6(0x22f9,0xa232cbe6),
-                sceSasCore_d5ebbbcd(0x22fa,0xd5ebbbcd),
+                __sceSasCore(0x22e3, 0xA3589D81), // 2.71+
+                __sceSasCoreWithMix(0x22e4, 0x50A14DFC), // 2.71+
+                __sceSasGetEndFlag(0x22e5, 0x68A46B95), // 2.71+
+                __sceSasSetVolume(0x22e6, 0x440CA7D8), // 2.71+
+                __sceSasSetPitch(0x22e7, 0xAD84D37F), // 2.71+
+                __sceSasSetVoice(0x22e8, 0x99944089), // 2.71+
+                __sceSasSetNoise(0x22e9, 0xB7660A23), // 2.71+
+                __sceSasSetADSR(0x22ea, 0x019B25EB), // 2.71+
+                __sceSasSetADSRmode(0x22eb, 0x9EC3676A), // 2.71+
+                __sceSasSetSL(0x22ec, 0x5F9529F6), // 2.71+
+                __sceSasGetEnvelopeHeight(0x22ed, 0x74AE582A), // 2.71+
+                __sceSasSetSimpleADSR(0x22ee, 0xCBCD4F79), // 2.71+
+                __sceSasInit(0x22ef, 0x42778A9F), // 2.71+
+                __sceSasSetKeyOff(0x22f0, 0xA0CF2FA4), // 2.71+
+                __sceSasSetKeyOn(0x22f1, 0x76F01ACA), // 2.71+
+                __sceSasRevVON(0x22f2, 0xF983B186), // 2.71+
+                __sceSasRevEVOL(0x22f3, 0xD5A229C9), // 2.71+
+                __sceSasRevType(0x22f4, 0x33D4AB37), // 2.71+
+                __sceSasRevParam(0x22f5, 0x267A6DD2), // 2.71+
+                __sceSasGetPauseFlag(0x22f6, 0x2C8E6AB3), // 2.71+
+                __sceSasSetPause(0x22f7, 0x787D04D5), // 2.71+
+                __sceSasSetTrianglarWave(0x22f8, 0xA232CBE6), // 2.71+
+                __sceSasSetSteepWave(0x22f9, 0xD5EBBBCD), // 2.71+
                 /*sceSasCore the following 4 appears to be on Firmware 3.00 and after but add it just in case */
-                 sceSasCore_bd11b7c2(0x22fb,0xbd11b7c2),
- 	         sceSasCore_d1e0a01e(0x22fc,0xd1e0a01e),
- 	         sceSasCore_e175ef66(0x22fd,0xe175ef66),
- 	         sceSasCore_e855bf76(0x22fe,0xe855bf76),
-
+                __sceSasGetGrain(0x22fa, 0xBD11B7C2), // 3.52+
+                __sceSasSetGrain(0x22fb, 0xD1E0A01E), // 3.52+
+                __sceSasGetOutputmode(0x22fc, 0xE175EF66), // 3.52+
+                __sceSasSetOutputmode(0x22fd, 0xE855BF76), // 3.52+
+                // where did 0x22fe go?
                 sceNetSetDropRate(0x22ff, 0xFD8585E1), // 1.00+
                 sceHttpsInit(0x2300, 0xE4D21302), // 1.00+
                 sceNetApctlConnect(0x2301, 0xCFB957C6), // 1.00+
@@ -828,7 +828,7 @@ public class syscallsFirm15 {
                  sceUtilityUnloadModule(0x3006,0xe49bfe92), // fw 3.52 or less?
                  /* more fake mapping */
                  sceUmdReplaceProhibit(0x3007,0x87533940),//umd function 2.00 +
-                 sceNetAdhocMatching_8f58bedf(0x3008,0x8f58bedf), //2.50+
+                 sceNetAdhocMatchingCancelTargetWithOpt(0x3008,0x8f58bedf), //2.50+
                  sceFontFindOptimumFont(0x3009,0x99ef33c),//2.00 +
                  sceFontGetFontInfo(0x300a,0xda7535e),//2.00+
                  sceFontClose(0x300b,0x3aea8cb6), //2.00+
@@ -964,7 +964,8 @@ public class syscallsFirm15 {
 
                 scePower_EBD177D6(0x308b, 0xEBD177D6), //3.52+ or lower
                 sceKernelSetCompiledSdkVersion370(0x308c, 0x342061E5), //3.72+ or lower
-                sceSasCore_07F58C24(0x308d, 0x07F58C24), //3.72+ or lower
+                __sceSasGetAllEnvelopeHeights(0x308d, 0x07F58C24), //3.72+ or lower, 3.95+ in libdoc
+
 
                 sceKernelSetCompiledSdkVersion395(0x308e, 0xEBD5C3E6), // 3.95+ or lower
                 sceAtracReinit(0x308f, 0x132F1ECA), // 2.50+ or lower
@@ -1056,6 +1057,37 @@ public class syscallsFirm15 {
                 inflateEnd(0x30d6, 0x461C7724), // 2.71+
                 inflateInit_(0x30d7, 0x18CB51AB), // 2.71+
                 inflate(0x30d8, 0x216D1BF1), // 2.71+
+
+                __sceSasSetVoicePCM(0x30d9, 0xE1CD9561), // 5.00+
+                LoadExecForUser_362A956B(0x30da, 0x362A956B), // 5.00+
+                SysMemUserForUser_FE707FDF(0x30db, 0xFE707FDF), // 3.52+
+                SysMemUserForUser_50F61D8A(0x30dc, 0x50F61D8A), // 3.52+
+                SysMemUserForUser_91DE343C(0x30dd, 0x91DE343C), // 5.00+ sceKernelSetCompiledSdkVersionXXX
+                SysMemUserForUser_DB83A952(0x30de, 0xDB83A952), // 3.52+
+                SysMemUserForUser_D8DE5C1E(0x30df, 0xD8DE5C1E), // 5.00+
+                sceHttpGetContentLength(0x30e0, 0x0282A3BD), // 1.00+
+                sceHttpSetResolveRetry(0x30e1, 0x03D9526F), // 2.00+
+                sceHttpSetRecvTimeOut(0x30e2, 0x1F0FC3E3), // 1.00+
+                sceHttpSetResolveTimeOut(0x30e3, 0x47940436), // 1.00+
+                sceHttpSetConnectTimeOut(0x30e4, 0x8ACD1F73), // 1.00+
+                sceHttpSetSendTimeOut(0x30e5, 0x9988172D), // 1.00+
+                sceRtcGetLastAdjustedTime(0x30e6, 0x62685E98), // 2.00+
+
+                sceKernelRegisterDefaultExceptionHandler(0x30e7, 0x565C0B0E), // 1.00 to 3.52, gone in 3.95+
+                sceKernelGetModel(0x30e8, 0x6373995D), // 3.52+
+                sceImposeGetParam(0x30e9, 0x531C9778), // 1.00+
+                sceImposeSetParam(0x30ea, 0x810FB7FB), // 1.00+
+                sceDisplaySetBrightness(0x30eb, 0x9E3C6DC6), // 1.00+
+                sceDisplayEnable(0x30ec, 0x432D133F), // 1.00+
+                sceDisplayDisable(0x30ed, 0x681EE6A7), // 1.00+
+                sceSysregMeBusClockEnable(0x30ee, 0x44F6CDA7), // 1.00+
+                sceSysregMeBusClockDisable(0x30ef, 0x158AD4FC), // 1.00+
+                unknown_CC9ADCF8(0x30f0, 0xCC9ADCF8), // 3.71+? homebrew psplayer 2.0 (mp3 player)
+                sceFontFlush(0x30f1, 0x02D7F94B), // 2.00+
+                sceUtilityInstallInitStart(0x30f2, 0x1281DA8E), // 2.71+
+                sceUtilityInstallShutdownStart(0x30f3, 0x5EF1C24A), // 2.71+
+                sceUtilityInstallUpdate(0x30f4, 0xA03D29BA), // 2.71+
+                sceUtilityInstallGetStatus(0x30f5, 0xC4700FA3), // 2.71+
 
 
                 // We choose to start HLEModuleManager at 0x4000
