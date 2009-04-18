@@ -106,9 +106,8 @@ public class FpuState extends BcuState {
             case 31:
                 int bits = gpr[rt] & 0x01800003;
                 fcr31.rm = bits & 3;
-                bits >>= 23;
-                fcr31.fs = (bits > 1);
-                fcr31.c = (bits >> 1) == 1;
+                fcr31.fs = ((bits >> 24) & 1) != 0;
+                fcr31.c  = ((bits >> 23) & 1) != 0;
                 break;
 
             default:
