@@ -319,6 +319,9 @@ public class pspSysMem {
     /**
      * @param partitionid TODO probably user, kernel etc
      * 1 = kernel, 2 = user, 3 = me, 4 = kernel mirror (from potemkin/dash)
+     * http://forums.ps2dev.org/viewtopic.php?p=75341#75341
+     * 8 = slim, topaddr = 0x8A000000, size = 0x1C00000 (28 MB), attr = 0x0C
+     * 8 = slim, topaddr = 0x8BC00000, size = 0x400000 (4 MB), attr = 0x0C
      * @param type If type is PSP_SMEM_Addr, then addr specifies the lowest
      * address to allocate the block from.
      */
@@ -388,7 +391,7 @@ public class pspSysMem {
         }
     }
 
-    /** may need to implement format string parsing */
+    /** TODO implement format string parsing and reading variable number of parameters */
     public void sceKernelPrintf(int string_addr)
     {
         String msg = readStringNZ(string_addr, 256);

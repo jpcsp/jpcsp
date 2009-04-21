@@ -29,7 +29,8 @@ import jpcsp.format.PSF;
 import jpcsp.format.PSPModuleInfo;
 import jpcsp.util.Utilities;
 
-/** After initialising an instance please call .write() at least once. */
+/** After initialising an instance please call .write() at least once.
+ * Also call free() when unloading the module. */
 public class SceModule {
 
     // PSP info
@@ -54,7 +55,7 @@ public class SceModule {
     public int text_size;
     public int data_size;
     public int bss_size;
-    public int nsegment; // ? maybe init/text/sceStub.text/fini
+    public int nsegment; // usually just 1 segment
     public int[] segmentaddr = new int[4]; // static memory footprint of the module
     public int[] segmentsize = new int[4]; // static memory footprint of the module
 
@@ -83,18 +84,30 @@ public class SceModule {
     public List<DeferredStub> unresolvedImports;
     public int importFixupAttempts;
 
-    private static int sceModuleAddressOffset = 0x08410000;
+    private static int sceModuleAddressOffset = 0x08400000; // reset this when we reset the emu
+    public static void ResetAllocator() {
+        sceModuleAddressOffset = 0x08400000;
+    }
+
     public SceModule(boolean isFlashModule) {
         this.isFlashModule = isFlashModule;
 
         modid = SceUidManager.getNewUid("SceModule");
 
-        // Address this struct will be stored in PSP mem
+        // This struct must exist in PSP mem for old homebrew that uses pspSdkInstallNoDeviceCheckPatch,
+        // actually that function is error tolerant so we may not need to save this into psp memory at all.
+
         // TODO This messes with loader "base address" since the loader has new SceModule() right at the start, and we'd rather not use smem_high since it will make stack allocations "non-pretty"
         //address = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_Low, size, 0);
         //pspSysMem.getInstance().addSysMemInfo(2, "ModuleMgr", pspSysMem.PSP_SMEM_Low, size, address);
+
+        // update: allocate down into kernel area, otherwise we interfere with the volatile mem area,
+        // also you can only get a pointer to this struct from LoadCoreForKernel,
+        // which is kernel mode only, anyone see an official game call those functions?
+        // usermode version is SceKernelModuleInfo
+
+        sceModuleAddressOffset -= (size + 64) & ~63;
         address = sceModuleAddressOffset;
-        sceModuleAddressOffset += (size + 64) & ~63;
 
         // Link SceModule structs together
         if (previousModule != null)
@@ -117,6 +130,7 @@ public class SceModule {
     }
 
     public void write(Memory mem, int address) {
+        //Emulator.log.debug(String.format("Writing SceModule @ %08X modname:'%s'", address, modname));
         mem.write32(address, next);
         mem.write16(address + 4, attribute);
         mem.write8(address + 6, version[0]);
@@ -157,6 +171,7 @@ public class SceModule {
     public void read(Memory mem, int address) {
         // TODO
         Emulator.log.error("UNIMPLEMENTED SceModule read");
+        Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
     }
 
     /** initialise ourself from a PSPModuleInfo object.

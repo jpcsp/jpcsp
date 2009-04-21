@@ -416,6 +416,10 @@ public class ThreadMan {
         return (thread == idle0 || thread == idle1);
     }
 
+    public boolean isKernelMode() {
+        return ((current_thread.attr & PSP_THREAD_ATTR_KERNEL) == PSP_THREAD_ATTR_KERNEL);
+    }
+
     public String getThreadName(int uid) {
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
@@ -588,6 +592,14 @@ public class ThreadMan {
                 waitingThreads.add(thread);
             }
         } else if (thread.status == PSP_THREAD_STOPPED) {
+            // TODO check if stopped threads eventually get automatically deleted on a real psp
+            // HACK auto delete module mgr threads
+            if (thread.name.equals("root") || // should probably find the real name and change it
+                thread.name.equals("SceModmgrStart") ||
+                thread.name.equals("SceKernelModmgrStop")) {
+                thread.do_delete = true;
+            }
+
             if (thread.do_delete) {
                 toBeDeletedThreads.add(thread);
             }

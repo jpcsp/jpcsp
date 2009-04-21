@@ -20,18 +20,16 @@ package jpcsp.HLE.kernel.types;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 
-/**
- *
- * @author hli
- */
+/** usermode version of SceModule */
 public class SceKernelModuleInfo extends pspAbstractMemoryMappedStructure {
 
     // PSP info
     // http://psp.jim.sh/pspsdk-doc/structSceKernelModuleInfo.html
-    public final int size = 92;
-    public int nsegment; // ?
-    public int[] segmentaddr = new int[4]; // ?
-    public int[] segmentsize = new int[4]; // ?
+    public final int size = 96;
+    public byte nsegment;
+    public byte[] reserved = new byte[3]; // these never get touched, nsegment is not 32-bit in this struct
+    public int[] segmentaddr = new int[4];
+    public int[] segmentsize = new int[4];
     public int entry_addr;
     public int gp_value;
     public int text_addr;
@@ -42,17 +40,12 @@ public class SceKernelModuleInfo extends pspAbstractMemoryMappedStructure {
     public byte[] version = new byte[2];
     public String name;
 
-    // Internal info
-    // TODO does this need a UID? is it always bound to SceModule?
-    public final int uid;
-
     public SceKernelModuleInfo() {
-        uid = SceUidManager.getNewUid("SceKernelModuleInfo");
     }
 
     /** SceKernelModuleInfo contains a subset of the data in SceModule */
     public void copy(SceModule sceModule) {
-        nsegment = sceModule.nsegment;
+        nsegment = (byte)(sceModule.nsegment & 0xFF);
         segmentaddr[0] = sceModule.segmentaddr[0];
         segmentaddr[1] = sceModule.segmentaddr[1];
         segmentaddr[2] = sceModule.segmentaddr[2];
@@ -64,6 +57,7 @@ public class SceKernelModuleInfo extends pspAbstractMemoryMappedStructure {
         entry_addr = sceModule.entry_addr;
         gp_value = sceModule.gp_value;
         text_addr = sceModule.text_addr;
+        text_size = sceModule.text_size;
         data_size = sceModule.data_size;
         bss_size = sceModule.bss_size;
         attribute = sceModule.attribute;
@@ -76,7 +70,10 @@ public class SceKernelModuleInfo extends pspAbstractMemoryMappedStructure {
         int size = read32();
         setMaxSize(size);
 
-        nsegment        = read32();
+        nsegment        = (byte)(read8() & 0xFF);
+        reserved[0]     = (byte)(read8() & 0xFF);
+        reserved[1]     = (byte)(read8() & 0xFF);
+        reserved[2]     = (byte)(read8() & 0xFF);
         segmentaddr[0]  = read32();
         segmentaddr[1]  = read32();
         segmentaddr[2]  = read32();
@@ -98,9 +95,12 @@ public class SceKernelModuleInfo extends pspAbstractMemoryMappedStructure {
     }
 
     protected void write() {
+        // TODO read size, but override so min is enough for everything up to and including bss_size
         setMaxSize(size);
 
-        write32(nsegment);
+        write32(size);
+        write8(nsegment);
+        writeSkip(3);
         write32(segmentaddr[0]);
         write32(segmentaddr[1]);
         write32(segmentaddr[2]);

@@ -154,6 +154,7 @@ public class Emulator implements Runnable {
         getClock().reset();
         getProcessor().reset();
         Memory.getInstance().Initialise();
+        jpcsp.HLE.kernel.types.SceModule.ResetAllocator(); // HACK, see SceModule for details
 
         NIDMapper.getInstance().Initialise();
         Loader.getInstance().reset();

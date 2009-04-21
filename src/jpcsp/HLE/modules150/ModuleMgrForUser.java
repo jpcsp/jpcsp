@@ -41,6 +41,7 @@ import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.util.Utilities;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceModule;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 
 import jpcsp.Allegrex.CpuState; // New-Style Processor
 
@@ -249,7 +250,7 @@ public class ModuleMgrForUser implements HLEModule {
                 moduleInput.close();
             } else {
                 Modules.log.warn("sceKernelLoadModule(path='" + name + "') can't find file");
-                cpu.gpr[2] = -1;
+                cpu.gpr[2] = pspiofilemgr.PSP_ERROR_FILE_NOT_FOUND;
             }
         } catch (IOException e) {
             Modules.log.error("sceKernelLoadModule - Error while loading module " + name + ": " + e.getMessage());
@@ -312,22 +313,21 @@ public class ModuleMgrForUser implements HLEModule {
 
         if (sceModule == null) {
             Modules.log.warn("sceKernelStartModule - unknown module UID 0x" + Integer.toHexString(uid));
-            cpu.gpr[2] = -1;
+            cpu.gpr[2] = ERROR_UNKNOWN_MODULE;
         } else  if (sceModule.isFlashModule) {
             // Trying to start a module loaded from flash0:
             // Do nothing...
             Modules.log.warn("IGNORING:sceKernelStartModule flash module '" + sceModule.modname + "'");
-            cpu.gpr[2] = 0;
+            cpu.gpr[2] = sceModule.modid; // return the module id
         } else {
-            // TODO check thread priority
             ThreadMan threadMan = ThreadMan.getInstance();
             if (mem.isAddressGood(sceModule.entry_addr)) {
                 if (mem.isAddressGood(status_addr)) {
                     mem.write32(status_addr, 0); // TODO set to return value of the thread (when it exits, of course)
                 }
 
-                SceKernelThreadInfo thread = threadMan.hleKernelCreateThread(sceModule.modname,
-                        sceModule.entry_addr, 0x20, 0x4000, sceModule.attribute, option_addr);
+                SceKernelThreadInfo thread = threadMan.hleKernelCreateThread("SceModmgrStart",
+                        sceModule.entry_addr, 0x20, 0x40000, sceModule.attribute, option_addr);
                 // override inherited module id with the new module we are starting
                 thread.moduleid = sceModule.modid;
                 cpu.gpr[2] = sceModule.modid; // return the module id
@@ -356,10 +356,19 @@ public class ModuleMgrForUser implements HLEModule {
             + ",status=0x" + Integer.toHexString(status_addr)
             + ",option=0x" + Integer.toHexString(option_addr) + ")");
 
+        // TODO check if module_stop export exists in this module, if so:
+        // - create a thread called SceKernelModmgrStop, stack 0x40000, pri 0x20, entry = module_stop
+        // - start the thread using the parameters supplied to this function
+
+        // TODO only write this if module_stop exists
         if (mem.isAddressGood(status_addr)) {
             mem.write32(status_addr, 0); // TODO set to return value of the thread (when it exits, of course)
         }
 
+        // TODO
+        // return 0 regardless of module_stop existing
+        // 80020135 module already stopped, ERROR_UNKNOWN_MODULE
+        // 8002012E not found module
         cpu.gpr[2] = 0xDEADC0DE;
     }
 

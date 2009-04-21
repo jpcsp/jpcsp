@@ -22,6 +22,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 
 import jpcsp.Memory;
 import jpcsp.Processor;
@@ -88,39 +89,75 @@ public class sceSuspendForUser implements HLEModule {
         cpu.gpr[2] = 0;
     }
 
-    public void sceKernelVolatileMemLock(Processor processor) {
+    protected void hleKernelVolatileMemLock(Processor processor, boolean trylock) {
         CpuState cpu = processor.cpu; // New-Style Processor
         Memory mem = Processor.memory;
 
+        int unk1 = cpu.gpr[4];
         int paddr = cpu.gpr[5];
         int psize = cpu.gpr[6];
 
-        Modules.log.debug("sceKernelVolatileMemLock paddr=0x" + Integer.toHexString(paddr) + ", psize=0x" + Integer.toHexString(psize));
+        Modules.log.debug("PARTIAL:hleKernelVolatileMemLock unk1=" + unk1
+            + ", paddr=0x" + Integer.toHexString(paddr)
+            + ", psize=0x" + Integer.toHexString(psize)
+            + ", trylock=" + trylock);
 
-        if (!volatileMemLocked && mem.isAddressGood(paddr) && mem.isAddressGood(psize)) {
-            mem.write32(paddr, 0x08400000); // Volatile mem is always at 0x08400000
-            mem.write32(psize,   0x400000); // Volatile mem size is 4Megs
-
-            cpu.gpr[2] = 0;
-            volatileMemLocked = true;
+        if (unk1 != 0) {
+            Modules.log.warn("hleKernelVolatileMemLock bad param: unk1 != 0");
+            cpu.gpr[2] = ERROR_ARGUMENT;
         } else {
-            cpu.gpr[2] = -1;
+            if (!volatileMemLocked) {
+                volatileMemLocked = true;
+
+                if (mem.isAddressGood(paddr)) {
+                    mem.write32(paddr, 0x08400000); // Volatile mem is always at 0x08400000
+                }
+
+                if (mem.isAddressGood(psize)) {
+                    mem.write32(psize,   0x400000); // Volatile mem size is 4Megs
+                }
+
+                cpu.gpr[2] = 0;
+            } else {
+                Modules.log.warn("hleKernelVolatileMemLock already locked");
+
+                if (trylock) {
+                    cpu.gpr[2] = 0x802b0200; // unknown meaning
+                } else {
+                    // TODO implement mem locking using psp semaphores, block here until unlock
+                    Modules.log.warn("UNIMPLEMENTED:hleKernelVolatileMemLock blocking current thread");
+                    jpcsp.HLE.ThreadMan.getInstance().blockCurrentThread();
+                    cpu.gpr[2] = -1; // check, probably 0 if/when the psp wakes from the semaphore... when we implement it :)
+                }
+            }
         }
     }
 
+    public void sceKernelVolatileMemLock(Processor processor) {
+        hleKernelVolatileMemLock(processor, false);
+    }
+
     public void sceKernelVolatileMemTryLock(Processor processor) {
-        Modules.log.debug("sceKernelVolatileMemTryLock - redirecting to sceKernelVolatileMemLock");
-        sceKernelVolatileMemLock(processor);
+        hleKernelVolatileMemLock(processor, true);
     }
 
     public void sceKernelVolatileMemUnlock(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
-        Modules.log.debug("sceKernelVolatileMemUnlock");
-        if (!volatileMemLocked) {
-            Modules.log.info("sceKernelVolatileMemUnlock - Volatile Memory was not locked!");
+
+        int unk1 = cpu.gpr[4];
+
+        Modules.log.debug("sceKernelVolatileMemUnlock(unk1=" + unk1 + ")");
+
+        if (unk1 != 0) {
+            Modules.log.warn("sceKernelVolatileMemUnlock bad param: unk1 != 0");
+            cpu.gpr[2] = ERROR_ARGUMENT;
+        } else if (!volatileMemLocked) {
+            Modules.log.warn("sceKernelVolatileMemUnlock - Volatile Memory was not locked!");
+            cpu.gpr[2] = ERROR_SEMA_OVERFLOW;
+        } else {
+            volatileMemLocked = false;
+            cpu.gpr[2] = 0;
         }
-        volatileMemLocked = false;
-        cpu.gpr[2] = 0;
     }
 
     public final HLEModuleFunction sceKernelPowerLockFunction = new HLEModuleFunction("sceSuspendForUser", "sceKernelPowerLock") {
