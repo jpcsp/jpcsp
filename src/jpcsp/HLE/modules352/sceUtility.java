@@ -42,7 +42,7 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
     public void installModule(HLEModuleManager mm, int version) {
         super.installModule(mm, version);
 
-        if (version >= 271) {
+        if (version >= 352) {
 
             mm.addFunction(sceUtilityLoadModuleFunction, 0x2A2B3DE0);
             mm.addFunction(sceUtilityUnloadModuleFunction, 0xE49BFE92);
@@ -54,7 +54,7 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
     public void uninstallModule(HLEModuleManager mm, int version) {
         super.uninstallModule(mm, version);
 
-        if (version >= 271) {
+        if (version >= 352) {
 
             mm.removeFunction(sceUtilityLoadModuleFunction);
             mm.removeFunction(sceUtilityUnloadModuleFunction);

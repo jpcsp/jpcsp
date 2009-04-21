@@ -367,8 +367,8 @@ public class ModuleMgrForUser implements HLEModule {
 
         // TODO
         // return 0 regardless of module_stop existing
-        // 80020135 module already stopped, ERROR_UNKNOWN_MODULE
-        // 8002012E not found module
+        // 80020135 module already stopped
+        // 8002012E not found module, ERROR_UNKNOWN_MODULE
         cpu.gpr[2] = 0xDEADC0DE;
     }
 
