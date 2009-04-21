@@ -405,9 +405,10 @@ public class Loader {
                 }
                 if (memOffset + memLen > module.loadAddressHigh) {
                     module.loadAddressHigh = memOffset + memLen;
-                    Memory.log.debug(String.format("PH#%d: new loadAddressHigh %08X", i, module.loadAddressHigh));
+                    Memory.log.trace(String.format("PH#%d: new loadAddressHigh %08X", i, module.loadAddressHigh));
                 }
 
+                Memory.log.trace(String.format("PH#%d: contributes %08X to bss size", i, (int)(phdr.getP_memsz() - phdr.getP_filesz())));
                 module.bss_size += (int)(phdr.getP_memsz() - phdr.getP_filesz());
             }
             i++;
@@ -502,18 +503,36 @@ public class Loader {
         // Save the address/size of some sections for SceModule
         Elf32SectionHeader shdr = elf.getSectionHeader(".text");
         if (shdr != null) {
+            Emulator.log.trace(String.format("SH: Storing text size %08X %d", shdr.getSh_size(), shdr.getSh_size()));
             module.text_addr = (int)(baseAddress + shdr.getSh_addr());
             module.text_size = (int)shdr.getSh_size();
         }
 
         shdr = elf.getSectionHeader(".data");
-        if (shdr != null)
+        if (shdr != null) {
+            Emulator.log.trace(String.format("SH: Storing data size %08X %d", shdr.getSh_size(), shdr.getSh_size()));
             module.data_size = (int)shdr.getSh_size();
+        }
 
         shdr = elf.getSectionHeader(".bss");
-        if (shdr != null && shdr.getSh_size() != 0)
-            module.bss_size = (int)shdr.getSh_size();
+        if (shdr != null && shdr.getSh_size() != 0) {
+            Emulator.log.trace(String.format("SH: Storing bss size %08X %d", shdr.getSh_size(), shdr.getSh_size()));
 
+            if (module.bss_size == (int)shdr.getSh_size()) {
+                Emulator.log.trace("SH: Same bss size already set");
+            } else if (module.bss_size > (int)shdr.getSh_size()) {
+                Emulator.log.trace(String.format("SH: Larger bss size already set (%08X > %08X)", module.bss_size, shdr.getSh_size()));
+            } else if (module.bss_size != 0) {
+                Emulator.log.warn(String.format("SH: Overwriting bss size %08X with %08X", module.bss_size, shdr.getSh_size()));
+                module.bss_size = (int)shdr.getSh_size();
+            } else {
+                // Can we even get here? bss size always set from PH first
+                Emulator.log.info("SH: bss size not already set");
+                module.bss_size = (int)shdr.getSh_size();
+            }
+        }
+
+        module.nsegment += 1;
         module.segmentaddr[0] = module.loadAddressLow;
         module.segmentsize[0] = module.loadAddressHigh - module.loadAddressLow;
     }
@@ -765,8 +784,12 @@ public class Loader {
 
                 f.position((int)(elfOffset + phdr.getP_offset()));
                 relocateFromBuffer(f, module, baseAddress, elf, RelCount);
-                // TODO now skip relocate from section headers?
+                // now skip relocate from section headers
                 return;
+            } else if (phdr.getP_type() == 0x700000A1L) {
+                // Issue 91 Support more relocate format in program headers
+                // http://forums.ps2dev.org/viewtopic.php?p=80416#80416
+                Memory.log.warn("Unimplemented:PH#" + i + ": relocate type 0x700000A1");
             }
             i++;
         }

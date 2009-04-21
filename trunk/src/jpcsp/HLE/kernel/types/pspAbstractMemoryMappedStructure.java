@@ -156,6 +156,10 @@ public abstract class pspAbstractMemoryMappedStructure {
         }
     }
 
+    protected void writeSkip(int length) {
+        offset += length;
+    }
+
     protected void writeStringNZ(int n, String s) {
         if (offset < maxSize) {
             Utilities.writeStringNZ(mem, baseAddress + offset, n, s);

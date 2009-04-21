@@ -64,7 +64,7 @@ public class sceSasCore extends jpcsp.HLE.modules150.sceSasCore {
         int size = cpu.gpr[7];
         int loopmode = cpu.gpr[8];
 
-        Modules.log.info("PARTIAL __sceSasSetVoicePCM "
+        Modules.log.warn("UNIMPLEMENTED __sceSasSetVoicePCM "
             + String.format("sasCore=0x%08x voice=%d pcmAddr=0x%08x size=0x%08x loopmode=%d",
             sasCore, voice, pcmAddr, size, loopmode));
 

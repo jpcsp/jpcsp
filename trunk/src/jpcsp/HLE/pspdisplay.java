@@ -73,11 +73,6 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     public static final int PSP_DISPLAY_SETBUF_IMMEDIATE = 0;
     public static final int PSP_DISPLAY_SETBUF_NEXTFRAME = 1;
 
-    // PspDisplayErrorCodes enum
-    public static final int PSP_DISPLAY_ERROR_OK       = 0;
-    public static final int PSP_DISPLAY_ERROR_POINTER  = 0x80000103;
-    public static final int PSP_DISPLAY_ERROR_ARGUMENT = 0x80000107;
-
     public boolean disableGE;
 
     // current display mode

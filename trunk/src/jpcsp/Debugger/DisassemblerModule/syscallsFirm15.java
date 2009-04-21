@@ -475,10 +475,10 @@ public class syscallsFirm15 {
        WlanDevSetGPIO(0x21c2,0x7ff54bd2),
        WlanDevGetStateGPIO(0x21c3,0x05fe320c),
        WlanDrv_lib_8D5F551B(0x21c4,0x8d5f551b),
-       VaudioOutputBlocking(0x21c5,0x8986295e),
-       VaudioChReserve(0x21c6,0x03b6807d),
-       VaudioChRelease(0x21c7,0x67585dfd),
-       Vaudio_346FBE94(0x21c8,0x346fbe94),
+       sceVaudioOutputBlocking(0x21c5,0x8986295e),
+       sceVaudioChReserve(0x21c6,0x03b6807d),
+       sceVaudioChRelease(0x21c7,0x67585dfd),
+       sceVaudioSetEffectType(0x21c8,0x346fbe94),
        RegExit(0x21c9,0x9b25edf1),
        RegOpenRegistry(0x21ca,0x92e41280),
        RegCloseRegistry(0x21cb,0xfa8a5739),
@@ -962,7 +962,7 @@ public class syscallsFirm15 {
                 sceAudioOutput2ChangeLength(0x3089, 0x63F2889C), //2.50+ or lower
                 sceAudioOutput2GetRestSample(0x308a, 0x647CEF33), //2.50+ or lower
 
-                scePower_EBD177D6(0x308b, 0xEBD177D6), //3.52+ or lower
+                scePower_EBD177D6(0x308b, 0xEBD177D6), //3.52+ or lower change clock speeds
                 sceKernelSetCompiledSdkVersion370(0x308c, 0x342061E5), //3.72+ or lower
                 __sceSasGetAllEnvelopeHeights(0x308d, 0x07F58C24), //3.72+ or lower, 3.95+ in libdoc
 
@@ -1046,7 +1046,6 @@ public class syscallsFirm15 {
                 sceMp3GetLoopNum(0x30ce, 0xD8F54A51), // 3.95+
 
                 sceMpegQueryUserdataEsSize(0x30cf, 0xC45C99CC), // 2.71+
-                sceMpegQueryUserdataEsSize_vsh(0x30cf, 0x01977054), // 2.71+ fiddled so the syscall is the same as the non-vsh version
                 sceUtilityGetNetParamLatestID(0x30d0, 0x4FED24D8), // 2.00+
 
                 sceAtracSetAA3DataAndGetID(0x30d1, 0x5622B7C1), // 2.71+
@@ -1072,7 +1071,6 @@ public class syscallsFirm15 {
                 sceHttpSetConnectTimeOut(0x30e4, 0x8ACD1F73), // 1.00+
                 sceHttpSetSendTimeOut(0x30e5, 0x9988172D), // 1.00+
                 sceRtcGetLastAdjustedTime(0x30e6, 0x62685E98), // 2.00+
-
                 sceKernelRegisterDefaultExceptionHandler(0x30e7, 0x565C0B0E), // 1.00 to 3.52, gone in 3.95+
                 sceKernelGetModel(0x30e8, 0x6373995D), // 3.52+
                 sceImposeGetParam(0x30e9, 0x531C9778), // 1.00+
@@ -1089,6 +1087,15 @@ public class syscallsFirm15 {
                 sceUtilityInstallUpdate(0x30f4, 0xA03D29BA), // 2.71+
                 sceUtilityInstallGetStatus(0x30f5, 0xC4700FA3), // 2.71+
 
+                sceHttpGetNetworkPspError(0x30f6, 0x2255551E), // 2.00+
+                sceHttpSetRedirectCallback(0x30f7, 0xA4496DE5), // 2.00+
+                sceHttpsGetSslError(0x30f8, 0xAB1540D5), // 1.50+
+                sceHttpSetMallocFunction(0x30f9, 0xF49934F6), // 1.00+
+                sceMpegBasePESpacketCopy(0x30fa, 0xBEA18F91), // 1.00+
+                sceMpegBaseCscInit(0x30fb, 0x492B5E4B), // 1.00+
+                sceMpegbase_driver_0530BE4E(0x30fc, 0x0530BE4E), // 1.00+
+                sceMpegBaseCscAvc(0x30fd, 0x91929A21), // 1.00+
+                sceMpegGetUserdataAu(0x30fe, 0x01977054), // 2.71+
 
                 // We choose to start HLEModuleManager at 0x4000
 
@@ -1097,7 +1104,7 @@ public class syscallsFirm15 {
                 systemctrl_user_577AF198(0x5001, 0x577AF198),
                 systemctrl_user_75643FCA(0x5002, 0x75643FCA),
                 systemctrl_user_ABA7F1B0(0x5003, 0xABA7F1B0),
-                systemctrl_user_16C3B7EE(0x5004, 0x16C3B7EE),
+                sctrlSEGetConfig(0x5004, 0x16C3B7EE),
                 systemctrl_user_85B520C6(0x5005, 0x85B520C6),
 
                 // Module magic, we choose to start at 0x6000

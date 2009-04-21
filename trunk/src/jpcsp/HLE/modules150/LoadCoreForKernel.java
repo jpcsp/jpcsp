@@ -19,12 +19,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import jpcsp.HLE.Modules;
+import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Processor;
@@ -527,6 +529,12 @@ public class LoadCoreForKernel implements HLEModule {
             Modules.log.warn("sceKernelFindModuleByName not found module name='" + name + "'");
             cpu.gpr[2] = 0; // return NULL
         }
+
+        // we still execute the function normally, so user can click run again
+        if (!ThreadMan.getInstance().isKernelMode()) {
+            Modules.log.error("kernel mode required (sceKernelFindModuleByName)");
+            Emulator.PauseEmu();
+        }
     }
 
     public void sceKernelFindModuleByAddress(Processor processor) {
@@ -545,6 +553,12 @@ public class LoadCoreForKernel implements HLEModule {
             Modules.log.warn("sceKernelFindModuleByAddress not found module address=0x" + Integer.toHexString(address));
             cpu.gpr[2] = 0; // return NULL
         }
+
+        // we still execute the function normally, so user can click run again
+        if (!ThreadMan.getInstance().isKernelMode()) {
+            Modules.log.error("kernel mode required (sceKernelFindModuleByAddress)");
+            Emulator.PauseEmu();
+        }
     }
 
     public void sceKernelFindModuleByUID(Processor processor) {
@@ -562,6 +576,12 @@ public class LoadCoreForKernel implements HLEModule {
         } else {
             Modules.log.warn("sceKernelFindModuleByUID not found module uid=0x" + Integer.toHexString(uid));
             cpu.gpr[2] = 0; // return NULL
+        }
+
+        // we still execute the function normally, so user can click run again
+        if (!ThreadMan.getInstance().isKernelMode()) {
+            Modules.log.error("kernel mode required (sceKernelFindModuleByUID)");
+            Emulator.PauseEmu();
         }
     }
 

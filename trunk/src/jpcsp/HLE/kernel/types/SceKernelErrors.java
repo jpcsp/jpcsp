@@ -18,6 +18,9 @@ package jpcsp.HLE.kernel.types;
 
 public class SceKernelErrors {
 
+    public static final int ERROR_POINTER  = 0x80000103;
+    public static final int ERROR_ARGUMENT = 0x80000107;
+
     public static final int ERROR_SAVEDATA_LOAD_NO_MEMSTICK = 0x80110301;
     public static final int ERROR_SAVEDATA_LOAD_ACCESS_ERROR = 0x80110305;
     public static final int ERROR_SAVEDATA_LOAD_DATA_BROKEN = 0x80110306;
@@ -34,6 +37,8 @@ public class SceKernelErrors {
     public static final int ERROR_SAVEDATA_SAVE_WRONG_UMD = 0x8011038a;
 
     public final static int ERROR_UNKNOWN_UID = 0x800200cb;
+    // some missing
+    public final static int ERROR_UNKNOWN_MODULE = 0x8002012e;
     // some missing
     public final static int ERROR_NO_MEMORY = 0x80020190;
     public final static int ERROR_ILLEGAL_ATTR = 0x80020191;
