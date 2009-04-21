@@ -42,7 +42,9 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
     public void installModule(HLEModuleManager mm, int version) {
         super.installModule(mm, version);
 
-        if (version >= 271) {
+        // HACK using 270 instead of 271 because some 270 games use it...
+        // TODO move to a 270 directory if it becomes a problem
+        if (version >= 270) {
 
             mm.addFunction(sceUtilityLoadAvModuleFunction, 0xC629AF26);
             mm.addFunction(sceUtilityUnloadAvModuleFunction, 0xF7D8D092);
@@ -54,7 +56,7 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
     public void uninstallModule(HLEModuleManager mm, int version) {
         super.uninstallModule(mm, version);
 
-        if (version >= 271) {
+        if (version >= 270) {
 
             mm.removeFunction(sceUtilityLoadAvModuleFunction);
             mm.removeFunction(sceUtilityUnloadAvModuleFunction);
