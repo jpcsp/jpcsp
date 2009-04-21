@@ -36,7 +36,7 @@ import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.HLE.kernel.types.*;
 import jpcsp.HLE.kernel.managers.*;
 
-public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
+public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
 
     @Override
     public void installModule(HLEModuleManager mm, int version) {
