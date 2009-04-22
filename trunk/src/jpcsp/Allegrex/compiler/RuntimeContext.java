@@ -71,6 +71,8 @@ public class RuntimeContext {
 	private static volatile Map<Integer, CodeBlock> codeBlocks = Collections.synchronizedMap(new HashMap<Integer, CodeBlock>());
 	private static volatile Map<SceKernelThreadInfo, RuntimeThread> threads = Collections.synchronizedMap(new HashMap<SceKernelThreadInfo, RuntimeThread>());
 	private static volatile Map<SceKernelThreadInfo, RuntimeThread> toBeStoppedThreads = Collections.synchronizedMap(new HashMap<SceKernelThreadInfo, RuntimeThread>());
+	private static volatile Map<SceKernelThreadInfo, RuntimeThread> alreadyStoppedThreads = Collections.synchronizedMap(new HashMap<SceKernelThreadInfo, RuntimeThread>());
+	private static volatile Map<SceKernelThreadInfo, RuntimeThread> toBeDeletedThreads = Collections.synchronizedMap(new HashMap<SceKernelThreadInfo, RuntimeThread>());
 	public  static volatile SceKernelThreadInfo currentThread = null;
 	private static volatile RuntimeThread currentRuntimeThread = null;
 	private static volatile Object waitForEnd = new Object();
@@ -340,6 +342,10 @@ public class RuntimeContext {
 
         syncIdle();
 
+        if (toBeDeletedThreads.containsValue(getRuntimeThread())) {
+        	return;
+        }
+
         Thread currentThread = Thread.currentThread();
     	if (log.isDebugEnabled()) {
     		log.debug("syncThread currentThread=" + currentThread.getName() + ", currentRuntimeThread=" + currentRuntimeThread.getName());
@@ -380,7 +386,9 @@ public class RuntimeContext {
 
 		RuntimeThread runtimeThread = getRuntimeThread();
 		if (runtimeThread != null && toBeStoppedThreads.containsValue(runtimeThread)) {
-			return true;
+			if (!alreadyStoppedThreads.containsValue(runtimeThread)) {
+				return true;
+			}
 		}
 
 		return false;
@@ -490,6 +498,8 @@ public class RuntimeContext {
 		}
 
 		SceKernelThreadInfo threadInfo = thread.getThreadInfo();
+    	alreadyStoppedThreads.put(threadInfo, thread);
+
     	if (!thread.getThreadInfo().do_delete) {
     		thread.setInSyscall(true);
 
@@ -507,6 +517,8 @@ public class RuntimeContext {
 
 		threads.remove(threadInfo);
 		toBeStoppedThreads.remove(threadInfo);
+		alreadyStoppedThreads.remove(threadInfo);
+		toBeDeletedThreads.remove(threadInfo);
 
 		if (log.isDebugEnabled()) {
 			log.debug("End of Thread " + thread.getName());
@@ -624,7 +636,8 @@ public class RuntimeContext {
     	if (runtimeThread != null) {
     		log.debug("Deleting Thread " + thread.name);
     		toBeStoppedThreads.put(thread, runtimeThread);
-    		if (runtimeThread.isInSyscall()) {
+    		if (runtimeThread.isInSyscall() && Thread.currentThread() != runtimeThread) {
+    			toBeDeletedThreads.put(thread, runtimeThread);
     			runtimeThread.continueRuntimeExecution();
     		}
     	}
