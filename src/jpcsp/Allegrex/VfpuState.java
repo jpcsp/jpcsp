@@ -1029,7 +1029,7 @@ public class VfpuState extends FpuState {
     public void doVRNDF1(int vsize, int vd) {
         // temporary solution
         for (int i = 0; i < vsize; ++i) {
-            v3[i] = rnd.nextFloat()*2.0f;
+            v3[i] = 1.0f + rnd.nextFloat();
         }
         saveVd(vsize, vd, v3);
     }
