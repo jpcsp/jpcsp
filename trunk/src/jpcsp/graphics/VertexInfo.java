@@ -152,15 +152,31 @@ public class VertexInfo {
         //VideoEngine.log.debug("texture " + String.format("0x%08x", addr));
         switch(texture) {
             case 1:
-                v.t[0] = (byte)mem.read8(addr); addr += 1;
-                v.t[1] = (byte)mem.read8(addr); addr += 1;
-                VideoEngine.log.trace("texture type 1 " + v.t[0] + ", " + v.t[1] + " transform2D=" + transform2D);
+            	// Unsigned 8 bit
+        		v.t[0] = mem.read8(addr) & 0xFF; addr += 1;
+        		v.t[1] = mem.read8(addr) & 0xFF; addr += 1;
+            	if (transform2D == 0) {
+            		// To be mapped to [0..2] for 3D
+            		v.t[0] /= 0x80;
+            		v.t[1] /= 0x80;
+            	}
+            	if (VideoEngine.log.isTraceEnabled()) {
+            		VideoEngine.log.trace("texture type 1 " + v.t[0] + ", " + v.t[1] + " transform2D=" + transform2D);
+            	}
                 break;
             case 2:
             	addr = (addr + 1) & ~1;
-                v.t[0] = (short)mem.read16(addr); addr += 2;
-                v.t[1] = (short)mem.read16(addr); addr += 2;
-                VideoEngine.log.trace("texture type 2 " + v.t[0] + ", " + v.t[1] + " transform2D=" + transform2D);
+            	// Unsigned 16 bit
+        		v.t[0] = mem.read16(addr) & 0xFFFF; addr += 2;
+        		v.t[1] = mem.read16(addr) & 0xFFFF; addr += 2;
+            	if (transform2D == 0) {
+            		// To be mapped to [0..2] for 3D
+            		v.t[0] /= 0x8000;
+            		v.t[1] /= 0x8000;
+            	}
+            	if (VideoEngine.log.isTraceEnabled()) {
+            		VideoEngine.log.trace("texture type 2 " + v.t[0] + ", " + v.t[1] + " transform2D=" + transform2D);
+            	}
                 break;
             case 3:
             	addr = (addr + 3) & ~3;
@@ -179,9 +195,9 @@ public class VertexInfo {
             case 4: { // GU_COLOR_5650
             	addr = (addr + 1) & ~1;
             	int packed = mem.read16(addr); addr += 2;
-                v.c[0] = ((packed      ) & 0x1f) / 15.0f;
-                v.c[1] = ((packed >>  5) & 0x3f) / 15.0f;
-                v.c[2] = ((packed >> 11) & 0x1f) / 15.0f;
+                v.c[0] = ((packed      ) & 0x1f) / 31.0f;
+                v.c[1] = ((packed >>  5) & 0x3f) / 63.0f;
+                v.c[2] = ((packed >> 11) & 0x1f) / 31.0f;
                 v.c[3] = 0.0f; // 1.0f
                 VideoEngine.log.warn("color type " + color + " untested");
             	break;
@@ -225,17 +241,37 @@ public class VertexInfo {
         //VideoEngine.log.debug("normal " + String.format("0x%08x", addr));
         switch(normal) {
             case 1:
+            	// TODO Check if this value is signed like position or unsigned like texture
+            	// Signed 8 bit
                 v.n[0] = (byte)mem.read8(addr); addr += 1;
                 v.n[1] = (byte)mem.read8(addr); addr += 1;
                 v.n[2] = (byte)mem.read8(addr); addr += 1;
-                VideoEngine.log.warn("normal type 1 " + v.n[0] + ", " + v.n[1] + ", " + v.n[2] + " transform2D=" + transform2D);
+            	if (transform2D == 0) {
+            		// To be mapped to [-1..1] for 3D
+            		v.n[0] /= 0x7f;
+            		v.n[1] /= 0x7f;
+            		v.n[2] /= 0x7f;
+            	}
+            	if (VideoEngine.log.isTraceEnabled()) {
+            		VideoEngine.log.trace("normal type 1 " + v.n[0] + ", " + v.n[1] + ", " + v.n[2] + " transform2D=" + transform2D);
+            	}
                 break;
             case 2:
             	addr = (addr + 1) & ~1;
+            	// TODO Check if this value is signed like position or unsigned like texture
+            	// Signed 16 bit
                 v.n[0] = (short)mem.read16(addr); addr += 2;
                 v.n[1] = (short)mem.read16(addr); addr += 2;
                 v.n[2] = (short)mem.read16(addr); addr += 2;
-                VideoEngine.log.warn("normal type 2 " + v.n[0] + ", " + v.n[1] + ", " + v.n[2] + " transform2D=" + transform2D);
+            	if (transform2D == 0) {
+            		// To be mapped to [-1..1] for 3D
+            		v.n[0] /= 0x7fff;
+            		v.n[1] /= 0x7fff;
+            		v.n[2] /= 0x7fff;
+            	}
+            	if (VideoEngine.log.isTraceEnabled()) {
+            		VideoEngine.log.trace("normal type 2 " + v.n[0] + ", " + v.n[1] + ", " + v.n[2] + " transform2D=" + transform2D);
+            	}
                 break;
             case 3:
             	addr = (addr + 3) & ~3;
@@ -248,24 +284,44 @@ public class VertexInfo {
         //VideoEngine.log.debug("position " + String.format("0x%08x", addr));
         switch (position) {
             case 1:
+            	// Signed 8 bit
                 v.p[0] = (byte)mem.read8(addr); addr += 1;
                 v.p[1] = (byte)mem.read8(addr); addr += 1;
                 v.p[2] = (byte)mem.read8(addr); addr += 1;
-                VideoEngine.log.trace("vertex type 1 " + v.p[0] + ", " + v.p[1] + ", " + v.p[2] + " transform2D=" + transform2D);
+            	if (transform2D == 0) {
+            		// To be mapped to [-1..1] for 3D
+            		v.p[0] /= 0x7f;
+            		v.p[1] /= 0x7f;
+            		v.p[2] /= 0x7f;
+            	}
+            	if (VideoEngine.log.isTraceEnabled()) {
+            		VideoEngine.log.trace("vertex type 1 " + v.p[0] + ", " + v.p[1] + ", " + v.p[2] + " transform2D=" + transform2D);
+            	}
                 break;
             case 2:
             	addr = (addr + 1) & ~1;
-                v.p[0] = (short)mem.read16(addr); addr += 2;
-                v.p[1] = (short)mem.read16(addr); addr += 2;
-                v.p[2] = (short)mem.read16(addr); addr += 2;
-                VideoEngine.log.trace("vertex type 2 " + v.p[0] + ", " + v.p[1] + ", " + v.p[2] + " transform2D=" + transform2D);
+            	// Signed 16 bit
+        		v.p[0] = (short)mem.read16(addr); addr += 2;
+        		v.p[1] = (short)mem.read16(addr); addr += 2;
+        		v.p[2] = (short)mem.read16(addr); addr += 2;
+            	if (transform2D == 0) {
+            		// To be mapped to [-1..1] for 3D
+            		v.p[0] /= 0x7fff;
+            		v.p[1] /= 0x7fff;
+            		v.p[2] /= 0x7fff;
+            	}
+            	if (VideoEngine.log.isTraceEnabled()) {
+            		VideoEngine.log.trace("vertex type 2 " + v.p[0] + ", " + v.p[1] + ", " + v.p[2] + " transform2D=" + transform2D + ", addr=0x" + Integer.toHexString(addr - 6));
+            	}
                 break;
             case 3: // GU_VERTEX_32BITF
             	addr = (addr + 3) & ~3;
                 v.p[0] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
                 v.p[1] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
                 v.p[2] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-                VideoEngine.log.trace("vertex type 3 " + v.p[0] + ", " + v.p[1] + ", " + v.p[2] + " transform2D=" + transform2D);
+            	if (VideoEngine.log.isTraceEnabled()) {
+            		VideoEngine.log.trace("vertex type 3 " + v.p[0] + ", " + v.p[1] + ", " + v.p[2] + " transform2D=" + transform2D);
+            	}
                 break;
         }
 
