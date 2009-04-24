@@ -227,86 +227,113 @@ public class pspiofilemgr {
     }
 
     private String getDeviceFilePath(String pspfilename) {
-        //Modules.log.debug("getDeviceFilePath filepath='" + filepath + "' pspfilename='" + pspfilename + "'");
+        Modules.log.debug("getDeviceFilePath input filepath='" + filepath + "' pspfilename='" + pspfilename + "'");
         pspfilename = pspfilename.replaceAll("\\\\", "/");
-        String device = filepath; // must not end with /
-        String path = pspfilename;
+        String device = null;
+        String cwd = "";
         String filename = null;
 
-        // on PSP
-        // path - relative to cwd
-        // /path - relative to cwd
-        // dev:path
-        // dev:/path
-
-        // on PSP: device:path
-        // on PC: device/path
         int findcolon = pspfilename.indexOf(":");
         if (findcolon != -1) {
             // Device absolute
+            // dev:path
+            // dev:/path
             device = pspfilename.substring(0, findcolon);
-            path = pspfilename.substring(findcolon + 1);
-            //Modules.log.debug("getDeviceFilePath split device='" + device + "' path='" + path + "'");
-        }
-
-        // removing trailing / on paths, but only if the path isn't just "/"
-        if (path.endsWith("/") && path.length() != 1) {
-            path = path.substring(0, path.length() - 1);
-        }
-
-        if (path.startsWith("/")) {
-            if (path.length() == 1) {
-                filename = device;
-            } else {
-                filename = device + path;
-            }
+            pspfilename = pspfilename.substring(findcolon + 1);
+            Modules.log.debug("getDeviceFilePath device='" + device + "' pspfilename='" + pspfilename + "'");
         } else {
-            filename = device + "/" + path;
-        }
+            // Relative
+            // path - relative to cwd
+            // /path - relative to cwd
+            int findslash = filepath.indexOf("/");
+            if (findslash != -1) {
+                device = filepath.substring(0, findslash);
+                cwd = filepath.substring(findslash + 1);
+                Modules.log.debug("getDeviceFilePath device='" + device + "' cwd='" + cwd + "'");
 
-        if (device.equals("host0")) {
-            // If an iso is loaded, remap host0 to disc0
-            // If an iso is not loaded, assume running an unpacked iso, remap to file system
-            if (iso != null) {
-                Modules.log.warn("pspiofilemgr - remapping host0 to disc0");
-                filename = filename.replace("host0", "disc0");
+                if (cwd.startsWith("/")) {
+                    cwd = cwd.substring(1);
+                }
+                if (cwd.endsWith("/")) {
+                    cwd = cwd.substring(0, cwd.length() - 1);
+                }
             } else {
-                Modules.log.warn("pspiofilemgr - remapping host0 to " + filepath);
-                filename = filename.replace("host0", filepath);
+                device = filepath;
+                Modules.log.debug("getDeviceFilePath device='" + device + "'");
             }
-        } else if (device.equals("fatms0")) {
-            // might not be right but lets try it
-            Modules.log.warn("pspiofilemgr - remapping fatms0 to ms0");
-            filename = filename.replace("fatms0", "ms0");
         }
 
-        //if (filename != null)
-        //    Modules.log.debug("getDeviceFilePath filename='" + filename + "'");
+        // strip leading and trailing slash from supplied path
+        // this step is common to absolute and relative paths
+        if (pspfilename.startsWith("/")) {
+            pspfilename = pspfilename.substring(1);
+        }
+        if (pspfilename.endsWith("/")) {
+            pspfilename = pspfilename.substring(0, pspfilename.length() - 1);
+        }
 
+        // assemble final path
+        if (cwd.length() == 0) {
+            filename = device + "/" + pspfilename;
+        } else {
+            filename = device + "/" + cwd + "/" + pspfilename;
+        }
+
+        Modules.log.debug("getDeviceFilePath output filename='" + filename + "'");
         return filename;
     }
 
+    private final String[] umdPrefixes = new String[] {
+        "disc", "umd"
+    };
+
     private boolean isUmdPath(String deviceFilePath) {
-        //return deviceFilePath.toLowerCase().startsWith("disc0/"); // old
-        return deviceFilePath.toLowerCase().startsWith("disc0") ||
-            deviceFilePath.toLowerCase().startsWith("umd0") ||
-            deviceFilePath.toLowerCase().startsWith("umd1");
+        // Assume the device name is always lower case
+        // Assume there is always a device number
+        for (int i = 0; i < umdPrefixes.length; i++) {
+            if (deviceFilePath.matches("^" + umdPrefixes[i] + "[0-9]+.*"))
+                return true;
+        }
+
+        // TODO eventually delete this once we're sure it's working
+        for (int i = 0; i < umdPrefixes.length; i++) {
+            if (deviceFilePath.toLowerCase().matches("^" + umdPrefixes[i] + "[0-9]+.*")) {
+                Modules.log.warn("isUmdPath mixed case device '" + deviceFilePath + "'");
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // TODO fix this slash thing properly, must be caused by poor handling in some other function
     private String trimUmdPrefix(String pcfilename) {
+        // Assume the device name is always lower case
+        // Assume there is always a device number
+        // Assume there is always a slash after the device name
+        for (int i = 0; i < umdPrefixes.length; i++) {
+            if (pcfilename.matches("^" + umdPrefixes[i] + "[0-9]+/.*"))
+                return pcfilename.substring(pcfilename.indexOf("/") + 1);
+        }
+
+        // Now make sure getDeviceFilePath is working properly - keep the old behaviour as a fallback
+        // TODO eventually delete all this once we're sure it's working
+        Modules.log.warn("trimUmdPrefix '" + pcfilename + "'");
+
         if (pcfilename.toLowerCase().startsWith("disc0/"))
             return pcfilename.substring(6);
-        if (pcfilename.toLowerCase().startsWith("disc0"))
-            return pcfilename.substring(5);
         if (pcfilename.toLowerCase().startsWith("umd0/"))
+            return pcfilename.substring(5);
+        if (pcfilename.toLowerCase().startsWith("umd1/"))
+            return pcfilename.substring(5);
+
+        if (pcfilename.toLowerCase().startsWith("disc0"))
             return pcfilename.substring(5);
         if (pcfilename.toLowerCase().startsWith("umd0"))
             return pcfilename.substring(4);
-        if (pcfilename.toLowerCase().startsWith("umd1/"))
-            return pcfilename.substring(5);
         if (pcfilename.toLowerCase().startsWith("umd1"))
             return pcfilename.substring(4);
+
         return pcfilename;
     }
 
@@ -1085,7 +1112,7 @@ public class pspiofilemgr {
             if (index != -1)
                 filepath = filepath.substring(0, index);
 
-            Modules.log.info("pspiofilemgr - filepath " + filepath);
+            Modules.log.info("pspiofilemgr - filepath " + filepath + " (going up one level)");
             Emulator.getProcessor().cpu.gpr[2] = 0;
         } else {
             String pcfilename = getDeviceFilePath(path);
@@ -1582,6 +1609,58 @@ public class pspiofilemgr {
 
         Modules.log.info("pspiofilemgr - filepath " + filepath);
         this.filepath = filepath;
+
+        // test getDeviceFilePath/umd path handling
+        if (false) {
+            System.err.println("filepath " + filepath);
+
+            // good: disc0 or disc0/
+            System.err.println(getDeviceFilePath(""));
+            System.err.println(getDeviceFilePath("disc0:"));
+            System.err.println(getDeviceFilePath("disc0:/"));
+
+            System.err.println(getDeviceFilePath("somewhere/trailing/"));
+            System.err.println(getDeviceFilePath("somewhere/somewhere"));
+            System.err.println(getDeviceFilePath("/somewhere/trailing/"));
+            System.err.println(getDeviceFilePath("/somewhere/somewhere"));
+
+            // good: disc0/somewhere
+            System.err.println(getDeviceFilePath("somewhere"));
+            System.err.println(getDeviceFilePath("disc0:somewhere"));
+            System.err.println(getDeviceFilePath("disc0:/somewhere"));
+
+            // good: disc0/trailing
+            // bad:  disc0/trailing/
+            System.err.println(getDeviceFilePath("trailing/"));
+            System.err.println(getDeviceFilePath("disc0:trailing/"));
+            System.err.println(getDeviceFilePath("disc0:/trailing/"));
+
+            System.err.println(isUmdPath("disc0"));
+            System.err.println(isUmdPath("disc0:"));
+            System.err.println(isUmdPath("disc0:/"));
+            System.err.println(isUmdPath("umd0:"));
+            System.err.println(isUmdPath("umd1:"));
+            System.err.println(isUmdPath("umd000:")); // this should pass as umd
+
+            // these 3 should fail (but not checked on real psp)
+            System.err.println(isUmdPath("/disc0:"));
+            System.err.println(isUmdPath("somewheredisc0:"));
+            System.err.println(isUmdPath("somewhere/disc0:"));
+
+            {
+                String realfilepath = this.filepath;
+
+                this.filepath = "disc0/somewhere";
+                System.err.println(getDeviceFilePath("file"));
+
+                // good: disc0/trailing/file
+                // bad:  disc0/trailing//file
+                this.filepath = "disc0/trailing/";
+                System.err.println(getDeviceFilePath("file"));
+
+                this.filepath = realfilepath;
+            }
+        }
     }
 
     public void setIsoReader(UmdIsoReader iso)
