@@ -3273,11 +3273,12 @@ public class VideoEngine {
         gl.glMatrixMode(GL.GL_TEXTURE);
         gl.glPushMatrix ();
         gl.glLoadIdentity();
-        gl.glTranslatef(tex_translate_x, tex_translate_y, 0.f);
-        if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
+        if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
+            gl.glTranslatef(tex_translate_x, tex_translate_y, 0.f);
             gl.glScalef(tex_scale_x, tex_scale_y, 1.f);
-        else
+        } else {
             gl.glScalef(1.f / texture_width[0], 1.f / texture_height[0], 1.f);
+        }
 
         switch (tex_map_mode) {
             case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV:
