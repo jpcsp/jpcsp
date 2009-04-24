@@ -105,6 +105,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     // Canvas fields
     private Buffer pixelsFb;
     private Buffer pixelsGe;
+    private int pixelsWidthGe;
+    private int pixelsHeightGe;
     private Buffer temp;
     private int canvasWidth;
     private int canvasHeight;
@@ -169,6 +171,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         pixelformatGe = pixelformatFb;
         bottomaddrGe  = bottomaddrFb;
         pixelsGe = getPixels(topaddrGe, bottomaddrGe);
+        pixelsWidthGe = widthGe;
+        pixelsHeightGe = heightGe;
 
         setGeBufCalledAtLeastOnce = false;
         gotBadGeBufParams = false;
@@ -299,7 +303,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                 // Re-render GE/current texture upside down
                 drawFrameBuffer(gl, true, true, widthGe, heightGe);
 
-                copyScreenToPixels(gl, pixelsGe, bufferwidthGe, pixelformatGe, widthGe, heightGe);
+                copyScreenToPixels(gl, pixelsGe, bufferwidthGe, pixelformatGe, pixelsWidthGe, pixelsHeightGe);
             }
 
             this.topaddrGe     = topaddr;
@@ -328,6 +332,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             }
 
             pixelsGe = getPixels(topaddrGe, bottomaddrGe);
+            pixelsWidthGe = widthGe;
+            pixelsHeightGe = heightGe;
         }
 
         setGeBufCalledAtLeastOnce = true;
