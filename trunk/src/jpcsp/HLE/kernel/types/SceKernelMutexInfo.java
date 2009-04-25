@@ -27,11 +27,12 @@ import jpcsp.util.Utilities;
 public class SceKernelMutexInfo {
 
     // PSP info
-    public static final int size = 48;
+    public static final int size = 52;
     public String name;
     public int attr;
     public int numWaitThreads;
     public int locked;
+    public int threadid;
 
     // Internal info
     public final int uid;
@@ -52,6 +53,7 @@ public class SceKernelMutexInfo {
         attr            = mem.read32(address + 36);
         numWaitThreads  = mem.read32(address + 40);
         locked          = mem.read32(address + 44);
+        threadid        = mem.read32(address + 48);
     }
 
     public void write(Memory mem, int address) {
@@ -60,5 +62,6 @@ public class SceKernelMutexInfo {
         mem.write32(address + 36, attr);
         mem.write32(address + 40, numWaitThreads);
         mem.write32(address + 44, locked);
+        mem.write32(address + 48, threadid);
     }
 }

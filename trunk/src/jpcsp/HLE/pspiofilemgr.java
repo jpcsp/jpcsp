@@ -273,10 +273,12 @@ public class pspiofilemgr {
         }
 
         // assemble final path
-        if (cwd.length() == 0) {
-            filename = device + "/" + pspfilename;
-        } else {
-            filename = device + "/" + cwd + "/" + pspfilename;
+        filename = device;
+        if (cwd.length() > 0) {
+            filename += "/" + cwd;
+        }
+        if (pspfilename.length() > 0) {
+            filename += "/" + pspfilename;
         }
 
         Modules.log.debug("getDeviceFilePath output filename='" + filename + "'");
@@ -1459,6 +1461,7 @@ public class pspiofilemgr {
                     // 0 = not inserted
                     // 1 = inserted
                     mem.write32(outdata_addr, 1);
+                    Emulator.getProcessor().cpu.gpr[2] = 0;
                 } else {
                     Emulator.getProcessor().cpu.gpr[2] = -1;
                 }
@@ -1651,12 +1654,16 @@ public class pspiofilemgr {
                 String realfilepath = this.filepath;
 
                 this.filepath = "disc0/somewhere";
+                System.err.println(getDeviceFilePath(""));
                 System.err.println(getDeviceFilePath("file"));
+                System.err.println(getDeviceFilePath("/file"));
 
                 // good: disc0/trailing/file
                 // bad:  disc0/trailing//file
                 this.filepath = "disc0/trailing/";
+                System.err.println(getDeviceFilePath(""));
                 System.err.println(getDeviceFilePath("file"));
+                System.err.println(getDeviceFilePath("/file"));
 
                 this.filepath = realfilepath;
             }

@@ -532,7 +532,10 @@ public class ThreadMan {
             Modules.sceUmdUserModule.onThreadWaitTimeout(thread);
         }
 
-        // TODO mutex timeout, if it has one
+        // Mutex
+        else if (thread.wait.waitingOnMutex) {
+            Managers.mutex.onThreadWaitTimeout(thread);
+        }
 
         // IO has no timeout, it's always forever
     }
