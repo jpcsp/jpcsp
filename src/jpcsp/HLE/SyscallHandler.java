@@ -908,7 +908,7 @@ public class SyscallHandler {
                     Managers.mutex.sceKernelTryLockMutex(gpr[4], gpr[5]);
                     break;
                 case 0x3016:
-                    Managers.mutex.sceKernelUnlockMutex(gpr[4]);
+                    Managers.mutex.sceKernelUnlockMutex(gpr[4], gpr[5]);
                     break;
                 case 0x30a3:
                     Managers.mutex.sceKernelCancelMutex(gpr[4]);
