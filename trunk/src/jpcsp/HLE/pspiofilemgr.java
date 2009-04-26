@@ -1478,6 +1478,97 @@ public class pspiofilemgr {
                 device_addr, device, cmd, indata_addr, inlen, outdata_addr, outlen);
     }
 
+    public void hleIoIoctl(int uid, int cmd, int indata_addr, int inlen, int outdata_addr, int outlen, boolean async) {
+        IoInfo info = null;
+        int result = -1;
+        Memory mem = Memory.getInstance();
+
+        if (debug) {
+            Modules.log.debug("hleIoIoctl(uid=" + Integer.toHexString(uid)
+                + ",cmd=0x" + Integer.toHexString(cmd)
+                + ",indata=0x" + Integer.toHexString(indata_addr)
+                + ",inlen=" + inlen
+                + ",outdata=0x" + Integer.toHexString(outdata_addr)
+                + ",outlen=" + outlen
+                + ",async=" + async
+                + ")");
+
+            if (mem.isAddressGood(indata_addr)) {
+                for (int i = 0; i < inlen; i += 4) {
+                    Modules.log.debug("hleIoIoctl indata[" + (i / 4) + "]=0x" + Integer.toHexString(mem.read32(indata_addr + i)));
+                }
+            }
+
+            if (mem.isAddressGood(outdata_addr)) {
+                for (int i = 0; i < outlen; i += 4) {
+                    Modules.log.debug("hleIoIoctl outdata[" + (i / 4) + "]=0x" + Integer.toHexString(mem.read32(outdata_addr + i)));
+                }
+            }
+        }
+
+        SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
+        info = filelist.get(uid);
+        if (info == null) {
+            Modules.log.warn("hleIoRead - unknown uid " + Integer.toHexString(uid));
+            result = PSP_ERROR_BAD_FILE_DESCRIPTOR;
+        } else if (info.asyncPending) {
+            // Can't execute another operation until the previous one completed
+            Modules.log.warn("hleIoRead - uid " + Integer.toHexString(uid) + " PSP_ERROR_ASYNC_BUSY");
+            result = PSP_ERROR_ASYNC_BUSY;
+        } else {
+        	switch (cmd) {
+	            case 0x01020006:
+	            {
+	            	if (mem.isAddressGood(outdata_addr) && outlen == 4) {
+        				int startSector = 0;
+        				if (info.readOnlyFile instanceof UmdIsoFile) {
+        					UmdIsoFile file = (UmdIsoFile) info.readOnlyFile;
+        					startSector = file.getStartSector();
+            				mem.write32(outdata_addr, startSector);
+    		            	result = 0;
+        				} else {
+    	            		Modules.log.warn("hleIoIoctl cmd=0x01020006 only implemented for UmdIsoFile");
+        				}
+	            	} else {
+	            		Modules.log.warn("hleIoIoctl " + String.format("0x%08X %d", outdata_addr, outlen) + " unsupported parameters");
+	            	}
+	            	break;
+	            }
+	            case 0x01020007:
+	            {
+	            	if (mem.isAddressGood(outdata_addr) && outlen == 8) {
+            			try {
+							mem.write64(outdata_addr, info.readOnlyFile.length());
+			            	result = 0;
+						} catch (IOException e) {
+							// Should never happen?
+						}
+	            	} else {
+	            		Modules.log.warn("hleIoIoctl " + String.format("0x%08X %d", outdata_addr, outlen) + " unsupported parameters");
+	            	}
+	            	break;
+	            }
+	            default:
+	            {
+	                Modules.log.warn("hleIoIoctl " + String.format("0x%08X", cmd) + " unknown command");
+	                break;
+	            }
+	        }
+        }
+
+        Emulator.getProcessor().cpu.gpr[2] = updateResult(info, result, async);
+
+        State.fileLogger.logIoIoctl(Emulator.getProcessor().cpu.gpr[2], uid, cmd, indata_addr, inlen, outdata_addr, outlen);
+    }
+
+    public void sceIoIoctl(int uid, int cmd, int indata_addr, int inlen, int outdata_addr, int outlen) {
+    	hleIoIoctl(uid, cmd, indata_addr, inlen, outdata_addr, outlen, false);
+    }
+
+    public void sceIoIoctlAsync(int uid, int cmd, int indata_addr, int inlen, int outdata_addr, int outlen) {
+    	hleIoIoctl(uid, cmd, indata_addr, inlen, outdata_addr, outlen, true);
+    }
+
     public void sceIoAssign(int dev1_addr, int dev2_addr, int dev3_addr, int mode, int unk1, int unk2) {
         String dev1 = readStringZ(dev1_addr);
         String dev2 = readStringZ(dev2_addr);

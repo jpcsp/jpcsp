@@ -601,6 +601,15 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
                 ));
     }
 
+    public void logIoIoctl(int result, int uid, int cmd,
+            int indata_addr, int inlen, int outdata_addr, int outlen) {
+        logFileCommand(new FileCommandInfo(
+                uid, "ioctl", result,
+                String.format("cmd=0x%08X indata=0x%08X inlen=0x%08X outdata=0x%08X outlen=0x%08X",
+                        cmd, indata_addr, inlen, outdata_addr, outlen)
+                ));
+    }
+
     public void logIoAssign(int result, int dev1_addr, String dev1,
             int dev2_addr, String dev2, int dev3_addr, String dev3,
             int mode, int unk1, int unk2) {
