@@ -144,11 +144,11 @@ public class sceSasCore implements HLEModule {
     		bufferIndex = 0;
     	}
 
-    	float getSampleRate() {
+    	private float getSampleRate() {
     		return (sampleRate * pitch) / (float) NORMAL_PITCH;
     	}
 
-    	public void init() {
+    	private void init() {
     		float wantedSampleRate = getSampleRate();
     		int wantedBufferSize = 0;
     		if (samples != null) {
@@ -180,13 +180,13 @@ public class sceSasCore implements HLEModule {
             }
     	}
 
-    	public int on() {
+    	public synchronized int on() {
     		init();
 
             if (samples != null) {
             	outputDataLine.stop();
             	buffer = encodeSamples();
-            	int length = Math.min(outputDataLine.getBufferSize(), buffer.length);
+            	int length = Math.min(outputDataLine.available(), buffer.length);
             	bufferIndex = length;
             	outputDataLine.write(buffer, 0, length);
             	outputDataLine.start();
@@ -195,7 +195,7 @@ public class sceSasCore implements HLEModule {
             return 0;	// TODO Check the return value
     	}
 
-    	public int off() {
+    	public synchronized int off() {
     		if (outputDataLine != null) {
     			outputDataLine.stop();
     		}
@@ -203,7 +203,7 @@ public class sceSasCore implements HLEModule {
     		return 0;	// TODO Check the return value
     	}
 
-    	public boolean IsEnded() {
+    	public synchronized boolean IsEnded() {
     		if (outputDataLine == null) {
     			return true;
     		}
@@ -239,7 +239,7 @@ public class sceSasCore implements HLEModule {
             return buffer;
         }
 
-    	public void check() {
+    	public synchronized void check() {
     		if (outputDataLine == null || !outputDataLine.isActive() || buffer == null) {
     			return;
     		}
