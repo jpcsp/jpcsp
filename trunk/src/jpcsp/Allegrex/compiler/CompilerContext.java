@@ -368,7 +368,19 @@ public class CompilerContext implements ICompilerContext {
         mv.visitInsn(Opcodes.RETURN);
     }
 
+    public void checkSync() {
+    	if (RuntimeContext.enableDaemonThreadSync) {
+    		Label doNotWantSync = new Label();
+            mv.visitFieldInsn(Opcodes.GETSTATIC, runtimeContextInternalName, "wantSync", "Z");
+            mv.visitJumpInsn(Opcodes.IFEQ, doNotWantSync);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.syncName, "()V");
+            mv.visitLabel(doNotWantSync);
+    	}
+    }
+
     public void startMethod() {
+    	checkSync();
+
     	if (RuntimeContext.enableCallCount) {
 	    	mv.visitFieldInsn(Opcodes.GETSTATIC, codeBlock.getClassName(), "callCount", "I");
 	    	mv.visitInsn(Opcodes.ICONST_1);

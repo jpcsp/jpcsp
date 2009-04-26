@@ -171,6 +171,9 @@ public class CodeInstruction {
             CodeInstruction branchingToCodeInstruction = context.getCodeBlock().getCodeInstruction(getBranchingTo());
             if (branchingToCodeInstruction != null) {
                 Label branchingToLabel = branchingToCodeInstruction.getLabel();
+                if (branchingToCodeInstruction.getAddress() < getAddress()) {
+                	context.checkSync();
+                }
                 context.visitJump(branchingOpcode, branchingToLabel);
             } else {
                 context.visitJump(branchingOpcode, getBranchingTo());

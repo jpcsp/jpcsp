@@ -85,6 +85,12 @@ public class RuntimeContext {
     private static SceKernelThreadInfo pendingCallbackReturnThread = null;
 	private static CpuState pendingCallbackCpuState = null;
 	private static boolean insideCallback = false;
+	public  static boolean enableDaemonThreadSync = true;
+	public  static final String syncName = "sync";
+	private static final long syncIntervalMillis = 1000 / 60;	// Sync at least every 1/60 Second
+	public  static volatile boolean wantSync = false;
+	private static long lastSyncTime;
+	private static RuntimeSyncThread runtimeSyncThread = null;
 
 	public static void execute(Instruction insn, int opcode) {
 		insn.interpret(processor, opcode);
@@ -139,8 +145,10 @@ public class RuntimeContext {
     }
 
     public static void debugCodeInstruction(int address, int opcode) {
-    	Instruction insn = Decoder.instruction(opcode);
-		log.debug("Executing 0x" + Integer.toHexString(address).toUpperCase() + " - " + insn.disasm(address, opcode));
+    	if (log.isDebugEnabled()) {
+    		Instruction insn = Decoder.instruction(opcode);
+    		log.debug("Executing 0x" + Integer.toHexString(address).toUpperCase() + " - " + insn.disasm(address, opcode));
+    	}
     }
 
     private static boolean initialise() {
@@ -148,7 +156,14 @@ public class RuntimeContext {
             return false;
         }
 
-		memory = Emulator.getMemory();
+        if (enableDaemonThreadSync && runtimeSyncThread == null) {
+        	runtimeSyncThread = new RuntimeSyncThread(syncIntervalMillis);
+        	runtimeSyncThread.setName("Sync Daemon");
+        	runtimeSyncThread.setDaemon(true);
+        	runtimeSyncThread.start();
+        }
+
+        memory = Emulator.getMemory();
 		if (memory instanceof FastMemory) {
 			memoryInt = ((FastMemory) memory).getAll();
 		} else {
@@ -445,13 +460,16 @@ public class RuntimeContext {
         State.controller.checkControllerState();
     }
 
-    private static void sync() throws StopThreadException {
+    public static void sync() throws StopThreadException {
     	syncPause();
         syncThread();
     	syncEmulator(false);
         syncDebugger();
     	syncPause();
     	checkStoppedThread();
+
+    	lastSyncTime = System.currentTimeMillis();
+    	wantSync = false;
     }
 
     public static void syscall(int code) throws StopThreadException {
@@ -812,5 +830,26 @@ public class RuntimeContext {
         }
 
         return rawAddress;
+    }
+
+    public static boolean syncDaemon() {
+    	long now = System.currentTimeMillis();
+    	if (now - lastSyncTime >= syncIntervalMillis) {
+			wantSync = true;
+    	}
+
+    	return enableDaemonThreadSync;
+    }
+
+    public static void exitSyncDaemon() {
+    	runtimeSyncThread = null;
+    }
+
+    public static void setIsHomebrew(boolean isHomebrew) {
+    	if (isHomebrew) {
+    		enableDaemonThreadSync = true;
+    	} else {
+    		enableDaemonThreadSync = false;
+    	}
     }
 }
