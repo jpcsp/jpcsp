@@ -286,7 +286,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         {
             selectedAddress = null;
             int find = text.indexOf(" 0x");
-            if (find != -1 && text.charAt(find + 7) != ' ') {
+            if (find != -1 && (find + 11) <= text.length() && text.charAt(find + 7) != ' ') {
                 selectedAddress = text.substring(find + 3, find + 3 + 8);
             }
         }
