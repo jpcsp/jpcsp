@@ -379,9 +379,12 @@ public class SyscallHandler {
                             gpr[5],
                             gpr[6]);
                     break;
-
-		// sceIoIoctl(0x2099),
-		// sceIoIoctlAsync(0x209a),
+                case 0x2099:
+                    pspiofilemgr.getInstance().sceIoIoctl(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8], gpr[9]);
+                    break;
+                case 0x209a:
+                    pspiofilemgr.getInstance().sceIoIoctlAsync(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8], gpr[9]);
+                    break;
 
             case 0x209b:
                     pspiofilemgr.getInstance().sceIoDopen(gpr[4]);

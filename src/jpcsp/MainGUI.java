@@ -45,6 +45,7 @@ import javax.swing.JPopupMenu;
 import javax.swing.ToolTipManager;
 import javax.swing.UIManager;
 
+import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Debugger.ElfHeaderInfo;
 import jpcsp.Debugger.InstructionCounter;
 import jpcsp.Debugger.MemoryViewer;
@@ -524,6 +525,8 @@ public void loadFile(File file) {
         pspiofilemgr.getInstance().setIsoReader(null);
         jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(null);
 
+        RuntimeContext.setIsHomebrew(isHomebrew);
+
         // use regular settings first
         installCompatibilitySettings();
 
@@ -784,6 +787,7 @@ public void loadUMD(File file) {
         addRecentUMD(file, params.getString("TITLE"));
         String discid = params.getString("DISC_ID");
         emulator.setFirmwareVersion(params.getString("PSP_SYSTEM_VER"));
+        RuntimeContext.setIsHomebrew(params.isLikelyHomebrew());
 
         if ((discid != null && loadUnpackedUMD(discid + ".BIN")) ||
             loadUMD(iso, "PSP_GAME/SYSDIR/BOOT.BIN") ||
