@@ -378,7 +378,7 @@ public class UmdIsoReader {
         long size = 0;
         for (String file : files)
         {
-            if (!file.equals(".") && !file.equals("\01"))
+            //if (!file.equals(".") && !file.equals("\01"))
             {
                 String filePath = path + "/" + file;
                 Iso9660File info = null;
@@ -397,14 +397,20 @@ public class UmdIsoReader {
                 //else
                 {
                     info = getFileEntry(filePath);
-                    fileStart = info.getLBA();
-                    fileLength = info.getSize();
-                    timestamp = info.getTimestamp();
-                    size += (fileLength + 0x7FF) & ~0x7FF;
+                    if (info != null)
+                    {
+                        fileStart = info.getLBA();
+                        fileLength = info.getSize();
+                        timestamp = info.getTimestamp();
+                        size += (fileLength + 0x7FF) & ~0x7FF;
+                    }
                 }
 
+                // "." isn't a directory (throws an exception)
+                // "\01" claims to be a directory but ends up in an infinite loop
                 //if (isDirectory(pathfile))
-                if (info == null || (info.getProperties() & 2) == 2)
+                if ((info == null || (info.getProperties() & 2) == 2) &&
+                    !file.equals(".") && !file.equals("\01"))
                 {
                     out.println(String.format("D %08X %10d %s", fileStart, fileLength, filePath));
                     String[] childFiles = listDirectory(filePath);
@@ -427,7 +433,7 @@ public class UmdIsoReader {
         long size = dumpIndexRecursive(out, "", files);
         out.println(String.format("Total Size %10d", size));
         out.println(String.format("Image Size %10d", numSectors * 2048));
-        out.println(String.format("Missing    %10d", (numSectors * 2048) - size));
+        out.println(String.format("Missing    %10d (%d sectors)", (numSectors * 2048) - size, numSectors - (size / 2048)));
         out.close();
     }
 }
