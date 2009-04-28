@@ -126,6 +126,9 @@ public class UmdIsoReader {
             {
                 numSectors = (int)(fileReader.length() / 2048);
             }
+
+            //dumpIndexFile("iso-index.txt");
+
             return;
         }
 
@@ -309,7 +312,7 @@ public class UmdIsoReader {
 	                info=null;
 	            }
 	        }
-	
+
 	        if(info==null) throw new FileNotFoundException("File '" + filePath + "' not found or not a file.");
 
 	        fileStart = info.getLBA();
@@ -319,11 +322,11 @@ public class UmdIsoReader {
 
         return new UmdIsoFile(this, fileStart, fileLength, timestamp);
     }
- 
+
     public String[] listDirectory(String filePath) throws IOException, FileNotFoundException
     {
         Iso9660Directory dir = null;
-        
+
         if(filePath.compareTo("")==0)
         {
             dir = new Iso9660Handler(this);
@@ -340,11 +343,11 @@ public class UmdIsoReader {
                 }
             }
         }
-        
+
         if(dir==null) throw new FileNotFoundException("File '" + filePath + "' not found or not a directory.");
-        
+
         return dir.getFileList();
-    }   
+    }
 
     public int getFileProperties(String filePath) throws IOException, FileNotFoundException
     {
@@ -354,19 +357,77 @@ public class UmdIsoReader {
         }
 
         Iso9660File info = getFileEntry(filePath);
-        
+
         if(info==null) throw new FileNotFoundException("File '" + filePath + "' not found.");
 
         return info.getProperties();
-    }   
-    
+    }
+
     public boolean isDirectory(String filePath) throws IOException, FileNotFoundException
     {
         return (getFileProperties(filePath)&2)==2;
-    }   
-    
+    }
+
     public String getFilename()
     {
         return fileName;
+    }
+
+    public long dumpIndexRecursive(PrintWriter out, String path, String[] files) throws IOException
+    {
+        long size = 0;
+        for (String file : files)
+        {
+            if (!file.equals(".") && !file.equals("\01"))
+            {
+                String filePath = path + "/" + file;
+                Iso9660File info = null;
+                int fileStart = 0;
+                long fileLength = 0;
+                Date timestamp = null;
+
+                //out.println(path);
+                //out.println(file);
+                //out.flush();
+
+                if (path.length() == 0)
+                {
+                    filePath = file;
+                }
+                //else
+                {
+                    info = getFileEntry(filePath);
+                    fileStart = info.getLBA();
+                    fileLength = info.getSize();
+                    timestamp = info.getTimestamp();
+                    size += (fileLength + 0x7FF) & ~0x7FF;
+                }
+
+                //if (isDirectory(pathfile))
+                if (info == null || (info.getProperties() & 2) == 2)
+                {
+                    out.println(String.format("D %08X %10d %s", fileStart, fileLength, filePath));
+                    String[] childFiles = listDirectory(filePath);
+                    size += dumpIndexRecursive(out, filePath, childFiles);
+                }
+                else
+                {
+                    out.println(String.format("  %08X %10d %s", fileStart, fileLength, filePath));
+                }
+            }
+        }
+        return size;
+    }
+
+    public void dumpIndexFile(String filename) throws IOException, FileNotFoundException
+    {
+        PrintWriter out = new PrintWriter( new FileOutputStream(filename));
+        out.println("  Start    Size       Name");
+        String[] files = listDirectory("");
+        long size = dumpIndexRecursive(out, "", files);
+        out.println(String.format("Total Size %10d", size));
+        out.println(String.format("Image Size %10d", numSectors * 2048));
+        out.println(String.format("Missing    %10d", (numSectors * 2048) - size));
+        out.close();
     }
 }
