@@ -509,6 +509,76 @@ public class VfpuState extends FpuState {
                 break;
         }
     }
+    
+    float halffloatToFloat(int imm16) {   
+        int s = (imm16 >> 15) & 0x00000001; // sign
+        int e = (imm16 >> 10) & 0x0000001f; // exponent
+        int f = (imm16 >>  0) & 0x000003ff; // fraction
+
+        // need to handle 0x7C00 INF and 0xFC00 -INF?
+        if (e == 0) {
+            // need to handle +-0 case f==0 or f=0x8000?
+            if (f == 0) {
+                // Plus or minus zero
+                return Float.intBitsToFloat(s << 31);                
+            } else {
+                // Denormalized number -- renormalize it
+                while ((f & 0x00000400) == 0) {
+                    f <<= 1;
+                    e -=  1;
+                }
+                e += 1;
+                f &= ~0x00000400;
+            }
+        } else if (e == 31) {
+            if (f == 0) {
+                // Inf
+                return Float.intBitsToFloat((s << 31) | 0x7f800000);
+            } else {
+                // NaN
+                return Float.intBitsToFloat((s << 31) | 0x7f800000 | (f << 13));
+            }
+        }
+
+        e = e + (127 - 15);
+        f = f << 13;
+       
+        return Float.intBitsToFloat((s << 31) | (e << 23) | f);
+    }
+    
+    int floatToHalffloat(float v) {
+        int i = Float.floatToRawIntBits(v);
+        int s = ((i >> 16) & 0x00008000);              // sign
+        int e = ((i >> 23) & 0x000000ff) - (127 - 15); // exponent
+        int f = ((i >>  0) & 0x007fffff);              // fraction
+
+        // need to handle NaNs and Inf?
+        if (e <= 0) {
+            if (e < -10) {
+                if (s != 0) {
+                    // handle -0.0
+                    return 0x8000;
+                }
+                return 0;
+            }
+            f = (f | 0x00800000) >> (1 - e);
+            return s | (f >> 13);
+        } else if (e == 0xff - (127 - 15)) {
+            if (f == 0) {
+                // Inf
+                return s | 0x7c00;
+            }
+            // NAN
+            f >>= 13;
+            return s | 0x7c00 | f | ((f == 0) ? 1 : 0);
+        }
+        if (e > 30) {
+            // Overflow
+            return s | 0x7c00;
+        }
+        return s | (e << 10) | (f >> 13);
+    }
+    
     // group VFPU0
     // VFPU0:VADD
     public void doVADD(int vsize, int vd, int vs, int vt) {
@@ -628,7 +698,7 @@ public class VfpuState extends FpuState {
             hdp += v1[i] * v2[i];
         }
 
-        v2[0] += hdp;
+        v2[0] = hdp + v2[i];
 
         saveVd(1, vd, v2);
     }
@@ -1043,11 +1113,30 @@ public class VfpuState extends FpuState {
     }
     // VFPU4:VF2H
     public void doVF2H(int vsize, int vd, int vs) {
-        doUNK("Unimplemented VF2H");
+        if ((vsize & 1) == 1) {
+            doUNK("Only supported VF2H.P or VF2H.Q");
+            return;
+        }
+        loadVs(vsize, vs);
+        for (int i = 0; i < vsize/2; ++i) {
+            v3[i] = (floatToHalffloat(v1[1+i*2])<<16)|
+                    (floatToHalffloat(v1[0+i*2])<< 0);
+        }
+        saveVd(vsize/2, vd, v3);
     }
     // VFPU4:VH2F
     public void doVH2F(int vsize, int vd, int vs) {
-        doUNK("Unimplemented VH2F");
+        if (vsize < 2) {
+            doUNK("Only supported VH2F.S or VH2F.P");
+            return;
+        }
+        loadVs(vsize, vs);
+        for (int i = 0; i < vsize; ++i) {
+            int imm32 = Float.floatToRawIntBits(v1[i]);
+            v3[0+2*i] = halffloatToFloat(imm32 & 65535);
+            v3[1+2*i] = halffloatToFloat(imm32 >>> 16);
+        }
+        saveVd(vsize*2, vd, v3);
     }
     // VFPU4:VSBZ
     public void doVSBZ(int vsize, int vd, int vs) {
@@ -1184,9 +1273,9 @@ public class VfpuState extends FpuState {
 
         loadVs(4, vs);
         float x = v1[0];
-        float y = v1[0];
-        float z = v1[0];
-        float w = v1[0];
+        float y = v1[1];
+        float z = v1[2];
+        float w = v1[3];
         v3[0] = Math.min(x, y);
         v3[1] = Math.max(x, y);
         v3[2] = Math.min(z, w);
@@ -1202,9 +1291,9 @@ public class VfpuState extends FpuState {
 
         loadVs(4, vs);
         float x = v1[0];
-        float y = v1[0];
-        float z = v1[0];
-        float w = v1[0];
+        float y = v1[1];
+        float z = v1[2];
+        float w = v1[3];
         v3[0] = Math.min(x, w);
         v3[1] = Math.min(y, z);
         v3[2] = Math.max(y, z);
@@ -1256,7 +1345,7 @@ public class VfpuState extends FpuState {
         loadVs(vsize, vs);
 
         for (int i = 1; i < vsize; ++i) {
-            v1[i] = 0.0f - v1[i];
+            v1[i] = 1.0f - v1[i];
         }
 
         saveVd(vsize, vd, v1);
@@ -1270,12 +1359,12 @@ public class VfpuState extends FpuState {
 
         loadVs(vsize, vs);
         float x = v1[0];
-        v3[0] = Math.min(Math.max(0.0f, 0.0f - x), 1.0f);
-        v3[1] = Math.min(Math.max(0.0f, 0.0f + x), 1.0f);
+        v3[0] = Math.min(Math.max(0.0f, 1.0f - x), 1.0f);
+        v3[1] = Math.min(Math.max(0.0f, 1.0f + x), 1.0f);
         if (vsize > 1) {
             float y = v1[1];
-            v3[2] = Math.min(Math.max(0.0f, 0.0f - y), 1.0f);
-            v3[3] = Math.min(Math.max(0.0f, 0.0f + y), 1.0f);
+            v3[2] = Math.min(Math.max(0.0f, 1.0f - y), 1.0f);
+            v3[3] = Math.min(Math.max(0.0f, 1.0f + y), 1.0f);
             saveVd(4, vd, v3);
         } else {
             saveVd(2, vd, v3);
@@ -1621,13 +1710,9 @@ public class VfpuState extends FpuState {
     }
 
     // VFPU5:VFIM
-    public void doVFIM(int vd, int imm16) {
-        float s = ((imm16 >> 15) == 0) ? 1.0f : -1.0f;
-        int e = ((imm16 >> 10) & 0x1f);
-        int m = (e == 0) ? ((imm16 & 0x3ff) << 1) : ((imm16 & 0x3ff) | 0x400);
-
-        v3[0] = s * ((float) m) / ((float) (1 << e)) / ((float) (1 << 41));
-
+    public void doVFIM(int vd, int imm16) {        
+        v3[0] = halffloatToFloat(imm16);
+        
         saveVd(1, vd, v3);
     }
 
