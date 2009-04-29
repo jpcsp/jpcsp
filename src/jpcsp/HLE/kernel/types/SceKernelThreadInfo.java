@@ -125,7 +125,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         this.attr = attr;
 
         uid = SceUidManager.getNewUid("ThreadMan-thread");
-        status = PSP_THREAD_SUSPEND;
+        status = PSP_THREAD_STOPPED;
 
         // setup the stack
         stack_addr = ThreadMan.getInstance().mallocStack(stackSize);
