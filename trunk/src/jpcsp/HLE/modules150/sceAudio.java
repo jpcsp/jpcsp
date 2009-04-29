@@ -257,6 +257,8 @@ public class sceAudio implements HLEModule, HLEThread {
     protected static final int PSP_AUDIO_FREQ_44K = 44100;
     protected static final int PSP_AUDIO_FREQ_48K = 48000;
 
+    private static ChannelsCheckerThread channelsCheckerThread = null;
+
     protected pspChannelInfo[] pspchannels; // psp channels
     protected int sampleRate;
 
@@ -311,10 +313,12 @@ public class sceAudio implements HLEModule, HLEThread {
 
         sampleRate = 48000;
 
-        ChannelsCheckerThread channelsCheckerThread = new ChannelsCheckerThread(500);
-        channelsCheckerThread.setDaemon(true);
-        channelsCheckerThread.setName("sceAudio Channels Checker");
-        channelsCheckerThread.start();
+        if (channelsCheckerThread == null) {
+	        channelsCheckerThread = new ChannelsCheckerThread(500);
+	        channelsCheckerThread.setDaemon(true);
+	        channelsCheckerThread.setName("sceAudio Channels Checker");
+	        channelsCheckerThread.start();
+        }
     }
 
     @Override
