@@ -105,8 +105,6 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     // Canvas fields
     private Buffer pixelsFb;
     private Buffer pixelsGe;
-    private int pixelsWidthGe;
-    private int pixelsHeightGe;
     private Buffer temp;
     private int canvasWidth;
     private int canvasHeight;
@@ -171,8 +169,6 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         pixelformatGe = pixelformatFb;
         bottomaddrGe  = bottomaddrFb;
         pixelsGe = getPixels(topaddrGe, bottomaddrGe);
-        pixelsWidthGe = widthGe;
-        pixelsHeightGe = heightGe;
 
         setGeBufCalledAtLeastOnce = false;
         gotBadGeBufParams = false;
@@ -245,6 +241,10 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             Modules.log.debug("hleDisplaySetGeMode(width=" + width + ",height=" + height + ")");
             widthGe = width;
             heightGe = height;
+            bottomaddrGe =
+                topaddrGe + bufferwidthGe * heightGe *
+                getPixelFormatBytes(pixelformatGe);
+            pixelsGe = getPixels(topaddrGe, bottomaddrGe);
         }
     }
 
@@ -303,7 +303,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                 // Re-render GE/current texture upside down
                 drawFrameBuffer(gl, true, true, widthGe, heightGe);
 
-                copyScreenToPixels(gl, pixelsGe, bufferwidthGe, pixelformatGe, pixelsWidthGe, pixelsHeightGe);
+                copyScreenToPixels(gl, pixelsGe, bufferwidthGe, pixelformatGe, widthGe, heightGe);
             }
 
             this.topaddrGe     = topaddr;
@@ -332,8 +332,6 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             }
 
             pixelsGe = getPixels(topaddrGe, bottomaddrGe);
-            pixelsWidthGe = widthGe;
-            pixelsHeightGe = heightGe;
         }
 
         setGeBufCalledAtLeastOnce = true;
@@ -617,7 +615,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 	            int pixelFormatGL = getPixelFormatGL(pixelformatGe);
 				gl.glTexSubImage2D(
 	                GL.GL_TEXTURE_2D, 0,
-	                0, 0, width, height,
+	                0, 0, widthGe, heightGe,
 	                pixelFormatGL == GL.GL_UNSIGNED_SHORT_5_6_5_REV ? GL.GL_RGB : GL.GL_RGBA,
 	                pixelFormatGL, pixelsGe);
 
@@ -633,13 +631,13 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                 // Copy screen to the current texture
                 gl.glCopyTexSubImage2D(
                     GL.GL_TEXTURE_2D, 0,
-                    0, 0, 0, 0, width, height);
+                    0, 0, 0, 0, widthGe, heightGe);
 
                 // Re-render GE/current texture upside down
                 drawFrameBuffer(gl, true, true, width, height);
 
                 // Save GE/current texture to vram
-                copyScreenToPixels(gl, pixelsGe, bufferwidthGe, pixelformatGe, width, height);
+                copyScreenToPixels(gl, pixelsGe, bufferwidthGe, pixelformatGe, widthGe, heightGe);
             }
 
             // Render FB
@@ -699,6 +697,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             bottomaddrFb =
                 topaddrFb + bufferwidthFb * height *
                 getPixelFormatBytes(pixelformatFb);
+            pixelsFb = getPixels(topaddrFb, bottomaddrFb);
 
             refreshRequired = true;
 
