@@ -168,6 +168,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         EnterDebugger = new javax.swing.JMenuItem();
         EnterMemoryViewer = new javax.swing.JMenuItem();
         ToggleDebugLog = new javax.swing.JMenuItem();
+        DumpIso = new javax.swing.JMenuItem();
         VfpuRegisters = new javax.swing.JMenuItem();
         ToggleConsole = new javax.swing.JMenuItem();
         ElfHeaderViewer = new javax.swing.JMenuItem();
@@ -374,6 +375,14 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         DebugMenu.add(ToggleDebugLog);
+
+        DumpIso.setText("Dump ISO to iso-index.txt");
+        DumpIso.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                DumpIsoActionPerformed(evt);
+            }
+        });
+        DebugMenu.add(DumpIso);
 
         MenuBar.add(DebugMenu);
 
@@ -643,6 +652,19 @@ private void ToggleDebugLogActionPerformed(java.awt.event.ActionEvent evt) {//GE
 		rootLogLevel = null;
 	}
 }//GEN-LAST:event_ToggleDebugLogActionPerformed
+
+private void DumpIsoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DumpIsoActionPerformed
+	if (umdLoaded) {
+		UmdIsoReader iso = pspiofilemgr.getInstance().getIsoReader();
+		if (iso != null) {
+			try {
+				iso.dumpIndexFile("iso-index.txt");
+			} catch (IOException e) {
+				// Ignore Exception
+			}
+		}
+	}
+}//GEN-LAST:event_DumpIsoActionPerformed
 
 private void AboutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AboutActionPerformed
   StringBuilder message = new StringBuilder();
@@ -1094,6 +1116,7 @@ private void processArgs(String[] args) {
     private javax.swing.JMenuItem EnterDebugger;
     private javax.swing.JMenuItem EnterMemoryViewer;
     private javax.swing.JMenuItem ToggleDebugLog;
+    private javax.swing.JMenuItem DumpIso;
     private javax.swing.JMenuItem ExitEmu;
     private javax.swing.JMenuItem FileLog;
     private javax.swing.JMenu FileMenu;
