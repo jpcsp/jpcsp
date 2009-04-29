@@ -39,6 +39,7 @@ import jpcsp.HLE.modules.HLEThread;
 
 public class sceAudio implements HLEModule, HLEThread {
     protected class pspChannelInfo {
+    	public int index;
 		public boolean reserved;
         public int allocatedSamples;
         public int format;
@@ -55,8 +56,9 @@ public class sceAudio implements HLEModule, HLEThread {
     	public int bufferIndex;
     	public List<byte[]> waitingBuffers;
 
-        public pspChannelInfo()
+        public pspChannelInfo(int index)
         {
+        	this.index = index;
             reserved = false;
             allocatedSamples = 0;
             format = 0;
@@ -206,7 +208,7 @@ public class sceAudio implements HLEModule, HLEThread {
 		public String toString() {
         	StringBuffer result = new StringBuffer();
 
-        	result.append("pspChannelInfo(");
+        	result.append("pspChannelInfo[" + index + "](");
         	if (buffer != null) {
         		result.append("buffer " + bufferIndex + " of " + buffer.length + ", ");
         	}
@@ -308,7 +310,7 @@ public class sceAudio implements HLEModule, HLEThread {
         pspchannels = new pspChannelInfo[8];
         for (int channel = 0; channel < pspchannels.length; channel++)
         {
-            pspchannels[channel] = new pspChannelInfo();
+            pspchannels[channel] = new pspChannelInfo(channel);
         }
 
         sampleRate = 48000;
@@ -622,10 +624,16 @@ public class sceAudio implements HLEModule, HLEThread {
         } else {
         	ThreadMan threadMan = ThreadMan.getInstance();
             if (!pspchannels[channel].isOutputBlocking() || disableBlockingAudio) {
+            	if (Modules.log.isDebugEnabled()) {
+            		Modules.log.debug("sceAudioOutputBlocking[not blocking] " + pspchannels[channel].toString());
+            	}
 	            sceAudioChangeChannelVolume(channel, vol, vol);
 	            cpu.gpr[2] = doAudioOutput(channel, pvoid_buf);
 	            //threadMan.yieldCurrentThread();
             } else {
+            	if (Modules.log.isDebugEnabled()) {
+            		Modules.log.debug("sceAudioOutputBlocking[blocking] " + pspchannels[channel].toString());
+            	}
 	            pspchannels[channel].waitingThreadId = threadMan.getCurrentThreadID();
 	            pspchannels[channel].waitingAudioDataAddr = pvoid_buf;
 	            pspchannels[channel].waitingVolumeLeft  = vol;
