@@ -1779,6 +1779,10 @@ public class pspiofilemgr {
         //getDeviceFilePath("host0:modules/module.cnf");
     }
 
+    public UmdIsoReader getIsoReader() {
+    	return iso;
+    }
+
     class IoInfo {
         // PSP settings
         public final int flags;

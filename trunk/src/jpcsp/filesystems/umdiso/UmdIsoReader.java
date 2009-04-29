@@ -127,8 +127,6 @@ public class UmdIsoReader {
                 numSectors = (int)(fileReader.length() / 2048);
             }
 
-            //dumpIndexFile("iso-index.txt");
-
             return;
         }
 
