@@ -54,7 +54,7 @@ public class RuntimeContext {
 	public  static volatile CpuState cpu;
 	public  static volatile Memory memory;
 	public  static final boolean enableIntructionCounting = true;
-	public  static final boolean enableDebugger = true;
+	public  static       boolean enableDebugger = true;
 	public  static final String debuggerName = "syncDebugger";
 	public  static final boolean debugCodeBlockCalls = false;
 	public  static final String debugCodeBlockStart = "debugCodeBlockStart";
@@ -170,7 +170,13 @@ public class RuntimeContext {
 		    memoryInt = null;
 		}
 
-		return true;
+        if (State.debugger == null) {
+        	enableDebugger = false;
+        } else {
+        	enableDebugger = true;
+        }
+
+        return true;
     }
 
     public static void executeCallback(SceKernelThreadInfo callbackThreadInfo) {
