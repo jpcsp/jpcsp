@@ -185,6 +185,7 @@ public class ThreadMan {
         Memory.getInstance().write32(MemoryMap.START_RAM + 8, instruction_jr);
         Memory.getInstance().write32(MemoryMap.START_RAM + 12, instruction_syscall);
 
+        // lowest allowed priority is 0x77, so we are ok at 0x7f
         idle0 = new SceKernelThreadInfo("idle0", MemoryMap.START_RAM | 0x80000000, 0x7f, 0x0, PSP_THREAD_ATTR_KERNEL);
         idle0.status = PSP_THREAD_READY;
         threadMap.put(idle0.uid, idle0);
@@ -557,6 +558,7 @@ public class ThreadMan {
         // TODO remove from wait object reference count, example: sema.numWaitThreads--
         Managers.eventFlags.onThreadDeleted(thread);
         Managers.semas.onThreadDeleted(thread);
+        Managers.mutex.onThreadDeleted(thread);
         Modules.sceUmdUserModule.onThreadDeleted(thread);
         RuntimeContext.onThreadDeleted(thread);
         // TODO blocking audio?
@@ -675,6 +677,8 @@ public class ThreadMan {
 
         Modules.log.debug("sceKernelCreateThread redirecting to hleKernelCreateThread");
         SceKernelThreadInfo thread = hleKernelCreateThread(name, entry_addr, initPriority, stackSize, attr, option_addr);
+
+        // TODO user thread trying to create kernel thread should be disallowed with ERROR_ILLEGAL_ATTR
 
         // Inherit kernel mode if user mode bit is not set
         if ((current_thread.attr & PSP_THREAD_ATTR_KERNEL) == PSP_THREAD_ATTR_KERNEL &&
@@ -832,7 +836,7 @@ public class ThreadMan {
         }
         thread.cpuContext.gpr[28] = gp;
 
-        // Start thread immediately
+        // Start thread immediately, but only if new thread priority is equal or higher
         changeThreadState(thread, PSP_THREAD_READY);
         if (current_thread.currentPriority >= thread.initPriority) {
             contextSwitch(thread);
@@ -922,14 +926,21 @@ public class ThreadMan {
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
         } else if (thread.status != PSP_THREAD_WAITING) {
             Modules.log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "' not sleeping/waiting (status=" + thread.status + ")");
-            Emulator.getProcessor().cpu.gpr[2] = ERROR_THREAD_IS_NOT_WAIT;
+            Emulator.getProcessor().cpu.gpr[2] = 0; // ERROR_THREAD_IS_NOT_WAIT;
         } else if (isBannedThread(thread)) {
             Modules.log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "' banned, not waking up");
             Emulator.getProcessor().cpu.gpr[2] = 0;
         } else {
             Modules.log.debug("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "'");
             changeThreadState(thread, PSP_THREAD_READY);
+
             Emulator.getProcessor().cpu.gpr[2] = 0;
+
+            // switch in the target thread if it's now higher priority
+            if (thread.currentPriority < current_thread.currentPriority) {
+                Modules.log.debug("sceKernelWakeupThread yielding to thread with higher priority");
+                yieldCurrentThread();
+            }
         }
     }
 
@@ -1219,7 +1230,9 @@ public class ThreadMan {
         }
     }
 
-    /** Write uid's to buffer */
+    /** Write uid's to buffer
+     * return written count
+     * save full count to idcount_addr */
     public void ThreadMan_sceKernelGetThreadmanIdList(int type,
         int readbuf_addr, int readbufsize, int idcount_addr) {
         Memory mem = Memory.getInstance();
@@ -1229,9 +1242,8 @@ public class ThreadMan {
             + " readbufsize:" + readbufsize
             + " idcount:0x" + Integer.toHexString(idcount_addr));
 
-        // TODO type=SCE_KERNEL_TMID_Thread, don't show the idle threads!
-
-        int count = 0;
+        int saveCount = 0;
+        int fullCount = 0;
 
         switch(type) {
             case SCE_KERNEL_TMID_Thread:
@@ -1239,16 +1251,18 @@ public class ThreadMan {
                     SceKernelThreadInfo thread = it.next();
 
                     // Hide kernel mode threads when called from a user mode thread
-                    if ((thread.attr & PSP_THREAD_ATTR_KERNEL) != PSP_THREAD_ATTR_KERNEL ||
-                        (current_thread.attr & PSP_THREAD_ATTR_KERNEL) == PSP_THREAD_ATTR_KERNEL) {
+                    if (!isIdleThread(thread) &&
+                        ((thread.attr & PSP_THREAD_ATTR_KERNEL) != PSP_THREAD_ATTR_KERNEL ||
+                        (current_thread.attr & PSP_THREAD_ATTR_KERNEL) == PSP_THREAD_ATTR_KERNEL)) {
 
-                        if (count < readbufsize) {
+                        if (saveCount < readbufsize) {
                             Modules.log.debug("sceKernelGetThreadmanIdList adding thread '" + thread.name + "'");
-                            mem.write32(readbuf_addr + count * 4, thread.uid);
-                            count++;
+                            mem.write32(readbuf_addr + saveCount * 4, thread.uid);
+                            saveCount++;
                         } else {
-                            Modules.log.warn("sceKernelGetThreadmanIdList NOT adding thread '" + thread.name + "'");
+                            Modules.log.warn("sceKernelGetThreadmanIdList NOT adding thread '" + thread.name + "' (no more space)");
                         }
+                        fullCount++;
                     }
                 }
                 break;
@@ -1258,12 +1272,11 @@ public class ThreadMan {
                 break;
         }
 
-        // Fake success - 0 entries written
         if (mem.isAddressGood(idcount_addr)) {
-            idcount_addr = count;
+            idcount_addr = fullCount;
         }
 
-        Emulator.getProcessor().cpu.gpr[2] = count; // TODO or idcount_addr?
+        Emulator.getProcessor().cpu.gpr[2] = saveCount;
     }
 
     public void ThreadMan_sceKernelChangeThreadPriority(int uid, int priority) {
@@ -1272,15 +1285,54 @@ public class ThreadMan {
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
             Modules.log.warn("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid)
-                    + " newPriority:0x" + Integer.toHexString(priority) + " unknown thread");
+                + ",newPriority:0x" + Integer.toHexString(priority) + ") unknown thread");
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
-        } else {
-            Modules.log.debug("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(thread.uid)
-                    + " newPriority:0x" + Integer.toHexString(priority) + " oldPriority:0x" + Integer.toHexString(thread.currentPriority));
 
+        } else if ((thread.status & PSP_THREAD_STOPPED) == PSP_THREAD_STOPPED) {
+            Modules.log.warn("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid)
+                + " newPriority:0x" + Integer.toHexString(priority)
+                + " oldPriority:0x" + Integer.toHexString(thread.currentPriority)
+                + " thread is stopped, ignoring");
+            Emulator.getProcessor().cpu.gpr[2] = ERROR_THREAD_ALREADY_DORMANT;
+
+        // Don't do anything when new priority is 0
+        } else if (priority == 0) {
+            Modules.log.warn("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid)
+                + " newPriority:0x" + Integer.toHexString(priority)
+                + " oldPriority:0x" + Integer.toHexString(thread.currentPriority)
+                + " newPriority is 0, ignoring");
+            Emulator.getProcessor().cpu.gpr[2] = 0;
+
+        // TODO check whether it affects kernel threads (probably doesn't)
+        } else if (priority < 0x08 || priority >= 0x78) {
+            Modules.log.warn("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid)
+                + " newPriority:0x" + Integer.toHexString(priority)
+                + " oldPriority:0x" + Integer.toHexString(thread.currentPriority)
+                + " newPriority is outside of valid range");
+            Emulator.getProcessor().cpu.gpr[2] = ERROR_ILLEGAL_PRIORITY;
+
+        } else {
+            Modules.log.debug("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid)
+                + " newPriority:0x" + Integer.toHexString(priority)
+                + " oldPriority:0x" + Integer.toHexString(thread.currentPriority));
+
+            int oldPriority = thread.currentPriority;
             thread.currentPriority = priority;
 
             Emulator.getProcessor().cpu.gpr[2] = 0;
+
+            // switch in the target thread if it's now higher priority
+            if ((thread.status & PSP_THREAD_READY) == PSP_THREAD_READY &&
+                priority < current_thread.currentPriority) {
+                Modules.log.debug("sceKernelChangeThreadPriority yielding to thread with higher priority");
+                yieldCurrentThread();
+
+            // yield if we moved ourselve to lower priority
+            // TODO only yield if there are other ready threads of higher priority (idle threads are always ready)
+            } else if (uid == current_thread.uid && priority > oldPriority) {
+                Modules.log.debug("sceKernelChangeThreadPriority yielding");
+                yieldCurrentThread();
+            }
         }
     }
 

@@ -96,6 +96,7 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
         Modules.log.warn("IGNORING:" + msg);
 
         cpu.gpr[2] = 0;
+        jpcsp.HLE.ThreadMan.getInstance().yieldCurrentThread();
     }
 
     public void sceUtilityUnloadNetModule(Processor processor) {
@@ -110,6 +111,7 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
         Modules.log.warn("IGNORING:" + msg);
 
         cpu.gpr[2] = 0;
+        jpcsp.HLE.ThreadMan.getInstance().yieldCurrentThread();
     }
 
     public final HLEModuleFunction sceUtilityLoadNetModuleFunction = new HLEModuleFunction("sceUtility", "sceUtilityLoadNetModule") {

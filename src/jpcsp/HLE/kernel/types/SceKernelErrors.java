@@ -43,6 +43,8 @@ public class SceKernelErrors {
     public final static int ERROR_NO_MEMORY = 0x80020190;
     public final static int ERROR_ILLEGAL_ATTR = 0x80020191;
     // some missing
+    public final static int ERROR_ILLEGAL_PRIORITY = 0x80020193;
+    // some missing
     public final static int ERROR_ILLEGAL_THREAD = 0x80020197;
     public final static int ERROR_NOT_FOUND_THREAD = 0x80020198;
     public final static int ERROR_NOT_FOUND_SEMAPHORE = 0x80020199;
