@@ -36,10 +36,6 @@ import static jpcsp.util.Utilities.*;
 
 import jpcsp.HLE.kernel.managers.*;
 
-/**
- *
- * @author shadow
- */
 public class pspSysMem {
     private static pspSysMem instance;
 
@@ -290,9 +286,11 @@ public class pspSysMem {
         // round down to 4 byte alignment (shouldn't need this if the 64 byte thing was working properly, TODO investigate)
         int maxFree = (heapTopGuard - heapBottom - 64) & ~3;
 
-        // TODO Something not quite right here...
+        // Negative is ok if we are reserving thread memory, clamp back to 0
         if (maxFree < 0) {
-            Modules.log.warn("pspSysMem maxFree < 0 (" + maxFree + ") maybe overflow");
+            if (disableReservedThreadMemory) {
+                Modules.log.warn("pspSysMem maxFree < 0 (" + maxFree + ") maybe overflow");
+            }
             maxFree = 0;
         }
 
@@ -372,8 +370,8 @@ public class pspSysMem {
             Modules.log.warn("sceKernelFreePartitionMemory unknown SceUID=" + Integer.toHexString(uid));
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_ILLEGAL_CHUNK_ID;
         } else {
-            free(info);
             Modules.log.warn("PARTIAL:sceKernelFreePartitionMemory SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "'");
+            free(info);
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
     }

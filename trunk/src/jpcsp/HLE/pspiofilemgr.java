@@ -68,6 +68,7 @@ public class pspiofilemgr {
     public final static int PSP_O_UNKNOWN1 = 0x4000; // something async?
     public final static int PSP_O_NOWAIT   = 0x8000;
     public final static int PSP_O_UNKNOWN2 = 0xf0000; // seen on Wipeout Pure and Infected
+    public final static int PSP_O_UNKNOWN3 = 0x2000000; // seen on Puzzle Guzzle
 
     public final static int PSP_SEEK_SET  = 0;
     public final static int PSP_SEEK_CUR  = 1;
@@ -227,7 +228,7 @@ public class pspiofilemgr {
     }
 
     private String getDeviceFilePath(String pspfilename) {
-        Modules.log.debug("getDeviceFilePath input filepath='" + filepath + "' pspfilename='" + pspfilename + "'");
+        //Modules.log.debug("getDeviceFilePath input filepath='" + filepath + "' pspfilename='" + pspfilename + "'");
         pspfilename = pspfilename.replaceAll("\\\\", "/");
         String device = null;
         String cwd = "";
@@ -240,7 +241,7 @@ public class pspiofilemgr {
             // dev:/path
             device = pspfilename.substring(0, findcolon);
             pspfilename = pspfilename.substring(findcolon + 1);
-            Modules.log.debug("getDeviceFilePath device='" + device + "' pspfilename='" + pspfilename + "'");
+            //Modules.log.debug("getDeviceFilePath device='" + device + "' pspfilename='" + pspfilename + "'");
         } else {
             // Relative
             // path - relative to cwd
@@ -249,7 +250,7 @@ public class pspiofilemgr {
             if (findslash != -1) {
                 device = filepath.substring(0, findslash);
                 cwd = filepath.substring(findslash + 1);
-                Modules.log.debug("getDeviceFilePath device='" + device + "' cwd='" + cwd + "'");
+                //Modules.log.debug("getDeviceFilePath device='" + device + "' cwd='" + cwd + "'");
 
                 if (cwd.startsWith("/")) {
                     cwd = cwd.substring(1);
@@ -259,7 +260,7 @@ public class pspiofilemgr {
                 }
             } else {
                 device = filepath;
-                Modules.log.debug("getDeviceFilePath device='" + device + "'");
+                //Modules.log.debug("getDeviceFilePath device='" + device + "'");
             }
         }
 
@@ -273,6 +274,10 @@ public class pspiofilemgr {
         }
 
         // assemble final path
+        // convert device to lower case here for case sensitive file systems (linux) and also for isUmdPath and trimUmdPrefix regex
+        // - GTA: LCS uses upper case device DISC0
+        // - The Fast and the Furious uses upper case device DISC0
+        filename = device.toLowerCase();
         filename = device;
         if (cwd.length() > 0) {
             filename += "/" + cwd;
@@ -281,7 +286,7 @@ public class pspiofilemgr {
             filename += "/" + pspfilename;
         }
 
-        Modules.log.debug("getDeviceFilePath output filename='" + filename + "'");
+        //Modules.log.debug("getDeviceFilePath output filename='" + filename + "'");
         return filename;
     }
 
@@ -290,7 +295,7 @@ public class pspiofilemgr {
     };
 
     private boolean isUmdPath(String deviceFilePath) {
-        // Assume the device name is always lower case
+        // Assume the device name is always lower case (ensured by getDeviceFilePath)
         // Assume there is always a device number
         for (int i = 0; i < umdPrefixes.length; i++) {
             if (deviceFilePath.matches("^" + umdPrefixes[i] + "[0-9]+.*"))
@@ -310,7 +315,7 @@ public class pspiofilemgr {
 
     // TODO fix this slash thing properly, must be caused by poor handling in some other function
     private String trimUmdPrefix(String pcfilename) {
-        // Assume the device name is always lower case
+        // Assume the device name is always lower case (ensured by getDeviceFilePath)
         // Assume there is always a device number
         // Assume there is always a slash after the device name
         for (int i = 0; i < umdPrefixes.length; i++) {
@@ -320,7 +325,7 @@ public class pspiofilemgr {
 
         // Now make sure getDeviceFilePath is working properly - keep the old behaviour as a fallback
         // TODO eventually delete all this once we're sure it's working
-        Modules.log.warn("trimUmdPrefix '" + pcfilename + "'");
+        Modules.log.warn("trimUmdPrefix falling back to old routine, input='" + pcfilename + "'");
 
         if (pcfilename.toLowerCase().startsWith("disc0/"))
             return pcfilename.substring(6);
@@ -573,6 +578,7 @@ public class pspiofilemgr {
         }
         if ((flags & PSP_O_UNKNOWN1) == PSP_O_UNKNOWN1) Modules.log.warn("UNIMPLEMENTED:sceIoOpen flags=PSP_O_UNKNOWN1 file='" + filename + "'");
         if ((flags & PSP_O_UNKNOWN2) == PSP_O_UNKNOWN2) Modules.log.warn("UNIMPLEMENTED:sceIoOpen flags=PSP_O_UNKNOWN2 file='" + filename + "'");
+        if ((flags & PSP_O_UNKNOWN3) == PSP_O_UNKNOWN3) Modules.log.warn("UNIMPLEMENTED:sceIoOpen flags=PSP_O_UNKNOWN3 file='" + filename + "'");
 
         String mode = getMode(flags);
 
@@ -1367,6 +1373,8 @@ public class pspiofilemgr {
                 if (!device.equals("mscmhc0:")) {
                     Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_UNSUPPORTED_OPERATION;
                 } else if (mem.isAddressGood(outdata_addr)) {
+                    // 1 = inserted
+                    // 2 = not inserted
                     mem.write32(outdata_addr, memoryStickState);
                     Emulator.getProcessor().cpu.gpr[2] = 0;
                 } else {

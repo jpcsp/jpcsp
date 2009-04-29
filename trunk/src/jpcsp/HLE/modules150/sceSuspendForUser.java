@@ -84,7 +84,10 @@ public class sceSuspendForUser implements HLEModule {
     public void sceKernelPowerTick(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
 
-        Modules.log.debug("IGNORING:sceKernelPowerTick(" + cpu.gpr[4] + ")");
+        if (cpu.gpr[4] == 0)
+            Modules.log.trace("IGNORING:sceKernelPowerTick(" + cpu.gpr[4] + ")");
+        else
+            Modules.log.info("IGNORING:sceKernelPowerTick(" + cpu.gpr[4] + ")");
 
         cpu.gpr[2] = 0;
     }

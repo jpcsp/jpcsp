@@ -58,15 +58,14 @@ public class OptionPaneMultiple {
        // }
         //System.out.println(selectedValue);
         if (selectedValue == null) {
-            System.out.println("dump code window Closed");
+            //System.out.println("dump code window Closed");
 
         } else if (selectedValue.equals("Ok")) {
             //System.out.println("dump code returns " + startaddr.getText() + " : " + endaddr.getText() + " : " + filename.getText());
             completed=true;
 
         } else {
-            System.out.println("dump code window Canceled");
-
+            //System.out.println("dump code window Canceled");
         }
 
     }
