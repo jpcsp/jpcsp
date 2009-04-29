@@ -39,7 +39,7 @@ public class Common {
         public final static int FLAG_STARTS_NEW_BLOCK = (1 << 6);
         public final static int FLAG_ENDS_BLOCK = (1 << 7);
         public final static int FLAGS_BRANCH_INSTRUCTION = FLAG_CANNOT_BE_SPLIT | FLAG_HAS_DELAY_SLOT | FLAG_IS_BRANCHING | FLAG_IS_CONDITIONAL;
-        public final static int FLAGS_LINK_INSTRUCTION = FLAG_HAS_DELAY_SLOT | FLAG_STARTS_NEW_BLOCK;
+        public final static int FLAGS_LINK_INSTRUCTION = FLAG_CANNOT_BE_SPLIT | FLAG_HAS_DELAY_SLOT | FLAG_STARTS_NEW_BLOCK;
 
         public abstract void interpret(Processor processor, int insn);
 
