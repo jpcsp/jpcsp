@@ -80,10 +80,12 @@ public class sceSasCore implements HLEModule {
         	voices[i] = new pspVoice();
         }
 
-        VoicesCheckerThread voicesCheckerThread = new VoicesCheckerThread(500);
-        voicesCheckerThread.setDaemon(true);
-        voicesCheckerThread.setName("sceSasCore Voices Checker");
-        voicesCheckerThread.start();
+        if (voicesCheckerThread == null) {
+	        voicesCheckerThread = new VoicesCheckerThread(500);
+	        voicesCheckerThread.setDaemon(true);
+	        voicesCheckerThread.setName("sceSasCore Voices Checker");
+	        voicesCheckerThread.start();
+        }
     }
 
     @Override
@@ -280,6 +282,7 @@ public class sceSasCore implements HLEModule {
     	
     }
 
+    private static VoicesCheckerThread voicesCheckerThread = null;
     protected int sasCoreUid;
     protected pspVoice[] voices;
     protected int sampleRate;
