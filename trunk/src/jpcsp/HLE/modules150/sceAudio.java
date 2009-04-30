@@ -159,8 +159,11 @@ public class sceAudio implements HLEModule, HLEThread {
     		if (outputDataLine != null) {
     			if (this.buffer == null) {
                 	int length = Math.min(outputDataLine.available(), buffer.length);
-                	outputDataLine.write(buffer, 0, length);
                 	outputDataLine.start();
+                	int written = outputDataLine.write(buffer, 0, length);
+                	if (Modules.log.isDebugEnabled()) {
+                		Modules.log.debug("pspChannelInfo.play: written " + written + " bytes (" + toString() + ")");
+                	}
                 	bufferIndex = length;
     				this.buffer = buffer;
     			} else {
@@ -185,7 +188,11 @@ public class sceAudio implements HLEModule, HLEThread {
     		if (bufferIndex < buffer.length) {
     			int length = Math.min(outputDataLine.available(), buffer.length - bufferIndex);
     			if (length > 0) {
-    				outputDataLine.write(buffer, bufferIndex, length);
+    				outputDataLine.start();
+    				int written = outputDataLine.write(buffer, bufferIndex, length);
+                	if (Modules.log.isDebugEnabled()) {
+                		Modules.log.debug("pspChannelInfo.check: written " + written + " bytes (" + toString() + ")");
+                	}
     				bufferIndex += length;
     			}
     		}
@@ -217,7 +224,8 @@ public class sceAudio implements HLEModule, HLEThread {
         	}
         	result.append("Waiting " + waitingBuffers.size() + ", ");
         	result.append("Ended " + IsEnded()+ ", ");
-        	result.append("OutputBlocking " + isOutputBlocking());
+        	result.append("OutputBlocking " + isOutputBlocking() + ", ");
+        	result.append("Reserved " + reserved);
         	result.append(")");
 
         	return result.toString();
@@ -463,6 +471,8 @@ public class sceAudio implements HLEModule, HLEThread {
             pspchannels[channel].play(data);
 
             ret = nsamples;
+        } else {
+        	Modules.log.warn("sceAudio.doAudioOutput: channel " + channel + " not reserved");
         }
 
         return ret;
@@ -629,6 +639,9 @@ public class sceAudio implements HLEModule, HLEThread {
             	}
 	            sceAudioChangeChannelVolume(channel, vol, vol);
 	            cpu.gpr[2] = doAudioOutput(channel, pvoid_buf);
+            	if (Modules.log.isDebugEnabled()) {
+            		Modules.log.debug("sceAudioOutputBlocking[not blocking] returning " + cpu.gpr[2] + " (" + pspchannels[channel].toString() + ")");
+            	}
 	            //threadMan.yieldCurrentThread();
             } else {
             	if (Modules.log.isDebugEnabled()) {
@@ -711,7 +724,7 @@ public class sceAudio implements HLEModule, HLEThread {
             }
             else // find first free channel
             {
-                for (int i = 0; i < 8; i++)
+                for (int i = 0; i < pspchannels.length; i++)
                 {
                     if (!pspchannels[i].reserved)
                     {
