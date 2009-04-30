@@ -191,7 +191,7 @@ public class sceAudio implements HLEModule, HLEThread {
     				outputDataLine.start();
     				int written = outputDataLine.write(buffer, bufferIndex, length);
                 	if (Modules.log.isDebugEnabled()) {
-                		Modules.log.debug("pspChannelInfo.check: written " + written + " bytes (" + toString() + ")");
+                		Modules.log.debug("pspChannelInfo.check: written " + written);
                 	}
     				bufferIndex += length;
     			}
