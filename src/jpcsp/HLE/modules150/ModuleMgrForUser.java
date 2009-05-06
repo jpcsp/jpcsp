@@ -384,8 +384,20 @@ public class ModuleMgrForUser implements HLEModule {
             Modules.log.warn("sceKernelUnloadModule unknown module UID 0x" + Integer.toHexString(uid));
             cpu.gpr[2] = -1;
         } else {
-            Modules.log.warn("UNIMPLEMENTED:sceKernelUnloadModule(uid=" + uid + ") modname:'" + sceModule.modname + "'");
-            cpu.gpr[2] = 0; // Fake
+            Modules.log.warn("PARTIAL:sceKernelUnloadModule(uid=" + Integer.toHexString(uid) + ") modname:'" + sceModule.modname + "'");
+
+            // TODO terminate delete all threads that belong to this module
+
+            pspSysMem sysMem = pspSysMem.getInstance();
+            for (int i = 0; i < sceModule.nsegment; i++) {
+                sysMem.free(sceModule.segmentaddr[i]);
+            }
+
+            sceModule.free();
+
+            Managers.modules.removeModule(uid);
+
+            cpu.gpr[2] = 0;
         }
     }
 

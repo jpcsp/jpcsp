@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
@@ -45,6 +46,7 @@ import static jpcsp.util.Utilities.*;
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.*;
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.modules.HLECallback;
 import jpcsp.HLE.modules.sceUmdUser;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
@@ -231,7 +233,36 @@ public class ThreadMan {
 
             // Hook jr ra to 0 (thread function returned)
             if (cpu.pc == 0 && cpu.gpr[31] == 0) {
-                if (insideCallback) {
+
+                if (current_thread.insideCallback) {
+                    Modules.log.debug("Callback v2 exit detected");
+                    current_thread.insideCallback = false;
+
+                    Modules.log.debug("PC=0x" + Integer.toHexString(cpu.pc)
+                        + " NPC=0x" + Integer.toHexString(cpu.npc)
+                        + " new PC=0x" + Integer.toHexString(current_thread.callbackSavedNPC));
+
+                    // Do not restore saved pc into pc! Restore npc into pc.
+                    // Otherwise we will end up calling the next syscall in the stub table
+                    current_thread.cpuContext.pc = current_thread.callbackSavedNPC;
+                    current_thread.cpuContext.npc = current_thread.callbackSavedNPC;
+
+                    // restore registers, but keep the return value of the callback
+                    int v0 = cpu.gpr[2];
+                    for (int i = 0; i < 32; i++) {
+                        cpu.gpr[i] = current_thread.callbackSavedGpr[i];
+                    }
+                    cpu.gpr[2] = v0;
+                    cpu.gpr[31] = current_thread.callbackSavedRA;
+
+                    if (current_thread.hleCallback != null) {
+                        HLECallback hleCallback = current_thread.hleCallback;
+                        current_thread.hleCallback = null;
+
+                        // this has to be the very last thing so it can call executeCallback again
+                        hleCallback.execute(Emulator.getProcessor());
+                    }
+                } else if (insideCallback) {
                     // Callback has exited
                     Modules.log.debug("Callback exit detected");
 
@@ -638,12 +669,15 @@ public class ThreadMan {
      * if uid < 0 then $v0 is set to ERROR_NOT_FOUND_THREAD and false is returned */
     private boolean checkThreadID(int uid) {
         if (uid == 0) {
+            Modules.log.warn("checkThreadID illegal thread (uid=0) caller:" + getCallingFunction());
             Emulator.getProcessor().cpu.gpr[2] = ERROR_ILLEGAL_THREAD;
             return false;
         } else if (uid < 0) {
+            Modules.log.warn("checkThreadID not found thread " + Integer.toHexString(uid) + " (uid<0) caller:" + getCallingFunction());
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
             return false;
         } else {
+            SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
             return true;
         }
     }
@@ -701,7 +735,7 @@ public class ThreadMan {
 
     /** terminate thread a0 */
     public void ThreadMan_sceKernelTerminateThread(int uid) {
-        SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
+        if (!checkThreadID(uid)) return;
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
@@ -737,7 +771,6 @@ public class ThreadMan {
     /** terminate thread a0, then mark it for deletion */
     public void ThreadMan_sceKernelTerminateDeleteThread(int uid) {
         if (!checkThreadID(uid)) return;
-        SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
@@ -844,7 +877,7 @@ public class ThreadMan {
     }
 
     public void ThreadMan_sceKernelStartThread(int uid, int len, int data_addr) {
-        SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
+        if (!checkThreadID(uid)) return;
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
@@ -919,13 +952,13 @@ public class ThreadMan {
     }
 
     public void ThreadMan_sceKernelWakeupThread(int uid) {
-        SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
+        if (!checkThreadID(uid)) return;
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
             Modules.log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " unknown thread");
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
         } else if (thread.status != PSP_THREAD_WAITING) {
-            Modules.log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "' not sleeping/waiting (status=" + thread.status + ")");
+            Modules.log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "' not sleeping/waiting (status=0x" + Integer.toHexString(thread.status) + ")");
             Emulator.getProcessor().cpu.gpr[2] = 0; // ERROR_THREAD_IS_NOT_WAIT;
         } else if (isBannedThread(thread)) {
             Modules.log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "' banned, not waking up");
@@ -945,7 +978,7 @@ public class ThreadMan {
     }
 
     public void ThreadMan_sceKernelSuspendThread(int uid) {
-        SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
+        if (!checkThreadID(uid)) return;
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
             Modules.log.warn("sceKernelSuspendThread SceUID=" + Integer.toHexString(uid) + " unknown thread");
@@ -958,7 +991,7 @@ public class ThreadMan {
     }
 
     public void ThreadMan_sceKernelResumeThread(int uid) {
-        SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
+        if (!checkThreadID(uid)) return;
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
             Modules.log.warn("sceKernelResumeThread SceUID=" + Integer.toHexString(uid) + " unknown thread");
@@ -977,12 +1010,12 @@ public class ThreadMan {
     }
 
     private void hleKernelWaitThreadEnd(int uid, int micros, boolean forever, boolean callbacks) {
+        if (!checkThreadID(uid)) return;
         Modules.log.debug("hleKernelWaitThreadEnd SceUID=" + Integer.toHexString(uid)
             + " micros=" + micros
             + " forever=" + forever
             + " callbacks=" + callbacks);
 
-        SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
             Modules.log.warn("hleKernelWaitThreadEnd unknown thread 0x" + Integer.toHexString(uid));
@@ -1175,6 +1208,7 @@ public class ThreadMan {
         Emulator.getProcessor().cpu.gpr[2] = current_thread.currentPriority;
     }
 
+    /** @return ERROR_NOT_FOUND_THREAD on uid < 0, uid == 0 and thread not found */
     public void ThreadMan_sceKernelGetThreadExitStatus(int uid) {
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
@@ -1285,7 +1319,7 @@ public class ThreadMan {
         SceKernelThreadInfo thread = threadMap.get(uid);
         if (thread == null) {
             Modules.log.warn("sceKernelChangeThreadPriority SceUID=" + Integer.toHexString(uid)
-                + ",newPriority:0x" + Integer.toHexString(priority) + ") unknown thread");
+                + " newPriority:0x" + Integer.toHexString(priority) + ") unknown thread");
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
 
         } else if ((thread.status & PSP_THREAD_STOPPED) == PSP_THREAD_STOPPED) {
@@ -1327,7 +1361,7 @@ public class ThreadMan {
                 Modules.log.debug("sceKernelChangeThreadPriority yielding to thread with higher priority");
                 yieldCurrentThread();
 
-            // yield if we moved ourselve to lower priority
+            // yield if we moved ourself to lower priority
             // TODO only yield if there are other ready threads of higher priority (idle threads are always ready)
             } else if (uid == current_thread.uid && priority > oldPriority) {
                 Modules.log.debug("sceKernelChangeThreadPriority yielding");
@@ -1416,6 +1450,49 @@ public class ThreadMan {
 
     public boolean isInsideCallback() {
         return insideCallback;
+    }
+
+    /** New style callback mechanism
+     * Currently used for MPEG callback, kernel/GE callbacks will be upgraded later.
+     * - supports HLE callback on the PSP callback
+     * - supports chaining callbacks. After the PSP callback exits, the
+     *   HLE callback may trigger another PSP callback on the same thread.
+     * - should support context switching inside the callback (untested)
+     *
+     * How it works:
+     * 1st we call into PSP code using the pspAddress and gpr parameters
+     * 2nd, when PSP code returns we call into HLE code using the HLECallback interface.
+     */
+    public void executeCallback(int pspAddress, int[] gpr, HLECallback callback) {
+        //RuntimeContext.update();
+
+        Modules.log.debug("executeCallback entry=0x" + Integer.toHexString(pspAddress)
+            + " oldPC=0x" + Integer.toHexString(current_thread.cpuContext.pc)
+            + " oldNPC=0x" + Integer.toHexString(current_thread.cpuContext.npc));
+
+        current_thread.insideCallback = true;
+        current_thread.callbackSavedNPC = current_thread.cpuContext.npc;
+        current_thread.callbackSavedRA = current_thread.cpuContext.gpr[31];
+        current_thread.hleCallback = callback;
+
+        // set entry
+        current_thread.cpuContext.pc = pspAddress; // for when executeAndCallback is called from step() (chaining callbacks)
+        current_thread.cpuContext.npc = pspAddress; // for when executeAndCallback is called from a syscall/branch delay slot
+
+        // set parameters
+        for (int i = 0; i < 32; i++) {
+            // save old gpr
+            current_thread.callbackSavedGpr[i] = current_thread.cpuContext.gpr[i];
+
+            // copy gpr instead of overwriting the array reference, just for safety
+            current_thread.cpuContext.gpr[i] = gpr[i];
+        }
+
+        // catch ra 0
+        current_thread.cpuContext.gpr[31] = 0;
+
+        // TODO make it work in dynarec
+        // problem is PC and NPC are not valid? (08800000)
     }
 
     /** push callback to all threads */

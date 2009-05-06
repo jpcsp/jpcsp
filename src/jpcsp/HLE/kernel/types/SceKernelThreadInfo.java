@@ -24,6 +24,7 @@ import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.modules.HLECallback;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import jpcsp.util.Utilities;
 
@@ -42,7 +43,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public static final int PSP_MODULE_POPS                 = 0x00000200;
     public static final int PSP_MODULE_DEMO                 = 0x00000200; // same as PSP_MODULE_POPS
     public static final int PSP_MODULE_GAMESHARING          = 0x00000400;
-    public static final int PSP_MODULE_VSH                  = 0x00000800;
+    public static final int PSP_MODULE_VSH                  = 0x00000800; // can only be loaded from kernel mode?
 
     public static final int PSP_MODULE_KERNEL               = 0x00001000;
     public static final int PSP_MODULE_USE_MEMLMD_LIB       = 0x00002000;
@@ -50,10 +51,10 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     */
 
     // TODO are module/thread attr interchangeable? (probably yes)
-    public static final int PSP_THREAD_ATTR_USER = 0x80000000;
+    public static final int PSP_THREAD_ATTR_USER = 0x80000000; // module attr 0, thread attr: 0x800000FF?
     public static final int PSP_THREAD_ATTR_USBWLAN = 0xa0000000;
     public static final int PSP_THREAD_ATTR_VSH = 0xc0000000;
-    public static final int PSP_THREAD_ATTR_KERNEL = 0x00001000;
+    public static final int PSP_THREAD_ATTR_KERNEL = 0x00001000; // module attr 0x1000, thread attr: 0?
     public static final int PSP_THREAD_ATTR_VFPU = 0x00004000;
     public static final int PSP_THREAD_ATTR_SCRATCH_SRAM = 0x00008000;
     public static final int PSP_THREAD_ATTR_NO_FILLSTACK = 0x00100000; // Disables filling the stack with 0xFF on creation.
@@ -70,14 +71,14 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     // SceKernelThreadInfo <http://psp.jim.sh/pspsdk-doc/structSceKernelThreadInfo.html>
     public final String name;
     public int attr;
-    public int status;
+    public int status; // it's a bitfield but I don't think we ever use more than 1 bit at once
     public final int entry_addr;
-    public final int stack_addr; // currently using bottom
+    public final int stack_addr; // using low address, no need to add stackSize to the pointer returned by malloc
     public final int stackSize;
     public int gpReg_addr;
-    public final int initPriority;
+    public final int initPriority; // lower numbers mean higher priority
     public int currentPriority;
-    public int waitType; // 3 = sema
+    public int waitType; // 1=SleepThread 2=DelayThread 3=sema 4=VblankStart?
     public int waitId;
     public int wakeupCount;
     public int exitStatus;
@@ -105,6 +106,14 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public boolean[] callbackRegistered;
     public boolean[] callbackReady;
     public SceKernelCallbackInfo[] callbackInfo;
+
+    // make this information per thread instead of globals in ThreadMan,
+    // this way we should be able to allow context switching (wait sema, etc) while inside the callback.
+    public boolean insideCallback;
+    public int[] callbackSavedGpr = new int[32];
+    public int callbackSavedNPC; // hleCallbackSavedPC not required, only NPC
+    public int callbackSavedRA; // not really necessary but keeps things consistent
+    public HLECallback hleCallback;
 
     public SceKernelThreadInfo(String name, int entry_addr, int initPriority, int stackSize, int attr) {
         // Ignore 0 size from the idle threads (don't want them stealing space)
@@ -188,6 +197,12 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
             callbackRegistered[i] = false;
             callbackReady[i] = false;
             callbackInfo[i] = null;
+        }
+
+        insideCallback = false;
+        callbackSavedGpr = new int[32];
+        for (int i = 0; i < 32; i++) {
+            callbackSavedGpr[i] = 0;
         }
     }
 

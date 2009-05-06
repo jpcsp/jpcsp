@@ -126,7 +126,10 @@ public class SceModule {
 
     /** For use when unloading modules. */
     public void free() {
-        pspSysMem.getInstance().free(address);
+        // TODO
+        //pspSysMem.getInstance().free(address);
+
+        // TODO fixup "next" field/linked list
     }
 
     public void write(Memory mem, int address) {

@@ -68,7 +68,7 @@ public class sceSuspendForUser implements HLEModule {
     public void sceKernelPowerLock(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
 
-        Modules.log.debug("IGNORING:sceKernelPowerLock");
+        Modules.log.trace("IGNORING:sceKernelPowerLock");
 
         cpu.gpr[2] = 0;
     }
@@ -76,7 +76,7 @@ public class sceSuspendForUser implements HLEModule {
     public void sceKernelPowerUnlock(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
 
-        Modules.log.debug("IGNORING:sceKernelPowerUnlock");
+        Modules.log.trace("IGNORING:sceKernelPowerUnlock");
 
         cpu.gpr[2] = 0;
     }

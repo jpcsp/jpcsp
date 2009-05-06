@@ -43,11 +43,11 @@ public class GeCommands {
     public final static int CALL = 0x0A; //Call Address (BASE)
     public final static int RET = 0x0B; //Return From Call
     public final static int END = 0x0C; //Stop Execution
-    public final static int UNKNOWCOMMAND_0X0D = 0x0D;
+    public final static int UNKNOWNCOMMAND_0x0D = 0x0D;
     public final static int SIGNAL = 0x0E; //	SIGNAL 	Raise Signal Interrupt
     public final static int FINISH = 0x0F;// 	FINISH 	Complete Rendering
     public final static int BASE = 0x10; 	//BASE 	Base Address Register
-    public final static int UNKNOWCOMMAND_0X11 = 0x11;
+    public final static int UNKNOWNCOMMAND_0x11 = 0x11;
     public final static int VTYPE = 0x12;// 	VTYPE 	Vertex Type
         public final static int VTYPE_TRANSFORM_PIPELINE_TRANS_COORD = 0x0;
         public final static int VTYPE_TRANSFORM_PIPELINE_RAW_COORD = 0x1;
@@ -107,7 +107,7 @@ public class GeCommands {
     public final static int PCE = 0x26;// 	PCE 	Patch Cull Enable
     public final static int CTE = 0x27;// 	CTE 	Color Test Enable
     public final static int LOE = 0x28;// 	LOE 	Logical Operation Enable
-    public final static int UNKNOWCOMMAND_0x29 = 0x29;
+    public final static int UNKNOWNCOMMAND_0x29 = 0x29;
     public final static int BOFS = 0x2A;// 	BOFS 	Bone Matrix Offset
     public final static int BONE = 0x2B;// 	BONE 	Bone Matrix Upload
     public final static int MW0 = 0x2C;// 	MW0 	Morph Weight 0
@@ -118,12 +118,12 @@ public class GeCommands {
     public final static int MW5 = 0x31;// 	MW5 	Morph Weight 5
     public final static int MW6 = 0x32;// 	MW6 	Morph Weight 6
     public final static int MW7 = 0x33;// 	MW7 	Morph Weight 7
-    public final static int UNKNOWCOMMAND_0x34 = 0x34;
-    public final static int UNKNOWCOMMAND_0x35 = 0x35;
+    public final static int UNKNOWNCOMMAND_0x34 = 0x34;
+    public final static int UNKNOWNCOMMAND_0x35 = 0x35;
     public final static int PSUB = 0x36;// 	PSUB 	Patch Subdivision
     public final static int PPRIM = 0x37;// 	PPRIM 	Patch Primitive
     public final static int PFACE = 0x38;// 	PFACE 	Patch Front Face
-    public final static int UNKNOWCOMMAND_0x39 = 0x39;
+    public final static int UNKNOWNCOMMAND_0x39 = 0x39;
     public final static int MMS = 0x3A;// 	MDL 	Model Matrix Select
     public final static int MODEL = 0x3B;// MODEL 	Model Matrix Upload
     public final static int VMS = 0x3C;// 	VMS 	View Matrix Select
@@ -144,13 +144,13 @@ public class GeCommands {
     public final static int VOFFSET = 0x4B;// 	VOFFSET 	Texture Offset V
     public final static int OFFSETX = 0x4C;// 	OFFSETX 	Viewport offset (X)
     public final static int OFFSETY = 0x4D;// 	OFFSETY 	Viewport offset (Y)
-    public final static int UNKNOWCOMMAND_0X4E = 0x4E;
-    public final static int UNKNOWCOMMAND_0x4F = 0X4F;
+    public final static int UNKNOWNCOMMAND_0x4E = 0x4E;
+    public final static int UNKNOWNCOMMAND_0x4F = 0X4F;
     public final static int SHADE = 0x50;// 	SHADE 	Shade Model
         public final static int SHADE_TYPE_FLAT = 0X00;
         public final static int SHADE_TYPE_SMOOTH = 0X01;
     public final static int RNORM = 0x51;// 	RNORM 	Reverse Face Normals Enable
-    public final static int UNKNOWCOMMAND_0x52 = 0X52;
+    public final static int UNKNOWNCOMMAND_0x52 = 0X52;
     public final static int CMAT = 0x53;// 	CMAT 	Color Material
         public final static int CMAT_FLAG_AMBIENT = 0X01;
         public final static int CMAT_FLAG_DIFFUSE = 0X02;
@@ -160,8 +160,8 @@ public class GeCommands {
     public final static int DMC = 0x56;// 	DMC 	Diffuse Model Color
     public final static int SMC = 0x57;// 	SMC 	Specular Model Color
     public final static int AMA = 0x58;// 	AMA 	Ambient Model Alpha
-    public final static int UNKNOWCOMMAND_0x59 = 0X59;
-    public final static int UNKNOWCOMMAND_0x5A = 0X5A;
+    public final static int UNKNOWNCOMMAND_0x59 = 0X59;
+    public final static int UNKNOWNCOMMAND_0x5A = 0X5A;
     public final static int SPOW = 0x5B;// 	SPOW 	Specular Power
     public final static int ALC = 0x5C;// 	ALC 	Ambient Light Color
     public final static int ALA = 0x5D;// 	ALA 	Ambient Light Alpha
@@ -267,8 +267,8 @@ public class GeCommands {
     public final static int TRXSBW = 0xB3;// 	TRXSBW 	Transmission Source Buffer Width
     public final static int TRXDBP = 0xB4;// 	TRXDBP 	Transmission Destination Buffer Pointer
     public final static int TRXDBW = 0xB5;// 	TRXDBW 	Transmission Destination Buffer Width
-    public final static int UNKNOWCOMMAND_0xB6 = 0XB6;
-    public final static int UNKNOWCOMMAND_0xB7 = 0XB7;
+    public final static int UNKNOWNCOMMAND_0xB6 = 0XB6;
+    public final static int UNKNOWNCOMMAND_0xB7 = 0XB7;
     public final static int TSIZE0 = 0xB8;// 	TSIZE0 	Texture Size Level 0
     public final static int TSIZE1 = 0xB9;// 	TSIZE1 	Texture Size Level 1
     public final static int TSIZE2 = 0xBA;// 	TSIZE2 	Texture Size Level 2
@@ -314,7 +314,7 @@ public class GeCommands {
         public final static int TFLT_UNKNOW2 = 0X03;
         public final static int TFLT_NEAREST_MIPMAP_NEAREST = 0X04;
         public final static int TFLT_LINEAR_MIPMAP_NEAREST = 0X05;
-        public final static int TFLT_NEAREST_MIPMAP_LINEAR = 0X06;        
+        public final static int TFLT_NEAREST_MIPMAP_LINEAR = 0X06;
         public final static int TFLT_LINEAR_MIPMAP_LINEAR = 0X07;
     public final static int TWRAP = 0xC7;// 	TWRAP 	Texture Wrapping
         public final static int TWRAP_WRAP_MODE_REPEAT = 0X00;
@@ -342,7 +342,7 @@ public class GeCommands {
     public final static int FDIST = 0xCE;// 	FDIST 	Fog Range
     public final static int FCOL = 0xCF;// 	FCOL 	Fog Color
     public final static int TSLOPE = 0xD0;// 	TSLOPE 	Texture Slope
-    public final static int UNKNOWCOMMAND_0xD1 = 0XD1;
+    public final static int UNKNOWNCOMMAND_0xD1 = 0XD1;
     public final static int PSM = 0xD2;// 	PSM 	Frame Buffer Pixel Storage Mode
         public final static int PSM_16BIT_BGR5650 = 0X00;
         public final static int PSM_16BIT_ABGR5551 = 0X01;
@@ -449,14 +449,14 @@ public class GeCommands {
         public final static int TRXKICK_32BIT_TEXEL_SIZE = 0X01;
     public final static int TRXPOS = 0xEB;// 	TRXSPOS 	Transfer Source Position
     public final static int TRXDPOS = 0xEC;// 	TRXDPOS 	Transfer Destination Position
-    public final static int UNKNOWCOMMAND_0xED = 0XED;
+    public final static int UNKNOWNCOMMAND_0xED = 0XED;
     public final static int TRXSIZE = 0xEE;// 	TRXSIZE 	Transfer Size
 
 
     public GeCommands() {
         commands = new String[0x100];
         commands[TRXSIZE]="trxsize";
-        commands[UNKNOWCOMMAND_0xED]="unk 0xed";
+        commands[UNKNOWNCOMMAND_0xED]="unk 0xed";
         commands[TRXDPOS]="trxdpos";
         commands[TRXPOS]="trxpos";
         commands[TRXKICK]="trxkick";
@@ -484,7 +484,7 @@ public class GeCommands {
         commands[SCISSOR1]="scissor1";
         commands[CLEAR]="clear";
         commands[PSM]="psm";
-        commands[UNKNOWCOMMAND_0xD1]="unk 0xd1";
+        commands[UNKNOWNCOMMAND_0xD1]="unk 0xd1";
         commands[TSLOPE]="tslope";
         commands[FCOL]="fcol";
         commands[FDIST]="fdist";
@@ -510,8 +510,8 @@ public class GeCommands {
         commands[TSIZE2]="tsize2";
         commands[TSIZE1]="tsize1";
         commands[TSIZE0]="tsize0";
-        commands[UNKNOWCOMMAND_0xB7]="unk 0xB7";
-        commands[UNKNOWCOMMAND_0xB6]="unk 0xB6";
+        commands[UNKNOWNCOMMAND_0xB7]="unk 0xB7";
+        commands[UNKNOWNCOMMAND_0xB6]="unk 0xB6";
         commands[TRXDBW]="trxdbw";
         commands[TRXDBP]="trxdbp";
         commands[TRXSBW]="trxsbw";
@@ -603,8 +603,8 @@ public class GeCommands {
         commands[ALA]="ala";
         commands[ALC]="alc";
         commands[SPOW]="spow";
-        commands[UNKNOWCOMMAND_0x5A]="unk 0x5A";
-        commands[UNKNOWCOMMAND_0x59]="unk 0x59";
+        commands[UNKNOWNCOMMAND_0x5A]="unk 0x5A";
+        commands[UNKNOWNCOMMAND_0x59]="unk 0x59";
         commands[AMA]="ama";
         commands[SMC]="smc";
         commands[DMC]="dmc";
@@ -613,8 +613,8 @@ public class GeCommands {
         commands[CMAT]="cmat";
         commands[RNORM]="rnorm";
         commands[SHADE]="shade";
-        commands[UNKNOWCOMMAND_0x4F]="unk 0x4f";
-        commands[UNKNOWCOMMAND_0X4E]="unk 0x4e";
+        commands[UNKNOWNCOMMAND_0x4F]="unk 0x4f";
+        commands[UNKNOWNCOMMAND_0x4E]="unk 0x4e";
         commands[OFFSETY]="offsety";
         commands[OFFSETX]="offsetx";
         commands[VOFFSET]="voffset";
@@ -635,12 +635,12 @@ public class GeCommands {
         commands[VMS]="vms";
         commands[MODEL]="model";
         commands[MMS]="mms";
-        commands[UNKNOWCOMMAND_0x39]="unk 0x39";
+        commands[UNKNOWNCOMMAND_0x39]="unk 0x39";
         commands[PFACE]="pface";
         commands[PPRIM]="pprim";
         commands[PSUB]="psub";
-        commands[UNKNOWCOMMAND_0x35]="unk 0x35";
-        commands[UNKNOWCOMMAND_0x34]="unk 0x34";
+        commands[UNKNOWNCOMMAND_0x35]="unk 0x35";
+        commands[UNKNOWNCOMMAND_0x34]="unk 0x34";
         commands[MW7]="mw7";
         commands[MW6]="mw6";
         commands[MW5]="mw5";
@@ -651,7 +651,7 @@ public class GeCommands {
         commands[MW0]="mw0";
         commands[BONE]="bone";
         commands[BOFS]="bofs";
-        commands[UNKNOWCOMMAND_0x29]="unk 0x29";
+        commands[UNKNOWNCOMMAND_0x29]="unk 0x29";
         commands[LOE]="loe";
         commands[CTE]="cte";
         commands[PCE]="pce";
@@ -675,11 +675,11 @@ public class GeCommands {
         commands[ORIGIN_ADDR]= "origin_addr";
         commands[OFFSET_ADDR]= "offset_addr";
         commands[VTYPE]="vtype";
-        commands[UNKNOWCOMMAND_0X11] = "unk 0x11";
+        commands[UNKNOWNCOMMAND_0x11] = "unk 0x11";
         commands[BASE]="base";
         commands[FINISH]="finish";
         commands[SIGNAL]="signal";
-        commands[UNKNOWCOMMAND_0X0D]="unk 0x0D";
+        commands[UNKNOWNCOMMAND_0x0D]="unk 0x0D";
         commands[END] = "end";
         commands[RET] = "ret";
         commands[CALL] = "call";
