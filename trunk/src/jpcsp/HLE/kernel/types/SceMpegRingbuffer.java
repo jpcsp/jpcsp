@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 import jpcsp.Memory;
+import jpcsp.HLE.Modules;
 
 // some field info from noxa/pspplayer
 public class SceMpegRingbuffer {
@@ -31,28 +32,35 @@ public class SceMpegRingbuffer {
     public int callback_addr; // see sceMpegRingbufferPut
     public int callback_args;
     public int dataUpperBound;
-    public int semaID;
-    public int mpeg;
+    public int semaID; // unused?
+    public int mpeg; // pointer to mpeg struct, fixed up in sceMpegCreate
 
     public SceMpegRingbuffer(int packets, int data, int size, int callback_addr, int callback_args) {
         this.packets = packets;
         this.packetsRead = 0;
         this.packetsWritten = 0;
-
-        // set in sceMpegCreate, since we may tell the app to allocate less mem
-        // than it wanted, in which case "packetsFree" will never reach "packets"
-        this.packetsFree = 0;
-        this.packetSize = 0; // set in sceMpegCreate? (2048)
+        this.packetsFree = 0; // set later
+        this.packetSize = 2048;
         this.data = data;
         this.callback_addr = callback_addr;
         this.callback_args = callback_args;
-        this.dataUpperBound = data + size;
+        this.dataUpperBound = data + packets * 2048;
         this.semaID = -1;
-        this.mpeg = -1;
+        this.mpeg = 0;
+
+        if (dataUpperBound > data + size) {
+            dataUpperBound = data + size;
+            Modules.log.warn("SceMpegRingbuffer clamping dataUpperBound to " + dataUpperBound);
+        }
     }
 
-    public SceMpegRingbuffer(Memory mem, int address) {
-        read(mem, address);
+    private SceMpegRingbuffer() {
+    }
+
+    public static SceMpegRingbuffer fromMem(Memory mem, int address) {
+        SceMpegRingbuffer ringbuffer = new SceMpegRingbuffer();
+        ringbuffer.read(mem, address);
+        return ringbuffer;
     }
 
     public void read(Memory mem, int address) {

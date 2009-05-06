@@ -199,6 +199,7 @@ public class VertexInfo {
                 v.c[1] = ((packed >>  5) & 0x3f) / 63.0f;
                 v.c[2] = ((packed >> 11) & 0x1f) / 31.0f;
                 v.c[3] = 0.0f; // 1.0f
+                // Alpha needs confirming, other components have been checked (fiveofhearts)
                 VideoEngine.log.warn("color type " + color + " untested");
             	break;
             }
@@ -210,7 +211,6 @@ public class VertexInfo {
                 v.c[1] = ((packed >>  5) & 0x1f) / 31.0f;
                 v.c[2] = ((packed >> 10) & 0x1f) / 31.0f;
                 v.c[3] = ((packed >> 15) & 0x1) / 1.0f;
-                VideoEngine.log.warn("color type " + color + " untested");
             	break;
             }
 
@@ -221,7 +221,6 @@ public class VertexInfo {
                 v.c[1] = ((packed >>  4) & 0xf) / 15.0f;
                 v.c[2] = ((packed >>  8) & 0xf) / 15.0f;
                 v.c[3] = ((packed >> 12) & 0xf) / 15.0f;
-                VideoEngine.log.warn("color type " + color + " untested");
                 break;
             }
 

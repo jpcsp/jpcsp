@@ -823,9 +823,9 @@ public class syscallsFirm15 {
                  sceKernelSetCompiledSdkVersion(0x3001,0x7591c7db), // fw 2.5
                  sceKernelSetCompilerVersion(0x3002,0xf77d77cb), // fw 2.5
                  sceAtracIsSecondBufferNeeded(0x3003,0xeca32a99), // fw 2.5
-                 sceUtilityLoadModule(0x3004,0x2a2b3de0), // fw 3.52 or less?
-                 sceUtilityMsgDialogAbort(0x3005,0x4928bd96), // fw 3.52 or less?
-                 sceUtilityUnloadModule(0x3006,0xe49bfe92), // fw 3.52 or less?
+                 sceUtilityLoadModule(0x3004,0x2a2b3de0), // fw 3.11 or less?
+                 sceUtilityMsgDialogAbort(0x3005,0x4928bd96), // fw 2.71 or less?
+                 sceUtilityUnloadModule(0x3006,0xe49bfe92), // fw 3.11 or less?
                  /* more fake mapping */
                  sceUmdReplaceProhibit(0x3007,0x87533940),//umd function 2.00 +
                  sceNetAdhocMatchingCancelTargetWithOpt(0x3008,0x8f58bedf), //2.50+
@@ -963,8 +963,8 @@ public class syscallsFirm15 {
                 sceAudioOutput2GetRestSample(0x308a, 0x647CEF33), //2.50+ or lower
 
                 scePower_EBD177D6(0x308b, 0xEBD177D6), //3.52+ or lower change clock speeds
-                sceKernelSetCompiledSdkVersion370(0x308c, 0x342061E5), //3.72+ or lower
-                __sceSasGetAllEnvelopeHeights(0x308d, 0x07F58C24), //3.72+ or lower, 3.95+ in libdoc
+                sceKernelSetCompiledSdkVersion370(0x308c, 0x342061E5), //3.70+ or lower
+                __sceSasGetAllEnvelopeHeights(0x308d, 0x07F58C24), // added after 3.52, maybe 3.70+ or lower
 
 
                 sceKernelSetCompiledSdkVersion395(0x308e, 0xEBD5C3E6), // 3.95+ or lower
@@ -1086,7 +1086,6 @@ public class syscallsFirm15 {
                 sceUtilityInstallShutdownStart(0x30f3, 0x5EF1C24A), // 2.71+
                 sceUtilityInstallUpdate(0x30f4, 0xA03D29BA), // 2.71+
                 sceUtilityInstallGetStatus(0x30f5, 0xC4700FA3), // 2.71+
-
                 sceHttpGetNetworkPspError(0x30f6, 0x2255551E), // 2.00+
                 sceHttpSetRedirectCallback(0x30f7, 0xA4496DE5), // 2.00+
                 sceHttpsGetSslError(0x30f8, 0xAB1540D5), // 1.50+
@@ -1096,6 +1095,12 @@ public class syscallsFirm15 {
                 sceMpegbase_driver_0530BE4E(0x30fc, 0x0530BE4E), // 1.00+
                 sceMpegBaseCscAvc(0x30fd, 0x91929A21), // 1.00+
                 sceMpegGetUserdataAu(0x30fe, 0x01977054), // 2.71+
+
+                sceFontOpenUserFile(0x30ff, 0x57FCB733), // 2.00+
+                sceFontFindFont(0x3100, 0x681E61A7), // 2.00+
+                sceHttpsDisableOption(0x3101, 0xB3FAF831), // 1.50+
+                sceMpegAvcCopyYCbCr(0x3102, 0x0558B075), // 2.71+
+                sceMpegRingbufferQueryPackNum(0x3103, 0x769BEBB6), // 2.50+
 
                 // We choose to start HLEModuleManager at 0x4000
 

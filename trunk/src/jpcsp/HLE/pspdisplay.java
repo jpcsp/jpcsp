@@ -842,6 +842,12 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         Emulator.getProcessor().cpu.gpr[2] = (int)accumulatedHcount;
     }
 
+    public void sceDisplayGetFramePerSec() {
+        // "return" whatever was already in v0
+        Modules.log.debug("sceDisplayGetFramePerSec ret:0x"
+            + Integer.toHexString(Emulator.getProcessor().cpu.gpr[2]));
+    }
+
     public boolean isGeAddress(int address) {
         address &= 0x3FFFFFFF;
         if (address >= topaddrGe && address < bottomaddrGe) {

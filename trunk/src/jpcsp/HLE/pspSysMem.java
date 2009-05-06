@@ -450,7 +450,7 @@ public class pspSysMem {
 
         @Override
         public String toString(){
-            return "SysMemInfo{ uid="+Integer.toHexString(uid)+";partitionid="+partitionid+";name="+name+";type="+type+";size="+size+";addr="+addr+" }";
+            return "SysMemInfo{ uid="+Integer.toHexString(uid)+";partitionid="+partitionid+";name="+name+";type="+type+";size="+size+";addr="+Integer.toHexString(addr)+" }";
         }
     }
 }

@@ -642,7 +642,9 @@ public class SyscallHandler {
                     pspdisplay.getInstance().sceDisplaySetMode(gpr[4], gpr[5], gpr[6]);
                     break;
                //  sceDisplayGetMode(0x213b),
-		// sceDisplayGetFramePerSec(0x213c),
+                case 0x213c:
+                    pspdisplay.getInstance().sceDisplayGetFramePerSec();
+                    break;
 		// sceDisplaySetHoldMode(0x213d),
 		// sceDisplaySetResumeMode(0x213e),
                 case 0x213f:
