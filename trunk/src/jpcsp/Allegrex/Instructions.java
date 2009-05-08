@@ -3819,7 +3819,7 @@ public void interpret(Processor processor, int insn) {
 	int rs = (insn>>21)&31;
 
 
-                processor.cpu.doLVS((vt5 + (vt2 << 32)), rs, (int)(short)(imm14 << 2));
+                processor.cpu.doLVS((vt5|(vt2<<5)), rs, (int)(short)(imm14 << 2));
             
 }
 @Override
@@ -3852,7 +3852,7 @@ public void interpret(Processor processor, int insn) {
 	int rs = (insn>>21)&31;
 
 
-                processor.cpu.doLVLQ((vt5 + (vt1 << 32)), rs, (int)(short)(imm14 << 2));
+                processor.cpu.doLVLQ((vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));
             
 }
 @Override
@@ -3885,7 +3885,7 @@ public void interpret(Processor processor, int insn) {
 	int rs = (insn>>21)&31;
 
 
-                processor.cpu.doLVRQ((vt5 + (vt1 << 32)), rs, (int)(short)(imm14 << 2));
+                processor.cpu.doLVRQ((vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));
             
 }
 @Override
@@ -3918,7 +3918,7 @@ public void interpret(Processor processor, int insn) {
 	int rs = (insn>>21)&31;
 
 
-                processor.cpu.doLVQ((vt5 + (vt1 << 32)), rs, (((int)(short)imm14) << 2));
+                processor.cpu.doLVQ((vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));
             
 }
 @Override
@@ -4013,7 +4013,7 @@ public void interpret(Processor processor, int insn) {
 	int rs = (insn>>21)&31;
 
 
-                processor.cpu.doSVS((vt5 + (vt2 << 32)), rs, (((int)(short)imm14) << 2));
+                processor.cpu.doSVS((vt5|(vt2<<5)), rs, (int)(short)(imm14 << 2));
             
 }
 @Override
@@ -4046,7 +4046,7 @@ public void interpret(Processor processor, int insn) {
 	int rs = (insn>>21)&31;
 
 
-                processor.cpu.doSVLQ((vt5 + (vt1 << 32)), rs, (((int)(short)imm14) << 2));
+                processor.cpu.doSVLQ((vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));
             
 }
 @Override
@@ -4079,7 +4079,7 @@ public void interpret(Processor processor, int insn) {
 	int rs = (insn>>21)&31;
 
 
-                processor.cpu.doSVRQ((vt5 + (vt1 << 32)), rs, (((int)(short)imm14) << 2));
+                processor.cpu.doSVRQ((vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));
             
 }
 @Override
@@ -4112,7 +4112,7 @@ public void interpret(Processor processor, int insn) {
 	int rs = (insn>>21)&31;
 
 
-                processor.cpu.doSVQ((vt5 + (vt1 << 32)), rs, (((int)(short)imm14) << 2));
+                processor.cpu.doSVQ((vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));
             
 }
 @Override
@@ -4145,7 +4145,8 @@ public void interpret(Processor processor, int insn) {
 	int rs = (insn>>21)&31;
 
 
-                processor.cpu.doSVQ((vt5 + (vt1 << 32)), rs, (((int)(short)imm14) << 2));
+				// TODO Check implementation of SWB instruction: same as SV.Q?
+                processor.cpu.doSVQ((vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));
             
 }
 @Override
