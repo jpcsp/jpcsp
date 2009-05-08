@@ -459,7 +459,7 @@ public class CompilerContext implements ICompilerContext {
     		}
     	}
 
-    	if (RuntimeContext.debugCodeInstruction && RuntimeContext.log.isDebugEnabled()) {
+    	if (RuntimeContext.debugCodeInstruction) {
         	mv.visitLdcInsn(codeInstruction.getAddress());
         	mv.visitLdcInsn(codeInstruction.getOpcode());
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.debugCodeInstructionName, "(II)V");
@@ -748,6 +748,15 @@ public class CompilerContext implements ICompilerContext {
 			mv.visitInsn(Opcodes.IADD);
 		}
 
+		if (RuntimeContext.debugMemoryRead && (!RuntimeContext.debugMemoryReadWriteNoSP || registerIndex != 29)) {
+			mv.visitInsn(Opcodes.DUP);
+			loadImm(0);
+            mv.visitLdcInsn(codeInstruction.getAddress());
+			loadImm(1);
+			loadImm(32);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "debugMemoryReadWrite", "(IIIZI)V");
+		}
+
 		if (RuntimeContext.memoryInt == null) {
 	        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "read32", "(I)I");
 		} else {
@@ -779,6 +788,15 @@ public class CompilerContext implements ICompilerContext {
 		if (offset != 0) {
 			loadImm(offset);
 			mv.visitInsn(Opcodes.IADD);
+		}
+
+		if (RuntimeContext.debugMemoryRead) {
+			mv.visitInsn(Opcodes.DUP);
+			loadImm(0);
+            mv.visitLdcInsn(codeInstruction.getAddress());
+			loadImm(1);
+			loadImm(16);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "debugMemoryReadWrite", "(IIIZI)V");
 		}
 
 		if (RuntimeContext.memoryInt == null) {
@@ -824,6 +842,15 @@ public class CompilerContext implements ICompilerContext {
 		if (offset != 0) {
 			loadImm(offset);
 			mv.visitInsn(Opcodes.IADD);
+		}
+
+		if (RuntimeContext.debugMemoryRead) {
+			mv.visitInsn(Opcodes.DUP);
+			loadImm(0);
+            mv.visitLdcInsn(codeInstruction.getAddress());
+			loadImm(1);
+			loadImm(8);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "debugMemoryReadWrite", "(IIIZI)V");
 		}
 
 		if (RuntimeContext.memoryInt == null) {
@@ -909,6 +936,18 @@ public class CompilerContext implements ICompilerContext {
 			mv.visitInsn(Opcodes.SWAP);
 		}
 
+		if (RuntimeContext.debugMemoryWrite && (!RuntimeContext.debugMemoryReadWriteNoSP || registerIndex != 29)) {
+			mv.visitInsn(Opcodes.DUP2);
+			mv.visitInsn(Opcodes.SWAP);
+			loadImm(2);
+			mv.visitInsn(Opcodes.ISHL);
+			mv.visitInsn(Opcodes.SWAP);
+            mv.visitLdcInsn(codeInstruction.getAddress());
+			loadImm(0);
+			loadImm(32);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "debugMemoryReadWrite", "(IIIZI)V");
+		}
+
 		if (RuntimeContext.memoryInt == null) {
 	        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "write32", "(II)V");
 		} else {
@@ -962,7 +1001,6 @@ public class CompilerContext implements ICompilerContext {
     public void compileDelaySlotAsBranchTarget(CodeInstruction codeInstruction) {
     	Label afterDelaySlot = new Label();
     	mv.visitJumpInsn(Opcodes.GOTO, afterDelaySlot);
-    	codeInstruction.forceNewLabel();
     	codeInstruction.compile(this, mv);
     	mv.visitLabel(afterDelaySlot);
     }
