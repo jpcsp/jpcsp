@@ -61,6 +61,9 @@ public class RuntimeContext {
 	public  static final String debugCodeBlockEnd = "debugCodeBlockEnd";
 	public  static final boolean debugCodeInstruction = false;
 	public  static final String debugCodeInstructionName = "debugCodeInstruction";
+	public  static final boolean debugMemoryRead = false;
+	public  static final boolean debugMemoryWrite = false;
+	public  static final boolean debugMemoryReadWriteNoSP = true;
 	public  static final boolean enableInstructionTypeCounting = false;
 	public  static final String instructionTypeCount = "instructionTypeCount";
 	public  static final boolean enableCallCount = false;
@@ -836,6 +839,34 @@ public class RuntimeContext {
         }
 
         return rawAddress;
+    }
+
+    public static void debugMemoryReadWrite(int address, int value, int pc, boolean isRead, int width) {
+    	if (log.isDebugEnabled()) {
+	    	StringBuffer message = new StringBuffer();
+	    	message.append(String.format("0x%08X - ", pc));
+	    	if (isRead) {
+	    		message.append(String.format("read%d(0x%08X)=0x", width, address));
+	    		if (width == 8) {
+	    			message.append(String.format("%02X", memory.read8(address)));
+	    		} else if (width == 16) {
+	    			message.append(String.format("%04X", memory.read16(address)));
+	    		} else if (width == 32) {
+	    			message.append(String.format("%08X", memory.read32(address)));
+	    		}
+	    	} else {
+	    		message.append(String.format("write%d(0x%08X, 0x", width, address));
+	    		if (width == 8) {
+	    			message.append(String.format("%02X", value));
+	    		} else if (width == 16) {
+	    			message.append(String.format("%04X", value));
+	    		} else if (width == 32) {
+	    			message.append(String.format("%08X", value));
+	    		}
+	    		message.append(")");
+	    	}
+	    	log.debug(message.toString());
+    	}
     }
 
     public static boolean syncDaemon() {

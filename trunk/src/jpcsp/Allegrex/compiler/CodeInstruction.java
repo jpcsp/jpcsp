@@ -120,6 +120,10 @@ public class CodeInstruction {
     	label = new Label();
     }
 
+    private void setLabel(Label label) {
+    	this.label = label;
+    }
+
     protected void startCompile(CompilerContext context, MethodVisitor mv) {
         if (Compiler.log.isDebugEnabled()) {
             Compiler.log.debug("CodeInstruction.compile " + toString());
@@ -196,7 +200,18 @@ public class CodeInstruction {
             return;
         }
 
+        Label delaySlotLabel = null;
+        if (delaySlotCodeInstruction.hasLabel())
+        {
+        	delaySlotLabel = delaySlotCodeInstruction.getLabel();
+        	delaySlotCodeInstruction.forceNewLabel();
+        }
         delaySlotCodeInstruction.compile(context, mv);
+        if (delaySlotLabel != null) {
+        	delaySlotCodeInstruction.setLabel(delaySlotLabel);
+        } else if (delaySlotCodeInstruction.hasLabel()) {
+        	delaySlotCodeInstruction.forceNewLabel();
+        }
         context.setCodeInstruction(this);
         context.setSkipNextIntruction(true);
     }
