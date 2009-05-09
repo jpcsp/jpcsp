@@ -379,16 +379,18 @@ public class RuntimeContext {
 
     		if (currentThread instanceof RuntimeThread) {
     			RuntimeThread runtimeThread = (RuntimeThread) currentThread;
-    			log.debug("Waiting to be scheduled...");
-				runtimeThread.suspendRuntimeExecution();
-    			log.debug("Scheduled, restarting...");
-                updateStaticVariables();
+    			if (!alreadyStoppedThreads.containsValue(runtimeThread)) {
+	    			log.debug("Waiting to be scheduled...");
+					runtimeThread.suspendRuntimeExecution();
+	    			log.debug("Scheduled, restarting...");
+	                updateStaticVariables();
 
-    			if (pendingCallbackThread == RuntimeContext.currentThread) {
-    			    pendingCallbackThread = null;
-    			    executeCallbackImmediately(pendingCallbackCpuState);
-    			    switchThread(pendingCallbackReturnThread);
-    			    syncThread();
+	    			if (pendingCallbackThread == RuntimeContext.currentThread) {
+	    			    pendingCallbackThread = null;
+	    			    executeCallbackImmediately(pendingCallbackCpuState);
+	    			    switchThread(pendingCallbackReturnThread);
+	    			    syncThread();
+	    			}
     			}
     		}
     	}
@@ -544,8 +546,18 @@ public class RuntimeContext {
 
 		threads.remove(threadInfo);
 		toBeStoppedThreads.remove(threadInfo);
-		alreadyStoppedThreads.remove(threadInfo);
 		toBeDeletedThreads.remove(threadInfo);
+
+		// Go out of the idle state before really ending this thread
+		// otherwise, no thread will break the idle state...
+		try {
+			if (isIdle) {
+				syncThread();
+			}
+		} catch (StopThreadException e) {
+		}
+
+		alreadyStoppedThreads.remove(threadInfo);
 
 		if (log.isDebugEnabled()) {
 			log.debug("End of Thread " + thread.getName());
