@@ -322,7 +322,7 @@ public class pspiofilemgr {
             if (pcfilename.matches("^" + umdPrefixes[i] + "[0-9]+/.*"))
                 return pcfilename.substring(pcfilename.indexOf("/") + 1);
             else if (pcfilename.matches("^" + umdPrefixes[i] + "[0-9]+"))
-                return pcfilename;
+                return "";
         }
 
         // Now make sure getDeviceFilePath is working properly - keep the old behaviour as a fallback
@@ -1750,6 +1750,13 @@ public class pspiofilemgr {
             System.err.println(isUmdPath("/disc0:"));
             System.err.println(isUmdPath("somewheredisc0:"));
             System.err.println(isUmdPath("somewhere/disc0:"));
+
+            // Gripshift
+            System.err.println("Gripshift: " + trimUmdPrefix("disc0")); // should come out blank
+src/jpcsp/HLE/pspiofilemgr.java
+            // FFCC
+            System.err.println("FFCC: " + getDeviceFilePath("umd1:"));
+            System.err.println("FFCC: " + trimUmdPrefix(getDeviceFilePath("umd1:"))); // should come out blank
 
             {
                 String realfilepath = this.filepath;
