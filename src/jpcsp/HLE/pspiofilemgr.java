@@ -1753,7 +1753,7 @@ public class pspiofilemgr {
 
             // Gripshift
             System.err.println("Gripshift: " + trimUmdPrefix("disc0")); // should come out blank
-src/jpcsp/HLE/pspiofilemgr.java
+
             // FFCC
             System.err.println("FFCC: " + getDeviceFilePath("umd1:"));
             System.err.println("FFCC: " + trimUmdPrefix(getDeviceFilePath("umd1:"))); // should come out blank
