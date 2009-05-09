@@ -318,7 +318,6 @@ public class Loader {
             // Load into mem
             LoadELFProgram(f, module, baseAddress, elf, elfOffset);
             LoadELFSections(f, module, baseAddress, elf, elfOffset);
-            LoadELFReserveMemory(module);
 
             // Relocate PRX
             if (elf.getHeader().requiresRelocation()) {
@@ -328,6 +327,9 @@ public class Loader {
             // The following can only be done after relocation
             // Load .rodata.sceModuleInfo
             LoadELFModuleInfo(f, module, baseAddress, elf, elfOffset);
+
+            // After LoadELFModuleInfo so the we can name the memory allocation after the module name
+            LoadELFReserveMemory(module);
 
             // Save imports
             LoadELFImports(module, baseAddress, elf);
@@ -544,14 +546,17 @@ public class Loader {
             + " for module '" + module.pspfilename + "'");
 
         pspSysMem SysMemUserForUserModule = pspSysMem.getInstance();
-        int addr = SysMemUserForUserModule.malloc(2, pspSysMem.PSP_SMEM_Addr, module.loadAddressHigh - module.loadAddressLow, module.loadAddressLow);
-        if (addr != module.loadAddressLow) {
+        int address = module.loadAddressLow & ~0x3F; // round down to nearest 64-bytes to match sysmem allocations
+        int size = module.loadAddressHigh - address;
+
+        int allocatedAddress = SysMemUserForUserModule.malloc(2, pspSysMem.PSP_SMEM_Addr, size, address);
+        if (allocatedAddress != address) {
             Memory.log.warn("Failed to properly reserve memory consumed by module " + module.modname
-                + " at address 0x" + Integer.toHexString(module.loadAddressLow)
-                + " size " + (module.loadAddressHigh - module.loadAddressLow)
-                + " new address 0x" + Integer.toHexString(addr));
+                + " at address 0x" + Integer.toHexString(address)
+                + " size " + size
+                + " new address 0x" + Integer.toHexString(allocatedAddress));
         }
-        SysMemUserForUserModule.addSysMemInfo(2, module.modname, pspSysMem.PSP_SMEM_Low, module.loadAddressHigh - module.loadAddressLow, module.loadAddressLow);
+        SysMemUserForUserModule.addSysMemInfo(2, module.modname, pspSysMem.PSP_SMEM_Low, size, allocatedAddress);
     }
 
     /** Loads from memory */

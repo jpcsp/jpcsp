@@ -264,6 +264,16 @@ public class pspiofilemgr {
             }
         }
 
+        // remap host0
+        // - Bliss Island - ULES00616
+        if (device.equals("host0")) {
+            if (iso != null) {
+                device = "dics0";
+            } else {
+                device = "ms0";
+            }
+        }
+
         // strip leading and trailing slash from supplied path
         // this step is common to absolute and relative paths
         if (pspfilename.startsWith("/")) {
@@ -278,7 +288,6 @@ public class pspiofilemgr {
         // - GTA: LCS uses upper case device DISC0
         // - The Fast and the Furious uses upper case device DISC0
         filename = device.toLowerCase();
-        filename = device;
         if (cwd.length() > 0) {
             filename += "/" + cwd;
         }
@@ -302,25 +311,18 @@ public class pspiofilemgr {
                 return true;
         }
 
-        // TODO eventually delete this once we're sure it's working
-        for (int i = 0; i < umdPrefixes.length; i++) {
-            if (deviceFilePath.toLowerCase().matches("^" + umdPrefixes[i] + "[0-9]+.*")) {
-                Modules.log.warn("isUmdPath mixed case device '" + deviceFilePath + "'");
-                return true;
-            }
-        }
-
         return false;
     }
 
-    // TODO fix this slash thing properly, must be caused by poor handling in some other function
     private String trimUmdPrefix(String pcfilename) {
         // Assume the device name is always lower case (ensured by getDeviceFilePath)
         // Assume there is always a device number
-        // Assume there is always a slash after the device name
+        // Handle case where file path is blank so there is no slash after the device name
         for (int i = 0; i < umdPrefixes.length; i++) {
             if (pcfilename.matches("^" + umdPrefixes[i] + "[0-9]+/.*"))
                 return pcfilename.substring(pcfilename.indexOf("/") + 1);
+            else if (pcfilename.matches("^" + umdPrefixes[i] + "[0-9]+"))
+                return pcfilename;
         }
 
         // Now make sure getDeviceFilePath is working properly - keep the old behaviour as a fallback
