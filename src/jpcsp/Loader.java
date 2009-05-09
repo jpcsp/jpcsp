@@ -107,7 +107,7 @@ public class Loader {
                 // probably kxploit stub
                 if (currentOffset == f.limit())
                     break;
-            } else {
+            } else if (!loadedFirstModule) {
                 loadPSF(module);
             }
 
