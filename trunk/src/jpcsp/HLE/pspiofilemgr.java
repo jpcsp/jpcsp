@@ -111,6 +111,7 @@ public class pspiofilemgr {
     public final static int PSP_ERROR_FILE_NOT_FOUND = 0x80010002;
     //public final static int PSP_ERROR_FILE_OPEN_ERROR     = 0x80010003; // actual name unknown, no such device? bad format path name?
     public final static int PSP_ERROR_FILE_ALREADY_EXISTS = 0x80010011;
+    public final static int PSP_ERROR_DEVICE_NOT_FOUND = 0x80010013;
     public final static int PSP_ERROR_INVALID_ARGUMENT = 0x80010016;
     public final static int PSP_ERROR_READ_ONLY = 0x8001001e;
     public final static int PSP_ERROR_NO_MEDIA = 0x8001007b;
@@ -613,7 +614,12 @@ public class pspiofilemgr {
                     // check umd is mounted
                     if (iso == null) {
                         Modules.log.error("sceIoOpen - no umd mounted");
-                        Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NO_MEDIA; // not sure about this
+                        Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_DEVICE_NOT_FOUND;
+
+                    // check umd is activated
+                    } else if (!Modules.sceUmdUserModule.isUmdActivated()) {
+                        Modules.log.warn("sceIoOpen - umd mounted but not activated");
+                        Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NO_SUCH_DEVICE;
 
                     // check flags are valid
                     } else if ((flags & PSP_O_WRONLY) == PSP_O_WRONLY ||
@@ -1153,7 +1159,11 @@ public class pspiofilemgr {
                 // check umd is mounted
                 if (iso == null) {
                     Modules.log.error("sceIoDopen - no umd mounted");
-                    Emulator.getProcessor().cpu.gpr[2] = -1;
+                    Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_DEVICE_NOT_FOUND;
+                // check umd is activated
+                } else if (!Modules.sceUmdUserModule.isUmdActivated()) {
+                    Modules.log.warn("sceIoDopen - umd mounted but not activated");
+                    Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NO_SUCH_DEVICE;
                 } else {
                     try {
                         if (iso.isDirectory(isofilename)) {
@@ -1616,7 +1626,13 @@ public class pspiofilemgr {
                 // check umd is mounted
                 if (iso == null) {
                     Modules.log.error("stat - no umd mounted");
-                    Emulator.getProcessor().cpu.gpr[2] = -1;
+                    Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_DEVICE_NOT_FOUND;
+
+                // check umd is activated
+                } else if (!Modules.sceUmdUserModule.isUmdActivated()) {
+                    Modules.log.warn("stat - umd mounted but not activated");
+                    Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NO_SUCH_DEVICE;
+
                 } else {
                     String isofilename = trimUmdPrefix(pcfilename);
                     try {
@@ -1697,7 +1713,7 @@ public class pspiofilemgr {
             stat.write(Memory.getInstance(), stat_addr);
             Emulator.getProcessor().cpu.gpr[2] = 0;
         } else {
-            Emulator.getProcessor().cpu.gpr[2] = -1;
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_FILE_NOT_FOUND;
         }
 
         // TODO move into stat()? that will also log on Dread
