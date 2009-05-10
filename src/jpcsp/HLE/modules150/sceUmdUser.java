@@ -108,12 +108,17 @@ public class sceUmdUser implements HLEModule {
     public void setIsoReader(UmdIsoReader iso) {
         this.iso = iso;
 
-        // I'd rather not enable this because we already caught some thread issues that would have been hidden if this was enabled (fiveofhearts)
-        //if (iso == null) {
-        //    umdActivated = false;
-        //} else {
-        //    umdActivated = true;
-        //}
+        // MGS:PO does not contain an import for sceUmdActivate
+        // this suggests sceUmdActivate/sceUmdDeactivate are completely useless
+        if (iso == null) {
+            umdActivated = false;
+        } else {
+            umdActivated = true;
+        }
+    }
+
+    public boolean isUmdActivated() {
+        return umdActivated;
     }
 
     /** note this value is NOT the same as that used in the activate/deactivate callback */
@@ -121,11 +126,6 @@ public class sceUmdUser implements HLEModule {
         int stat;
 
         if (iso != null) {
-            // hack for MGS:PO, see setIsoReader()
-            if (!umdActivated && ThreadMan.getInstance().getCurrentThread().name.equals("Main")) {
-                umdActivated = true;
-            }
-
             stat = PSP_UMD_PRESENT | PSP_UMD_INITED; // return 0x12
             if (umdActivated) stat |= PSP_UMD_READY; // return 0x32
         } else {
@@ -142,10 +142,12 @@ public class sceUmdUser implements HLEModule {
         if (iso != null) {
             event = PSP_UMD_PRESENT;
 
-            if (umdActivated)
+            if (umdActivated) {
+                // it can also return just 0x2 and 0x12, immediately after the UMD has been inserted, but we'll go straight to 0x22
                 event |= PSP_UMD_READY; // return 0x22
-            else
+            } else {
                 event |= PSP_UMD_INITED; // return 0x12
+            }
         } else {
             event = PSP_UMD_NOT_PRESENT;
 
@@ -272,7 +274,7 @@ public class sceUmdUser implements HLEModule {
     	ThreadMan threadMan = ThreadMan.getInstance();
         int currentStat = getUmdStat();
 
-        if ((currentStat & wantedStat) == wantedStat) {
+        if ((currentStat & wantedStat) != 0) {
         	processor.cpu.gpr[2] = 0;
 
             if (doCallbacks) {
@@ -299,55 +301,71 @@ public class sceUmdUser implements HLEModule {
         }
     }
 
-    /** wait until drive stat reaches a0 */
+    /** wait forever until drive stat reaches a0 */
     public void sceUmdWaitDriveStat(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
         int wantedStat = cpu.gpr[4];
-        Modules.log.debug("sceUmdWaitDriveStat = 0x" + Integer.toHexString(wantedStat));
+        Modules.log.debug("sceUmdWaitDriveStat(stat=0x" + Integer.toHexString(wantedStat) + ")");
 
         hleUmdWaitDriveStat(processor, wantedStat, false, false, 0);
     }
 
-    /** wait until drive stat reaches a0 */
+    /** wait until drive stat reaches a0
+     * timeout parameter is literal, not a pointer. */
     public void sceUmdWaitDriveStatWithTimer(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
 
         int wantedStat = cpu.gpr[4];
         int timeout = cpu.gpr[5];
-        Modules.log.debug("sceUmdWaitDriveStatWithTimer stat = 0x" + Integer.toHexString(wantedStat) + " timeout = " + timeout);
+        Modules.log.debug("sceUmdWaitDriveStatWithTimer(stat=0x" + Integer.toHexString(wantedStat) + ",timeout=" + timeout + ")");
 
         hleUmdWaitDriveStat(processor, wantedStat, false, true, timeout);
     }
 
-    /** wait until drive stat reaches a0 */
+    /** wait until drive stat reaches a0
+     * timeout parameter is literal, not a pointer. */
     public void sceUmdWaitDriveStatCB(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
 
         int wantedStat = cpu.gpr[4];
         int timeout = cpu.gpr[5];
-        Modules.log.debug("sceUmdWaitDriveStatCB stat = 0x" + Integer.toHexString(wantedStat) + " timeout = " + timeout);
+        Modules.log.debug("sceUmdWaitDriveStatCB(stat=0x" + Integer.toHexString(wantedStat) + ",timeout=" + timeout + ")");
 
         hleUmdWaitDriveStat(processor, wantedStat, true, true, timeout);
     }
 
     public void sceUmdCancelWaitDriveStat(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        ThreadMan threadMan = ThreadMan.getInstance();
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        for (ListIterator<SceKernelThreadInfo> lit = waitingThreads.listIterator(); lit.hasNext(); ) {
+            SceKernelThreadInfo waitingThread = lit.next();
 
-        System.out.println("Unimplemented NID function sceUmdCancelWaitDriveStat [0x6AF9B50A]");
+            if (!waitingThread.wait.waitingOnUmd ||
+                waitingThread.status != SceKernelThreadInfo.PSP_THREAD_WAITING) {
+                Modules.log.error("sceUmdCancelWaitDriveStat thread " + Integer.toHexString(waitingThread.uid)
+                    + " '" + waitingThread.name + "' not waiting on umd");
+            } else {
+                Modules.log.debug("sceUmdCancelWaitDriveStat waking thread " + Integer.toHexString(waitingThread.uid)
+                    + " '" + waitingThread.name + "'");
 
-        cpu.gpr[2] = 0xDEADC0DE;
+                // Untrack
+                waitingThread.wait.waitingOnUmd = false;
+                lit.remove();
 
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+                // Return WAIT_CANCELLED
+                waitingThread.cpuContext.gpr[2] = ERROR_WAIT_CANCELLED;
+
+                // Wakeup thread
+                threadMan.changeThreadState(waitingThread, SceKernelThreadInfo.PSP_THREAD_READY);
+            }
+        }
+
+        cpu.gpr[2] = 0;
     }
 
     public void sceUmdGetDriveStat(Processor processor) {
@@ -401,7 +419,14 @@ public class sceUmdUser implements HLEModule {
 
         ThreadMan threadMan = ThreadMan.getInstance();
         if (threadMan.setCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, uid)) {
-            // Do not trigger the registered callback immediately (confirmed on a PSP)
+            // seems to be dependant on timing, for example if you run the
+            // umdcallback sample immediately after resetting psplink you will
+            // get all the callbacks, if you wait a few seconds after resetting
+            // psplink you won't get them.
+            if (iso != null) {
+                ThreadMan.getInstance().pushCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, getUmdCallbackEvent());
+            }
+
             cpu.gpr[2] = 0;
         } else {
             cpu.gpr[2] = -1;
