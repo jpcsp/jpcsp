@@ -17,11 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.managers;
 
 import jpcsp.HLE.Modules;
-import jpcsp.Allegrex.CpuState;
 import jpcsp.Emulator;
 import jpcsp.Memory;
-import jpcsp.MemoryMap;
-import jpcsp.Processor;
 
 public class SystemTimeManager {
 
@@ -62,11 +59,38 @@ public class SystemTimeManager {
                 Modules.log.error("sceKernelSysClock2USec bad output pointers "
                     + " 0x" + Integer.toHexString(low_addr)
                     + " 0x" + Integer.toHexString(high_addr));
-                Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_READ);
+                Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_WRITE);
             }
 
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
+    }
+
+    public void sceKernelSysClock2USecWide(int sysclockLow, int sysclockHigh, int low_addr, int high_addr) {
+        // sysclockLow and sysclockHigh are for example
+        // the result from sceKernelGetSystemTimeWide()
+        long clocks = ((long) sysclockLow) & 0xFFFFFFFFL | (((long) sysclockHigh) << 32);
+
+        Memory mem = Memory.getInstance();
+        boolean ok = false;
+        if (mem.isAddressGood(low_addr)) {
+            mem.write32(low_addr, (int)(clocks / 1000000));
+            ok = true;
+        }
+
+        if (mem.isAddressGood(high_addr)) {
+            mem.write32(high_addr, (int)(clocks % 1000000));
+            ok = true;
+        }
+
+        if (!ok) {
+            Modules.log.error("sceKernelSysClock2USecWide bad output pointers "
+                + " 0x" + Integer.toHexString(low_addr)
+                + " 0x" + Integer.toHexString(high_addr));
+            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_WRITE);
+        }
+
+        Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
     /** SceKernelSysClock time_addr http://psp.jim.sh/pspsdk-doc/structSceKernelSysClock.html
