@@ -86,17 +86,23 @@ public class TextureCache {
 		textureAlreadyHashed = new HashSet<Integer>();
 	}
 
-	public boolean hasTexture(int addr) {
-		return cache.containsKey(new Integer(addr));
+	private Integer getKey(int addr, int clutAddr) {
+		// Some games use the same texture address with different cluts.
+		// Keep a combination of both texture address and clut address in the cache
+		return new Integer(addr + clutAddr);
 	}
 
-	private Texture getTexture(int addr) {
-		return cache.get(new Integer(addr));
+	public boolean hasTexture(int addr, int clutAddr) {
+		return cache.containsKey(getKey(addr, clutAddr));
+	}
+
+	private Texture getTexture(int addr, int clutAddr) {
+		return cache.get(getKey(addr, clutAddr));
 	}
 
 	public void addTexture(GL gl, Texture texture) {
-		Integer addr = new Integer(texture.getAddr());
-		Texture previousTexture = cache.get(addr);
+		Integer key = getKey(texture.getAddr(), texture.getClutAddr());
+		Texture previousTexture = cache.get(key);
 		if (previousTexture != null) {
 		    previousTexture.deleteTexture(gl);
 		} else {
@@ -114,7 +120,7 @@ public class TextureCache {
 			}
 		}
 
-        cache.put(addr, texture);
+        cache.put(key, texture);
 
         if (cache.size() > statistics.maxSizeUsed) {
             statistics.maxSizeUsed = cache.size();
@@ -123,7 +129,7 @@ public class TextureCache {
 
 	public Texture getTexture(int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks, int mipmapLevels) {
 		statistics.totalHits++;
-		Texture texture = getTexture(addr);
+		Texture texture = getTexture(addr, clutAddr);
 
 		if (texture == null) {
 			statistics.notPresentHits++;
@@ -143,11 +149,11 @@ public class TextureCache {
 		textureAlreadyHashed.clear();
 	}
 
-	public boolean textureAlreadyHashed(int addr) {
-		return textureAlreadyHashed.contains(addr);
+	public boolean textureAlreadyHashed(int addr, int clutAddr) {
+		return textureAlreadyHashed.contains(getKey(addr, clutAddr));
 	}
 
-	public void setTextureAlreadyHashed(int addr) {
-		textureAlreadyHashed.add(addr);
+	public void setTextureAlreadyHashed(int addr, int clutAddr) {
+		textureAlreadyHashed.add(getKey(addr, clutAddr));
 	}
 }

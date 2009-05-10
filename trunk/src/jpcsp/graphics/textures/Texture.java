@@ -18,9 +18,10 @@ package jpcsp.graphics.textures;
 
 import javax.media.opengl.GL;
 
-import jpcsp.Memory;
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.MemoryReader;
 
 public class Texture {
 	private int addr;
@@ -68,7 +69,6 @@ public class Texture {
 	    // the address index (i) is added to the value itself.
 	    //
 		int hashCode = mipmapLevels;
-		Memory mem = Memory.getInstance();
 
 		if (addr != 0) {
 			int bufferLengthInBytes = lineWidth * height;
@@ -92,23 +92,28 @@ public class Texture {
 				case GeCommands.TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED:
 					break;
 			}
-			VideoEngine.log.debug("Texture.hashCode: " + bufferLengthInBytes + " bytes");
+			if (VideoEngine.log.isDebugEnabled()) {
+				VideoEngine.log.debug("Texture.hashCode: " + bufferLengthInBytes + " bytes");
+			}
 
+			IMemoryReader memoryReader = MemoryReader.getMemoryReader(addr, bufferLengthInBytes, 4);
 			for (int i = 0; i < bufferLengthInBytes; i += 4) {
-				hashCode ^= mem.read32(addr + i) + i;
+				hashCode ^= memoryReader.readNext() + i;
 			}
 		}
 
 		if (clutAddr != 0) {
 			if (clutMode == GeCommands.CMODE_FORMAT_32BIT_ABGR8888) {
 				int clutNumEntries = clutNumBlocks * 8;
+				IMemoryReader memoryReader = MemoryReader.getMemoryReader(clutAddr, clutNumEntries * 4, 4);
 				for (int i = clutStart; i < clutNumEntries; i++) {
-					hashCode ^= mem.read32(clutAddr + i * 4) + i;
+					hashCode ^= memoryReader.readNext() + i;
 				}
 			} else {
 				int clutNumEntries = clutNumBlocks * 16;
+				IMemoryReader memoryReader = MemoryReader.getMemoryReader(clutAddr, clutNumEntries * 2, 4);
 				for (int i = clutStart; i < clutNumEntries; i += 2) {
-					hashCode ^= mem.read32(clutAddr + i * 2) + i;
+					hashCode ^= memoryReader.readNext() + i;
 				}
 			}
 		}
@@ -145,12 +150,12 @@ public class Texture {
 
 		// Do not compute the hashCode of the new texture if it has already
 		// been checked during this display cycle
-		if (!textureCache.textureAlreadyHashed(addr)) {
+		if (!textureCache.textureAlreadyHashed(addr, clutAddr)) {
 			int hashCode = hashCode(addr, lineWidth, width, height, pixelStorage, clutAddr, clutMode, clutStart, clutShift, clutMask, clutNumBlocks, mipmapLevels);
 			if (hashCode != hashCode()) {
 				return false;
 			}
-			textureCache.setTextureAlreadyHashed(addr);
+			textureCache.setTextureAlreadyHashed(addr, clutAddr);
 		}
 
 		return true;
@@ -191,6 +196,10 @@ public class Texture {
 
 	public int getAddr() {
 		return addr;
+	}
+
+	public int getClutAddr() {
+		return clutAddr;
 	}
 
 	public int getGlId() {

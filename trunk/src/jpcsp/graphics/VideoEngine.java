@@ -42,6 +42,8 @@ import jpcsp.HLE.pspge;
 import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.graphics.textures.Texture;
 import jpcsp.graphics.textures.TextureCache;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.MemoryReader;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
 import static jpcsp.HLE.pspge.*;
@@ -77,6 +79,7 @@ public class VideoEngine {
     private static final char SPACE = ' ';
     private DurationStatistics statistics;
     private DurationStatistics[] commandStatistics;
+    private boolean openGL1_2;
 
     private int fbp, fbw; // frame buffer pointer and width
     private int zbp, zbw; // depth buffer pointer and width
@@ -281,6 +284,8 @@ public class VideoEngine {
             VideoEngine.log.info("Using VBO");
             buildVBO(gl);
         }
+
+        openGL1_2 = getOpenGLVersion(gl).compareTo("1.2") >= 0;
     }
 
     private void buildVBO(GL gl) {
@@ -1726,7 +1731,7 @@ public class VideoEngine {
                 int numberOfVertex = normalArgument & 0xFFFF;
                 int type = ((normalArgument >> 16) & 0x7);
 
-                somethingDisplayed = true;
+            	somethingDisplayed = true;
 
                 loadTexture();
 
@@ -2921,12 +2926,14 @@ public class VideoEngine {
 	                            short[] clut = readClut16();
 
 	                            if (!texture_swizzle) {
-	                                for (int i = 0, j = 0; i < texture_buffer_width[level]*texture_height[level]; i += 2, j++) {
+	                            	int length = texture_buffer_width[level]*texture_height[level];
+	                            	IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length / 2, 1);
+	                                for (int i = 0; i < length; i += 2) {
 
-	                                    int index = mem.read8(texaddr+j);
+	                                    int index = memoryReader.readNext();
 
-	                                    tmp_texture_buffer16[i+1]   = clut[getClutIndex((index >> 4) & 0xF)];
 	                                    tmp_texture_buffer16[i]     = clut[getClutIndex( index       & 0xF)];
+	                                    tmp_texture_buffer16[i+1]   = clut[getClutIndex((index >> 4) & 0xF)];
 	                                }
 	                                final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
 	                            } else {
@@ -2946,9 +2953,11 @@ public class VideoEngine {
 	                            int[] clut = readClut32();
 
 	                            if (!texture_swizzle) {
-	                                for (int i = 0, j = 0; i < texture_buffer_width[level]*texture_height[level]; i += 2, j++) {
+	                            	int length = texture_buffer_width[level]*texture_height[level];
+	                            	IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length / 2, 1);
+	                                for (int i = 0; i < length; i += 2) {
 
-	                                    int index = mem.read8(texaddr+j);
+	                                    int index = memoryReader.readNext();
 
 	                                    tmp_texture_buffer32[i+1] = clut[getClutIndex((index >> 4) & 0xF)];
 	                                    tmp_texture_buffer32[i]   = clut[getClutIndex( index       & 0xF)];
@@ -3005,8 +3014,10 @@ public class VideoEngine {
 	                            short[] clut = readClut16();
 
 	                            if (!texture_swizzle) {
-	                                for (int i = 0; i < texture_buffer_width[level]*texture_height[level]; i++) {
-	                                    int index = mem.read8(texaddr+i);
+	                            	int length = texture_buffer_width[level]*texture_height[level];
+	                            	IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length, 1);
+	                                for (int i = 0; i < length; i++) {
+	                                    int index = memoryReader.readNext();
 	                                    tmp_texture_buffer16[i]     = clut[getClutIndex(index)];
 	                                }
 	                                final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
@@ -3037,8 +3048,10 @@ public class VideoEngine {
 	                            int[] clut = readClut32();
 
 	                            if (!texture_swizzle) {
-	                                for (int i = 0; i < texture_buffer_width[level]*texture_height[level]; i++) {
-	                                    int index = mem.read8(texaddr+i);
+	                            	int length = texture_buffer_width[level]*texture_height[level];
+	                            	IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length, 1);
+	                                for (int i = 0; i < length; i++) {
+	                                    int index = memoryReader.readNext();
 	                                    tmp_texture_buffer32[i] = clut[getClutIndex(index)];
 	                                }
 	                                final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
@@ -3091,8 +3104,10 @@ public class VideoEngine {
 	                            texture_width0 * texture_height0).slice();
 	                        */
 
-	                        for (int i = 0; i < texture_buffer_width[level]*texture_height[level]; i++) {
-	                            int pixel = mem.read16(texaddr+i*2);
+                        	int length = texture_buffer_width[level]*texture_height[level];
+	                    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length * 2, 2);
+	                        for (int i = 0; i < length; i++) {
+	                            int pixel = memoryReader.readNext();
 	                            tmp_texture_buffer16[i] = (short)pixel;
 	                        }
 
@@ -3105,7 +3120,7 @@ public class VideoEngine {
 	                }
 
 	                case TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888: {
-	                    if (getOpenGLVersion(gl).compareTo("1.2") >= 0) {
+	                    if (openGL1_2) {
 	                        texture_type = GL.GL_UNSIGNED_INT_8_8_8_8_REV;  // Only available from V1.2
 	                    } else {
 	                        texture_type = GL.GL_UNSIGNED_BYTE;
@@ -3142,7 +3157,7 @@ public class VideoEngine {
 
 	            // Some textureTypes are only supported from OpenGL v1.2.
 	            // Try to convert to type supported in v1.
-	            if (getOpenGLVersion(gl).compareTo("1.2") < 0) {
+	            if (!openGL1_2) {
 	                if (texture_type == GL.GL_UNSIGNED_SHORT_4_4_4_4_REV) {
 	                    convertPixelType(tmp_texture_buffer16, tmp_texture_buffer32, 0xF000, 16, 0x0F00, 12, 0x00F0, 8, 0x000F, 4, level);
 	                    final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
@@ -3575,8 +3590,10 @@ public class VideoEngine {
                 final_buffer = pixels;
             } else {
                 VideoEngine.log.warn("tpsm 3 slow");
-                for (int i = 0; i < texture_buffer_width[level]*texture_height[level]; i++) {
-                    tmp_texture_buffer32[i] = mem.read32(texaddr+i*4);
+            	int length = texture_buffer_width[level]*texture_height[level];
+                IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length * 4, 4);
+                for (int i = 0; i < length; i++) {
+                    tmp_texture_buffer32[i] = memoryReader.readNext();
                 }
                 final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
             }
