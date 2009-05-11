@@ -88,7 +88,7 @@ public class sceUtility implements HLEModule {
             msgdialog_status = PSP_UTILITY_ERROR_NOT_INITED;
             msgdialog_params = null;
 
-            osk_status = PSP_UTILITY_ERROR_NOT_INITED;
+            osk_status = PSP_UTILITY_DIALOG_QUIT;
 		}
 	}
 
@@ -740,8 +740,8 @@ public class sceUtility implements HLEModule {
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
 		Modules.log.warn("Unimplemented NID function sceUtilityOskShutdownStart [0x3DFAEBA9]");
-
-		cpu.gpr[2] = 0xDEADC0DE;
+        osk_status = PSP_UTILITY_DIALOG_FINISHED;
+		cpu.gpr[2] =osk_status; //0xDEADC0DE;
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
@@ -776,6 +776,8 @@ public class sceUtility implements HLEModule {
 		Modules.log.warn("Unimplemented NID function sceUtilityOskGetStatus [0xF3F76017]");
 
 		cpu.gpr[2] = osk_status;
+        if (osk_status == PSP_UTILITY_DIALOG_FINISHED)
+            osk_status = PSP_UTILITY_DIALOG_NONE;
 
 		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
