@@ -538,7 +538,7 @@ public class sceMpeg implements HLEModule {
 
         int mpeg = cpu.gpr[4];
         int buffer_addr = cpu.gpr[5];
-        int au_addr = cpu.gpr[6]; // 136/84/24 byte struct?
+        int au_addr = cpu.gpr[6]; // 32/24 byte struct?
 
         Modules.log.warn("PARTIAL:sceMpegInitAu(mpeg=0x" + Integer.toHexString(mpeg)
             + ",buffer=0x" + Integer.toHexString(buffer_addr)
@@ -652,6 +652,8 @@ public class sceMpeg implements HLEModule {
                 + String.format("0x%08X 0x%08X", stream_addr, au_addr));
             cpu.gpr[2] = -1;
         }
+
+        Modules.log.info("sceMpegGetAvcAu ret:0x" + Integer.toHexString(cpu.gpr[2]));
     }
 
     public void sceMpegGetPcmAu(Processor processor) {
@@ -741,6 +743,8 @@ public class sceMpeg implements HLEModule {
                 + String.format("0x%08X 0x%08X", stream_addr, au_addr));
             cpu.gpr[2] = -1;
         }
+
+        Modules.log.info("sceMpegGetAtracAu ret:0x" + Integer.toHexString(cpu.gpr[2]));
     }
 
     public void sceMpegFlushStream(Processor processor) {
@@ -811,7 +815,7 @@ public class sceMpeg implements HLEModule {
                 int buffer = mem.read32(buffer_addr);
                 int init = mem.read32(init_addr);
 
-                Modules.log.debug("sceMpegAvcDecode *au=0x" + Integer.toHexString(au)
+                Modules.log.info("sceMpegAvcDecode *au=0x" + Integer.toHexString(au)
                     + " *buffer=0x" + Integer.toHexString(buffer)
                     + " *init=" + init);
 
@@ -1028,7 +1032,7 @@ public class sceMpeg implements HLEModule {
         int mpeg = cpu.gpr[4];
         int au_addr = cpu.gpr[5];
         int buffer_addr = cpu.gpr[6];
-        int init = cpu.gpr[7];
+        int init = cpu.gpr[7]; // in parameter
 
         Modules.log.warn("IGNORING:sceMpegAtracDecode(mpeg=0x" + Integer.toHexString(mpeg)
             + ",au=0x" + Integer.toHexString(au_addr)
@@ -1047,6 +1051,8 @@ public class sceMpeg implements HLEModule {
                 + String.format("0x%08X 0x%08X", au_addr, buffer_addr));
             cpu.gpr[2] = -1;
         }
+
+        Modules.log.info("sceMpegAtracDecode ret:0x" + Integer.toHexString(cpu.gpr[2]));
     }
 
     public void sceMpegRingbufferQueryMemSize(Processor processor) {
@@ -1064,9 +1070,12 @@ public class sceMpeg implements HLEModule {
         size = ( packets * 104 ) + ( packets * 2048 );
         Modules.log.debug("sceMpegRingbufferQueryMemSize noxa/pspplayer size=0x" + Integer.toHexString(size));
 
-        // we use a 2mb cap, not sure if there is actually a cap or how big it is
-        if (size > 0x200000)
-            size = 0x200000;
+        // for now remove the cap, some games check if sceMpegRingbufferAvailableSize is the requested size
+        if (!enableMpeg) {
+            // we use a 2mb cap, not sure if there is actually a cap or how big it is
+            if (size > 0x200000)
+                size = 0x200000;
+        }
 
         cpu.gpr[2] = size;
         Modules.log.debug("sceMpegRingbufferQueryMemSize ret=0x" + Integer.toHexString(cpu.gpr[2]));
@@ -1230,15 +1239,17 @@ public class sceMpeg implements HLEModule {
         Memory mem = Processor.memory;
 
         int ringbuffer_addr = cpu.gpr[4];
-        SceMpegRingbuffer ringbuffer = SceMpegRingbuffer.fromMem(mem, ringbuffer_addr);
 
-        // we can't fake this whatever we do
-        // if we return max the game will keep trying to put packets, it doesn't start decoding until the ringbuffer is full
-        // if we return 0 no packets will ever get put, the game won't get to update it's own variables so it will think it's always playing the beginning of the video
-        cpu.gpr[2] = ringbuffer.packetsFree;
-
-        Modules.log.debug("sceMpegRingbufferAvailableSize(ringbuffer=0x"
-            + Integer.toHexString(ringbuffer_addr) + ") ret:" + cpu.gpr[2]);
+        if (enableMpeg) {
+            SceMpegRingbuffer ringbuffer = SceMpegRingbuffer.fromMem(mem, ringbuffer_addr);
+            cpu.gpr[2] = ringbuffer.packetsFree;
+            Modules.log.debug("sceMpegRingbufferAvailableSize(ringbuffer=0x"
+                + Integer.toHexString(ringbuffer_addr) + ") ret:" + cpu.gpr[2]);
+        } else {
+            Modules.log.debug("IGNORING:sceMpegRingbufferAvailableSize(ringbuffer=0x"
+                + Integer.toHexString(ringbuffer_addr) + ") ret:" + cpu.gpr[2]);
+            cpu.gpr[2] = 0; // fake
+        }
     }
 
     public void sceMpeg_11CAB459(Processor processor) {
