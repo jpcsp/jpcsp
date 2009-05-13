@@ -19,6 +19,7 @@ package jpcsp.HLE.kernel.types;
 public class ThreadWaitInfo {
     public boolean forever;
     public long microTimeTimeout; // when Clock.microTime() reaches microTimeTimeout the wait has expired
+    public int micros; // time period specified by the game, just stored here for logging/debugging purposes
 
     // TODO change waitingOnThreadEnd, waitingOnEventFlag, etc to waitType,
     // since we can only wait on one type of event at a time.

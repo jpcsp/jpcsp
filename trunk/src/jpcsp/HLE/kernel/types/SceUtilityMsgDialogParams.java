@@ -38,10 +38,8 @@ public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure 
     public int errorValue;
     public String message; // 512 bytes
     public int options;
-        public final static int PSP_UTILITY_MSGDIALOG_OPTION_ERROR          = 0;
-        public final static int PSP_UTILITY_MSGDIALOG_OPTION_TEXT           = 0x00000001;
-        public final static int PSP_UTILITY_MSGDIALOG_OPTION_YESNO_BUTTONS  = 0x00000010;
-        public final static int PSP_UTILITY_MSGDIALOG_OPTION_DEFAULT_NO     = 0x00000100;
+        public final static int PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_YES  = 0x00000010;
+        public final static int PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_NO   = 0x00000110;
     public int buttonPressed;
 
     public SceUtilityMsgDialogParams() {
@@ -91,14 +89,10 @@ public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure 
         sb.append("errorValue " + String.format("0x%08X", errorValue) + "\n");
         sb.append("message '" + message + "'\n");
         sb.append("options " + String.format("0x%08X", options) + "\n");
-        if ((options & PSP_UTILITY_MSGDIALOG_OPTION_TEXT) == PSP_UTILITY_MSGDIALOG_OPTION_TEXT)
-            sb.append("options PSP_UTILITY_MSGDIALOG_OPTION_TEXT\n");
-        else
-            sb.append("options PSP_UTILITY_MSGDIALOG_OPTION_ERROR\n");
-        if ((options & PSP_UTILITY_MSGDIALOG_OPTION_YESNO_BUTTONS) == PSP_UTILITY_MSGDIALOG_OPTION_YESNO_BUTTONS)
-            sb.append("options PSP_UTILITY_MSGDIALOG_OPTION_YESNO_BUTTONS\n");
-        if ((options & PSP_UTILITY_MSGDIALOG_OPTION_DEFAULT_NO) == PSP_UTILITY_MSGDIALOG_OPTION_DEFAULT_NO)
-            sb.append("options PSP_UTILITY_MSGDIALOG_OPTION_DEFAULT_NO\n");
+        if (options == PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_YES)
+            sb.append("options PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_YES\n");
+        if (options == PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_NO)
+            sb.append("options PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_NO\n");
         sb.append("buttonPressed " + String.format("0x%08X", buttonPressed));
 
         return sb.toString();

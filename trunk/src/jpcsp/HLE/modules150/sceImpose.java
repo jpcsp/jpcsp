@@ -78,8 +78,8 @@ public class sceImpose implements HLEModule {
     public final static int PSP_LANGUAGE_PORTUGUESE = 7; // unconfirmed
     public final static int PSP_LANGUAGE_RUSSIAN = 8; // unconfirmed
     public final static int PSP_LANGUAGE_KOREAN = 9;
-    public final static int PSP_LANGUAGE_UNKNOWN10 = 10; // unknown
-    public final static int PSP_LANGUAGE_UNKNOWN11 = 11; // unknown
+    public final static int PSP_LANGUAGE_TRADITIONAL_CHINESE = 10; // unconfirmed
+    public final static int PSP_LANGUAGE_SIMPLIFIED_CHINESE = 11; // unconfirmed
     private int languageMode_language;
 
     // TODO check assignment
