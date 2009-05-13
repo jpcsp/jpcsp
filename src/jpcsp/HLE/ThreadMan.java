@@ -41,6 +41,7 @@ import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.Debugger.DumpDebugState;
 import static jpcsp.util.Utilities.*;
 
 import jpcsp.HLE.kernel.Managers;
@@ -390,8 +391,9 @@ public class ThreadMan {
             //Emulator.PauseEmu();
         } else {
             // Shouldn't get here now we are using idle threads
-            Modules.log.info("No ready threads - pausing emulator");
+            Modules.log.info("No ready threads - pausing emulator. caller:" + getCallingFunction());
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNKNOWN);
+            DumpDebugState.dumpDebugState();
         }
 
         current_thread = newthread;
@@ -1078,6 +1080,7 @@ public class ThreadMan {
     public void hleKernelThreadWait(ThreadWaitInfo wait, int micros, boolean forever) {
         wait.forever = forever;
         wait.microTimeTimeout = Emulator.getClock().microTime() + micros;
+        wait.micros = micros; // for debugging
 
         if (LOG_CONTEXT_SWITCHING && !isIdleThread(current_thread))
             Modules.log.debug("-------------------- hleKernelThreadWait micros=" + micros + " forever:" + forever + " thread:'" + current_thread.name + "' caller:" + getCallingFunction());

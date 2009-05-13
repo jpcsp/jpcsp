@@ -428,6 +428,60 @@ public class pspSysMem {
         Emulator.getProcessor().cpu.gpr[2] = result;
     }
 
+    // note: we're only looking at user memory, so 0x08800000 - 0x0A000000
+    // this is mainly to make it fit on one console line
+    public void dumpSysMemInfo() {
+        final int MEMORY_SIZE = 0x1800000;
+        final int SLOT_COUNT = 64; // 0x60000
+        final int SLOT_SIZE = MEMORY_SIZE / SLOT_COUNT; // 0x60000
+        boolean[] allocated = new boolean[SLOT_COUNT];
+        boolean[] fragmented = new boolean[SLOT_COUNT];
+        int allocatedSize = 0;
+        int fragmentedSize = 0;
+
+        for (Iterator<SysMemInfo> it = blockList.values().iterator(); it.hasNext();)
+        {
+            SysMemInfo info = it.next();
+            for (int i = info.addr; i < info.addr + info.size; i += SLOT_SIZE) {
+                if (i >= 0x08800000 && i < 0x0A000000) {
+                    allocated[(i - 0x08800000) / SLOT_SIZE] = true;
+                }
+            }
+            allocatedSize += info.size;
+        }
+
+        for (Iterator<SysMemInfo> it = freeBlockList.iterator(); it.hasNext();)
+        {
+            SysMemInfo info = it.next();
+            for (int i = info.addr; i < info.addr + info.size; i += SLOT_SIZE) {
+                if (i >= 0x08800000 && i < 0x0A000000) {
+                    fragmented[(i - 0x08800000) / SLOT_SIZE] = true;
+                }
+            }
+            fragmentedSize += info.size;
+        }
+
+        StringBuffer allocatedDiagram = new StringBuffer();
+        allocatedDiagram.append("[");
+        for (int i = 0; i < SLOT_COUNT; i++) {
+            allocatedDiagram.append(allocated[i] ? "X" : " ");
+        }
+        allocatedDiagram.append("]");
+
+        StringBuffer fragmentedDiagram = new StringBuffer();
+        fragmentedDiagram.append("[");
+        for (int i = 0; i < SLOT_COUNT; i++) {
+            fragmentedDiagram.append(fragmented[i] ? "X" : " ");
+        }
+        fragmentedDiagram.append("]");
+
+        System.err.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+        System.err.println(String.format("Allocated memory:  %08X %d bytes", allocatedSize, allocatedSize));
+        System.err.println(allocatedDiagram);
+        System.err.println(String.format("Fragmented memory: %08X %d bytes", fragmentedSize, fragmentedSize));
+        System.err.println(fragmentedDiagram);
+    }
+
     class SysMemInfo {
         public final int uid;
         public final int partitionid;
