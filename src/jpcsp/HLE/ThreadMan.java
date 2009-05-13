@@ -308,25 +308,43 @@ public class ThreadMan {
 
         if (!waitingThreads.isEmpty()) {
             long microTimeNow = Emulator.getClock().microTime();
+            ArrayList<SceKernelThreadInfo> workList = new ArrayList(waitingThreads.size());
+
             // Access waitingThreads using array indexing because
             // this is more efficient than iterator access for short lists
             for (int i = 0; i < waitingThreads.size(); i++) {
                 SceKernelThreadInfo thread = waitingThreads.get(i);
                 if (!thread.wait.forever && microTimeNow >= thread.wait.microTimeTimeout) {
-                    onWaitTimeout(thread);
-                    changeThreadState(thread, PSP_THREAD_READY);
+                    workList.add(thread);
                 }
+            }
+
+            // Use deferred removal to prevent concurrent modification of the collection
+            for (int i = 0; i < workList.size(); i++) {
+                SceKernelThreadInfo thread = workList.get(i);
+                onWaitTimeout(thread);
+                changeThreadState(thread, PSP_THREAD_READY);
             }
         }
 
-        // Cleanup stopped threads (deferred deletion)
-        for (int i = 0; i < toBeDeletedThreads.size(); i++) {
-            SceKernelThreadInfo thread = toBeDeletedThreads.get(i);
-            // this check shouldn't be necessary anymore, can be inferred by the thread existing in the toBeDeletedThreads list
-            if (thread.do_delete) {
+            // Cleanup stopped threads (deferred deletion)
+        if (!toBeDeletedThreads.isEmpty()) {
+            ArrayList<SceKernelThreadInfo> workList = new ArrayList(toBeDeletedThreads.size());
+
+            for (int i = 0; i < toBeDeletedThreads.size(); i++) {
+                SceKernelThreadInfo thread = toBeDeletedThreads.get(i);
+                // this check shouldn't be necessary anymore, can be inferred by the thread existing in the toBeDeletedThreads list
+                if (thread.do_delete) {
+                    workList.add(thread);
+                } else {
+                    Modules.log.warn("thread:'" + thread.name + "' in toBeDeletedThreads list with do_delete = false");
+                }
+            }
+
+            // Use deferred removal to prevent concurrent modification of the collection
+            for (int i = 0; i < workList.size(); i++) {
+                SceKernelThreadInfo thread = workList.get(i);
                 deleteThread(thread);
-            } else {
-                Modules.log.warn("thread:'" + thread.name + "' in toBeDeletedThreads list with do_delete = false");
             }
         }
 
