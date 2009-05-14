@@ -2937,8 +2937,28 @@ public class VideoEngine {
 	                                }
 	                                final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
 	                            } else {
-	                                VideoEngine.log.error("Unhandled swizzling on clut4/16 textures");
-	                                Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
+	                                unswizzleTextureFromMemory(texaddr, 0, level);
+	                                int pixels = texture_buffer_width[level] * texture_height[level];
+	                                for (int i = 0, j = 0; i < pixels; i += 8, j++) {
+	                                    int n = tmp_texture_buffer32[j];
+	                                    int index = n & 0xF;
+	                                    tmp_texture_buffer16[i + 0] = clut[getClutIndex(index)];
+	                                    index = (n >> 4) & 0xF;
+	                                    tmp_texture_buffer16[i + 1] = clut[getClutIndex(index)];
+	                                    index = (n >> 8) & 0xF;
+	                                    tmp_texture_buffer16[i + 2] = clut[getClutIndex(index)];
+	                                    index = (n >> 12) & 0xF;
+	                                    tmp_texture_buffer16[i + 3] = clut[getClutIndex(index)];
+	                                    index = (n >> 16) & 0xF;
+	                                    tmp_texture_buffer16[i + 4] = clut[getClutIndex(index)];
+	                                    index = (n >> 20) & 0xF;
+	                                    tmp_texture_buffer16[i + 5] = clut[getClutIndex(index)];
+	                                    index = (n >> 24) & 0xF;
+	                                    tmp_texture_buffer16[i + 6] = clut[getClutIndex(index)];
+	                                    index = (n >> 28) & 0xF;
+	                                    tmp_texture_buffer16[i + 7] = clut[getClutIndex(index)];
+	                                }
+	                                final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
 	                                break;
 	                            }
 
