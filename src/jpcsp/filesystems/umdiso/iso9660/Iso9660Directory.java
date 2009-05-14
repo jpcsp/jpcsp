@@ -26,13 +26,12 @@ public class Iso9660Directory {
 
         byte[] b;
 
-        int currentPos = 0;
-
-        while(directorySize>=4)
+        while(directorySize>=1)
         {
             int entryLength = dataStream.read();
-            directorySize -= 4;
+            directorySize -= 1;
 
+            // This is assuming that the padding bytes are always filled with 0's.
             if(entryLength==0)
             {
                 continue;
