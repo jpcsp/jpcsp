@@ -242,7 +242,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 			newData.write(mem, newDataAddr);
 		}
 		write32(focus);
-		writeUnknown(4);
+		write32(0); // Unknown value but game "INFECTED" requires this to be 0.
 		write32(buffer1Addr);
         write32(buffer2Addr);
         write32(buffer3Addr);
