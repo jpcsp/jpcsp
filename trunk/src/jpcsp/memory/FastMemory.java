@@ -208,7 +208,7 @@ public class FastMemory extends Memory {
 	public IntBuffer getBuffer(int address, int length) {
 		IntBuffer buffer = getMainMemoryByteBuffer();
 		buffer.position(address / 4);
-		buffer.limit((address + length) / 4);
+		buffer.limit((address + length + 3) / 4);
 
 		return buffer.slice();
 	}
