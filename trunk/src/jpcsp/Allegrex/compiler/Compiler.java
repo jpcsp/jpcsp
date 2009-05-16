@@ -155,11 +155,26 @@ public class Compiler implements ICompiler {
 		return pc + (((int)(short) (opcode & 0x0000FFFF)) << 2);
 	}
 
+	private IExecutable interpret(CompilerContext context, int startAddress) {
+        if (log.isDebugEnabled()) {
+            log.debug("Compiler.interpret Block 0x" + Integer.toHexString(startAddress));
+        }
+        startAddress = startAddress & Memory.addressMask;
+        CodeBlock codeBlock = new CodeBlock(startAddress);
+
+        IExecutable executable = codeBlock.getInterpretedExecutable(context);
+        if (log.isDebugEnabled()) {
+            log.debug("Executable: " + executable);
+        }
+
+        return executable;
+	}
+
 	private IExecutable analyse(CompilerContext context, int startAddress, boolean recursive) {
         if (log.isDebugEnabled()) {
             log.debug("Compiler.analyse Block 0x" + Integer.toHexString(startAddress));
         }
-        startAddress = startAddress & 0x3FFFFFFF;
+        startAddress = startAddress & Memory.addressMask;
         CodeBlock codeBlock = new CodeBlock(startAddress);
         Stack<Integer> pendingBlockAddresses = new Stack<Integer>();
         pendingBlockAddresses.clear();
@@ -271,7 +286,11 @@ public class Compiler implements ICompiler {
         if (error != null) {
             if (executable == null) {
                 Compiler.log.debug("Compilation failed with maxInstruction=" + context.getMethodMaxInstructions());
-                throw error;
+                context = new CompilerContext(classLoader);
+                executable = interpret(context, address);
+                if (executable == null) {
+                	throw error;
+                }
             } else {
                 Compiler.log.debug("Compilation was now correct with maxInstruction=" + context.getMethodMaxInstructions());
             }

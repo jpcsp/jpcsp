@@ -134,7 +134,32 @@ public class RuntimeContext {
         }
     }
 
-    public static void execute(int opcode) {
+	public static int executeInterpreter(int address, int returnAddress, int alternativeReturnAddress, boolean isJump) throws Exception {
+		if (log.isDebugEnabled()) {
+			log.debug("RuntimeContext.executeInterpreter address=0x" + Integer.toHexString(address) + ", returnAddress=0x" + Integer.toHexString(returnAddress) + ", alternativeReturnAddress=0x" + Integer.toHexString(alternativeReturnAddress) + ", isJump=" + isJump);
+		}
+
+		boolean interpret = true;
+		cpu.pc = address;
+		int returnValue = returnAddress;
+		while (interpret) {
+			int opcode = cpu.fetchOpcode();
+			Instruction insn = Decoder.instruction(opcode);
+			insn.interpret(processor, opcode);
+			if (insn.hasFlags(Instruction.FLAG_STARTS_NEW_BLOCK)) {
+				cpu.pc = jumpCall(cpu.pc, cpu.gpr[31], false);
+			} else if (insn.hasFlags(Instruction.FLAG_ENDS_BLOCK)) {
+				if (cpu.pc == returnAddress || cpu.pc == alternativeReturnAddress) {
+					interpret = false;
+					returnValue = cpu.pc;
+				} 
+			}
+		}
+
+		return returnValue;
+	}
+
+	public static void execute(int opcode) {
 		Instruction insn = Decoder.instruction(opcode);
 		execute(insn, opcode);
 	}
