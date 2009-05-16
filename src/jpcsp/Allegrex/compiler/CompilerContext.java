@@ -22,6 +22,7 @@ import java.util.Stack;
 
 import jpcsp.Memory;
 import jpcsp.Processor;
+import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Instructions;
 import jpcsp.Allegrex.Common.Instruction;
@@ -220,7 +221,14 @@ public class CompilerContext implements ICompilerContext {
     }
 
     private void loadInstruction(Instruction insn) {
-        mv.visitFieldInsn(Opcodes.GETSTATIC, instructionsInternalName, insn.name().replace('.', '_').replace(' ', '_'), instructionDescriptor);
+    	String classInternalName = instructionsInternalName;
+
+    	if (insn == Common.UNK) {
+    		// UNK instruction is in Common class, not Instructions
+    		classInternalName = Type.getInternalName(Common.class);
+    	}
+
+    	mv.visitFieldInsn(Opcodes.GETSTATIC, classInternalName, insn.name().replace('.', '_').replace(' ', '_'), instructionDescriptor);
     }
 
     public void visitJump() {
