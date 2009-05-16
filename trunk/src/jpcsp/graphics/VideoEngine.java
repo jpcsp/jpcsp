@@ -3234,7 +3234,7 @@ public class VideoEngine {
 	                }
 	            }
             }
-            if(texture_num_mip_maps != 0) {
+            if(texture_num_mip_maps != 0 && final_buffer != null) {
             	for(int level = 0; level <= texture_num_mip_maps; ++level)
             		log(String.format("Mipmap PSP Texture level %d size %dx%d", level, texture_width[level], texture_height[level]));
 	            int maxLevel = (int) (Math.log(Math.max(texture_width[texture_num_mip_maps], texture_height[texture_num_mip_maps]) * (1 << texture_num_mip_maps))/Math.log(2));
