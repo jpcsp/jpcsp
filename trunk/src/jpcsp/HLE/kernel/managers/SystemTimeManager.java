@@ -25,6 +25,38 @@ public class SystemTimeManager {
     public void reset() {
     }
 
+    /**
+     * Convert a number of sysclocks into microseconds.
+     * 
+     * @param sysclocks	- number of sysclocks
+     * @return microseconds
+     */
+    public long hleSysClock2USec(long sysclocks) {
+    	// 1 sysclock == 1 microsecond
+    	return sysclocks;
+    }
+
+    /**
+     * Convert a number of sysclocks into microseconds,
+     * truncating to 32 bits.
+     * 
+     * @param sysclocks	- number of sysclocks
+     * @return microseconds (truncated to 32 bits)
+     *         Integer.MAX_VALUE or MIN_VALUE in case of truncation overflow.
+     */
+    public int hleSysClock2USec32(long sysclocks) {
+    	long micros64 = hleSysClock2USec(sysclocks);
+
+    	int micros32 = (int) micros64;
+    	if (micros64 > Integer.MAX_VALUE) {
+    		micros32 = Integer.MAX_VALUE;
+    	} else if (micros64 < Integer.MIN_VALUE) {
+    		micros32 = Integer.MIN_VALUE;
+    	}
+
+    	return micros32;
+    }
+
     public void sceKernelUSec2SysClock(int usec, int clock_addr) {
         Memory mem = Memory.getInstance();
         if (!mem.isAddressGood(clock_addr)) {

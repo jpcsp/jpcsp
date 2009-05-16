@@ -1145,6 +1145,50 @@ public class ThreadMan {
         }
     }
 
+    /**
+     * Delay the current thread by a specified number of sysclocks
+     *
+     * @param sysclocks_addr - Address of delay in sysclocks
+     *
+     * @return 0 on success, < 0 on error
+     */
+    public void ThreadMan_sceKernelDelaySysClockThread(int sysclocks_addr) {
+    	Memory mem = Memory.getInstance();
+    	if (mem.isAddressGood(sysclocks_addr)) {
+    		long sysclocks = mem.read64(sysclocks_addr);
+    		int micros = Managers.systime.hleSysClock2USec32(sysclocks);
+            hleKernelDelayThread(micros, false);
+    	} else {
+            Modules.log.warn("sceKernelDelaySysClockThread invalid sysclocks address 0x" + Integer.toHexString(sysclocks_addr));
+            Emulator.getProcessor().cpu.gpr[2] = -1;
+    	}
+    }
+
+    /**
+     * Delay the current thread by a specified number of sysclocks handling callbacks
+     *
+     * @param sysclocks_addr - Address of delay in sysclocks
+     *
+     * @return 0 on success, < 0 on error
+     *
+     */
+    public void ThreadMan_sceKernelDelaySysClockThreadCB(int sysclocks_addr) {
+    	Memory mem = Memory.getInstance();
+    	if (mem.isAddressGood(sysclocks_addr)) {
+    		long sysclocks = mem.read64(sysclocks_addr);
+    		int micros = Managers.systime.hleSysClock2USec32(sysclocks);
+            if (!insideCallback) {
+                hleKernelDelayThread(micros, true);
+            } else {
+                Modules.log.warn("sceKernelDelaySysClockThreadCB called from inside callback!");
+                Emulator.getProcessor().cpu.gpr[2] = -1;
+            }
+    	} else {
+            Modules.log.warn("sceKernelDelaySysClockThreadCB invalid sysclocks address 0x" + Integer.toHexString(sysclocks_addr));
+            Emulator.getProcessor().cpu.gpr[2] = -1;
+    	}
+    }
+
     public SceKernelCallbackInfo hleKernelCreateCallback(String name, int func_addr, int user_arg_addr) {
         SceKernelCallbackInfo callback = new SceKernelCallbackInfo(name, current_thread.uid, func_addr, user_arg_addr);
         callbackMap.put(callback.uid, callback);

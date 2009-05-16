@@ -96,9 +96,12 @@ public class SyscallHandler {
                 case 0x201d:
                     ThreadMan.getInstance().ThreadMan_sceKernelDelayThreadCB(gpr[4]);
                     break;
-		 //sceKernelDelaySysClockThread(0x201e),
-		// sceKernelDelaySysClockThreadCB(0x201f),
-
+                case 0x201e:
+                    ThreadMan.getInstance().ThreadMan_sceKernelDelaySysClockThread(gpr[4]);
+                    break;
+                case 0x201f:
+                    ThreadMan.getInstance().ThreadMan_sceKernelDelaySysClockThreadCB(gpr[4]);
+                    break;
                 case 0x2020:
                     Managers.semas.sceKernelCreateSema(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
                     break;
