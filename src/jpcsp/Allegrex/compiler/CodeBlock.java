@@ -284,6 +284,58 @@ public class CodeBlock {
         }
     }
 
+    private Class<IExecutable> interpret(CompilerContext context) {
+		Class<IExecutable> compiledClass = null;
+    	
+		context.setCodeBlock(this);
+		String className = getInternalClassName();
+		if (Compiler.log.isInfoEnabled()) {
+		    Compiler.log.info("Compiling for Interpreter " + className);
+		}
+
+        int computeFlag = ClassWriter.COMPUTE_FRAMES;
+		if (context.isAutomaticMaxLocals() || context.isAutomaticMaxStack()) {
+		    computeFlag |= ClassWriter.COMPUTE_MAXS;
+		}
+    	ClassWriter cw = new ClassWriter(computeFlag);
+    	ClassVisitor cv = cw;
+    	if (Compiler.log.isDebugEnabled()) {
+    		cv = new CheckClassAdapter(cv);
+    	}
+
+    	StringWriter debugOutput = null;
+    	if (Compiler.log.isDebugEnabled()) {
+    	    debugOutput = new StringWriter();
+    	    PrintWriter debugPrintWriter = new PrintWriter(debugOutput);
+    	    cv = new TraceClassVisitor(cv, debugPrintWriter);
+    	}
+    	cv.visit(Opcodes.V1_6, Opcodes.ACC_PUBLIC | Opcodes.ACC_SUPER, className, null, objectInternalName, interfacesForExecutable);
+    	context.startClass(cv);
+
+    	addConstructor(cv);
+    	addNonStaticMethods(context, cv);
+
+    	MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, context.getStaticExecMethodName(), context.getStaticExecMethodDesc(), null, exceptions);
+        mv.visitCode();
+        context.setMethodVisitor(mv);
+        context.startMethod();
+
+        context.compileExecuteInterpreter(getStartAddress());
+
+        mv.visitMaxs(context.getMaxLocals(), context.getMaxStack());
+        mv.visitEnd();
+
+        cv.visitEnd();
+
+    	if (debugOutput != null) {
+    	    Compiler.log.debug(debugOutput.toString());
+    	}
+
+	    compiledClass = loadExecutable(context, className, cw.toByteArray());
+
+    	return compiledClass;
+    }
+
     private Class<IExecutable> compile(CompilerContext context) {
 		Class<IExecutable> compiledClass = null;
 
@@ -380,4 +432,21 @@ public class CodeBlock {
 
 	    return executable;
 	}
+
+    public synchronized IExecutable getInterpretedExecutable(CompilerContext context) {
+    	if (executable == null) {
+	        Class<IExecutable> classExecutable = interpret(context);
+	        if (classExecutable != null) {
+	            try {
+                    executable = classExecutable.newInstance();
+                } catch (InstantiationException e) {
+                    Compiler.log.error(e);
+                } catch (IllegalAccessException e) {
+                    Compiler.log.error(e);
+                }
+	        }
+    	}
+
+    	return executable;
+    }
 }

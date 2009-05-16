@@ -1012,4 +1012,14 @@ public class CompilerContext implements ICompilerContext {
     	codeInstruction.compile(this, mv);
     	mv.visitLabel(afterDelaySlot);
     }
+
+    public void compileExecuteInterpreter(int startAddress) {
+    	loadImm(startAddress);
+        loadLocalVar(LOCAL_RETURN_ADDRESS);
+        loadLocalVar(LOCAL_ALTERVATIVE_RETURN_ADDRESS);
+        loadLocalVar(LOCAL_IS_JUMP);
+        mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "executeInterpreter", "(IIIZ)I");
+        endMethod();
+        mv.visitInsn(Opcodes.IRETURN);
+    }
 }
