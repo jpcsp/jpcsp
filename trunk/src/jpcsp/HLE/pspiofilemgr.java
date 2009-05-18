@@ -275,6 +275,12 @@ public class pspiofilemgr {
             }
         }
 
+        // remap fatms0
+        // - Wipeout Pure - UCUS98612
+        if (device.equals("fatms0")) {
+            device = "ms0";
+        }
+
         // strip leading and trailing slash from supplied path
         // this step is common to absolute and relative paths
         if (pspfilename.startsWith("/")) {
