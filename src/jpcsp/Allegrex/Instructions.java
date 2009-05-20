@@ -5212,7 +5212,7 @@ public String disasm(int address, int insn) {
 	int imm7 = (insn>>0)&127;
 	int rt = (insn>>16)&31;
 
-return "Unimplemented MFV";
+	return Common.disasmVDRS("mfv", imm7, rt);
 }
 };
 public static final Instruction MFVC = new Instruction(160) {
@@ -6287,7 +6287,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 
-return "Unimplemented VF2H";
+	return Common.disasmVDVS("vf2h", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VH2F = new Instruction(193) {
@@ -6320,7 +6320,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 
-return "Unimplemented VH2F";
+	return Common.disasmVDVS("vh2f", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VSBZ = new Instruction(194) {
@@ -6419,7 +6419,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 
-return "Unimplemented VUC2I";
+	return Common.disasmVDVS("vuc2i", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VC2I = new Instruction(197) {
@@ -6485,7 +6485,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 
-return "Unimplemented VUS2I";
+	return Common.disasmVDVS("vus2i", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VS2I = new Instruction(199) {
@@ -6518,7 +6518,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 
-return "Unimplemented VS2I";
+	return Common.disasmVDVS("vs2i", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VI2UC = new Instruction(200) {
@@ -6551,7 +6551,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 
-return "Unimplemented VI2UC";
+	return Common.disasmVDVS("vi2uc", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VI2C = new Instruction(201) {
@@ -6584,7 +6584,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 
-return "Unimplemented VI2C";
+	return Common.disasmVDVS("vi2c", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VI2US = new Instruction(202) {
@@ -6617,7 +6617,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 
-return "Unimplemented VI2US";
+	return Common.disasmVDVS("vi2us", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VI2S = new Instruction(203) {
@@ -6650,7 +6650,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 
-return "Unimplemented VI2S";
+	return Common.disasmVDVS("vi2s", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VSRT1 = new Instruction(204) {
@@ -6749,7 +6749,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 
-return "Unimplemented VBFY1";
+	return Common.disasmVDVS("vbfy1", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VBFY2 = new Instruction(207) {
@@ -6782,7 +6782,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 
-return "Unimplemented VBFY2";
+	return Common.disasmVDVS("vbfy2", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VOCP = new Instruction(208) {
@@ -6848,7 +6848,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 
-return "Unimplemented VSOCP";
+	return Common.disasmVDVS("vsocp", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VFAD = new Instruction(210) {
@@ -7071,7 +7071,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 
-return "Unimplemented VT4444";
+	return Common.disasmVDVS("vt4444", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VT5551 = new Instruction(217) {
@@ -7104,7 +7104,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 
-return "Unimplemented VT5551";
+	return Common.disasmVDVS("vt5551", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VT5650 = new Instruction(218) {
@@ -7137,7 +7137,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 
-return "Unimplemented VT5650";
+	return Common.disasmVDVS("vt5650", 1+one+(two<<1), vd, vs);
 }
 };
 public static final Instruction VCST = new Instruction(219) {
@@ -7205,7 +7205,7 @@ public String disasm(int address, int insn) {
 	int two = (insn>>15)&1;
 	int imm5 = (insn>>16)&31;
 
-return "Unimplemented VF2IN";
+	return Common.disasmVDVSIMM("vf2in", 1+one+(two<<1), vd, vs, imm5);
 }
 };
 public static final Instruction VF2IZ = new Instruction(221) {
@@ -7240,7 +7240,7 @@ public String disasm(int address, int insn) {
 	int two = (insn>>15)&1;
 	int imm5 = (insn>>16)&31;
 
-return "Unimplemented VF2IZ";
+	return Common.disasmVDVSIMM("vf2iz", 1+one+(two<<1), vd, vs, imm5);
 }
 };
 public static final Instruction VF2IU = new Instruction(222) {
@@ -7275,7 +7275,7 @@ public String disasm(int address, int insn) {
 	int two = (insn>>15)&1;
 	int imm5 = (insn>>16)&31;
 
-return "Unimplemented VF2IU";
+	return Common.disasmVDVSIMM("vf2iu", 1+one+(two<<1), vd, vs, imm5);
 }
 };
 public static final Instruction VF2ID = new Instruction(223) {
@@ -7310,7 +7310,7 @@ public String disasm(int address, int insn) {
 	int two = (insn>>15)&1;
 	int imm5 = (insn>>16)&31;
 
-return "Unimplemented VF2ID";
+	return Common.disasmVDVSIMM("vf2id", 1+one+(two<<1), vd, vs, imm5);
 }
 };
 public static final Instruction VI2F = new Instruction(224) {
@@ -7345,7 +7345,7 @@ public String disasm(int address, int insn) {
 	int two = (insn>>15)&1;
 	int imm5 = (insn>>16)&31;
 
-return "Unimplemented VI2F";
+	return Common.disasmVDVSIMM("vi2f", 1+one+(two<<1), vd, vs, imm5);
 }
 };
 public static final Instruction VCMOVT = new Instruction(225) {
@@ -7990,7 +7990,7 @@ public String disasm(int address, int insn) {
 	int two = (insn>>15)&1;
 	int vt = (insn>>16)&127;
 
-return "Unimplemented VMSCL";
+	return Common.disasmVDVSVT("vmscl", 1+one+(two<<1), vd, vs, vt);
 }
 };
 public static final Instruction VCRSP = new Instruction(241) {

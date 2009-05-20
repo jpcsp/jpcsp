@@ -1126,7 +1126,7 @@ public class VfpuState extends FpuState {
     }
     // VFPU4:VH2F
     public void doVH2F(int vsize, int vd, int vs) {
-        if (vsize < 2) {
+        if (vsize > 2) {
             doUNK("Only supported VH2F.S or VH2F.P");
             return;
         }
@@ -1148,19 +1148,59 @@ public class VfpuState extends FpuState {
     }
     // VFPU4:VUC2I
     public void doVUC2I(int vsize, int vd, int vs) {
-        doUNK("Unimplemented VUC2I");
+        if (vsize != 1) {
+            doUNK("Only supported VUC2I.S");
+            return;
+        }
+        loadVs(1, vs);
+        int n = Float.floatToRawIntBits(v1[0]);
+        v3[0] = Float.intBitsToFloat((((n      ) & 0xFF) * 0x01010101) >> 1);
+        v3[1] = Float.intBitsToFloat((((n >>  8) & 0xFF) * 0x01010101) >> 1);
+        v3[2] = Float.intBitsToFloat((((n >> 16) & 0xFF) * 0x01010101) >> 1);
+        v3[3] = Float.intBitsToFloat((((n >> 24) & 0xFF) * 0x01010101) >> 1);
+        saveVd(4, vd, v3);
     }
     // VFPU4:VC2I
     public void doVC2I(int vsize, int vd, int vs) {
-        doUNK("Unimplemented VC2I");
+        if (vsize != 1) {
+            doUNK("Only supported VC2I.S");
+            return;
+        }
+        loadVs(1, vs);
+        int n = Float.floatToRawIntBits(v1[0]);
+        v3[0] = Float.intBitsToFloat(((n      ) & 0xFF) << 24);
+        v3[1] = Float.intBitsToFloat(((n >>  8) & 0xFF) << 24);
+        v3[2] = Float.intBitsToFloat(((n >> 16) & 0xFF) << 24);
+        v3[3] = Float.intBitsToFloat(((n >> 24) & 0xFF) << 24);
+        saveVd(4, vd, v3);
     }
     // VFPU4:VUS2I
     public void doVUS2I(int vsize, int vd, int vs) {
-        doUNK("Unimplemented VUS2I");
+        if (vsize > 2) {
+            doUNK("Only supported VUS2I.S or VUS2I.P");
+            return;
+        }
+    	loadVs(vsize, vs);
+        for (int i = 0; i < vsize; ++i) {
+            int imm32 = Float.floatToRawIntBits(v1[i]);
+            v3[0+2*i] = Float.intBitsToFloat(((imm32       ) & 0xFFFF) << 15);
+            v3[1+2*i] = Float.intBitsToFloat(((imm32 >>> 16) & 0xFFFF) << 15);
+        }
+    	saveVd(vsize * 2, vd, v3);
     }
     // VFPU4:VS2I
     public void doVS2I(int vsize, int vd, int vs) {
-        doUNK("Unimplemented VS2I");
+        if (vsize > 2) {
+            doUNK("Only supported VS2I.S or VS2I.P");
+            return;
+        }
+    	loadVs(vsize, vs);
+        for (int i = 0; i < vsize; ++i) {
+            int imm32 = Float.floatToRawIntBits(v1[i]);
+            v3[0+2*i] = Float.intBitsToFloat(((imm32       ) & 0xFFFF) << 16);
+            v3[1+2*i] = Float.intBitsToFloat(((imm32 >>> 16) & 0xFFFF) << 16);
+        }
+    	saveVd(vsize * 2, vd, v3);
     }
 
     // VFPU4:VI2UC
