@@ -32,6 +32,17 @@ public class UmdIsoFile extends SeekableInputStream {
         startSectorNumber = startSector;
         currentSectorNumber = startSectorNumber;
         currentOffset = 0;
+
+        // Some ISO directory entries indicate a file length past the size of the complete ISO.
+        // Truncate the file length in that case to the available sectors.
+        // This might be some sort of copy protection?
+        // E.g. "Kamen no Maid Guy: Boyoyon Battle Royale"
+        int endSectorNumber = startSectorNumber + (int) ((lengthInBytes + sectorLength - 1) / sectorLength);
+        if (endSectorNumber >= reader.numSectors) {
+        	endSectorNumber = reader.numSectors - 1;
+        	lengthInBytes = (endSectorNumber - startSector + 1) * sectorLength;
+        }
+
         if (lengthInBytes == 0) {
         	currentSector = null;
         } else {
