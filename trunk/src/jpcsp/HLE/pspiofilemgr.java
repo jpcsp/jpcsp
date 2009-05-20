@@ -705,6 +705,7 @@ public class pspiofilemgr {
         sceIoOpen(filename_addr, flags, permissions);
 
         // TODO refactor sceIoOpen into hleIoOpen and add more parameters
+        // TODO make asyncPending a global? only allow 1 async op across all io operations regardless of the uid?
         int uid = Emulator.getProcessor().cpu.gpr[2];
         IoInfo info = filelist.get(uid);
         if (info != null) {
@@ -772,15 +773,21 @@ public class pspiofilemgr {
         SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
         IoInfo info = filelist.get(uid);
         if (info != null) {
-            info.result = 0;
-            info.closePending = true;
-            info.asyncPending = true;
-            Emulator.getProcessor().cpu.gpr[2] = 0;
+            if (info.asyncPending) {
+                Modules.log.warn("sceIoCloseAsync - uid " + Integer.toHexString(uid) + " PSP_ERROR_ASYNC_BUSY");
+                Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_ASYNC_BUSY;
+            } else {
+                info.result = 0;
+                info.closePending = true;
+                info.asyncPending = true;
+                Emulator.getProcessor().cpu.gpr[2] = 0;
+            }
         } else {
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
         }
     }
 
+    // Handle returning/storing result for sync/async operations
     private int updateResult(IoInfo info, int result, boolean async) {
         int newResult;
 
@@ -1537,51 +1544,91 @@ public class pspiofilemgr {
         SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
         info = filelist.get(uid);
         if (info == null) {
-            Modules.log.warn("hleIoRead - unknown uid " + Integer.toHexString(uid));
+            Modules.log.warn("hleIoIoctl - unknown uid " + Integer.toHexString(uid));
             result = PSP_ERROR_BAD_FILE_DESCRIPTOR;
         } else if (info.asyncPending) {
             // Can't execute another operation until the previous one completed
-            Modules.log.warn("hleIoRead - uid " + Integer.toHexString(uid) + " PSP_ERROR_ASYNC_BUSY");
+            Modules.log.warn("hleIoIoctl - uid " + Integer.toHexString(uid) + " PSP_ERROR_ASYNC_BUSY");
             result = PSP_ERROR_ASYNC_BUSY;
         } else {
-        	switch (cmd) {
-	            case 0x01020006:
-	            {
-	            	if (mem.isAddressGood(outdata_addr) && outlen == 4) {
-        				int startSector = 0;
-        				if (info.readOnlyFile instanceof UmdIsoFile) {
-        					UmdIsoFile file = (UmdIsoFile) info.readOnlyFile;
-        					startSector = file.getStartSector();
-            				mem.write32(outdata_addr, startSector);
-    		            	result = 0;
-        				} else {
-    	            		Modules.log.warn("hleIoIoctl cmd=0x01020006 only implemented for UmdIsoFile");
-        				}
-	            	} else {
-	            		Modules.log.warn("hleIoIoctl " + String.format("0x%08X %d", outdata_addr, outlen) + " unsupported parameters");
-	            	}
-	            	break;
-	            }
-	            case 0x01020007:
-	            {
-	            	if (mem.isAddressGood(outdata_addr) && outlen == 8) {
-            			try {
-							mem.write64(outdata_addr, info.readOnlyFile.length());
-			            	result = 0;
-						} catch (IOException e) {
-							// Should never happen?
-						}
-	            	} else {
-	            		Modules.log.warn("hleIoIoctl " + String.format("0x%08X %d", outdata_addr, outlen) + " unsupported parameters");
-	            	}
-	            	break;
-	            }
-	            default:
-	            {
-	                Modules.log.warn("hleIoIoctl " + String.format("0x%08X", cmd) + " unknown command");
-	                break;
-	            }
-	        }
+            switch (cmd) {
+                // UMD file seek set
+                case 0x01010005:
+                {
+                    if (mem.isAddressGood(indata_addr) && inlen >= 4) {
+                        if (info.isUmdFile()) {
+                            try {
+                                int offset = mem.read32(indata_addr);
+                                Modules.log.debug("hleIoIoctl umd file seek set " + offset);
+                                info.readOnlyFile.seek(offset);
+                                info.position = offset;
+                                result = 0;
+                            } catch (IOException e) {
+                                // Should never happen?
+                                Modules.log.warn("hleIoIoctl cmd=0x01010005 exception: " + e.getMessage());
+                                result = -1;
+                            }
+                        } else {
+                            Modules.log.warn("hleIoIoctl cmd=0x01010005 only allowed on UMD files");
+                        }
+                    } else {
+                        Modules.log.warn("hleIoIoctl cmd=0x01010005 " + String.format("0x%08X %d", indata_addr, inlen) + " unsupported parameters");
+                        result = PSP_ERROR_INVALID_ARGUMENT;
+                    }
+                    break;
+                }
+
+                // Get UMD file start sector
+                case 0x01020006:
+                {
+                    if (mem.isAddressGood(outdata_addr) && outlen >= 4) {
+                        int startSector = 0;
+                        if (info.isUmdFile() && info.readOnlyFile instanceof UmdIsoFile) {
+                            UmdIsoFile file = (UmdIsoFile) info.readOnlyFile;
+                            startSector = file.getStartSector();
+                            Modules.log.debug("hleIoIoctl umd file get start sector " + startSector);
+                            mem.write32(outdata_addr, startSector);
+                            result = 0;
+                        } else {
+                            Modules.log.warn("hleIoIoctl cmd=0x01020006 only allowed on UMD files and only implemented for UmdIsoFile");
+                        }
+                    } else {
+                        Modules.log.warn("hleIoIoctl cmd=0x01020006 " + String.format("0x%08X %d", outdata_addr, outlen) + " unsupported parameters");
+                        result = PSP_ERROR_INVALID_ARGUMENT;
+                    }
+                    break;
+                }
+
+                // Get UMD file length in bytes
+                case 0x01020007:
+                {
+                    if (mem.isAddressGood(outdata_addr) && outlen >= 8) {
+                        if (info.isUmdFile()) {
+                            try {
+                                long length = info.readOnlyFile.length();
+                                mem.write64(outdata_addr, length);
+                                Modules.log.debug("hleIoIoctl get file size " + length);
+                                result = 0;
+                            } catch (IOException e) {
+                                // Should never happen?
+                                Modules.log.warn("hleIoIoctl cmd=0x01020007 exception: " + e.getMessage());
+                            }
+                        } else {
+                            Modules.log.warn("hleIoIoctl cmd=0x01020007 only allowed on UMD files");
+                        }
+                    } else {
+                        Modules.log.warn("hleIoIoctl cmd=0x01020007 " + String.format("0x%08X %d", outdata_addr, outlen) + " unsupported parameters");
+                        result = PSP_ERROR_INVALID_ARGUMENT;
+                    }
+                    break;
+                }
+
+                default:
+                {
+                    Modules.log.warn("hleIoIoctl " + String.format("0x%08X", cmd) + " unknown command");
+                    break;
+                }
+            }
         }
 
         Emulator.getProcessor().cpu.gpr[2] = updateResult(info, result, async);
@@ -1870,6 +1917,10 @@ public class pspiofilemgr {
             this.sectorBlockMode = false;
             uid = SceUidManager.getNewUid("IOFileManager-File");
             filelist.put(uid, this);
+        }
+
+        public boolean isUmdFile() {
+            return (msFile == null);
         }
     }
 
