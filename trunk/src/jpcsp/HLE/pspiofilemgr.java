@@ -446,6 +446,8 @@ public class pspiofilemgr {
             threadMan.contextSwitch(threadMan.nextThread());
         } else if (callbacks) {
             ThreadMan.getInstance().yieldCurrentThreadCB();
+        } else {
+        	ThreadMan.getInstance().yieldCurrentThread();
         }
     }
 
