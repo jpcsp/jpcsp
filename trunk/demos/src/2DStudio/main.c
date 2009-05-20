@@ -4,8 +4,6 @@
 #include <pspdisplay.h>
 #include <pspgu.h>
 #include <pspgum.h>
-//#include <psputility.h>
-//#include <psppower.h>
 
 #include <sys/stat.h>
 #include <stdio.h>
@@ -18,6 +16,14 @@ PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 #define BUF_WIDTH (512)
 #define SCR_WIDTH (480)
 #define SCR_HEIGHT (272)
+
+//#define USE_VERTEX_8BIT	1
+//#define USE_VERTEX_16BIT	1
+#define USE_VERTEX_32BITF	1
+
+//#define USE_TEXTURE_8BIT	1
+//#define USE_TEXTURE_16BIT	1
+#define USE_TEXTURE_32BITF	1
 
 void sendCommandi(int cmd, int argument);
 
@@ -89,11 +95,11 @@ void addAttribute(char *label, int *pvalue, int x, int y, int min, int max, int 
 {
 	struct attribute *pattribute = &attributes[nattributes];
 	pattribute->label  = label;
-	pattribute->x      = x;
-	pattribute->y      = y;
+	pattribute->x	  = x;
+	pattribute->y	  = y;
 	pattribute->pvalue = pvalue;
-	pattribute->min    = min;
-	pattribute->max    = max;
+	pattribute->min	= min;
+	pattribute->max	= max;
 	pattribute->step   = step;
 	pattribute->names  = NULL;
 
@@ -154,13 +160,13 @@ int states[] = {
 	GU_DEPTH_TEST,
 	GU_TEXTURE_2D,
 	GU_BLEND,
+	GU_LIGHTING,
 /*	GU_SCISSOR_TEST,
 	GU_STENCIL_TEST,
 	GU_CULL_FACE,
 	GU_DITHER,
 	GU_FOG,
 	GU_CLIP_PLANES,
-	GU_LIGHTING,
 	GU_LIGHT0,
 	GU_LIGHT1,
 	GU_LIGHT2,
@@ -207,9 +213,55 @@ char *stateValueNames[] = { "Off", "On", "Unchanged" };
 
 struct Vertex
 {
+ #ifdef USE_TEXTURE_8BIT
+   u8 u, v;
+   u16 pad1;
+ #endif
+ #ifdef USE_TEXTURE_16BIT
+   u16 u, v;
+ #endif
+ #ifdef USE_TEXTURE_32BITF
    float u, v;
-   unsigned int color;
+ #endif
+
+	u32 color;
+
+ #ifdef USE_VERTEX_8BIT
+   s8 x, y, z;
+   s8 pad2;
+ #endif
+ #ifdef USE_VERTEX_16BIT
+   s16 x, y, z;
+   s16 pad2;
+ #endif
+ #ifdef USE_VERTEX_32BITF
    float x, y, z;
+ #endif
+};
+
+struct VertexNoColor
+{
+ #ifdef USE_TEXTURE_8BIT
+   u8 u, v;
+ #endif
+ #ifdef USE_TEXTURE_16BIT
+   u16 u, v;
+ #endif
+ #ifdef USE_TEXTURE_32BITF
+   float u, v;
+ #endif
+
+ #ifdef USE_VERTEX_8BIT
+   s8 x, y, z;
+   s8 pad;
+ #endif
+ #ifdef USE_VERTEX_16BIT
+   s16 x, y, z;
+   s16 pad;
+ #endif
+ #ifdef USE_VERTEX_32BITF
+   float x, y, z;
+ #endif
 };
 
 struct Vertex __attribute__((aligned(16))) vertices1[4];
@@ -277,6 +329,36 @@ int clearFlagDepth = 1;
 char *onOffNames[] = { "Off", "On" };
 
 
+int depthFunc = 7;
+int nearZ = 10000;
+int farZ = 50000;
+
+struct Color materialAmbient;
+int materialAmbientFlag = 0;
+struct Color materialDiffuse;
+int materialDiffuseFlag = 0;
+struct Color materialEmissive;
+int materialEmissiveFlag = 0;
+struct Color materialSpecular;
+int materialSpecularFlag = 0;
+int vertexColorFlag = 1;
+
+int texture1_a2 = 0;
+int texture2_a2 = 0;
+
+void addColorAttribute(char *label, struct Color *pcolor, int x, int y, int hasAlpha)
+{
+	addAttribute(label, &pcolor->r, x +  0, y, 0, 0xFF, 10);
+	x += strlen(label);
+	addAttribute(", G", &pcolor->g, x +  5, y, 0, 0xFF, 10);
+	addAttribute(", B", &pcolor->b, x + 13, y, 0, 0xFF, 10);
+	if (hasAlpha)
+	{
+		addAttribute(", A", &pcolor->a, x + 21, y, 0, 0xFF, 10);
+	}
+}
+
+
 void drawStates(int stateValues[])
 {
 	int i;
@@ -287,7 +369,7 @@ void drawStates(int stateValues[])
 		{
 			case 0: sceGuDisable(states[i]); break;
 			case 1: sceGuEnable(states[i]);  break;
-			case 2: /* Unchanged */          break;
+			case 2: /* Unchanged */		  break;
 		}
 	}
 }
@@ -330,12 +412,31 @@ void setVertexPoint(struct Point *ppoint, struct Vertex *pvertex, int x, int y, 
 }
 
 
+void setVertexNoColorPoint(struct Point *ppoint, struct VertexNoColor *pvertex, int x, int y, int z, int u, int v)
+{
+	pvertex->u = u;
+	pvertex->v = v;
+	pvertex->x = x + ppoint->x;
+	pvertex->y = y + ppoint->y;
+	pvertex->z = z + ppoint->z;
+}
+
+
 void setRectanglePoint(struct Point *ppoint, struct Vertex pvertices[])
 {
-	setVertexPoint(ppoint, &pvertices[0], -50, -50, 0, 0,             0);
+	setVertexPoint(ppoint, &pvertices[0], -50, -50, 0, 0,			 0);
 	setVertexPoint(ppoint, &pvertices[1],  50, -50, 0, TEXTURE_WIDTH, 0);
-	setVertexPoint(ppoint, &pvertices[2], -50,  50, 0, 0,             TEXTURE_HEIGHT);
+	setVertexPoint(ppoint, &pvertices[2], -50,  50, 0, 0,			 TEXTURE_HEIGHT);
 	setVertexPoint(ppoint, &pvertices[3],  50,  50, 0, TEXTURE_WIDTH, TEXTURE_HEIGHT);
+}
+
+
+void setNoColorRectanglePoint(struct Point *ppoint, struct VertexNoColor pvertices[])
+{
+	setVertexNoColorPoint(ppoint, &pvertices[0], -50, -50, 0, 0,			 0);
+	setVertexNoColorPoint(ppoint, &pvertices[1],  50, -50, 0, TEXTURE_WIDTH, 0);
+	setVertexNoColorPoint(ppoint, &pvertices[2], -50,  50, 0, 0,			 TEXTURE_HEIGHT);
+	setVertexNoColorPoint(ppoint, &pvertices[3],  50,  50, 0, TEXTURE_WIDTH, TEXTURE_HEIGHT);
 }
 
 
@@ -387,10 +488,18 @@ void drawRectangles()
 {
 	createTexture(&rectangle1color, textureType1, texture1, TEXTURE_WIDTH, TEXTURE_HEIGHT);
 	createTexture(&rectangle2color, textureType2, texture2, TEXTURE_WIDTH, TEXTURE_HEIGHT);
-	setVerticesColor(&rectangle1color, vertices1, sizeof(vertices1));
-	setVerticesColor(&rectangle2color, vertices2, sizeof(vertices2));
-	setRectanglePoint(&rectangle1point, vertices1);
-	setRectanglePoint(&rectangle2point, vertices2);
+	if (vertexColorFlag)
+	{
+		setVerticesColor(&rectangle1color, vertices1, sizeof(vertices1));
+		setVerticesColor(&rectangle2color, vertices2, sizeof(vertices2));
+		setRectanglePoint(&rectangle1point, vertices1);
+		setRectanglePoint(&rectangle2point, vertices2);
+	}
+	else
+	{
+		setNoColorRectanglePoint(&rectangle1point, (struct VertexNoColor *) vertices1);
+		setNoColorRectanglePoint(&rectangle2point, (struct VertexNoColor *) vertices2);
+	}
 
 	int clearFlags = 0;
 	if (clearFlagColor   != 0) clearFlags |= GU_COLOR_BUFFER_BIT;
@@ -411,23 +520,58 @@ void drawRectangles()
 	}
 
 	sceGuDepthMask(depthMask);
+	sceGuDepthFunc(depthFunc);
 	sceGuAlphaFunc(alphaFunc, alphaReference, 0xFF);
 	sceGuBlendFunc(blendOp, blendFuncSrc, blendFuncDst, 0, 0);
+	sceGuDepthRange(nearZ, farZ);
+	int materialFlags = 0;
+	if (materialAmbientFlag ) materialFlags |= GU_AMBIENT;
+	if (materialDiffuseFlag ) materialFlags |= GU_DIFFUSE;
+	if (materialSpecularFlag) materialFlags |= GU_SPECULAR;
+	sceGuColorMaterial(materialFlags);
+	sceGuMaterial(GU_AMBIENT , getColor(&materialAmbient ));
+	sceGuMaterial(GU_DIFFUSE , getColor(&materialDiffuse ));
+	sceGuMaterial(GU_SPECULAR, getColor(&materialSpecular));
+	if (materialEmissiveFlag)
+	{
+		sendCommandi(84, getColor(&materialEmissive));
+	}
 
-	sceGuColorMaterial(0);
 	drawStates(stateValues1);
-	sceGuTexMode(GU_PSM_8888,0,0,0);
-	sceGuTexImage(0, TEXTURE_WIDTH, TEXTURE_HEIGHT, TEXTURE_WIDTH, texture1);
+	sceKernelDcacheWritebackAll();
+	sceGuTexMode(GU_PSM_8888, 0, texture1_a2, 0);
+	sceGuTexImage(0, TEXTURE_WIDTH, TEXTURE_HEIGHT, TEXTURE_WIDTH, texture1); 
 	sceGuTexFunc(texFunc1, texFuncAlpha1);
 	sceGuTexFilter(GU_NEAREST, GU_NEAREST);
 	sceGuTexWrap(GU_CLAMP, GU_CLAMP);
 	sceGuTexScale(1,1);
 	sceGuTexOffset(0,0);
 	sceGuAmbientColor(0xffffffff);
-	sceGuDrawArray(GU_TRIANGLE_STRIP, GU_TEXTURE_32BITF | GU_COLOR_8888 | GU_VERTEX_32BITF | GU_TRANSFORM_2D, sizeof(vertices1) / sizeof(struct Vertex), 0, vertices1);
+	int vertexFlags = GU_TRANSFORM_2D;
+#ifdef USE_TEXTURE_8BIT
+	vertexFlags |= GU_TEXTURE_8BIT;
+#endif
+#ifdef USE_TEXTURE_16BIT
+	vertexFlags |= GU_TEXTURE_16BIT;
+#endif
+#ifdef USE_TEXTURE_32BITF
+	vertexFlags |= GU_TEXTURE_32BITF;
+#endif
+
+#ifdef USE_VERTEX_8BIT
+	vertexFlags |= GU_VERTEX_8BIT;
+#endif
+#ifdef USE_VERTEX_16BIT
+	vertexFlags |= GU_VERTEX_16BIT;
+#endif
+#ifdef USE_VERTEX_32BITF
+	vertexFlags |= GU_VERTEX_32BITF;
+#endif
+	if (vertexColorFlag) vertexFlags |= GU_COLOR_8888;
+	sceGuDrawArray(GU_TRIANGLE_STRIP, vertexFlags, sizeof(vertices1) / sizeof(struct Vertex), 0, vertices1);
 
 	drawStates(stateValues2);
-	sceGuTexMode(GU_PSM_8888,0,0,0);
+	sceGuTexMode(GU_PSM_8888, 0, texture2_a2, 0);
 	sceGuTexImage(0, TEXTURE_WIDTH, TEXTURE_HEIGHT, TEXTURE_WIDTH, texture2);
 	sceGuTexFunc(texFunc2, texFuncAlpha2);
 	sceGuTexFilter(GU_NEAREST, GU_NEAREST);
@@ -435,7 +579,7 @@ void drawRectangles()
 	sceGuTexScale(1,1);
 	sceGuTexOffset(0,0);
 	sceGuAmbientColor(0xffffffff);
-	sceGuDrawArray(GU_TRIANGLE_STRIP, GU_TEXTURE_32BITF | GU_COLOR_8888 | GU_VERTEX_32BITF | GU_TRANSFORM_2D, sizeof(vertices2) / sizeof(struct Vertex), 0, vertices2);
+	sceGuDrawArray(GU_TRIANGLE_STRIP, vertexFlags, sizeof(vertices2) / sizeof(struct Vertex), 0, vertices2);
 
 	if (clearMode != 0)
 	{
@@ -508,6 +652,14 @@ void init()
 	setAttributeValueNames(&depthMaskNames[0]);
 	y++;
 
+	addAttribute("sceGuDepthFunc", &depthFunc, x, y, 0, 7, 1);
+	setAttributeValueNames(&alphaFuncNames[0]);
+	y++;
+
+	addAttribute("NearZ", &nearZ, x, y, 0, 0xFFFF, 5000);
+	addAttribute(", FarZ", &farZ, x + 12, y, 0, 0xFFFF, 5000);
+	y++;
+
 	addAttribute("sceGuAlphaFunc", &alphaFunc, x, y, 0, 7, 1);
 	setAttributeValueNames(&alphaFuncNames[0]);
 	addAttribute(", Reference", &alphaReference, x + 27, y, 0, 255, 10);
@@ -531,14 +683,11 @@ void init()
 	rectangle1point.y = 100;
 	rectangle1point.z = 0;
 
-	addAttribute("Rect1 X", &rectangle1point.x, x, y, 200, 400, 5);
-	addAttribute(", Y", &rectangle1point.y, x + 12, y, 0, 250, 5);
+	addAttribute("Rect1 X", &rectangle1point.x, x, y, -50, 400, 5);
+	addAttribute(", Y", &rectangle1point.y, x + 12, y, -50, 250, 5);
 	addAttribute(", Z", &rectangle1point.z, x + 20, y, -50, 50, 5);
 	y++;
-	addAttribute("R", &rectangle1color.r, x + 6, y, 0, 0xFF, 10);
-	addAttribute(", G", &rectangle1color.g, x + 12, y, 0, 0xFF, 10);
-	addAttribute(", B", &rectangle1color.b, x + 20, y, 0, 0xFF, 10);
-	addAttribute(", A", &rectangle1color.a, x + 28, y, 0, 0xFF, 10);
+	addColorAttribute("R", &rectangle1color, x + 6, y, 1);
 	y++;
 
 	addAttribute("sceGuTexFunc", &texFunc1, x + 6, y, 0, 4, 1);
@@ -550,6 +699,9 @@ void init()
 
 	addAttribute("Texture Type", &textureType1, x + 6, y, 0, 5, 1);
 	setAttributeValueNames(&textureTypeNames[0]);
+	y++;
+
+	addAttribute("Texture a2", &texture1_a2, x + 6, y, 0, 1, 1);
 	y++;
 
 	rectangle2color.r = 0xFF;
@@ -564,10 +716,7 @@ void init()
 	addAttribute(", Y", &rectangle2point.y, x + 12, y, 0, 250, 5);
 	addAttribute(", Z", &rectangle2point.z, x + 20, y, -50, 50, 5);
 	y++;
-	addAttribute("R", &rectangle2color.r, x + 6, y, 0, 0xFF, 10);
-	addAttribute(", G", &rectangle2color.g, x + 12, y, 0, 0xFF, 10);
-	addAttribute(", B", &rectangle2color.b, x + 20, y, 0, 0xFF, 10);
-	addAttribute(", A", &rectangle2color.a, x + 28, y, 0, 0xFF, 10);
+	addColorAttribute("R", &rectangle2color, x + 6, y, 1);
 	y++;
 
 	addAttribute("sceGuTexFunc", &texFunc2, x + 6, y, 0, 4, 1);
@@ -581,15 +730,15 @@ void init()
 	setAttributeValueNames(&textureTypeNames[0]);
 	y++;
 
+	addAttribute("Texture a2", &texture2_a2, x + 6, y, 0, 1, 1);
+	y++;
+
 	backgroundColor.r = 70;
 	backgroundColor.g = 70;
 	backgroundColor.b = 70;
 	backgroundColor.a = 0xFF;
 
-	addAttribute("Background R", &backgroundColor.r, x, y, 0, 0xFF, 10);
-	addAttribute(", G", &backgroundColor.g, x + 17, y, 0, 0xFF, 10);
-	addAttribute(", B", &backgroundColor.b, x + 25, y, 0, 0xFF, 10);
-	addAttribute(", A", &backgroundColor.a, x + 33, y, 0, 0xFF, 10);
+	addColorAttribute("Background R", &backgroundColor, x, y, 1);
 	y++;
 
 	addAttribute("Clear Mode", &clearMode, x, y, 0, 1, 1);
@@ -603,162 +752,195 @@ void init()
 	addAttribute(", Stencil", &clearFlagStencil, x + 16 + 13, y, 0, 1, 1);
 	setAttributeValueNames(&onOffNames[0]);
 	y++;
+
+	materialAmbient.r  = 0xE0;
+	materialAmbient.g  = 0xE0;
+	materialAmbient.b  = 0xE0;
+	materialAmbient.a  = 0xFF;
+	materialSpecular.r = 0xE0;
+	materialSpecular.g = 0xE0;
+	materialSpecular.b = 0xE0;
+	materialDiffuse.r  = 0xE0;
+	materialDiffuse.g  = 0xE0;
+	materialDiffuse.b  = 0xE0;
+	materialEmissive.r = 0xE0;
+	materialEmissive.g = 0xE0;
+	materialEmissive.b = 0xE0;
+
+	addAttribute("Material Emissive", &materialEmissiveFlag, x, y, 0, 1, 1);
+	setAttributeValueNames(&onOffNames[0]);
+	addColorAttribute(", R", &materialEmissive, x + 22, y, 0);
+	y++;
+	addAttribute("Material Diffuse ", &materialDiffuseFlag, x, y, 0, 1, 1);
+	setAttributeValueNames(&onOffNames[0]);
+	addColorAttribute(", R", &materialDiffuse , x + 22, y, 0);
+	y++;
+	addAttribute("Material Specular", &materialSpecularFlag, x, y, 0, 1, 1);
+	setAttributeValueNames(&onOffNames[0]);
+	addColorAttribute(", R", &materialSpecular, x + 22, y, 0);
+	y++;
+	addAttribute("Material Ambient ", &materialAmbientFlag, x, y, 0, 1, 1);
+	setAttributeValueNames(&onOffNames[0]);
+	addColorAttribute(", R", &materialAmbient , x + 22, y, 1);
+	y++;
+	addAttribute("Use Vertex Color", &vertexColorFlag, x, y, 0, 1, 1);
+	setAttributeValueNames(&onOffNames[0]);
 }
 
 
 int main(int argc, char *argv[])
 {
-    SceCtrlData pad;
-    int oldButtons = 0;
-#define SECOND       1000000
+	SceCtrlData pad;
+	int oldButtons = 0;
+#define SECOND	   1000000
 #define REPEAT_START (1 * SECOND)
 #define REPEAT_DELAY (SECOND / 5)
-    struct timeval repeatStart;
-    struct timeval repeatDelay;
+	struct timeval repeatStart;
+	struct timeval repeatDelay;
 
-    repeatStart.tv_sec = 0;
-    repeatStart.tv_usec = 0;
-    repeatDelay.tv_sec = 0;
-    repeatDelay.tv_usec = 0;
+	repeatStart.tv_sec = 0;
+	repeatStart.tv_usec = 0;
+	repeatDelay.tv_sec = 0;
+	repeatDelay.tv_usec = 0;
 
-    init();
+	init();
 
-    while(!done)
-    {
-	draw();
-
-        sceCtrlReadBufferPositive(&pad, 1);
-        int buttonDown = (oldButtons ^ pad.Buttons) & pad.Buttons;
-
-	if (pad.Buttons == oldButtons)
+	while(!done)
 	{
-		struct timeval now;
-		gettimeofday(&now, NULL);
-		if (repeatStart.tv_sec == 0)
-		{
-			repeatStart.tv_sec = now.tv_sec;
-			repeatStart.tv_usec = now.tv_usec;
-			repeatDelay.tv_sec = 0;
-			repeatDelay.tv_usec = 0;
-		}
-		else
-		{
-			long usec = (now.tv_sec - repeatStart.tv_sec) * SECOND;
-			usec += (now.tv_usec - repeatStart.tv_usec);
-			if (usec >= REPEAT_START)
-			{
-				if (repeatDelay.tv_sec != 0)
-				{
-					usec = (now.tv_sec - repeatDelay.tv_sec) * SECOND;
-					usec += (now.tv_usec - repeatDelay.tv_usec);
-					if (usec >= REPEAT_DELAY)
-					{
-						repeatDelay.tv_sec = 0;
-					}
-				}
+		draw();
 
-				if (repeatDelay.tv_sec == 0)
+		sceCtrlReadBufferPositive(&pad, 1);
+		int buttonDown = (oldButtons ^ pad.Buttons) & pad.Buttons;
+
+		if (pad.Buttons == oldButtons)
+		{
+			struct timeval now;
+			gettimeofday(&now, NULL);
+			if (repeatStart.tv_sec == 0)
+			{
+				repeatStart.tv_sec = now.tv_sec;
+				repeatStart.tv_usec = now.tv_usec;
+				repeatDelay.tv_sec = 0;
+				repeatDelay.tv_usec = 0;
+			}
+			else
+			{
+				long usec = (now.tv_sec - repeatStart.tv_sec) * SECOND;
+				usec += (now.tv_usec - repeatStart.tv_usec);
+				if (usec >= REPEAT_START)
 				{
-					buttonDown = pad.Buttons;
-					repeatDelay.tv_sec = now.tv_sec;
-					repeatDelay.tv_usec = now.tv_usec;
+					if (repeatDelay.tv_sec != 0)
+					{
+						usec = (now.tv_sec - repeatDelay.tv_sec) * SECOND;
+						usec += (now.tv_usec - repeatDelay.tv_usec);
+						if (usec >= REPEAT_DELAY)
+						{
+							repeatDelay.tv_sec = 0;
+						}
+					}
+
+					if (repeatDelay.tv_sec == 0)
+					{
+						buttonDown = pad.Buttons;
+						repeatDelay.tv_sec = now.tv_sec;
+						repeatDelay.tv_usec = now.tv_usec;
+					}
 				}
 			}
 		}
+		else
+		{
+			repeatStart.tv_sec = 0;
+		}
+
+		struct attribute *pattribute = &attributes[selectedAttribute];
+
+		if (buttonDown & PSP_CTRL_CROSS)
+		{
+		}
+
+		if (buttonDown & PSP_CTRL_LEFT)
+		{
+			*(pattribute->pvalue) -= pattribute->step;
+			if (*(pattribute->pvalue) < pattribute->min)
+			{
+				*(pattribute->pvalue) = pattribute->min;
+			}
+		}
+
+		if (buttonDown & PSP_CTRL_RIGHT)
+		{
+			*(pattribute->pvalue) += pattribute->step;
+			if (*(pattribute->pvalue) > pattribute->max)
+			{
+				*(pattribute->pvalue) = pattribute->max;
+			}
+		}
+
+		if (buttonDown & PSP_CTRL_UP)
+		{
+			selectedAttribute--;
+			if (selectedAttribute < 0)
+			{
+				selectedAttribute = nattributes - 1;
+			}
+		}
+
+		if (buttonDown & PSP_CTRL_DOWN)
+		{
+			selectedAttribute++;
+			if (selectedAttribute >= nattributes)
+			{
+				selectedAttribute = 0;
+			}
+		}
+
+
+		if (buttonDown & PSP_CTRL_TRIANGLE)
+		{
+			done = 1;
+		}
+
+		oldButtons = pad.Buttons;
 	}
-	else
-	{
-		repeatStart.tv_sec = 0;
-	}
 
-	struct attribute *pattribute = &attributes[selectedAttribute];
+	sceGuTerm();
 
-        if (buttonDown & PSP_CTRL_CROSS)
-        {
-        }
-
-        if (buttonDown & PSP_CTRL_LEFT)
-        {
-		*(pattribute->pvalue) -= pattribute->step;
-		if (*(pattribute->pvalue) < pattribute->min)
-		{
-			*(pattribute->pvalue) = pattribute->min;
-		}
-        }
-
-        if (buttonDown & PSP_CTRL_RIGHT)
-        {
-		*(pattribute->pvalue) += pattribute->step;
-		if (*(pattribute->pvalue) > pattribute->max)
-		{
-			*(pattribute->pvalue) = pattribute->max;
-		}
-        }
-
-        if (buttonDown & PSP_CTRL_UP)
-        {
-		selectedAttribute--;
-		if (selectedAttribute < 0)
-		{
-			selectedAttribute = nattributes - 1;
-		}
-        }
-
-        if (buttonDown & PSP_CTRL_DOWN)
-        {
-		selectedAttribute++;
-		if (selectedAttribute >= nattributes)
-		{
-			selectedAttribute = 0;
-		}
-        }
-
-
-        if (buttonDown & PSP_CTRL_TRIANGLE)
-	{
-        	done = 1;
-	}
-
-        oldButtons = pad.Buttons;
-    }
-
-    sceGuTerm();
-
-    sceKernelExitGame();
-    return 0;
+	sceKernelExitGame();
+	return 0;
 }
 
 /* Exit callback */
 int exit_callback(int arg1, int arg2, void *common)
 {
-    done = 1;
-    return 0;
+	done = 1;
+	return 0;
 }
 
 /* Callback thread */
 int CallbackThread(SceSize args, void *argp)
 {
-    int cbid;
+	int cbid;
 
-    cbid = sceKernelCreateCallback("Exit Callback", exit_callback, (void*)0);
-    sceKernelRegisterExitCallback(cbid);
+	cbid = sceKernelCreateCallback("Exit Callback", exit_callback, (void*)0);
+	sceKernelRegisterExitCallback(cbid);
 
-    sceKernelSleepThreadCB();
+	sceKernelSleepThreadCB();
 
-    return 0;
+	return 0;
 }
 
 /* Sets up the callback thread and returns its thread id */
 int SetupCallbacks(void)
 {
-    int thid = 0;
+	int thid = 0;
 
-    thid = sceKernelCreateThread("CallbackThread", CallbackThread, 0x11, 0xFA0, 0, 0);
-    if(thid >= 0)
-    {
-        sceKernelStartThread(thid, 0, 0);
-    }
+	thid = sceKernelCreateThread("CallbackThread", CallbackThread, 0x11, 0xFA0, 0, 0);
+	if(thid >= 0)
+	{
+		sceKernelStartThread(thid, 0, 0);
+	}
 
-    return thid;
+	return thid;
 }
 

@@ -3293,8 +3293,14 @@ public class VideoEngine {
             gl.glLoadMatrixf(proj_uploaded_matrix, 0);
         } else {
             gl.glDepthFunc(depthFunc2D);
-            // 2D mode shouldn't be affected by the lighting
-        	gl.glOrtho(0.0, 480, 272, 0, Double.MAX_VALUE, Double.MIN_VALUE);
+
+            // Do not set the Z clipping plane for glOrtho:
+            // I don't know what are the min. and max. allowed values,
+            // but using Double.MAX_VALUE and Double.MIN_VALUE does not work.
+            // So try using some other large value (1000000)...
+        	gl.glOrtho(0.0, 480, 272, 0, 1000000, -1000000);
+
+        	// 2D mode shouldn't be affected by the lighting
             gl.glPushAttrib(GL.GL_LIGHTING_BIT);
             gl.glDisable(GL.GL_LIGHTING);
             if(useShaders) {

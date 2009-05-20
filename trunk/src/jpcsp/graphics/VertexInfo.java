@@ -200,7 +200,7 @@ public class VertexInfo {
                 v.c[2] = ((packed >> 11) & 0x1f) / 31.0f;
                 v.c[3] = 0.0f; // 1.0f
                 // Alpha needs confirming, other components have been checked (fiveofhearts)
-                VideoEngine.log.warn("color type " + color + " untested");
+                VideoEngine.log.debug("color type " + color + " untested");
             	break;
             }
 
@@ -283,15 +283,16 @@ public class VertexInfo {
         //VideoEngine.log.debug("position " + String.format("0x%08x", addr));
         switch (position) {
             case 1:
-            	// Signed 8 bit
-                v.p[0] = (byte)mem.read8(addr); addr += 1;
-                v.p[1] = (byte)mem.read8(addr); addr += 1;
-                v.p[2] = (byte)mem.read8(addr); addr += 1;
-            	if (transform2D == 0) {
-            		// To be mapped to [-1..1] for 3D
-            		v.p[0] /= 0x7f;
-            		v.p[1] /= 0x7f;
-            		v.p[2] /= 0x7f;
+            	if (transform2D == 1) {
+            		// X and Y are signed 8 bit, Z is unsigned 8 bit
+                    v.p[0] = (byte) mem.read8(addr); addr += 1;
+                    v.p[1] = (byte) mem.read8(addr); addr += 1;
+                    v.p[2] =        mem.read8(addr); addr += 1;
+            	} else {
+	            	// Signed 8 bit, to be mapped to [-1..1] for 3D
+	                v.p[0] = ((byte)mem.read8(addr)) / 127f; addr += 1;
+	                v.p[1] = ((byte)mem.read8(addr)) / 127f; addr += 1;
+	                v.p[2] = ((byte)mem.read8(addr)) / 127f; addr += 1;
             	}
             	if (VideoEngine.log.isTraceEnabled()) {
             		VideoEngine.log.trace("vertex type 1 " + v.p[0] + ", " + v.p[1] + ", " + v.p[2] + " transform2D=" + transform2D);
@@ -299,15 +300,16 @@ public class VertexInfo {
                 break;
             case 2:
             	addr = (addr + 1) & ~1;
-            	// Signed 16 bit
-        		v.p[0] = (short)mem.read16(addr); addr += 2;
-        		v.p[1] = (short)mem.read16(addr); addr += 2;
-        		v.p[2] = (short)mem.read16(addr); addr += 2;
-            	if (transform2D == 0) {
-            		// To be mapped to [-1..1] for 3D
-            		v.p[0] /= 0x7fff;
-            		v.p[1] /= 0x7fff;
-            		v.p[2] /= 0x7fff;
+            	if (transform2D == 1) {
+            		// X and Y are signed 16 bit, Z is unsigned 16 bit
+	        		v.p[0] = (short)mem.read16(addr); addr += 2;
+	        		v.p[1] = (short)mem.read16(addr); addr += 2;
+	        		v.p[2] =        mem.read16(addr); addr += 2;
+            	} else {
+	            	// Signed 16 bit, to be mapped to [-1..1] for 3D
+	        		v.p[0] = ((short)mem.read16(addr)) / 32767f; addr += 2;
+	        		v.p[1] = ((short)mem.read16(addr)) / 32767f; addr += 2;
+	        		v.p[2] = ((short)mem.read16(addr)) / 32767f; addr += 2;
             	}
             	if (VideoEngine.log.isTraceEnabled()) {
             		VideoEngine.log.trace("vertex type 2 " + v.p[0] + ", " + v.p[1] + ", " + v.p[2] + " transform2D=" + transform2D + ", addr=0x" + Integer.toHexString(addr - 6));
@@ -318,6 +320,12 @@ public class VertexInfo {
                 v.p[0] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
                 v.p[1] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
                 v.p[2] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+                if (transform2D == 1) {
+                	// Negative Z are interpreted as 0
+                	if (v.p[2] < 0) {
+                		v.p[2] = 0;
+                	}
+                }
             	if (VideoEngine.log.isTraceEnabled()) {
             		VideoEngine.log.trace("vertex type 3 " + v.p[0] + ", " + v.p[1] + ", " + v.p[2] + " transform2D=" + transform2D);
             	}
