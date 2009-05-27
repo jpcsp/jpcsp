@@ -202,6 +202,8 @@ public class VideoEngine {
     private int[] tmp_clut_buffer32 = new int[4096];
     private short[] tmp_clut_buffer16 = new short[4096];
     private int tex_map_mode = TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV;
+    private int tex_proj_map_mode = TMAP_TEXTURE_PROJECTION_MODE_POSITION;
+
 
     private boolean listHasEnded;
     //private DisplayList currentList; // The currently executing list
@@ -1567,8 +1569,10 @@ public class VideoEngine {
 
             case TMAP:
             	tex_map_mode = normalArgument & 3;
+            	tex_proj_map_mode = (normalArgument >> 8) & 3;
                 if (log.isDebugEnabled()) {
                     log ("sceGuTexMapMode(mode=" + tex_map_mode + ", X, X)");
+                    log ("sceGuTexProjMapMode(mode=" + tex_proj_map_mode + ")");
                 }
             	break;
 
@@ -1767,8 +1771,32 @@ public class VideoEngine {
 
                 boolean useVertexColor = initRendering();
 
+                boolean useTexture = false;
+                boolean useTextureFromNormal = false;
+                boolean useTextureFromPosition = false;
+                if (vinfo.texture != 0) {
+                	useTexture = true;
+                } else if (tex_enable == 1 && transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
+                	switch (tex_proj_map_mode) {
+                		// What is the difference between MODE_NORMAL and MODE_NORMALIZED_NORMAL?
+                		case TMAP_TEXTURE_PROJECTION_MODE_NORMAL:
+                		case TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL:
+                			if (vinfo.normal != 0) {
+                				useTexture = true;
+                				useTextureFromNormal = true;
+                			}
+                			break;
+                		case TMAP_TEXTURE_PROJECTION_MODE_POSITION:
+                			if (vinfo.position != 0) {
+                				useTexture = true;
+                				useTextureFromPosition = true;
+                			}
+                			break;
+                	}
+                }
+
                 Memory mem = Memory.getInstance();
-                bindBuffers(useVertexColor, false);
+                bindBuffers(useVertexColor, useTexture);
                 vboBuffer.clear();
 
                 switch (type) {
@@ -1782,6 +1810,8 @@ public class VideoEngine {
                             int addr = vinfo.getAddress(mem, i);
                             VertexState v = vinfo.readVertex(mem, addr);
                             if (vinfo.texture  != 0) vboBuffer.put(v.t);
+                            else if (useTextureFromNormal) vboBuffer.put(v.n, 0, 2);
+                            else if (useTextureFromPosition) vboBuffer.put(v.p, 0, 2);
                             if (useVertexColor) vboBuffer.put(v.c);
                             if (vinfo.normal   != 0) vboBuffer.put(v.n);
                             if (vinfo.position != 0) {
@@ -2697,7 +2727,7 @@ public class VideoEngine {
     	if(useVBO) {
         	gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vboBufferId[0]);
 
-        	if(vinfo.texture != 0) {
+        	if(vinfo.texture != 0 || useTexture) {
             	gl.glTexCoordPointer(2, GL.GL_FLOAT, stride, 0);
             }
             if(useVertexColor) {
@@ -2708,7 +2738,7 @@ public class VideoEngine {
             }
             gl.glVertexPointer(3, GL.GL_FLOAT, stride, vpos);
         } else {
-		    if(vinfo.texture != 0) {
+		    if(vinfo.texture != 0 || useTexture) {
 		    	gl.glTexCoordPointer(2, GL.GL_FLOAT, stride, vboBuffer.position(0));
 		    }
 		    if(useVertexColor) {
