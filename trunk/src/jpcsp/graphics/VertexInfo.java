@@ -182,6 +182,9 @@ public class VertexInfo {
             	addr = (addr + 3) & ~3;
                 v.t[0] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
                 v.t[1] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+            	if (VideoEngine.log.isTraceEnabled()) {
+            		VideoEngine.log.trace("texture type 3 " + v.t[0] + ", " + v.t[1] + " transform2D=" + transform2D);
+            	}
                 break;
         }
 
