@@ -81,10 +81,14 @@ public class Texture {
 					break;
 				case GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_ABGR8888:
 				case GeCommands.TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED:
+					bufferLengthInBytes = bufferLengthInBytes * 4;
+					break;
 				case GeCommands.TPSM_PIXEL_STORAGE_MODE_DXT1:
+					bufferLengthInBytes = VideoEngine.getCompressedTextureSize(lineWidth, height, 8);
+					break;
 				case GeCommands.TPSM_PIXEL_STORAGE_MODE_DXT3:
 				case GeCommands.TPSM_PIXEL_STORAGE_MODE_DXT5:
-					bufferLengthInBytes = bufferLengthInBytes * 4;
+					bufferLengthInBytes = VideoEngine.getCompressedTextureSize(lineWidth, height, 4);
 					break;
 				case GeCommands.TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED:
 					bufferLengthInBytes = bufferLengthInBytes / 2;

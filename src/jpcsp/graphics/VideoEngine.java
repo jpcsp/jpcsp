@@ -1876,7 +1876,7 @@ public class VideoEngine {
                         break;
                 }
 
-                endRendering(useVertexColor);
+                endRendering(useVertexColor, useTexture);
                 break;
             }
 
@@ -2941,6 +2941,8 @@ public class VideoEngine {
 	            texaddr = texture_base_pointer[level];
 	            texaddr &= 0xFFFFFFF;
 	            texture_format = GL.GL_RGBA;
+	            boolean compressedTexture = false;
+	            int compressedTextureSize = 0;
 
 	            switch (texture_storage) {
 	                case TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED: {
@@ -3181,20 +3183,74 @@ public class VideoEngine {
 	                }
 
                     case TPSM_PIXEL_STORAGE_MODE_DXT1: {
-                        texture_type = GL.GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
-                        final_buffer = getTexture32BitBuffer(texaddr, level);
+                    	if (log.isDebugEnabled()) {
+                    		log.debug("Loading texture TPSM_PIXEL_STORAGE_MODE_DXT1 " + Integer.toHexString(texaddr));
+                    	}
+                        texture_type = GL.GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+                        compressedTexture = true;
+	                    compressedTextureSize = getCompressedTextureSize(level, 8);
+                    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, compressedTextureSize, 4);
+                    	// PSP DXT1 hardware format reverses the colors and the per-pixel
+                    	// bits, and encodes the color in RGB 565 format
+                    	int n = compressedTextureSize / 4;
+                        for (int i = 0; i < n; i += 2) {
+                            tmp_texture_buffer32[i + 1] = memoryReader.readNext();
+                            tmp_texture_buffer32[i + 0] = memoryReader.readNext();
+                        }
+                        final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
                         break;
                     }
 
                     case TPSM_PIXEL_STORAGE_MODE_DXT3: {
+                    	if (log.isDebugEnabled()) {
+                    		log.debug("Loading texture TPSM_PIXEL_STORAGE_MODE_DXT3 " + Integer.toHexString(texaddr));
+                    	}
                         texture_type = GL.GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-                        final_buffer = getTexture32BitBuffer(texaddr, level);
+                        compressedTexture = true;
+	                    compressedTextureSize = getCompressedTextureSize(level, 4);
+                    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, compressedTextureSize, 4);
+                    	// PSP DXT3 format reverses the alpha and color parts of each block,
+                    	// and reverses the color and per-pixel terms in the color part.
+                    	int n = compressedTextureSize / 4;
+                        for (int i = 0; i < n; i += 4) {
+                        	// Color
+                            tmp_texture_buffer32[i + 3] = memoryReader.readNext();
+                            tmp_texture_buffer32[i + 2] = memoryReader.readNext();
+                            // Alpha
+                            tmp_texture_buffer32[i + 0] = memoryReader.readNext();
+                            tmp_texture_buffer32[i + 1] = memoryReader.readNext();
+                        }
+                        final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
                         break;
                     }
 
                     case TPSM_PIXEL_STORAGE_MODE_DXT5: {
+                    	log.warn("texture TPSM_PIXEL_STORAGE_MODE_DXT5 untested");
+                    	if (log.isDebugEnabled()) {
+                    		log.debug("Loading texture TPSM_PIXEL_STORAGE_MODE_DXT5 " + Integer.toHexString(texaddr));
+                    	}
                         texture_type = GL.GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-                        final_buffer = getTexture32BitBuffer(texaddr, level);
+                        compressedTexture = true;
+	                    compressedTextureSize = getCompressedTextureSize(level, 4);
+                    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, compressedTextureSize, 2);
+                    	// PSP DXT5 format reverses the alpha and color parts of each block,
+                    	// and reverses the color and per-pixel terms in the color part. In
+                    	// the alpha part, the 2 reference alpha values are swapped with the
+                    	// alpha interpolation values.
+                    	int n = compressedTextureSize / 2;
+                        for (int i = 0; i < n; i += 8) {
+                        	// Color
+                            tmp_texture_buffer16[i + 6] = (short) memoryReader.readNext();
+                            tmp_texture_buffer16[i + 7] = (short) memoryReader.readNext();
+                            tmp_texture_buffer16[i + 4] = (short) memoryReader.readNext();
+                            tmp_texture_buffer16[i + 5] = (short) memoryReader.readNext();
+                            // Alpha
+                            tmp_texture_buffer16[i + 1] = (short) memoryReader.readNext();
+                            tmp_texture_buffer16[i + 2] = (short) memoryReader.readNext();
+                            tmp_texture_buffer16[i + 3] = (short) memoryReader.readNext();
+                            tmp_texture_buffer16[i + 0] = (short) memoryReader.readNext();
+                        }
+                        final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
                         break;
                     }
 
@@ -3248,14 +3304,24 @@ public class VideoEngine {
                 }
                 */
 
-	            gl.glTexImage2D  (  GL.GL_TEXTURE_2D,
-	                                level,
-	                                texture_format,
-	                                texture_width[level], texture_height[level],
-	                                0,
-	                                texture_format,
-	                                texture_type,
-	                                final_buffer);
+	            if (compressedTexture) {
+		            gl.glCompressedTexImage2D  (  GL.GL_TEXTURE_2D,
+				                        level,
+				                        texture_type,
+				                        texture_width[level], texture_height[level],
+				                        0,
+				                        compressedTextureSize,
+				                        final_buffer);
+	            } else {
+		            gl.glTexImage2D  (  GL.GL_TEXTURE_2D,
+		                                level,
+		                                texture_format,
+		                                texture_width[level], texture_height[level],
+		                                0,
+		                                texture_format,
+		                                texture_type,
+		                                final_buffer);
+	            }
 
 	            if (texture != null) {
 	                texture.setIsLoaded();
@@ -3445,7 +3511,7 @@ public class VideoEngine {
         return useVertexColor;
     }
 
-    private void endRendering(boolean useVertexColor) {
+    private void endRendering(boolean useVertexColor, boolean useTexture) {
         switch (tex_map_mode) {
             case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP: {
                 gl.glDisable (GL.GL_TEXTURE_GEN_S);
@@ -3455,7 +3521,7 @@ public class VideoEngine {
         }
 
         gl.glDisableClientState(GL.GL_VERTEX_ARRAY);
-        if(vinfo.texture != 0) gl.glDisableClientState(GL.GL_TEXTURE_COORD_ARRAY);
+        if(vinfo.texture != 0 || useTexture) gl.glDisableClientState(GL.GL_TEXTURE_COORD_ARRAY);
         if(useVertexColor) gl.glDisableClientState(GL.GL_COLOR_ARRAY);
         if(vinfo.normal != 0) gl.glDisableClientState(GL.GL_NORMAL_ARRAY);
 
@@ -3528,7 +3594,8 @@ public class VideoEngine {
             Bernstein(last[v], px, temp);
         }
 
-        bindBuffers(useVertexColor, true);
+        boolean useTexture = true;
+        bindBuffers(useVertexColor, useTexture);
 
         float pyold = 0;
         for (int u = 1; u <= udivs; u++) {
@@ -3578,7 +3645,7 @@ public class VideoEngine {
             pyold = py;
         }
 
-        endRendering(useVertexColor);
+        endRendering(useVertexColor, useTexture);
     }
 
     private void pointAdd(VertexState result, VertexState p, VertexState q) {
@@ -3664,5 +3731,17 @@ public class VideoEngine {
         return (psm >= 0 && psm < psm_names.length)
             ? psm_names[psm % psm_names.length]
             : "PSM_UNKNOWN" + psm;
+    }
+
+    private int getCompressedTextureSize(int level, int compressionRatio) {
+    	return getCompressedTextureSize(texture_buffer_width[level], texture_height[level], compressionRatio);
+    }
+
+    public static int getCompressedTextureSize(int width, int height, int compressionRatio) {
+    	int compressedTextureWidth = ((width + 3) / 4) * 4;
+    	int compressedTextureHeight = ((height + 3) / 4) * 4;
+        int compressedTextureSize = compressedTextureWidth * compressedTextureHeight * 4 / compressionRatio;
+
+        return compressedTextureSize;
     }
 }
