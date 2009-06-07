@@ -674,7 +674,7 @@ public class VfpuState extends FpuState {
 
         float scale = v2[0];
 
-        for (int i = 1; i < vsize; ++i) {
+        for (int i = 0; i < vsize; ++i) {
             v1[i] *= scale;
         }
 
@@ -698,6 +698,7 @@ public class VfpuState extends FpuState {
             hdp += v1[i] * v2[i];
         }
 
+		// TODO Check if should add v2[i] or v1[i]*v2[i]?
         v2[0] = hdp + v2[i];
 
         saveVd(1, vd, v2);
@@ -1384,7 +1385,7 @@ public class VfpuState extends FpuState {
     public void doVOCP(int vsize, int vd, int vs) {
         loadVs(vsize, vs);
 
-        for (int i = 1; i < vsize; ++i) {
+        for (int i = 0; i < vsize; ++i) {
             v1[i] = 1.0f - v1[i];
         }
 
