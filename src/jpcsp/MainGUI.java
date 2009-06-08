@@ -319,7 +319,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         DebugMenu.add(EnterDebugger);
 
-        EnterMemoryViewer.setText("Memory viewer");
+        EnterMemoryViewer.setText("Memory Viewer");
         EnterMemoryViewer.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 EnterMemoryViewerActionPerformed(evt);
@@ -367,7 +367,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         DebugMenu.add(FileLog);
 
-        ToggleDebugLog.setText("Toggle Debug logging");
+        ToggleDebugLog.setText("Toggle Debug Logging");
         ToggleDebugLog.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 ToggleDebugLogActionPerformed(evt);
