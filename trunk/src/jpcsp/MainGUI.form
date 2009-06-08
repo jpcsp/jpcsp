@@ -109,7 +109,7 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="EnterMemoryViewer">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Memory viewer"/>
+                <Property name="text" type="java.lang.String" value="Memory Viewer"/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="EnterMemoryViewerActionPerformed"/>
@@ -157,7 +157,7 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="ToggleDebugLog">
               <Properties>
-                <Property name="text" type="java.lang.String" value="Toggle Debug logging"/>
+                <Property name="text" type="java.lang.String" value="Toggle Debug Logging"/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="ToggleDebugLogActionPerformed"/>

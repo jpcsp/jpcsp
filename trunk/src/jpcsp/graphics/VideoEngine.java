@@ -80,6 +80,7 @@ public class VideoEngine {
     private DurationStatistics statistics;
     private DurationStatistics[] commandStatistics;
     private boolean openGL1_2;
+    private boolean openGL1_5;
 
     private int fbp, fbw; // frame buffer pointer and width
     private int zbp, zbw; // depth buffer pointer and width
@@ -261,7 +262,8 @@ public class VideoEngine {
     	this.gl = gl;
     	this.glu = new GLU();
 
-        useVBO = !Settings.getInstance().readBool("emu.disablevbo") && gl.isFunctionAvailable("glGenBuffersARB") &&
+        useVBO = !Settings.getInstance().readBool("emu.disablevbo") &&
+            gl.isFunctionAvailable("glGenBuffersARB") &&
             gl.isFunctionAvailable("glBindBufferARB") &&
             gl.isFunctionAvailable("glBufferDataARB") &&
             gl.isFunctionAvailable("glDeleteBuffersARB") &&
@@ -288,13 +290,21 @@ public class VideoEngine {
         }
 
         openGL1_2 = getOpenGLVersion(gl).compareTo("1.2") >= 0;
+        openGL1_5 = getOpenGLVersion(gl).compareTo("1.5") >= 0;
     }
 
     private void buildVBO(GL gl) {
-        gl.glGenBuffers(1, vboBufferId, 0);
-        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vboBufferId[0]);
-        gl.glBufferData(GL.GL_ARRAY_BUFFER, vboBufferSize *
-                BufferUtil.SIZEOF_FLOAT, vboBuffer, GL.GL_STREAM_DRAW);
+        if (openGL1_5) {
+            gl.glGenBuffers(1, vboBufferId, 0);
+            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vboBufferId[0]);
+            gl.glBufferData(GL.GL_ARRAY_BUFFER, vboBufferSize *
+                    BufferUtil.SIZEOF_FLOAT, vboBuffer, GL.GL_STREAM_DRAW);
+        } else {
+            gl.glGenBuffersARB(1, vboBufferId, 0);
+            gl.glBindBufferARB(GL.GL_ARRAY_BUFFER, vboBufferId[0]);
+            gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, vboBufferSize *
+                    BufferUtil.SIZEOF_FLOAT, vboBuffer, GL.GL_STREAM_DRAW);
+        }
     }
 
     private void loadShaders(GL gl) {
@@ -1816,7 +1826,7 @@ public class VideoEngine {
                             if (vinfo.normal   != 0) vboBuffer.put(v.n);
                             if (vinfo.position != 0) {
                             	if(vinfo.weight != 0)
-                            		doSkinning(vinfo, v);
+                                    doSkinning(vinfo, v);
                                 vboBuffer.put(v.p);
                             }
                             if (log.isTraceEnabled()) {
@@ -1826,8 +1836,12 @@ public class VideoEngine {
                             }
                         }
 
-                        if(useVBO)
-                        	gl.glBufferData(GL.GL_ARRAY_BUFFER, vboBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboBuffer.rewind(), GL.GL_STREAM_DRAW);
+                        if(useVBO) {
+                            if (openGL1_5)
+                                gl.glBufferData(GL.GL_ARRAY_BUFFER, vboBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboBuffer.rewind(), GL.GL_STREAM_DRAW);
+                            else
+                                gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, vboBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboBuffer.rewind(), GL.GL_STREAM_DRAW);
+                        }
                         gl.glDrawArrays(prim_mapping[type], 0, numberOfVertex);
                         break;
 
@@ -1869,8 +1883,12 @@ public class VideoEngine {
                             if (vinfo.normal   != 0) vboBuffer.put(v2.n);
                             if (vinfo.position != 0) vboBuffer.put(v1.p[0]).put(v2.p[1]).put(v2.p[2]);
                         }
-                        if(useVBO)
-                        	gl.glBufferData(GL.GL_ARRAY_BUFFER, vboBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboBuffer.rewind(), GL.GL_STREAM_DRAW);
+                        if(useVBO) {
+                            if (openGL1_5)
+                                gl.glBufferData(GL.GL_ARRAY_BUFFER, vboBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboBuffer.rewind(), GL.GL_STREAM_DRAW);
+                            else
+                                gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, vboBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboBuffer.rewind(), GL.GL_STREAM_DRAW);
+                        }
                         gl.glDrawArrays(GL.GL_QUADS, 0, numberOfVertex * 2);
                         gl.glPopAttrib();
                         break;
@@ -2725,7 +2743,10 @@ public class VideoEngine {
         stride += BufferUtil.SIZEOF_FLOAT * 3;
 
     	if(useVBO) {
-        	gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vboBufferId[0]);
+            if (openGL1_5)
+                gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vboBufferId[0]);
+            else
+                gl.glBindBufferARB(GL.GL_ARRAY_BUFFER, vboBufferId[0]);
 
         	if(vinfo.texture != 0 || useTexture) {
             	gl.glTexCoordPointer(2, GL.GL_FLOAT, stride, 0);
@@ -3638,7 +3659,10 @@ public class VideoEngine {
             }
 
             if(useVBO) {
-                gl.glBufferData(GL.GL_ARRAY_BUFFER, vboBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboBuffer.rewind(), GL.GL_STREAM_DRAW);
+                if (openGL1_5)
+                    gl.glBufferData(GL.GL_ARRAY_BUFFER, vboBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboBuffer.rewind(), GL.GL_STREAM_DRAW);
+                else
+                    gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, vboBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboBuffer.rewind(), GL.GL_STREAM_DRAW);
             }
             gl.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, (vdivs + 1) * 2);
 
