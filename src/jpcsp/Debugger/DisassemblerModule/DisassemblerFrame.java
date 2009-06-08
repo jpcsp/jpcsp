@@ -49,6 +49,7 @@ import jpcsp.Allegrex.Instructions.*;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Common.Instruction;
+import jpcsp.Debugger.DumpDebugState;
 import static jpcsp.Allegrex.Common.gprNames;
 import jpcsp.util.*;
 
@@ -263,16 +264,16 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         // refresh registers
         // gpr
-        jTable1.setValueAt(Integer.toHexString(cpu.pc), 0, 1);
-        jTable1.setValueAt(Integer.toHexString(cpu.getHi()), 1, 1);
-        jTable1.setValueAt(Integer.toHexString(cpu.getLo()), 2, 1);
+        gprTable.setValueAt(Integer.toHexString(cpu.pc), 0, 1);
+        gprTable.setValueAt(Integer.toHexString(cpu.getHi()), 1, 1);
+        gprTable.setValueAt(Integer.toHexString(cpu.getLo()), 2, 1);
         for (int i = 0; i < 32; i++) {
-            jTable1.setValueAt(Integer.toHexString(cpu.gpr[i]), 3 + i, 1);
+            gprTable.setValueAt(Integer.toHexString(cpu.gpr[i]), 3 + i, 1);
         }
 
         // fpr
         for (int i = 0; i < 32; i++) {
-            jTable3.setValueAt(cpu.fpr[i], i, 1);
+            cop1Table.setValueAt(cpu.fpr[i], i, 1);
         }
 
         // vfpu
@@ -340,7 +341,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         RegMenu = new javax.swing.JPopupMenu();
         CopyValue = new javax.swing.JMenuItem();
         disasmList = new javax.swing.JList(listmodel);
-        DisasmToolbar = new javax.swing.JToolBar();
+        disasmToolbar = new javax.swing.JToolBar();
         RunDebugger = new javax.swing.JToggleButton();
         PauseDebugger = new javax.swing.JButton();
         jSeparator1 = new javax.swing.JToolBar.Separator();
@@ -356,27 +357,33 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         DeleteAllBreakpoints = new javax.swing.JButton();
         jSeparator3 = new javax.swing.JToolBar.Separator();
         DumpCodeToText = new javax.swing.JButton();
-        jTabbedPane1 = new javax.swing.JTabbedPane();
-        jTable1 = new javax.swing.JTable();
-        jTable2 = new javax.swing.JTable();
-        jTable3 = new javax.swing.JTable();
-        jPanel1 = new javax.swing.JPanel();
-        jToggleButton1 = new javax.swing.JToggleButton();
-        jToggleButton2 = new javax.swing.JToggleButton();
-        jToggleButton3 = new javax.swing.JToggleButton();
-        jToggleButton4 = new javax.swing.JToggleButton();
-        jToggleButton5 = new javax.swing.JToggleButton();
-        jToggleButton6 = new javax.swing.JToggleButton();
-        jToggleButton7 = new javax.swing.JToggleButton();
-        jToggleButton8 = new javax.swing.JToggleButton();
+        disasmTabs = new javax.swing.JTabbedPane();
+        gprTable = new javax.swing.JTable();
+        cop0Table = new javax.swing.JTable();
+        cop1Table = new javax.swing.JTable();
+        miscPanel = new javax.swing.JPanel();
+        gpiButton1 = new javax.swing.JToggleButton();
+        gpiButton2 = new javax.swing.JToggleButton();
+        gpiButton3 = new javax.swing.JToggleButton();
+        gpiButton4 = new javax.swing.JToggleButton();
+        gpiButton5 = new javax.swing.JToggleButton();
+        gpiButton6 = new javax.swing.JToggleButton();
+        gpiButton7 = new javax.swing.JToggleButton();
+        gpiButton8 = new javax.swing.JToggleButton();
+        gpoLabel1 = new javax.swing.JLabel();
+        gpoLabel2 = new javax.swing.JLabel();
+        gpoLabel3 = new javax.swing.JLabel();
+        gpoLabel4 = new javax.swing.JLabel();
+        gpoLabel5 = new javax.swing.JLabel();
+        gpoLabel6 = new javax.swing.JLabel();
+        gpoLabel7 = new javax.swing.JLabel();
+        gpoLabel8 = new javax.swing.JLabel();
+        gpioLabel = new javax.swing.JLabel();
         jLabel1 = new javax.swing.JLabel();
+        captureButton = new javax.swing.JButton();
+        replayButton = new javax.swing.JButton();
         jLabel2 = new javax.swing.JLabel();
-        jLabel3 = new javax.swing.JLabel();
-        jLabel4 = new javax.swing.JLabel();
-        jLabel5 = new javax.swing.JLabel();
-        jLabel6 = new javax.swing.JLabel();
-        jLabel7 = new javax.swing.JLabel();
-        jLabel8 = new javax.swing.JLabel();
+        dumpDebugStateButton = new javax.swing.JButton();
 
         CopyAddress.setText("Copy Address");
         CopyAddress.addActionListener(new java.awt.event.ActionListener() {
@@ -446,8 +453,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             }
         });
 
-        DisasmToolbar.setFloatable(false);
-        DisasmToolbar.setRollover(true);
+        disasmToolbar.setFloatable(false);
+        disasmToolbar.setRollover(true);
 
         RunDebugger.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PlayIcon.png"))); // NOI18N
         RunDebugger.setMnemonic('R');
@@ -461,7 +468,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 RunDebuggerActionPerformed(evt);
             }
         });
-        DisasmToolbar.add(RunDebugger);
+        disasmToolbar.add(RunDebugger);
 
         PauseDebugger.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PauseIcon.png"))); // NOI18N
         PauseDebugger.setMnemonic('P');
@@ -476,8 +483,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 PauseDebuggerActionPerformed(evt);
             }
         });
-        DisasmToolbar.add(PauseDebugger);
-        DisasmToolbar.add(jSeparator1);
+        disasmToolbar.add(PauseDebugger);
+        disasmToolbar.add(jSeparator1);
 
         StepInto.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StepIntoIcon.png"))); // NOI18N
         StepInto.setText("Step Into");
@@ -490,7 +497,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 StepIntoActionPerformed(evt);
             }
         });
-        DisasmToolbar.add(StepInto);
+        disasmToolbar.add(StepInto);
 
         jButton2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StepOverIcon.png"))); // NOI18N
         jButton2.setText("Step Over");
@@ -499,7 +506,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         jButton2.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
         jButton2.setIconTextGap(2);
         jButton2.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        DisasmToolbar.add(jButton2);
+        disasmToolbar.add(jButton2);
 
         jButton3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StepOutIcon.png"))); // NOI18N
         jButton3.setText("Step Out");
@@ -513,8 +520,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 jButton3ActionPerformed(evt);
             }
         });
-        DisasmToolbar.add(jButton3);
-        DisasmToolbar.add(jSeparator2);
+        disasmToolbar.add(jButton3);
+        disasmToolbar.add(jSeparator2);
 
         ResetToPCbutton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/ResetToPc.png"))); // NOI18N
         ResetToPCbutton.setMnemonic('P');
@@ -528,7 +535,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 ResetToPCbuttonActionPerformed(evt);
             }
         });
-        DisasmToolbar.add(ResetToPCbutton);
+        disasmToolbar.add(ResetToPCbutton);
 
         JumpToAddress.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/JumpTo.png"))); // NOI18N
         JumpToAddress.setMnemonic('J');
@@ -542,8 +549,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 JumpToAddressActionPerformed(evt);
             }
         });
-        DisasmToolbar.add(JumpToAddress);
-        DisasmToolbar.add(jSeparator4);
+        disasmToolbar.add(JumpToAddress);
+        disasmToolbar.add(jSeparator4);
 
         AddBreakpoint.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/NewBreakpointIcon.png"))); // NOI18N
         AddBreakpoint.setMnemonic('A');
@@ -557,7 +564,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 AddBreakpointActionPerformed(evt);
             }
         });
-        DisasmToolbar.add(AddBreakpoint);
+        disasmToolbar.add(AddBreakpoint);
 
         DeleteBreakpoint.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/DeleteBreakpointIcon.png"))); // NOI18N
         DeleteBreakpoint.setMnemonic('D');
@@ -572,7 +579,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 DeleteBreakpointActionPerformed(evt);
             }
         });
-        DisasmToolbar.add(DeleteBreakpoint);
+        disasmToolbar.add(DeleteBreakpoint);
 
         DeleteAllBreakpoints.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/DeleteAllBreakpointsIcon.png"))); // NOI18N
         DeleteAllBreakpoints.setMnemonic('E');
@@ -586,8 +593,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 DeleteAllBreakpointsActionPerformed(evt);
             }
         });
-        DisasmToolbar.add(DeleteAllBreakpoints);
-        DisasmToolbar.add(jSeparator3);
+        disasmToolbar.add(DeleteAllBreakpoints);
+        disasmToolbar.add(jSeparator3);
 
         DumpCodeToText.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/Dump.png"))); // NOI18N
         DumpCodeToText.setMnemonic('W');
@@ -601,9 +608,9 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 DumpCodeToTextActionPerformed(evt);
             }
         });
-        DisasmToolbar.add(DumpCodeToText);
+        disasmToolbar.add(DumpCodeToText);
 
-        jTable1.setModel(new javax.swing.table.DefaultTableModel(
+        gprTable.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {"PC", ""},
                 {"HI", null},
@@ -660,16 +667,16 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 return canEdit [columnIndex];
             }
         });
-        jTable1.setColumnSelectionAllowed(true);
-        jTable1.getTableHeader().setReorderingAllowed(false);
-        jTable1.addMouseListener(new java.awt.event.MouseAdapter() {
+        gprTable.setColumnSelectionAllowed(true);
+        gprTable.getTableHeader().setReorderingAllowed(false);
+        gprTable.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                jTable1MouseClicked(evt);
+                gprTableMouseClicked(evt);
             }
         });
-        jTabbedPane1.addTab("GPR", jTable1);
+        disasmTabs.addTab("GPR", gprTable);
 
-        jTable2.setModel(new javax.swing.table.DefaultTableModel(
+        cop0Table.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {null, null},
                 {null, null},
@@ -695,9 +702,9 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 return canEdit [columnIndex];
             }
         });
-        jTabbedPane1.addTab("COP0", jTable2);
+        disasmTabs.addTab("COP0", cop0Table);
 
-        jTable3.setModel(new javax.swing.table.DefaultTableModel(
+        cop1Table.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {"FPR0", null},
                 {"FPR1", null},
@@ -751,199 +758,258 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 return canEdit [columnIndex];
             }
         });
-        jTable3.setColumnSelectionAllowed(true);
-        jTable3.addMouseListener(new java.awt.event.MouseAdapter() {
+        cop1Table.setColumnSelectionAllowed(true);
+        cop1Table.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                jTable3MouseClicked(evt);
+                cop1TableMouseClicked(evt);
             }
         });
-        jTabbedPane1.addTab("COP1", jTable3);
+        disasmTabs.addTab("COP1", cop1Table);
 
-        jToggleButton1.setText("1");
-        jToggleButton1.setBorder(null);
-        jToggleButton1.setPreferredSize(new java.awt.Dimension(16, 16));
-        jToggleButton1.addActionListener(new java.awt.event.ActionListener() {
+        gpiButton1.setText("1");
+        gpiButton1.setBorder(null);
+        gpiButton1.setPreferredSize(new java.awt.Dimension(16, 16));
+        gpiButton1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jToggleButton1ActionPerformed(evt);
+                gpiButton1ActionPerformed(evt);
             }
         });
 
-        jToggleButton2.setText("2");
-        jToggleButton2.setBorder(null);
-        jToggleButton2.setPreferredSize(new java.awt.Dimension(16, 16));
-        jToggleButton2.addActionListener(new java.awt.event.ActionListener() {
+        gpiButton2.setText("2");
+        gpiButton2.setBorder(null);
+        gpiButton2.setPreferredSize(new java.awt.Dimension(16, 16));
+        gpiButton2.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jToggleButton2ActionPerformed(evt);
+                gpiButton2ActionPerformed(evt);
             }
         });
 
-        jToggleButton3.setText("3");
-        jToggleButton3.setBorder(null);
-        jToggleButton3.setPreferredSize(new java.awt.Dimension(16, 16));
-        jToggleButton3.addActionListener(new java.awt.event.ActionListener() {
+        gpiButton3.setText("3");
+        gpiButton3.setBorder(null);
+        gpiButton3.setPreferredSize(new java.awt.Dimension(16, 16));
+        gpiButton3.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jToggleButton3ActionPerformed(evt);
+                gpiButton3ActionPerformed(evt);
             }
         });
 
-        jToggleButton4.setText("4");
-        jToggleButton4.setBorder(null);
-        jToggleButton4.setPreferredSize(new java.awt.Dimension(16, 16));
-        jToggleButton4.addActionListener(new java.awt.event.ActionListener() {
+        gpiButton4.setText("4");
+        gpiButton4.setBorder(null);
+        gpiButton4.setPreferredSize(new java.awt.Dimension(16, 16));
+        gpiButton4.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jToggleButton4ActionPerformed(evt);
+                gpiButton4ActionPerformed(evt);
             }
         });
 
-        jToggleButton5.setText("5");
-        jToggleButton5.setBorder(null);
-        jToggleButton5.setPreferredSize(new java.awt.Dimension(16, 16));
-        jToggleButton5.addActionListener(new java.awt.event.ActionListener() {
+        gpiButton5.setText("5");
+        gpiButton5.setBorder(null);
+        gpiButton5.setPreferredSize(new java.awt.Dimension(16, 16));
+        gpiButton5.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jToggleButton5ActionPerformed(evt);
+                gpiButton5ActionPerformed(evt);
             }
         });
 
-        jToggleButton6.setText("6");
-        jToggleButton6.setBorder(null);
-        jToggleButton6.setPreferredSize(new java.awt.Dimension(16, 16));
-        jToggleButton6.addActionListener(new java.awt.event.ActionListener() {
+        gpiButton6.setText("6");
+        gpiButton6.setBorder(null);
+        gpiButton6.setPreferredSize(new java.awt.Dimension(16, 16));
+        gpiButton6.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jToggleButton6ActionPerformed(evt);
+                gpiButton6ActionPerformed(evt);
             }
         });
 
-        jToggleButton7.setText("7");
-        jToggleButton7.setBorder(null);
-        jToggleButton7.setPreferredSize(new java.awt.Dimension(16, 16));
-        jToggleButton7.addActionListener(new java.awt.event.ActionListener() {
+        gpiButton7.setText("7");
+        gpiButton7.setBorder(null);
+        gpiButton7.setPreferredSize(new java.awt.Dimension(16, 16));
+        gpiButton7.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jToggleButton7ActionPerformed(evt);
+                gpiButton7ActionPerformed(evt);
             }
         });
 
-        jToggleButton8.setText("8");
-        jToggleButton8.setBorder(null);
-        jToggleButton8.setPreferredSize(new java.awt.Dimension(16, 16));
-        jToggleButton8.addActionListener(new java.awt.event.ActionListener() {
+        gpiButton8.setText("8");
+        gpiButton8.setBorder(null);
+        gpiButton8.setPreferredSize(new java.awt.Dimension(16, 16));
+        gpiButton8.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jToggleButton8ActionPerformed(evt);
+                gpiButton8ActionPerformed(evt);
             }
         });
 
-        jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif"))); // NOI18N
-        jLabel1.setEnabled(false);
+        gpoLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif"))); // NOI18N
+        gpoLabel1.setEnabled(false);
 
-        jLabel2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif"))); // NOI18N
-        jLabel2.setEnabled(false);
+        gpoLabel2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif"))); // NOI18N
+        gpoLabel2.setEnabled(false);
 
-        jLabel3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif"))); // NOI18N
-        jLabel3.setEnabled(false);
+        gpoLabel3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif"))); // NOI18N
+        gpoLabel3.setEnabled(false);
 
-        jLabel4.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif"))); // NOI18N
-        jLabel4.setEnabled(false);
+        gpoLabel4.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif"))); // NOI18N
+        gpoLabel4.setEnabled(false);
 
-        jLabel5.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif"))); // NOI18N
-        jLabel5.setEnabled(false);
+        gpoLabel5.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif"))); // NOI18N
+        gpoLabel5.setEnabled(false);
 
-        jLabel6.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif"))); // NOI18N
-        jLabel6.setEnabled(false);
+        gpoLabel6.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif"))); // NOI18N
+        gpoLabel6.setEnabled(false);
 
-        jLabel7.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif"))); // NOI18N
-        jLabel7.setEnabled(false);
+        gpoLabel7.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif"))); // NOI18N
+        gpoLabel7.setEnabled(false);
 
-        jLabel8.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif"))); // NOI18N
-        jLabel8.setEnabled(false);
+        gpoLabel8.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/tick.gif"))); // NOI18N
+        gpoLabel8.setEnabled(false);
 
-        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
-        jPanel1.setLayout(jPanel1Layout);
-        jPanel1Layout.setHorizontalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
+        gpioLabel.setText("GPI/GPO");
+
+        jLabel1.setText("GE Capture/Replay");
+
+        captureButton.setText("Capture next frame");
+        captureButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                captureButtonActionPerformed(evt);
+            }
+        });
+
+        replayButton.setText("Replay capture in next frame");
+        replayButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                replayButtonActionPerformed(evt);
+            }
+        });
+
+        jLabel2.setText("Dump debug state");
+
+        dumpDebugStateButton.setText("Dump to console");
+        dumpDebugStateButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                dumpDebugStateButtonActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout miscPanelLayout = new javax.swing.GroupLayout(miscPanel);
+        miscPanel.setLayout(miscPanelLayout);
+        miscPanelLayout.setHorizontalGroup(
+            miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(miscPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel1)
-                    .addComponent(jToggleButton1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jToggleButton2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel2))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jToggleButton3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel3))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jToggleButton4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel4))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jToggleButton5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel5))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jToggleButton6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel6))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jToggleButton7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel7))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jToggleButton8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel8))
-                .addContainerGap(22, Short.MAX_VALUE))
+                .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(miscPanelLayout.createSequentialGroup()
+                        .addComponent(gpioLabel)
+                        .addContainerGap(166, Short.MAX_VALUE))
+                    .addGroup(miscPanelLayout.createSequentialGroup()
+                        .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(gpoLabel1)
+                            .addComponent(gpiButton1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(gpiButton2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(gpoLabel2))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(gpiButton3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(gpoLabel3))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(gpiButton4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(gpoLabel4))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(gpiButton5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(gpoLabel5))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(gpiButton6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(gpoLabel6))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(gpiButton7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(gpoLabel7))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(gpiButton8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(gpoLabel8))
+                        .addGap(22, 22, 22))
+                    .addGroup(miscPanelLayout.createSequentialGroup()
+                        .addComponent(jLabel1)
+                        .addContainerGap(116, Short.MAX_VALUE))
+                    .addGroup(miscPanelLayout.createSequentialGroup()
+                        .addComponent(replayButton)
+                        .addContainerGap(35, Short.MAX_VALUE))
+                    .addGroup(miscPanelLayout.createSequentialGroup()
+                        .addComponent(jLabel2)
+                        .addContainerGap(120, Short.MAX_VALUE))
+                    .addGroup(miscPanelLayout.createSequentialGroup()
+                        .addComponent(dumpDebugStateButton)
+                        .addContainerGap(97, Short.MAX_VALUE))
+                    .addGroup(miscPanelLayout.createSequentialGroup()
+                        .addComponent(captureButton)
+                        .addContainerGap(81, Short.MAX_VALUE))))
         );
-        jPanel1Layout.setVerticalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
+        miscPanelLayout.setVerticalGroup(
+            miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(miscPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel1)
-                    .addComponent(jLabel8)
-                    .addComponent(jLabel2)
-                    .addComponent(jLabel3)
-                    .addComponent(jLabel4)
-                    .addComponent(jLabel5)
-                    .addComponent(jLabel6)
-                    .addComponent(jLabel7))
+                .addComponent(gpioLabel)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(gpoLabel1)
+                    .addComponent(gpoLabel8)
+                    .addComponent(gpoLabel2)
+                    .addComponent(gpoLabel3)
+                    .addComponent(gpoLabel4)
+                    .addComponent(gpoLabel5)
+                    .addComponent(gpoLabel6)
+                    .addComponent(gpoLabel7))
                 .addGap(11, 11, 11)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
-                    .addComponent(jToggleButton1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jToggleButton2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jToggleButton3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jToggleButton4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jToggleButton5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jToggleButton6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jToggleButton7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jToggleButton8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(505, Short.MAX_VALUE))
+                .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
+                    .addComponent(gpiButton1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(gpiButton2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(gpiButton3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(gpiButton4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(gpiButton5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(gpiButton6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(gpiButton7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(gpiButton8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jLabel1)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(captureButton)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(replayButton)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jLabel2)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(dumpDebugStateButton)
+                .addContainerGap(348, Short.MAX_VALUE))
         );
 
-        jTabbedPane1.addTab("GPIO", jPanel1);
+        disasmTabs.addTab("Misc", miscPanel);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addComponent(DisasmToolbar, javax.swing.GroupLayout.DEFAULT_SIZE, 763, Short.MAX_VALUE)
+                .addComponent(disasmToolbar, javax.swing.GroupLayout.DEFAULT_SIZE, 763, Short.MAX_VALUE)
                 .addContainerGap())
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(disasmList, javax.swing.GroupLayout.PREFERRED_SIZE, 503, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
-                .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 223, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(disasmTabs, javax.swing.GroupLayout.PREFERRED_SIZE, 223, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(19, 19, 19))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addComponent(DisasmToolbar, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(disasmToolbar, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(disasmList, javax.swing.GroupLayout.DEFAULT_SIZE, 588, Short.MAX_VALUE)
-                    .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(disasmTabs, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap())
         );
 
@@ -1267,35 +1333,35 @@ private boolean isCellChecked(JTable table)
   }
   return false;
 }
-private void jTable3MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTable3MouseClicked
-   if (SwingUtilities.isRightMouseButton(evt) && jTable3.isColumnSelected(1) && isCellChecked(jTable3))
+private void cop1TableMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_cop1TableMouseClicked
+   if (SwingUtilities.isRightMouseButton(evt) && cop1Table.isColumnSelected(1) && isCellChecked(cop1Table))
    {
-     RegMenu.show(jTable3, evt.getX(), evt.getY());
+     RegMenu.show(cop1Table, evt.getX(), evt.getY());
    }
-}//GEN-LAST:event_jTable3MouseClicked
+}//GEN-LAST:event_cop1TableMouseClicked
 
 private void CopyValueActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CopyValueActionPerformed
- if(jTable3.isShowing()){
-    float value = (Float)jTable3.getValueAt(jTable3.getSelectedRow(),1);
+ if(cop1Table.isShowing()){
+    float value = (Float)cop1Table.getValueAt(cop1Table.getSelectedRow(),1);
     StringSelection stringSelection = new StringSelection( Float.toString(value));
     Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
     clipboard.setContents(stringSelection, this);
  }
- else if(jTable1.isShowing())
+ else if(gprTable.isShowing())
  {
-    String value = (String)jTable1.getValueAt(jTable1.getSelectedRow(),1);
+    String value = (String)gprTable.getValueAt(gprTable.getSelectedRow(),1);
     StringSelection stringSelection = new StringSelection(value);
     Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
     clipboard.setContents(stringSelection, this);
  }
 }//GEN-LAST:event_CopyValueActionPerformed
 
-private void jTable1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTable1MouseClicked
-   if (SwingUtilities.isRightMouseButton(evt) && jTable1.isColumnSelected(1) && isCellChecked(jTable1))
+private void gprTableMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_gprTableMouseClicked
+   if (SwingUtilities.isRightMouseButton(evt) && gprTable.isColumnSelected(1) && isCellChecked(gprTable))
    {
-     RegMenu.show(jTable1, evt.getX(), evt.getY());
+     RegMenu.show(gprTable, evt.getX(), evt.getY());
    }
-}//GEN-LAST:event_jTable1MouseClicked
+}//GEN-LAST:event_gprTableMouseClicked
 
 public int GetGPI() {
     return gpi;
@@ -1322,61 +1388,61 @@ private void ToggleGPI(int index) {
 
 private void SetGPO(int index, boolean on) {
     switch(index) {
-        case 0: jLabel1.setEnabled(on); break;
-        case 1: jLabel2.setEnabled(on); break;
-        case 2: jLabel3.setEnabled(on); break;
-        case 3: jLabel4.setEnabled(on); break;
-        case 4: jLabel5.setEnabled(on); break;
-        case 5: jLabel6.setEnabled(on); break;
-        case 6: jLabel7.setEnabled(on); break;
-        case 7: jLabel8.setEnabled(on); break;
+        case 0: gpoLabel1.setEnabled(on); break;
+        case 1: gpoLabel2.setEnabled(on); break;
+        case 2: gpoLabel3.setEnabled(on); break;
+        case 3: gpoLabel4.setEnabled(on); break;
+        case 4: gpoLabel5.setEnabled(on); break;
+        case 5: gpoLabel6.setEnabled(on); break;
+        case 6: gpoLabel7.setEnabled(on); break;
+        case 7: gpoLabel8.setEnabled(on); break;
     }
 }
 
 private void SetGPI(int index, boolean on) {
     switch(index) {
-        case 0: jToggleButton1.setSelected(on); break;
-        case 1: jToggleButton2.setSelected(on); break;
-        case 2: jToggleButton3.setSelected(on); break;
-        case 3: jToggleButton4.setSelected(on); break;
-        case 4: jToggleButton5.setSelected(on); break;
-        case 5: jToggleButton6.setSelected(on); break;
-        case 6: jToggleButton7.setSelected(on); break;
-        case 7: jToggleButton8.setSelected(on); break;
+        case 0: gpiButton1.setSelected(on); break;
+        case 1: gpiButton2.setSelected(on); break;
+        case 2: gpiButton3.setSelected(on); break;
+        case 3: gpiButton4.setSelected(on); break;
+        case 4: gpiButton5.setSelected(on); break;
+        case 5: gpiButton6.setSelected(on); break;
+        case 6: gpiButton7.setSelected(on); break;
+        case 7: gpiButton8.setSelected(on); break;
     }
 }
 
-private void jToggleButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton1ActionPerformed
+private void gpiButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gpiButton1ActionPerformed
     ToggleGPI(0);
-}//GEN-LAST:event_jToggleButton1ActionPerformed
+}//GEN-LAST:event_gpiButton1ActionPerformed
 
-private void jToggleButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton2ActionPerformed
+private void gpiButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gpiButton2ActionPerformed
     ToggleGPI(1);
-}//GEN-LAST:event_jToggleButton2ActionPerformed
+}//GEN-LAST:event_gpiButton2ActionPerformed
 
-private void jToggleButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton3ActionPerformed
+private void gpiButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gpiButton3ActionPerformed
     ToggleGPI(2);
-}//GEN-LAST:event_jToggleButton3ActionPerformed
+}//GEN-LAST:event_gpiButton3ActionPerformed
 
-private void jToggleButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton4ActionPerformed
+private void gpiButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gpiButton4ActionPerformed
     ToggleGPI(3);
-}//GEN-LAST:event_jToggleButton4ActionPerformed
+}//GEN-LAST:event_gpiButton4ActionPerformed
 
-private void jToggleButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton5ActionPerformed
+private void gpiButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gpiButton5ActionPerformed
     ToggleGPI(4);
-}//GEN-LAST:event_jToggleButton5ActionPerformed
+}//GEN-LAST:event_gpiButton5ActionPerformed
 
-private void jToggleButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton6ActionPerformed
+private void gpiButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gpiButton6ActionPerformed
     ToggleGPI(5);
-}//GEN-LAST:event_jToggleButton6ActionPerformed
+}//GEN-LAST:event_gpiButton6ActionPerformed
 
-private void jToggleButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton7ActionPerformed
+private void gpiButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gpiButton7ActionPerformed
     ToggleGPI(6);
-}//GEN-LAST:event_jToggleButton7ActionPerformed
+}//GEN-LAST:event_gpiButton7ActionPerformed
 
-private void jToggleButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jToggleButton8ActionPerformed
+private void gpiButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_gpiButton8ActionPerformed
     ToggleGPI(7);
-}//GEN-LAST:event_jToggleButton8ActionPerformed
+}//GEN-LAST:event_gpiButton8ActionPerformed
 
 private void SetPCToCursorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SetPCToCursorActionPerformed
     int index = disasmListGetSelectedIndex();
@@ -1394,6 +1460,18 @@ private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     // TODO add your handling code here:
 }//GEN-LAST:event_jButton3ActionPerformed
 
+private void captureButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_captureButtonActionPerformed
+    System.out.println("Not yet implemented");
+}//GEN-LAST:event_captureButtonActionPerformed
+
+private void replayButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_replayButtonActionPerformed
+    System.out.println("Not yet implemented");
+}//GEN-LAST:event_replayButtonActionPerformed
+
+private void dumpDebugStateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_dumpDebugStateButtonActionPerformed
+    DumpDebugState.dumpDebugState();
+}//GEN-LAST:event_dumpDebugStateButtonActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton AddBreakpoint;
     private javax.swing.JMenuItem BranchOrJump;
@@ -1403,7 +1481,6 @@ private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.JButton DeleteAllBreakpoints;
     private javax.swing.JButton DeleteBreakpoint;
     private javax.swing.JPopupMenu DisMenu;
-    private javax.swing.JToolBar DisasmToolbar;
     private javax.swing.JButton DumpCodeToText;
     private javax.swing.JButton JumpToAddress;
     private javax.swing.JButton PauseDebugger;
@@ -1412,34 +1489,41 @@ private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.JToggleButton RunDebugger;
     private javax.swing.JMenuItem SetPCToCursor;
     private javax.swing.JButton StepInto;
+    private javax.swing.JButton captureButton;
+    private javax.swing.JTable cop0Table;
+    private javax.swing.JTable cop1Table;
     private javax.swing.JList disasmList;
+    private javax.swing.JTabbedPane disasmTabs;
+    private javax.swing.JToolBar disasmToolbar;
+    private javax.swing.JButton dumpDebugStateButton;
+    private javax.swing.JToggleButton gpiButton1;
+    private javax.swing.JToggleButton gpiButton2;
+    private javax.swing.JToggleButton gpiButton3;
+    private javax.swing.JToggleButton gpiButton4;
+    private javax.swing.JToggleButton gpiButton5;
+    private javax.swing.JToggleButton gpiButton6;
+    private javax.swing.JToggleButton gpiButton7;
+    private javax.swing.JToggleButton gpiButton8;
+    private javax.swing.JLabel gpioLabel;
+    private javax.swing.JLabel gpoLabel1;
+    private javax.swing.JLabel gpoLabel2;
+    private javax.swing.JLabel gpoLabel3;
+    private javax.swing.JLabel gpoLabel4;
+    private javax.swing.JLabel gpoLabel5;
+    private javax.swing.JLabel gpoLabel6;
+    private javax.swing.JLabel gpoLabel7;
+    private javax.swing.JLabel gpoLabel8;
+    private javax.swing.JTable gprTable;
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton3;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
-    private javax.swing.JLabel jLabel3;
-    private javax.swing.JLabel jLabel4;
-    private javax.swing.JLabel jLabel5;
-    private javax.swing.JLabel jLabel6;
-    private javax.swing.JLabel jLabel7;
-    private javax.swing.JLabel jLabel8;
-    private javax.swing.JPanel jPanel1;
     private javax.swing.JToolBar.Separator jSeparator1;
     private javax.swing.JToolBar.Separator jSeparator2;
     private javax.swing.JToolBar.Separator jSeparator3;
     private javax.swing.JToolBar.Separator jSeparator4;
-    private javax.swing.JTabbedPane jTabbedPane1;
-    private javax.swing.JTable jTable1;
-    private javax.swing.JTable jTable2;
-    private javax.swing.JTable jTable3;
-    private javax.swing.JToggleButton jToggleButton1;
-    private javax.swing.JToggleButton jToggleButton2;
-    private javax.swing.JToggleButton jToggleButton3;
-    private javax.swing.JToggleButton jToggleButton4;
-    private javax.swing.JToggleButton jToggleButton5;
-    private javax.swing.JToggleButton jToggleButton6;
-    private javax.swing.JToggleButton jToggleButton7;
-    private javax.swing.JToggleButton jToggleButton8;
+    private javax.swing.JPanel miscPanel;
+    private javax.swing.JButton replayButton;
     // End of variables declaration//GEN-END:variables
 
 }

@@ -1,15 +1,16 @@
 /*
 Thread Manager
 Function:
-- HLE everything in http://psp.jim.sh/pspsdk-doc/group__ThreadMan.html
+- HLE thread related things in http://psp.jim.sh/pspsdk-doc/group__ThreadMan.html
 - Schedule threads
 
 Note:
 - incomplete and not fully tested
 
 Todo:
-user/kernel read/write permissions on addresses (such as refer status)
-
+- user/kernel read/write permissions on addresses (such as refer status)
+- move callbacks to another file
+- move scheduler to another file
 
 This file is part of jpcsp.
 
@@ -48,7 +49,6 @@ import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.*;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.modules.HLECallback;
-import jpcsp.HLE.modules.sceUmdUser;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 
@@ -71,6 +71,7 @@ public class ThreadMan {
     private boolean insideCallback;
     private HashMap<Integer, SceKernelCallbackInfo> callbackMap;
 
+    private boolean enableWaitThreadEndCB;
     private boolean USE_THREAD_BANLIST = false;
     private static final boolean LOG_CONTEXT_SWITCHING = false;
     private static final boolean IGNORE_DELAY = false;
@@ -1079,20 +1080,33 @@ public class ThreadMan {
         hleKernelWaitThreadEnd(uid, micros, forever, false);
     }
 
-    // disabled in syscall handler for TOE
+    public void setEnableWaitThreadEndCB(boolean enable)
+    {
+        enableWaitThreadEndCB = enable;
+        Modules.log.info("WaitThreadEndCB enabled: " + enableWaitThreadEndCB);
+    }
+
+    // disable in TOE (and many other games) until we get better MPEG support
     public void ThreadMan_sceKernelWaitThreadEndCB(int uid, int timeout_addr) {
-        Modules.log.debug("sceKernelWaitThreadEndCB redirecting to hleKernelWaitThreadEnd(callbacks=true)");
+        if (enableWaitThreadEndCB)
+        {
+            Modules.log.debug("sceKernelWaitThreadEndCB redirecting to hleKernelWaitThreadEnd(callbacks=true)");
 
-        int micros = 0;
-        boolean forever = true;
+            int micros = 0;
+            boolean forever = true;
 
-        if (timeout_addr != 0) { // psp does not check for address inside a valid range, just 0 or not 0
-            micros = Memory.getInstance().read32(timeout_addr);
-            forever = false;
+            if (timeout_addr != 0) { // psp does not check for address inside a valid range, just 0 or not 0
+                micros = Memory.getInstance().read32(timeout_addr);
+                forever = false;
+            }
+
+            hleKernelWaitThreadEnd(uid, micros, forever, true);
+            checkCallbacks();
         }
-
-        hleKernelWaitThreadEnd(uid, micros, forever, true);
-        checkCallbacks();
+        else
+        {
+            Modules.log.warn("IGNORING:sceKernelWaitThreadEndCB - enable in settings if you know what you're doing");
+        }
     }
 
     public void hleKernelThreadWait(ThreadWaitInfo wait, int micros, boolean forever) {
