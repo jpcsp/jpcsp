@@ -1207,6 +1207,36 @@ public class VideoEngine {
             }
 
             /*
+             * Spot light exponent
+             */
+            case SLE0:
+            case SLE1:
+            case SLE2:
+            case SLE3: {
+            	int lnum = command - SLE0;
+                gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_SPOT_EXPONENT, floatArgument);
+                if (log.isDebugEnabled()) {
+                    VideoEngine.log.debug("sceGuLightSpot(" + lnum + ",X," + floatArgument + ",X)");
+                }
+            	break;
+            }
+
+            /*
+             * Spot light exponent
+             */
+            case SLF0:
+            case SLF1:
+            case SLF2:
+            case SLF3: {
+            	int lnum = command - SLF0;
+                gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_SPOT_CUTOFF, floatArgument);
+                if (log.isDebugEnabled()) {
+                    VideoEngine.log.debug("sceGuLightSpot(" + lnum + ",X,X," + floatArgument + ")");
+                }
+            	break;
+            }
+
+            /*
              * Lighting enable/disable
              */
             case LTE:
@@ -2462,24 +2492,20 @@ public class VideoEngine {
             	break;
 
             case TRXSBP:
-                // use base?
-            	textureTx_sourceAddress = normalArgument;
+            	textureTx_sourceAddress = (textureTx_sourceAddress & 0xFF000000) | normalArgument;
             	break;
 
             case TRXSBW:
-                // remove upper bits first?
-            	textureTx_sourceAddress |= (normalArgument << 8) & 0xFF000000;
+            	textureTx_sourceAddress = (textureTx_sourceAddress & 0x00FFFFFF) | ((normalArgument << 8) & 0xFF000000);
             	textureTx_sourceLineWidth = normalArgument & 0x0000FFFF;
             	break;
 
             case TRXDBP:
-                // use base?
-            	textureTx_destinationAddress = normalArgument;
+            	textureTx_destinationAddress = (textureTx_destinationAddress & 0xFF000000) | normalArgument;
             	break;
 
             case TRXDBW:
-                // remove upper bits first?
-            	textureTx_destinationAddress |= (normalArgument << 8) & 0xFF000000;
+            	textureTx_destinationAddress = (textureTx_destinationAddress & 0x00FFFFFF) | ((normalArgument << 8) & 0xFF000000);
             	textureTx_destinationLineWidth = normalArgument & 0x0000FFFF;
             	break;
 
@@ -3276,8 +3302,8 @@ public class VideoEngine {
                     }
 
                     default: {
-	                    VideoEngine.log.warn("Unhandled texture storage " + texture_storage);
-	                    Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
+	                    VideoEngine.log.error("Unhandled texture storage " + texture_storage);
+	                    //Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
 	                    break;
 	                }
 	            }
