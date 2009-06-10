@@ -35,8 +35,13 @@ public class SafeFastMemory extends FastMemory {
 	@Override
 	public int read8(int address) {
 		if (!isAddressGood(address)) {
-			invalidMemoryAddress(address, "read8", Emulator.EMU_STATUS_MEM_READ);
-			return 0;
+            int normalizedAddress = normalizeAddress(address);
+            if (isRawAddressGood(normalizedAddress)) {
+                address = normalizedAddress;
+            } else {
+				invalidMemoryAddress(address, "read8", Emulator.EMU_STATUS_MEM_READ);
+				return 0;
+            }
 		}
 
 		return super.read8(address);
@@ -45,8 +50,13 @@ public class SafeFastMemory extends FastMemory {
 	@Override
 	public int read16(int address) {
 		if (!isAddressGood(address)) {
-			invalidMemoryAddress(address, "read16", Emulator.EMU_STATUS_MEM_READ);
-			return 0;
+            int normalizedAddress = normalizeAddress(address);
+            if (isRawAddressGood(normalizedAddress)) {
+                address = normalizedAddress;
+            } else {
+            	invalidMemoryAddress(address, "read16", Emulator.EMU_STATUS_MEM_READ);
+    			return 0;
+            }
 		}
 
 		return super.read16(address);
@@ -60,7 +70,7 @@ public class SafeFastMemory extends FastMemory {
             }
 
             int normalizedAddress = normalizeAddress(address);
-            if (isAddressGood(normalizedAddress)) {
+            if (isRawAddressGood(normalizedAddress)) {
                 address = normalizedAddress;
             } else {
                 invalidMemoryAddress(address, "read32", Emulator.EMU_STATUS_MEM_READ);
@@ -74,8 +84,13 @@ public class SafeFastMemory extends FastMemory {
 	@Override
 	public long read64(int address) {
 		if (!isAddressGood(address)) {
-			invalidMemoryAddress(address, "read64", Emulator.EMU_STATUS_MEM_READ);
-			return 0;
+            int normalizedAddress = normalizeAddress(address);
+            if (isRawAddressGood(normalizedAddress)) {
+                address = normalizedAddress;
+            } else {
+				invalidMemoryAddress(address, "read64", Emulator.EMU_STATUS_MEM_READ);
+				return 0;
+            }
 		}
 
 		return super.read64(address);
@@ -84,8 +99,13 @@ public class SafeFastMemory extends FastMemory {
 	@Override
 	public void write8(int address, byte data) {
 		if (!isAddressGood(address)) {
-			invalidMemoryAddress(address, "write8", Emulator.EMU_STATUS_MEM_WRITE);
-			return;
+            int normalizedAddress = normalizeAddress(address);
+            if (isRawAddressGood(normalizedAddress)) {
+                address = normalizedAddress;
+            } else {
+				invalidMemoryAddress(address, "write8", Emulator.EMU_STATUS_MEM_WRITE);
+				return;
+            }
 		}
 
 		super.write8(address, data);
@@ -94,8 +114,13 @@ public class SafeFastMemory extends FastMemory {
 	@Override
 	public void write16(int address, short data) {
 		if (!isAddressGood(address)) {
-			invalidMemoryAddress(address, "write16", Emulator.EMU_STATUS_MEM_WRITE);
-			return;
+            int normalizedAddress = normalizeAddress(address);
+            if (isRawAddressGood(normalizedAddress)) {
+                address = normalizedAddress;
+            } else {
+				invalidMemoryAddress(address, "write16", Emulator.EMU_STATUS_MEM_WRITE);
+				return;
+            }
 		}
 
 		super.write16(address, data);
@@ -104,8 +129,13 @@ public class SafeFastMemory extends FastMemory {
 	@Override
 	public void write32(int address, int data) {
 		if (!isAddressGood(address)) {
-			invalidMemoryAddress(address, "write32", Emulator.EMU_STATUS_MEM_WRITE);
-			return;
+            int normalizedAddress = normalizeAddress(address);
+            if (isRawAddressGood(normalizedAddress)) {
+                address = normalizedAddress;
+            } else {
+				invalidMemoryAddress(address, "write32", Emulator.EMU_STATUS_MEM_WRITE);
+				return;
+            }
 		}
 
 		super.write32(address, data);
@@ -114,8 +144,13 @@ public class SafeFastMemory extends FastMemory {
 	@Override
 	public void write64(int address, long data) {
 		if (!isAddressGood(address)) {
-			invalidMemoryAddress(address, "write64", Emulator.EMU_STATUS_MEM_WRITE);
-			return;
+            int normalizedAddress = normalizeAddress(address);
+            if (isRawAddressGood(normalizedAddress)) {
+                address = normalizedAddress;
+            } else {
+				invalidMemoryAddress(address, "write64", Emulator.EMU_STATUS_MEM_WRITE);
+				return;
+            }
 		}
 
 		super.write64(address, data);

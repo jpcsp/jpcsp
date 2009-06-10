@@ -172,7 +172,7 @@ public abstract class Memory {
     public abstract void copyToMemory(int address, ByteBuffer source, int length);
     public abstract void memcpy(int destination, int source, int length);
 
-    protected int normalizeAddress(int address) {
+    public int normalizeAddress(int address) {
     	address = address & addressMask;
 
     	// Test on a PSP: 0x4200000 is equivalent to 0x4000000
