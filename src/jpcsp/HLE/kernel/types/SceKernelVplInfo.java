@@ -128,15 +128,16 @@ public class SceKernelVplInfo {
     /** @return the address or 0 on failure */
     public int tryAllocate(int size) {
         int addr = 0;
+        int alignedSize = (size + 7) & ~7; // 8-byte align
         // TODO proper malloc implementation
-        if (size + 8 <= freeSize) {
+        if (alignedSize + 8 <= freeSize) {
 
             if ((attr & VPL_ATTR_ADDR_HIGH) == VPL_ATTR_ADDR_HIGH) {
-                addr = freeHighAddress - size;
-                freeHighAddress -= size + 8;
+                addr = freeHighAddress - alignedSize;
+                freeHighAddress -= alignedSize + 8;
             } else {
                 addr = freeLowAddress + 8;
-                freeLowAddress += size + 8;
+                freeLowAddress += alignedSize + 8;
             }
 
             // write block header
@@ -144,7 +145,7 @@ public class SceKernelVplInfo {
             mem.write32(addr - 8, allocAddress);
             mem.write32(addr - 4, 0); // magic?
 
-            freeSize -= size + 8;
+            freeSize -= alignedSize + 8;
         }
         return addr;
     }
