@@ -165,17 +165,21 @@ public class RuntimeContext {
 	}
 
     public static void debugCodeBlockStart(int address, int returnAddress, int alternativeReturnAddress, boolean isJump) {
-    	log.debug("Starting CodeBlock 0x" + Integer.toHexString(address) + ", returnAddress=0x" + Integer.toHexString(returnAddress) + ", alternativeReturnAddress=0x" + Integer.toHexString(alternativeReturnAddress) + ", isJump=" + isJump);
+    	if (log.isDebugEnabled()) {
+    		log.debug("Starting CodeBlock 0x" + Integer.toHexString(address) + ", returnAddress=0x" + Integer.toHexString(returnAddress) + ", alternativeReturnAddress=0x" + Integer.toHexString(alternativeReturnAddress) + ", isJump=" + isJump);
+    	}
     }
 
     public static void debugCodeBlockEnd(int address, int returnAddress) {
-    	log.debug("Returning from CodeBlock 0x" + Integer.toHexString(address) + " to 0x" + Integer.toHexString(returnAddress));
+    	if (log.isDebugEnabled()) {
+    		log.debug("Returning from CodeBlock 0x" + Integer.toHexString(address) + " to 0x" + Integer.toHexString(returnAddress));
+    	}
     }
 
     public static void debugCodeInstruction(int address, int opcode) {
-    	if (log.isDebugEnabled()) {
+    	if (log.isTraceEnabled()) {
     		Instruction insn = Decoder.instruction(opcode);
-    		log.debug("Executing 0x" + Integer.toHexString(address).toUpperCase() + " - " + insn.disasm(address, opcode));
+    		log.trace("Executing 0x" + Integer.toHexString(address).toUpperCase() + " - " + insn.disasm(address, opcode));
     	}
     }
 
@@ -801,13 +805,19 @@ public class RuntimeContext {
     public static int checkMemoryRead32(int address, int pc) throws StopThreadException {
         int rawAddress = address & Memory.addressMask;
         if (!memory.isRawAddressGood(rawAddress)) {
-        	if (!memory.read32AllowedInvalidAddress(rawAddress)) {
-	            processor.cpu.pc = pc;
-	            memory.invalidMemoryAddress(address, "read32", Emulator.EMU_STATUS_MEM_READ);
-	            syncPause();
+        	if (memory.read32AllowedInvalidAddress(rawAddress)) {
+        		rawAddress = 0;
+        	} else {
+                int normalizedAddress = memory.normalizeAddress(address);
+                if (memory.isRawAddressGood(normalizedAddress)) {
+                    rawAddress = normalizedAddress;
+                } else {
+		            processor.cpu.pc = pc;
+		            memory.invalidMemoryAddress(address, "read32", Emulator.EMU_STATUS_MEM_READ);
+		            syncPause();
+		            rawAddress = 0;
+                }
         	}
-
-            rawAddress = 0;
         }
 
         return rawAddress;
@@ -815,12 +825,16 @@ public class RuntimeContext {
 
     public static int checkMemoryRead16(int address, int pc) throws StopThreadException {
         int rawAddress = address & Memory.addressMask;
-        if (!memory.isAddressGood(address)) {
-            processor.cpu.pc = pc;
-            memory.invalidMemoryAddress(address, "read16", Emulator.EMU_STATUS_MEM_READ);
-            syncPause();
-
-            rawAddress = 0;
+        if (!memory.isRawAddressGood(rawAddress)) {
+            int normalizedAddress = memory.normalizeAddress(address);
+            if (memory.isRawAddressGood(normalizedAddress)) {
+                rawAddress = normalizedAddress;
+            } else {
+	            processor.cpu.pc = pc;
+	            memory.invalidMemoryAddress(address, "read16", Emulator.EMU_STATUS_MEM_READ);
+	            syncPause();
+	            rawAddress = 0;
+            }
         }
 
         return rawAddress;
@@ -828,12 +842,16 @@ public class RuntimeContext {
 
     public static int checkMemoryRead8(int address, int pc) throws StopThreadException {
         int rawAddress = address & Memory.addressMask;
-        if (!memory.isAddressGood(address)) {
-            processor.cpu.pc = pc;
-            memory.invalidMemoryAddress(address, "read8", Emulator.EMU_STATUS_MEM_READ);
-            syncPause();
-
-            rawAddress = 0;
+        if (!memory.isRawAddressGood(rawAddress)) {
+            int normalizedAddress = memory.normalizeAddress(address);
+            if (memory.isRawAddressGood(normalizedAddress)) {
+                rawAddress = normalizedAddress;
+            } else {
+	            processor.cpu.pc = pc;
+	            memory.invalidMemoryAddress(address, "read8", Emulator.EMU_STATUS_MEM_READ);
+	            syncPause();
+	            rawAddress = 0;
+            }
         }
 
         return rawAddress;
@@ -841,12 +859,16 @@ public class RuntimeContext {
 
     public static int checkMemoryWrite32(int address, int pc) throws StopThreadException {
         int rawAddress = address & Memory.addressMask;
-        if (!memory.isAddressGood(address)) {
-            processor.cpu.pc = pc;
-            memory.invalidMemoryAddress(address, "write32", Emulator.EMU_STATUS_MEM_WRITE);
-            syncPause();
-
-            rawAddress = 0;
+        if (!memory.isRawAddressGood(rawAddress)) {
+            int normalizedAddress = memory.normalizeAddress(address);
+            if (memory.isRawAddressGood(normalizedAddress)) {
+                rawAddress = normalizedAddress;
+            } else {
+	            processor.cpu.pc = pc;
+	            memory.invalidMemoryAddress(address, "write32", Emulator.EMU_STATUS_MEM_WRITE);
+	            syncPause();
+	            rawAddress = 0;
+            }
         }
 
         return rawAddress;
@@ -854,12 +876,16 @@ public class RuntimeContext {
 
     public static int checkMemoryWrite16(int address, int pc) throws StopThreadException {
         int rawAddress = address & Memory.addressMask;
-        if (!memory.isAddressGood(address)) {
-            processor.cpu.pc = pc;
-            memory.invalidMemoryAddress(address, "write16", Emulator.EMU_STATUS_MEM_WRITE);
-            syncPause();
-
-            rawAddress = 0;
+        if (!memory.isRawAddressGood(rawAddress)) {
+            int normalizedAddress = memory.normalizeAddress(address);
+            if (memory.isRawAddressGood(normalizedAddress)) {
+                rawAddress = normalizedAddress;
+            } else {
+	            processor.cpu.pc = pc;
+	            memory.invalidMemoryAddress(address, "write16", Emulator.EMU_STATUS_MEM_WRITE);
+	            syncPause();
+	            rawAddress = 0;
+            }
         }
 
         return rawAddress;
@@ -867,12 +893,16 @@ public class RuntimeContext {
 
     public static int checkMemoryWrite8(int address, int pc) throws StopThreadException {
         int rawAddress = address & Memory.addressMask;
-        if (!memory.isAddressGood(address)) {
-            processor.cpu.pc = pc;
-            memory.invalidMemoryAddress(address, "write8", Emulator.EMU_STATUS_MEM_WRITE);
-            syncPause();
-
-            rawAddress = 0;
+        if (!memory.isRawAddressGood(rawAddress)) {
+            int normalizedAddress = memory.normalizeAddress(address);
+            if (memory.isRawAddressGood(normalizedAddress)) {
+                rawAddress = normalizedAddress;
+            } else {
+	            processor.cpu.pc = pc;
+	            memory.invalidMemoryAddress(address, "write8", Emulator.EMU_STATUS_MEM_WRITE);
+	            syncPause();
+	            rawAddress = 0;
+            }
         }
 
         return rawAddress;
