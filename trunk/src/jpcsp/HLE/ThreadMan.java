@@ -75,6 +75,7 @@ public class ThreadMan {
     private boolean USE_THREAD_BANLIST = false;
     private static final boolean LOG_CONTEXT_SWITCHING = false;
     private static final boolean IGNORE_DELAY = false;
+    private boolean exitCalled = false;
 
     // see sceKernelGetThreadmanIdList
     public final static int SCE_KERNEL_TMID_Thread             = 1;
@@ -203,6 +204,8 @@ public class ThreadMan {
 
     /** to be called when exiting the emulation */
     public void exit() {
+        exitCalled = true;
+
         if (threadMap != null) {
             Modules.log.info("----------------------------- ThreadMan exit -----------------------------");
 
@@ -410,9 +413,14 @@ public class ThreadMan {
             //Emulator.PauseEmu();
         } else {
             // Shouldn't get here now we are using idle threads
-            Modules.log.info("No ready threads - pausing emulator. caller:" + getCallingFunction());
-            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNKNOWN);
-            DumpDebugState.dumpDebugState();
+
+            // When running under compiler mode this gets triggered by exit()
+            if (!exitCalled) {
+                DumpDebugState.dumpDebugState();
+
+                Modules.log.info("No ready threads - pausing emulator. caller:" + getCallingFunction());
+                Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNKNOWN);
+            }
         }
 
         current_thread = newthread;
@@ -590,6 +598,11 @@ public class ThreadMan {
             Managers.mutex.onThreadWaitTimeout(thread);
         }
 
+        // MsgPipe
+        else if (thread.wait.waitingOnMsgPipeSend || thread.wait.waitingOnMsgPipeReceive) {
+            Managers.msgPipes.onThreadWaitTimeout(thread);
+        }
+
         // IO has no timeout, it's always forever
     }
 
@@ -611,6 +624,7 @@ public class ThreadMan {
         Managers.eventFlags.onThreadDeleted(thread);
         Managers.semas.onThreadDeleted(thread);
         Managers.mutex.onThreadDeleted(thread);
+        Managers.msgPipes.onThreadDeleted(thread);
         Modules.sceUmdUserModule.onThreadDeleted(thread);
         RuntimeContext.onThreadDeleted(thread);
         // TODO blocking audio?
@@ -1250,6 +1264,7 @@ public class ThreadMan {
     /** Check callbacks, including those on the current thread */
     public void ThreadMan_sceKernelCheckCallback() {
         Modules.log.debug("sceKernelCheckCallback");
+        Emulator.getProcessor().cpu.gpr[2] = 0;
         current_thread.do_callbacks = true;
         checkCallbacks();
     }

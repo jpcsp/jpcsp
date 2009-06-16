@@ -51,4 +51,11 @@ public class ThreadWaitInfo {
     // UMD
     public boolean waitingOnUmd;
     public int wantedUmdStat;
+
+    // MsgPipe
+    public boolean waitingOnMsgPipeSend;
+    public boolean waitingOnMsgPipeReceive;
+    public int MsgPipe_id;
+    public int MsgPipe_address;
+    public int MsgPipe_size;
 }

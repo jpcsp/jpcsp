@@ -160,16 +160,36 @@ public class SyscallHandler {
 		// sceKernelPollMbx(0x2036),
 		// sceKernelCancelReceiveMbx(0x2037),
 		// sceKernelReferMbxStatus(0x2038),
-		// sceKernelCreateMsgPipe(0x2039),
-		// sceKernelDeleteMsgPipe(0x203a),
-		// sceKernelSendMsgPipe(0x203b),
-		// sceKernelSendMsgPipeCB(0x203c),
-		// sceKernelTrySendMsgPipe(0x203d),
-		// sceKernelReceiveMsgPipe(0x203e),
-		// sceKernelReceiveMsgPipeCB(0x203f),
-		// sceKernelTryReceiveMsgPipe(0x2040),
-		// sceKernelCancelMsgPipe(0x2041),
-		// sceKernelReferMsgPipeStatus(0x2042),
+                case 0x2039:
+                    Managers.msgPipes.sceKernelCreateMsgPipe(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
+                    break;
+                case 0x203a:
+                    Managers.msgPipes.sceKernelDeleteMsgPipe(gpr[4]);
+                    break;
+                case 0x203b:
+                    Managers.msgPipes.sceKernelSendMsgPipe(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8], gpr[9]);
+                    break;
+                case 0x203c:
+                    Managers.msgPipes.sceKernelSendMsgPipeCB(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8], gpr[9]);
+                    break;
+                case 0x203d:
+                    Managers.msgPipes.sceKernelTrySendMsgPipe(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
+                    break;
+                case 0x203e:
+                    Managers.msgPipes.sceKernelReceiveMsgPipe(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8], gpr[9]);
+                    break;
+                case 0x203f:
+                    Managers.msgPipes.sceKernelReceiveMsgPipeCB(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8], gpr[9]);
+                    break;
+                case 0x2040:
+                    Managers.msgPipes.sceKernelTryReceiveMsgPipe(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
+                    break;
+                case 0x2041:
+                    Managers.msgPipes.sceKernelCancelMsgPipe(gpr[4], gpr[5], gpr[6]);
+                    break;
+                case 0x2042:
+                    Managers.msgPipes.sceKernelReferMsgPipeStatus(gpr[4], gpr[5]);
+                    break;
                 case 0x2043:
                     Managers.vpl.sceKernelCreateVpl(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
                     break;
