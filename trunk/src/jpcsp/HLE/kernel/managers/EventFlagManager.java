@@ -108,13 +108,14 @@ public class EventFlagManager {
 
     public void sceKernelDeleteEventFlag(int uid)
     {
-        Modules.log.debug("sceKernelDeleteEventFlag uid=0x" + Integer.toHexString(uid));
+        String msg = "sceKernelDeleteEventFlag uid=0x" + Integer.toHexString(uid);
         SceUidManager.checkUidPurpose(uid, "ThreadMan-eventflag", true);
         SceKernelEventFlagInfo event = eventMap.remove(uid);
         if (event == null) {
-            Modules.log.warn("sceKernelDeleteEventFlag unknown uid=0x" + Integer.toHexString(uid));
+            Modules.log.warn(msg + " unknown uid");
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_EVENT_FLAG;
         } else {
+            Modules.log.debug(msg + " name:'" + event.name + "'");
             if (event.numWaitThreads > 0) {
                 Modules.log.warn("sceKernelDeleteEventFlag numWaitThreads " + event.numWaitThreads);
                 updateWaitingEventFlags();

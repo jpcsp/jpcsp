@@ -18,6 +18,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.Debugger;
 
 import java.awt.event.KeyEvent;
+import java.awt.Point;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -34,7 +35,10 @@ import jpcsp.util.Utilities;
  */
 public class MemoryViewer extends javax.swing.JFrame {
     //Processor cpu;
-    int startaddress;
+    private int startaddress;
+    private Point lastLocation = null;
+
+
     /** Creates new form MemoryViewer */
     public MemoryViewer() {
         //this.cpu = c;
@@ -266,8 +270,13 @@ private void memoryviewMouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GE
 
 private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowDeactivated
     //Called when the mainWindow is closed
-    if (Settings.getInstance().readBool("gui.saveWindowPos"))
-        Settings.getInstance().writeWindowPos("memoryview", getLocation());
+    if (Settings.getInstance().readBool("gui.saveWindowPos")) {
+        Point location = getLocation();
+        if (lastLocation == null || location.x != lastLocation.x || location.y != lastLocation.y) {
+            Settings.getInstance().writeWindowPos("memoryview", location);
+            lastLocation = location;
+        }
+    }
 }//GEN-LAST:event_formWindowDeactivated
 
 private void GoToSPActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_GoToSPActionPerformed
@@ -283,13 +292,13 @@ private void DumpRawRamActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
        out = new BufferedWriter( new FileWriter(f) );
        for(int i = 0x08000000; i<=0x09ffffff; i++ )
        {
-          out.write((byte)safeRead8(i));   
+          out.write((byte)safeRead8(i));
        }
-                     
+
    }
    catch(IOException e)
    {
-       
+
    }
    finally
   {
@@ -306,7 +315,7 @@ private void DumpRawRamActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
           }
      }
 
-   
+
 }//GEN-LAST:event_DumpRawRamActionPerformed
 
 private void onKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_onKeyPressed

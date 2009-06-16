@@ -68,7 +68,7 @@ public class pspiofilemgr {
     public final static int PSP_O_UNKNOWN1 = 0x4000; // something async?
     public final static int PSP_O_NOWAIT   = 0x8000;
     public final static int PSP_O_UNKNOWN2 = 0xf0000; // seen on Wipeout Pure and Infected
-    public final static int PSP_O_UNKNOWN3 = 0x2000000; // seen on Puzzle Guzzle
+    public final static int PSP_O_UNKNOWN3 = 0x2000000; // seen on Puzzle Guzzle, Hammerin' Hero
 
     public final static int PSP_SEEK_SET  = 0;
     public final static int PSP_SEEK_CUR  = 1;
@@ -1248,7 +1248,7 @@ public class pspiofilemgr {
                         + "', file='" + filename + "'");
                 }
 
-                Emulator.getProcessor().cpu.gpr[2] = 1; // TODO "> 0", so number of files remaining or 1 is ok?
+                Emulator.getProcessor().cpu.gpr[2] = 1;
             } else {
                 Modules.log.warn("sceIoDread uid=" + Integer.toHexString(uid) + " stat failed (" + info.path + "/" + filename + ")");
                 Emulator.getProcessor().cpu.gpr[2] = -1;
@@ -1327,7 +1327,7 @@ public class pspiofilemgr {
                 break;
             }
 
-            case 0x02015804: // register memory stick insert/eject callback (mscmhc0)
+            case 0x02015804: // register memorystick insert/eject callback (mscmhc0)
             {
                 Modules.log.debug("sceIoDevctl register memorystick insert/eject callback (mscmhc0)");
                 Memory mem = Memory.getInstance();
@@ -1351,7 +1351,7 @@ public class pspiofilemgr {
                 break;
             }
 
-            case 0x02015805: // unregister memory stick insert/eject callback (mscmhc0)
+            case 0x02015805: // unregister memorystick insert/eject callback (mscmhc0)
             {
                 Modules.log.debug("sceIoDevctl unregister memorystick insert/eject callback (mscmhc0)");
                 Memory mem = Memory.getInstance();
@@ -1467,6 +1467,7 @@ public class pspiofilemgr {
                 if (mem.isAddressGood(indata_addr) && inlen >= 4) {
                     int addr = mem.read32(indata_addr);
                     if (mem.isAddressGood(addr)) {
+                        Modules.log.debug("sceIoDevctl refer ms free space");
                         mem.write32(addr, maxClusters);
                         mem.write32(addr + 4, freeClusters);
                         mem.write32(addr + 8, maxSectors);

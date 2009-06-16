@@ -613,6 +613,10 @@ public class sceAudio implements HLEModule, HLEThread {
             Modules.log.warn("sceAudioOutput bad pointer " + String.format("0x%08X", pvoid_buf));
             cpu.gpr[2] = -1;
         } else {
+            if (Modules.log.isDebugEnabled()) {
+                Modules.log.debug(String.format("sceAudioOutput 0x%08X", pvoid_buf));
+            }
+
         	if (!pspchannels[channel].isOutputBlocking()) {
                 sceAudioChangeChannelVolume(channel, vol, vol);
                 cpu.gpr[2] = doAudioOutput(channel, pvoid_buf);
@@ -632,6 +636,10 @@ public class sceAudio implements HLEModule, HLEThread {
             Modules.log.warn("sceAudioOutputBlocking bad pointer " + String.format("0x%08X", pvoid_buf));
             cpu.gpr[2] = -1;
         } else {
+            if (Modules.log.isDebugEnabled()) {
+                Modules.log.debug(String.format("sceAudioOutputBlocking 0x%08X", pvoid_buf));
+            }
+
         	ThreadMan threadMan = ThreadMan.getInstance();
             if (!pspchannels[channel].isOutputBlocking() || disableBlockingAudio) {
             	if (Modules.log.isDebugEnabled()) {
@@ -666,6 +674,10 @@ public class sceAudio implements HLEModule, HLEThread {
             Modules.log.warn("sceAudioOutputPanned bad pointer " + String.format("0x%08X", pvoid_buf));
             cpu.gpr[2] = -1;
         } else {
+            if (Modules.log.isDebugEnabled()) {
+                Modules.log.debug(String.format("sceAudioOutputPanned 0x%08X", pvoid_buf));
+            }
+
         	if (!pspchannels[channel].isOutputBlocking()) {
                 sceAudioChangeChannelVolume(channel, leftvol, rightvol);
                 cpu.gpr[2] = doAudioOutput(channel, pvoid_buf);
@@ -685,6 +697,10 @@ public class sceAudio implements HLEModule, HLEThread {
             Modules.log.warn("sceAudioOutputPannedBlocking bad pointer " + String.format("0x%08X", pvoid_buf));
             cpu.gpr[2] = -1;
         } else {
+            if (Modules.log.isDebugEnabled()) {
+                Modules.log.debug(String.format("sceAudioOutputPannedBlocking 0x%08X", pvoid_buf));
+            }
+
         	ThreadMan threadMan = ThreadMan.getInstance();
             if (!pspchannels[channel].isOutputBlocking() || disableBlockingAudio) {
 	            sceAudioChangeChannelVolume(channel, leftvol, rightvol);

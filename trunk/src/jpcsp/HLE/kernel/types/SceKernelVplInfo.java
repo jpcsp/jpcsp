@@ -101,9 +101,8 @@ public class SceKernelVplInfo {
     }
 
     public void read(Memory mem, int address) {
-        address &= 0x3FFFFFFF;
         int size        = mem.read32(address);
-        name            = Utilities.readStringNZ(mem, address + 4, 31);
+        name            = Utilities.readStringNZ(mem, address + 4, 32);
         attr            = mem.read32(address + 36);
         poolSize        = mem.read32(address + 40);
         freeSize        = mem.read32(address + 44);
@@ -112,13 +111,7 @@ public class SceKernelVplInfo {
 
     public void write(Memory mem, int address) {
         mem.write32(address, size);
-
-        int i;
-        for (i = 0; i < 32 && i < name.length(); i++)
-            mem.write8(address + 4 + i, (byte)name.charAt(i));
-        for (; i < 32; i++)
-            mem.write8(address + 4 + i, (byte)0);
-
+        Utilities.writeStringNZ(mem, address + 4, 32, name);
         mem.write32(address + 36, attr);
         mem.write32(address + 40, poolSize);
         mem.write32(address + 44, freeSize);

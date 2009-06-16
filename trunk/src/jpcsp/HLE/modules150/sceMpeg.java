@@ -1246,7 +1246,7 @@ public class sceMpeg implements HLEModule {
             Modules.log.debug("sceMpegRingbufferAvailableSize(ringbuffer=0x"
                 + Integer.toHexString(ringbuffer_addr) + ") ret:" + cpu.gpr[2]);
         } else {
-            Modules.log.debug("IGNORING:sceMpegRingbufferAvailableSize(ringbuffer=0x"
+            Modules.log.warn("IGNORING:sceMpegRingbufferAvailableSize(ringbuffer=0x"
                 + Integer.toHexString(ringbuffer_addr) + ") ret:" + cpu.gpr[2]);
             cpu.gpr[2] = 0; // fake
         }

@@ -57,6 +57,7 @@ public class FplManager {
             Modules.log.warn("UNIMPLEMENTED:sceKernelCreateFpl option at 0x" + Integer.toHexString(opt_addr)
                 + " (size=" + optsize + ")");
 
+            // [1] = 0x40 phantasy star
             for (int i = 4; i < optsize && i < 200; i += 4) {
                 Modules.log.debug(String.format("opt[%d] = %08X", (i / 4), mem.read32(opt_addr + i)));
             }
@@ -71,7 +72,7 @@ public class FplManager {
         } else {
             SceKernelFplInfo info = SceKernelFplInfo.tryCreateFpl(name, partitionid, attr, blocksize, blocks);
             if (info != null) {
-                Modules.log.debug("sceKernelCreateFpl assigned uid " + Integer.toHexString(info.uid));
+                Modules.log.debug("sceKernelCreateFpl '" + name + "' assigned uid " + Integer.toHexString(info.uid));
                 fplMap.put(info.uid, info);
                 cpu.gpr[2] = info.uid;
             } else {
