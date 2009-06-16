@@ -70,9 +70,12 @@ public class SceKernelErrors {
     public final static int ERROR_EVENT_FLAG_POLL_FAILED = 0x800201af;
     public final static int ERROR_EVENT_FLAG_NO_MULTI_PERM = 0x800201b0;
     // some missing
+    public final static int ERROR_MESSAGE_PIPE_FULL = 0x800201b3;
+    public final static int ERROR_MESSAGE_PIPE_EMPTY = 0x800201b4;
     public final static int ERROR_WAIT_DELETE = 0x800201b5;
     public final static int ERROR_ILLEGAL_MEMBLOCK = 0x800201b6;
     // some missing
+    public final static int ERROR_ILLEGAL_SIZE = 0x800201bc;
     public final static int ERROR_ILLEGAL_COUNT = 0x800201bd;
     // some missing
     public final static int ERROR_MUTEX_LOCKED = 0x800201c4; // 2.71+
