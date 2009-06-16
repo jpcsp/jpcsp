@@ -72,7 +72,6 @@ public class pspge {
 
     public void Initialise() {
 
-
         syncThreadId = -1;
         waitingForSync = false;
         syncDone = false;
@@ -268,14 +267,14 @@ public class pspge {
                 msg += ", discarding list";
             }
 
-            if (list.thid != 0) {
+            if (list.thid > 0) {
                 msg += ", waking thread " + Integer.toHexString(list.thid);
             }
 
             VideoEngine.log.debug(msg);
         }
 
-        if (list.thid != 0) {
+        if (list.thid > 0) {
             // things might go wrong if the thread already exists in the queue
             deferredThreadWakeupQueue.add(list.thid);
         }
@@ -444,7 +443,7 @@ public class pspge {
     }
 
     public void sceGeUnsetCallback(int cbid) {
-        Modules.log.debug("sceGeUnsetCallback cbid=" + cbid);
+        Modules.log.debug("sceGeUnsetCallback cbid=" + Integer.toHexString(cbid));
         ThreadMan threadMan = ThreadMan.getInstance();
         SceKernelCallbackInfo callbackSignal = signalCallbacks.remove(cbid);
         SceKernelCallbackInfo callbackFinish = finishCallbacks.remove(cbid);

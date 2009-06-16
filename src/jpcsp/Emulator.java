@@ -218,6 +218,7 @@ public class Emulator implements Runnable {
     {
         if (!moduleLoaded) {
             Emulator.log.debug("Nothing loaded, can't run...");
+            gui.RefreshButtons();
             return;
         }
 
@@ -253,7 +254,7 @@ public class Emulator implements Runnable {
 
                 if (State.debugger != null) {
                     State.debugger.RefreshButtons();
-                    State.debugger.SafeRefreshDebugger(true);
+                    State.debugger.SafeRefreshDebugger(true); // executes in GUI thread
                 }
 
                 if (State.memoryViewer != null)
@@ -288,7 +289,7 @@ public class Emulator implements Runnable {
 
                 if (State.debugger != null) {
                     State.debugger.RefreshButtons();
-                    State.debugger.SafeRefreshDebugger(true);
+                    State.debugger.SafeRefreshDebugger(true); // executes in GUI thread
                 }
 
                 if (State.memoryViewer != null)

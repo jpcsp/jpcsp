@@ -279,7 +279,7 @@ public class sceSasCore implements HLEModule {
 				}
 			}
 		}
-    	
+
     }
 
     private static VoicesCheckerThread voicesCheckerThread = null;
@@ -807,16 +807,12 @@ public class sceSasCore implements HLEModule {
         // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
-        /* put your own code here instead */
-
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        int sasCore = cpu.gpr[4];
+        int grain = cpu.gpr[5]; // 0x400
 
         Modules.log.warn("Unimplemented NID function __sceSasSetGrain [0xD1E0A01E] " + makeLogParams(cpu));
 
         cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
     }
 
     public void __sceSasRevEVOL(Processor processor) {

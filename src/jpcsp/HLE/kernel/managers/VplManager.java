@@ -40,7 +40,6 @@ public class VplManager {
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Processor.memory;
 
-        name_addr &= 0x3FFFFFFF;
         String name = Utilities.readStringZ(name_addr);
         Modules.log.info("sceKernelCreateVpl(name=" + name
             + ",partition=" + partitionid
@@ -62,6 +61,7 @@ public class VplManager {
         } else {
             SceKernelVplInfo info = SceKernelVplInfo.tryCreateVpl(name, partitionid, attr, size);
             if (info != null) {
+                Modules.log.debug("sceKernelCreateVpl '" + name + "' assigned uid " + Integer.toHexString(info.uid));
                 vplMap.put(info.uid, info);
                 cpu.gpr[2] = info.uid;
             } else {
@@ -73,7 +73,7 @@ public class VplManager {
     public void sceKernelDeleteVpl(int uid) {
         CpuState cpu = Emulator.getProcessor().cpu;
 
-        Modules.log.info("sceKernelDeleteVpl(uid=0x" + Integer.toHexString(uid) + ")");
+        Modules.log.debug("sceKernelDeleteVpl(uid=0x" + Integer.toHexString(uid) + ")");
 
         SceKernelVplInfo info = vplMap.remove(uid);
         if (info == null) {
@@ -111,7 +111,7 @@ public class VplManager {
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Processor.memory;
 
-        Modules.log.info("sceKernelAllocateVpl(uid=0x" + Integer.toHexString(uid)
+        Modules.log.debug("sceKernelAllocateVpl(uid=0x" + Integer.toHexString(uid)
             + ",size=0x" + Integer.toHexString(size)
             + ",data=0x" + Integer.toHexString(data_addr)
             + ",timeout=0x" + Integer.toHexString(timeout_addr) + ")");
@@ -166,7 +166,7 @@ public class VplManager {
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Processor.memory;
 
-        Modules.log.info("sceKernelTryAllocateVpl(uid=0x" + Integer.toHexString(uid)
+        Modules.log.debug("sceKernelTryAllocateVpl(uid=0x" + Integer.toHexString(uid)
             + ",size=0x" + Integer.toHexString(size)
             + ",data=0x" + Integer.toHexString(data_addr) + ")");
 

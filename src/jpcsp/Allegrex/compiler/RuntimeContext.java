@@ -152,7 +152,7 @@ public class RuntimeContext {
 				if (cpu.pc == returnAddress || cpu.pc == alternativeReturnAddress) {
 					interpret = false;
 					returnValue = cpu.pc;
-				} 
+				}
 			}
 		}
 
@@ -560,6 +560,9 @@ public class RuntimeContext {
 
     	if (!thread.getThreadInfo().do_delete) {
     		thread.setInSyscall(true);
+
+            log.info("Thread exit detected SceUID=" + Integer.toHexString(threadInfo.uid)
+                + " name:'" + threadInfo.name + "' return:0x" + Integer.toHexString(gpr[2]));
 
 			ThreadMan threadManager = ThreadMan.getInstance();
 			threadInfo.exitStatus = gpr[2];

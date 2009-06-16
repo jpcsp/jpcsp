@@ -615,7 +615,7 @@ public class Common {
                 return String.format("%2$s <=> li %1$s, 0", gprNames[rt], s);
             } else if (opname.matches("slti")) {
                 return String.format("%3$s <=> li %1$s, %2$d", gprNames[rt], ((0 < imm16) ? 1 : 0), s);
-            } else if (opname.matches("addiu")) {
+            } else if (opname.matches("addiu") || opname.equals("ori")) {
                 return String.format("%3$s <=> li %1$s, %2$d", gprNames[rt], imm16, s);
             }
 

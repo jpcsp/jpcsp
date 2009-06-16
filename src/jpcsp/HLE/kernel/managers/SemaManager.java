@@ -37,7 +37,8 @@ import static jpcsp.util.Utilities.*;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.kernel.Managers;
-import jpcsp.HLE.kernel.types.*;
+import jpcsp.HLE.kernel.types.SceKernelSemaInfo;
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
 
@@ -346,16 +347,16 @@ public class SemaManager {
     /** This is attempt to signal the sema and always return immediately */
     public void sceKernelPollSema(int semaid, int signal)
     {
-        Modules.log.debug("sceKernelPollSema id= 0x" + Integer.toHexString(semaid) + " signal= " + signal);
+        String msg = "sceKernelPollSema id=0x" + Integer.toHexString(semaid) + " signal=" + signal;
 
         if (signal <= 0) {
-            Modules.log.warn("sceKernelPollSema - bad signal " + signal);
+            Modules.log.warn(msg + " bad signal");
             Emulator.getProcessor().cpu.gpr[2] = ERROR_ILLEGAL_COUNT;
             return;
         }
 
         if (semaid <= 0) {
-            Modules.log.warn("sceKernelPollSema bad id=0x" + Integer.toHexString(semaid));
+            Modules.log.warn(msg + " bad uid");
             Emulator.getProcessor().cpu.gpr[2] = ERROR_UNKNOWN_UID;
             return;
         }
@@ -363,11 +364,13 @@ public class SemaManager {
         SceUidManager.checkUidPurpose(semaid, "ThreadMan-sema", true);
         SceKernelSemaInfo sema = semaMap.get(semaid);
         if (sema == null) {
-            Modules.log.warn("sceKernelPollSema - unknown uid 0x" + Integer.toHexString(semaid));
+            Modules.log.warn(msg + " unknown uid");
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_SEMAPHORE;
         } else if (sema.currentCount - signal < 0) {
+            Modules.log.debug(msg + " '" + sema.name + "'");
             Emulator.getProcessor().cpu.gpr[2] = ERROR_SEMA_ZERO;
         } else {
+            Modules.log.debug(msg + " '" + sema.name + "'");
             sema.currentCount -= signal;
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }

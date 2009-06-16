@@ -119,7 +119,7 @@ public class DumpDebugState
             log(String.format("Thread Attr: 0x%08X Current Priority: 0x%02X Initial Priority: 0x%02X", thread.attr, thread.currentPriority, thread.initPriority));
             log(String.format("Thread Entry: 0x%08X Stack: 0x%08X - 0x%08X Stack Size: 0x%08X", thread.entry_addr, thread.stack_addr, thread.stack_addr + thread.stackSize, thread.stackSize));
             log(String.format("Thread Run Clocks: %d Exit Code: 0x%08X", thread.runClocks, thread.exitStatus));
-            log(String.format("Thread Wait Type: %s Ms: %d Forever: %s", getThreadWaitName(thread), thread.wait.micros, thread.wait.forever));
+            log(String.format("Thread Wait Type: %s Us: %d Forever: %s", getThreadWaitName(thread), thread.wait.micros, thread.wait.forever));
 
 /*
     // callbacks, only 1 of each type can be registered per thread
