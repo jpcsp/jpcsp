@@ -182,6 +182,7 @@ public class MsgPipeManager {
             + ",size=0x" + Integer.toHexString(size)
             + ",opt=0x" + Integer.toHexString(opt_addr) + ")");
 
+        // 0x1100 Star Ocean: First Departure
         if (attr != 0) Modules.log.warn("UNIMPLEMENTED:sceKernelCreateMsgPipe attr value 0x" + Integer.toHexString(attr));
 
         if (mem.isAddressGood(opt_addr)) {
@@ -227,15 +228,19 @@ public class MsgPipeManager {
             micros = mem.read32(timeout_addr);
         }
 
+        String waitType = "";
+        if (poll) waitType = "poll";
+        else if (timeout_addr == 0) waitType = "forever";
+        else waitType = micros + " ms";
+        if (do_callbacks) waitType += " + CB";
+
         Modules.log.info("hleKernelSendMsgPipe(uid=0x" + Integer.toHexString(uid)
             + ",msg=0x" + Integer.toHexString(msg_addr)
             + ",size=0x" + Integer.toHexString(size)
             + ",unk1=0x" + Integer.toHexString(unk1)
             + ",unk2=0x" + Integer.toHexString(unk2)
             + ",timeout=0x" + Integer.toHexString(timeout_addr) + ")"
-            + " cb=" + do_callbacks
-            + " poll=" + poll
-            + " " + micros + " ms");
+            + " " + waitType);
 
         SceKernelMppInfo info = msgMap.get(uid);
         if (info == null) {
@@ -272,18 +277,23 @@ public class MsgPipeManager {
                     threadMan.contextSwitch(threadMan.nextThread());
                 } else {
                     Modules.log.warn("hleKernelSendMsgPipe illegal size 0x" + Integer.toHexString(size)
-                        + " max 0x" + Integer.toHexString(info.freeSize));
+                        + " max 0x" + Integer.toHexString(info.freeSize) + " (pipe needs consuming)");
                     cpu.gpr[2] = ERROR_ILLEGAL_SIZE;
+
+                    // not sure about this
+                    if (do_callbacks) {
+                        ThreadMan.getInstance().yieldCurrentThreadCB();
+                    }
                 }
             } else {
                 // success
+                cpu.gpr[2] = 0;
 
                 // not sure about this
                 if (do_callbacks) {
                     ThreadMan.getInstance().yieldCurrentThreadCB();
                 }
 
-                cpu.gpr[2] = 0;
                 updateWaitingMsgPipeReceive(info);
             }
         }
@@ -311,15 +321,19 @@ public class MsgPipeManager {
             micros = mem.read32(timeout_addr);
         }
 
+        String waitType = "";
+        if (poll) waitType = "poll";
+        else if (timeout_addr == 0) waitType = "forever";
+        else waitType = micros + " ms";
+        if (do_callbacks) waitType += " + CB";
+
         Modules.log.info("hleKernelReceiveMsgPipe(uid=0x" + Integer.toHexString(uid)
             + ",msg=0x" + Integer.toHexString(msg_addr)
             + ",size=0x" + Integer.toHexString(size)
             + ",unk1=0x" + Integer.toHexString(unk1)
             + ",unk2=0x" + Integer.toHexString(unk2)
             + ",timeout=0x" + Integer.toHexString(timeout_addr) + ")"
-            + " cb=" + do_callbacks
-            + " poll=" + poll
-            + " " + micros + " ms");
+            + " " + waitType);
 
         SceKernelMppInfo info = msgMap.get(uid);
         if (info == null) {
@@ -329,11 +343,6 @@ public class MsgPipeManager {
             Modules.log.warn("hleKernelReceiveMsgPipe illegal size 0x" + Integer.toHexString(size)
                 + " max 0x" + Integer.toHexString(info.bufSize));
             cpu.gpr[2] = ERROR_ILLEGAL_SIZE;
-        } else if (size > info.availableReadSize()) {
-            // TODO if !poll then wait
-            Modules.log.warn("PARTIAL:hleKernelReceiveMsgPipe trying to read more than is available size 0x" + Integer.toHexString(size)
-                + " available 0x" + Integer.toHexString(info.bufSize - info.freeSize));
-            cpu.gpr[2] = ERROR_MESSAGE_PIPE_EMPTY;
         } else {
             if (!tryReceiveMsgPipe(mem, info, msg_addr, size)) {
                 if (!poll) {
@@ -363,16 +372,21 @@ public class MsgPipeManager {
                     Modules.log.warn("hleKernelReceiveMsgPipe trying to read more than is available size 0x" + Integer.toHexString(size)
                         + " available 0x" + Integer.toHexString(info.bufSize - info.freeSize));
                     cpu.gpr[2] = ERROR_MESSAGE_PIPE_EMPTY;
+
+                    // not sure about this
+                    if (do_callbacks) {
+                        ThreadMan.getInstance().yieldCurrentThreadCB();
+                    }
                 }
             } else {
                 // success
+                cpu.gpr[2] = 0;
 
                 // not sure about this
                 if (do_callbacks) {
                     ThreadMan.getInstance().yieldCurrentThreadCB();
                 }
 
-                cpu.gpr[2] = 0;
                 updateWaitingMsgPipeSend(info);
             }
         }
