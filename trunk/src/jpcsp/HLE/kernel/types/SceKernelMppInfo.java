@@ -43,7 +43,7 @@ public class SceKernelMppInfo {
     private int head; // relative to address
     private int tail; // relative to address
 
-    public SceKernelMppInfo(String name, int partitionid, int attr, int size) {
+    private SceKernelMppInfo(String name, int partitionid, int attr, int size) {
         this.name = name;
         this.attr = attr;
 
