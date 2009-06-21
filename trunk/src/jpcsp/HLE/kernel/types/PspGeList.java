@@ -40,6 +40,7 @@ public class PspGeList
     public int id;
 
     public int thid; // the thread we are blocking
+    public boolean listHasFinished;
 
     public PspGeList(int list_addr, int stall_addr, int cbid, int arg_addr) {
         this.list_addr = list_addr;

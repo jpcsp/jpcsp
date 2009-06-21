@@ -44,6 +44,7 @@ import javax.swing.event.ListSelectionEvent;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Settings;
+import jpcsp.State;
 
 import jpcsp.Allegrex.Instructions.*;
 import jpcsp.Allegrex.Decoder;
@@ -1461,11 +1462,11 @@ private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
 }//GEN-LAST:event_jButton3ActionPerformed
 
 private void captureButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_captureButtonActionPerformed
-    System.out.println("Not yet implemented");
+    State.captureGeNextFrame = true;
 }//GEN-LAST:event_captureButtonActionPerformed
 
 private void replayButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_replayButtonActionPerformed
-    System.out.println("Not yet implemented");
+    State.replayGeNextFrame = true;
 }//GEN-LAST:event_replayButtonActionPerformed
 
 private void dumpDebugStateButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_dumpDebugStateButtonActionPerformed
