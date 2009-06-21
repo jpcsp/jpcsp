@@ -37,9 +37,11 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Settings;
+import jpcsp.State;
 import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.pspge;
 import jpcsp.HLE.kernel.types.PspGeList;
+import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.graphics.textures.Texture;
 import jpcsp.graphics.textures.TextureCache;
 import jpcsp.memory.IMemoryReader;
@@ -207,12 +209,13 @@ public class VideoEngine {
 
 
     private boolean listHasEnded;
-    //private DisplayList currentList; // The currently executing list
     private PspGeList currentList; // The currently executing list
+
     private boolean useVBO = true;
     private int[] vboBufferId = new int[1];
     private static final int vboBufferSize = 1024 * 1024;
     private FloatBuffer vboBuffer = BufferUtil.newFloatBuffer(vboBufferSize);
+
     private boolean useShaders = true;
     private int shaderProgram;
 
@@ -262,6 +265,10 @@ public class VideoEngine {
     	this.gl = gl;
     	this.glu = new GLU();
 
+        String openGLVersion = getOpenGLVersion(gl);
+        openGL1_2 = openGLVersion.compareTo("1.2") >= 0;
+        openGL1_5 = openGLVersion.compareTo("1.5") >= 0;
+
         useVBO = !Settings.getInstance().readBool("emu.disablevbo") &&
             gl.isFunctionAvailable("glGenBuffersARB") &&
             gl.isFunctionAvailable("glBindBufferARB") &&
@@ -279,6 +286,8 @@ public class VideoEngine {
 			gl.isFunctionAvailable("glValidateProgram") &&
 			gl.isFunctionAvailable("glUseProgram") && true;
 
+        VideoEngine.log.info("OpenGL version: " + openGLVersion);
+
         if(useShaders) {
         	VideoEngine.log.info("Using shaders");
         	loadShaders(gl);
@@ -288,9 +297,6 @@ public class VideoEngine {
             VideoEngine.log.info("Using VBO");
             buildVBO(gl);
         }
-
-        openGL1_2 = getOpenGLVersion(gl).compareTo("1.2") >= 0;
-        openGL1_5 = getOpenGLVersion(gl).compareTo("1.5") >= 0;
     }
 
     private void buildVBO(GL gl) {
@@ -412,8 +418,6 @@ public class VideoEngine {
      * @return true if an update was made
      */
     public boolean update() {
-        boolean updated = false;
-
         PspGeList list = drawListQueue.poll();
         if (list == null)
             return false;
@@ -425,42 +429,44 @@ public class VideoEngine {
         TextureCache.getInstance().resetTextureAlreadyHashed();
         somethingDisplayed = false;
 
+        if (State.captureGeNextFrame) {
+            CaptureManager.startCapture("capture.bin", list);
+        }
+
+        if (State.replayGeNextFrame) {
+            // Load the replay list into drawListQueue
+            CaptureManager.startReplay("capture.bin");
+
+            // Hijack the current list with the replay list
+            // TODO this is assuming there is only 1 list in drawListQueue at this point, only the last list is the replay list
+            PspGeList replayList = drawListQueue.poll();
+            replayList.id = list.id;
+            replayList.syncStatus = list.syncStatus;
+            replayList.thid = list.thid;
+            list = replayList;
+        }
+
         do {
             executeList(list);
             list = drawListQueue.poll();
         } while(list != null);
-        updated = true;
-
-        /* old
-        DisplayList.Lock();
-        Iterator<DisplayList> it = DisplayList.iterator();
-        while(it.hasNext() && !Emulator.pause) {
-            DisplayList list = it.next();
-            if (list.status == DisplayList.QUEUED && list.HasFinish()) {
-                executeList(list);
-
-                if (list.status == DisplayList.DRAWING_DONE) {
-                    updated = true;
-                } else if (list.status == DisplayList.DONE) {
-                    it.remove();
-                    updated = true;
-                }
-            }
-        }
-        DisplayList.Unlock();
-        */
 
         if (useShaders)
         	gl.glUseProgram(0);
 
-        /* old
-        if (updated)
-            jpcsp.HLE.pspge.getInstance().syncDone = true;
-        */
+        if (State.captureGeNextFrame) {
+            // Can't end capture until we get a sceDisplaySetFrameBuf after the list has executed
+            CaptureManager.markListExecuted();
+        }
+
+        if (State.replayGeNextFrame) {
+            CaptureManager.endReplay();
+            State.replayGeNextFrame = false;
+        }
 
         statistics.end();
 
-        return updated;
+        return true;
     }
 
     // call from GL thread
@@ -469,7 +475,6 @@ public class VideoEngine {
     // - But user may also press pause button
     //   - Either continue drawing to the end of the list (bad if the list contains an infinite loop)
     //   - Or we want to be able to restart drawing when the user presses the run button
-    //private void executeList(DisplayList list) {
     private void executeList(PspGeList list) {
         currentList = list;
         listHasEnded = false;
@@ -488,7 +493,6 @@ public class VideoEngine {
         }
 
         if (currentList.pc == currentList.stall_addr) {
-            //currentList.status = DisplayList.STALL_REACHED;
             currentList.currentStatus = PSP_GE_LIST_STALL_REACHED;
             if (log.isDebugEnabled()) {
                 log("list id=" + currentList.id + " stalled at " + String.format("%08x", currentList.stall_addr) + " listHasEnded=" + listHasEnded);
@@ -500,8 +504,17 @@ public class VideoEngine {
             currentList.currentStatus = PSP_GE_LIST_CANCEL_DONE;
         }
 
-        // takes priority over PSP_GE_LIST_STALL_REACHED
+        // let DONE take priority over STALL_REACHED
         if (listHasEnded) {
+
+            // for now testing, but maybe list is not DONE until we get a FINISH and an END?
+            // this could explain games trying to sync lists that have been discarded (fiveofhearts)
+            // No FINISH:
+            // - Virtua Tennis: World Tour (1 instruction: signal)
+            if (!currentList.listHasFinished) {
+                VideoEngine.log.warn("END without FINISH id=" + currentList.id);
+            }
+
             currentList.currentStatus = PSP_GE_LIST_DONE;
         }
 
@@ -639,6 +652,11 @@ public class VideoEngine {
 			tmp_clut_buffer16[i + 1] = (short) (n >> 16);
 		}
 
+        if (State.captureGeNextFrame) {
+            log.info("Capture readClut16");
+            CaptureManager.captureRAM(tex_clut_addr, clutNumEntries * 2);
+        }
+
     	return tmp_clut_buffer16;
     }
 
@@ -648,6 +666,11 @@ public class VideoEngine {
 		for (int i = tex_clut_start; i < clutNumEntries; i++) {
 			tmp_clut_buffer32[i] = mem.read32(tex_clut_addr + i * 4);
 		}
+
+        if (State.captureGeNextFrame) {
+            log.info("Capture readClut32");
+            CaptureManager.captureRAM(tex_clut_addr, clutNumEntries * 4);
+        }
 
     	return tmp_clut_buffer32;
     }
@@ -687,6 +710,11 @@ public class VideoEngine {
             ydest += (rowWidth * 8)/4;
         }
 
+        if (State.captureGeNextFrame) {
+            log.info("Capture unswizzleTextureFromMemory");
+            CaptureManager.captureRAM(texaddr, rowWidth * texture_height[level]);
+        }
+
         return IntBuffer.wrap(tmp_texture_buffer32);
     }
 
@@ -708,6 +736,7 @@ public class VideoEngine {
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(FINISH) + " (hex="+Integer.toHexString(normalArgument)+",int="+normalArgument+",float="+floatArgument+")");
                 }
+                currentList.listHasFinished = true;
                 currentList.pushFinishCallback(normalArgument);
                 break;
 
@@ -1463,7 +1492,10 @@ public class VideoEngine {
             }
 
             case TPSM:
-            	texture_storage = normalArgument & 0xFF; // saw a game send 0x105
+                // TODO find correct mask
+                // - unknown game 0x105 (261)
+                // - hot wheels 0x40 (64)
+            	texture_storage = normalArgument & 0xFF;
                 if (log.isDebugEnabled()) {
                     log ("sceGuTexMode(tpsm=" + texture_storage + "(" + getPsmName(texture_storage) + "), X, X, X)");
                 }
@@ -1924,6 +1956,13 @@ public class VideoEngine {
                         break;
                 }
 
+                // Don't capture the ram if the vertex list is embedded in the display list. TODO handle stall_addr == 0 better
+                // TODO may need to move inside the loop if indices are used, or find the largest index so we can calculate the size of the vertex list
+                if (State.captureGeNextFrame && !isVertexBufferEmbedded()) {
+                    log.info("Capture PRIM");
+                    CaptureManager.captureRAM(vinfo.ptr_vertex, vinfo.vertexSize * numberOfVertex);
+                }
+
                 endRendering(useVertexColor, useTexture);
                 break;
             }
@@ -2173,45 +2212,52 @@ public class VideoEngine {
 
 	        case ATST: {
 
-	            	int func = GL.GL_ALWAYS;
+                    int guFunc = normalArgument & 0xFF;
+	            	int guReferenceAlphaValue = (normalArgument >> 8) & 0xFF;
+	            	int glFunc = GL.GL_ALWAYS;
+                    float glReferenceAlphaValue = guReferenceAlphaValue / 255.0f;
 
-	            	switch(normalArgument & 0xFF) {
+	            	log("sceGuAlphaFunc(" + guFunc + "," + guReferenceAlphaValue + ")");
+
+	            	switch(guFunc) {
 	            	case ATST_NEVER_PASS_PIXEL:
-	            		func = GL.GL_NEVER;
+	            		glFunc = GL.GL_NEVER;
 	            		break;
 
 	            	case ATST_ALWAYS_PASS_PIXEL:
-	            		func = GL.GL_ALWAYS;
+	            		glFunc = GL.GL_ALWAYS;
 	            		break;
 
 	            	case ATST_PASS_PIXEL_IF_MATCHES:
-	            		func = GL.GL_EQUAL;
+	            		glFunc = GL.GL_EQUAL;
 	            		break;
 
 	            	case ATST_PASS_PIXEL_IF_DIFFERS:
-	            		func = GL.GL_NOTEQUAL;
+	            		glFunc = GL.GL_NOTEQUAL;
 	            		break;
 
 	            	case ATST_PASS_PIXEL_IF_LESS:
-	            		func = GL.GL_LESS;
+	            		glFunc = GL.GL_LESS;
 	            		break;
 
 	            	case ATST_PASS_PIXEL_IF_LESS_OR_EQUAL:
-	            		func = GL.GL_LEQUAL;
+	            		glFunc = GL.GL_LEQUAL;
 	            		break;
 
 	            	case ATST_PASS_PIXEL_IF_GREATER:
-	            		func = GL.GL_GREATER;
+	            		glFunc = GL.GL_GREATER;
 	            		break;
 
 	            	case ATST_PASS_PIXEL_IF_GREATER_OR_EQUAL:
-	            		func = GL.GL_GEQUAL;
+	            		glFunc = GL.GL_GEQUAL;
 	            		break;
+
+                    default:
+                        log.warn("sceGuAlphaFunc unhandled func " + guFunc);
+                        break;
 	            	}
 
-	            	int referenceAlphaValue = (normalArgument >> 8) & 0xff;
-            		gl.glAlphaFunc(func, referenceAlphaValue / 255.0f);
-	            	log ("sceGuAlphaFunc(" + func + "," + referenceAlphaValue + ")");
+            		gl.glAlphaFunc(glFunc, glReferenceAlphaValue);
 
 	            	break;
 	            }
@@ -2548,6 +2594,10 @@ public class VideoEngine {
             			srcAddress += (textureTx_sourceLineWidth - width) * bpp;
             			dstAddress += (textureTx_destinationLineWidth - width) * bpp;
             		}
+
+                    if (State.captureGeNextFrame) {
+                        log.warn("TRXKICK outside of Ge Address space not supported in capture yet");
+                    }
             	} else {
                     log(helper.getCommandString(TRXKICK) + " in Ge Address space");
 
@@ -2590,6 +2640,11 @@ public class VideoEngine {
 	                gl.glLoadIdentity();
 
                 	Buffer buffer = Memory.getInstance().getBuffer(textureTx_sourceAddress, lineWidth * height * bpp);
+
+                    if (State.captureGeNextFrame) {
+                        log.info("Capture TRXKICK");
+                        CaptureManager.captureRAM(textureTx_sourceAddress, lineWidth * height * bpp);
+                    }
 
 	        		//
 	        		// glTexImage2D only supports
@@ -2951,7 +3006,7 @@ public class VideoEngine {
         }
 
         // Load the texture if not yet loaded
-        if (texture == null || !texture.isLoaded()) {
+        if (texture == null || !texture.isLoaded() || State.captureGeNextFrame || State.replayGeNextFrame) {
             if (log.isDebugEnabled()) {
                 log(helper.getCommandString(TFLUSH)
                     + " " + String.format("0x%08X", texture_base_pointer[0])
@@ -3015,6 +3070,11 @@ public class VideoEngine {
 	                                    tmp_texture_buffer16[i+1]   = clut[getClutIndex((index >> 4) & 0xF)];
 	                                }
 	                                final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
+
+                                    if (State.captureGeNextFrame) {
+                                        log.info("Capture loadTexture clut 4/16 unswizzled");
+                                        CaptureManager.captureRAM(texaddr, length / 2);
+                                    }
 	                            } else {
 	                                unswizzleTextureFromMemory(texaddr, 0, level);
 	                                int pixels = texture_buffer_width[level] * texture_height[level];
@@ -3062,6 +3122,11 @@ public class VideoEngine {
 	                                    tmp_texture_buffer32[i]   = clut[getClutIndex( index       & 0xF)];
 	                                }
 	                                final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
+
+                                    if (State.captureGeNextFrame) {
+                                        log.info("Capture loadTexture clut 4/32 unswizzled");
+                                        CaptureManager.captureRAM(texaddr, length / 2);
+                                    }
 	                            } else {
 	                                unswizzleTextureFromMemory(texaddr, 0, level);
 	                                int pixels = texture_buffer_width[level] * texture_height[level];
@@ -3120,6 +3185,11 @@ public class VideoEngine {
 	                                    tmp_texture_buffer16[i]     = clut[getClutIndex(index)];
 	                                }
 	                                final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
+
+                                    if (State.captureGeNextFrame) {
+                                        log.info("Capture loadTexture clut 8/16 unswizzled");
+                                        CaptureManager.captureRAM(texaddr, length);
+                                    }
 	                            } else {
 	                                unswizzleTextureFromMemory(texaddr, 1, level);
 	                                for (int i = 0, j = 0; i < texture_buffer_width[level]*texture_height[level]; i += 4, j++) {
@@ -3154,6 +3224,11 @@ public class VideoEngine {
 	                                    tmp_texture_buffer32[i] = clut[getClutIndex(index)];
 	                                }
 	                                final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
+
+                                    if (State.captureGeNextFrame) {
+                                        log.info("Capture loadTexture clut 8/32 unswizzled");
+                                        CaptureManager.captureRAM(texaddr, length);
+                                    }
 	                            } else {
 	                                unswizzleTextureFromMemory(texaddr, 1, level);
 	                                int pixels = texture_buffer_width[level] * texture_height[level];
@@ -3211,6 +3286,11 @@ public class VideoEngine {
 	                        }
 
 	                        final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
+
+                            if (State.captureGeNextFrame) {
+                                log.info("Capture loadTexture 16 unswizzled");
+                                CaptureManager.captureRAM(texaddr, length * 2);
+                            }
 	                    } else {
 	                        final_buffer = unswizzleTextureFromMemory(texaddr, 2, level);
 	                    }
@@ -3608,6 +3688,13 @@ public class VideoEngine {
             }
         }
 
+        // Don't capture the ram if the vertex list is embedded in the display list. TODO handle stall_addr == 0 better
+        // TODO may need to move inside the loop if indices are used, or find the largest index so we can calculate the size of the vertex list
+        if (State.captureGeNextFrame && !isVertexBufferEmbedded()) {
+            log.info("Capture drawBezier");
+            CaptureManager.captureRAM(vinfo.ptr_vertex, vinfo.vertexSize * ucount * vcount);
+        }
+
         int udivs = patch_div_s;
         int vdivs = patch_div_t;
 
@@ -3770,6 +3857,11 @@ public class VideoEngine {
                 }
                 final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
             }
+
+            if (State.captureGeNextFrame) {
+                log.info("Capture getTexture32BitBuffer unswizzled");
+                CaptureManager.captureRAM(texaddr, bufferlen);
+            }
         } else {
             final_buffer = unswizzleTextureFromMemory(texaddr, 4, level);
         }
@@ -3793,5 +3885,19 @@ public class VideoEngine {
         int compressedTextureSize = compressedTextureWidth * compressedTextureHeight * 4 / compressionRatio;
 
         return compressedTextureSize;
+    }
+
+
+    // For capture/replay
+
+    public int getFBP() { return fbp; }
+    public int getFBW() { return fbw; }
+    public int getZBP() { return zbp; }
+    public int getZBW() { return zbw; }
+    public int getPSM() { return psm; }
+
+    private boolean isVertexBufferEmbedded() {
+        // stall_addr may be 0
+        return (vinfo.ptr_vertex >= currentList.list_addr && vinfo.ptr_vertex < currentList.stall_addr);
     }
 }

@@ -36,7 +36,9 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Settings;
+import jpcsp.State;
 import jpcsp.graphics.VideoEngine;
+import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
 
@@ -99,7 +101,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     private int bufferwidthGe;
     private int pixelformatGe;
 
-    private volatile boolean refreshRequired;
+    private boolean displayDirty;
+    private boolean geDirty;
     private long lastUpdate;
 
     // Canvas fields
@@ -154,7 +157,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         bottomaddrFb =
             topaddrFb + bufferwidthFb * height * getPixelFormatBytes(pixelformatFb);
 
-        refreshRequired = true;
+        displayDirty = true;
+        geDirty = false;
         createTex = true;
 
         disableGE =
@@ -194,11 +198,12 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
     public void step(boolean immediately) {
         long now = System.currentTimeMillis();
-        if (immediately || now - lastUpdate > 1000 / 60) {
+        if (immediately || now - lastUpdate > 1000 / 60 || displayDirty) {
         	if (!onlyGEGraphics || VideoEngine.getInstance().hasDrawLists()) {
-	            if (refreshRequired) {
+	            if (displayDirty || geDirty) {
 	                display();
-	                refreshRequired = false;
+	                displayDirty = false;
+	                geDirty = false;
 	            }
 	            lastUpdate = now;
         	}
@@ -215,23 +220,23 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     public void write8(int address, int data) {
         address &= 0x3FFFFFFF;
         if (address >= topaddrFb && address < bottomaddrFb)
-            setDirty(true);
+            displayDirty = true;
     }
 
     public void write16(int address, int data) {
         address &= 0x3FFFFFFF;
         if (address >= topaddrFb && address < bottomaddrFb)
-            setDirty(true);
+            displayDirty = true;
     }
 
     public void write32(int address, int data) {
         address &= 0x3FFFFFFF;
         if (address >= topaddrFb && address < bottomaddrFb)
-            setDirty(true);
+            displayDirty = true;
     }
 
-    public void setDirty(boolean dirty) {
-        refreshRequired = dirty;
+    public void setGeDirty(boolean dirty) {
+        geDirty = dirty;
     }
 
     public void hleDisplaySetGeMode(int width, int height) {
@@ -699,7 +704,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                 getPixelFormatBytes(pixelformatFb);
             pixelsFb = getPixels(topaddrFb, bottomaddrFb);
 
-            refreshRequired = true;
+            displayDirty = true;
 
             if (mode != 0)
                 Modules.log.warn("UNIMPLEMENTED:sceDisplaySetMode mode=" + mode);
@@ -776,8 +781,14 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             texS = (float)width / (float)bufferwidth;
             texT = (float)height / (float)Utilities.makePow2(height);
 
-            refreshRequired = true;
+            displayDirty = true;
             //display();
+
+            if (State.captureGeNextFrame && CaptureManager.hasListExecuted()) {
+                CaptureManager.captureFrameBufDetails();
+                CaptureManager.endCapture();
+                State.captureGeNextFrame = false;
+            }
 
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
@@ -874,4 +885,10 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         this.onlyGEGraphics = onlyGEGraphics;
         VideoEngine.log.info("Only GE Graphics: " + onlyGEGraphics);
     }
+
+    // For capture/replay
+    public int getTopAddrFb() { return topaddrFb; }
+    public int getBufferWidthFb() { return bufferwidthFb; }
+    public int getPixelFormatFb() { return pixelformatFb; }
+    public int getSync() { return sync; }
 }

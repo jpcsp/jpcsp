@@ -1,8 +1,19 @@
 /*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
+This file is part of jpcsp.
 
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package jpcsp;
 
 import java.nio.ByteBuffer;
@@ -17,7 +28,7 @@ import jpcsp.Debugger.MemoryViewer;
 public class State extends jpcsp.HLE.Modules {
 
     // re-enable this when we remove getInstance from all code
-    // also Emulator calls new Processor() too!
+    // also Emulator calls "new Processor()" too!
     //public static final Processor processor = new Processor();
     public static final Memory memory;
     public static final Controller controller;
@@ -25,17 +36,23 @@ public class State extends jpcsp.HLE.Modules {
     public static DisassemblerFrame debugger; // can be null
     public static MemoryViewer memoryViewer; // can be null
     public static final FileLoggerFrame fileLogger;
-    
+
+    public static boolean captureGeNextFrame;
+    public static boolean replayGeNextFrame;
+
     static {
         //processor = new Processor();
         memory = Memory.getInstance();
         controller = new Controller();
-        
+
         //debugger = new DisassemblerFrame();
         //memoryViewer = new MemoryViewer();
         fileLogger = new FileLoggerFrame();
+
+        captureGeNextFrame = false;
+        replayGeNextFrame = false;
     }
-    
+
     @Override
     public void step() {
         //processor.step();
