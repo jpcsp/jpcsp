@@ -44,6 +44,12 @@ public class FastMemory extends Memory {
 	//
 	private int[] all;
 
+	// Enable/disable read & write tracing.
+	// Use final variables to not reduce the performance
+	// (the code is removed/inserted at Java compile time)
+	private static final boolean traceRead  = false;
+	private static final boolean traceWrite = false;
+
 	@Override
 	public boolean allocate() {
 		int allSize = (MemoryMap.END_RAM + 1) / 4;
@@ -94,6 +100,10 @@ public class FastMemory extends Memory {
 				case 2: data >>= 16; break;
 				case 3: data >>= 24; break;
 			}
+
+			if (traceRead && log.isTraceEnabled()) {
+				log.trace("read8(0x" + Integer.toHexString(address).toUpperCase() + ")=0x" + Integer.toHexString(data & 0xFF).toUpperCase());
+			}
 	
 			return data & 0xFF;
 		} catch (Exception e) {
@@ -110,6 +120,11 @@ public class FastMemory extends Memory {
 			if ((address & 0x02) != 0) {
 				data >>= 16;
 			}
+
+			if (traceRead && log.isTraceEnabled()) {
+				log.trace("read16(0x" + Integer.toHexString(address).toUpperCase() + ")=0x" + Integer.toHexString(data & 0xFFFF).toUpperCase());
+			}
+
 			return data & 0xFFFF;
 		} catch (Exception e) {
             invalidMemoryAddress(address, "read16", Emulator.EMU_STATUS_MEM_READ);
@@ -121,6 +136,11 @@ public class FastMemory extends Memory {
 	public int read32(int address) {
 		try {
 			address &= addressMask;
+
+			if (traceRead && log.isTraceEnabled()) {
+				log.trace("read32(0x" + Integer.toHexString(address).toUpperCase() + ")=0x" + Integer.toHexString(all[address / 4]).toUpperCase() + " (" + Float.intBitsToFloat(all[address / 4]) + ")");
+			}
+
 			return all[address / 4];
 		} catch (Exception e) {
 			if (read32AllowedInvalidAddress(address)) {
@@ -136,7 +156,13 @@ public class FastMemory extends Memory {
 	public long read64(int address) {
 		try {
 			address &= addressMask;
-			return (all[address / 4 + 1] << 32) | (all[address / 4] & 0xFFFFFFFFL);
+			long data = (all[address / 4 + 1] << 32) | (all[address / 4] & 0xFFFFFFFFL);
+
+			if (traceRead && log.isTraceEnabled()) {
+				log.trace("read64(0x" + Integer.toHexString(address).toUpperCase() + ")=0x" + Long.toHexString(data).toUpperCase());
+			}
+
+			return data;
 		} catch (Exception e) {
             invalidMemoryAddress(address, "read64", Emulator.EMU_STATUS_MEM_READ);
 			return 0;
@@ -154,6 +180,11 @@ public class FastMemory extends Memory {
 			case 2: memData = (memData & 0xFF00FFFF) | ((data & 0xFF) << 16); break;
 			case 3: memData = (memData & 0x00FFFFFF) | ((data & 0xFF) << 24); break;
 			}
+
+			if (traceWrite && log.isTraceEnabled()) {
+				log.trace("write8(0x" + Integer.toHexString(address).toUpperCase() + ", 0x" + Integer.toHexString(data & 0xFF).toUpperCase() + ")");
+			}
+
 			all[address / 4] = memData;
 		} catch (Exception e) {
             invalidMemoryAddress(address, "write8", Emulator.EMU_STATUS_MEM_WRITE);
@@ -170,6 +201,11 @@ public class FastMemory extends Memory {
 			} else {
 				memData = (memData & 0x0000FFFF) | ((data & 0xFFFF) << 16);
 			}
+
+			if (traceWrite && log.isTraceEnabled()) {
+				log.trace("write16(0x" + Integer.toHexString(address).toUpperCase() + ", 0x" + Integer.toHexString(data & 0xFFFF).toUpperCase() + ")");
+			}
+
 			all[address / 4] = memData;
             pspdisplay.getInstance().write16(address, data);
 		} catch (Exception e) {
@@ -182,7 +218,12 @@ public class FastMemory extends Memory {
 		try {
 			address &= addressMask;
 			all[address / 4] = data;
-            pspdisplay.getInstance().write32(address, data);
+
+			if (traceWrite && log.isTraceEnabled()) {
+				log.trace("write32(0x" + Integer.toHexString(address).toUpperCase() + ", 0x" + Integer.toHexString(data).toUpperCase() + " (" + Float.intBitsToFloat(data) + "))");
+			}
+
+			pspdisplay.getInstance().write32(address, data);
 		} catch (Exception e) {
             invalidMemoryAddress(address, "write32", Emulator.EMU_STATUS_MEM_WRITE);
 		}
@@ -192,6 +233,11 @@ public class FastMemory extends Memory {
 	public void write64(int address, long data) {
 		try {
 			address &= addressMask;
+
+			if (traceWrite && log.isTraceEnabled()) {
+				log.trace("write64(0x" + Integer.toHexString(address).toUpperCase() + ", 0x" + Long.toHexString(data).toUpperCase() + ")");
+			}
+
 			all[address / 4] = (int) data;
 			all[address / 4 + 1] = (int) (data >> 32);
 		} catch (Exception e) {
