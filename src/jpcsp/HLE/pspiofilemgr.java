@@ -269,7 +269,7 @@ public class pspiofilemgr {
         // - Bliss Island - ULES00616
         if (device.equals("host0")) {
             if (iso != null) {
-                device = "dics0";
+                device = "disc0";
             } else {
                 device = "ms0";
             }
