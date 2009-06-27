@@ -7800,7 +7800,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int vt = (insn>>16)&127;
 
-return "Unimplemented VHTFM2";
+	return Common.disasmVDVSVT("VHTFM2", 2, vd, vs, vt);
 }
 };
 public static final Instruction VTFM2 = new Instruction(235) {
@@ -7831,7 +7831,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int vt = (insn>>16)&127;
 
-return "Unimplemented VTFM2";
+	return Common.disasmVDVSVT("VTFM2", 2, vd, vs, vt);
 }
 };
 public static final Instruction VHTFM3 = new Instruction(236) {
@@ -7862,7 +7862,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int vt = (insn>>16)&127;
 
-return "Unimplemented VHTFM3";
+	return Common.disasmVDVSVT("VHTFM3", 3, vd, vs, vt);
 }
 };
 public static final Instruction VTFM3 = new Instruction(237) {
@@ -7893,7 +7893,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int vt = (insn>>16)&127;
 
-return "Unimplemented VTFM3";
+	return Common.disasmVDVSVT("VTFM3", 3, vd, vs, vt);
 }
 };
 public static final Instruction VHTFM4 = new Instruction(238) {
@@ -7924,7 +7924,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int vt = (insn>>16)&127;
 
-return "Unimplemented VHTFM4";
+	return Common.disasmVDVSVT("VHTFM4", 4, vd, vs, vt);
 }
 };
 public static final Instruction VTFM4 = new Instruction(239) {
@@ -7955,7 +7955,7 @@ public String disasm(int address, int insn) {
 	int vs = (insn>>8)&127;
 	int vt = (insn>>16)&127;
 
-return "Unimplemented VTFM4";
+	return Common.disasmVDVSVT("VTFM4", 4, vd, vs, vt);
 }
 };
 public static final Instruction VMSCL = new Instruction(240) {
