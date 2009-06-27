@@ -1,6 +1,18 @@
 /*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
+This file is part of jpcsp.
+
+Jpcsp is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Jpcsp is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex;
 
@@ -1780,137 +1792,73 @@ public class VfpuState extends FpuState {
 
     // VFPU6:VHTFM2
     public void doVHTFM2(int vd, int vs, int vt) {
-        // not sure :(
-        float dot0;
-        float dot1;
         loadVt(1, vt);
         loadVs(2, vs + 0);
-        dot0 = v1[0] * v2[0];
-        dot1 = v1[1] * v2[0];
+        v3[0] = v1[0] * v2[0] + v1[1];
         loadVs(2, vs + 1);
-        v3[0] = dot0 + v1[0];
-        v3[1] = dot1 + v1[1];
+        v3[1] = v1[0] * v2[0] + v1[1];
         saveVd(2, vd, v3);
     }
 
     // VFPU6:VTFM2
     public void doVTFM2(int vd, int vs, int vt) {
-        // not sure :(
-        float dot0;
-        float dot1;
         loadVt(2, vt);
         loadVs(2, vs + 0);
-        dot0 = v1[0] * v2[0];
-        dot1 = v1[1] * v2[0];
+        v3[0] = v1[0] * v2[0] + v1[1] * v2[1];
         loadVs(2, vs + 1);
-        v3[0] = dot0 + v1[0] * v2[1];
-        v3[1] = dot1 + v1[1] * v2[1];
+        v3[1] = v1[0] * v2[0] + v1[1] * v2[1];
         saveVd(2, vd, v3);
     }
 
     // VFPU6:VHTFM3
     public void doVHTFM3(int vd, int vs, int vt) {
-        // not sure :(
-        float dot0;
-        float dot1;
-        float dot2;
         loadVt(2, vt);
         loadVs(3, vs + 0);
-        dot0 = v1[0] * v2[0];
-        dot1 = v1[1] * v2[0];
-        dot2 = v1[2] * v2[0];
+        v3[0] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2];
         loadVs(3, vs + 1);
-        dot0 += v1[0] * v2[1];
-        dot1 += v1[1] * v2[1];
-        dot2 += v1[2] * v2[1];
+        v3[1] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2];
         loadVs(3, vs + 2);
-        v3[0] = dot0 + v1[0];
-        v3[1] = dot1 + v1[1];
-        v3[2] = dot2 + v1[2];
+        v3[2] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2];
         saveVd(3, vd, v3);
     }
 
     // VFPU6:VTFM3
     public void doVTFM3(int vd, int vs, int vt) {
-        // not sure :(
-        float dot0;
-        float dot1;
-        float dot2;
         loadVt(3, vt);
         loadVs(3, vs + 0);
-        dot0 = v1[0] * v2[0];
-        dot1 = v1[1] * v2[0];
-        dot2 = v1[2] * v2[0];
+        v3[0] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
         loadVs(3, vs + 1);
-        dot0 += v1[0] * v2[1];
-        dot1 += v1[1] * v2[1];
-        dot2 += v1[2] * v2[1];
+        v3[1] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
         loadVs(3, vs + 2);
-        v3[0] = dot0 + v1[0] * v2[2];
-        v3[1] = dot1 + v1[1] * v2[2];
-        v3[2] = dot2 + v1[2] * v2[2];
+        v3[2] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
         saveVd(3, vd, v3);
     }
 
     // VFPU6:VHTFM4
     public void doVHTFM4(int vd, int vs, int vt) {
-        // not sure :(
-        float dot0;
-        float dot1;
-        float dot2;
-        float dot3;
         loadVt(3, vt);
         loadVs(4, vs + 0);
-        dot0 = v1[0] * v2[0];
-        dot1 = v1[1] * v2[0];
-        dot2 = v1[2] * v2[0];
-        dot3 = v1[3] * v2[0];
+        v3[0] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2] + v1[3];
         loadVs(4, vs + 1);
-        dot0 += v1[0] * v2[1];
-        dot1 += v1[1] * v2[1];
-        dot2 += v1[2] * v2[1];
-        dot3 += v1[3] * v2[1];
+        v3[1] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2] + v1[3];
         loadVs(4, vs + 2);
-        dot0 += v1[0] * v2[2];
-        dot1 += v1[1] * v2[2];
-        dot2 += v1[2] * v2[2];
-        dot3 += v1[3] * v2[2];
+        v3[2] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2] + v1[3];
         loadVs(4, vs + 3);
-        v3[0] = dot0 + v1[0];
-        v3[1] = dot1 + v1[1];
-        v3[2] = dot2 + v1[2];
-        v3[3] = dot3 + v1[3];
+        v3[3] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2] + v1[3];
         saveVd(4, vd, v3);
     }
 
     // VFPU6:VTFM4
     public void doVTFM4(int vd, int vs, int vt) {
-        // not sure :(
-        float dot0;
-        float dot1;
-        float dot2;
-        float dot3;
         loadVt(4, vt);
         loadVs(4, vs + 0);
-        dot0 = v1[0] * v2[0];
-        dot1 = v1[1] * v2[0];
-        dot2 = v1[2] * v2[0];
-        dot3 = v1[3] * v2[0];
+        v3[0] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2] + v1[3] * v2[3];
         loadVs(4, vs + 1);
-        dot0 += v1[0] * v2[1];
-        dot1 += v1[1] * v2[1];
-        dot2 += v1[2] * v2[1];
-        dot3 += v1[3] * v2[1];
+        v3[1] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2] + v1[3] * v2[3];
         loadVs(4, vs + 2);
-        dot0 += v1[0] * v2[2];
-        dot1 += v1[1] * v2[2];
-        dot2 += v1[2] * v2[2];
-        dot3 += v1[3] * v2[2];
+        v3[2] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2] + v1[3] * v2[3];
         loadVs(4, vs + 3);
-        v3[0] = dot0 + v1[0] * v2[3];
-        v3[1] = dot1 + v1[1] * v2[3];
-        v3[2] = dot2 + v1[2] * v2[3];
-        v3[3] = dot3 + v1[3] * v2[3];
+        v3[3] = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2] + v1[3] * v2[3];
         saveVd(4, vd, v3);
     }
 
