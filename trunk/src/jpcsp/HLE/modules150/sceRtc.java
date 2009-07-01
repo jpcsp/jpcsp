@@ -291,21 +291,59 @@ public class sceRtc implements HLEModule {
         cpu.gpr[2] = number;
     }
 
+    final static int PSP_TIME_INVALID_YEAR = -1;
+    final static int PSP_TIME_INVALID_MONTH = -2;
+    final static int PSP_TIME_INVALID_DAY = -3;
+    final static int PSP_TIME_INVALID_HOUR = -4;
+    final static int PSP_TIME_INVALID_MINUTES = -5;
+    final static int PSP_TIME_INVALID_SECONDS = -6;
+    final static int PSP_TIME_INVALID_MICROSECONDS = -7;
+
+    /**
+     * Validate pspDate component ranges
+     *
+     * @param date - pointer to pspDate struct to be checked
+     * @return 0 on success, one of PSP_TIME_INVALID_* on error
+     */
     public void sceRtcCheckValid(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        //////Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        int time_addr = cpu.gpr[4];
 
+        if (mem.isAddressGood(time_addr)) {
+            ScePspDateTime time = new ScePspDateTime();
+            time.read(mem, time_addr);
+            Calendar cal = new GregorianCalendar(time.year, time.month - 1, time.day,
+                time.hour, time.minute, time.second);
+            int result = 0;
+            if (time.year < 1582 || time.year > 3000) {	// What are valid years?
+            	result = PSP_TIME_INVALID_YEAR;
+            } else if (time.month < 1 || time.month > 12) {
+            	result = PSP_TIME_INVALID_MONTH;
+            } else if (time.day < 1 || time.day > 31) {
+            	result = PSP_TIME_INVALID_DAY;
+            } else if (time.hour < 0 || time.hour > 23) {
+            	result = PSP_TIME_INVALID_HOUR;
+            } else if (time.minute < 0 || time.minute > 59) {
+            	result = PSP_TIME_INVALID_MINUTES;
+            } else if (time.second < 0 || time.second > 59) {
+            	result = PSP_TIME_INVALID_SECONDS;
+            } else if (time.microsecond < 0 || time.microsecond >= 1000000) {
+            	result = PSP_TIME_INVALID_MICROSECONDS;
+            } else if (cal.get(Calendar.DAY_OF_MONTH) != time.day) { // Check if this is a valid day of the month
+            	result = PSP_TIME_INVALID_DAY;
+            }
 
+            if (Modules.log.isDebugEnabled()) {
+            	Modules.log.debug("sceRtcCheckValid " + time.toString() + ", cal: " + cal + ", result: " + result);
+            }
 
-
-        Modules.log.warn("Unimplemented NID function sceRtcCheckValid [0x4B1B5E82]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-
+            cpu.gpr[2] = result;
+        } else {
+            Modules.log.warn("sceRtcGetTick bad address " + String.format("0x%08X", time_addr));
+            cpu.gpr[2] = -1;
+        }
     }
 
     public void sceRtcSetTime_t(Processor processor) {
