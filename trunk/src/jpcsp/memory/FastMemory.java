@@ -186,6 +186,7 @@ public class FastMemory extends Memory {
 			}
 
 			all[address / 4] = memData;
+            pspdisplay.getInstance().write8(address, data);
 		} catch (Exception e) {
             invalidMemoryAddress(address, "write8", Emulator.EMU_STATUS_MEM_WRITE);
 		}
