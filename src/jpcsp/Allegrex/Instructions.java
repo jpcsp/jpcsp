@@ -5312,14 +5312,14 @@ public final String category() { return "VFPU"; }
 
 @Override
 public void interpret(Processor processor, int insn) {
-	int imm3 = (insn>>0)&7;
+	int imm4 = (insn>>0)&15;
 	int one = (insn>>7)&1;
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 	int vt = (insn>>16)&127;
 
 
-                processor.cpu.doVCMP(1+one+(two<<1), vs, vt, imm3);
+                processor.cpu.doVCMP(1+one+(two<<1), vs, vt, imm4);
             
 }
 @Override
@@ -5328,13 +5328,13 @@ public void compile(ICompilerContext context, int insn) {
 }
 @Override
 public String disasm(int address, int insn) {
-	int imm3 = (insn>>0)&7;
+	int imm4 = (insn>>0)&15;
 	int one = (insn>>7)&1;
 	int vs = (insn>>8)&127;
 	int two = (insn>>15)&1;
 	int vt = (insn>>16)&127;
 
-return Common.disasmVCMP("vcmp", 1+one+(two<<1), imm3, vs, vt);
+return Common.disasmVCMP("vcmp", 1+one+(two<<1), imm4, vs, vt);
 }
 };
 public static final Instruction VMIN = new Instruction(164) {
