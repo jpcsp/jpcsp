@@ -6950,6 +6950,39 @@ public String disasm(int address, int insn) {
 return Common.disasmVDVS("vsrt3", 1+one+(two<<1), vd, vs);
 }
 };
+public static final Instruction VSGN = new Instruction(212) {
+
+	@Override
+	public final String name() { return "VSGN"; }
+
+	@Override
+	public final String category() { return "VFPU"; }
+
+	@Override
+	public void interpret(Processor processor, int insn) {
+		int vd = (insn>>0)&127;
+		int one = (insn>>7)&1;
+		int vs = (insn>>8)&127;
+		int two = (insn>>15)&1;
+
+
+	                processor.cpu.doVSGN(1+one+(two<<1), vd, vs);
+	            
+	}
+	@Override
+	public void compile(ICompilerContext context, int insn) {
+		super.compile(context, insn);
+	}
+	@Override
+	public String disasm(int address, int insn) {
+		int vd = (insn>>0)&127;
+		int one = (insn>>7)&1;
+		int vs = (insn>>8)&127;
+		int two = (insn>>15)&1;
+
+	return Common.disasmVDVS("vsgn", 1+one+(two<<1), vd, vs);
+	}
+	};
 public static final Instruction VSRT4 = new Instruction(213) {
 
 @Override
