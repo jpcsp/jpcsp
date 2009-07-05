@@ -759,7 +759,7 @@ public class VfpuState extends FpuState {
     }
     // VFPU2:MFVC
     public void doMFVC(int rt, int imm7) {
-        doUNK("Unimplemented MFVC");
+        doUNK("Unimplemented MFVC (rt=" + rt + ", imm7=" + imm7 + ")");
     }
     // VFPU2:MTV
     public void doMTV(int rt, int imm7) {
@@ -1459,6 +1459,8 @@ public class VfpuState extends FpuState {
     public void doVSRT3(int vsize, int vd, int vs) {
         if (vsize != 4) {
             doUNK("Only supported VSRT3.Q (vsize=" + vsize + ")");
+            // The instruction is somehow supported on the PSP (see VfpuTest),
+            // but leave the error message here to help debugging the Decoder.
             return;
         }
 
@@ -1472,6 +1474,14 @@ public class VfpuState extends FpuState {
         v3[2] = Math.max(z, w);
         v3[3] = Math.min(z, w);
         saveVd(4, vd, v3);
+    }
+    // VFPU4:VSGN
+    public void doVSGN(int vsize, int vd, int vs) {
+        loadVs(vsize, vs);
+        for (int i = 0; i < vsize; ++i) {
+        	v3[i] = Math.signum(v1[i]);
+        }
+        saveVd(vsize, vd, v3);
     }
     // VFPU4:VSRT4
     public void doVSRT4(int vsize, int vd, int vs) {

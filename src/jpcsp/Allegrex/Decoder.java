@@ -1011,7 +1011,11 @@ public class Decoder {
             @Override
             public Instruction instance(int insn) {
                 if ((insn & 0x02010000) == 0x00000000) {
-                    return jpcsp.Allegrex.Instructions.VSRT3;
+                    if ((insn & 0x00020000) == 0x00000000) {
+                    	return jpcsp.Allegrex.Instructions.VSRT3;
+                    } else {
+                    	return jpcsp.Allegrex.Instructions.VSGN;
+                    }
                 } else {
                     if ((insn & 0x02000000) == 0x00000000) {
                         return jpcsp.Allegrex.Instructions.VSRT4;
