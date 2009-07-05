@@ -50,6 +50,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		public final static int MODE_LISTDELETE = 6;
 		public final static int MODE_DELETE = 7;
 		public final static int MODE_TRYSAVE = 8;
+		public final static int MODE_LIST = 11;
 	public int focus;
 		public final static int FOCUS_UNKNOWN = 0;
 		public final static int FOCUS_FIRSTLIST = 1;	// First in list
@@ -77,6 +78,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 	public int buffer1Addr;
 	public int buffer2Addr;
 	public int buffer3Addr;
+	public int buffer4Addr;
 	public String key;		// encrypt/decrypt key for save with firmware >= 2.00
 
 	public class PspUtilitySavedataSFOParam extends pspAbstractMemoryMappedStructure {
@@ -212,6 +214,9 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         buffer2Addr = read32();
         buffer3Addr = read32();
 		key = readStringNZ(16);
+		readUnknown(8);
+		buffer4Addr = read32();
+		readUnknown(8);
 	}
 
 	protected void write() {

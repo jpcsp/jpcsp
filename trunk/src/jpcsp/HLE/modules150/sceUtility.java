@@ -19,6 +19,7 @@ package jpcsp.HLE.modules150;
 
 import java.io.IOException;
 
+import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceUtilityMsgDialogParams;
 import jpcsp.HLE.kernel.types.SceUtilitySavedataParam;
 import jpcsp.HLE.modules.HLEModule;
@@ -479,7 +480,7 @@ public class sceUtility implements HLEModule {
                 sceUtilitySavedataParam.base.result = ERROR_SAVEDATA_SAVE_NO_MEMSTICK;
                 break;
 
-            case SceUtilitySavedataParam.MODE_TRYSAVE:
+            case SceUtilitySavedataParam.MODE_TRYSAVE: {
                 Modules.log.warn("PARTIAL:sceUtilitySavedataInitStart mode 8");
                 if (sceUtilitySavedataParam.isPresent(pspiofilemgr.getInstance())) {
                     sceUtilitySavedataParam.base.result = 0;
@@ -517,6 +518,48 @@ public class sceUtility implements HLEModule {
                     Modules.log.debug("Memory Stick Required Space = " + memoryStickRequiredSpaceKbString);
                 }
                 break;
+            }
+
+            case SceUtilitySavedataParam.MODE_LIST: {
+                Modules.log.debug("sceUtilitySavedataInitStart mode 11");
+                int buffer4Addr = sceUtilitySavedataParam.buffer4Addr;
+                if (mem.isAddressGood(buffer4Addr)) {
+                	int maxEntries = mem.read32(buffer4Addr + 0);
+                	int entriesAddr = mem.read32(buffer4Addr + 8);
+                	String saveName = sceUtilitySavedataParam.saveName;
+                	// PSP file name pattern:
+                	//   '?' matches one character
+                	//   '*' matches any character sequence
+                	// To convert to regular expressions:
+                	//   replace '?' with '.'
+                	//   replace '*' with '.*'
+                	String pattern = saveName.replace('?', '.');
+                	pattern = pattern.replace("*", ".*");
+                	pattern = sceUtilitySavedataParam.gameName + pattern;
+
+                	pspiofilemgr fileManager = pspiofilemgr.getInstance();
+                	String[] entries = fileManager.listFiles(SceUtilitySavedataParam.savedataPath, pattern);
+                	Modules.log.debug("Entries: " + entries);
+                	int numEntries = entries == null ? 0 : entries.length;
+                	numEntries = Math.min(numEntries, maxEntries);
+                	for (int i = 0; i < numEntries; i++) {
+                		String filePath = SceUtilitySavedataParam.savedataPath + "/" + entries[i];
+                		SceIoStat stat = fileManager.statFile(filePath);
+                		int entryAddr = entriesAddr + i * 72;
+                		if (stat != null) {
+                			mem.write32(entryAddr + 0, stat.mode);
+                			stat.ctime.write(mem, entryAddr + 4);
+                			stat.atime.write(mem, entryAddr + 20);
+                			stat.mtime.write(mem, entryAddr + 36);
+                		}
+                		String entryName = entries[i].substring(sceUtilitySavedataParam.gameName.length());
+                		Utilities.writeStringNZ(mem, entryAddr + 52, 20, entryName);
+                	}
+                	mem.write32(buffer4Addr + 4, numEntries);
+                }
+        		sceUtilitySavedataParam.base.result = 0;
+                break;
+            }
 
             default:
                 Modules.log.warn("sceUtilitySavedataInitStart - Unsupported mode " + savedata_mode);

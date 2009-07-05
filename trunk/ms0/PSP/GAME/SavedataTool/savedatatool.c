@@ -17,6 +17,15 @@
 //   controller function usage based on a program by skippy911
 //   and last but not least, thanks to ps2dev.org!
 
+#include <pspkernel.h>
+#include <pspkernel.h>
+#include <pspkernel.h>
+#include <pspdebug.h>
+#include <pspctrl.h>
+#include <pspdisplay.h>
+#include <psputility.h>
+#include <string.h>
+#include <stdio.h>
 #include "pg.h"
 
 unsigned char g_dataBuf[0x100000];
@@ -26,6 +35,12 @@ unsigned char g_readPic1[100000];
 unsigned char buffer1[20];
 unsigned char buffer2[64];
 unsigned char buffer3[28];
+unsigned char buffer4[12];
+unsigned char buffer5[72 * 0x1f];
+unsigned char buffer6[40];
+unsigned char buffer7[184];
+unsigned char buffer8[100000];
+unsigned char buffer9[100000];
 
 char* g_gameName;
 char* g_saveName;
@@ -55,7 +70,7 @@ void print(char* text)
 
 
 void printHex(int value) {
-	const unsigned char* digits = "0123456789abcdef";
+	const unsigned char* digits = (unsigned char *) "0123456789abcdef";
 	int i;
 	int x = 0;
 	for (i = 7; i >= 0; i--) {
@@ -65,60 +80,18 @@ void printHex(int value) {
 	y++;
 }
 
-void *memcpy(void* dest, void* src, int size)
-{
-	void* save = dest;
-	int i;
-	for (i = 0; i < size; i++) {
-		*((unsigned char*)dest) = *((unsigned char*)src);
-		dest++;
-		src++;
-	}
-	return save;
-}
-
-char *strcpy(char *strDestination, const char *strSource)
-{
-	char* save = strDestination;
-	while (*strSource) {
-		*strDestination = *strSource;
-		strSource++;
-		strDestination++;
-	}
-	*strDestination = *strSource;
-	return save;
-}
-
-char *strcat(char *strDestination, const char *strSource) {
-	char* save = strDestination;
-	while (*strDestination) strDestination++;
-	strcpy(strDestination, strSource);
-	return save;
-}
-
-void *memset(void* dest, int c, int count)
-{
-	int i;
-	void* save = dest;
-	for (i = 0; i < count; i++) {
-		*((unsigned char*)dest) = c;
-		dest++;
-	}
-	return save;
-}
-
-int exit_callback(void)
+int exit_callback(int arg1, int arg2, void *common)
 {
 	sceKernelExitGame();
 
 	return 0;
 }
 
-int CallbackThread(void *arg)
+int CallbackThread(SceSize args, void *argp)
 {
 	int cbid;
 
-	cbid = sceKernelCreateCallback("Exit Callback", exit_callback);
+	cbid = sceKernelCreateCallback("Exit Callback", exit_callback, (void*)0);
 	sceKernelRegisterExitCallback(cbid);
 	sceKernelSleepThreadCB();
 
@@ -192,9 +165,12 @@ typedef struct
 	unsigned char *ptr2;
 	unsigned char *ptr3;
 	char key[16];
-	char unknown20[20];
+	char unknown20[8];
+	unsigned char *ptr4;
+	unsigned char *ptr5;
+	unsigned char *ptr6;
 #endif
-} SceUtilitySavedataParam;
+} SceUtilitySavedataParamNew;
 
 #define PARAMS_LEN (0x80 + 0x80 + 0x400 + 1)
 
@@ -212,18 +188,9 @@ typedef struct
 #define CTRL_LTRIGGER   0x0100 
 #define CTRL_RTRIGGER   0x0200 
 
-/* Returned control data */ 
-typedef struct _ctrl_data 
-{ 
-	int frame; 
-	int buttons; 
-	unsigned char analog[4]; 
-	int unused; 
-} ctrl_data_t; 
-
-void initSavedata(SceUtilitySavedataParam* savedata, int mode) {
-	memset(savedata, 0, sizeof(SceUtilitySavedataParam));
-	savedata->size = sizeof(SceUtilitySavedataParam);
+void initSavedata(SceUtilitySavedataParamNew* savedata, int mode) {
+	memset(savedata, 0, sizeof(SceUtilitySavedataParamNew));
+	savedata->size = sizeof(SceUtilitySavedataParamNew);
 #if FW15
 	savedata->graphicsThread = 0x21;
 	savedata->accessThread = 0x23;
@@ -237,11 +204,20 @@ void initSavedata(SceUtilitySavedataParam* savedata, int mode) {
 	memset(buffer1, 0, sizeof(buffer1));
 	memset(buffer2, 0, sizeof(buffer2));
 	memset(buffer3, 0, sizeof(buffer3));
+	memset(buffer4, 0, sizeof(buffer4));
+	memset(buffer5, 0, sizeof(buffer5));
 	savedata->ptr1 = buffer1;
 	savedata->ptr2 = buffer2;
 	savedata->ptr3 = buffer3;
-	strcpy(buffer2, g_gameName);
-	strcpy(buffer2 + 16, g_saveName);
+	savedata->ptr4 = buffer4;
+	*((int *) (buffer4 + 0)) = sizeof(buffer5) / 72;
+	*((int *) (buffer4 + 8)) = (int) &buffer5;
+	savedata->ptr5 = buffer6;
+	savedata->ptr6 = buffer7;
+	*((int *) (buffer6 + 24)) = (int) &buffer8;
+	*((int *) (buffer6 + 32)) = (int) &buffer9;
+	strcpy((char *) buffer2, g_gameName);
+	strcpy((char *) (buffer2 + 16), g_saveName);
 	strncpy(savedata->key, "1234567890123456", 16);
 #endif
 	savedata->overwrite = 1;
@@ -256,7 +232,7 @@ void initSavedata(SceUtilitySavedataParam* savedata, int mode) {
 void mainImpl()
 {
 	int result, previousResult;
-	SceUtilitySavedataParam savedata;
+	SceUtilitySavedataParamNew savedata;
 
 	// read info file
 	int fd = sceIoOpen("ms0:/savename.txt", O_RDONLY, 0);
@@ -295,22 +271,26 @@ void mainImpl()
 	y++;
 	print("press 'x' for load or 'o' for update savedata,");
 	print("press triangle for savedata mode 8");
+	print("press square for savedata mode 11");
 	y++;
 
 	sceCtrlSetSamplingCycle(0); 
 	sceCtrlSetSamplingMode(0); 
-	ctrl_data_t ctrl;
+	SceCtrlData ctrl;
 	int update;
 	while(1) { 
 		sceCtrlReadBufferPositive(&ctrl, 1); 
-		if (ctrl.buttons & CTRL_CROSS) { 
+		if (ctrl.Buttons & CTRL_CROSS) { 
 			update = 0;
 			break;
-		} else if (ctrl.buttons & CTRL_CIRCLE) { 
+		} else if (ctrl.Buttons & CTRL_CIRCLE) { 
 			update = 1;
 			break;
-		} else if (ctrl.buttons & CTRL_TRIANGLE) {
+		} else if (ctrl.Buttons & CTRL_TRIANGLE) {
 			update = 2;
+			break;
+		} else if (ctrl.Buttons & CTRL_SQUARE) {
+			update = 3;
 			break;
 		}
 		sceDisplayWaitVblankStart();
@@ -327,7 +307,7 @@ void mainImpl()
 			print("can't open ms0:/params.bin");
 			return;
 		}
-		int r = sceIoRead(fd, &savedata.paramsSfoTitle, PARAMS_LEN);
+		sceIoRead(fd, &savedata.paramsSfoTitle, PARAMS_LEN);
 		sceIoClose(fd);
 		fd = sceIoOpen("ms0:/data.bin", O_RDONLY, 0);
 		if (!fd) {
@@ -340,7 +320,7 @@ void mainImpl()
 		// update gamedata
 		print("updating savedata...");
 		savedata.sizeOfData = len;
-		result = sceUtilitySavedataInitStart(savedata);
+		result = sceUtilitySavedataInitStart((SceUtilitySavedataParam *) &savedata);
 		if (result) {
 			print("sceUtilitySavedataInitStart failed");
 			printHex(result);
@@ -368,7 +348,7 @@ void mainImpl()
 		savedata.sizeOfReadIcon1Buf = sizeof(g_readIcon1);
 		savedata.readPic1Buf = g_readPic1;
 		savedata.sizeOfReadPic1Buf = sizeof(g_readPic1);
-		result = sceUtilitySavedataInitStart(savedata);
+		result = sceUtilitySavedataInitStart((SceUtilitySavedataParam *) &savedata);
 		if (result) {
 			print("sceUtilitySavedataInitStart failed");
 			printHex(result);
@@ -408,7 +388,7 @@ void mainImpl()
 			print("can't open ms0:/savedata.bin");
 			return;
 		}
-		sceIoWrite(fd, savedata, sizeof(savedata));
+		sceIoWrite(fd, &savedata, sizeof(savedata));
 		sceIoClose(fd);
 	} else if (update == 2) {
 		// Test savedata mode 8
@@ -416,7 +396,7 @@ void mainImpl()
 		initSavedata(&savedata, 8);
 		/* savedata.sizeOfDataBuf = 0x1000; */
 		savedata.sizeOfData = savedata.sizeOfDataBuf;
-		result = sceUtilitySavedataInitStart(savedata);
+		result = sceUtilitySavedataInitStart((SceUtilitySavedataParam *) &savedata);
 		if (result) {
 			print("sceUtilitySavedataInitStart failed");
 			printHex(result);
@@ -442,7 +422,7 @@ void mainImpl()
 			print("can't open ms0:/savedata.bin");
 			return;
 		}
-		sceIoWrite(fd, savedata, sizeof(savedata));
+		sceIoWrite(fd, &savedata, sizeof(savedata));
 		sceIoClose(fd);
 #if FW15
 #else
@@ -475,6 +455,96 @@ void mainImpl()
 			return;
 		}
 		sceIoWrite(fd, buffer3, sizeof(buffer3));
+		sceIoClose(fd);
+#endif
+	} else if (update == 3) {
+		// Test savedata mode 11
+		print("loading savedata with mode 11...");
+		initSavedata(&savedata, 11);
+		result = sceUtilitySavedataInitStart((SceUtilitySavedataParam *) &savedata);
+		if (result) {
+			print("sceUtilitySavedataInitStart failed");
+			printHex(result);
+			return;
+		}
+		previousResult = -1;
+		while (1) {
+			result = sceUtilitySavedataGetStatus();
+			if (result != previousResult) {
+				print("sceUtilitySavedataGetStatus result:");
+				printHex(result);
+				previousResult = result;
+			}
+			if (result == 3) break;
+			sceUtilitySavedataUpdate(1);
+			sceDisplayWaitVblankStart();
+		}
+
+		int numEntries = *((int *) (buffer4 + 4));
+		int i;
+		char buffer[100];
+		for (i = 0; i < numEntries; i++) {
+			sprintf(buffer, "Name: %s", (char *) (buffer5 + i * 72 + 52));
+			print(buffer);
+		}
+
+		// write data
+		print("writing savedata structure...");
+		fd = sceIoOpen("ms0:/savedata.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/savedata.bin");
+			return;
+		}
+		sceIoWrite(fd, &savedata, sizeof(savedata));
+		sceIoClose(fd);
+#if FW15
+#else
+		fd = sceIoOpen("ms0:/buffer4.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/buffer4.bin");
+			return;
+		}
+		sceIoWrite(fd, buffer4, sizeof(buffer4));
+		sceIoClose(fd);
+
+		fd = sceIoOpen("ms0:/buffer5.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/buffer5.bin");
+			return;
+		}
+		sceIoWrite(fd, buffer5, sizeof(buffer5));
+		sceIoClose(fd);
+
+		fd = sceIoOpen("ms0:/buffer6.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/buffer6.bin");
+			return;
+		}
+		sceIoWrite(fd, buffer6, sizeof(buffer6));
+		sceIoClose(fd);
+
+		fd = sceIoOpen("ms0:/buffer7.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/buffer7.bin");
+			return;
+		}
+		sceIoWrite(fd, buffer7, sizeof(buffer7));
+		sceIoClose(fd);
+
+		fd = sceIoOpen("ms0:/buffer8.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/buffer8.bin");
+			return;
+		}
+		sceIoWrite(fd, buffer8, sizeof(buffer8));
+		sceIoClose(fd);
+
+		fd = sceIoOpen("ms0:/buffer9.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/buffer9.bin");
+			return;
+		}
+		sceIoWrite(fd, buffer9, sizeof(buffer9));
 		sceIoClose(fd);
 #endif
 	}

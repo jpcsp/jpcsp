@@ -28,9 +28,11 @@ import jpcsp.util.Utilities;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 
@@ -475,6 +477,40 @@ public class pspiofilemgr {
             File f = new File(pcfilename);
             f.mkdirs();
         }
+    }
+
+    private class PatternFilter implements FilenameFilter {
+    	private Pattern pattern;
+
+    	public PatternFilter(String pattern) {
+    		this.pattern = Pattern.compile(pattern);
+    	}
+
+		@Override
+		public boolean accept(File dir, String name) {
+			return pattern.matcher(name).matches();
+		}
+    };
+
+    public String[] listFiles(String dir, String pattern) {
+    	String pcfilename = getDeviceFilePath(dir);
+    	if (pcfilename == null) {
+    		return null;
+    	}
+
+    	File f = new File(pcfilename);
+    	String[] list = f.list(new PatternFilter(pattern));
+
+    	return list;
+    }
+
+    public SceIoStat statFile(String pspfilename) {
+    	String pcfilename = getDeviceFilePath(pspfilename);
+    	if (pcfilename == null) {
+    		return null;
+    	}
+
+    	return stat(pcfilename);
     }
 
     public SeekableDataInput getFile(String filename, int flags) {
