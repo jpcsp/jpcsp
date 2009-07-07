@@ -89,6 +89,104 @@ public class EventFlagManager {
         }
     }
 
+
+    /** May yield, so call last/after setting gpr[2] */
+    private void onEventFlagDeletedCancelled(int evid, int result) {
+        ThreadMan threadMan = ThreadMan.getInstance();
+        int currentPriority = threadMan.getCurrentThread().currentPriority;
+        boolean yield = false;
+
+        for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
+            SceKernelThreadInfo thread = it.next();
+
+            // We're assuming if waitingOnEventFlag is set then thread.status = waiting
+            if (thread.wait.waitingOnEventFlag &&
+                thread.wait.EventFlag_id == evid) {
+                // EventFlag was deleted
+                Modules.log.warn("EventFlag deleted while we were waiting for it! thread:" + Integer.toHexString(thread.uid) + "/'" + thread.name + "'");
+
+                // Untrack
+                thread.wait.waitingOnEventFlag = false;
+
+                // Return ERROR_WAIT_DELETE / ERROR_WAIT_CANCELLED
+                thread.cpuContext.gpr[2] = result;
+
+                // Wakeup
+                threadMan.changeThreadState(thread, PSP_THREAD_READY);
+
+                // switch in the target thread if it's now higher priority (check)
+                if (thread.currentPriority < currentPriority) {
+                    yield = true;
+                }
+            }
+        }
+
+        if (yield) {
+            Modules.log.debug("onEventFlagDeletedCancelled yielding to thread with higher priority");
+            threadMan.yieldCurrentThread();
+        }
+    }
+
+    /** May yield, so call last/after setting gpr[2] */
+    private void onEventFlagDeleted(int evid) {
+        onEventFlagDeletedCancelled(evid, ERROR_WAIT_DELETE);
+    }
+
+    /** May yield, so call last/after setting gpr[2] */
+    private void onEventFlagCancelled(int evid) {
+        onEventFlagDeletedCancelled(evid, ERROR_WAIT_CANCELLED);
+    }
+
+    /** May yield, so call last/after setting gpr[2] */
+    private void onEventFlagModified(SceKernelEventFlagInfo event) {
+        ThreadMan threadMan = ThreadMan.getInstance();
+        int currentPriority = threadMan.getCurrentThread().currentPriority;
+        boolean yield = false;
+
+        for (Iterator<SceKernelThreadInfo> it = threadMan.iterator(); it.hasNext(); ) {
+            SceKernelThreadInfo thread = it.next();
+
+            // We're assuming if waitingOnEventFlag is set then thread.status = waiting
+            if (thread.wait.waitingOnEventFlag &&
+                thread.wait.EventFlag_id == event.uid) {
+
+                int bits = thread.wait.EventFlag_bits;
+                int wait = thread.wait.EventFlag_wait;
+                int outBits_addr = thread.wait.EventFlag_outBits_addr;
+
+                // Check EventFlag
+                if (checkEventFlag(event, bits, wait, outBits_addr)) {
+                    // Success
+                    Modules.log.debug("onEventFlagModified waking thread 0x" + Integer.toHexString(thread.uid)
+                        + " name:'" + thread.name + "'");
+
+                    // Update numWaitThreads
+                    event.numWaitThreads--;
+
+                    // Untrack
+                    thread.wait.waitingOnEventFlag = false;
+
+                    // Return success
+                    thread.cpuContext.gpr[2] = 0;
+
+                    // Wakeup
+                    threadMan.changeThreadState(thread, PSP_THREAD_READY);
+
+                    // switch in the target thread if it's now higher priority (check)
+                    if (thread.currentPriority < currentPriority) {
+                        yield = true;
+                    }
+                }
+            }
+        }
+
+        if (yield) {
+            Modules.log.debug("onEventFlagModified yielding to thread with higher priority");
+            threadMan.yieldCurrentThread();
+        }
+    }
+
+
     public void sceKernelCreateEventFlag(int name_addr, int attr, int initPattern, int option)
     {
         String name = readStringZ(name_addr);
@@ -118,10 +216,10 @@ public class EventFlagManager {
             Modules.log.debug(msg + " name:'" + event.name + "'");
             if (event.numWaitThreads > 0) {
                 Modules.log.warn("sceKernelDeleteEventFlag numWaitThreads " + event.numWaitThreads);
-                updateWaitingEventFlags();
             }
 
             Emulator.getProcessor().cpu.gpr[2] = 0;
+            onEventFlagDeleted(uid);
         }
     }
 
@@ -135,8 +233,8 @@ public class EventFlagManager {
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_EVENT_FLAG;
         } else {
             event.currentPattern |= bitsToSet;
-            updateWaitingEventFlags();
             Emulator.getProcessor().cpu.gpr[2] = 0;
+            onEventFlagModified(event);
         }
     }
 
@@ -150,8 +248,8 @@ public class EventFlagManager {
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_EVENT_FLAG;
         } else {
             event.currentPattern &= bitsToKeep;
-            updateWaitingEventFlags();
             Emulator.getProcessor().cpu.gpr[2] = 0;
+            onEventFlagModified(event);
         }
     }
 
@@ -192,59 +290,6 @@ public class EventFlagManager {
         }
 
         return matched;
-    }
-
-    // Check all waiting threads for all event flags.
-    // Could be optimized for all waiting threads for a specific event flag,
-    // but then DeleteEventFlag will need special case handling.
-    // TODO specialise for a specific event flag uid
-    private void updateWaitingEventFlags() {
-        for (Iterator<SceKernelThreadInfo> it = ThreadMan.getInstance().iterator(); it.hasNext(); ) {
-            SceKernelThreadInfo thread = it.next();
-
-            // We're assuming if waitingOnEventFlag is set then thread.status = waiting
-            if (thread.wait.waitingOnEventFlag) {
-
-                int evid = thread.wait.EventFlag_id;
-                int bits = thread.wait.EventFlag_bits;
-                int wait = thread.wait.EventFlag_wait;
-                int outBits_addr = thread.wait.EventFlag_outBits_addr;
-
-                SceKernelEventFlagInfo event = eventMap.get(evid);
-                if (event != null) {
-                    // Check EventFlag
-                    if (checkEventFlag(event, bits, wait, outBits_addr)) {
-                        // Success
-                        Modules.log.debug("Delete/Set/Clear EventFlag waking thread 0x" + Integer.toHexString(thread.uid)
-                            + " name:'" + thread.name + "'");
-
-                        // Update numWaitThreads
-                        event.numWaitThreads--;
-
-                        // Untrack
-                        thread.wait.waitingOnEventFlag = false;
-
-                        // Return success
-                        thread.cpuContext.gpr[2] = 0;
-
-                        // Wakeup
-                        ThreadMan.getInstance().changeThreadState(thread, PSP_THREAD_READY);
-                    }
-                } else {
-                    // EventFlag was deleted
-                    Modules.log.warn("EventFlag deleted while we were waiting for it! thread:" + Integer.toHexString(thread.uid) + "/'" + thread.name + "'");
-
-                    // Untrack
-                    thread.wait.waitingOnEventFlag = false;
-
-                    // Return ERROR_WAIT_DELETE
-                    thread.cpuContext.gpr[2] = ERROR_WAIT_DELETE;
-
-                    // Wakeup
-                    ThreadMan.getInstance().changeThreadState(thread, PSP_THREAD_READY);
-                }
-            }
-        }
     }
 
     public void hleKernelWaitEventFlag(int uid, int bits, int wait, int outBits_addr, int timeout_addr, boolean do_callbacks)
@@ -361,24 +406,8 @@ public class EventFlagManager {
                 mem.write32(result_addr, 0);
             }
 
-            // Find threads waiting on this event flag and wake them up
-            for (Iterator<SceKernelThreadInfo> it = ThreadMan.getInstance().iterator(); it.hasNext(); ) {
-                SceKernelThreadInfo thread = it.next();
-
-                if (thread.wait.waitingOnEventFlag &&
-                    thread.wait.EventFlag_id == uid) {
-                    // Untrack
-                    thread.wait.waitingOnEventFlag = false;
-
-                    // Return WAIT_CANCELLED
-                    thread.cpuContext.gpr[2] = ERROR_WAIT_CANCELLED;
-
-                    // Wakeup
-                    ThreadMan.getInstance().changeThreadState(thread, PSP_THREAD_READY);
-                }
-            }
-
             Emulator.getProcessor().cpu.gpr[2] = 0;
+            onEventFlagCancelled(uid);
         }
     }
 
