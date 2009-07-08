@@ -526,7 +526,7 @@ public class VideoEngine {
         }
     }
 
-    private static int command(int instruction) {
+    public static int command(int instruction) {
         return (instruction >>> 24);
     }
 
@@ -3448,6 +3448,10 @@ public class VideoEngine {
 		                                texture_format,
 		                                texture_type,
 		                                final_buffer);
+	            }
+
+	            if (State.captureGeNextFrame) {
+	            	CaptureManager.captureImage(texaddr, level, final_buffer, texture_width[level], texture_height[level], texture_buffer_width[level], texture_type, compressedTexture, compressedTextureSize);
 	            }
 
 	            if (texture != null) {
