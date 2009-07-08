@@ -110,7 +110,51 @@ public class pspSysMem {
             // no mem left
             Modules.log.warn("malloc failed (want=" + size + ",free=" + maxFreeMemSize() + ")");
         }
-        else */ if (type == PSP_SMEM_Low)
+        else */
+
+        // If the heap does not provide enough free space,
+        // try to allocate from the free block list
+        if (size > heapTop - heapBottom)
+        {
+        	int alignment = 63;
+	        if (type == PSP_SMEM_LowAligned || type == PSP_SMEM_HighAligned)
+	        {
+	        	// Use the alignment provided in the addr parameter
+	        	alignment = addr - 1;
+	        }
+
+	        // Allocate from the free block list
+	    	for (ListIterator<SysMemInfo> lit = freeBlockList.listIterator(); lit.hasNext(); )
+	    	{
+	    		SysMemInfo info = lit.next();
+
+	    		// Check if this block is a candidate
+	    		if (info.size >= size)
+	    		{
+	    			// Depending on the block address, we might need some
+	    			// additional alignment space
+	    			int alignmentSize = (info.addr + alignment) & ~alignment - info.addr;
+
+	    			// Check if the block has enough space also for the additional alignment
+	    			if (info.size >= size + alignmentSize)
+	    			{
+	    				// OK, the block has enough free space, allocate from the block
+	    				lit.remove();
+	    				allocatedAddress = info.addr + alignmentSize;
+
+	    				// If the block has some space left, put it back to the free list
+	    				if (info.size > size + alignmentSize)
+	    				{
+	    					SysMemInfo resizedInfo = new SysMemInfo(info.partitionid, info.name, info.type, info.size - size - alignmentSize, allocatedAddress + size);
+	    					freeBlockList.add(resizedInfo);
+	    				}
+
+	    				break;
+	    			}
+	    		}
+	    	}
+        }
+        else if (type == PSP_SMEM_Low)
         {
             allocatedAddress = heapBottom;
             allocatedAddress = (allocatedAddress + 63) & ~63;
@@ -240,7 +284,8 @@ public class pspSysMem {
         }
     }
 
-    private void cleanupFreeBlockList() {
+    private void cleanupFreeBlockList(SysMemInfo newInfo) {
+    	// Delete blocks adjacent to the heap top and bottom limits
     	boolean changed;
     	do {
     		changed = false;
@@ -257,12 +302,44 @@ public class pspSysMem {
 	    		}
 	    	}
     	} while (changed);
+
+    	// Merge the newInfo block with adjacent blocks
+    	// if it has not yet been merged into the heap
+    	if (freeBlockList.contains(newInfo)) {
+			SysMemInfo mergedInfo;
+			do {
+				mergedInfo = null;
+		    	for (ListIterator<SysMemInfo> lit = freeBlockList.listIterator(); lit.hasNext(); ) {
+		    		SysMemInfo info = lit.next();
+		    		if (info != newInfo) {
+		    			if (newInfo.addr + newInfo.size == info.addr) {
+		    				// partitionid, name and type are not relevant here.
+		    				mergedInfo = new SysMemInfo(newInfo.partitionid, newInfo.name, newInfo.type, newInfo.size + info.size, newInfo.addr);
+		    				lit.remove();
+		    				freeBlockList.remove(newInfo);
+		    				freeBlockList.add(mergedInfo);
+		    				break;
+		    			} else if (info.addr + info.size == newInfo.addr) {
+		    				// partitionid, name and type are not relevant here.
+		    				mergedInfo = new SysMemInfo(info.partitionid, info.name, info.type, info.size + newInfo.size, info.addr);
+		    				lit.remove();
+		    				freeBlockList.remove(newInfo);
+		    				freeBlockList.add(mergedInfo);
+		    				break;
+		    			}
+		    		}
+		    	}
+
+		    	// If blocks have been merged, check again with the merged block
+	    		newInfo = mergedInfo;
+			} while (mergedInfo != null);
+    	}
     }
 
     private void free(SysMemInfo info)
     {
     	freeBlockList.add(info);
-    	cleanupFreeBlockList();
+    	cleanupFreeBlockList(info);
     	if (freeBlockList.isEmpty()) {
     		Modules.log.info("pspSysMem.free(info) successful (all blocks released)");
     	} else if (!freeBlockList.contains(info)) {
@@ -285,6 +362,14 @@ public class pspSysMem {
         // include 64 byte alignment padding used in allocations
         // round down to 4 byte alignment (shouldn't need this if the 64 byte thing was working properly, TODO investigate)
         int maxFree = (heapTopGuard - heapBottom - 64) & ~3;
+
+        // Check if a free block is larger than the heap
+        for (ListIterator<SysMemInfo> lit = freeBlockList.listIterator(); lit.hasNext(); ) {
+    		SysMemInfo info = lit.next();
+    		if (info.size > maxFree) {
+    			maxFree = info.size;
+    		}
+    	}
 
         // Negative is ok if we are reserving thread memory, clamp back to 0
         if (maxFree < 0) {
