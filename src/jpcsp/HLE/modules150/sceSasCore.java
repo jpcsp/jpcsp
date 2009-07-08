@@ -723,9 +723,9 @@ public class sceSasCore implements HLEModule {
             // noxa/pspplayer blocks in __sceSasCore
             // some games protect __sceSasCore with locks, suggesting it may context switch.
         	// Games seems to run better when delaying the thread instead of just yielding.
+            cpu.gpr[2] = 0;
         	ThreadMan.getInstance().hleKernelDelayThread(1000000, false);
         	// ThreadMan.getInstance().yieldCurrentThread();
-            cpu.gpr[2] = 0;
         }
     }
 
