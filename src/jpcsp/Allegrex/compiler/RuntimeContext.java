@@ -31,6 +31,7 @@ import jpcsp.Processor;
 import jpcsp.State;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Decoder;
+import jpcsp.Allegrex.Instructions;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.ThreadMan;
@@ -166,7 +167,17 @@ public class RuntimeContext {
 
     public static void debugCodeBlockStart(int address, int returnAddress, int alternativeReturnAddress, boolean isJump) {
     	if (log.isDebugEnabled()) {
-    		log.debug("Starting CodeBlock 0x" + Integer.toHexString(address) + ", returnAddress=0x" + Integer.toHexString(returnAddress) + ", alternativeReturnAddress=0x" + Integer.toHexString(alternativeReturnAddress) + ", isJump=" + isJump);
+    		String comment = "";
+    		int syscallAddress = address + 4;
+    		if (memory.isAddressGood(syscallAddress)) {
+        		int syscallOpcode = memory.read32(syscallAddress);
+        		Instruction syscallInstruction = Decoder.instruction(syscallOpcode);
+        		if (syscallInstruction == Instructions.SYSCALL) {
+            		String syscallDisasm = syscallInstruction.disasm(syscallAddress, syscallOpcode);
+        			comment = syscallDisasm.substring(19);
+        		}
+    		}
+    		log.debug("Starting CodeBlock 0x" + Integer.toHexString(address) + comment + ", returnAddress=0x" + Integer.toHexString(returnAddress) + ", alternativeReturnAddress=0x" + Integer.toHexString(alternativeReturnAddress) + ", isJump=" + isJump);
     	}
     }
 
@@ -912,7 +923,7 @@ public class RuntimeContext {
     }
 
     public static void debugMemoryReadWrite(int address, int value, int pc, boolean isRead, int width) {
-    	if (log.isDebugEnabled()) {
+    	if (log.isTraceEnabled()) {
 	    	StringBuffer message = new StringBuffer();
 	    	message.append(String.format("0x%08X - ", pc));
 	    	if (isRead) {
@@ -935,7 +946,7 @@ public class RuntimeContext {
 	    		}
 	    		message.append(")");
 	    	}
-	    	log.debug(message.toString());
+	    	log.trace(message.toString());
     	}
     }
 
