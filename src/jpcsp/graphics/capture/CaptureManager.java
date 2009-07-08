@@ -38,11 +38,13 @@ import java.io.BufferedOutputStream;
 import java.io.InputStream;
 import java.io.FileInputStream;
 import java.io.BufferedInputStream;
+import java.nio.Buffer;
+
+import org.apache.log4j.Level;
 
 
 import jpcsp.Emulator;
 import jpcsp.graphics.VideoEngine;
-import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.kernel.types.PspGeList;
 
 public class CaptureManager {
@@ -51,6 +53,7 @@ public class CaptureManager {
     private static boolean captureInProgress;
     private static boolean listExecuted;
     private static CaptureFrameBufDetails replayFrameBufDetails;
+    private static Level logLevel;
 
     public static void startReplay(String filename) {
         if (captureInProgress) {
@@ -119,6 +122,11 @@ public class CaptureManager {
             return;
         }
 
+        // Set the VideoEngine log level to TRACE when capturing,
+        // the information in the log file is also interesting
+        logLevel = VideoEngine.log.getLevel();
+        VideoEngine.log.setLevel(Level.TRACE);
+
         try {
             VideoEngine.log.info("Starting capture... (list=" + list.id + ")");
             out = new BufferedOutputStream(new FileOutputStream(filename));
@@ -168,6 +176,7 @@ public class CaptureManager {
         captureInProgress = false;
 
         VideoEngine.log.info("Capture completed");
+        VideoEngine.log.setLevel(logLevel);
         Emulator.PauseEmu();
     }
 
@@ -186,6 +195,23 @@ public class CaptureManager {
             captureRAM.write(out);
         } catch(Exception e) {
             VideoEngine.log.error("Failed to capture RAM: " + e.getMessage());
+            e.printStackTrace();
+            Emulator.PauseEmu();
+        }
+    }
+
+    public static void captureImage(int imageaddr, int level, Buffer buffer, int width, int height, int bufferWidth, int imageType, boolean compressedImage, int compressedImageSize) {
+        if (!captureInProgress) {
+            VideoEngine.log.warn("Ignoring captureImage, capture hasn't been started");
+            return;
+        }
+
+        try {
+            // write image to the file system, not to the capture file itself
+            CaptureImage captureImage = new CaptureImage(imageaddr, level, buffer, width, height, bufferWidth, imageType, compressedImage, compressedImageSize);
+            captureImage.write();
+        } catch(Exception e) {
+            VideoEngine.log.error("Failed to capture Image: " + e.getMessage());
             e.printStackTrace();
             Emulator.PauseEmu();
         }

@@ -22,14 +22,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-import java.nio.Buffer;
-import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.WritableByteChannel;
-
 import jpcsp.Memory;
-import jpcsp.memory.IMemoryReader;
-import jpcsp.memory.MemoryReader;
+import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.HLE.kernel.types.PspGeList;
 
@@ -49,13 +43,23 @@ public class CaptureList {
             throw new Exception("Command list is empty");
         }
 
-        // don't support unterminated lists for now
-        // TODO scan list for END command
+        int listSize = 0;
         if (list.stall_addr == 0) {
-            throw new Exception("Unterminated command list is not supported yet");
+            // Scan list for END command
+        	Memory mem = Memory.getInstance();
+        	for (int listPc = list.list_addr; mem.isAddressGood(listPc); listPc += 4) {
+        		int instruction = mem.read32(listPc);
+        		int command = VideoEngine.command(instruction);
+        		if (command == GeCommands.END) {
+        			listSize = listPc - list.list_addr + 4;
+        			break;
+        		}
+        	}
+        } else {
+        	listSize = list.stall_addr - list.list_addr;
         }
 
-        listBuffer = new CaptureRAM(list.list_addr & 0x3FFFFFFF, list.stall_addr - list.list_addr);
+        listBuffer = new CaptureRAM(list.list_addr & Memory.addressMask, listSize);
     }
 
     public void write(OutputStream out) throws IOException {
