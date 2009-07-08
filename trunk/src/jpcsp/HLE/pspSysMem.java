@@ -271,8 +271,8 @@ public class pspSysMem {
             if (info.addr == addr)
             {
                 found = true;
-                free(info);
                 it.remove();
+                free(info);
                 break;
             }
         }
