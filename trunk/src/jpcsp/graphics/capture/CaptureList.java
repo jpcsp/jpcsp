@@ -53,6 +53,16 @@ public class CaptureList {
         		if (command == GeCommands.END) {
         			listSize = listPc - list.list_addr + 4;
         			break;
+        		} else if (command == GeCommands.JUMP) {
+        			VideoEngine.log.error("Found a JUMP instruction while scanning the list. Aborting the scan.");
+        			listSize = listPc - list.list_addr + 4;
+        			break;
+        		} else if (command == GeCommands.RET) {
+        			VideoEngine.log.error("Found a RET instruction while scanning the list. Aborting the scan.");
+        			listSize = listPc - list.list_addr + 4;
+        			break;
+        		} else if (command == GeCommands.CALL) {
+        			VideoEngine.log.warn("Found a CALL instruction while scanning the list. Ignoring the called list.");
         		}
         	}
         } else {
