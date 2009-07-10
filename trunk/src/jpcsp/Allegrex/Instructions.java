@@ -20,6 +20,7 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+import jpcsp.HLE.Modules;
 import jpcsp.HLE.SyscallHandler;
 
 import jpcsp.Allegrex.Common.*;
@@ -4146,6 +4147,7 @@ public void interpret(Processor processor, int insn) {
 
 
 				// TODO Check implementation of SWB instruction: same as SV.Q?
+				Modules.log.warn("Untested SWB Instruction");
                 processor.cpu.doSVQ((vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));
             
 }
