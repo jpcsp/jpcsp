@@ -119,10 +119,14 @@ public class Decoder {
 
             @Override
             public Instruction instance(int insn) {
-                if ((insn & 0x00000021) == 0x00000020) {
+                if ((insn & 0x00000020) == 0x00000020) {
                     if ((insn & 0x00000080) == 0x00000000) {
                         if ((insn & 0x00000100) == 0x00000000) {
-                            return jpcsp.Allegrex.Instructions.SEH;
+                            if ((insn & 0x00000200) == 0x00000000) {
+                                return jpcsp.Allegrex.Instructions.SEB;
+                            } else {
+                            	return jpcsp.Allegrex.Instructions.SEH;
+                            }
                         } else {
                             return jpcsp.Allegrex.Instructions.BITREV;
                         }
@@ -134,14 +138,10 @@ public class Decoder {
                         }
                     }
                 } else {
-                    if ((insn & 0x00000001) == 0x00000000) {
-                        if ((insn & 0x00000004) == 0x00000000) {
-                            return jpcsp.Allegrex.Instructions.EXT;
-                        } else {
-                            return jpcsp.Allegrex.Instructions.INS;
-                        }
+                    if ((insn & 0x00000004) == 0x00000000) {
+                        return jpcsp.Allegrex.Instructions.EXT;
                     } else {
-                        return jpcsp.Allegrex.Instructions.SEB;
+                        return jpcsp.Allegrex.Instructions.INS;
                     }
                 }
             }

@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.Allegrex;
 
 import jpcsp.Allegrex.compiler.ICompilerContext;
+import jpcsp.HLE.Modules;
 import jpcsp.util.Utilities;
 import jpcsp.Processor;
 
@@ -175,6 +176,7 @@ public class Common {
 
         @Override
         public void interpret(Processor processor, int insn) {
+        	Modules.log.warn(String.format("%08X %s", processor.cpu.pc, disasm(processor.cpu.pc, insn)));
         }
 
         @Override
