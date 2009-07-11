@@ -145,7 +145,61 @@ void __attribute__((noinline)) vmmulq(ScePspFMatrix4 *m0, ScePspFMatrix4 *m1, Sc
    "lv.q   C220, 0x20+%2\n"
    "lv.q   C230, 0x30+%2\n"
 
-   "vmmul.q E000.q, E100.q, E200.q\n"
+   "vmmul.q E000, E100, E200\n"
+
+   "sv.q   C000, 0x00+%0\n"
+   "sv.q   C010, 0x10+%0\n"
+   "sv.q   C020, 0x20+%0\n"
+   "sv.q   C030, 0x30+%0\n"
+   : "+m" (*m0) : "m" (*m1) ,"m" (*m2) );
+}
+
+void __attribute__((noinline)) vmmult(ScePspFMatrix4 *m0, ScePspFMatrix4 *m1, ScePspFMatrix4 *m2)
+{
+	asm volatile (
+   "lv.q   C000, 0x00+%0\n"
+   "lv.q   C010, 0x10+%0\n"
+   "lv.q   C020, 0x20+%0\n"
+   "lv.q   C030, 0x30+%0\n"
+
+   "lv.q   C100, 0x00+%1\n"
+   "lv.q   C110, 0x10+%1\n"
+   "lv.q   C120, 0x20+%1\n"
+   "lv.q   C130, 0x30+%1\n"
+
+   "lv.q   C200, 0x00+%2\n"
+   "lv.q   C210, 0x10+%2\n"
+   "lv.q   C220, 0x20+%2\n"
+   "lv.q   C230, 0x30+%2\n"
+
+   "vmmul.t E000, E100, E200\n"
+
+   "sv.q   C000, 0x00+%0\n"
+   "sv.q   C010, 0x10+%0\n"
+   "sv.q   C020, 0x20+%0\n"
+   "sv.q   C030, 0x30+%0\n"
+   : "+m" (*m0) : "m" (*m1) ,"m" (*m2) );
+}
+
+void __attribute__((noinline)) vmmulp(ScePspFMatrix4 *m0, ScePspFMatrix4 *m1, ScePspFMatrix4 *m2)
+{
+	asm volatile (
+   "lv.q   C000, 0x00+%0\n"
+   "lv.q   C010, 0x10+%0\n"
+   "lv.q   C020, 0x20+%0\n"
+   "lv.q   C030, 0x30+%0\n"
+
+   "lv.q   C100, 0x00+%1\n"
+   "lv.q   C110, 0x10+%1\n"
+   "lv.q   C120, 0x20+%1\n"
+   "lv.q   C130, 0x30+%1\n"
+
+   "lv.q   C200, 0x00+%2\n"
+   "lv.q   C210, 0x10+%2\n"
+   "lv.q   C220, 0x20+%2\n"
+   "lv.q   C230, 0x30+%2\n"
+
+   "vmmul.p E000, E100, E200\n"
 
    "sv.q   C000, 0x00+%0\n"
    "sv.q   C010, 0x10+%0\n"
@@ -259,6 +313,17 @@ void __attribute__((noinline)) vsgnq(ScePspFVector4 *v0, ScePspFVector4 *v1)
    "vsgn.q C000, C100\n"
 
    "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*v1));
+}
+
+void __attribute__((noinline)) vwbq(ScePspFVector4 *v0, ScePspFVector4 *v1)
+{
+	asm volatile (
+   "lv.q   C000, %0\n"
+
+   "lv.q   C100, %1\n"
+
+   "vwb.q C100, %0\n"
    : "+m" (*v0) : "m" (*v1));
 }
 
@@ -443,6 +508,20 @@ int main(int argc, char *argv[])
 			printf("         %f %f %f %f\n", m0.w.x, m0.w.y, m0.w.z, m0.w.w);
 
 			initValues();
+			vmmult(&m0, &m1, &m2);
+			printf("vmmul.t: %f %f %f %f\n", m0.x.x, m0.x.y, m0.x.z, m0.x.w);
+			printf("         %f %f %f %f\n", m0.y.x, m0.y.y, m0.y.z, m0.y.w);
+			printf("         %f %f %f %f\n", m0.z.x, m0.z.y, m0.z.z, m0.z.w);
+			printf("         %f %f %f %f\n", m0.w.x, m0.w.y, m0.w.z, m0.w.w);
+
+			initValues();
+			vmmulp(&m0, &m1, &m2);
+			printf("vmmul.p: %f %f %f %f\n", m0.x.x, m0.x.y, m0.x.z, m0.x.w);
+			printf("         %f %f %f %f\n", m0.y.x, m0.y.y, m0.y.z, m0.y.w);
+			printf("         %f %f %f %f\n", m0.z.x, m0.z.y, m0.z.z, m0.z.w);
+			printf("         %f %f %f %f\n", m0.w.x, m0.w.y, m0.w.z, m0.w.w);
+
+			initValues();
 			v1.x = -1;
 			v1.y = 1;
 			vsrt3s(&v0, &v1);
@@ -540,6 +619,11 @@ int main(int argc, char *argv[])
 			initValues();
 			vsgnq(&v0, &v1);
 			printf("vsgn.q : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+
+			initValues();
+			vwbq(&v0, &v1);
+			printf("vwb.q : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+			printf("        %f %f %f %f\n", v1.x, v1.y, v1.z, v1.w);
 		}
 
 		if (buttonDown & PSP_CTRL_TRIANGLE)

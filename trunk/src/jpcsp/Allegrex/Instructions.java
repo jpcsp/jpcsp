@@ -4130,10 +4130,10 @@ public String disasm(int address, int insn) {
 return Common.disasmVTIMMRS("sv", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));
 }
 };
-public static final Instruction SWB = new Instruction(125) {
+public static final Instruction VWB = new Instruction(125) {
 
 @Override
-public final String name() { return "SWB"; }
+public final String name() { return "VWB"; }
 
 @Override
 public final String category() { return "MIPS I/VFPU"; }
@@ -4146,8 +4146,7 @@ public void interpret(Processor processor, int insn) {
 	int rs = (insn>>21)&31;
 
 
-				// TODO Check implementation of SWB instruction: same as SV.Q?
-				Modules.log.warn("Untested SWB Instruction");
+				// Checked using VfpuTest: VWB.Q is equivalent to SV.Q
                 processor.cpu.doSVQ((vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));
             
 }
@@ -4162,7 +4161,7 @@ public String disasm(int address, int insn) {
 	int vt5 = (insn>>16)&31;
 	int rs = (insn>>21)&31;
 
-return Common.disasmVTIMMRS("swb", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));
+return Common.disasmVTIMMRS("vwb", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));
 }
 };
 public static final Instruction ADD_S = new Instruction(126) {
@@ -6952,7 +6951,7 @@ public String disasm(int address, int insn) {
 return Common.disasmVDVS("vsrt3", 1+one+(two<<1), vd, vs);
 }
 };
-public static final Instruction VSGN = new Instruction(212) {
+public static final Instruction VSGN = new Instruction(251) {
 
 	@Override
 	public final String name() { return "VSGN"; }

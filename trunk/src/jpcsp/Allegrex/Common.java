@@ -859,7 +859,7 @@ public class Common {
     }
 
 
-    protected static Instruction[] m_instances = new Instruction[251];
+    protected static Instruction[] m_instances = new Instruction[252];
 
     public static final Instruction[] instructions() {
         return m_instances;
