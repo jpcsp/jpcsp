@@ -474,8 +474,10 @@ public class CompilerContext implements ICompilerContext {
 	    }
 
 	    if (RuntimeContext.enableInstructionTypeCounting) {
-	    	loadInstruction(codeInstruction.getInsn());
-            mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.instructionTypeCount, "(" + instructionDescriptor + ")V");
+	    	if (codeInstruction.getInsn() != null) {
+		    	loadInstruction(codeInstruction.getInsn());
+	            mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.instructionTypeCount, "(" + instructionDescriptor + ")V");
+	    	}
 	    }
 
 	    if (RuntimeContext.enableDebugger) {

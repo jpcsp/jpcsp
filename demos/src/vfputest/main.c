@@ -327,9 +327,241 @@ void __attribute__((noinline)) vwbq(ScePspFVector4 *v0, ScePspFVector4 *v1)
    : "+m" (*v0) : "m" (*v1));
 }
 
+void __attribute__((noinline)) vdotq(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePspFVector4 *v2)
+{
+	asm volatile (
+   "lv.q   C000, %0\n"
+
+   "lv.q   C100, %1\n"
+
+   "lv.q   C200, %2\n"
+
+   "vdot.q S000, C100, C200\n"
+
+   "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*v1), "m" (*v2));
+}
+
+void __attribute__((noinline)) vdott(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePspFVector4 *v2)
+{
+	asm volatile (
+   "lv.q   C000, %0\n"
+
+   "lv.q   C100, %1\n"
+
+   "lv.q   C200, %2\n"
+
+   "vdot.t S000, C100, C200\n"
+
+   "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*v1), "m" (*v2));
+}
+
+void __attribute__((noinline)) vdotp(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePspFVector4 *v2)
+{
+	asm volatile (
+   "lv.q   C000, %0\n"
+
+   "lv.q   C100, %1\n"
+
+   "lv.q   C200, %2\n"
+
+   "vdot.p S000, C100, C200\n"
+
+   "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*v1), "m" (*v2));
+}
+
+void __attribute__((noinline)) vrsqq(ScePspFVector4 *v0, ScePspFVector4 *v1)
+{
+	asm volatile (
+   "lv.q   C000, %0\n"
+
+   "lv.q   C100, %1\n"
+
+   "vrsq.q C000, C100\n"
+
+   "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*v1));
+}
+
+void __attribute__((noinline)) vrsqt(ScePspFVector4 *v0, ScePspFVector4 *v1)
+{
+	asm volatile (
+   "lv.q   C000, %0\n"
+
+   "lv.q   C100, %1\n"
+
+   "vrsq.t C000, C100\n"
+
+   "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*v1));
+}
+
+void __attribute__((noinline)) vrsqp(ScePspFVector4 *v0, ScePspFVector4 *v1)
+{
+	asm volatile (
+   "lv.q   C000, %0\n"
+
+   "lv.q   C100, %1\n"
+
+   "vrsq.p C000, C100\n"
+
+   "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*v1));
+}
+
+void __attribute__((noinline)) vrsqs(ScePspFVector4 *v0, ScePspFVector4 *v1)
+{
+	asm volatile (
+   "lv.q   C000, %0\n"
+
+   "lv.q   C100, %1\n"
+
+   "vrsq.s S000, S100\n"
+
+   "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*v1));
+}
+
+void __attribute__((noinline)) vhdpq(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePspFVector4 *v2)
+{
+	asm volatile (
+   "lv.q   C000, %0\n"
+
+   "lv.q   C100, %1\n"
+
+   "lv.q   C200, %2\n"
+
+   "vhdp.q S000, C100, C200\n"
+
+   "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*v1), "m" (*v2));
+}
+
+void __attribute__((noinline)) vhdpt(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePspFVector4 *v2)
+{
+	asm volatile (
+   "lv.q   C000, %0\n"
+
+   "lv.q   C100, %1\n"
+
+   "lv.q   C200, %2\n"
+
+   "vhdp.t S000, C100, C200\n"
+
+   "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*v1), "m" (*v2));
+}
+
+void __attribute__((noinline)) vhdpp(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePspFVector4 *v2)
+{
+	asm volatile (
+   "lv.q   C000, %0\n"
+
+   "lv.q   C100, %1\n"
+
+   "lv.q   C200, %2\n"
+
+   "vhdp.p S000, C100, C200\n"
+
+   "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*v1), "m" (*v2));
+}
+
+void __attribute__((noinline)) vcrspt(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePspFVector4 *v2)
+{
+	asm volatile (
+   "lv.q   C000, %0\n"
+
+   "lv.q   C100, %1\n"
+
+   "lv.q   C200, %2\n"
+
+   "vcrsp.t C000, C100, C200\n"
+
+   "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*v1), "m" (*v2));
+}
+
+void __attribute__((noinline)) vcmovtq(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePspFVector4 *v2, int imm3)
+{
+	asm volatile (
+   "lv.q   C000, %0\n"
+
+   "lv.q   C100, %1\n"
+
+   "lv.q   C200, %2\n"
+
+   "vcmp.q LT, C100, C200\n"
+
+   : "+m" (*v0) : "m" (*v1), "m" (*v2));
+
+   if (imm3 == 0) {
+      asm volatile ("vcmovt.q C000, C100, 0\n" : "+m" (*v0) : "m" (*v1));
+   } else if (imm3 == 1) {
+      asm volatile ("vcmovt.q C000, C100, 1\n" : "+m" (*v0) : "m" (*v1));
+   } else if (imm3 == 2) {
+      asm volatile ("vcmovt.q C000, C100, 2\n" : "+m" (*v0) : "m" (*v1));
+   } else if (imm3 == 3) {
+      asm volatile ("vcmovt.q C000, C100, 3\n" : "+m" (*v0) : "m" (*v1));
+   } else if (imm3 == 4) {
+      asm volatile ("vcmovt.q C000, C100, 4\n" : "+m" (*v0) : "m" (*v1));
+   } else if (imm3 == 5) {
+      asm volatile ("vcmovt.q C000, C100, 5\n" : "+m" (*v0) : "m" (*v1));
+   } else if (imm3 == 6) {
+      asm volatile ("vcmovt.q C000, C100, 6\n" : "+m" (*v0) : "m" (*v1));
+   } else if (imm3 == 7) {
+      // asm volatile ("vcmovt.q C000, C100, 7\n" : "+m" (*v0) : "m" (*v1));
+      asm volatile (".word 0xD2A78480\n");
+   }
+
+	asm volatile (
+   "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*v1));
+}
+
+void __attribute__((noinline)) vcmovfq(ScePspFVector4 *v0, ScePspFVector4 *v1, ScePspFVector4 *v2, int imm3)
+{
+	asm volatile (
+   "lv.q   C000, %0\n"
+
+   "lv.q   C100, %1\n"
+
+   "lv.q   C200, %2\n"
+
+   "vcmp.q LT, C100, C200\n"
+
+   : "+m" (*v0) : "m" (*v1), "m" (*v2));
+
+   if (imm3 == 0) {
+      asm volatile ("vcmovf.q C000, C100, 0\n" : "+m" (*v0) : "m" (*v1));
+   } else if (imm3 == 1) {
+      asm volatile ("vcmovf.q C000, C100, 1\n" : "+m" (*v0) : "m" (*v1));
+   } else if (imm3 == 2) {
+      asm volatile ("vcmovf.q C000, C100, 2\n" : "+m" (*v0) : "m" (*v1));
+   } else if (imm3 == 3) {
+      asm volatile ("vcmovf.q C000, C100, 3\n" : "+m" (*v0) : "m" (*v1));
+   } else if (imm3 == 4) {
+      asm volatile ("vcmovf.q C000, C100, 4\n" : "+m" (*v0) : "m" (*v1));
+   } else if (imm3 == 5) {
+      asm volatile ("vcmovf.q C000, C100, 5\n" : "+m" (*v0) : "m" (*v1));
+   } else if (imm3 == 6) {
+      asm volatile ("vcmovf.q C000, C100, 6\n" : "+m" (*v0) : "m" (*v1));
+   } else if (imm3 == 7) {
+      // asm volatile ("vcmovf.q C000, C100, 7\n" : "+m" (*v0) : "m" (*v1));
+      asm volatile (".word 0xD2AF8480\n");
+   }
+
+	asm volatile (
+   "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*v1));
+}
+
 
 ScePspFVector4 v0;
 ScePspFVector4 v1;
+ScePspFVector4 v2;
 ScePspFMatrix4 m0;
 ScePspFMatrix4 m1;
 ScePspFMatrix4 m2;
@@ -367,6 +599,11 @@ void initValues()
 	v1.y = 13;
 	v1.z = -5;
 	v1.w = 11;
+
+	v2.x = 3;
+	v2.y = -7;
+	v2.z = -15;
+	v2.w = 19;
 
 	m1.x.x = -23;
 	m1.x.y = -9;
@@ -409,6 +646,13 @@ void initValues()
 	m2.w.w = 18;
 }
 
+void startNewScreen()
+{
+	pspDebugScreenInit();
+	printf("Press Cross/Square/Circle to start test group 1, 2, 3\n");
+	printf("Press Triangle to exit\n");
+}
+
 int main(int argc, char *argv[])
 {
     SceCtrlData pad;
@@ -418,15 +662,14 @@ int main(int argc, char *argv[])
 #define REPEAT_DELAY (SECOND / 5)
     struct timeval repeatStart;
     struct timeval repeatDelay;
+	int i;
 
     repeatStart.tv_sec = 0;
     repeatStart.tv_usec = 0;
     repeatDelay.tv_sec = 0;
     repeatDelay.tv_usec = 0;
 
-	pspDebugScreenInit();
-	printf("Press Cross to start test\n");
-	printf("Press Triangle to exit\n");
+	startNewScreen();
 
 	while(!done)
 	{
@@ -476,6 +719,8 @@ int main(int argc, char *argv[])
 
 		if (buttonDown & PSP_CTRL_CROSS)
 		{
+			startNewScreen();
+
 			initValues();
 			vtfm4(&v0, &m1, &v1);
 			printf("vtfm4 : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
@@ -588,6 +833,11 @@ int main(int argc, char *argv[])
 			initValues();
 			vsrt3q(&v0, &v1);
 			printf("vsrt3.q : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+		}
+
+		if (buttonDown & PSP_CTRL_SQUARE)
+		{
+			startNewScreen();
 
 			initValues();
 			v1.x = -100;
@@ -624,23 +874,82 @@ int main(int argc, char *argv[])
 			vwbq(&v0, &v1);
 			printf("vwb.q : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
 			printf("        %f %f %f %f\n", v1.x, v1.y, v1.z, v1.w);
+
+			initValues();
+			vdotq(&v0, &v1, &v2);
+			printf("vdot.q : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+
+			initValues();
+			vdott(&v0, &v1, &v2);
+			printf("vdot.t : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+
+			initValues();
+			vdotp(&v0, &v1, &v2);
+			printf("vdot.p : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+
+			initValues();
+			vrsqq(&v0, &v1);
+			printf("vrsq.q : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+
+			initValues();
+			vrsqt(&v0, &v1);
+			printf("vrsq.t : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+
+			initValues();
+			vrsqp(&v0, &v1);
+			printf("vrsq.p : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+
+			initValues();
+			vrsqs(&v0, &v1);
+			printf("vrsq.s : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+
+			initValues();
+			vhdpq(&v0, &v1, &v2);
+			printf("vhdp.q : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+
+			initValues();
+			vhdpt(&v0, &v1, &v2);
+			printf("vhdp.t : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+
+			initValues();
+			vhdpp(&v0, &v1, &v2);
+			printf("vhdp.p : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+
+			initValues();
+			vcrspt(&v0, &v1, &v2);
+			printf("vcrsp.t : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+		}
+
+		if (buttonDown & PSP_CTRL_CIRCLE)
+		{
+			startNewScreen();
+
+			for (i = 0; i < 8; i++)
+			{
+				initValues();
+				v2.x = v1.x + 1;
+				v2.y = v1.y;
+				v2.z = v1.z - 1;
+				v2.w = v1.w + 2;
+				vcmovtq(&v0, &v1, &v2, i);
+				printf("vcmovt.q %d: %f %f %f %f\n", i, v0.x, v0.y, v0.z, v0.w);
+			}
+
+			for (i = 0; i < 8; i++)
+			{
+				initValues();
+				v2.x = v1.x + 1;
+				v2.y = v1.y;
+				v2.z = v1.z - 1;
+				v2.w = v1.w + 2;
+				vcmovfq(&v0, &v1, &v2, i);
+				printf("vcmovf.q %d: %f %f %f %f\n", i, v0.x, v0.y, v0.z, v0.w);
+			}
 		}
 
 		if (buttonDown & PSP_CTRL_TRIANGLE)
 		{
 			done = 1;
-		}
-
-		if (buttonDown & PSP_CTRL_CIRCLE)
-		{
-			int dfd;
-			dfd = sceIoDopen("ms0:/PSP/GAME150/__SCE__wolf3d");
-			SceIoDirent dir;
-			while(sceIoDread(dfd, &dir) > 0)
-			{
-				printf("%s\n", dir.d_name);
-			}
-			sceIoDclose(dfd);
 		}
 
 		oldButtons = pad.Buttons;

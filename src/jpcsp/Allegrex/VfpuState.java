@@ -710,7 +710,7 @@ public class VfpuState extends FpuState {
             hdp += v1[i] * v2[i];
         }
 
-		// TODO Check if should add v2[i] or v1[i]*v2[i]?
+		// Tested: last element is only v2[i] (and not v1[i]*v2[i])
         v2[0] = hdp + v2[i];
 
         saveVd(1, vd, v2);
@@ -1666,7 +1666,7 @@ public class VfpuState extends FpuState {
                 loadVs(vsize, vs);
                 saveVd(vsize, vd, v1);
             }
-        } else {
+        } else if (imm3 == 6) {
             loadVs(vsize, vs);
             loadVt(vsize, vd);
             for (int i = 0; i < vsize; ++i) {
@@ -1675,6 +1675,8 @@ public class VfpuState extends FpuState {
                 }
             }
             saveVd(vsize, vd, v2);
+        } else {
+        	// Never copy (checked on a PSP)
         }
     }
     // VFPU4:VCMOVF
@@ -1684,7 +1686,7 @@ public class VfpuState extends FpuState {
                 loadVs(vsize, vs);
                 saveVd(vsize, vd, v1);
             }
-        } else {
+        } else if (imm3 == 6) {
             loadVs(vsize, vs);
             loadVt(vsize, vd);
             for (int i = 0; i < vsize; ++i) {
@@ -1693,6 +1695,10 @@ public class VfpuState extends FpuState {
                 }
             }
             saveVd(vsize, vd, v2);
+        } else {
+        	// Always copy (checked on a PSP)
+        	loadVs(vsize, vs);
+        	saveVd(vsize, vd, v1);
         }
     }
     // VFPU4:VWBN
