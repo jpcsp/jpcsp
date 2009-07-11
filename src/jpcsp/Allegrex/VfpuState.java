@@ -1782,10 +1782,14 @@ public class VfpuState extends FpuState {
     // group VFPU6   
     // VFPU6:VMMUL
     public void doVMMUL(int vsize, int vd, int vs, int vt) {
-        // you must do it for disasm, not for emulation !
+    	if (vsize == 1) {
+            doUNK("Not supported VMMUL.S");
+            return;
+    	}
+
+    	// you must do it for disasm, not for emulation !
         //vs = vs ^ 32;
 
-        // not sure :(
         for (int i = 0; i < vsize; ++i) {
             loadVt(vsize, vt + i);
             for (int j = 0; j < vsize; ++j) {

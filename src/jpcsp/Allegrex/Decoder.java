@@ -227,7 +227,7 @@ public class Decoder {
                 if ((insn & 0x00000002) == 0x00000000) {
                     return jpcsp.Allegrex.Instructions.SVQ;
                 } else {
-                    return jpcsp.Allegrex.Instructions.SWB;
+                    return jpcsp.Allegrex.Instructions.VWB;
                 }
             }
         },
