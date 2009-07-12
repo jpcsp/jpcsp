@@ -157,6 +157,13 @@ public class sceUtility implements HLEModule {
     public static final int PSP_SYSTEMPARAM_LANGUAGE_CHINESE_TRADITIONAL = 10;
     public static final int PSP_SYSTEMPARAM_LANGUAGE_CHINESE_SIMPLIFIED = 11;
 
+    public static final int PSP_SYSTEMPARAM_DATE_FORMAT_YYYYMMDD = 0;
+    public static final int PSP_SYSTEMPARAM_DATE_FORMAT_MMDDYYYY = 1;
+    public static final int PSP_SYSTEMPARAM_DATE_FORMAT_DDMMYYYY = 2;
+
+    public static final int PSP_SYSTEMPARAM_TIME_FORMAT_24HR = 0;
+    public static final int PSP_SYSTEMPARAM_TIME_FORMAT_12HR = 1;
+
     public static final int PSP_UTILITY_ERROR_NOT_INITED = 0x80110005; // might not be correct name
 
     public static final int PSP_NETPARAM_ERROR_BAD_NETCONF = 0x80110601;
@@ -183,6 +190,13 @@ public class sceUtility implements HLEModule {
 
     protected int osk_status;
 
+    // TODO expose via settings GUI
+    protected String systemParam_nickname = "JPCSP";
+    protected int systemParam_dateFormat = PSP_SYSTEMPARAM_DATE_FORMAT_YYYYMMDD;
+    protected int systemParam_timeFormat = PSP_SYSTEMPARAM_TIME_FORMAT_24HR;
+    protected int systemParam_timeZone = 0; // TODO probably minutes west or east of UTC
+    protected int systemParam_language = PSP_SYSTEMPARAM_LANGUAGE_ENGLISH;
+    protected int systemParam_buttonPreference = 0;
 
 	public void sceUtilityGameSharingInitStart(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
@@ -899,19 +913,24 @@ public class sceUtility implements HLEModule {
 
             cpu.gpr[2] = 0;
             switch(id) {
+                case PSP_SYSTEMPARAM_ID_INT_DATE_FORMAT:
+                    mem.write32(value_addr, systemParam_dateFormat);
+                    break;
+
+                case PSP_SYSTEMPARAM_ID_INT_TIME_FORMAT:
+                    mem.write32(value_addr, systemParam_timeFormat);
+                    break;
+
                 case PSP_SYSTEMPARAM_ID_INT_TIMEZONE:
-                    // TODO probably minutes west or east of UTC
-                    mem.write32(value_addr, 0);
+                    mem.write32(value_addr, systemParam_timeZone);
                     break;
 
                 case PSP_SYSTEMPARAM_ID_INT_LANGUAGE:
-                    // TODO add an option to SettingsGUI to allow users to set the prefered language
-                    mem.write32(value_addr, PSP_SYSTEMPARAM_LANGUAGE_ENGLISH);
+                    mem.write32(value_addr, systemParam_language);
                     break;
 
                 case PSP_SYSTEMPARAM_ID_INT_UNKNOWN:
-                    // TODO add an option to SettingsGUI to allow users to set the prefered accept button (cross/circle)
-                    mem.write32(value_addr, 0);
+                    mem.write32(value_addr, systemParam_buttonPreference);
                     break;
 
                 default:
@@ -940,13 +959,7 @@ public class sceUtility implements HLEModule {
             cpu.gpr[2] = 0;
             switch(id) {
                 case PSP_SYSTEMPARAM_ID_STRING_NICKNAME:
-                    // TODO let the user set a nickname somewhere
-                    String nickname = "JPCSP";
-                    for(int i = 0; i < len && i < nickname.length(); i++) {
-                        mem.write8(str_addr + i, (byte)nickname.charAt(i));
-                    }
-                    if (len > nickname.length())
-                        mem.write8(str_addr + nickname.length(), (byte)0);
+                    Utilities.writeStringNZ(mem, str_addr, len, systemParam_nickname);
                     break;
 
                 default:
