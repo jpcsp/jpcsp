@@ -263,6 +263,9 @@ public class MsgPipeManager {
                     // Do callbacks?
                     currentThread.do_callbacks = do_callbacks;
 
+                    // wait type
+                    currentThread.waitType = PSP_WAIT_MSGPIPE;
+
                     // Go to wait state
                     threadMan.hleKernelThreadWait(currentThread.wait, micros, (timeout_addr == 0));
 
@@ -356,6 +359,9 @@ public class MsgPipeManager {
                     // Do callbacks?
                     currentThread.do_callbacks = do_callbacks;
 
+                    // wait type
+                    currentThread.waitType = PSP_WAIT_MSGPIPE;
+
                     // Go to wait state
                     threadMan.hleKernelThreadWait(currentThread.wait, micros, (timeout_addr == 0));
 
@@ -406,10 +412,9 @@ public class MsgPipeManager {
 
     public void sceKernelCancelMsgPipe(int uid, int send_addr, int recv_addr) {
         CpuState cpu = Emulator.getProcessor().cpu;
+        Memory mem = cpu.memory;
 
-        // TODO find out what send_addr and recv_addr are for
-        // maybe they are boolean flags whether to cancel sends or receives (or both)
-        Modules.log.warn("PARTIAL:sceKernelCancelMsgPipe(uid=0x" + Integer.toHexString(uid)
+        Modules.log.debug("sceKernelCancelMsgPipe(uid=0x" + Integer.toHexString(uid)
             + ",send=0x" + Integer.toHexString(send_addr)
             + ",recv=0x" + Integer.toHexString(recv_addr) + ")");
 
@@ -418,6 +423,13 @@ public class MsgPipeManager {
             Modules.log.warn("sceKernelCancelMsgPipe unknown uid=0x" + Integer.toHexString(uid));
             cpu.gpr[2] = ERROR_NOT_FOUND_MESSAGE_PIPE;
         } else {
+            if (mem.isAddressGood(send_addr)) {
+                mem.write32(send_addr, info.numSendWaitThreads);
+            }
+            if (mem.isAddressGood(recv_addr)) {
+                mem.write32(recv_addr, info.numReceiveWaitThreads);
+            }
+
             info.numSendWaitThreads = 0;
             info.numReceiveWaitThreads = 0;
 

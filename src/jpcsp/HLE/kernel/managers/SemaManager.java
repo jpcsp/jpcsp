@@ -222,6 +222,9 @@ public class SemaManager {
                 // Do callbacks?
                 currentThread.do_callbacks = do_callbacks;
 
+                // wait type
+                currentThread.waitType = PSP_WAIT_SEMA;
+
                 // Go to wait state
                 threadMan.hleKernelThreadWait(currentThread.wait, micros, (timeout_addr == 0));
 

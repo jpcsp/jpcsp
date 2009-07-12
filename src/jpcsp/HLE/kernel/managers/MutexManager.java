@@ -33,13 +33,17 @@ import jpcsp.Processor;
 import jpcsp.util.Utilities;
 
 // http://forums.ps2dev.org/viewtopic.php?p=79708#79708
-// TODO find ERROR_NOT_FOUND_MUTEX error code
-// TODO find other codes like:
-// - DONE mutex already locked 0x800201c4
-// - mutex already unlocked
+// TODO find other codes:
+// - 0x800201c3 ERROR_NOT_FOUND_MUTEX
+// - 0x800201c4 mutex already locked (from try lock)
+// - 0x800201c8 overflow? (mutex already locked). set initial count > 0, don't use attr 0x200, then try and lock on the same thread
+// - ??? underflow/mutex already unlocked
 public class MutexManager {
 
     private HashMap<Integer, SceKernelMutexInfo> mutexMap;
+
+    private final static int PSP_MUTEX_UNKNOWN_ATTR = 0x100; // TODO
+    private final static int PSP_MUTEX_ALLOW_SAME_THREAD = 0x200;
 
     public void reset() {
         mutexMap = new HashMap<Integer, SceKernelMutexInfo>();
@@ -101,9 +105,10 @@ public class MutexManager {
             + ",count=0x" + Integer.toHexString(count)
             + ",option_addr=0x" + Integer.toHexString(option_addr) + ")");
 
+        // TODO ERROR_ILLEGAL_ATTR
         // both attr can be used at the same time
         // 0x100 - ?
-        // 0x200 - ?
+        // 0x200 - allow same thread to lock multiple times (overflow without error)
         if (attr != 0) Modules.log.warn("PARTIAL:sceKernelCreateMutex attr value 0x" + Integer.toHexString(attr));
 
         SceKernelMutexInfo info = new SceKernelMutexInfo(name, attr);
@@ -113,7 +118,6 @@ public class MutexManager {
         info.threadid = jpcsp.HLE.ThreadMan.getInstance().getCurrentThreadID();
 
         cpu.gpr[2] = info.uid;
-        //Emulator.PauseEmu();
     }
 
     public void sceKernelDeleteMutex(int uid) {
@@ -126,7 +130,7 @@ public class MutexManager {
         SceKernelMutexInfo info = mutexMap.remove(uid);
         if (info == null) {
             Modules.log.warn("sceKernelDeleteMutex unknown UID " +Integer.toHexString(uid));
-            cpu.gpr[2] = ERROR_UNKNOWN_UID; // check
+            cpu.gpr[2] = ERROR_NOT_FOUND_MUTEX;
         } else {
             cpu.gpr[2] = 0;
         }
@@ -157,13 +161,16 @@ public class MutexManager {
         SceKernelMutexInfo info = mutexMap.get(uid);
         if (info == null) {
             Modules.log.warn(message + " - unknown UID");
-            cpu.gpr[2] = ERROR_UNKNOWN_UID; // check
+            cpu.gpr[2] = ERROR_NOT_FOUND_MUTEX;
         } else {
             ThreadMan threadMan = ThreadMan.getInstance();
             SceKernelThreadInfo current_thread = threadMan.getCurrentThread();
 
-            // TODO check if the special flag is 0x100 or 0x200, I doubt it's both (fiveofhearts)
-            boolean allowSameThread = (info.attr & 0x300) == 0x300 && info.threadid == current_thread.uid;
+            boolean allowSameThread = false;
+            if (info.threadid == current_thread.uid &&
+                (info.attr & PSP_MUTEX_ALLOW_SAME_THREAD) == PSP_MUTEX_ALLOW_SAME_THREAD) {
+                allowSameThread = true;
+            }
 
             if (!tryLockMutex(info, count, allowSameThread)) {
                 Modules.log.info(message + " - '" + info.name + "' fast check failed");
@@ -177,6 +184,9 @@ public class MutexManager {
 
                     // Do callbacks?
                     current_thread.do_callbacks = do_callbacks;
+
+                    // wait type
+                    current_thread.waitType = PSP_WAIT_MUTEX;
 
                     // Go to wait state
                     int timeout = 0;
@@ -281,7 +291,7 @@ public class MutexManager {
         SceKernelMutexInfo info = mutexMap.get(uid);
         if (info == null) {
             Modules.log.warn("sceKernelUnlockMutex unknown uid");
-            cpu.gpr[2] = -1;
+            cpu.gpr[2] = ERROR_NOT_FOUND_MUTEX;
         } else if (info.locked == 0) {
             Modules.log.warn("sceKernelUnlockMutex not locked");
             cpu.gpr[2] = 0; // check
@@ -299,7 +309,6 @@ public class MutexManager {
 
             cpu.gpr[2] = 0;
         }
-        //Emulator.PauseEmu();
     }
 
     public void sceKernelCancelMutex(int uid) {
@@ -311,7 +320,7 @@ public class MutexManager {
         SceKernelMutexInfo info = mutexMap.get(uid);
         if (info == null) {
             Modules.log.warn("sceKernelCancelMutex unknown UID " + Integer.toHexString(uid));
-            cpu.gpr[2] = -1;
+            cpu.gpr[2] = ERROR_NOT_FOUND_MUTEX;
         } else if (info.locked == 0) {
             Modules.log.warn("sceKernelCancelMutex UID " + Integer.toHexString(uid) + " not locked");
             cpu.gpr[2] = -1;
@@ -336,7 +345,7 @@ public class MutexManager {
         SceKernelMutexInfo info = mutexMap.get(uid);
         if (info == null) {
             Modules.log.warn("sceKernelReferMutexStatus unknown UID " + Integer.toHexString(uid));
-            cpu.gpr[2] = -1;
+            cpu.gpr[2] = ERROR_NOT_FOUND_MUTEX;
         } else {
             Memory mem = Memory.getInstance();
             if (mem.isAddressGood(addr)) {

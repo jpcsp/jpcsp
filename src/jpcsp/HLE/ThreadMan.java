@@ -427,6 +427,8 @@ public class ThreadMan {
         syscallFreeCycles = 0;
 
         pspiofilemgr.getInstance().onContextSwitch();
+
+        // TODO delete this once we're sure it's not needed anymore
         Modules.sceUmdUserModule.onContextSwitch();
 
         RuntimeContext.update();
@@ -637,7 +639,14 @@ public class ThreadMan {
         thread.do_delete = true;
 
         if (thread.status == PSP_THREAD_STOPPED) {
-            toBeDeletedThreads.add(thread);
+            // It's possible for a game to request the same thread to be deleted multiple times
+            // We only mark for deferred deletion, so make sure it's not already in the toBeDeletedThreads list
+            // Example:
+            // - main thread calls sceKernelDeleteThread on child thread
+            // - child thread calls sceKernelExitDeleteThread
+            if (!toBeDeletedThreads.contains(thread)) {
+                toBeDeletedThreads.add(thread);
+            }
         }
     }
 
@@ -662,6 +671,12 @@ public class ThreadMan {
             if (!thread.wait.forever) {
                 waitingThreads.add(thread);
             }
+
+            // debug
+            if (thread.waitType == PSP_WAIT_NONE) {
+                Modules.log.warn("changeThreadState thread '" + thread.name + "' => PSP_THREAD_WAITING. waitType should NOT be PSP_WAIT_NONE. caller:" + getCallingFunction());
+                //Emulator.PauseEmu();
+            }
         } else if (thread.status == PSP_THREAD_STOPPED) {
             // TODO check if stopped threads eventually get automatically deleted on a real psp
             // HACK auto delete module mgr threads
@@ -675,6 +690,13 @@ public class ThreadMan {
                 toBeDeletedThreads.add(thread);
             }
             onThreadStopped(thread);
+        } else if (thread.status == PSP_THREAD_READY) {
+            thread.waitType = PSP_WAIT_NONE;
+        } else if (thread.status == PSP_THREAD_RUNNING) {
+            // debug
+            if (thread.waitType != PSP_WAIT_NONE) {
+                Modules.log.error("changeThreadState thread '" + thread.name + "' => PSP_THREAD_RUNNING. waitType should be PSP_WAIT_NONE. caller:" + getCallingFunction());
+            }
         }
     }
 
@@ -904,9 +926,10 @@ public class ThreadMan {
         }
         thread.cpuContext.gpr[28] = gp;
 
-        // Start thread immediately, but only if new thread priority is equal or higher
+        // switch in the target thread if it's higher priority
         changeThreadState(thread, PSP_THREAD_READY);
-        if (current_thread.currentPriority >= thread.initPriority) {
+        if (thread.currentPriority < current_thread.currentPriority) {
+            Modules.log.debug("hleKernelStartThread switching in thread immediately");
             contextSwitch(thread);
         }
     }
@@ -958,8 +981,12 @@ public class ThreadMan {
     }
 
     private void hleKernelSleepThread(boolean do_callbacks) {
-        // Go to wait state, callbacks
+        // Go to wait state
+        // callbacks
         current_thread.do_callbacks = do_callbacks;
+
+        // wait type
+        current_thread.waitType = PSP_WAIT_SLEEP;
 
         // Wait forever (another thread will call sceKernelWakeupThread)
         hleKernelThreadWait(current_thread.wait, 0, true);
@@ -1018,6 +1045,9 @@ public class ThreadMan {
         if (thread == null) {
             Modules.log.warn("sceKernelSuspendThread SceUID=" + Integer.toHexString(uid) + " unknown thread");
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
+        } else if (uid == current_thread.uid) {
+            Modules.log.warn("sceKernelSuspendThread on self is not allowed");
+            Emulator.getProcessor().cpu.gpr[2] = ERROR_ILLEGAL_THREAD;
         } else {
             Modules.log.debug("sceKernelSuspendThread SceUID=" + Integer.toHexString(uid));
             changeThreadState(thread, PSP_THREAD_SUSPEND);
@@ -1066,6 +1096,9 @@ public class ThreadMan {
         } else {
             // Do callbacks?
             current_thread.do_callbacks = callbacks;
+
+            // wait type
+            current_thread.waitType = PSP_WAIT_THREAD_END;
 
             // Go to wait state
             hleKernelThreadWait(current_thread.wait, micros, forever);
@@ -1133,8 +1166,12 @@ public class ThreadMan {
     }
 
     public void hleKernelDelayThread(int micros, boolean do_callbacks) {
-        // Go to wait state, callbacks
+        // Go to wait state
+        // callbacks
         //current_thread.do_callbacks = do_callbacks;
+
+        // wait type
+        current_thread.waitType = PSP_WAIT_DELAY;
 
         if (IGNORE_DELAY)
             micros = 0;
