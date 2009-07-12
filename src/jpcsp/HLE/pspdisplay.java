@@ -201,7 +201,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     public void step(boolean immediately) {
         long now = System.currentTimeMillis();
         if (immediately || now - lastUpdate > 1000 / 60) {
-        	if (!onlyGEGraphics || VideoEngine.getInstance().hasDrawLists() || detailsDirty) {
+        	if (!onlyGEGraphics || VideoEngine.getInstance().hasDrawLists()) {
 	            if (geDirty || detailsDirty || displayDirty) {
 	                display();
                     detailsDirty = false;
