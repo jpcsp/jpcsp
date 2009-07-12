@@ -101,6 +101,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     private int bufferwidthGe;
     private int pixelformatGe;
 
+    private boolean detailsDirty;
     private boolean displayDirty;
     private boolean geDirty;
     private long lastUpdate;
@@ -157,6 +158,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         bottomaddrFb =
             topaddrFb + bufferwidthFb * height * getPixelFormatBytes(pixelformatFb);
 
+        detailsDirty = true;
         displayDirty = true;
         geDirty = false;
         createTex = true;
@@ -198,10 +200,11 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
     public void step(boolean immediately) {
         long now = System.currentTimeMillis();
-        if (immediately || now - lastUpdate > 1000 / 60 || displayDirty) {
-        	if (!onlyGEGraphics || VideoEngine.getInstance().hasDrawLists()) {
-	            if (displayDirty || geDirty) {
+        if (immediately || now - lastUpdate > 1000 / 60) {
+        	if (!onlyGEGraphics || VideoEngine.getInstance().hasDrawLists() || detailsDirty) {
+	            if (geDirty || detailsDirty || displayDirty) {
 	                display();
+                    detailsDirty = false;
 	                displayDirty = false;
 	                geDirty = false;
 	            }
@@ -218,19 +221,19 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     }
 
     public void write8(int address, int data) {
-        address &= 0x3FFFFFFF;
+        address &= Memory.addressMask;
         if (address >= topaddrFb && address < bottomaddrFb)
             displayDirty = true;
     }
 
     public void write16(int address, int data) {
-        address &= 0x3FFFFFFF;
+        address &= Memory.addressMask;
         if (address >= topaddrFb && address < bottomaddrFb)
             displayDirty = true;
     }
 
     public void write32(int address, int data) {
-        address &= 0x3FFFFFFF;
+        address &= Memory.addressMask;
         if (address >= topaddrFb && address < bottomaddrFb)
             displayDirty = true;
     }
@@ -704,7 +707,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                 getPixelFormatBytes(pixelformatFb);
             pixelsFb = getPixels(topaddrFb, bottomaddrFb);
 
-            displayDirty = true;
+            detailsDirty = true;
 
             if (mode != 0)
                 Modules.log.warn("UNIMPLEMENTED:sceDisplaySetMode mode=" + mode);
@@ -781,7 +784,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             texS = (float)width / (float)bufferwidth;
             texT = (float)height / (float)Utilities.makePow2(height);
 
-            displayDirty = true;
+            detailsDirty = true;
             //display();
 
             if (State.captureGeNextFrame && CaptureManager.hasListExecuted()) {
