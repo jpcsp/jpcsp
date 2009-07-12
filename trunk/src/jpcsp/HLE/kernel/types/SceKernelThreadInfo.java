@@ -68,6 +68,20 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public static final int PSP_THREAD_STOPPED  = 0x00000010;
     public static final int PSP_THREAD_KILLED   = 0x00000020;
 
+    public static final int PSP_WAIT_NONE       = 0x00;
+    public static final int PSP_WAIT_SLEEP      = 0x01; // sleep thread
+    public static final int PSP_WAIT_DELAY      = 0x02; // delay thread
+    public static final int PSP_WAIT_SEMA       = 0x03; // wait sema
+    public static final int PSP_WAIT_MISC       = 0x04; // wait event flag, io, umd, vblank(?)
+    public static final int PSP_WAIT_5          = 0x05; // ?
+    public static final int PSP_WAIT_6          = 0x06; // ?
+    public static final int PSP_WAIT_7          = 0x07; // ?
+    public static final int PSP_WAIT_MSGPIPE    = 0x08; // wait msg pipe (send and receive)
+    public static final int PSP_WAIT_THREAD_END = 0x09; // wait thread end
+    public static final int PSP_WAIT_a          = 0x0a; // ?
+    public static final int PSP_WAIT_b          = 0x0b; // ?
+    public static final int PSP_WAIT_MUTEX      = 0x0c; // wait mutex
+
     // SceKernelThreadInfo <http://psp.jim.sh/pspsdk-doc/structSceKernelThreadInfo.html>
     public final String name;
     public int attr;
@@ -78,7 +92,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public int gpReg_addr;
     public final int initPriority; // lower numbers mean higher priority
     public int currentPriority;
-    public int waitType; // 1=SleepThread 2=DelayThread 3=sema 4=VblankStart?
+    public int waitType;
     public int waitId;
     public int wakeupCount;
     public int exitStatus;
@@ -158,8 +172,8 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
 
         gpReg_addr = Emulator.getProcessor().cpu.gpr[28]; // inherit gpReg // TODO addr into ModuleInfo struct?
         currentPriority = initPriority;
-        waitType = 0; // not yet used by us
-        waitId = 0; // ?
+        waitType = PSP_WAIT_NONE;
+        waitId = 0; // probably a uid to a wait struct, we're using custom ThreadWaitInfo class at the moment
         wakeupCount = 0;
         exitStatus = ERROR_THREAD_IS_NOT_DORMANT;
         runClocks = 0;

@@ -433,6 +433,9 @@ public class pspiofilemgr {
             // Do callbacks?
             current_thread.do_callbacks = callbacks;
 
+            // wait type
+            current_thread.waitType = PSP_WAIT_MISC;
+
             // Go to wait state
             int timeout = 0;
             boolean forever = true;
@@ -1238,7 +1241,7 @@ public class pspiofilemgr {
                 Modules.log.warn("sceIoDopen apps running outside of ms0 dir are not fully supported, relative child paths should still work");
                 Emulator.getProcessor().cpu.gpr[2] = -1;
             } else {
-                // Regular apps inside mstick dir
+                // Regular apps run from inside mstick dir or absolute path given
                 if (debug) Modules.log.debug("sceIoDopen - pcfilename = " + pcfilename);
                 File f = new File(pcfilename);
                 if (f.isDirectory()) {
@@ -1246,10 +1249,12 @@ public class pspiofilemgr {
                     Emulator.getProcessor().cpu.gpr[2] = info.uid;
                 } else {
                     if (debug) Modules.log.warn("sceIoDopen '" + pcfilename + "' not a directory! (could be missing)");
-                    Emulator.getProcessor().cpu.gpr[2] = -1;
+                    Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_FILE_NOT_FOUND;
                 }
             }
         } else {
+            // I don't think we can get here anymore? (fiveofhearts)
+            Modules.log.error("sceIoDopen something went wrong in getDeviceFilePath '" + dirname + "'");
             Emulator.getProcessor().cpu.gpr[2] = -1;
         }
 

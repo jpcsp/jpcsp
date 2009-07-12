@@ -253,7 +253,7 @@ public class EventFlagManager {
         }
     }
 
-    /** If there was a match we attempt to write to outBits_addr.
+    /** If there was a match we attempt to write the current pattern to outBits_addr.
      * @return true if there was a match. */
     private boolean checkEventFlag(SceKernelEventFlagInfo event, int bits, int wait, int outBits_addr) {
         boolean matched = false;
@@ -271,7 +271,7 @@ public class EventFlagManager {
         }
 
         if (matched) {
-            // All 32 bits
+            // Write current pattern
             Memory mem = Memory.getInstance();
             if (mem.isAddressGood(outBits_addr)) {
                 mem.write32(outBits_addr, event.currentPattern);
@@ -326,6 +326,7 @@ public class EventFlagManager {
                 // Go to wait state
                 SceKernelThreadInfo currentThread = ThreadMan.getInstance().getCurrentThread();
                 currentThread.do_callbacks = do_callbacks;
+                currentThread.waitType = PSP_WAIT_MISC;
 
                 // Wait on a specific event flag
                 ThreadMan.getInstance().hleKernelThreadWait(currentThread.wait, micros, (timeout_addr == 0));

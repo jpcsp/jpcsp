@@ -289,6 +289,9 @@ public class sceUmdUser implements HLEModule {
             // Do callbacks?
             currentThread.do_callbacks = doCallbacks;
 
+            // wait type
+            currentThread.waitType = SceKernelThreadInfo.PSP_WAIT_MISC;
+
             // Go to wait state
             threadMan.hleKernelThreadWait(currentThread.wait, timeout, !doTimeout);
 
