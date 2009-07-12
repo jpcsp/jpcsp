@@ -46,6 +46,7 @@ public class sceHprm implements HLEModule {
             mm.addFunction(sceHprmPeekLatchFunction, 0x2BCEC83E);
             mm.addFunction(sceHprmReadLatchFunction, 0x40D2F9F0);
 
+            peekCurrentKeyWarningLogged = false;
         }
     }
 
@@ -69,6 +70,8 @@ public class sceHprm implements HLEModule {
     private boolean enableRemote = false;
     private boolean enableHeadphone = false;
     private boolean enableMicrophone = false;
+
+    private boolean peekCurrentKeyWarningLogged;
 
     public void sceHprmRegisterCallback(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
@@ -155,7 +158,16 @@ public class sceHprm implements HLEModule {
         int key_addr = cpu.gpr[4];
 
         if (mem.isAddressGood(key_addr)) {
-            Modules.log.warn("IGNORING:sceHprmPeekCurrentKey(key_addr=0x" + Integer.toHexString(key_addr) + ")");
+
+            if (peekCurrentKeyWarningLogged) {
+                if (Modules.log.isTraceEnabled()) {
+                    Modules.log.trace("IGNORING:sceHprmPeekCurrentKey(key_addr=0x" + Integer.toHexString(key_addr) + ")");
+                }
+            } else {
+                Modules.log.warn("IGNORING:sceHprmPeekCurrentKey(key_addr=0x" + Integer.toHexString(key_addr) + ") future calls will only appear in TRACE log");
+                peekCurrentKeyWarningLogged = true;
+            }
+
             mem.write32(key_addr, 0); // fake
             cpu.gpr[2] = 0; // check
         } else {
