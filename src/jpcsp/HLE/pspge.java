@@ -26,12 +26,14 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 //import java.util.concurrent.Semaphore;
 
 import jpcsp.Emulator;
+import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelCallbackInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.pspGeCallbackData;
 import jpcsp.HLE.kernel.types.PspGeList;
+import jpcsp.HLE.kernel.types.pspGeContext;
 
 import jpcsp.graphics.VideoEngine;
 
@@ -336,6 +338,22 @@ public class pspge {
         } else {
             threadMan.yieldCurrentThread();
         }
+    }
+
+    public void sceGeSaveContext(int contextAddr) {
+    	pspGeContext context = new pspGeContext();
+    	VideoEngine.getInstance().saveContext(context);
+    	context.write(Memory.getInstance(), contextAddr);
+
+    	Emulator.getProcessor().cpu.gpr[2] = 0;
+    }
+
+    public void sceGeRestoreContext(int contextAddr) {
+    	pspGeContext context = new pspGeContext();
+    	context.read(Memory.getInstance(), contextAddr);
+    	VideoEngine.getInstance().restoreContext(context);
+
+    	Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
     public void sceGeSetCallback(int cbdata_addr) {

@@ -41,6 +41,7 @@ import jpcsp.State;
 import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.pspge;
 import jpcsp.HLE.kernel.types.PspGeList;
+import jpcsp.HLE.kernel.types.pspGeContext;
 import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.graphics.textures.Texture;
 import jpcsp.graphics.textures.TextureCache;
@@ -265,7 +266,7 @@ public class VideoEngine {
     	this.gl = gl;
     	this.glu = new GLU();
 
-        String openGLVersion = getOpenGLVersion(gl);
+    	String openGLVersion = getOpenGLVersion(gl);
         openGL1_2 = openGLVersion.compareTo("1.2") >= 0;
         openGL1_5 = openGLVersion.compareTo("1.5") >= 0;
 
@@ -3903,5 +3904,253 @@ public class VideoEngine {
     private boolean isVertexBufferEmbedded() {
         // stall_addr may be 0
         return (vinfo.ptr_vertex >= currentList.list_addr && vinfo.ptr_vertex < currentList.stall_addr);
+    }
+
+    public void saveContext(pspGeContext context) {
+    	context.fbp = fbp;
+    	context.fbw = fbw;
+    	context.zbp = zbp;
+    	context.zbw = zbw;
+    	context.psm = psm;
+
+    	context.region_x1 = region_x1;
+    	context.region_y1 = region_y1;
+    	context.region_x2 = region_x2;
+    	context.region_y2 = region_y2;
+    	context.region_width = region_width;
+    	context.region_height = region_height;
+    	context.scissor_x1 = scissor_x1;
+    	context.scissor_y1 = scissor_y1;
+    	context.scissor_x2 = scissor_x2;
+    	context.scissor_y2 = scissor_y2;
+    	context.scissor_width = scissor_width;
+    	context.scissor_height = scissor_height;
+    	context.offset_x = offset_x;
+    	context.offset_y = offset_y;
+    	context.viewport_width = viewport_width;
+    	context.viewport_height = viewport_height;
+    	context.viewport_cx = viewport_cx;
+    	context.viewport_cy = viewport_cy;
+
+    	System.arraycopy(proj_uploaded_matrix, 0, context.proj_uploaded_matrix, 0, proj_uploaded_matrix.length);
+    	System.arraycopy(texture_uploaded_matrix, 0, context.texture_uploaded_matrix, 0, texture_uploaded_matrix.length);
+    	System.arraycopy(model_uploaded_matrix, 0, context.model_uploaded_matrix, 0, model_uploaded_matrix.length);
+    	System.arraycopy(view_uploaded_matrix, 0, context.view_uploaded_matrix, 0, view_uploaded_matrix.length);
+    	System.arraycopy(morph_weight, 0, context.morph_weight, 0, morph_weight.length);
+    	System.arraycopy(tex_envmap_matrix, 0, context.tex_envmap_matrix, 0, tex_envmap_matrix.length);
+    	if (pspGeContext.fullVersion) {
+	    	for (int i = 0; i < bone_uploaded_matrix.length; i++) {
+	    		System.arraycopy(bone_uploaded_matrix[i], 0, context.bone_uploaded_matrix[i], 0, bone_uploaded_matrix[i].length);
+	    	}
+    	}
+    	for (int i = 0; i < light_pos.length; i++) {
+    		System.arraycopy(light_pos[i], 0, context.light_pos[i], 0, light_pos[i].length);
+    		System.arraycopy(light_dir[i], 0, context.light_dir[i], 0, light_dir[i].length);
+    	}
+
+    	System.arraycopy(light_enabled, 0, context.light_enabled, 0, light_enabled.length);
+    	System.arraycopy(light_type, 0, context.light_type, 0, light_type.length);
+    	System.arraycopy(light_kind, 0, context.light_kind, 0, light_kind.length);
+    	context.lighting = lighting;
+
+    	System.arraycopy(fog_color, 0, context.fog_color, 0, fog_color.length);
+    	context.fog_far = fog_far;
+    	context.fog_dist = fog_dist;
+
+    	context.nearZ = nearZ;
+    	context.farZ = farZ;
+    	context.zscale = zscale;
+    	context.zpos = zpos;
+
+    	context.mat_flags = mat_flags;
+    	System.arraycopy(mat_ambient, 0, context.mat_ambient, 0, mat_ambient.length);
+    	System.arraycopy(mat_diffuse, 0, context.mat_diffuse, 0, mat_diffuse.length);
+    	System.arraycopy(mat_specular, 0, context.mat_specular, 0, mat_specular.length);
+    	System.arraycopy(mat_emissive, 0, context.mat_emissive, 0, mat_emissive.length);
+
+    	System.arraycopy(ambient_light, 0, context.ambient_light, 0, ambient_light.length);
+
+    	context.texture_storage = texture_storage;
+    	context.texture_num_mip_maps = texture_num_mip_maps;
+    	context.texture_swizzle = texture_swizzle;
+
+    	System.arraycopy(texture_base_pointer, 0, context.texture_base_pointer, 0, texture_base_pointer.length);
+    	System.arraycopy(texture_width, 0, context.texture_width, 0, texture_width.length);
+    	System.arraycopy(texture_height, 0, context.texture_height, 0, texture_height.length);
+    	System.arraycopy(texture_buffer_width, 0, context.texture_buffer_width, 0, texture_buffer_width.length);
+    	context.tex_min_filter = tex_min_filter;
+    	context.tex_mag_filter = tex_mag_filter;
+
+    	context.tex_translate_x = tex_translate_x;
+    	context.tex_translate_y = tex_translate_y;
+    	context.tex_scale_x = tex_scale_x;
+    	context.tex_scale_y = tex_scale_y;
+    	System.arraycopy(tex_env_color, 0, context.tex_env_color, 0, tex_env_color.length);
+    	context.tex_enable = tex_enable;
+
+        context.tex_clut_addr = tex_clut_addr;
+        context.tex_clut_num_blocks = tex_clut_num_blocks;
+        context.tex_clut_mode = tex_clut_mode;
+		context.tex_clut_shift = tex_clut_shift;
+		context.tex_clut_mask = tex_clut_mask;
+		context.tex_clut_start = tex_clut_start;
+        context.tex_wrap_s = tex_wrap_s;
+		context.tex_wrap_t = tex_wrap_t;
+        context.patch_div_s = patch_div_s;
+        context.patch_div_t = patch_div_t;
+
+        context.transform_mode = transform_mode;
+
+        context.textureTx_sourceAddress = textureTx_sourceAddress;
+        context.textureTx_sourceLineWidth = textureTx_sourceLineWidth;
+        context.textureTx_destinationAddress = textureTx_destinationAddress;
+        context.textureTx_destinationLineWidth = textureTx_destinationLineWidth;
+        context.textureTx_width = textureTx_width;
+        context.textureTx_height = textureTx_height;
+        context.textureTx_sx = textureTx_sx;
+        context.textureTx_sy = textureTx_sy;
+        context.textureTx_dx = textureTx_dx;
+        context.textureTx_dy = textureTx_dy;
+        context.textureTx_pixelSize = textureTx_pixelSize;
+
+    	System.arraycopy(dfix_color, 0, context.dfix_color, 0, dfix_color.length);
+    	System.arraycopy(sfix_color, 0, context.sfix_color, 0, sfix_color.length);
+        context.blend_src = blend_src;
+        context.blend_dst = blend_dst;
+
+        context.clearMode = clearMode;
+        context.depthFuncClearMode = depthFuncClearMode;
+
+        context.depthFunc2D = depthFunc2D;
+        context.depthFunc3D = depthFunc3D;
+
+        context.tex_map_mode = tex_map_mode;
+        context.tex_proj_map_mode = tex_proj_map_mode;
+
+        context.copyGLToContext(gl);
+    }
+
+    public void restoreContext(pspGeContext context) {
+    	fbp = context.fbp;
+    	fbw = context.fbw;
+    	zbp = context.zbp;
+    	zbw = context.zbw;
+    	psm = context.psm;
+
+    	region_x1 = context.region_x1;
+    	region_y1 = context.region_y1;
+    	region_x2 = context.region_x2;
+    	region_y2 = context.region_y2;
+    	region_width = context.region_width;
+    	region_height = context.region_height;
+    	scissor_x1 = context.scissor_x1;
+    	scissor_y1 = context.scissor_y1;
+    	scissor_x2 = context.scissor_x2;
+    	scissor_y2 = context.scissor_y2;
+    	scissor_width = context.scissor_width;
+    	scissor_height = context.scissor_height;
+    	offset_x = context.offset_x;
+    	offset_y = context.offset_y;
+    	viewport_width = context.viewport_width;
+    	viewport_height = context.viewport_height;
+    	viewport_cx = context.viewport_cx;
+    	viewport_cy = context.viewport_cy;
+
+    	System.arraycopy(context.proj_uploaded_matrix, 0, proj_uploaded_matrix, 0, proj_uploaded_matrix.length);
+    	System.arraycopy(context.texture_uploaded_matrix, 0, texture_uploaded_matrix, 0, texture_uploaded_matrix.length);
+    	System.arraycopy(context.model_uploaded_matrix, 0, model_uploaded_matrix, 0, model_uploaded_matrix.length);
+    	System.arraycopy(context.view_uploaded_matrix, 0, view_uploaded_matrix, 0, view_uploaded_matrix.length);
+    	System.arraycopy(context.morph_weight, 0, morph_weight, 0, morph_weight.length);
+    	System.arraycopy(context.tex_envmap_matrix, 0, tex_envmap_matrix, 0, tex_envmap_matrix.length);
+    	if (pspGeContext.fullVersion) {
+	    	for (int i = 0; i < bone_uploaded_matrix.length; i++) {
+	    		System.arraycopy(context.bone_uploaded_matrix[i], 0, bone_uploaded_matrix[i], 0, bone_uploaded_matrix[i].length);
+	    	}
+    	}
+    	for (int i = 0; i < light_pos.length; i++) {
+    		System.arraycopy(context.light_pos[i], 0, light_pos[i], 0, light_pos[i].length);
+    		System.arraycopy(context.light_dir[i], 0, light_dir[i], 0, light_dir[i].length);
+    	}
+
+    	System.arraycopy(context.light_enabled, 0, light_enabled, 0, light_enabled.length);
+    	System.arraycopy(context.light_type, 0, light_type, 0, light_type.length);
+    	System.arraycopy(context.light_kind, 0, light_kind, 0, light_kind.length);
+    	lighting = context.lighting;
+
+    	System.arraycopy(context.fog_color, 0, fog_color, 0, fog_color.length);
+    	fog_far = context.fog_far;
+    	fog_dist = context.fog_dist;
+
+    	nearZ = context.nearZ;
+    	farZ = context.farZ;
+    	zscale = context.zscale;
+    	zpos = context.zpos;
+
+    	mat_flags = context.mat_flags;
+    	System.arraycopy(context.mat_ambient, 0, mat_ambient, 0, mat_ambient.length);
+    	System.arraycopy(context.mat_diffuse, 0, mat_diffuse, 0, mat_diffuse.length);
+    	System.arraycopy(context.mat_specular, 0, mat_specular, 0, mat_specular.length);
+    	System.arraycopy(context.mat_emissive, 0, mat_emissive, 0, mat_emissive.length);
+
+    	System.arraycopy(context.ambient_light, 0, ambient_light, 0, ambient_light.length);
+
+    	texture_storage = context.texture_storage;
+    	texture_num_mip_maps = context.texture_num_mip_maps;
+    	texture_swizzle = context.texture_swizzle;
+
+    	System.arraycopy(context.texture_base_pointer, 0, texture_base_pointer, 0, texture_base_pointer.length);
+    	System.arraycopy(context.texture_width, 0, texture_width, 0, texture_width.length);
+    	System.arraycopy(context.texture_height, 0, texture_height, 0, texture_height.length);
+    	System.arraycopy(context.texture_buffer_width, 0, texture_buffer_width, 0, texture_buffer_width.length);
+    	tex_min_filter = context.tex_min_filter;
+    	tex_mag_filter = context.tex_mag_filter;
+
+    	tex_translate_x = context.tex_translate_x;
+    	tex_translate_y = context.tex_translate_y;
+    	tex_scale_x = context.tex_scale_x;
+    	tex_scale_y = context.tex_scale_y;
+    	System.arraycopy(context.tex_env_color, 0, tex_env_color, 0, tex_env_color.length);
+    	tex_enable = context.tex_enable;
+
+        tex_clut_addr = context.tex_clut_addr;
+        tex_clut_num_blocks = context.tex_clut_num_blocks;
+        tex_clut_mode = context.tex_clut_mode;
+		tex_clut_shift = context.tex_clut_shift;
+		tex_clut_mask = context.tex_clut_mask;
+		tex_clut_start = context.tex_clut_start;
+        tex_wrap_s = context.tex_wrap_s;
+		tex_wrap_t = context.tex_wrap_t;
+        patch_div_s = context.patch_div_s;
+        patch_div_t = context.patch_div_t;
+
+        transform_mode = context.transform_mode;
+
+        textureTx_sourceAddress = context.textureTx_sourceAddress;
+        textureTx_sourceLineWidth = context.textureTx_sourceLineWidth;
+        textureTx_destinationAddress = context.textureTx_destinationAddress;
+        textureTx_destinationLineWidth = context.textureTx_destinationLineWidth;
+        textureTx_width = context.textureTx_width;
+        textureTx_height = context.textureTx_height;
+        textureTx_sx = context.textureTx_sx;
+        textureTx_sy = context.textureTx_sy;
+        textureTx_dx = context.textureTx_dx;
+        textureTx_dy = context.textureTx_dy;
+        textureTx_pixelSize = context.textureTx_pixelSize;
+
+    	System.arraycopy(context.dfix_color, 0, dfix_color, 0, dfix_color.length);
+    	System.arraycopy(context.sfix_color, 0, sfix_color, 0, sfix_color.length);
+        blend_src = context.blend_src;
+        blend_dst = context.blend_dst;
+
+        clearMode = context.clearMode;
+        depthFuncClearMode = context.depthFuncClearMode;
+
+        depthFunc2D = context.depthFunc2D;
+        depthFunc3D = context.depthFunc3D;
+
+        tex_map_mode = context.tex_map_mode;
+        tex_proj_map_mode = context.tex_proj_map_mode;
+
+        context.copyContextToGL(gl);
     }
 }
