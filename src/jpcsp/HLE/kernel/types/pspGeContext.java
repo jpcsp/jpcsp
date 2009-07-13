@@ -213,7 +213,6 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 		viewport_cx = read32();
 		viewport_cy = read32();
 
-		VideoEngine.log.info("Read 1 : " + getOffset());
 		readFloatArray(proj_uploaded_matrix);
 		readFloatArray(texture_uploaded_matrix);
 		readFloatArray(model_uploaded_matrix);
@@ -225,7 +224,6 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 		readFloatArray(tex_envmap_matrix);
 		readFloatArray(light_pos);
 		readFloatArray(light_dir);
-		VideoEngine.log.info("Read 2 : " + getOffset());
 
 		read32Array(light_enabled);
 		read32Array(light_type);
@@ -305,7 +303,6 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 
 		tex_map_mode = read32();
 		tex_proj_map_mode = read32();
-		VideoEngine.log.info("Read 3 : " + getOffset());
 
 		glTexture2D = readBoolean();
 		glLight0 = readBoolean();
@@ -374,7 +371,6 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 		read32Array(glStencilFail);
 		read32Array(glStencilPassDepthPass);
 		read32Array(glStencilPassDepthFail);
-		VideoEngine.log.info("Read 4 : " + getOffset());
 	}
 
 	@Override
@@ -405,7 +401,6 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 		write32(viewport_cx);
 		write32(viewport_cy);
 
-		VideoEngine.log.info("Write 1 : " + getOffset());
 		writeFloatArray(proj_uploaded_matrix);
 		writeFloatArray(texture_uploaded_matrix);
 		writeFloatArray(model_uploaded_matrix);
@@ -417,7 +412,6 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 		writeFloatArray(tex_envmap_matrix);
 		writeFloatArray(light_pos);
 		writeFloatArray(light_dir);
-		VideoEngine.log.info("Write 1 : " + getOffset());
 
 		write32Array(light_enabled);
 		write32Array(light_type);
@@ -497,7 +491,6 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 
 		write32(tex_map_mode);
 		write32(tex_proj_map_mode);
-		VideoEngine.log.info("Write 3 : " + getOffset());
 
 		writeBoolean(glTexture2D);
 		writeBoolean(glLight0);
@@ -566,7 +559,6 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 		write32Array(glStencilFail);
 		write32Array(glStencilPassDepthPass);
 		write32Array(glStencilPassDepthFail);
-		VideoEngine.log.info("Write 4 : " + getOffset());
 
 		if (getOffset() > sizeof()) {
 			Modules.log.error("pspGeContext buffer overflow (" + getOffset() + " bytes)!");
