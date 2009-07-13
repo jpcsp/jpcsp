@@ -564,8 +564,12 @@ public class SyscallHandler {
                 //sceGeEdramSetAddrTranslation(0x20f1),
 		// sceGeGetCmd(0x20f2),
 		// sceGeGetMtx(0x20f3),
-		// sceGeSaveContext(0x20f4),
-		// sceGeRestoreContext(0x20f5),
+                case 0x20f4:
+            	   pspge.getInstance().sceGeSaveContext(gpr[4]);
+            	   break;
+                case 0x20f5:
+            	   pspge.getInstance().sceGeRestoreContext(gpr[4]);
+            	   break;
                 case 0x20f6:
                     pspge.getInstance().sceGeListEnQueue(gpr[4], gpr[5], gpr[6], gpr[7]);
                     break;

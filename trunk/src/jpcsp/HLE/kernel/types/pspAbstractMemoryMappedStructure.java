@@ -77,8 +77,24 @@ public abstract class pspAbstractMemoryMappedStructure {
         return value;
     }
 
+    protected void read8Array(byte[] array) {
+    	for (int i = 0; array != null && i < array.length; i++) {
+    		array[i] = (byte) read8();
+    	}
+    }
+
+    protected void align16() {
+    	offset = (offset + 1) & ~1;
+    }
+
+    protected void align32() {
+    	offset = (offset + 3) & ~3;
+    }
+
     protected int read16() {
-        int value;
+    	align16();
+
+    	int value;
         if (offset >= maxSize) {
             value = 0;
         } else {
@@ -90,7 +106,9 @@ public abstract class pspAbstractMemoryMappedStructure {
     }
 
     protected int read32() {
-        int value;
+    	align32();
+
+    	int value;
         if (offset >= maxSize) {
             value = 0;
         } else {
@@ -99,6 +117,36 @@ public abstract class pspAbstractMemoryMappedStructure {
         offset += 4;
 
         return value;
+    }
+
+    protected void read32Array(int[] array) {
+    	for (int i = 0; array != null && i < array.length; i++) {
+    		array[i] = read32();
+    	}
+    }
+
+    protected boolean readBoolean() {
+    	int value = read8();
+
+    	return (value != 0);
+    }
+
+    protected float readFloat() {
+    	int int32 = read32();
+
+    	return Float.intBitsToFloat(int32);
+    }
+
+    protected void readFloatArray(float[] array) {
+    	for (int i = 0; array != null && i < array.length; i++) {
+    		array[i] = readFloat();
+    	}
+    }
+
+    protected void readFloatArray(float[][] array) {
+    	for (int i = 0; array != null && i < array.length; i++) {
+    		readFloatArray(array[i]);
+    	}
     }
 
     protected void readUnknown(int length) {
@@ -136,7 +184,14 @@ public abstract class pspAbstractMemoryMappedStructure {
         offset += 1;
     }
 
+    protected void write8Array(byte[] array) {
+    	for (int i = 0; array != null && i < array.length; i++) {
+    		write8(array[i]);
+    	}
+    }
+
     protected void write16(short data) {
+    	align16();
         if (offset < maxSize) {
             mem.write16(baseAddress + offset, data);
         }
@@ -144,10 +199,38 @@ public abstract class pspAbstractMemoryMappedStructure {
     }
 
     protected void write32(int data) {
+    	align32();
         if (offset < maxSize) {
             mem.write32(baseAddress + offset, data);
         }
         offset += 4;
+    }
+
+    protected void write32Array(int[] array) {
+    	for (int i = 0; array != null && i < array.length; i++) {
+    		write32(array[i]);
+    	}
+    }
+
+    protected void writeBoolean(boolean data) {
+    	write8(data ? (byte) 1 : (byte) 0);
+    }
+
+    protected void writeFloat(float data) {
+    	int int32 = Float.floatToIntBits(data);
+    	write32(int32);
+    }
+
+    protected void writeFloatArray(float[] array) {
+    	for (int i = 0; array != null && i < array.length; i++) {
+    		writeFloat(array[i]);
+    	}
+    }
+
+    protected void writeFloatArray(float[][] array) {
+    	for (int i = 0; array != null && i < array.length; i++) {
+    		writeFloatArray(array[i]);
+    	}
     }
 
     protected void writeUnknown(int length) {
@@ -177,5 +260,9 @@ public abstract class pspAbstractMemoryMappedStructure {
             object.write();
         }
         offset += object.sizeof();
+    }
+
+    protected int getOffset() {
+    	return offset;
     }
 }
