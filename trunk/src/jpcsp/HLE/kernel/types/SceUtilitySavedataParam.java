@@ -252,6 +252,9 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         write32(buffer2Addr);
         write32(buffer3Addr);
 		writeStringNZ(16, key);
+		writeUnknown(8);
+		write32(buffer4Addr);
+		writeUnknown(8);
 	}
 
     private void safeLoad(Memory mem, pspiofilemgr fileManager, String filename, PspUtilitySavedataFileData fileData) throws IOException {
