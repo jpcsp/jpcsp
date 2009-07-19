@@ -636,7 +636,11 @@ public class RuntimeContext {
     }
 
     public static void run() {
-        if (!initialise()) {
+    	if (ThreadMan.getInstance().exitCalled) {
+    		return;
+    	}
+
+    	if (!initialise()) {
         	isActive = false;
         	return;
         }

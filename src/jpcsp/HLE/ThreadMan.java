@@ -75,7 +75,7 @@ public class ThreadMan {
     private boolean USE_THREAD_BANLIST = false;
     private static final boolean LOG_CONTEXT_SWITCHING = false;
     private static final boolean IGNORE_DELAY = false;
-    private boolean exitCalled = false;
+    public boolean exitCalled = false;
 
     // see sceKernelGetThreadmanIdList
     public final static int SCE_KERNEL_TMID_Thread             = 1;
@@ -1175,6 +1175,10 @@ public class ThreadMan {
 
         if (IGNORE_DELAY)
             micros = 0;
+
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug("hleKernelDelayThread micros=" + micros + ", callbacks=" + do_callbacks);
+        }
 
         // Wait on a timeout only
         hleKernelThreadWait(current_thread.wait, micros, false);
