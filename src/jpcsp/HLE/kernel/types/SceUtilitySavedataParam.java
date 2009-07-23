@@ -51,6 +51,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		public final static int MODE_DELETE = 7;
 		public final static int MODE_TRYSAVE = 8;
 		public final static int MODE_LIST = 11;
+		public final static int MODE_TEST = 15;
 	public int focus;
 		public final static int FOCUS_UNKNOWN = 0;
 		public final static int FOCUS_FIRSTLIST = 1;	// First in list
@@ -267,6 +268,14 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
         }
     }
 
+	public boolean test(Memory mem, pspiofilemgr fileManager) throws IOException {
+		String path = savedataPath + gameName + saveName + "/";
+
+		boolean result = testFile(mem, fileManager, path, fileName);
+
+		return result;
+	}
+
 	public void load(Memory mem, pspiofilemgr fileManager) throws IOException {
 		String path = savedataPath + gameName + saveName + "/";
 
@@ -332,6 +341,21 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
             sfoParam.savedataTitle = psf.getString("SAVEDATA_TITLE");
         }
     }
+
+	private boolean testFile(Memory mem, pspiofilemgr fileManager, String path, String name) throws IOException {
+		if (name == null || name.length() <= 0) {
+			return false;
+		}
+
+		SeekableDataInput fileInput = getDataInput(fileManager, path, name);
+		if (fileInput == null) {
+			throw new FileNotFoundException("File not found '" + path + "' '" + name + "'");
+		}
+
+		fileInput.close();
+
+		return true;
+	}
 
 	private int loadFile(Memory mem, pspiofilemgr fileManager, String path, String name, int address, int maxLength) throws IOException {
 		if (name == null || name.length() <= 0 || address == 0 || maxLength <= 0) {

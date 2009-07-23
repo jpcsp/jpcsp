@@ -208,6 +208,8 @@ void initSavedata(SceUtilitySavedataParamNew* savedata, int mode) {
 	memset(buffer5, 0, sizeof(buffer5));
 	savedata->ptr1 = buffer1;
 	savedata->ptr2 = buffer2;
+	strcpy((char *) buffer2, g_gameName);
+	strcpy((char *) (buffer2 + 16), g_saveName);
 	savedata->ptr3 = buffer3;
 	savedata->ptr4 = buffer4;
 	*((int *) (buffer4 + 0)) = sizeof(buffer5) / 72;
@@ -216,8 +218,6 @@ void initSavedata(SceUtilitySavedataParamNew* savedata, int mode) {
 	savedata->ptr6 = buffer7;
 	*((int *) (buffer6 + 24)) = (int) &buffer8;
 	*((int *) (buffer6 + 32)) = (int) &buffer9;
-	strcpy((char *) buffer2, g_gameName);
-	strcpy((char *) (buffer2 + 16), g_saveName);
 	strncpy(savedata->key, "1234567890123456", 16);
 #endif
 	savedata->overwrite = 1;
@@ -272,6 +272,7 @@ void mainImpl()
 	print("press 'x' for load or 'o' for update savedata,");
 	print("press triangle for savedata mode 8");
 	print("press square for savedata mode 11");
+	print("press up for savedata mode 15");
 	y++;
 
 	sceCtrlSetSamplingCycle(0); 
@@ -291,6 +292,9 @@ void mainImpl()
 			break;
 		} else if (ctrl.Buttons & CTRL_SQUARE) {
 			update = 3;
+			break;
+		} else if (ctrl.Buttons & CTRL_UP) {
+			update = 4;
 			break;
 		}
 		sceDisplayWaitVblankStart();
@@ -547,6 +551,54 @@ void mainImpl()
 		sceIoWrite(fd, buffer9, sizeof(buffer9));
 		sceIoClose(fd);
 #endif
+	} else if (update == 4) {
+		// Test savedata mode 15
+		print("loading savedata with mode 15...");
+		initSavedata(&savedata, 15);
+		result = sceUtilitySavedataInitStart((SceUtilitySavedataParam *) &savedata);
+		if (result) {
+			print("sceUtilitySavedataInitStart failed");
+			printHex(result);
+			return;
+		}
+		previousResult = -1;
+		while (1) {
+			result = sceUtilitySavedataGetStatus();
+			if (result != previousResult) {
+				print("sceUtilitySavedataGetStatus result:");
+				printHex(result);
+				previousResult = result;
+			}
+			if (result == 3) break;
+			sceUtilitySavedataUpdate(1);
+			sceDisplayWaitVblankStart();
+		}
+
+		// write data	
+		print("writing extracted savedata...");
+		fd = sceIoOpen("ms0:/params.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/params.bin");
+			return;
+		}
+		sceIoWrite(fd, &savedata.paramsSfoTitle, PARAMS_LEN);
+		sceIoClose(fd);
+
+		fd = sceIoOpen("ms0:/data.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/data.bin");
+			return;
+		}
+		sceIoWrite(fd, g_dataBuf, savedata.sizeOfData);	
+		sceIoClose(fd);
+
+		fd = sceIoOpen("ms0:/savedata.bin", O_CREAT | O_TRUNC | O_WRONLY, 0777);
+		if (!fd) {
+			print("can't open ms0:/savedata.bin");
+			return;
+		}
+		sceIoWrite(fd, &savedata, sizeof(savedata));
+		sceIoClose(fd);
 	}
 
 	sceUtilitySavedataShutdownStart();
