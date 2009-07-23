@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import jpcsp.HLE.kernel.types.SceIoStat;
@@ -572,6 +573,24 @@ public class sceUtility implements HLEModule {
                 	mem.write32(buffer4Addr + 4, numEntries);
                 }
         		sceUtilitySavedataParam.base.result = 0;
+                break;
+            }
+
+            case SceUtilitySavedataParam.MODE_TEST: {
+            	boolean isPresent = false;
+
+            	try {
+                    isPresent = sceUtilitySavedataParam.test(mem, pspiofilemgr.getInstance());
+                } catch (FileNotFoundException e) {
+                	isPresent = false;
+                } catch (Exception e) {
+                }
+
+                if (isPresent) {
+                	sceUtilitySavedataParam.base.result = ERROR_SAVEDATA_MODE15_SAVEDATA_PRESENT;
+                } else {
+                    sceUtilitySavedataParam.base.result = ERROR_SAVEDATA_MODE15_SAVEDATA_NOT_PRESENT;
+                }
                 break;
             }
 
