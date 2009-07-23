@@ -132,21 +132,29 @@ public class VertexInfo {
         }
 
         //VideoEngine.log.debug("skinning " + String.format("0x%08x", addr));
-        for (int i = 0; i < skinningWeightCount; ++i) {
-            switch (weight) {
-            case 1:
-                v.boneWeights[i] = mem.read8(addr); addr += 1;
-                break;
-            case 2:
-            	addr = (addr + 1) & ~1;
-                v.boneWeights[i] = mem.read16(addr); addr += 2;
-                break;
-            case 3:
-            	addr = (addr + 3) & ~3;
-                v.boneWeights[i] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-                break;
-            }
-            //System.err.println(String.format("Weight %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f", v.boneWeights[0], v.boneWeights[1], v.boneWeights[2], v.boneWeights[3], v.boneWeights[4], v.boneWeights[5], v.boneWeights[6], v.boneWeights[7]));
+        if (weight != 0) {
+	        for (int i = 0; i < skinningWeightCount; ++i) {
+	            switch (weight) {
+	            case 1:
+	            	// Unsigned 8 bit, mapped to [0..2]
+	                v.boneWeights[i] = mem.read8(addr); addr += 1;
+	                v.boneWeights[i] /= 0x80;
+	                break;
+	            case 2:
+	            	addr = (addr + 1) & ~1;
+	            	// Unsigned 16 bit, mapped to [0..2]
+	                v.boneWeights[i] = mem.read16(addr); addr += 2;
+	                v.boneWeights[i] /= 0x8000;
+	                break;
+	            case 3:
+	            	addr = (addr + 3) & ~3;
+	                v.boneWeights[i] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
+	                break;
+	            }
+	        }
+	        if (VideoEngine.log.isTraceEnabled()) {
+	        	VideoEngine.log.trace(String.format("Weight(%d) %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f", skinningWeightCount, v.boneWeights[0], v.boneWeights[1], v.boneWeights[2], v.boneWeights[3], v.boneWeights[4], v.boneWeights[5], v.boneWeights[6], v.boneWeights[7]));
+	        }
         }
 
         //VideoEngine.log.debug("texture " + String.format("0x%08x", addr));

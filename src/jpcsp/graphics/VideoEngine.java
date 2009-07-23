@@ -1882,16 +1882,19 @@ public class VideoEngine {
                         for (int i = 0; i < numberOfVertex; i++) {
                             int addr = vinfo.getAddress(mem, i);
                             VertexState v = vinfo.readVertex(mem, addr);
+
+                            // Do skinning first as it modifies v.p and v.n
+                            if (vinfo.position != 0 && vinfo.weight != 0) {
+                                doSkinning(vinfo, v);
+                            }
+
                             if (vinfo.texture  != 0) vboBuffer.put(v.t);
                             else if (useTextureFromNormal) vboBuffer.put(v.n, 0, 2);
                             else if (useTextureFromPosition) vboBuffer.put(v.p, 0, 2);
                             if (useVertexColor) vboBuffer.put(v.c);
                             if (vinfo.normal   != 0) vboBuffer.put(v.n);
-                            if (vinfo.position != 0) {
-                            	if(vinfo.weight != 0)
-                                    doSkinning(vinfo, v);
-                                vboBuffer.put(v.p);
-                            }
+                            if (vinfo.position != 0) vboBuffer.put(v.p);
+
                             if (log.isTraceEnabled()) {
                             	if (vinfo.texture != 0 && vinfo.position != 0) {
                             		log.trace("  vertex#" + i + " (" + ((int) v.t[0]) + "," + ((int) v.t[1]) + ") at (" + ((int) v.p[0]) + "," + ((int) v.p[1]) + "," + ((int) v.p[2]) + ")");
