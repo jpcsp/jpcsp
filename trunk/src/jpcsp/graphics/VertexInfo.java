@@ -232,6 +232,9 @@ public class VertexInfo {
                 v.c[1] = ((packed >>  4) & 0xf) / 15.0f;
                 v.c[2] = ((packed >>  8) & 0xf) / 15.0f;
                 v.c[3] = ((packed >> 12) & 0xf) / 15.0f;
+                if (VideoEngine.log.isTraceEnabled()) {
+                	VideoEngine.log.trace("color type 6 " + String.format("r=%.1f g=%.1f b=%.1f a=%.1f (%04X)", v.c[0], v.c[1], v.c[2], v.c[3], packed));
+                }
                 break;
             }
 
@@ -243,7 +246,9 @@ public class VertexInfo {
                 v.c[1] = ((packed >>  8) & 0xff) / 255.0f;
                 v.c[2] = ((packed >> 16) & 0xff) / 255.0f;
                 v.c[3] = ((packed >> 24) & 0xff) / 255.0f;
-            	//VideoEngine.log.debug("color type 7 " + String.format("r=%.1f g=%.1f b=%.1f (%08X)", v.r, v.g, v.b, packed));
+                if (VideoEngine.log.isTraceEnabled()) {
+                	VideoEngine.log.trace("color type 7 " + String.format("r=%.1f g=%.1f b=%.1f a=%.1f (%08X)", v.c[0], v.c[1], v.c[2], v.c[3], packed));
+                }
                 break;
             }
         }
@@ -335,10 +340,12 @@ public class VertexInfo {
                 	// Negative Z are interpreted as 0
                 	if (v.p[2] < 0) {
                 		v.p[2] = 0;
+                	} else {
+                		v.p[2] = (int) v.p[2];	// 2D positions are always integer values
                 	}
                 }
             	if (VideoEngine.log.isTraceEnabled()) {
-            		VideoEngine.log.trace("vertex type 3 " + v.p[0] + ", " + v.p[1] + ", " + v.p[2] + " transform2D=" + transform2D);
+            		VideoEngine.log.trace("vertex type 3 " + v.p[0] + ", " + v.p[1] + ", " + v.p[2] + " transform2D=" + transform2D + ", addr=0x" + Integer.toHexString(addr - 12));
             	}
                 break;
         }
