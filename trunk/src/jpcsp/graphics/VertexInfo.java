@@ -77,14 +77,14 @@ public class VertexInfo {
 
         vertexSize = 0;
         vertexSize += size_mapping[weight] * skinningWeightCount;
-        vertexSize = (vertexSize + ((color != 0) ? ((color == 7) ? 3 : 1) : 0)) & ~((color != 0) ? ((color == 7) ? 3 : 1) : 0);
-        vertexSize += (color != 0) ? ((color == 7) ? 4 : 2) : 0;
         vertexSize = (vertexSize + size_padding[texture]) & ~size_padding[texture];
         vertexSize += size_mapping[texture] * 2;
-        vertexSize = (vertexSize + size_padding[position]) & ~size_padding[position];
-        vertexSize += size_mapping[position] * 3;
+        vertexSize = (vertexSize + ((color != 0) ? ((color == 7) ? 3 : 1) : 0)) & ~((color != 0) ? ((color == 7) ? 3 : 1) : 0);
+        vertexSize += (color != 0) ? ((color == 7) ? 4 : 2) : 0;
         vertexSize = (vertexSize + size_padding[normal]) & ~size_padding[normal];
         vertexSize += size_mapping[normal] * 3;
+        vertexSize = (vertexSize + size_padding[position]) & ~size_padding[position];
+        vertexSize += size_mapping[position] * 3;
         int maxsize = Math.max(size_mapping[weight],
         		Math.max((color != 0) ? ((color == 7) ? 4 : 2) : 0,
         		Math.max(size_padding[normal],
