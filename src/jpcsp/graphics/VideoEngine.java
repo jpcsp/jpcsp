@@ -1240,8 +1240,8 @@ public class VideoEngine {
             case SLF2:
             case SLF3: {
             	int lnum = command - SLF0;
-            	// PSP Cutoff is in radians, OpenGL expects degrees
-            	float degreeCutoff = (float) Math.toDegrees(floatArgument);
+            	// PSP Cutoff is cosine of angle, OpenGL expects degrees
+            	float degreeCutoff = (float) Math.toDegrees(Math.acos(floatArgument));
             	if ((degreeCutoff >= 0 && degreeCutoff <= 90) || degreeCutoff == 180) {
 	                gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_SPOT_CUTOFF, degreeCutoff);
 	                if (log.isDebugEnabled()) {
