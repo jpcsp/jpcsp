@@ -139,6 +139,8 @@ public class VideoEngine {
     private int[] light_type = new int[4];
     private int[] light_kind = new int[4];
     private boolean lighting = false;
+    private float[][] lightSpecularColor = new float[4][4];
+    private static final float[] blackColor = new float[] { 0, 0, 0, 0 };
 
     private float[] fog_color = new float[4];
     private float fog_far = 0.0f,fog_dist = 0.0f;
@@ -919,14 +921,12 @@ public class VideoEngine {
             }
 
             case SLC0: {
-            	float [] color = new float[4];
+            	lightSpecularColor[0][0] = ((normalArgument      ) & 255) / 255.f;
+            	lightSpecularColor[0][1] = ((normalArgument >>  8) & 255) / 255.f;
+            	lightSpecularColor[0][2] = ((normalArgument >> 16) & 255) / 255.f;
+            	lightSpecularColor[0][3] = 1.f;
 
-            	color[0] = ((normalArgument      ) & 255) / 255.f;
-            	color[1] = ((normalArgument >>  8) & 255) / 255.f;
-            	color[2] = ((normalArgument >> 16) & 255) / 255.f;
-            	color[3] = 1.f;
-
-            	gl.glLightfv(GL.GL_LIGHT0, GL.GL_SPECULAR, color, 0);
+            	gl.glLightfv(GL.GL_LIGHT0, GL.GL_SPECULAR, lightSpecularColor[0], 0);
             	log("sceGuLightColor (GU_LIGHT0, GU_SPECULAR)");
             	break;
             }
@@ -987,14 +987,12 @@ public class VideoEngine {
             }
 
             case SLC1: {
-            	float [] color = new float[4];
+            	lightSpecularColor[1][0] = ((normalArgument      ) & 255) / 255.f;
+            	lightSpecularColor[1][1] = ((normalArgument >>  8) & 255) / 255.f;
+            	lightSpecularColor[1][2] = ((normalArgument >> 16) & 255) / 255.f;
+            	lightSpecularColor[1][3] = 1.f;
 
-            	color[0] = ((normalArgument      ) & 255) / 255.f;
-            	color[1] = ((normalArgument >>  8) & 255) / 255.f;
-            	color[2] = ((normalArgument >> 16) & 255) / 255.f;
-            	color[3] = 1.f;
-
-            	gl.glLightfv(GL.GL_LIGHT1, GL.GL_SPECULAR, color, 0);
+            	gl.glLightfv(GL.GL_LIGHT1, GL.GL_SPECULAR, lightSpecularColor[1], 0);
             	log("sceGuLightColor (GU_LIGHT1, GU_SPECULAR)");
             	break;
             }
@@ -1055,14 +1053,12 @@ public class VideoEngine {
             }
 
             case SLC2: {
-            	float [] color = new float[4];
+            	lightSpecularColor[2][0] = ((normalArgument      ) & 255) / 255.f;
+            	lightSpecularColor[2][1] = ((normalArgument >>  8) & 255) / 255.f;
+            	lightSpecularColor[2][2] = ((normalArgument >> 16) & 255) / 255.f;
+            	lightSpecularColor[2][3] = 1.f;
 
-            	color[0] = ((normalArgument      ) & 255) / 255.f;
-            	color[1] = ((normalArgument >>  8) & 255) / 255.f;
-            	color[2] = ((normalArgument >> 16) & 255) / 255.f;
-            	color[3] = 1.f;
-
-            	gl.glLightfv(GL.GL_LIGHT2, GL.GL_SPECULAR, color, 0);
+            	gl.glLightfv(GL.GL_LIGHT2, GL.GL_SPECULAR, lightSpecularColor[2], 0);
             	log("sceGuLightColor (GU_LIGHT2, GU_SPECULAR)");
             	break;
             }
@@ -1123,14 +1119,12 @@ public class VideoEngine {
             }
 
             case SLC3: {
-            	float [] color = new float[4];
+            	lightSpecularColor[3][0] = ((normalArgument      ) & 255) / 255.f;
+            	lightSpecularColor[3][1] = ((normalArgument >>  8) & 255) / 255.f;
+            	lightSpecularColor[3][2] = ((normalArgument >> 16) & 255) / 255.f;
+            	lightSpecularColor[3][3] = 1.f;
 
-            	color[0] = ((normalArgument      ) & 255) / 255.f;
-            	color[1] = ((normalArgument >>  8) & 255) / 255.f;
-            	color[2] = ((normalArgument >> 16) & 255) / 255.f;
-            	color[3] = 1.f;
-
-            	gl.glLightfv(GL.GL_LIGHT3, GL.GL_SPECULAR, color, 0);
+            	gl.glLightfv(GL.GL_LIGHT3, GL.GL_SPECULAR, lightSpecularColor[3], 0);
             	log("sceGuLightColor (GU_LIGHT3, GU_SPECULAR)");
             	break;
             }
@@ -1162,23 +1156,10 @@ public class VideoEngine {
             case LZD0: case LZD1: case LZD2: case LZD3: {
                 int lnum = (command - LXD0) / 3;
                 int dircomponent = (command - LXD0) % 3;
-                light_dir[lnum][dircomponent] = floatArgument;
-
-                if ((command == LZD0 || command == LZD1 ||
-                     command == LZD2 || command == LZD3) &&
-                    light_type[lnum] == LIGHT_DIRECTIONAL) {
-                    // TODO any other gl command required to set light type to spot light?
-                    // TODO move to initRendering()?
-                    gl.glLightfv(GL.GL_LIGHT0 + lnum, GL.GL_SPOT_DIRECTION, light_dir[lnum], 0);
-
-                    if (log.isDebugEnabled()) {
-                        log("sceGuLightSpot(" + lnum
-                            + ", direction = {" + light_dir[lnum][0]
-                            + ", " + light_dir[lnum][1]
-                            + ", " + light_dir[lnum][2]
-                            + "}, X, X)");
-                    }
-                }
+                // OpenGL requires a normal in the opposite direction as the PSP
+                light_dir[lnum][dircomponent] = -floatArgument;
+                // OpenGL parameter for light direction is set in initRendering
+                // because it depends on the model/view matrix
                 break;
             }
 
@@ -1192,7 +1173,7 @@ public class VideoEngine {
             case LT3: {
             	int lnum = command - LT0;
             	light_type[lnum] = (normalArgument >> 8) & 3;
-            	light_kind[lnum] = normalArgument & 3; // TODO Use this somewhere...
+            	light_kind[lnum] = normalArgument & 3;
             	switch(light_type[lnum]) {
             	case LIGHT_DIRECTIONAL:
             		light_pos[lnum][3] = 0.f;
@@ -1259,10 +1240,16 @@ public class VideoEngine {
             case SLF2:
             case SLF3: {
             	int lnum = command - SLF0;
-                gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_SPOT_CUTOFF, floatArgument);
-                if (log.isDebugEnabled()) {
-                    VideoEngine.log.debug("sceGuLightSpot(" + lnum + ",X,X," + floatArgument + ")");
-                }
+            	// PSP Cutoff is in radians, OpenGL expects degrees
+            	float degreeCutoff = (float) Math.toDegrees(floatArgument);
+            	if ((degreeCutoff >= 0 && degreeCutoff <= 90) || degreeCutoff == 180) {
+	                gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_SPOT_CUTOFF, degreeCutoff);
+	                if (log.isDebugEnabled()) {
+	                    log.debug("sceGuLightSpot(" + lnum + ",X,X," + floatArgument + ")");
+	                }
+            	} else {
+                    log.warn("sceGuLightSpot(" + lnum + ",X,X," + floatArgument + ") invalid argument value");
+            	}
             	break;
             }
 
@@ -1650,8 +1637,6 @@ public class VideoEngine {
             	break;
 
             case TEXTURE_ENV_MAP_MATRIX: {
-            	log ("sceGuTexMapMode(X, column1, column2)");
-
             	if (normalArgument != 0) {
             		// Some games give column0=0x1B (Hot Wheels Ultimate Racing)
             		// TODO Check if our interpretation is correct. Masking with 0x03 for now.
@@ -1663,6 +1648,10 @@ public class VideoEngine {
             		for (int i = 0; i < 3; i++) {
             			tex_envmap_matrix [i+0] = light_pos[column0][i];
             			tex_envmap_matrix [i+4] = light_pos[column1][i];
+            		}
+
+            		if (log.isDebugEnabled()) {
+            			log("sceGuTexMapMode(X, " + column0 + ", " + column1 + ")");
             		}
             	}
             	break;
@@ -1709,9 +1698,6 @@ public class VideoEngine {
                 }
             	break;
 
-            /*
-             *
-             */
             case XSCALE:
                 viewport_width = (int)(floatArgument * 2);
                 break;
@@ -1767,16 +1753,15 @@ public class VideoEngine {
                 break;
 
             case FBP:
-                // assign or OR lower 24-bits? depends if it's always followed by fbw
-                //acording with the psp documentation
-                //24 least significant bits of pointer (see FBW)
-                //http://hitmen.c02.at/files/yapspd/psp_doc/frames.html
-                fbp = normalArgument;
+            	// FBP can be called before or after FBW
+                fbp = (fbp & 0xff000000) | normalArgument;
+                if (log.isDebugEnabled()) {
+                    log("fbp=" + Integer.toHexString(fbp) + ", fbw=" + fbw);
+                }
                 break;
             case FBW:
-                fbp &= 0xffffff;
-                fbp |= (normalArgument << 8) & 0xff000000;
-                fbw = (normalArgument) & 0xffff;
+                fbp = (fbp & 0x00ffffff) | ((normalArgument << 8) & 0xff000000);
+                fbw = normalArgument & 0xffff;
                 if (log.isDebugEnabled()) {
                     log("fbp=" + Integer.toHexString(fbp) + ", fbw=" + fbw);
                 }
@@ -1784,13 +1769,14 @@ public class VideoEngine {
                 break;
 
             case ZBP:
-                // assign or OR lower 24-bits?
-                zbp = normalArgument;
+                zbp = (zbp & 0xff000000) | normalArgument;
+                if (log.isDebugEnabled()) {
+                    log("zbp=" + Integer.toHexString(zbp) + ", zbw=" + zbw);
+                }
                 break;
             case ZBW:
-                zbp &= 0xffffff;
-                zbp |= (normalArgument << 8) & 0xff000000;
-                zbw = (normalArgument) & 0xffff;
+                zbp = (zbp & 0x00ffffff) | ((normalArgument << 8) & 0xff000000);
+                zbw = normalArgument & 0xffff;
                 if (log.isDebugEnabled()) {
                     log("zbp=" + Integer.toHexString(zbp) + ", zbw=" + zbw);
                 }
@@ -1854,6 +1840,7 @@ public class VideoEngine {
                 		// What is the difference between MODE_NORMAL and MODE_NORMALIZED_NORMAL?
                 		case TMAP_TEXTURE_PROJECTION_MODE_NORMAL:
                 		case TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL:
+                			log.warn("Texture mode not tested: " + tex_proj_map_mode);
                 			if (vinfo.normal != 0) {
                 				useTexture = true;
                 				useTextureFromNormal = true;
@@ -2519,7 +2506,11 @@ public class VideoEngine {
                             bone_upload_x = 0;
                             bone_upload_y++;
                             if (bone_upload_y == 3) {
-                                log("bone matrix " + bone_matrix_offset, model_matrix);
+                                if (log.isDebugEnabled()) {
+                                    for (int x = 0; x < 3; x++) {
+                                        log.debug(String.format("bone matrix %d %.2f %.2f %.2f %.2f", bone_matrix_offset, bone_matrix[x + 0], bone_matrix[x + 3], bone_matrix[x + 6], bone_matrix[x + 9]));
+                                    }
+                                }
 
                                 for (int i = 0; i < 4*3; i++)
                                 	bone_uploaded_matrix[bone_matrix_offset][i] = bone_matrix[i];
@@ -2863,20 +2854,20 @@ public class VideoEngine {
 		for(int i = 0; i < vinfo.skinningWeightCount; ++i) {
 			if(v.boneWeights[i] != 0.f) {
 
-				x += (	v.p[0] * 	bone_uploaded_matrix[i][0]
-				     + 	v.p[1] * 	bone_uploaded_matrix[i][3]
-				     + 	v.p[2] * 	bone_uploaded_matrix[i][6]
-				     + 			bone_uploaded_matrix[i][9]) * v.boneWeights[i];
+				x += (	v.p[0] * bone_uploaded_matrix[i][0]
+				     + 	v.p[1] * bone_uploaded_matrix[i][3]
+				     + 	v.p[2] * bone_uploaded_matrix[i][6]
+				     +           bone_uploaded_matrix[i][9]) * v.boneWeights[i];
 
-				y += (	v.p[0] * 	bone_uploaded_matrix[i][1]
-				     + 	v.p[1] * 	bone_uploaded_matrix[i][4]
-				     + 	v.p[2] * 	bone_uploaded_matrix[i][7]
-				     + 			bone_uploaded_matrix[i][10]) * v.boneWeights[i];
+				y += (	v.p[0] * bone_uploaded_matrix[i][1]
+				     + 	v.p[1] * bone_uploaded_matrix[i][4]
+				     + 	v.p[2] * bone_uploaded_matrix[i][7]
+				     +           bone_uploaded_matrix[i][10]) * v.boneWeights[i];
 
-				z += (	v.p[0] * 	bone_uploaded_matrix[i][2]
-				     + 	v.p[1] * 	bone_uploaded_matrix[i][5]
-				     + 	v.p[2] * 	bone_uploaded_matrix[i][8]
-				     + 			bone_uploaded_matrix[i][11]) * v.boneWeights[i];
+				z += (	v.p[0] * bone_uploaded_matrix[i][2]
+				     + 	v.p[1] * bone_uploaded_matrix[i][5]
+				     + 	v.p[2] * bone_uploaded_matrix[i][8]
+				     +           bone_uploaded_matrix[i][11]) * v.boneWeights[i];
 
 				// Normals shouldn't be translated :)
 				nx += (	v.n[0] * bone_uploaded_matrix[i][0]
@@ -3025,7 +3016,6 @@ public class VideoEngine {
                     + ", texture_swizzle=" + texture_swizzle);
             }
 
-            Memory  mem = Memory.getInstance();
             Buffer  final_buffer = null;
             int     texture_type = 0;
             int     texclut = tex_clut_addr;
@@ -3270,26 +3260,17 @@ public class VideoEngine {
 	                    textureByteAlignment = 2;  // 16 bits
 
 	                    if (!texture_swizzle) {
-	                        /* TODO replace the loop with 1 line to ShortBuffer.wrap
-	                         * but be careful of vram/mainram addresses
-	                        final_buffer = ShortBuffer.wrap(
-	                            memory.videoram.array(),
-	                            texaddr - MemoryMap.START_VRAM + memory.videoram.arrayOffset(),
-	                            texture_width0 * texture_height0).slice();
-	                        final_buffer = ShortBuffer.wrap(
-	                            memory.mainmemory.array(),
-	                            texaddr - MemoryMap.START_RAM + memory.mainmemory.arrayOffset(),
-	                            texture_width0 * texture_height0).slice();
-	                        */
+                        	int length = texture_buffer_width[level] * texture_height[level];
+	                    	final_buffer = Memory.getInstance().getBuffer(texaddr, length * 2);
+	                    	if (final_buffer == null) {
+		                    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length * 2, 2);
+		                        for (int i = 0; i < length; i++) {
+		                            int pixel = memoryReader.readNext();
+		                            tmp_texture_buffer16[i] = (short)pixel;
+		                        }
 
-                        	int length = texture_buffer_width[level]*texture_height[level];
-	                    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length * 2, 2);
-	                        for (int i = 0; i < length; i++) {
-	                            int pixel = memoryReader.readNext();
-	                            tmp_texture_buffer16[i] = (short)pixel;
-	                        }
-
-	                        final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
+		                        final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
+	                    	}
 
                             if (State.captureGeNextFrame) {
                                 log.info("Capture loadTexture 16 unswizzled");
@@ -3466,12 +3447,16 @@ public class VideoEngine {
 	            }
             }
             if(texture_num_mip_maps != 0 && final_buffer != null) {
-            	for(int level = 0; level <= texture_num_mip_maps; ++level)
-            		log(String.format("Mipmap PSP Texture level %d size %dx%d", level, texture_width[level], texture_height[level]));
+				if (log.isDebugEnabled()) {
+	            	for(int level = 0; level <= texture_num_mip_maps; ++level)
+	            		log(String.format("Mipmap PSP Texture level %d size %dx%d", level, texture_width[level], texture_height[level]));
+				}
 	            int maxLevel = (int) (Math.log(Math.max(texture_width[texture_num_mip_maps], texture_height[texture_num_mip_maps]) * (1 << texture_num_mip_maps))/Math.log(2));
 
 	            if(maxLevel != texture_num_mip_maps) {
-		            log(String.format("Generating mipmaps from level %d Size %dx%d to maxLevel %d", texture_num_mip_maps, texture_width[0], texture_height[0], maxLevel));
+	            	if (log.isDebugEnabled()) {
+	            		log(String.format("Generating mipmaps from level %d Size %dx%d to maxLevel %d", texture_num_mip_maps, texture_width[0], texture_height[0], maxLevel));
+	            	}
 		            // Build the other mipmaps level
 		            glu.gluBuild2DMipmapLevels(GL.GL_TEXTURE_2D,
 		            		texture_format,
@@ -3479,11 +3464,13 @@ public class VideoEngine {
 		            		texture_format,
 		            		texture_type,
 		            		texture_num_mip_maps, texture_num_mip_maps + 1, maxLevel, final_buffer);
-		            for(int i = 0; i <= maxLevel; ++i) {
-		            	float[] size = new float[2];
-		            	gl.glGetTexLevelParameterfv(GL.GL_TEXTURE_2D, i, GL.GL_TEXTURE_WIDTH, size, 0);
-		            	gl.glGetTexLevelParameterfv(GL.GL_TEXTURE_2D, i, GL.GL_TEXTURE_HEIGHT, size, 1);
-		            	log(String.format("OGL Texture level %d size %dx%d", i, (int)size[0], (int)size[1]));
+		            if (log.isDebugEnabled()) {
+			            for(int i = 0; i <= maxLevel; ++i) {
+			            	float[] size = new float[2];
+			            	gl.glGetTexLevelParameterfv(GL.GL_TEXTURE_2D, i, GL.GL_TEXTURE_WIDTH, size, 0);
+			            	gl.glGetTexLevelParameterfv(GL.GL_TEXTURE_2D, i, GL.GL_TEXTURE_HEIGHT, size, 1);
+			            	log(String.format("OGL Texture level %d size %dx%d", i, (int)size[0], (int)size[1]));
+			            }
 		            }
 	            }
             }
@@ -3591,10 +3578,26 @@ public class VideoEngine {
         /*
          *  Setup lights on when view transformation is set up
          */
-        gl.glLightfv(GL.GL_LIGHT0, GL.GL_POSITION, light_pos[0], 0);
-        gl.glLightfv(GL.GL_LIGHT1, GL.GL_POSITION, light_pos[1], 0);
-        gl.glLightfv(GL.GL_LIGHT2, GL.GL_POSITION, light_pos[2], 0);
-        gl.glLightfv(GL.GL_LIGHT3, GL.GL_POSITION, light_pos[3], 0);
+        if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
+	        for (int i = 0; i < 4; i++) {
+	            if (light_enabled[i] != 0) {
+	            	gl.glLightfv(GL.GL_LIGHT0 + i, GL.GL_POSITION, light_pos[i], 0);
+
+	            	if (light_type[i] == LIGHT_SPOT) {
+	                   gl.glLightfv(GL.GL_LIGHT0 + i, GL.GL_SPOT_DIRECTION, light_dir[i], 0);
+	                }
+
+	            	// Light kind:
+	            	//  LIGHT_DIFFUSE_SPECULAR: use ambient, diffuse and specular colors
+	            	//  all other light kinds: use ambient and diffuse colors (not specular)
+	                if (light_kind[i] == LIGHT_DIFFUSE_SPECULAR) {
+	                	gl.glLightfv(GL.GL_LIGHT0 + i, GL.GL_SPECULAR, lightSpecularColor[i], 0);
+	                } else {
+	                	gl.glLightfv(GL.GL_LIGHT0 + i, GL.GL_SPECULAR, blackColor, 0);
+	                }
+	            }
+	        }
+        }
 
         // Apply model matrix
         if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
@@ -3849,15 +3852,9 @@ public class VideoEngine {
         Buffer final_buffer = null;
 
         if (!texture_swizzle) {
-            // try and use ByteBuffer.wrap on the memory, taking note of vram/main ram
-            // speed difference is unnoticeable :(
-            Memory mem = Memory.getInstance();
-            int bufferlen = Math.max(texture_width[level], texture_buffer_width[level]) * texture_height[level] * 4;
-            Buffer pixels = mem.getBuffer(texaddr, bufferlen);
-            if (pixels != null) {
-                final_buffer = pixels;
-            } else {
-                VideoEngine.log.warn("tpsm 3 slow");
+            int bufferlen = texture_buffer_width[level] * texture_height[level] * 4;
+            final_buffer = Memory.getInstance().getBuffer(texaddr, bufferlen);
+            if (final_buffer == null) {
             	int length = texture_buffer_width[level]*texture_height[level];
                 IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length * 4, 4);
                 for (int i = 0; i < length; i++) {
