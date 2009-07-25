@@ -3852,7 +3852,8 @@ public class VideoEngine {
         Buffer final_buffer = null;
 
         if (!texture_swizzle) {
-            int bufferlen = texture_buffer_width[level] * texture_height[level] * 4;
+        	// texture_width might be larger than texture_buffer_width 
+            int bufferlen = Math.max(texture_buffer_width[level], texture_width[level]) * texture_height[level] * 4;
             final_buffer = Memory.getInstance().getBuffer(texaddr, bufferlen);
             if (final_buffer == null) {
             	int length = texture_buffer_width[level]*texture_height[level];
