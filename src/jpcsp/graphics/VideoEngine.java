@@ -1896,8 +1896,11 @@ public class VideoEngine {
                                 gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, vboBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboBuffer.rewind(), GL.GL_STREAM_DRAW);
                         }
                         gl.glDrawArrays(prim_mapping[type], 0, numberOfVertex);
-                        break;
 
+                        // VADDR is updated after vertex rendering.
+                        // Some games rely on this and don't reload VADDR between 2 PRIM calls.
+                        vinfo.ptr_vertex = vinfo.getAddress(mem, numberOfVertex);
+                        break;
 
                     case PRIM_SPRITES:
                         gl.glPushAttrib(GL.GL_ENABLE_BIT);
@@ -1944,6 +1947,10 @@ public class VideoEngine {
                         }
                         gl.glDrawArrays(GL.GL_QUADS, 0, numberOfVertex * 2);
                         gl.glPopAttrib();
+
+                        // VADDR is updated after vertex rendering.
+                        // Some games rely on this and don't reload VADDR between 2 PRIM calls.
+                        vinfo.ptr_vertex = vinfo.getAddress(mem, numberOfVertex);
                         break;
                 }
 
