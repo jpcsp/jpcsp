@@ -1533,7 +1533,7 @@ public class ThreadMan {
     public void ThreadMan_sceKernelRotateThreadReadyQueue(int priority) {
     	if (priority == 0) {
     		// TODO "Untold Legends: Brotherhood of the Blade" calls with priority=0 and expects to the async IOs to complete
-    		// TODO "Aliens vs. Predator™ - Requiem" cann with priority=0. Check if this has a special meaning.
+    		// TODO "Aliens vs. Predator - Requiem" calls with priority=0. Check if this has a special meaning.
     		Modules.log.warn("sceKernelRotateThreadReadyQueue priority=" + priority + " is this a special priority value?");
     		priority = current_thread.currentPriority;	// Assuming we are rotating the queue of the current thread
     	} else {
