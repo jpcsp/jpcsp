@@ -1816,6 +1816,108 @@ public class pspiofilemgr {
                 file_addr, filename, stat_addr);
     }
 
+    /**
+     * Remove directory entry
+     *
+     * @param file - Path to the file to remove
+     * @return < 0 on error
+     */
+    public void sceIoRemove(int file_addr) {
+        String filename = readStringZ(file_addr);
+        if (debug) Modules.log.debug("sceIoRemove - file = " + filename);
+
+        String pcfilename = getDeviceFilePath(filename);
+
+        if (pcfilename != null) {
+            if (isUmdPath(pcfilename)) {
+                Emulator.getProcessor().cpu.gpr[2] = -1;	// TODO Check error code
+            } else {
+                File file = new File(pcfilename);
+                if (file.delete()) {
+                    Emulator.getProcessor().cpu.gpr[2] = 0;
+                } else {
+                    Emulator.getProcessor().cpu.gpr[2] = -1;	// TODO Check error code
+                }
+            }
+        } else {
+            Emulator.getProcessor().cpu.gpr[2] = -1;	// TODO Check error code
+        }
+
+        State.fileLogger.logIoRemove(Emulator.getProcessor().cpu.gpr[2], file_addr, filename);
+    }
+
+    /**
+     * Change the status of a file.
+     *
+     * @param file - The path to the file.
+     * @param stat - A pointer to an io_stat_t structure.
+     * @param bits - Bitmask defining which bits to change.
+     *
+     * @return < 0 on error.
+     */
+    public void sceIoChstat(int file_addr, int stat_addr, int bits) {
+        String filename = readStringZ(file_addr);
+        if (debug) Modules.log.debug("sceIoRemove - file = " + filename);
+
+        String pcfilename = getDeviceFilePath(filename);
+
+        if (pcfilename != null) {
+            if (isUmdPath(pcfilename)) {
+                Emulator.getProcessor().cpu.gpr[2] = -1;	// TODO Check error code
+            } else {
+                File file = new File(pcfilename);
+                
+                SceIoStat stat = new SceIoStat();
+                stat.read(Memory.getInstance(), stat_addr);
+
+                int mode = stat.mode;
+                boolean successful = true;
+
+                if ((bits & 0x0001) != 0) {	// Others execute permission 
+                	if (!file.setExecutable((mode & 0x0001) != 0)) {
+                		successful = false;
+                	}
+                }
+                if ((bits & 0x0002) != 0) {	// Others write permission
+                	if (!file.setWritable((mode & 0x0002) != 0)) {
+                		successful = false;
+                	}
+                }
+                if ((bits & 0x0004) != 0) {	// Others read permission
+                	if (!file.setReadable((mode & 0x0004) != 0)) {
+                		successful = false;
+                	}
+                }
+
+                if ((bits & 0x0040) != 0) {	// User execute permission 
+                	if (!file.setExecutable((mode & 0x0040) != 0, true)) {
+                		successful = false;
+                	}
+                }
+                if ((bits & 0x0080) != 0) {	// User write permission
+                	if (!file.setWritable((mode & 0x0080) != 0, true)) {
+                		successful = false;
+                	}
+                }
+                if ((bits & 0x0100) != 0) {	// User read permission
+                	if (!file.setReadable((mode & 0x0100) != 0, true)) {
+                		successful = false;
+                	}
+                }
+
+                if (successful) {
+                	Emulator.getProcessor().cpu.gpr[2] = 0;
+                } else {
+                	Emulator.getProcessor().cpu.gpr[2] = -1;	// TODO Check error code
+                }
+            }
+        } else {
+            Emulator.getProcessor().cpu.gpr[2] = -1;	// TODO Check error code
+        }
+
+        State.fileLogger.logIoChstat(Emulator.getProcessor().cpu.gpr[2], file_addr, filename, stat_addr, bits);
+    }
+
     //the following sets the filepath from memstick manager.
     public void setfilepath(String filepath)
     {

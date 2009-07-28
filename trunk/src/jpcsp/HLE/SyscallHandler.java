@@ -418,7 +418,9 @@ public class SyscallHandler {
             case 0x209d:
                     pspiofilemgr.getInstance().sceIoDclose(gpr[4]);
                     break;
-		// sceIoRemove(0x209e),
+            case 0x209e:
+            		pspiofilemgr.getInstance().sceIoRemove(gpr[4]);
+            		break;
             case 0x209f:
                     pspiofilemgr.getInstance().sceIoMkdir(gpr[4], gpr[5]);
                     break;
@@ -432,7 +434,9 @@ public class SyscallHandler {
                 case 0x20a3:
                     pspiofilemgr.getInstance().sceIoGetstat(gpr[4], gpr[5]);
                     break;
-		// sceIoChstat(0x20a4),
+                case 0x20a4:
+                	pspiofilemgr.getInstance().sceIoChstat(gpr[4], gpr[5], gpr[6]);
+                	break;
 		// sceIoRename(0x20a5),
                 case 0x20a6:
                     pspiofilemgr.getInstance().sceIoDevctl(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8], gpr[9]);
