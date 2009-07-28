@@ -35,6 +35,9 @@ public class SceIoStat {
     								   , 0xbcbcbcbc
     								   };
 
+    public SceIoStat() {
+    }
+
     public SceIoStat(int mode, int attr, long size,
         ScePspDateTime ctime, ScePspDateTime atime, ScePspDateTime mtime) {
         this.mode = mode;
@@ -64,6 +67,23 @@ public class SceIoStat {
         mem.write32(address + 76, reserved[3]);
         mem.write32(address + 80, reserved[4]);
         mem.write32(address + 84, reserved[5]);
+    }
+
+    public void read(Memory mem, int address) {
+        if (!mem.isAddressGood(address) || !mem.isAddressGood(address + sizeof()))
+            Modules.log.warn("SceIoStat read bad address " + String.format("0x%08X", address));
+
+        mode = mem.read32(address);
+        attr = mem.read32(address + 4);
+        size = mem.read32(address + 8);
+
+        ctime = new ScePspDateTime();
+        atime = new ScePspDateTime();
+        mtime = new ScePspDateTime();
+
+        ctime.read(mem, address + 16);
+        atime.read(mem, address + 32);
+        mtime.read(mem, address + 48);
     }
 
     public static int sizeof() {
