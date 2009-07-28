@@ -589,6 +589,13 @@ public class sceSasCore implements HLEModule {
         	int n = mem.read8(vagAddr + i);
         	i++;
         	int predict_nr = n >> 4;
+        	if (predict_nr >= VAG_f.length) {
+        		// predict_nr is supposed to be included in [0..4].
+        		// TODO The game "Tenchu: TOTA" is using a value "predict_nr = 7", I could not find out how this value should be interpreted...
+        		Modules.log.warn("sceSasCore.decodeSamples: Unknown value for predict_nr: " + predict_nr);
+        		// Avoid ArrayIndexOutOfBoundsException
+        		predict_nr = 0;
+        	}
         	int shift_factor = n & 0x0F;
         	int flag = mem.read8(vagAddr + i);
         	i++;
