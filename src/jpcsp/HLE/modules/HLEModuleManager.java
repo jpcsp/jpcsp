@@ -99,7 +99,12 @@ public class HLEModuleManager {
         int version = 150;
 
         if (firmwareVersion != null) {
-            version = (int)(Float.parseFloat(firmwareVersion) * 100);
+        	// HACK Some games have firmwareVersion = "5.00 ?"
+        	if (firmwareVersion.indexOf(' ') >= 0) {
+        		firmwareVersion = firmwareVersion.substring(0, firmwareVersion.indexOf(' '));
+        	}
+
+        	version = (int)(Float.parseFloat(firmwareVersion) * 100);
 
             // HACK we started implementing stuff under 150 even if it existed in 100
             if (version < 150)
