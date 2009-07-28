@@ -56,6 +56,7 @@ public class ThreadMan {
     private static ThreadMan instance;
     private HashMap<Integer, SceKernelThreadInfo> threadMap;
     private ArrayList<SceKernelThreadInfo> waitingThreads;
+    private ArrayList<SceKernelThreadInfo> readyThreads;
     private ArrayList<SceKernelThreadInfo> toBeDeletedThreads;
     private SceKernelThreadInfo current_thread;
     private SceKernelThreadInfo real_current_thread; // for use with callbacks
@@ -125,6 +126,7 @@ public class ThreadMan {
 
         threadMap = new HashMap<Integer, SceKernelThreadInfo>();
         waitingThreads = new ArrayList<SceKernelThreadInfo>();
+        readyThreads = new ArrayList<SceKernelThreadInfo>();
         toBeDeletedThreads = new ArrayList<SceKernelThreadInfo>();
         statistics = new Statistics();
 
@@ -192,12 +194,12 @@ public class ThreadMan {
 
         // lowest allowed priority is 0x77, so we are ok at 0x7f
         idle0 = new SceKernelThreadInfo("idle0", MemoryMap.START_RAM | 0x80000000, 0x7f, 0x0, PSP_THREAD_ATTR_KERNEL);
-        idle0.status = PSP_THREAD_READY;
         threadMap.put(idle0.uid, idle0);
+        changeThreadState(idle0, PSP_THREAD_READY);
 
         idle1 = new SceKernelThreadInfo("idle1", MemoryMap.START_RAM | 0x80000000, 0x7f, 0x0, PSP_THREAD_ATTR_KERNEL);
-        idle1.status = PSP_THREAD_READY;
         threadMap.put(idle1.uid, idle1);
+        changeThreadState(idle1, PSP_THREAD_READY);
 
         continuousIdleCycles = 0;
     }
@@ -438,26 +440,16 @@ public class ThreadMan {
      * unless current_thread is already null.
      * @return The next thread to schedule (based on thread priorities). */
     public SceKernelThreadInfo nextThread() {
-        Collection<SceKernelThreadInfo> c;
-        List<SceKernelThreadInfo> list;
-        Iterator<SceKernelThreadInfo> it;
         SceKernelThreadInfo found = null;
 
-        // Find the thread with status PSP_THREAD_READY and the highest priority
-        // In this implementation low priority threads can get starved
-        c = threadMap.values();
-        list = new LinkedList<SceKernelThreadInfo>(c);
-        Collections.sort(list, idle0); // We need an instance of SceKernelThreadInfo for the comparator, so we use idle0
-        it = list.iterator();
-        while(it.hasNext()) {
-            SceKernelThreadInfo thread = it.next();
-            //Modules.log.debug("nextThread pri=" + Integer.toHexString(thread.currentPriority) + " name:" + thread.name + " status:" + thread.status);
-
-            if (thread != current_thread &&
-                thread.status == PSP_THREAD_READY) {
-                found = thread;
-                break;
-            }
+        // Find the thread with status PSP_THREAD_READY and the highest priority.
+        // In this implementation low priority threads can get starved.
+        // Remark: the current_thread is not present in the readyThreads List.
+        for (Iterator<SceKernelThreadInfo> it = readyThreads.iterator(); it.hasNext(); ) {
+        	SceKernelThreadInfo thread = it.next();
+    		if (found == null || thread.currentPriority < found.currentPriority) {
+    			found = thread;
+        	}
         }
 
         return found;
@@ -663,6 +655,8 @@ public class ThreadMan {
             thread.do_callbacks = false;
         } else if (thread.status == PSP_THREAD_STOPPED) {
             toBeDeletedThreads.remove(thread);
+        } else if (thread.status == PSP_THREAD_READY) {
+        	readyThreads.remove(thread);
         }
 
         thread.status = newStatus;
@@ -691,6 +685,7 @@ public class ThreadMan {
             }
             onThreadStopped(thread);
         } else if (thread.status == PSP_THREAD_READY) {
+        	readyThreads.add(thread);
             thread.waitType = PSP_WAIT_NONE;
         } else if (thread.status == PSP_THREAD_RUNNING) {
             // debug
@@ -1526,6 +1521,52 @@ public class ThreadMan {
         current_thread.attr = newAttr;
 
         Emulator.getProcessor().cpu.gpr[2] = 0;
+    }
+
+    /**
+     * Rotate thread ready queue at a set priority
+     *
+     * @param priority - The priority of the queue
+     *
+     * @return 0 on success, < 0 on error.
+     */
+    public void ThreadMan_sceKernelRotateThreadReadyQueue(int priority) {
+    	if (priority == 0) {
+    		// TODO "Untold Legends: Brotherhood of the Blade" calls with priority=0 and expects to the async IOs to complete
+    		// TODO "Aliens vs. Predator™ - Requiem" cann with priority=0. Check if this has a special meaning.
+    		Modules.log.warn("sceKernelRotateThreadReadyQueue priority=" + priority + " is this a special priority value?");
+    		priority = current_thread.currentPriority;	// Assuming we are rotating the queue of the current thread
+    	} else {
+	    	if (Modules.log.isDebugEnabled()) {
+	    		Modules.log.debug("sceKernelRotateThreadReadyQueue priority=" + priority);
+	    	}
+    	}
+
+    	boolean contextSwitched = false;
+
+    	// TODO Check if the current_thread should yield if a thread with higher priority is ready
+    	for (Iterator<SceKernelThreadInfo> it = readyThreads.iterator(); it.hasNext(); ) {
+    		SceKernelThreadInfo thread = it.next();
+    		if (thread.currentPriority == priority) {
+    			if (current_thread.currentPriority == priority) {
+    	    		// We are rotating the ThreadReadyQueue of the current_thread,
+    	    		// we can just yield the current thread.
+    	    		// TODO Check if this should yield only to a thread of the same priority or also to a thread with higher priority
+    				yieldCurrentThread();
+    				contextSwitched = true;
+    			} else {
+	    			// Move the thread to the end of the list
+	    			readyThreads.remove(thread);
+	    			readyThreads.add(thread);
+    			}
+    			break;
+    		}
+    	}
+
+    	if (!contextSwitched) {
+    		// Check if pending async IOs can be completed...
+            pspiofilemgr.getInstance().onContextSwitch();
+    	}
     }
 
     /** Registers a callback on the current thread.
