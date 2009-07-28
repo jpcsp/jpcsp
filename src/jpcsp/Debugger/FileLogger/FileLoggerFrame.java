@@ -628,6 +628,22 @@ public class FileLoggerFrame extends javax.swing.JFrame implements Runnable {
                 ));
     }
 
+    public void logIoRemove(int result, int path_addr, String path) {
+        logFileCommand(new FileCommandInfo(
+                "remove", result,
+                String.format("path=0x%08X('%s')",
+                        path_addr, path)
+                ));
+    }
+
+    public void logIoChstat(int result, int path_addr, String path, int stat_addr, int bits) {
+        logFileCommand(new FileCommandInfo(
+                "chstat", result,
+                String.format("path=0x%08X('%s') stat=0x%08X bits=0x%08X",
+                        path_addr, path, stat_addr, bits)
+                ));
+    }
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTable commandLogTable;
