@@ -3004,7 +3004,6 @@ public class VideoEngine {
             }
 
             texture.bindTexture(gl);
-            checkTextureMinFilter();
         }
 
         // Load the texture if not yet loaded
@@ -3037,6 +3036,7 @@ public class VideoEngine {
 
             int textureByteAlignment = 4;   // 32 bits
             int texture_format = GL.GL_RGBA;
+            boolean compressedTexture = false;
 
             for(int level = 0; level <= texture_num_mip_maps; ++level) {
 	            // Extract texture information with the minor conversion possible
@@ -3044,7 +3044,7 @@ public class VideoEngine {
 	            texaddr = texture_base_pointer[level];
 	            texaddr &= 0xFFFFFFF;
 	            texture_format = GL.GL_RGBA;
-	            boolean compressedTexture = false;
+	            compressedTexture = false;
 	            int compressedTextureSize = 0;
 
 	            switch (texture_storage) {
@@ -3411,7 +3411,7 @@ public class VideoEngine {
 	            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_mag_filter);
 	            gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, textureByteAlignment);
 	            gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, texture_buffer_width[level]);
-	            checkTextureMinFilter();
+	            checkTextureMinFilter(compressedTexture);
 
                 // apparently w > tbw still works, but I think we should log it just incase (fiveofhearts)
                 // update: seems some games are using tbw greater AND less than w, now I haven't got a clue what the meaning of the 2 variables are
@@ -3453,7 +3453,9 @@ public class VideoEngine {
 	                }
 	            }
             }
-            if(texture_num_mip_maps != 0 && final_buffer != null) {
+
+            // OpenGL cannot build mipmaps on compressed textures
+            if (texture_num_mip_maps != 0 && final_buffer != null && !compressedTexture) {
 				if (log.isDebugEnabled()) {
 	            	for(int level = 0; level <= texture_num_mip_maps; ++level)
 	            		log(String.format("Mipmap PSP Texture level %d size %dx%d", level, texture_width[level], texture_height[level]));
@@ -3488,8 +3490,11 @@ public class VideoEngine {
         }
     }
 
-	private void checkTextureMinFilter() {
-		if(texture_num_mip_maps == 0 && !(tex_min_filter == GL.GL_LINEAR || tex_min_filter == GL.GL_NEAREST)) {
+	private void checkTextureMinFilter(boolean compressedTexture) {
+		// OpenGL/Hardware cannot interpolate between compressed textures;
+		// this restriction has been checked on NVIDIA GeForce 8500 GT and 9800 GT
+		if (compressedTexture ||
+		    (texture_num_mip_maps == 0 && !(tex_min_filter == GL.GL_LINEAR || tex_min_filter == GL.GL_NEAREST))) {
 			int nex_tex_min_filter;
 			if(tex_min_filter == GL.GL_NEAREST_MIPMAP_LINEAR || tex_min_filter == GL.GL_NEAREST_MIPMAP_NEAREST)
 				nex_tex_min_filter = GL.GL_NEAREST;
