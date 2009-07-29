@@ -99,9 +99,9 @@ public class HLEModuleManager {
         int version = 150;
 
         if (firmwareVersion != null) {
-        	// HACK Some games have firmwareVersion = "5.00 ?"
-        	if (firmwareVersion.indexOf(' ') >= 0) {
-        		firmwareVersion = firmwareVersion.substring(0, firmwareVersion.indexOf(' '));
+        	// HACK Some games have firmwareVersion = "5.00?"
+        	while (!Character.isDigit(firmwareVersion.charAt(firmwareVersion.length() - 1))) {
+        		firmwareVersion = firmwareVersion.substring(0, firmwareVersion.length() - 1);
         	}
 
         	version = (int)(Float.parseFloat(firmwareVersion) * 100);
