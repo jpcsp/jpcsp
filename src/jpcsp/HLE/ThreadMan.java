@@ -445,12 +445,14 @@ public class ThreadMan {
         // Find the thread with status PSP_THREAD_READY and the highest priority.
         // In this implementation low priority threads can get starved.
         // Remark: the current_thread is not present in the readyThreads List.
-        for (Iterator<SceKernelThreadInfo> it = readyThreads.iterator(); it.hasNext(); ) {
-        	SceKernelThreadInfo thread = it.next();
-    		if (found == null || thread.currentPriority < found.currentPriority) {
-    			found = thread;
-        	}
-        }
+        synchronized (readyThreads) {
+            for (Iterator<SceKernelThreadInfo> it = readyThreads.iterator(); it.hasNext(); ) {
+            	SceKernelThreadInfo thread = it.next();
+        		if (found == null || thread.currentPriority < found.currentPriority) {
+        			found = thread;
+            	}
+            }
+		}
 
         return found;
     }
