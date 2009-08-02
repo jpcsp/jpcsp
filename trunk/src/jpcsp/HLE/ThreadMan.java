@@ -1571,6 +1571,26 @@ public class ThreadMan {
     	}
     }
 
+    /**
+     * Get the current system status.
+     *
+     * @param status - Pointer to a ::SceKernelSystemStatus structure.
+     *
+     * @return < 0 on error.
+     */
+    public void ThreadMan_sceKernelReferSystemStatus(int statusAddr) {
+    	Memory mem = Memory.getInstance();
+    	if (mem.isAddressGood(statusAddr)) {
+	    	SceKernelSystemStatus status = new SceKernelSystemStatus();
+	    	status.read(mem, statusAddr);
+	    	status.status = 0;
+	    	status.write(mem, statusAddr);
+	    	Emulator.getProcessor().cpu.gpr[2] = 0;
+    	} else {
+	    	Emulator.getProcessor().cpu.gpr[2] = -1;
+    	}
+    }
+
     /** Registers a callback on the current thread.
      * @return true on success (the cbid was a valid callback uid) */
     public boolean setCallback(int callbackType, int cbid) {

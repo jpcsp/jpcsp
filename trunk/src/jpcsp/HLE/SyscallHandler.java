@@ -329,7 +329,9 @@ public class SyscallHandler {
                     ThreadMan.getInstance().ThreadMan_sceKernelReferThreadStatus(gpr[4], gpr[5]);
                     break;
                 // sceKernelReferThreadRunStatus(0x2081),
-		// sceKernelReferSystemStatus(0x2082),
+                case 0x2082:
+                    ThreadMan.getInstance().ThreadMan_sceKernelReferSystemStatus(gpr[4]);
+                    break;
                 case 0x2083:
                     ThreadMan.getInstance().ThreadMan_sceKernelGetThreadmanIdList(gpr[4], gpr[5], gpr[6], gpr[7]);
                     break;
