@@ -386,6 +386,10 @@ public class pspSysMem {
     public void sceKernelMaxFreeMemSize()
     {
         int maxFree = maxFreeMemSize();
+
+        // Some games expect size to be rounded down in 16 bytes block
+        maxFree &= ~15;
+
         Modules.log.debug("sceKernelMaxFreeMemSize " + maxFree
                 + " (hex=" + Integer.toHexString(maxFree) + ")");
         Emulator.getProcessor().cpu.gpr[2] = maxFree;
