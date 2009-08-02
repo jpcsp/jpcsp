@@ -119,6 +119,20 @@ public abstract class pspAbstractMemoryMappedStructure {
         return value;
     }
 
+    protected long read64() {
+    	align32();
+
+    	long value;
+        if (offset >= maxSize) {
+            value = 0;
+        } else {
+            value = mem.read64(baseAddress + offset);
+        }
+        offset += 8;
+
+        return value;
+    }
+
     protected void read32Array(int[] array) {
     	for (int i = 0; array != null && i < array.length; i++) {
     		array[i] = read32();
@@ -204,6 +218,14 @@ public abstract class pspAbstractMemoryMappedStructure {
             mem.write32(baseAddress + offset, data);
         }
         offset += 4;
+    }
+
+    protected void write64(long data) {
+    	align32();
+        if (offset < maxSize) {
+            mem.write64(baseAddress + offset, data);
+        }
+        offset += 8;
     }
 
     protected void write32Array(int[] array) {
