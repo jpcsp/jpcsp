@@ -20,11 +20,14 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE;
 
+import java.awt.image.*;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import javax.media.opengl.DebugGL;
 import java.nio.IntBuffer;
+import java.io.*;
+import javax.imageio.*;
 import javax.media.opengl.GL;
 import javax.media.opengl.GLAutoDrawable;
 import javax.media.opengl.GLCanvas;
@@ -41,6 +44,8 @@ import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.capture.CaptureManager;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
+
+import com.sun.opengl.util.Screenshot;
 
 /**
  * @author shadow, aisesal
@@ -116,6 +121,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     private int texFb;
     private float texS;
     private float texT;
+
+    public boolean getscreen = false;
 
     // fps counter variables
     private long prevStatsTime;
@@ -667,6 +674,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         if (statistics != null) {
             statistics.end();
         }
+
+        if(getscreen) savescreen(this.getInstance());
     }
 
     @Override
@@ -888,6 +897,42 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         this.onlyGEGraphics = onlyGEGraphics;
         VideoEngine.log.info("Only GE Graphics: " + onlyGEGraphics);
     }
+
+    //Testing screenshot taking function
+    public void savescreen(GLAutoDrawable drawable)
+    {
+        final GL gl = drawable.getGL();
+
+        int l = 0;
+        String tag = Integer.toString(l);
+
+        File screenshot = new File("JPCSPShot"+tag+".png");
+        File directory = new File(System.getProperty("user.dir"));
+
+        File[] files = directory.listFiles();
+
+        for(int i=0; i<files.length; i++)
+        {
+            if((files[i].getName()).equals(screenshot.getName()))
+            {
+               l++;
+               tag = Integer.toString(l);
+               screenshot = new File("JPCSPShot"+tag+".png");
+            }
+        }
+
+        gl.glReadBuffer(mode);
+        BufferedImage img = Screenshot.readToBufferedImage(width, height);
+
+        try{
+        ImageIO.write(img, "png", screenshot);
+        }catch(IOException e){
+            return;
+        }
+
+        getscreen = false;
+    }
+
 
     // For capture/replay
     public int getTopAddrFb() { return topaddrFb; }
