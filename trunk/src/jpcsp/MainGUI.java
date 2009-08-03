@@ -165,6 +165,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         ResetEmu = new javax.swing.JMenuItem();
         OptionsMenu = new javax.swing.JMenu();
         SetttingsMenu = new javax.swing.JMenuItem();
+        ShotItem = new javax.swing.JMenuItem();
         DebugMenu = new javax.swing.JMenu();
         EnterDebugger = new javax.swing.JMenuItem();
         EnterMemoryViewer = new javax.swing.JMenuItem();
@@ -229,6 +230,12 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         jToolBar1.add(ResetButton);
 
         getContentPane().add(jToolBar1, java.awt.BorderLayout.NORTH);
+
+        MenuBar.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                MenuBarMouseExited(evt);
+            }
+        });
 
         FileMenu.setText("File");
 
@@ -306,6 +313,15 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         OptionsMenu.add(SetttingsMenu);
+
+        ShotItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F5, 0));
+        ShotItem.setText("Screenshot");
+        ShotItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                ShotItemActionPerformed(evt);
+            }
+        });
+        OptionsMenu.add(ShotItem);
 
         MenuBar.add(OptionsMenu);
 
@@ -968,6 +984,14 @@ private void DumpIsoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
     }
 }//GEN-LAST:event_DumpIsoActionPerformed
 
+private void MenuBarMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_MenuBarMouseExited
+pspdisplay.getInstance().repaint();
+}//GEN-LAST:event_MenuBarMouseExited
+
+private void ShotItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShotItemActionPerformed
+pspdisplay.getInstance().getscreen = true;
+}//GEN-LAST:event_ShotItemActionPerformed
+
 private void exitEmu() {
     if (Settings.getInstance().readBool("gui.saveWindowPos"))
         Settings.getInstance().writeWindowPos("mainwindow", getLocation());
@@ -1135,6 +1159,7 @@ private void processArgs(String[] args) {
     private javax.swing.JToggleButton RunButton;
     private javax.swing.JMenuItem RunEmu;
     private javax.swing.JMenuItem SetttingsMenu;
+    private javax.swing.JMenuItem ShotItem;
     private javax.swing.JMenuItem ToggleConsole;
     private javax.swing.JMenuItem ToggleDebugLog;
     private javax.swing.JMenuItem VfpuRegisters;
