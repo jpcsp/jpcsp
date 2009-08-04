@@ -989,7 +989,25 @@ pspdisplay.getInstance().repaint();
 }//GEN-LAST:event_MenuBarMouseExited
 
 private void ShotItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShotItemActionPerformed
+String id;
+
+try{
+File file = this.loadedFile;
+UmdIsoReader iso = new UmdIsoReader(file.getPath());
+UmdIsoFile paramSfo = iso.getFile("PSP_GAME/param.sfo");
+
+PSF params = new PSF();
+byte[] sfo = new byte[(int)paramSfo.length()];
+paramSfo.read(sfo);
+ByteBuffer buf = ByteBuffer.wrap(sfo);
+params.read(buf);
+
+id = params.getString("DISC_ID");
+}catch(Exception e){
+    id = "JPCSP";
+}
 pspdisplay.getInstance().getscreen = true;
+pspdisplay.getInstance().discid = id;
 }//GEN-LAST:event_ShotItemActionPerformed
 
 private void exitEmu() {
