@@ -123,6 +123,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     private float texT;
 
     public boolean getscreen = false;
+    public String discid;
 
     // fps counter variables
     private long prevStatsTime;
@@ -898,7 +899,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         VideoEngine.log.info("Only GE Graphics: " + onlyGEGraphics);
     }
 
-    //Testing screenshot taking function
+    //Testing screenshot taking function (using disc id)
     public void savescreen(GLAutoDrawable drawable)
     {
         final GL gl = drawable.getGL();
@@ -906,7 +907,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         int l = 0;
         String tag = Integer.toString(l);
 
-        File screenshot = new File("JPCSPShot"+tag+".png");
+        File screenshot = new File(discid+"-"+"Shot"+"-"+tag+".png");
         File directory = new File(System.getProperty("user.dir"));
 
         File[] files = directory.listFiles();
@@ -917,7 +918,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             {
                l++;
                tag = Integer.toString(l);
-               screenshot = new File("JPCSPShot"+tag+".png");
+               screenshot = new File(discid+"-"+"Shot"+"-"+tag+".png");
             }
         }
 
