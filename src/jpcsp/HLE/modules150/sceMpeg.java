@@ -356,7 +356,11 @@ public class sceMpeg implements HLEModule {
             // update the ring buffer struct
             SceMpegRingbuffer ringbuffer = SceMpegRingbuffer.fromMem(mem, ringbuffer_addr);
             // packetsFree field doesn't seem to be used on psp, but we need to store this info somewhere so might as well use it
-            ringbuffer.packetsFree = (ringbuffer.dataUpperBound - ringbuffer.data) / ringbuffer.packetSize;
+            if (ringbuffer.packetSize == 0) {
+            	ringbuffer.packetsFree = 0;
+            } else {
+            	ringbuffer.packetsFree = (ringbuffer.dataUpperBound - ringbuffer.data) / ringbuffer.packetSize;
+            }
             ringbuffer.mpeg = mpeg;
             ringbuffer.write(mem, ringbuffer_addr);
 
