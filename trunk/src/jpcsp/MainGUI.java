@@ -533,9 +533,16 @@ public void loadFile(File file) {
 
         PSF psf = module.psf;
         String title;
+        String discId = State.DISCID_UNKNOWN_FILE;
         boolean isHomebrew;
         if (psf != null) {
             title = psf.getPrintableString("TITLE");
+
+            discId = psf.getString("DISC_ID");
+            if (discId == null) {
+                discId = State.DISCID_UNKNOWN_FILE;
+            }
+
             isHomebrew = psf.isLikelyHomebrew();
         } else {
             title = file.getParentFile().getName();
@@ -551,16 +558,14 @@ public void loadFile(File file) {
         jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(null);
 
         RuntimeContext.setIsHomebrew(isHomebrew);
+        State.discId = discId;
 
         // use regular settings first
         installCompatibilitySettings();
 
-        if (psf != null) {
-            String discid = psf.getString("DISC_ID");
-            if (!isHomebrew && discid != null) {
-                // override with patch file (allows incomplete patch files)
-                installCompatibilityPatches(discid + ".patch");
-            }
+        if (!isHomebrew && !discId.equals(State.DISCID_UNKNOWN_FILE)) {
+            // override with patch file (allows incomplete patch files)
+            installCompatibilityPatches(discId + ".patch");
         }
 
         if (instructioncounter != null)
@@ -798,24 +803,32 @@ public void loadUMD(File file) {
         loadedFile = file;
 
         UmdIsoReader iso = new UmdIsoReader(file.getPath());
-        UmdIsoFile paramSfo = iso.getFile("PSP_GAME/param.sfo");
+        UmdIsoFile psfFile = iso.getFile("PSP_GAME/param.sfo");
 
         //Emulator.log.debug("Loading param.sfo from UMD");
-        PSF params = new PSF();
-        byte[] sfo = new byte[(int)paramSfo.length()];
-        paramSfo.read(sfo);
-        ByteBuffer buf = ByteBuffer.wrap(sfo);
-        params.read(buf);
-        Emulator.log.info("UMD param.sfo :\n" + params);
-        setTitle(MetaInformation.FULL_NAME + " - " + params.getString("TITLE"));
-        addRecentUMD(file, params.getString("TITLE"));
-        String discid = params.getString("DISC_ID");
-        emulator.setFirmwareVersion(params.getString("PSP_SYSTEM_VER"));
-        RuntimeContext.setIsHomebrew(params.isLikelyHomebrew());
+        PSF psf = new PSF();
+        byte[] data = new byte[(int)psfFile.length()];
+        psfFile.read(data);
+        psf.read(ByteBuffer.wrap(data));
 
-        if ((discid != null && loadUnpackedUMD(discid + ".BIN")) ||
+        Emulator.log.info("UMD param.sfo :\n" + psf);
+        String title = psf.getPrintableString("TITLE");
+        String discId = psf.getString("DISC_ID");
+        if (discId == null) {
+            discId = State.DISCID_UNKNOWN_UMD;
+        }
+
+        setTitle(MetaInformation.FULL_NAME + " - " + title);
+        addRecentUMD(file, title);
+
+        emulator.setFirmwareVersion(psf.getString("PSP_SYSTEM_VER"));
+        RuntimeContext.setIsHomebrew(psf.isLikelyHomebrew());
+
+        if ((!discId.equals(State.DISCID_UNKNOWN_UMD) && loadUnpackedUMD(discId + ".BIN")) ||
             loadUMD(iso, "PSP_GAME/SYSDIR/BOOT.BIN") ||
             loadUMD(iso, "PSP_GAME/SYSDIR/EBOOT.BIN")) {
+
+            State.discId = discId;
 
             pspiofilemgr.getInstance().setfilepath("disc0/");
             //pspiofilemgr.getInstance().setfilepath("disc0/PSP_GAME/SYSDIR");
@@ -827,7 +840,7 @@ public void loadUMD(File file) {
             installCompatibilitySettings();
 
             // override with patch file (allows incomplete patch files)
-            installCompatibilityPatches(discid + ".patch");
+            installCompatibilityPatches(discId + ".patch");
 
             if (instructioncounter != null)
                 instructioncounter.RefreshWindow();
@@ -989,25 +1002,7 @@ pspdisplay.getInstance().repaint();
 }//GEN-LAST:event_MenuBarMouseExited
 
 private void ShotItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShotItemActionPerformed
-String id;
-
-try{
-File file = this.loadedFile;
-UmdIsoReader iso = new UmdIsoReader(file.getPath());
-UmdIsoFile paramSfo = iso.getFile("PSP_GAME/param.sfo");
-
-PSF params = new PSF();
-byte[] sfo = new byte[(int)paramSfo.length()];
-paramSfo.read(sfo);
-ByteBuffer buf = ByteBuffer.wrap(sfo);
-params.read(buf);
-
-id = params.getString("DISC_ID");
-}catch(Exception e){
-    id = "JPCSP";
-}
-pspdisplay.getInstance().getscreen = true;
-pspdisplay.getInstance().discid = id;
+    pspdisplay.getInstance().getscreen = true;
 }//GEN-LAST:event_ShotItemActionPerformed
 
 private void exitEmu() {

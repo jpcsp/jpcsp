@@ -123,7 +123,6 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     private float texT;
 
     public boolean getscreen = false;
-    public String discid;
 
     // fps counter variables
     private long prevStatsTime;
@@ -230,19 +229,20 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
     public void write8(int address, int data) {
         address &= Memory.addressMask;
-        if (address >= topaddrFb && address < bottomaddrFb)
+        // vram address is lower than main memory so check the end of the buffer first, it's more likely to fail
+        if (address < bottomaddrFb && address >= topaddrFb)
             displayDirty = true;
     }
 
     public void write16(int address, int data) {
         address &= Memory.addressMask;
-        if (address >= topaddrFb && address < bottomaddrFb)
+        if (address < bottomaddrFb && address >= topaddrFb)
             displayDirty = true;
     }
 
     public void write32(int address, int data) {
         address &= Memory.addressMask;
-        if (address >= topaddrFb && address < bottomaddrFb)
+        if (address < bottomaddrFb && address >= topaddrFb)
             displayDirty = true;
     }
 
@@ -904,21 +904,19 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     {
         final GL gl = drawable.getGL();
 
-        int l = 0;
-        String tag = Integer.toString(l);
+        int tag = 0;
 
-        File screenshot = new File(discid+"-"+"Shot"+"-"+tag+".png");
+        File screenshot = new File(State.discId + "-" + "Shot" + "-" + tag + ".png");
         File directory = new File(System.getProperty("user.dir"));
 
         File[] files = directory.listFiles();
 
-        for(int i=0; i<files.length; i++)
+        for(int i = 0; i < files.length; i++)
         {
             if((files[i].getName()).equals(screenshot.getName()))
             {
-               l++;
-               tag = Integer.toString(l);
-               screenshot = new File(discid+"-"+"Shot"+"-"+tag+".png");
+               tag++;
+               screenshot = new File(State.discId + "-" + "Shot" + "-" + tag + ".png");
             }
         }
 
@@ -926,7 +924,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         BufferedImage img = Screenshot.readToBufferedImage(width, height);
 
         try{
-        ImageIO.write(img, "png", screenshot);
+            ImageIO.write(img, "png", screenshot);
         }catch(IOException e){
             return;
         }
