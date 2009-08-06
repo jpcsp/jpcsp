@@ -37,6 +37,12 @@ public class State extends jpcsp.HLE.Modules {
     public static MemoryViewer memoryViewer; // can be null
     public static final FileLoggerFrame fileLogger;
 
+    public static String discId;
+    // make sure these are valid filenames because it gets used by the screenshot system
+    public static final String DISCID_UNKNOWN_NOTHING_LOADED = "[unknown, nothing loaded]";
+    public static final String DISCID_UNKNOWN_FILE = "[unknown, file]";
+    public static final String DISCID_UNKNOWN_UMD = "[unknown, umd]";
+
     public static boolean captureGeNextFrame;
     public static boolean replayGeNextFrame;
 
@@ -48,6 +54,8 @@ public class State extends jpcsp.HLE.Modules {
         //debugger = new DisassemblerFrame();
         //memoryViewer = new MemoryViewer();
         fileLogger = new FileLoggerFrame();
+
+        discId = DISCID_UNKNOWN_NOTHING_LOADED;
 
         captureGeNextFrame = false;
         replayGeNextFrame = false;
