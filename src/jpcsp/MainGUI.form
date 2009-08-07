@@ -87,6 +87,14 @@
             <Property name="text" type="java.lang.String" value="Options"/>
           </Properties>
           <SubComponents>
+            <MenuItem class="javax.swing.JMenuItem" name="RotateItem">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Rotate"/>
+              </Properties>
+              <Events>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="RotateItemActionPerformed"/>
+              </Events>
+            </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="SetttingsMenu">
               <Properties>
                 <Property name="text" type="java.lang.String" value="Settings"/>
