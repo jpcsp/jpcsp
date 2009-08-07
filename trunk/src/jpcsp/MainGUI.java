@@ -164,6 +164,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         PauseEmu = new javax.swing.JMenuItem();
         ResetEmu = new javax.swing.JMenuItem();
         OptionsMenu = new javax.swing.JMenu();
+        RotateItem = new javax.swing.JMenuItem();
         SetttingsMenu = new javax.swing.JMenuItem();
         ShotItem = new javax.swing.JMenuItem();
         DebugMenu = new javax.swing.JMenu();
@@ -305,6 +306,14 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         MenuBar.add(EmulationMenu);
 
         OptionsMenu.setText("Options");
+
+        RotateItem.setText("Rotate");
+        RotateItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                RotateItemActionPerformed(evt);
+            }
+        });
+        OptionsMenu.add(RotateItem);
 
         SetttingsMenu.setText("Settings");
         SetttingsMenu.addActionListener(new java.awt.event.ActionListener() {
@@ -1005,6 +1014,18 @@ private void ShotItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     pspdisplay.getInstance().getscreen = true;
 }//GEN-LAST:event_ShotItemActionPerformed
 
+private void RotateItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RotateItemActionPerformed
+pspdisplay screen = pspdisplay.getInstance();
+Object[] options = {"90º CW","90º CCW","180º","Mirror","Normal"};
+
+int jop = JOptionPane.showOptionDialog(null, "Choose the angle of rotation", "Rotate", JOptionPane.UNDEFINED_CONDITION, JOptionPane.QUESTION_MESSAGE, null, options, options[4]);
+
+if(jop != -1)
+    screen.rotate(jop);
+else
+    return;
+}//GEN-LAST:event_RotateItemActionPerformed
+
 private void exitEmu() {
     if (Settings.getInstance().readBool("gui.saveWindowPos"))
         Settings.getInstance().writeWindowPos("mainwindow", getLocation());
@@ -1169,6 +1190,7 @@ private void processArgs(String[] args) {
     private javax.swing.JMenu RecentMenu;
     private javax.swing.JButton ResetButton;
     private javax.swing.JMenuItem ResetEmu;
+    private javax.swing.JMenuItem RotateItem;
     private javax.swing.JToggleButton RunButton;
     private javax.swing.JMenuItem RunEmu;
     private javax.swing.JMenuItem SetttingsMenu;

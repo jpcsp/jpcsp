@@ -124,6 +124,12 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
     public boolean getscreen = false;
 
+    //Rotation vars
+    private float texS1, texS2, texS3, texS4;
+    private float texT1, texT2, texT3, texT4;
+    private int ang = 4;
+    public boolean isrotating = false;
+
     // fps counter variables
     private long prevStatsTime;
     private long frameCount;
@@ -408,6 +414,14 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     /** @param first : true  = draw as psp size
      *                 false = draw as window size */
     private void drawFrameBuffer(final GL gl, boolean first, boolean invert, int width, int height) {
+        if(!isrotating){
+
+            texS1 = texS4 = texS;
+            texT1 = texT2 = texT;
+            
+            texS2 = texS3 = texT3 = texT4 = 0.0f;
+        }
+
         gl.glPushAttrib(GL.GL_ALL_ATTRIB_BITS);
 
         if (first)
@@ -452,16 +466,16 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
         gl.glColor3f(1.0f, 1.0f, 1.0f);
 
-        gl.glTexCoord2f(texS, texT);
+        gl.glTexCoord2f(texS1, texT1);
         gl.glVertex2f(width, height);
 
-        gl.glTexCoord2f(0.0f, texT);
+        gl.glTexCoord2f(texS2, texT2);
         gl.glVertex2f(0.0f, height);
 
-        gl.glTexCoord2f(0.0f, 0.0f);
+        gl.glTexCoord2f(texS3, texT3);
         gl.glVertex2f(0.0f, 0.0f);
 
-        gl.glTexCoord2f(texS, 0.0f);
+        gl.glTexCoord2f(texS4, texT4);
         gl.glVertex2f(width, 0.0f);
 
         gl.glEnd();
@@ -474,6 +488,9 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         gl.glPopAttrib();
 
         popTexEnv(gl);
+
+        isrotating = false;
+
     }
 
     private void copyScreenToPixels(GL gl, Buffer pixels, int bufferwidth, int pixelformat, int width, int height) {
@@ -665,6 +682,11 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                 0, 0, bufferwidthFb, height,
                 pixelFormatGL == GL.GL_UNSIGNED_SHORT_5_6_5_REV ? GL.GL_RGB : GL.GL_RGBA,
                 pixelFormatGL, pixelsFb);
+            
+            //Call the rotating function (if needed)
+            if(ang != 4)
+                rotate(ang);
+
             drawFrameBuffer(gl, false, true, width, height);
 
             //swapBuffers();
@@ -897,6 +919,60 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     public void setOnlyGEGraphics(boolean onlyGEGraphics) {
         this.onlyGEGraphics = onlyGEGraphics;
         VideoEngine.log.info("Only GE Graphics: " + onlyGEGraphics);
+    }
+
+    //Screen rotation function
+    public void rotate(int angleid)
+    {
+        ang = angleid;
+
+        switch(angleid){
+            case 0:
+                texS1 = texS2 = texS;
+                texT2 = texT3 = texT;
+
+                texS3 = texS4 = texT1 = texT4 = 0.0f;
+
+                isrotating = true;
+
+                break;
+
+            case 1:
+                texS3 = texS4 = texS;
+                texT1 = texT4 = texT;
+
+                texS1 = texS2 = texT2 = texT3 = 0.0f;
+
+                isrotating = true;
+
+                break;
+
+            case 2:
+                texS1 = texS4 = texS;
+                texT3 = texT4 = texT;
+
+                texS2 = texS3 = texT1 = texT2 = 0.0f;
+
+                isrotating = true;
+
+                break;
+
+            case 3:
+                texS2 = texS3 = texS;
+                texT1 = texT2 = texT;
+
+                texS1 = texS4 = texT3 = texT4 = 0.0f;
+
+                isrotating = true;
+
+                break;
+
+            case 4:
+            default:
+                isrotating = false;
+
+                break;
+        }
     }
 
     //Testing screenshot taking function (using disc id)
