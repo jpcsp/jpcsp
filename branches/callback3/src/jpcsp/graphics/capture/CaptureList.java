@@ -37,7 +37,7 @@ public class CaptureList {
     private CaptureRAM listBuffer;
 
     public CaptureList(PspGeList list) throws Exception {
-        this.list = new PspGeList(list.list_addr, list.stall_addr, list.cbid, list.arg_addr);
+        this.list = new PspGeList(list.list_addr, list.stall_addr, list.cbid, list.option_addr);
 
         if (list.stall_addr - list.list_addr == 0) {
             throw new Exception("Command list is empty");
@@ -79,7 +79,7 @@ public class CaptureList {
         data.writeInt(list.list_addr);
         data.writeInt(list.stall_addr);
         data.writeInt(list.cbid);
-        data.writeInt(list.arg_addr);
+        data.writeInt(list.option_addr);
 
         //VideoEngine.log.info("CaptureList write " + (5 * 4));
 
@@ -101,10 +101,10 @@ public class CaptureList {
             int list_addr = data.readInt(); sizeRemaining -= 4;
             int stall_addr = data.readInt(); sizeRemaining -= 4;
             int cbid = data.readInt(); sizeRemaining -= 4;
-            int arg_addr = data.readInt(); sizeRemaining -= 4;
+            int option_addr = data.readInt(); sizeRemaining -= 4;
             data.skipBytes(sizeRemaining);
 
-            list.list = new PspGeList(list_addr, stall_addr, cbid, arg_addr);
+            list.list = new PspGeList(list_addr, stall_addr, cbid, option_addr);
 
             CaptureHeader header = CaptureHeader.read(in);
             int packetType = header.getPacketType();

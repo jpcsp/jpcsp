@@ -233,34 +233,34 @@ public class syscallsFirm15 {
                  sceKernelLoadModuleByID(0x20d0,0xb7f46618),
                  sceKernelLoadModuleMs(0x20d1,0x710f61b5),
                  sceKernelLoadModuleBufferUsbWlan(0x20d2,0xf9275d98),
-                 KernelStartModule(0x20d3,0x50f0c1ec),
-                 KernelStopModule(0x20d4,0xd1ff982a),
-                 KernelUnloadModule(0x20d5,0x2e0911aa),
-                 KernelSelfStopUnloadModule(0x20d6,0xd675ebb8),
-                 KernelStopUnloadSelfModule(0x20d7,0xcc1d3699),
-                 KernelGetModuleIdList(0x20d8,0x644395e2),
-                 KernelQueryModuleInfo(0x20d9,0x748cbed9),
+                 sceKernelStartModule(0x20d3,0x50f0c1ec),
+                 sceKernelStopModule(0x20d4,0xd1ff982a),
+                 sceKernelUnloadModule(0x20d5,0x2e0911aa),
+                 sceKernelSelfStopUnloadModule(0x20d6,0xd675ebb8),
+                 sceKernelStopUnloadSelfModule(0x20d7,0xcc1d3699),
+                 sceKernelGetModuleIdList(0x20d8,0x644395e2),
+                 sceKernelQueryModuleInfo(0x20d9,0x748cbed9),
                  sceKernelGetModuleId(0x20da,0xf0a26395),
                  sceKernelGetModuleIdByAddress(0x20db,0xd8b73127),
-                 KernelMaxFreeMemSize(0x20dc,0xa291f107),
-                 KernelTotalFreeMemSize(0x20dd,0xf919f628),
-                 KernelAllocPartitionMemory(0x20de,0x237dbd4f),
-                 KernelFreePartitionMemory(0x20df,0xb6d61d02),
-                 KernelGetBlockHeadAddr(0x20e0,0x9d9a5ba1),
+                 sceKernelMaxFreeMemSize(0x20dc,0xa291f107),
+                 sceKernelTotalFreeMemSize(0x20dd,0xf919f628),
+                 sceKernelAllocPartitionMemory(0x20de,0x237dbd4f),
+                 sceKernelFreePartitionMemory(0x20df,0xb6d61d02),
+                 sceKernelGetBlockHeadAddr(0x20e0,0x9d9a5ba1),
                  sceKernelPrintf(0x20e1,0x13a5abef),
-                 KernelDevkitVersion(0x20e2,0x3fc9ae6a),
-                 KernelPowerLock(0x20e3,0xeadb1bd7),
-                 KernelPowerUnlock(0x20e4,0x3aee7261),
-                 KernelPowerTick(0x20e5,0x090ccb3f),
+                 sceKernelDevkitVersion(0x20e2,0x3fc9ae6a),
+                 sceKernelPowerLock(0x20e3,0xeadb1bd7),
+                 sceKernelPowerUnlock(0x20e4,0x3aee7261),
+                 sceKernelPowerTick(0x20e5,0x090ccb3f),
                  sceKernelVolatileMemLock(0x20e6,0x3e0271d3),
                  sceKernelVolatileMemTryLock(0x20e7,0xa14f40b2),
                  sceKernelVolatileMemUnlock(0x20e8,0xa569e425),
-                 KernelLoadExec(0x20e9,0xbd2f1094),
-                 KernelExitGameWithStatus(0x20ea,0x2ac9954b),
-                 KernelExitGame(0x20eb,0x05572a5f),
-                 KernelRegisterExitCallback(0x20ec,0x4ac57943),
-                 DmacMemcpy(0x20ed,0x617f3fe6),
-                 DmacTryMemcpy(0x20ee,0xd97f94d8),
+                 sceKernelLoadExec(0x20e9,0xbd2f1094),
+                 sceKernelExitGameWithStatus(0x20ea,0x2ac9954b),
+                 sceKernelExitGame(0x20eb,0x05572a5f),
+                 sceKernelRegisterExitCallback(0x20ec,0x4ac57943),
+                 sceDmacMemcpy(0x20ed,0x617f3fe6),
+                 sceDmacTryMemcpy(0x20ee,0xd97f94d8),
                  GeEdramGetSize(0x20ef,0x1f6752ad),
                  GeEdramGetAddr(0x20f0,0xe47e40e4),
                  GeEdramSetAddrTranslation(0x20f1,0xb77905ea),
@@ -1026,7 +1026,7 @@ public class syscallsFirm15 {
                 scePsmfPlayer_46F61F8B(0x30bd, 0x46F61F8B), // umd game only 2.60+
                 scePsmfPlayer_B9848A74(0x30be, 0xB9848A74), // umd game only 2.60+
                 scePsmfPlayer_F8EF08A6(0x30bf, 0xF8EF08A6), // umd game only 2.60+
-                scePsmfPlayer_DF089680(0x30c0, 0xDF089680), // umd game only 2.60+
+                scePsmfPlayerGetPsmfInfo(0x30c0, 0xDF089680), // umd game only 2.60+
                 scePsmfPlayer_1E57A8E7(0x30c1, 0x1E57A8E7), // umd game only 2.60+
                 scePsmfPlayer_2BEB1569(0x30c2, 0x2BEB1569), // umd game only 2.60+
 
@@ -1102,6 +1102,12 @@ public class syscallsFirm15 {
                 sceMpegAvcCopyYCbCr(0x3102, 0x0558B075), // 2.71+
                 sceMpegRingbufferQueryPackNum(0x3103, 0x769BEBB6), // 2.50+
 
+                sceNetAdhocDiscoverUpdate(0x3104, 0x52DE1B97), // 2.71+
+                sceNetAdhocDiscoverInitStart(0x3105, 0x941B3877), // 2.71+
+                sceNetAdhocDiscoverGetStatus(0x3106, 0x944DDBC6), // 2.71+
+                sceNetAdhocDiscoverTerm(0x3107, 0xA2246614), // 2.71+
+                sceNetAdhocDiscoverRequestSuspend(0x3108, 0xA423A21B), // 2.71+
+
                 // We choose to start HLEModuleManager at 0x4000
 
                 // CFW, we choose to start at 0x5000
@@ -1120,6 +1126,11 @@ public class syscallsFirm15 {
                 module_stop_1(0x6004, 0xCEE8593C),
                 module_stop_2(0x6005, 0xF01D73A7),
                 module_0F7C276C(0x6006, 0x0F7C276C),
+
+                // jpcsp HLE syscalls
+                hleKernelExitThread(0x6f000, 0x009AB670),
+                hleKernelExitCallback(0x6f001, 0x7A49075B),
+                hleKernelMemset(0x6f002, 0x691710FE),
 
                 hleDummy(0x70000, 0xcdcdcdcd); // got bored of editing , and ; so leave this entry at the end of the enum
 

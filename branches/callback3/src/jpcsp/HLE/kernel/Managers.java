@@ -24,7 +24,7 @@ import jpcsp.HLE.kernel.managers.*;
  */
 public class Managers {
     //public static UidManager uids;
-    //public static CallbackManager callbacks;
+    public static CallbackManager callbacks;
     public static SemaManager semas;
     public static EventFlagManager eventFlags;
     //public static ThreadManager threads;
@@ -38,6 +38,7 @@ public class Managers {
     /** call this when resetting the emulator */
     public static void reset() {
         // TODO add other reset calls here
+        callbacks.reset();
         semas.reset();
         eventFlags.reset();
         fpl.reset();
@@ -50,7 +51,7 @@ public class Managers {
 
     static {
         //uids = UidManager.singleton;
-        //callbacks = CallbackManager.singleton;
+        callbacks = CallbackManager.singleton;
         semas = SemaManager.singleton;
         eventFlags = EventFlagManager.singleton;
         //threads = ThreadManager.singleton;

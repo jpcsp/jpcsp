@@ -292,14 +292,14 @@ public class EventFlagManager {
         return matched;
     }
 
-    public void hleKernelWaitEventFlag(int uid, int bits, int wait, int outBits_addr, int timeout_addr, boolean do_callbacks)
+    public void hleKernelWaitEventFlag(int uid, int bits, int wait, int outBits_addr, int timeout_addr, boolean allowCallbacks)
     {
         Modules.log.debug("hleKernelWaitEventFlag uid=0x" + Integer.toHexString(uid)
             + " bits=0x" + Integer.toHexString(bits)
             + " wait=0x" + Integer.toHexString(wait)
             + " outBits=0x" + Integer.toHexString(outBits_addr)
             + " timeout=0x" + Integer.toHexString(timeout_addr)
-            + " callbacks=" + do_callbacks);
+            + " callbacks=" + allowCallbacks);
 
         SceUidManager.checkUidPurpose(uid, "ThreadMan-eventflag", true);
         SceKernelEventFlagInfo event = eventMap.get(uid);
@@ -325,7 +325,7 @@ public class EventFlagManager {
 
                 // Go to wait state
                 SceKernelThreadInfo currentThread = ThreadMan.getInstance().getCurrentThread();
-                currentThread.do_callbacks = do_callbacks;
+                currentThread.allowCallbacks = allowCallbacks;
                 currentThread.waitType = PSP_WAIT_MISC;
 
                 // Wait on a specific event flag
@@ -344,8 +344,8 @@ public class EventFlagManager {
                 Modules.log.debug("hleKernelWaitEventFlag fast check succeeded");
                 Emulator.getProcessor().cpu.gpr[2] = 0;
 
-                // TODO yield anyway? probably yes, at least when do_callbacks is true
-                if (do_callbacks)
+                // TODO yield anyway? probably yes, at least when allowCallbacks is true
+                if (allowCallbacks)
                     ThreadMan.getInstance().yieldCurrentThreadCB();
                 else
                     ThreadMan.getInstance().yieldCurrentThread();

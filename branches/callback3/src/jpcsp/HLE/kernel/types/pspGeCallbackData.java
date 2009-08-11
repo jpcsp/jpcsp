@@ -27,6 +27,11 @@ public class pspGeCallbackData extends pspAbstractMemoryMappedStructure
     /** GE callback argument for finish interrupt */
     public int finishArgument;
 
+    // internal info
+    public int uid;
+    public int signalId;
+    public int finishId;
+
     @Override
     protected void read() {
         signalFunction = read32();

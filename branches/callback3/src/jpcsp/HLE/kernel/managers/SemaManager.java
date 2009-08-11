@@ -178,12 +178,12 @@ public class SemaManager {
         return success;
     }
 
-    private void hleKernelWaitSema(int semaid, int signal, int timeout_addr, boolean do_callbacks)
+    private void hleKernelWaitSema(int semaid, int signal, int timeout_addr, boolean allowCallbacks)
     {
         Modules.log.debug("hleKernelWaitSema(id=0x" + Integer.toHexString(semaid)
             + ",signal=" + signal
             + ",timeout=0x" + Integer.toHexString(timeout_addr)
-            + ") callbacks=" + do_callbacks);
+            + ") callbacks=" + allowCallbacks);
 
         if (signal <= 0) {
             Modules.log.warn("hleKernelWaitSema - bad signal " + signal);
@@ -220,7 +220,7 @@ public class SemaManager {
                 SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
 
                 // Do callbacks?
-                currentThread.do_callbacks = do_callbacks;
+                currentThread.allowCallbacks = allowCallbacks;
 
                 // wait type
                 currentThread.waitType = PSP_WAIT_SEMA;
@@ -243,15 +243,17 @@ public class SemaManager {
                 Modules.log.debug("hleKernelWaitSema - '" + sema.name + "' fast check succeeded");
                 Emulator.getProcessor().cpu.gpr[2] = 0;
 
-                if (!threadMan.isInsideCallback()) {
-                    if (do_callbacks) {
-                        threadMan.yieldCurrentThreadCB();
-                    } else {
-                        // TODO yield anyway?
-                        //yieldCurrentThread();
-                    }
+                SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
+                if (currentThread.insideCallbackV3) {
+                    Modules.log.warn("hleKernelWaitSema called from inside callback");
+                    Emulator.PauseEmu();
+                }
+
+                if (allowCallbacks) {
+                    threadMan.yieldCurrentThreadCB();
                 } else {
-                    Modules.log.warn("hleKernelWaitSema called from inside callback!");
+                    // TODO yield anyway?
+                    //yieldCurrentThread();
                 }
             }
         }

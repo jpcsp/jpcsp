@@ -20,6 +20,7 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.RuntimeContext;
+import jpcsp.HLE.Modules;
 import jpcsp.util.Utilities;
 
 import jpcsp.HLE.kernel.managers.SceUidManager;
@@ -36,6 +37,7 @@ public class SceKernelCallbackInfo {
 
     // internal variables
     public final int uid;
+    public boolean forceNotify;
 
     public SceKernelCallbackInfo(String name, int threadId, int callback_addr, int callback_arg_addr) {
         this.name = name;
@@ -47,6 +49,7 @@ public class SceKernelCallbackInfo {
 
         // internal state
         uid = SceUidManager.getNewUid("ThreadMan-callback");
+        forceNotify = false;
 
         // TODO (hlide ?)
         //SceModule *mod = sceKernelFindModuleByAddress(callback_addr);
@@ -68,13 +71,20 @@ public class SceKernelCallbackInfo {
      * @param thread the thread this callback belongs to.
      */
     public void startContext(SceKernelThreadInfo thread) {
+        Modules.log.info("Entering callback '" + name
+            + "' @ 0x" + Integer.toHexString(callback_addr)
+            + " arg1=0x" + Integer.toHexString(notifyCount)
+            + " arg2=0x" + Integer.toHexString(notifyArg)
+            + " arg3=0x" + Integer.toHexString(callback_arg_addr));
+
         CpuState cpu = new CpuState(thread.cpuContext);
 
         cpu.pc = cpu.npc = callback_addr;
         cpu.gpr[4] = notifyCount;
         cpu.gpr[5] = notifyArg;
         cpu.gpr[6] = callback_arg_addr;
-        cpu.gpr[31] = 0; // ra
+        //cpu.gpr[31] = 0; // ra
+        cpu.gpr[31] = jpcsp.HLE.ThreadMan.CALLBACK_EXIT_HANDLER_ADDRESS; // ra
 
         // clear the counter and the arg
         notifyCount = 0;

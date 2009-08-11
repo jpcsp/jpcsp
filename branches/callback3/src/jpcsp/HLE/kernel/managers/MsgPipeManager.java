@@ -219,7 +219,7 @@ public class MsgPipeManager {
     }
 
     private void hleKernelSendMsgPipe(int uid, int msg_addr, int size, int unk1, int unk2, int timeout_addr,
-        boolean do_callbacks, boolean poll) {
+        boolean allowCallbacks, boolean poll) {
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Processor.memory;
 
@@ -232,7 +232,7 @@ public class MsgPipeManager {
         if (poll) waitType = "poll";
         else if (timeout_addr == 0) waitType = "forever";
         else waitType = micros + " ms";
-        if (do_callbacks) waitType += " + CB";
+        if (allowCallbacks) waitType += " + CB";
 
         Modules.log.info("hleKernelSendMsgPipe(uid=0x" + Integer.toHexString(uid)
             + ",msg=0x" + Integer.toHexString(msg_addr)
@@ -261,7 +261,7 @@ public class MsgPipeManager {
                     SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
 
                     // Do callbacks?
-                    currentThread.do_callbacks = do_callbacks;
+                    currentThread.allowCallbacks = allowCallbacks;
 
                     // wait type
                     currentThread.waitType = PSP_WAIT_MSGPIPE;
@@ -284,7 +284,7 @@ public class MsgPipeManager {
                     cpu.gpr[2] = ERROR_ILLEGAL_SIZE;
 
                     // not sure about this
-                    if (do_callbacks) {
+                    if (allowCallbacks) {
                         ThreadMan.getInstance().yieldCurrentThreadCB();
                     }
                 }
@@ -293,7 +293,7 @@ public class MsgPipeManager {
                 cpu.gpr[2] = 0;
 
                 // not sure about this
-                if (do_callbacks) {
+                if (allowCallbacks) {
                     ThreadMan.getInstance().yieldCurrentThreadCB();
                 }
 
@@ -315,7 +315,7 @@ public class MsgPipeManager {
     }
 
     private void hleKernelReceiveMsgPipe(int uid, int msg_addr, int size, int unk1, int unk2, int timeout_addr,
-        boolean do_callbacks, boolean poll) {
+        boolean allowCallbacks, boolean poll) {
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Processor.memory;
 
@@ -328,7 +328,7 @@ public class MsgPipeManager {
         if (poll) waitType = "poll";
         else if (timeout_addr == 0) waitType = "forever";
         else waitType = micros + " ms";
-        if (do_callbacks) waitType += " + CB";
+        if (allowCallbacks) waitType += " + CB";
 
         Modules.log.info("hleKernelReceiveMsgPipe(uid=0x" + Integer.toHexString(uid)
             + ",msg=0x" + Integer.toHexString(msg_addr)
@@ -357,7 +357,7 @@ public class MsgPipeManager {
                     SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
 
                     // Do callbacks?
-                    currentThread.do_callbacks = do_callbacks;
+                    currentThread.allowCallbacks = allowCallbacks;
 
                     // wait type
                     currentThread.waitType = PSP_WAIT_MSGPIPE;
@@ -380,7 +380,7 @@ public class MsgPipeManager {
                     cpu.gpr[2] = ERROR_MESSAGE_PIPE_EMPTY;
 
                     // not sure about this
-                    if (do_callbacks) {
+                    if (allowCallbacks) {
                         ThreadMan.getInstance().yieldCurrentThreadCB();
                     }
                 }
@@ -389,7 +389,7 @@ public class MsgPipeManager {
                 cpu.gpr[2] = 0;
 
                 // not sure about this
-                if (do_callbacks) {
+                if (allowCallbacks) {
                     ThreadMan.getInstance().yieldCurrentThreadCB();
                 }
 

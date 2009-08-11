@@ -148,7 +148,7 @@ public class MutexManager {
 
     /** TODO look for a timeout parameter, for now we assume infinite wait
      * @return true on success */
-    private void hleKernelLockMutex(int uid, int count, int timeout_addr, boolean wait, boolean do_callbacks) {
+    private void hleKernelLockMutex(int uid, int count, int timeout_addr, boolean wait, boolean allowCallbacks) {
         CpuState cpu = Emulator.getProcessor().cpu;
         Memory mem = Memory.getInstance();
 
@@ -156,7 +156,7 @@ public class MutexManager {
             + ",count=" + count
             + ",timeout_addr=0x" + Integer.toHexString(timeout_addr)
             + ") wait=" + wait
-            + ",cb=" + do_callbacks;
+            + ",cb=" + allowCallbacks;
 
         SceKernelMutexInfo info = mutexMap.get(uid);
         if (info == null) {
@@ -183,7 +183,7 @@ public class MutexManager {
                     info.numWaitThreads++;
 
                     // Do callbacks?
-                    current_thread.do_callbacks = do_callbacks;
+                    current_thread.allowCallbacks = allowCallbacks;
 
                     // wait type
                     current_thread.waitType = PSP_WAIT_MUTEX;

@@ -73,9 +73,9 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public static final int PSP_WAIT_DELAY      = 0x02; // delay thread
     public static final int PSP_WAIT_SEMA       = 0x03; // wait sema
     public static final int PSP_WAIT_MISC       = 0x04; // wait event flag, io, umd, vblank(?)
-    public static final int PSP_WAIT_5          = 0x05; // ?
-    public static final int PSP_WAIT_6          = 0x06; // ?
-    public static final int PSP_WAIT_7          = 0x07; // ?
+    public static final int PSP_WAIT_MSGBOX     = 0x05; // untested
+    public static final int PSP_WAIT_VPL        = 0x06; // untested
+    public static final int PSP_WAIT_FPL        = 0x07; // untested
     public static final int PSP_WAIT_MSGPIPE    = 0x08; // wait msg pipe (send and receive)
     public static final int PSP_WAIT_THREAD_END = 0x09; // wait thread end
     public static final int PSP_WAIT_a          = 0x0a; // ?
@@ -106,24 +106,16 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public int moduleid;
     public CpuState cpuContext;
     public boolean do_delete;
-    public boolean do_callbacks;
 
     public final ThreadWaitInfo wait;
 
-    // callbacks, only 1 of each type can be registered per thread
-    public final static int THREAD_CALLBACK_UMD         = 0;
-    public final static int THREAD_CALLBACK_IO          = 1;
-    public final static int THREAD_CALLBACK_GE_SIGNAL   = 2;
-    public final static int THREAD_CALLBACK_GE_FINISH   = 3;
-    public final static int THREAD_CALLBACK_MEMORYSTICK = 4;
-    public final static int THREAD_CALLBACK_SIZE        = 5;
-    public boolean[] callbackRegistered;
-    public boolean[] callbackReady;
-    public SceKernelCallbackInfo[] callbackInfo;
+    public int numWaitCallbacks;
+    public boolean insideCallbackV3;
+    public boolean allowCallbacks; // set in waitCB functions, these threads have status=waiting/sleeping
+    public boolean forceAllowCallbacks; // set in sceKernelCheckCallback, this is the only place where the running thread can process callbacks
 
-    // make this information per thread instead of globals in ThreadMan,
-    // this way we should be able to allow context switching (wait sema, etc) while inside the callback.
-    public boolean insideCallback;
+    // HLE -> PSP -> HLE callback system, lets a syscall execute game code, currently only used by mpeg module
+    public boolean insideCallbackV2;
     public int[] callbackSavedGpr = new int[32];
     public int callbackSavedNPC; // hleCallbackSavedPC not required, only NPC
     public int callbackSavedRA; // not really necessary but keeps things consistent
@@ -200,24 +192,17 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         cpuContext.gpr[31] = 0; // ra
 
         do_delete = false;
-        do_callbacks = false;
 
         wait = new ThreadWaitInfo();
 
-        callbackRegistered = new boolean[THREAD_CALLBACK_SIZE];
-        callbackReady = new boolean[THREAD_CALLBACK_SIZE];
-        callbackInfo = new SceKernelCallbackInfo[THREAD_CALLBACK_SIZE];
-        for (int i = 0; i < THREAD_CALLBACK_SIZE; i++) {
-            callbackRegistered[i] = false;
-            callbackReady[i] = false;
-            callbackInfo[i] = null;
-        }
-
-        insideCallback = false;
+        insideCallbackV2 = false;
         callbackSavedGpr = new int[32];
         for (int i = 0; i < 32; i++) {
             callbackSavedGpr[i] = 0;
         }
+
+        insideCallbackV3 = false;
+        allowCallbacks = false;
     }
 
     public void saveContext() {
@@ -228,6 +213,10 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     }
 
     public void restoreContext() {
+        if (!jpcsp.HLE.ThreadMan.getInstance().isIdleThread(this)) {
+            //jpcsp.HLE.Modules.log.info("thread:'" + name + "' restoreContext (same=" + (Emulator.getProcessor().cpu == cpuContext) + ")");
+        }
+
         // Assuming context switching only happens on syscall,
         // we always execute npc after a syscall,
         // so we can set pc = npc regardless of cop0.status.bd.

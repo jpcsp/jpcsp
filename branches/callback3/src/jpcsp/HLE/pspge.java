@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelCallbackInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
@@ -45,8 +46,7 @@ public class pspge {
     private int syncThreadId;
     public volatile boolean waitingForSync;
     public volatile boolean syncDone;
-    private HashMap<Integer, SceKernelCallbackInfo> signalCallbacks;
-    private HashMap<Integer, SceKernelCallbackInfo> finishCallbacks;
+    private HashMap<Integer, pspGeCallbackData> callbackDataMap;
 
     private ConcurrentLinkedQueue<PspGeList> listQueue;
     private int listIdAllocator;
@@ -78,8 +78,7 @@ public class pspge {
         waitingForSync = false;
         syncDone = false;
 
-        signalCallbacks = new HashMap<Integer, SceKernelCallbackInfo>();
-        finishCallbacks = new HashMap<Integer, SceKernelCallbackInfo>();
+        callbackDataMap = new HashMap<Integer, pspGeCallbackData>();
 
         listQueue = new ConcurrentLinkedQueue<PspGeList>();
         listIdAllocator = 0;
@@ -99,15 +98,15 @@ public class pspge {
 
         // Process deferred callbacks
         // TODO if these callbacks block GE we have more work to do...
-        if (DEFER_CALLBACKS && !threadMan.isInsideCallback()) {
-            DeferredCallbackInfo info = deferredFinishCallbackQueue.poll();
-            if (info != null) {
-                triggerCallback(info.cbid, info.callbackNotifyArg1, SceKernelThreadInfo.THREAD_CALLBACK_GE_FINISH, finishCallbacks);
+        if (DEFER_CALLBACKS) {
+            DeferredCallbackInfo info;
+
+            while ((info = deferredFinishCallbackQueue.poll()) != null) {
+                Managers.callbacks.hleKernelNotifyCallbackCommon(info.cbid, info.arg1, info.arg2, true);
             }
 
-            info = deferredSignalCallbackQueue.poll();
-            if (info != null) {
-                triggerCallback(info.cbid, info.callbackNotifyArg1, SceKernelThreadInfo.THREAD_CALLBACK_GE_SIGNAL, signalCallbacks);
+            while ((info = deferredSignalCallbackQueue.poll()) != null) {
+                Managers.callbacks.hleKernelNotifyCallbackCommon(info.cbid, info.arg1, info.arg2, true);
             }
         }
 
@@ -125,16 +124,19 @@ public class pspge {
         Emulator.getProcessor().cpu.gpr[2] = MemoryMap.START_VRAM;
     }
 
-    public void sceGeListEnQueue(int list_addr, int stall_addr, int cbid, int arg_addr) {
+    public void sceGeListEnQueue(int list_addr, int stall_addr, int cbid, int option_addr) {
         VideoEngine.log.debug("sceGeListEnQueue(list=0x" + Integer.toHexString(list_addr)
             + ",stall=0x" + Integer.toHexString(stall_addr)
             + ",cbid=0x" + Integer.toHexString(cbid)
-            + ",arg=0x" + Integer.toHexString(arg_addr) + ") result id " + listIdAllocator);
+            + ",option=0x" + Integer.toHexString(option_addr) + ") result id " + listIdAllocator);
 
-        PspGeList list = new PspGeList(list_addr, stall_addr, cbid, arg_addr);
+        PspGeList list = new PspGeList(list_addr, stall_addr, cbid, option_addr);
         list.id = listIdAllocator++;
         listQueue.add(list);
 
+        // 0x80000023 ?
+        // 0x80000103 option_addr[1] not a valid address (NULL is special case and is allowed)
+        // 0x80000104 option_addr[0] not within range [0, 15]
         Emulator.getProcessor().cpu.gpr[2] = list.id;
     }
 
@@ -356,88 +358,103 @@ public class pspge {
     	Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
+    /**
+     * arg1 = lower 16-bits of GE command argument
+     * arg2 = user data from PspGeCallbackData struct
+     * arg3 = user data from sceGeListEnQueue
+     */
     public void sceGeSetCallback(int cbdata_addr) {
         pspGeCallbackData cbdata = new pspGeCallbackData();
         cbdata.read(Emulator.getMemory(), cbdata_addr);
-        int cbid = SceUidManager.getNewUid("pspge-callback");
+
+        cbdata.uid = SceUidManager.getNewUid("pspge-callback");
         Modules.log.debug("sceGeSetCallback signalFunc=0x" + Integer.toHexString(cbdata.signalFunction)
                               + ", signalArg=0x" + Integer.toHexString(cbdata.signalArgument)
                               + ", finishFunc=0x" + Integer.toHexString(cbdata.finishFunction)
                               + ", finishArg=0x" + Integer.toHexString(cbdata.finishArgument)
-                              + ", result cbid=" + Integer.toHexString(cbid));
+                              + ", result uid=" + Integer.toHexString(cbdata.uid));
 
-        // HACK using kernel callback mechanism to trigger the ge callback
-        // could be a bad idea since $a2 will get clobbered. ge callback has 2
-        // args, kernel callback has 3. setting the 3rd arg to 0x12121212 so we
-        // can detect errors caused by this more easily.
+        // I checked and arg3 is 0, but I expect this to crash, just need to find the game so we can fix it (fiveofhearts)
+        SceKernelCallbackInfo callbackSignal = Managers.callbacks.hleKernelCreateCallback("GeCallbackSignal", cbdata.signalFunction, 0);
+        SceKernelCallbackInfo callbackFinish = Managers.callbacks.hleKernelCreateCallback("GeCallbackFinish", cbdata.finishFunction, 0);
+        cbdata.signalId = callbackSignal.uid;
+        cbdata.finishId = callbackFinish.uid;
 
-        // update: restored use of 3rd arg, needs fixing properly, or
-        // checking on real psp (since it's possible pspsdk is wrong).
+        callbackDataMap.put(cbdata.uid, cbdata);
 
-        ThreadMan threadMan = ThreadMan.getInstance();
-        SceKernelCallbackInfo callbackSignal = threadMan.hleKernelCreateCallback("GeCallbackSignal", cbdata.signalFunction, cbdata.signalArgument);
-        SceKernelCallbackInfo callbackFinish = threadMan.hleKernelCreateCallback("GeCallbackFinish", cbdata.finishFunction, cbdata.finishArgument);
-        signalCallbacks.put(cbid, callbackSignal);
-        finishCallbacks.put(cbid, callbackFinish);
-        threadMan.setCallback(SceKernelThreadInfo.THREAD_CALLBACK_GE_SIGNAL, callbackSignal.uid);
-        threadMan.setCallback(SceKernelThreadInfo.THREAD_CALLBACK_GE_FINISH, callbackFinish.uid);
-
-        Emulator.getProcessor().cpu.gpr[2] = cbid;
+        Emulator.getProcessor().cpu.gpr[2] = cbdata.uid;
     }
 
-    public void sceGeUnsetCallback(int cbid) {
-        Modules.log.debug("sceGeUnsetCallback cbid=" + Integer.toHexString(cbid));
-        ThreadMan threadMan = ThreadMan.getInstance();
-        SceKernelCallbackInfo callbackSignal = signalCallbacks.remove(cbid);
-        SceKernelCallbackInfo callbackFinish = finishCallbacks.remove(cbid);
-        if (callbackSignal != null) {
-            threadMan.clearCallback(SceKernelThreadInfo.THREAD_CALLBACK_GE_SIGNAL, callbackSignal.uid);
-            threadMan.hleKernelDeleteCallback(callbackSignal.uid);
+    public void sceGeUnsetCallback(int uid) {
+        Modules.log.debug("sceGeUnsetCallback uid=" + Integer.toHexString(uid));
+
+        pspGeCallbackData cbdata = callbackDataMap.remove(uid);
+        if (cbdata == null) {
+            Modules.log.warn("sceGeUnsetCallback unknown uid=" + Integer.toHexString(uid));
+            Emulator.getProcessor().cpu.gpr[2] = -1;
+        } else {
+            Managers.callbacks.hleKernelDeleteCallback(cbdata.signalId);
+            Managers.callbacks.hleKernelDeleteCallback(cbdata.finishId);
+            Emulator.getProcessor().cpu.gpr[2] = 0;
         }
-        if (callbackFinish != null) {
-            threadMan.clearCallback(SceKernelThreadInfo.THREAD_CALLBACK_GE_FINISH, callbackFinish.uid);
-            threadMan.hleKernelDeleteCallback(callbackFinish.uid);
-        }
-        Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
-    private void triggerCallback(int cbid, int callbackNotifyArg1, int callbackIndex, HashMap<Integer, SceKernelCallbackInfo> callbacks) {
-        SceKernelCallbackInfo callback = callbacks.get(cbid);
-        if (callback != null) {
+    /** safe to call from outside the main emulation thread if DEFER_CALLBACKS is true */
+    public void triggerSignalCallback(int uid, int arg1) {
+        // I played around with the signal command for a while but couldn't get it to do anything other than freeze my psp (fiveofhearts)
+        Modules.log.warn("UNTESTED: GE \"signal\" callback");
+
+        pspGeCallbackData cbdata = callbackDataMap.get(uid);
+        if (cbdata == null) {
+            Modules.log.warn("IGNORING:triggerSignalCallback unknown uid=" + Integer.toHexString(uid));
+        } else {
+            /*
             if (VideoEngine.log.isDebugEnabled()) {
-                VideoEngine.log.debug("Triggering callback " + callbackIndex + ", addr=0x" + Integer.toHexString(callback.callback_addr) + ", cbid=" + Integer.toHexString(cbid) + ", callback notify arg=0x" + Integer.toHexString(callbackNotifyArg1));
+                VideoEngine.log.debug("Triggering GE SIGNAL callback. uid=0x" + Integer.toHexString(uid)
+                    + ", cbid=0x" + Integer.toHexString(cbdata.signalId)
+                    + ", notifyArg=0x" + Integer.toHexString(notifyArg));
             }
-            ThreadMan threadMan = ThreadMan.getInstance();
+            */
 
-            // HACK push GE callback using Kernel callback code
-            threadMan.pushGeCallback(callbackIndex, callback.uid, callbackNotifyArg1, callback.callback_arg_addr);
+            if (DEFER_CALLBACKS) {
+                deferredFinishCallbackQueue.offer(new DeferredCallbackInfo(cbdata.signalId, arg1, cbdata.signalArgument));
+            } else {
+                Managers.callbacks.hleKernelNotifyCallbackCommon(cbdata.signalId, arg1, cbdata.signalArgument, true);
+            }
         }
     }
 
     /** safe to call from outside the main emulation thread if DEFER_CALLBACKS is true */
-    public void triggerFinishCallback(int cbid, int callbackNotifyArg1) {
-        if (DEFER_CALLBACKS)
-            deferredFinishCallbackQueue.offer(new DeferredCallbackInfo(cbid, callbackNotifyArg1));
-        else
-            triggerCallback(cbid, callbackNotifyArg1, SceKernelThreadInfo.THREAD_CALLBACK_GE_FINISH, finishCallbacks);
+    public void triggerFinishCallback(int uid, int arg1) {
+        pspGeCallbackData cbdata = callbackDataMap.get(uid);
+        if (cbdata == null) {
+            Modules.log.warn("IGNORING:triggerFinishCallback unknown uid=" + Integer.toHexString(uid));
+        } else {
+            /*
+            if (VideoEngine.log.isDebugEnabled()) {
+                VideoEngine.log.debug("Triggering GE FINISH callback. uid=0x" + Integer.toHexString(uid)
+                    + ", cbid=0x" + Integer.toHexString(cbdata.finishId)
+                    + ", notifyArg=0x" + Integer.toHexString(notifyArg));
+            }
+            */
 
-    }
-
-    /** safe to call from outside the main emulation thread if DEFER_CALLBACKS is true */
-    public void triggerSignalCallback(int cbid, int callbackNotifyArg1) {
-        if (DEFER_CALLBACKS)
-            deferredSignalCallbackQueue.offer(new DeferredCallbackInfo(cbid, callbackNotifyArg1));
-        else
-            triggerCallback(cbid, callbackNotifyArg1, SceKernelThreadInfo.THREAD_CALLBACK_GE_SIGNAL, signalCallbacks);
+            if (DEFER_CALLBACKS) {
+                deferredFinishCallbackQueue.offer(new DeferredCallbackInfo(cbdata.finishId, arg1, cbdata.finishArgument));
+            } else {
+                Managers.callbacks.hleKernelNotifyCallbackCommon(cbdata.finishId, arg1, cbdata.finishArgument, true);
+            }
+        }
     }
 
     class DeferredCallbackInfo {
         public final int cbid;
-        public final int callbackNotifyArg1;
+        public final int arg1;
+        public final int arg2;
 
-        public DeferredCallbackInfo(int cbid, int callbackNotifyArg1) {
+        public DeferredCallbackInfo(int cbid, int arg1, int arg2) {
             this.cbid = cbid;
-            this.callbackNotifyArg1 = callbackNotifyArg1;
+            this.arg1 = arg1;
+            this.arg2 = arg2;
         }
     }
 }
