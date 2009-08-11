@@ -1,0 +1,5373 @@
+field
+{
+    rs:5; rd:5; rt:5; sa:5; lsb:5; msb:5;
+
+    fs:5; fd:5; ft:5; fcond:4;
+
+    vs:7; vt:7; vd:7; vcond:4; vt1:1; vt2:2; vt5:5;
+
+    vs_m:3; vs_c:2; vs_r:2; vs_x:1; vs_o:1;
+    vt_m:3; vt_c:2; vt_r:2; vt_x:1; vt_o:1;
+    vd_m:3; vd_c:2; vd_r:2; vd_x:1; vd_o:1;
+
+    one:1; two:1;
+
+    imm3:3; imm5:5; imm7:7; imm8:8; imm14:14; imm16:16; imm20:20; imm26:26;
+
+    negw:1; negz:1; negy:1; negx:1;
+    cstw:1; cstz:1; csty:1; cstx:1;
+    absw:1; absz:1; absy:1; absx:1;
+    swzw:2; swzz:2; swzy:2; swzx:2;
+    mskw:1; mskz:1; msky:1; mskx:1;
+    satw:2; satz:2; saty:2; satx:2;
+
+    wb:1;
+
+    c0dr:5; c0cr:5;
+    c1dr:5; c1cr:5;
+}
+
+var {}
+
+group root
+{
+    group MISC
+    {
+        op NOP(00000000000000000000000000000000)
+        {
+            name=`NOP`
+
+            category=`MIPS I`
+
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return "nop";`
+        }
+
+        op ICACHE_INDEX_INVALIDATE(101111:rs:00100:imm16)
+        {
+            name=`CACHE 0x04`
+
+            category=`ALLEGREX`
+
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x04, (int)(short)imm16, rs);`
+        }
+
+        op ICACHE_INDEX_UNLOCK(101111:rs:00110:imm16)
+        {
+            name=`CACHE 0x06`
+
+            category=`ALLEGREX`
+
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x06, (int)(short)imm16, rs);`
+        }
+
+        op ICACHE_HIT_INVALIDATE(101111:rs:01000:imm16)
+        {
+            name=`CACHE 0x08`
+
+            category=`ALLEGREX`
+
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x08, (int)(short)imm16, rs);`
+        }
+
+        op ICACHE_FILL(101111:rs:01010:imm16)
+        {
+            name=`CACHE 0x0A`
+
+            category=`ALLEGREX`
+
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x0A, (int)(short)imm16, rs);`
+        }
+
+        op ICACHE_FILL_WITH_LOCK(101111:rs:01011:imm16)
+        {
+            name=`CACHE 0x0B`
+
+            category=`ALLEGREX`
+
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x0B, (int)(short)imm16, rs);`
+        }
+
+        op DCACHE_INDEX_WRITEBACK_INVALIDATE(101111:rs:10100:imm16)
+        {
+            name=`CACHE 0x14`
+
+            category=`ALLEGREX`
+
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x14, (int)(short)imm16, rs);`
+        }
+
+        op DCACHE_INDEX_UNLOCK(101111:rs:10110:imm16)
+        {
+            name=`CACHE 0x16`
+
+            category=`ALLEGREX`
+
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x16, (int)(short)imm16, rs);`
+        }
+
+        op DCACHE_CREATE_DIRTY_EXCLUSIVE(101111:rs:11000:imm16)
+        {
+            name=`CACHE 0x18`
+
+            category=`ALLEGREX`
+
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x18, (int)(short)imm16, rs);`
+        }
+
+        op DCACHE_HIT_INVALIDATE(101111:rs:11001:imm16)
+        {
+            name=`CACHE 0x19`
+
+            category=`ALLEGREX`
+
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x19, (int)(short)imm16, rs);`
+        }
+
+        op DCACHE_HIT_WRITEBACK(101111:rs:11010:imm16)
+        {
+            name=`CACHE 0x1A`
+
+            category=`ALLEGREX`
+
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x1A, (int)(short)imm16, rs);`
+        }
+
+        op DCACHE_HIT_WRITEBACK_INVALIDATE(101111:rs:11011:imm16)
+        {
+            name=`CACHE 0x1B`
+
+            category=`ALLEGREX`
+
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x1B, (int)(short)imm16, rs);`
+        }
+
+        op DCACHE_CREATE_DIRTY_EXCLUSIVE_WITH_LOCK(101111:rs:11100:imm16)
+        {
+            name=`CACHE 0x1C`
+
+            category=`ALLEGREX`
+
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x1C, (int)(short)imm16, rs);`
+        }
+
+        op DCACHE_FILL(101111:rs:11110:imm16)
+        {
+            name=`CACHE 0x1E`
+
+            category=`ALLEGREX`
+
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x1E, (int)(short)imm16, rs);`
+        }
+
+        op DCACHE_FILL_WITH_LOCK(101111:rs:11111:imm16)
+        {
+            name=`CACHE 0x1F`
+
+            category=`ALLEGREX`
+
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return Common.disasmCODEIMMRS("cache", 0x1F, (int)(short)imm16, rs);`
+        }
+
+        op SYSCALL(000000:imm20:001100)
+        {
+            name=`SYSCALL`
+
+            category=`MIPS I`
+
+            interpret = `
+                SyscallHandler.syscall(imm20);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmSYSCALL(imm20);`
+        }
+
+        op ERET(010000:10000:00000:00000:00000:011000)
+        {
+            name=`ERET`
+
+            category=`MIPS III`
+
+            interpret = ``
+
+            compile = ``
+
+            disasm = `return "eret";`
+        }
+
+        op BREAK(000000:imm20:001101)
+        {
+            name=`BREAK`
+
+            category=`MIPS I`
+
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmBREAK(imm20);`
+        }
+
+        op SYNC(00000000000000000000000000001111)
+        {
+            name=`SYNC`
+
+            category=`ALLEGREX`
+
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "sync";`
+        }
+
+        op HALT(011100:00000:00000:00000:00000:000000)
+        {
+            name=`HALT`
+
+            category=`ALLEGREX`
+
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "halt";`
+        }
+
+        op MFIC(011100:rt:00000:00000:00000:100100)
+        {
+            name=`MFIC`
+
+            category=`ALLEGREX`
+
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRT("mfic", rt);`
+        }
+
+        op MTIC(011100:rt:00000:00000:00000:100110)
+        {
+            name=`MTIC`
+
+            category=`ALLEGREX`
+
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRT("mtic", rt);`
+        }
+    }
+
+    group ALU
+    {
+        op ADD(000000:rs:rt:rd:00000:100000)
+        {
+            name=`ADD`
+
+            category=`MIPS I`
+
+            interpret = `
+                // just ignore overflow exception as it is useless
+                processor.cpu.doADDU(rd, rs, rt);
+            `
+
+            compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, processor.gpr[rs] + processor.gpr[rt]);
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = (" +
+                        processor.get_gpr(rs) +
+                        " + " +
+                        processor.get_gpr(rt) +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRDRSRT("add", rd, rs, rt);`
+        }
+
+        op ADDU(000000:rs:rt:rd:00000:100001)
+        {
+            name=`ADDU`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doADDU(rd, rs, rt);
+            `
+
+            compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, processor.gpr[rs] + processor.gpr[rt]);
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = (" +
+                        processor.get_gpr(rs) +
+                        " + " +
+                        processor.get_gpr(rt) +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRDRSRT("addu", rd, rs, rt);`
+        }
+
+        op ADDI(001000:rs:rt:imm16)
+        {
+            name=`ADDI`
+
+            category=`MIPS I`
+
+            interpret = `
+                // just ignore overflow exception as it is useless
+                processor.cpu.doADDIU(rt, rs, (int)(short)imm16);
+            `
+
+            compile = `
+                if (rt == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rs].fixed) {
+                    processor.fix_gpr(rt, processor.gpr[rs] + (int)(short)imm16);
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.alter_gpr(rt);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rt) +
+                        " = (" +
+                        processor.get_gpr(rs) +
+                        " + (" +
+                        (int)(short)imm16 +
+                        "));"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRTRSIMM("addi", rt, rs, (int)(short)imm16);`
+        }
+
+        op ADDIU(001001:rs:rt:imm16)
+        {
+            name=`ADDIU`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doADDIU(rt, rs, (int)(short)imm16);
+            `
+
+            compile = `
+                if (rt == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rs].fixed) {
+                    processor.fix_gpr(rt, processor.gpr[rs] + (int)(short)imm16);
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.alter_gpr(rt);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rt) +
+                        " = (" +
+                        processor.get_gpr(rs) +
+                        " + (" +
+                        (int)(short)imm16 +
+                        "));"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRTRSIMM("addiu", rt, rs, (int)(short)imm16);`
+        }
+
+        op AND(000000:rs:rt:rd:00000:100100)
+        {
+            name=`AND`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doAND(rd, rs, rt);
+            `
+
+            compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, processor.gpr[rs] & processor.gpr[rt]);
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = (" +
+                        processor.get_gpr(rs) +
+                        " & " +
+                        processor.get_gpr(rt) +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRDRSRT("and", rd, rs, rt);`
+        }
+
+        op ANDI(001100:rs:rt:imm16)
+        {
+            name=`ANDI`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doANDI(rt, rs, imm16);
+            `
+
+            compile = `
+                if (rt == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rs].fixed) {
+                    processor.fix_gpr(rt, processor.gpr[rs] & imm16);
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.alter_gpr(rt);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rt) +
+                        " = (" +
+                        processor.get_gpr(rs) +
+                        " & (" +
+                        Processor.zeroExtend(imm16) +
+                        "));"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRTRSIMM("andi", rt, rs, imm16);`
+        }
+
+        op NOR(000000:rs:rt:rd:00000:100111)
+        {
+            name=`NOR`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doNOR(rd, rs, rt);
+            `
+
+            compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, ~(processor.gpr[rs] | processor.gpr[rt]));
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = ~(" +
+                        processor.get_gpr(rs) +
+                        " | " +
+                        processor.get_gpr(rt) +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRDRSRT("nor", rd, rs, rt);`
+        }
+
+        op OR(000000:rs:rt:rd:00000:100101)
+        {
+            name=`OR`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doOR(rd, rs, rt);
+            `
+
+            compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, processor.gpr[rs] | processor.gpr[rt]);
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = (" +
+                        processor.get_gpr(rs) +
+                        " | " +
+                        processor.get_gpr(rt) +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRDRSRT("or", rd, rs, rt);`
+        }
+
+        op ORI(001101:rs:rt:imm16)
+        {
+            name=`ORI`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doORI(rt, rs, imm16);
+            `
+
+            compile = `
+                if (rt == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rs].fixed) {
+                    processor.fix_gpr(rt, processor.gpr[rs] | imm16);
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.alter_gpr(rt);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rt) +
+                        " = (" +
+                        processor.get_gpr(rs) +
+                        " | (" +
+                        Processor.zeroExtend(imm16) +
+                        "));"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRTRSIMM("ori", rt, rs, imm16);`
+        }
+
+        op XOR(000000:rs:rt:rd:00000:100110)
+        {
+            name=`XOR`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doXOR(rd, rs, rt);
+            `
+
+            compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, processor.gpr[rs] ^ processor.gpr[rt]);
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = (" +
+                        processor.get_gpr(rs) +
+                        " ^ " +
+                        processor.get_gpr(rt) +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRDRSRT("xor", rd, rs, rt);`
+        }
+
+        op XORI(001110:rs:rt:imm16)
+        {
+            name=`XORI`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doXORI(rt, rs, imm16);
+            `
+
+            compile = `
+                if (rt == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rs].fixed) {
+                    processor.fix_gpr(rt, processor.gpr[rs] ^ imm16);
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.alter_gpr(rt);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rt) +
+                        " = (" +
+                        processor.get_gpr(rs) +
+                        " ^ (" +
+                        Processor.zeroExtend(imm16) +
+                        "));"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRTRSIMM("xori", rt, rs, imm16);`
+        }
+
+        op SLL(000000:00000:rt:rd:sa:000000)
+        {
+            name=`SLL`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doSLL(rd, rt, sa);
+            `
+
+            compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, (processor.gpr[rt] << sa));
+                } else {
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = (" +
+                        processor.get_gpr(rt) +
+                        " << " +
+                        sa +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRDRTSA("sll", rd, rt, sa);`
+        }
+
+        op SLLV(000000:rs:rt:rd:00000:000100)
+        {
+            name=`SLLV`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doSLLV(rd, rt, rs);
+            `
+
+            compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, processor.gpr[rt] << (processor.gpr[rs]&31));
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = (" +
+                        processor.get_gpr(rs) +
+                        " << (" +
+                        processor.get_gpr(rt) +
+                        "&31));"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRDRTRS("sllv", rd, rt, rs);`
+        }
+
+        op SRA(000000:00000:rt:rd:sa:000011)
+        {
+            name=`SRA`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doSRA(rd, rt, sa);
+            `
+
+            compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, (processor.gpr[rt] >> sa));
+                } else {
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = (" +
+                        processor.get_gpr(rt) +
+                        " >> " +
+                        sa +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRDRTSA("sra", rd, rt, sa);`
+        }
+
+        op SRAV(000000:rs:rt:rd:00000:000111)
+        {
+            name=`SRAV`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doSRAV(rd, rt, rs);
+            `
+
+            compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, processor.gpr[rt] >> (processor.gpr[rs]&31));
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = (" +
+                        processor.get_gpr(rt) +
+                        " >> (" +
+                        processor.get_gpr(rs) +
+                        "&31));"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRDRTRS("srav", rd, rt, rs);`
+        }
+
+        op SRL(000000:00000:rt:rd:sa:000010)
+        {
+            name=`SRL`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doSRL(rd, rt, sa);
+            `
+
+            compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, (processor.gpr[rt] >>> sa));
+                } else {
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = (" +
+                        processor.get_gpr(rt) +
+                        " >>> " +
+                        sa +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRDRTSA("srl", rd, rt, sa);`
+        }
+
+        op SRLV(000000:rs:rt:rd:00000:000110)
+        {
+            name=`SRLV`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doSRLV(rd, rt, rs);
+            `
+
+            compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, processor.gpr[rt] >>> (processor.gpr[rs]&31));
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = (" +
+                        processor.get_gpr(rt) +
+                        " >>> (" +
+                        processor.get_gpr(rs) +
+                        "&31));"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRDRTRS("srlv", rd, rt, rs);`
+        }
+
+        op ROTR(000000:00001:rt:rd:sa:000010)
+        {
+            name=`ROTR`
+
+            category=`ALLEGREX`
+
+            interpret = `
+                processor.cpu.doROTR(rd, rt, sa);
+            `
+
+            compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, Integer.rotateRight(processor.gpr[rt], sa));
+                } else {
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = Integer.rotateRight(" +
+                        processor.get_gpr(rt) +
+                        ", " +
+                        sa +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRDRTSA("rotr", rd, rt, sa);`
+        }
+
+        op ROTRV(000000:rs:rt:rd:00001:000110)
+        {
+            name=`ROTRV`
+
+            category=`ALLEGREX`
+
+            interpret = `
+                processor.cpu.doROTRV(rd, rt, rs);
+            `
+
+            compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, Integer.rotateRight(processor.gpr[rt], processor.gpr[rs]));
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = Integer.rotateRight(" +
+                        processor.get_gpr(rt) +
+                        ", " +
+                        processor.get_gpr(rs) +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRDRTRS("rotrv", rd, rt, rs);`
+        }
+
+        op SLT(000000:rs:rt:rd:00000:101010)
+        {
+            name=`SLT`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doSLT(rd, rs, rt);
+            `
+
+            compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, Processor.signedCompare(processor.gpr[rs], processor.gpr[rt]));
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = Processor.signedCompare(" +
+                        processor.get_gpr(rs) +
+                        ", " +
+                        processor.get_gpr(rt) +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRDRSRT("slt", rd, rs, rt);`
+        }
+
+        op SLTI(001010:rs:rt:imm16)
+        {
+            name=`SLTI`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doSLTI(rt, rs, (int)(short)imm16);
+            `
+
+            compile = `
+                if (rt == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rs].fixed) {
+                    processor.fix_gpr(rt, Processor.signedCompare(processor.gpr[rs], (int)(short)imm16));
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.alter_gpr(rt);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rt) +
+                        " = Processor.signedCompare(" +
+                        processor.get_gpr(rs) +
+                        ", " +
+                        (int)(short)imm16 +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRTRSIMM("slti", rt, rs, (int)(short)imm16);`
+        }
+
+        op SLTU(000000:rs:rt:rd:00000:101011)
+        {
+            name=`SLTU`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doSLTU(rd, rs, rt);
+            `
+
+            compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, Processor.unsignedCompare(processor.gpr[rt], processor.gpr[rs]));
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = Processor.unsignedCompare(" +
+                        processor.get_gpr(rs) +
+                        ", " +
+                        processor.get_gpr(rt) +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRDRSRT("sltu", rd, rs, rt);`
+        }
+
+        op SLTIU(001011:rs:rt:imm16)
+        {
+            name=`SLTIU`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doSLTIU(rt, rs, (int)(short)imm16);
+            `
+
+            compile = `
+                if (rt == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rs].fixed) {
+                    processor.fix_gpr(rt, Processor.unsignedCompare(processor.gpr[rs], (int)(short)imm16));
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.alter_gpr(rt);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rt) +
+                        " = Processor.unsignedCompare(" +
+                        processor.get_gpr(rs) +
+                        ", " +
+                        (int)(short)imm16 +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRTRSIMM("sltiu", rt, rs, (int)(short)imm16);`
+        }
+
+        op SUB(000000:rs:rt:rd:00000:100010)
+        {
+            name=`SUB`
+
+            category=`MIPS I`
+
+            interpret = `
+                // just ignore overflow exception as it is useless
+                processor.cpu.doSUBU(rd, rs, rt);
+            `
+
+            compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, processor.gpr[rs] - processor.gpr[rt]);
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = (" +
+                        processor.get_gpr(rs) +
+                        " - " +
+                        processor.get_gpr(rt) +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRDRSRT("sub", rd, rs, rt);`
+        }
+
+        op SUBU(000000:rs:rt:rd:00000:100011)
+        {
+            name=`SUBU`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doSUBU(rd, rs, rt);
+            `
+
+            compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, processor.gpr[rs] - processor.gpr[rt]);
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = (" +
+                        processor.get_gpr(rs) +
+                        " - " +
+                        processor.get_gpr(rt) +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRDRSRT("subu", rd, rs, rt);`
+        }
+
+        op LUI(001111:00000:rt:imm16)
+        {
+            name=`LUI`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doLUI(rt, imm16);
+            `
+
+            compile = `
+                if (rt == 0) {
+                    return;
+                }
+                processor.fix_gpr(rt, (imm16 << 16));
+            `
+
+            disasm = `return Common.disasmRTIMM("lui", rt, imm16);`
+        }
+
+        op SEB(011111:00000:rt:rd:10000:100001)
+        {
+            name=`SEB`
+
+            category=`ALLEGREX`
+
+            interpret = `
+                processor.cpu.doSEB(rd, rt);
+            `
+
+            compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, Processor.signExtend8(processor.gpr[rt]));
+                } else {
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = Processor.signExtend8(" +
+                        processor.get_gpr(rt) +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRDRT("seb", rd, rt);`
+        }
+
+        op SEH(011111:00000:rt:rd:11000:100000)
+        {
+            name=`SEH`
+
+            category=`ALLEGREX`
+
+            interpret = `
+                processor.cpu.doSEH(rd, rt);
+            `
+
+            compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, Processor.signExtend(processor.gpr[rt]));
+                } else {
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = Processor.signExtend(" +
+                        processor.get_gpr(rt) +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRDRT("seh", rd, rt);`
+        }
+
+        op BITREV(011111:00000:rt:rd:10100:100000)
+        {
+            name=`BITREV`
+
+            category=`ALLEGREX`
+
+            interpret = `
+                processor.cpu.doBITREV(rd, rt);
+            `
+
+            compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, Integer.reverse(processor.gpr[rt]));
+                } else {
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = Integer.reverse(" +
+                        processor.get_gpr(rt) +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRDRT("bitrev", rd, rt);`
+        }
+
+        op WSBH(011111:00000:rt:rd:00010:100000)
+        {
+            name=`WSBH`
+
+            category=`ALLEGREX`
+
+            interpret = `
+                processor.cpu.doWSBH(rd, rt);
+            `
+
+            compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, Integer.rotateRight(Integer.reverseBytes(processor.gpr[rt]), 16));
+                } else {
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = Integer.rotateRight(Integer.reverseBytes(" +
+                        processor.get_gpr(rt) +
+                        "), 16);"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRDRT("wsbh", rd, rt);`
+        }
+
+        op WSBW(011111:00000:rt:rd:00011:100000)
+        {
+            name=`WSBW`
+
+            category=`ALLEGREX`
+
+            interpret = `
+                processor.cpu.doWSBW(rd, rt);
+            `
+
+            compile = `
+                if (rd == 0) {
+                    return;
+                }
+                if (processor.tracked_gpr[rt].fixed) {
+                    processor.fix_gpr(rd, Integer.reverseBytes(processor.gpr[rt]));
+                } else {
+                    processor.load_gpr(rt, false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = Integer.reverseBytes(" +
+                        processor.get_gpr(rt) +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRDRT("wsbw", rd, rt);`
+        }
+
+        op MOVZ(000000:rs:rt:rd:00000:001010)
+        {
+            name=`MOVZ`
+
+            category=`ALLEGREX`
+
+            interpret = `
+                processor.cpu.doMOVZ(rd, rs, rt);
+            `
+
+            compile = `
+                if (rd != 0) {
+                    if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                        if (processor.gpr[rt] == 0) {
+                            processor.fix_gpr(rd, processor.gpr[rs]);
+                        }
+                    } else {
+                        processor.load_gpr(rs, false);
+                        processor.load_gpr(rt, false);
+                        processor.alter_gpr(rd);
+                        processor.current_bb.emit(
+                            "if (" +
+                            processor.get_gpr(rt) +
+                            " == 0) {\n" +
+                            processor.get_gpr(rd) +
+                            " = " +
+                            processor.get_gpr(rs) +
+                            ";}\n"
+                        );
+                    }
+                }
+            `
+
+            disasm = `return Common.disasmRDRSRT("movz", rd, rs, rt);`
+        }
+
+        op MOVN(000000:rs:rt:rd:00000:001011)
+        {
+            name=`MOVN`
+
+            category=`ALLEGREX`
+
+            interpret = `
+                processor.cpu.doMOVN(rd, rs, rt);
+            `
+
+            compile = `
+                if (rd != 0) {
+                    if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                        if (processor.gpr[rt] != 0) {
+                            processor.fix_gpr(rd, processor.gpr[rs]);
+                        }
+                    } else {
+                        processor.load_gpr(rs, false);
+                        processor.load_gpr(rt, false);
+                        processor.alter_gpr(rd);
+                        processor.current_bb.emit(
+                            "if (" +
+                            processor.get_gpr(rt) +
+                            " != 0) {\n" +
+                            processor.get_gpr(rd) +
+                            " = " +
+                            processor.get_gpr(rs) +
+                            ";}\n"
+                        );
+                    }
+                }
+            `
+
+            disasm = `return Common.disasmRDRSRT("movn", rd, rs, rt);`
+        }
+
+        op MAX(000000:rs:rt:rd:00000:101100)
+        {
+            name=`MAX`
+
+            category=`ALLEGREX`
+
+            interpret = `
+                processor.cpu.doMAX(rd, rs, rt);
+            `
+
+            compile = `
+                if (rd != 0) {
+                    if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                        processor.fix_gpr(rd, Processor.max(processor.gpr[rs], processor.gpr[rt]));
+                    } else {
+                        processor.load_gpr(rs, false);
+                        processor.load_gpr(rt, false);
+                        processor.alter_gpr(rd);
+                        processor.current_bb.emit(
+                            processor.get_gpr(rd) +
+                            " = Processor.max(" +
+                            processor.get_gpr(rs) +
+                            ", " +
+                            processor.get_gpr(rt) +
+                            "));"
+                        );
+                    }
+                }
+            `
+
+            disasm = `return Common.disasmRDRSRT("max", rd, rs, rt);`
+        }
+
+        op MIN(000000:rs:rt:rd:00000:101101)
+        {
+            name=`MIN`
+
+            category=`ALLEGREX`
+
+            interpret = `
+                processor.cpu.doMIN(rd, rs, rt);
+            `
+
+            compile = `
+                if (rd != 0) {
+                    if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                        processor.fix_gpr(rd, Processor.min(processor.gpr[rs], processor.gpr[rt]));
+                    } else {
+                        processor.load_gpr(rs, false);
+                        processor.load_gpr(rt, false);
+                        processor.alter_gpr(rd);
+                        processor.current_bb.emit(
+                            processor.get_gpr(rd) +
+                            " = Processor.min(" +
+                            processor.get_gpr(rs) +
+                            ", " +
+                            processor.get_gpr(rt) +
+                            "));"
+                        );
+                    }
+                }
+            `
+
+            disasm = `return Common.disasmRDRSRT("min", rd, rs, rt);`
+        }
+
+        op CLZ(000000:rs:00000:rd:00000:010110)
+        {
+            name=`CLZ`
+
+            category=`ALLEGREX`
+
+            interpret = `
+                processor.cpu.doCLZ(rd, rs);
+            `
+
+            compile = `
+                if (rd != 0) {
+                    if (processor.tracked_gpr[rs].fixed) {
+                        processor.fix_gpr(rd, Integer.numberOfLeadingZeros(processor.gpr[rs]));
+                    } else {
+                        processor.load_gpr(rs, false);
+                        processor.alter_gpr(rd);
+                        processor.current_bb.emit(
+                            processor.get_gpr(rd) +
+                            " = Integer.numberOfLeadingZeros(" +
+                            processor.get_gpr(rs) +
+                            ");"
+                        );
+                    }
+                }
+            `
+
+            disasm = `return Common.disasmRDRS("clz", rd, rs);`
+        }
+
+        op CLO(000000:rs:00000:rd:00000:010111)
+        {
+            name=`CLO`
+
+            category=`ALLEGREX`
+
+            interpret = `
+                processor.cpu.doCLO(rd, rs);
+            `
+
+            compile = `
+                if (rd != 0) {
+                    if (processor.tracked_gpr[rs].fixed) {
+                        processor.fix_gpr(rd, Integer.numberOfLeadingZeros(~processor.gpr[rs]));
+                    } else {
+                        processor.load_gpr(rs, false);
+                        processor.alter_gpr(rd);
+                        processor.current_bb.emit(
+                            processor.get_gpr(rd) +
+                            " = Integer.numberOfLeadingZeros(~" +
+                            processor.get_gpr(rs) +
+                            ");"
+                        );
+                    }
+                }
+            `
+
+            disasm = `return Common.disasmRDRS("clo", rd, rs);`
+        }
+
+        op EXT(011111:rs:rt:msb:lsb:000000)
+        {
+            name=`EXT`
+
+            category=`ALLEGREX`
+
+            interpret = `
+                processor.cpu.doEXT(rt, rs, lsb, msb);
+            `
+
+            compile = `
+                if (rt != 0) {
+                    if (processor.tracked_gpr[rs].fixed) {
+                        processor.fix_gpr(rt, Processor.extractBits(processor.gpr[rs], lsb, msb+1));
+                    } else {
+                        processor.load_gpr(rs, false);
+                        processor.alter_gpr(rt);
+                        processor.current_bb.emit(
+                            processor.get_gpr(rt) +
+                            " = Processor.extractBits(" +
+                            processor.get_gpr(rs) +
+                            ", " +
+                            lsb +
+                            ", " +
+                            (msb+1) +
+                            ");"
+                        );
+                    }
+                }
+            `
+
+            disasm = `return Common.disasmEXT(rt, rs, lsb, msb);`
+        }
+
+        op INS(011111:rs:rt:msb:lsb:000100)
+        {
+            name=`INS`
+
+            category=`ALLEGREX`
+
+            interpret = `
+                processor.cpu.doINS(rt, rs, lsb, msb);
+            `
+
+            compile = `
+                if (rt != 0) {
+                    if (processor.tracked_gpr[rs].fixed) {
+                        processor.fix_gpr(rt, Processor.insertBits(processor.gpr[rt], processor.gpr[rs], lsb, msb));
+                    } else {
+                        processor.load_gpr(rs, false);
+                        processor.load_gpr(rt, false);
+                        processor.alter_gpr(rt);
+                        processor.current_bb.emit(
+                            processor.get_gpr(rt) +
+                            " = Processor.insertBits(" +
+                            processor.get_gpr(rt) +
+                            ", " +
+                            processor.get_gpr(rs) +
+                            ", " +
+                            lsb +
+                            ", " +
+                            msb +
+                            ");"
+                        );
+                    }
+                }
+            `
+
+            disasm = `return Common.disasmINS(rt, rs, lsb, msb);`
+        }
+    }
+
+    group MDU
+    {
+        op MULT(000000:rs:rt:00000:00000:011000)
+        {
+            name=`MULT`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doMULT(rs, rt);
+            `
+
+            compile = `
+                processor.load_gpr(rs, false);
+                processor.load_gpr(rt, false);
+                processor.alter_hilo();
+                processor.current_bb.emit(
+                    processor.get_hilo() +
+                    " = ((long) " +
+                    processor.get_gpr(rs) +
+                    ") * ((long) " +
+                    processor.get_gpr(rt) +
+                    ");"
+                );
+            `
+
+            disasm = `return Common.disasmRSRT("mult", rs, rt);`
+        }
+
+        op MULTU(000000:rs:rt:00000:00000:011001)
+        {
+            name=`MULTU`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doMULTU(rs, rt);
+            `
+
+            compile = `
+                processor.load_gpr(rs, false);
+                processor.load_gpr(rt, false);
+                processor.alter_hilo();
+                processor.current_bb.emit(
+                    processor.get_hilo() +
+                    " = (((long) " +
+                    processor.get_gpr(rs) +
+                    ") & 0xffffffff) * (((long) " +
+                    processor.get_gpr(rt) +
+                    ") & 0xffffffff);"
+                );
+            `
+
+            disasm = `return Common.disasmRSRT("multu", rs, rt);`
+        }
+
+        op MADD(000000:rs:rt:00000:00000:011100)
+        {
+            name=`MADD`
+
+            category=`ALLEGREX`
+
+            interpret = `
+                processor.cpu.doMADD(rs, rt);
+            `
+
+            compile = `
+                processor.load_gpr(rs, false);
+                processor.load_gpr(rt, false);
+                processor.load_hilo(false);
+                processor.alter_hilo();
+                processor.current_bb.emit(
+                    processor.get_hilo() +
+                    " += ((long) " +
+                    processor.get_gpr(rs) +
+                    ") * ((long) " +
+                    processor.get_gpr(rt) +
+                    ");"
+                );
+            `
+
+            disasm = `return Common.disasmRSRT("madd", rs, rt);`
+        }
+
+        op MADDU(000000:rs:rt:00000:00000:011101)
+        {
+            name=`MADDU`
+
+            category=`ALLEGREX`
+
+            interpret = `
+                processor.cpu.doMADDU(rs, rt);
+            `
+
+            compile = `
+                processor.load_gpr(rs, false);
+                processor.load_gpr(rt, false);
+                processor.load_hilo(false);
+                processor.alter_hilo();
+                processor.current_bb.emit(
+                    processor.get_hilo() +
+                    " += (((long) " +
+                    processor.get_gpr(rs) +
+                    ") & 0xffffffff) * (((long) " +
+                    processor.get_gpr(rt) +
+                    ") & 0xffffffff);"
+                );
+            `
+
+            disasm = `return Common.disasmRSRT("maddu", rs, rt);`
+        }
+
+        op MSUB(000000:rs:rt:00000:00000:101110)
+        {
+            name=`MSUB`
+
+            category=`ALLEGREX`
+
+            interpret = `
+                processor.cpu.doMSUB(rs, rt);
+            `
+
+            compile = `
+                processor.load_gpr(rs, false);
+                processor.load_gpr(rt, false);
+                processor.load_hilo(false);
+                processor.alter_hilo();
+                processor.current_bb.emit(
+                    processor.get_hilo() +
+                    " += ((long) " +
+                    processor.get_gpr(rs) +
+                    ") * ((long) " +
+                    processor.get_gpr(rt) +
+                    ");"
+                );
+            `
+
+            disasm = `return Common.disasmRSRT("msub", rs, rt);`
+        }
+
+        op MSUBU(000000:rs:rt:00000:00000:101111)
+        {
+            name=`MSUB`
+
+            category=`ALLEGREX`
+
+            interpret = `
+                processor.cpu.doMSUBU(rs, rt);
+            `
+
+            compile = `
+                processor.load_gpr(rs, false);
+                processor.load_gpr(rt, false);
+                processor.load_hilo(false);
+                processor.alter_hilo();
+                processor.current_bb.emit(
+                    processor.get_hilo() +
+                    " -= (((long) " +
+                    processor.get_gpr(rs) +
+                    ") & 0xffffffff) * (((long) " +
+                    processor.get_gpr(rt) +
+                    ") & 0xffffffff);"
+                );
+            `
+
+            disasm = `return Common.disasmRSRT("msubu", rs, rt);`
+        }
+
+        op DIV(000000:rs:rt:00000:00000:011010)
+        {
+            name=`DIV`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doDIV(rs, rt);
+            `
+
+            compile = `
+                processor.load_gpr(rs, false);
+                processor.load_gpr(rt, false);
+                processor.alter_hilo();
+                processor.current_bb.emit(
+                    processor.get_hilo() +
+                    " = Processor.signedDivMod(" +
+                    processor.get_gpr(rs) +
+                    ", " +
+                    processor.get_gpr(rt) +
+                    ");"
+                );
+            `
+
+            disasm = `return Common.disasmRSRT("div", rs, rt);`
+        }
+
+        op DIVU(000000:rs:rt:00000:00000:011011)
+        {
+            name=`DIVU`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doDIVU(rs, rt);
+            `
+
+            compile = `
+                processor.load_gpr(rs, false);
+                processor.load_gpr(rt, false);
+                processor.alter_hilo();
+                processor.current_bb.emit(
+                    processor.get_hilo() +
+                    " = Processor.unsignedDivMod(((long) " +
+                    processor.get_gpr(rs) +
+                    ") & 0xffffffff, ((long) " +
+                    processor.get_gpr(rt) +
+                    ") & 0xffffffff);"
+                );
+            `
+
+            disasm = `return Common.disasmRSRT("divu", rs, rt);`
+        }
+
+        op MFHI(000000:00000:00000:rd:00000:010000)
+        {
+            name=`MFHI`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doMFHI(rd);
+            `
+
+            compile = `
+                if (rd != 0) {
+                    processor.load_hilo(false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = (int) (" +
+                        processor.get_hilo() +
+                        " >>> 32);"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRD("mfhi", rd);`
+        }
+
+        op MFLO(000000:00000:00000:rd:00000:010010)
+        {
+            name=`MFLO`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doMFLO(rd);
+            `
+
+            compile = `
+                if (rd != 0) {
+                    processor.load_hilo(false);
+                    processor.alter_gpr(rd);
+                    processor.current_bb.emit(
+                        processor.get_gpr(rd) +
+                        " = (int) (" +
+                        processor.get_hilo() +
+                        " & 0xffffffff);"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRD("mflo", rd);`
+        }
+
+        op MTHI(000000:rs:00000:00000:00000:010001)
+        {
+            name=`MTHI`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doMTHI(rs);
+            `
+
+            compile = `
+                processor.load_gpr(rs, false);
+                processor.alter_hilo();
+                processor.current_bb.emit(
+                    processor.get_hilo() +
+                    " = (" +
+                    processor.get_hilo() +
+                    " & 0xffffffff) | (((long) " +
+                    processor.get_gpr(rs) +
+                    " << 32);"
+                    );
+            `
+
+            disasm = `return Common.disasmRS("mthi", rs);`
+        }
+
+        op MTLO(000000:rs:00000:00000:00000:010011)
+        {
+            name=`MTLO`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doMTLO(rs);
+            `
+
+            compile = `
+                processor.load_gpr(rs, false);
+                processor.alter_hilo();
+                processor.current_bb.emit(
+                    processor.get_hilo() +
+                    " = ((" +
+                    processor.get_hilo() +
+                    " >>> 32) << 32) | (((long) " +
+                    processor.get_gpr(rs) +
+                    ") & 0xffffffff);"
+                    );
+            `
+
+            disasm = `return Common.disasmRS("mtlo", rs);`
+        }
+    }
+
+    group BCU
+    {
+        op BEQ(000100:rs:rt:imm16)
+        {
+            name=`BEQ`
+
+            category=`MIPS I`
+
+            interpret = `
+                if (processor.cpu.doBEQ(rs, rt, (int)(short)imm16))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+                boolean c = (processor.gpr[rs] == processor.gpr[rt]);
+                int target = Processor.branchTarget(processor.pc, (int)(short)imm16);
+                boolean loop = (target == processor.current_bb.getEntry());
+                if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                    if (c) {
+                        processor.current_bb.emit("processor.pc = 0x" + Integer.toHexString(target) + ";");
+                    } else {
+                        processor.current_bb.emit("processor.pc += 4;");
+                    }
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.load_gpr(rt, false);
+                    processor.current_bb.emit(
+                        "processor.pc = (" +
+                        processor.get_gpr(rs) +
+                        " == " +
+                        processor.get_gpr(rt) +
+                        ") ? 0x" +
+                        Integer.toHexString(target) +
+                        " : (processor.pc + 4);"
+                    );
+                }
+                processor.npc = c ? target : (processor.pc + 4);
+                processor.stepDelayslot();
+                processor.reset_register_tracking();
+                processor.current_bb.emit(loop ? "continue;\n" : "break;\n");
+                processor.current_bb.freeze();
+                processor.current_bb = null;
+            `
+
+            disasm = `return Common.disasmRSRTOFFSET("beq", rs, rt, (int)(short)imm16, address);`
+        }
+
+        op BEQL(010100:rs:rt:imm16)
+        {
+            name=`BEQL`
+
+            category=`MIPS II`
+
+            interpret = `
+                if (processor.cpu.doBEQL(rs, rt, (int)(short)imm16))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+                boolean c = (processor.gpr[rs] == processor.gpr[rt]);
+                int target = Processor.branchTarget(processor.pc, (int)(short)imm16);
+                boolean loop = (target == processor.current_bb.getEntry());
+                if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                    if (c) {
+                        processor.current_bb.emit("processor.pc = 0x" + Integer.toHexString(target) + ";");
+                    } else {
+                        processor.current_bb.emit("processor.pc += 4;");
+                    }
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.load_gpr(rt, false);
+                    processor.current_bb.emit(
+                        "processor.pc = (" +
+                        processor.get_gpr(rs) +
+                        " == " +
+                        processor.get_gpr(rt) +
+                        ") ? 0x" +
+                        Integer.toHexString(target) +
+                        " : (processor.pc + 4);"
+                    );
+                }
+                processor.npc = c ? target : (processor.pc + 4);
+                if (c) {
+                    processor.stepDelayslot();
+                }
+                processor.reset_register_tracking();
+                processor.current_bb.emit(loop ? "continue;\n" : "break;\n");
+                processor.current_bb.freeze();
+                processor.current_bb = null;
+            `
+
+            disasm = `return Common.disasmRSRTOFFSET("beql", rs, rt, (int)(short)imm16, address);`
+        }
+
+        op BGEZ(000001:rs:00001:imm16)
+        {
+            name=`BGEZ`
+
+            category=`MIPS I`
+
+            interpret = `
+                if (processor.cpu.doBGEZ(rs, (int)(short)imm16))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRSOFFSET("bgez", rs, (int)(short)imm16, address);`
+        }
+
+        op BGEZAL(000001:rs:10001:imm16)
+        {
+            name=`BGEZAL`
+
+            category=`MIPS I`
+
+            interpret = `
+                if (processor.cpu.doBGEZAL(rs, (int)(short)imm16))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRSOFFSET("bgezal", rs, (int)(short)imm16, address);`
+        }
+
+        op BGEZALL(000001:rs:10011:imm16)
+        {
+            name=`BGEZALL`
+
+            category=`MIPS II`
+
+            interpret = `
+                if (processor.cpu.doBGEZALL(rs, (int)(short)imm16))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRSOFFSET("bgezall", rs, (int)(short)imm16, address);`
+        }
+
+        op BGEZL(000001:rs:00011:imm16)
+        {
+            name=`BGEZL`
+
+            category=`MIPS II`
+
+            interpret = `
+                if (processor.cpu.doBGEZL(rs, (int)(short)imm16))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRSOFFSET("bgezl", rs, (int)(short)imm16, address);`
+        }
+
+        op BGTZ(000111:rs:00000:imm16)
+        {
+            name=`BGTZ`
+
+            category=`MIPS I`
+
+            interpret = `
+                if (processor.cpu.doBGTZ(rs, (int)(short)imm16))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRSOFFSET("bgtz", rs, (int)(short)imm16, address);`
+        }
+
+        op BGTZL(010111:rs:00000:imm16)
+        {
+            name=`BGTZL`
+
+            category=`MIPS II`
+
+            interpret = `
+                if (processor.cpu.doBGTZL(rs, (int)(short)imm16))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRSOFFSET("bgtzl", rs, (int)(short)imm16, address);`
+        }
+
+        op BLEZ(000110:rs:00000:imm16)
+        {
+            name=`BLEZ`
+
+            category=`MIPS I`
+
+            interpret = `
+                if (processor.cpu.doBLEZ(rs, (int)(short)imm16))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRSOFFSET("blez", rs, (int)(short)imm16, address);`
+        }
+
+        op BLEZL(010110:rs:00000:imm16)
+        {
+            name=`BLEZL`
+
+            category=`MIPS II`
+
+            interpret = `
+                if (processor.cpu.doBLEZL(rs, (int)(short)imm16))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRSOFFSET("blezl", rs, (int)(short)imm16, address);`
+        }
+
+        op BLTZ(000001:rs:00000:imm16)
+        {
+            name=`BLTZ`
+
+            category=`MIPS I`
+
+            interpret = `
+                if (processor.cpu.doBLTZ(rs, (int)(short)imm16))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRSOFFSET("bltz", rs, (int)(short)imm16, address);`
+        }
+
+        op BLTZAL(000001:rs:10000:imm16)
+        {
+            name=`BLTZAL`
+
+            category=`MIPS I`
+
+            interpret = `
+                if (processor.cpu.doBLTZAL(rs, (int)(short)imm16))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRSOFFSET("bltzal", rs, (int)(short)imm16, address);`
+        }
+
+        op BLTZALL(000001:rs:10010:imm16)
+        {
+            name=`BLTZALL`
+
+            category=`MIPS II`
+
+            interpret = `
+                if (processor.cpu.doBLTZALL(rs, (int)(short)imm16))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRSOFFSET("bltzall", rs, (int)(short)imm16, address);`
+        }
+
+        op BLTZL(000001:rs:00010:imm16)
+        {
+            name=`BLTZL`
+
+            category=`MIPS I`
+
+            interpret = `
+                if (processor.cpu.doBLTZL(rs, (int)(short)imm16))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRSOFFSET("bltzl", rs, (int)(short)imm16, address);`
+        }
+
+        op BNE(000101:rs:rt:imm16)
+        {
+            name=`BNE`
+
+            category=`MIPS I`
+
+            interpret = `
+                if (processor.cpu.doBNE(rs, rt, (int)(short)imm16))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+                boolean c = (processor.gpr[rs] != processor.gpr[rt]);
+                int target = Processor.branchTarget(processor.pc, (int)(short)imm16);
+                boolean loop = (target == processor.current_bb.getEntry());
+                if (processor.tracked_gpr[rs].fixed && processor.tracked_gpr[rt].fixed) {
+                    if (c) {
+                        processor.current_bb.emit("processor.pc = 0x" + Integer.toHexString(target) + ";");
+                    } else {
+                        processor.current_bb.emit("processor.pc += 4;");
+                    }
+                } else {
+                    processor.load_gpr(rs, false);
+                    processor.load_gpr(rt, false);
+                    processor.current_bb.emit(
+                        "processor.pc = (" +
+                        processor.get_gpr(rs) +
+                        " != " +
+                        processor.get_gpr(rt) +
+                        ") ? 0x" +
+                        Integer.toHexString(target) +
+                        " : (processor.pc + 4);"
+                    );
+                }
+                processor.npc = c ? target : (processor.pc + 4);
+                processor.stepDelayslot();
+                processor.reset_register_tracking();
+                processor.current_bb.emit(loop ? "continue;\n" : "break;\n");
+                processor.current_bb.freeze();
+                processor.current_bb = null;
+            `
+
+            disasm = `return Common.disasmRSRTOFFSET("bne", rs, rt, (int)(short)imm16, address);`
+        }
+
+        op BNEL(010101:rs:rt:imm16)
+        {
+            name=`BNEL`
+
+            category=`MIPS II`
+
+            interpret = `
+                if (processor.cpu.doBNEL(rs, rt, (int)(short)imm16))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRSRTOFFSET("bnel", rs, rt, (int)(short)imm16, address);`
+        }
+
+        op J(000010:imm26)
+        {
+            name=`J`
+
+            category=`MIPS I`
+
+            interpret = `
+                if (processor.cpu.doJ(imm26))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmJUMP("j", imm26, address);`
+        }
+
+        op JAL(000011:imm26)
+        {
+            name=`JAL`
+
+            category=`MIPS I`
+
+            interpret = `
+                if (processor.cpu.doJAL(imm26))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmJUMP("jal", imm26, address);`
+        }
+
+        op JALR(000000:rs:00000:rd:00000:001001)
+        {
+            name=`JALR`
+
+            category=`MIPS I`
+
+            interpret = `
+                if (processor.cpu.doJALR(rd, rs))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+                boolean loop = (processor.tracked_gpr[rs].fixed && (processor.gpr[rs] == processor.current_bb.getEntry()));
+                if (rd != 0) {
+                    processor.fix_gpr(rd, processor.pc + 4);
+                }
+                processor.current_bb.emit(
+                    "processor.pc = " + processor.get_gpr(rs) + ";"
+                );
+                processor.npc = processor.gpr[rs];
+                processor.stepDelayslot();
+                processor.reset_register_tracking();
+                processor.current_bb.emit("break;");
+                processor.current_bb.freeze();
+                processor.current_bb = null;
+            `
+
+            disasm = `return Common.disasmRDRS("jalr", rd, rs);`
+        }
+
+        op JR(000000:rs:00000:00000:00000:001000)
+        {
+            name=`JR`
+
+            category=`MIPS I`
+
+            interpret = `
+                if (processor.cpu.doJR(rs))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+                boolean loop = (processor.tracked_gpr[rs].fixed && (processor.gpr[rs] == processor.current_bb.getEntry()));
+                processor.current_bb.emit(
+                    "processor.pc = " + processor.get_gpr(rs) + ";"
+                );
+                processor.npc = processor.gpr[rs];
+                processor.stepDelayslot();
+                processor.reset_register_tracking();
+                processor.current_bb.emit(loop ? "continue;" : "break;");
+                processor.current_bb.freeze();
+                processor.current_bb = null;
+            `
+
+            disasm = `return Common.disasmRS("jr", rs);`
+        }
+
+        op BC1F(010001:01000:00000:imm16)
+        {
+            name=`BC1F`
+
+            category=`MIPS I/FPU`
+
+            interpret = `
+                if (processor.cpu.doBC1F((int)(short)imm16))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+                int target = Processor.branchTarget(processor.pc, (int)(short)imm16);
+                boolean loop = (target == processor.current_bb.getEntry());
+                processor.current_bb.emit("processor.pc = (!processor.fcr31_c) ? 0x" + Integer.toHexString(target) + " : processor.pc + 4;");
+                processor.npc = !processor.fcr31_c ? target : (processor.pc + 4);
+                processor.stepDelayslot();
+                processor.reset_register_tracking();
+                processor.current_bb.emit(loop ? "continue;\n" : "break;\n");
+                processor.current_bb.freeze();
+                processor.current_bb = null;
+            `
+
+            disasm = `return Common.disasmOFFSET("bc1f", (int)(short)imm16, address);`
+        }
+
+        op BC1T(010001:01000:00001:imm16)
+        {
+            name=`BC1T`
+
+            category=`MIPS I/FPU`
+
+            interpret = `
+                if (processor.cpu.doBC1T((int)(short)imm16))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+                int target = Processor.branchTarget(processor.pc, (int)(short)imm16);
+                boolean loop = (target == processor.current_bb.getEntry());
+                processor.current_bb.emit("processor.pc = processor.fcr31_c ? 0x" + Integer.toHexString(target) + " : (processor.pc + 4);");
+                processor.npc = processor.fcr31_c ? target : (processor.pc + 4);
+                processor.stepDelayslot();
+                processor.reset_register_tracking();
+                processor.current_bb.emit(loop ? "continue;\n" : "break;\n");
+                processor.current_bb.freeze();
+                processor.current_bb = null;
+            `
+
+            disasm = `return Common.disasmOFFSET("bc1t", (int)(short)imm16, address);`
+        }
+
+        op BC1FL(010001:01000:00010:imm16)
+        {
+            name=`BC1FL`
+
+            category=`MIPS II/FPU`
+
+            interpret = `
+                if (processor.cpu.doBC1FL((int)(short)imm16))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+                int target = Processor.branchTarget(processor.pc, (int)(short)imm16);
+                boolean loop = (target == processor.current_bb.getEntry());
+                processor.current_bb.emit(
+                    "if (!processor.fcr31_c) {\n" +
+                        "processor.pc = 0x" + Integer.toHexString(target) + ";"
+                );
+                processor.npc = !processor.fcr31_c ? target : (processor.pc + 4);
+                processor.stepDelayslot();
+                processor.current_bb.emit(
+                    "} else {\n" +
+                        "processor.pc += 4;" +
+                    "}\n"
+                );
+                processor.reset_register_tracking();
+                processor.current_bb.emit(loop ? "continue;\n" : "break;\n");
+                processor.current_bb.freeze();
+                processor.current_bb = null;
+            `
+
+            disasm = `return Common.disasmOFFSET("bc1fl", (int)(short)imm16, address);`
+        }
+
+        op BC1TL(010001:01000:00011:imm16)
+        {
+            name=`BC1TL`
+
+            category=`MIPS II/FPU`
+
+            interpret = `
+                if (processor.cpu.doBC1TL((int)(short)imm16))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+                int target = Processor.branchTarget(processor.pc, (int)(short)imm16);
+                boolean loop = (target == processor.current_bb.getEntry());
+                processor.current_bb.emit(
+                    "if (processor.fcr31_c) {\n" +
+                        "processor.pc = 0x" + Integer.toHexString(target) + ";"
+                );
+                processor.npc = processor.fcr31_c ? target : (processor.pc + 4);
+                processor.stepDelayslot();
+                processor.current_bb.emit(
+                    "} else {\n" +
+                        "processor.pc += 4;" +
+                    "}\n"
+                );
+                processor.reset_register_tracking();
+                processor.current_bb.emit(loop ? "continue;\n" : "break;\n");
+                processor.current_bb.freeze();
+                processor.current_bb = null;
+            `
+
+            disasm = `return Common.disasmOFFSET("bc1tl", (int)(short)imm16, address);`
+        }
+
+        op BVF(010010:01:000:imm3:00:imm16)
+        {
+            name=`BVF`
+
+            category=`MIPS I/VFPU`
+
+            interpret = `
+                if (processor.cpu.doBVF(imm3, (int)(short)imm16))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented BVF";`
+        }
+ 
+        op BVT(010010:01:000:imm3:01:imm16)
+        {
+            name=`BVT`
+
+            category=`MIPS I/VFPU`
+
+            interpret = `
+                if (processor.cpu.doBVT(imm3, (int)(short)imm16))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented BVT";`
+        }
+ 
+        op BVFL(010010:01:000:imm3:10:imm16)
+        {
+            name=`BVFL`
+
+            category=`MIPS II/VFPU`
+
+            interpret = `
+                if (processor.cpu.doBVFL(imm3, (int)(short)imm16))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented BVFL";`
+        }
+ 
+        op BVTL(010010:01:000:imm3:11:imm16)
+        {
+            name=`BVTL`
+
+            category=`MIPS II/VFPU`
+
+            interpret = `
+                if (processor.cpu.doBVTL(imm3, (int)(short)imm16))
+                    processor.interpretDelayslot();
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented BVTL";`
+        }
+    }
+
+    group LSU
+    {
+        op LB(100000:rs:rt:imm16)
+        {
+            name=`LB`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doLB(rt, rs, (int)(short)imm16);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRTIMMRS("lb", rt, rs, (int)(short)imm16);`
+        }
+
+        op LBU(100100:rs:rt:imm16)
+        {
+            name=`LBU`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doLBU(rt, rs, (int)(short)imm16);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRTIMMRS("lbu", rt, rs, (int)(short)imm16);`
+        }
+
+        op LH(100001:rs:rt:imm16)
+        {
+            name=`LH`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doLH(rt, rs, (int)(short)imm16);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRTIMMRS("lh", rt, rs, (int)(short)imm16);`
+        }
+
+        op LHU(100101:rs:rt:imm16)
+        {
+            name=`LHU`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doLHU(rt, rs, (int)(short)imm16);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRTIMMRS("lhu", rt, rs, (int)(short)imm16);`
+        }
+
+        op LW(100011:rs:rt:imm16)
+        {
+            name=`LW`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doLW(rt, rs, (int)(short)imm16);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRTIMMRS("lw", rt, rs, (int)(short)imm16);`
+        }
+
+        op LWL(100010:rs:rt:imm16)
+        {
+            name=`LWL`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doLWL(rt, rs, (int)(short)imm16);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRTIMMRS("lwl", rt, rs, (int)(short)imm16);`
+        }
+
+        op LWR(100110:rs:rt:imm16)
+        {
+            name=`LWR`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doLWR(rt, rs, (int)(short)imm16);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRTIMMRS("lwr", rt, rs, (int)(short)imm16);`
+        }
+
+        op SB(101000:rs:rt:imm16)
+        {
+            name=`SB`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doSB(rt, rs, (int)(short)imm16);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRTIMMRS("sb", rt, rs, (int)(short)imm16);`
+        }
+
+        op SH(101001:rs:rt:imm16)
+        {
+            name=`SH`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doSH(rt, rs, (int)(short)imm16);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRTIMMRS("sh", rt, rs, (int)(short)imm16);`
+        }
+
+        op SW(101011:rs:rt:imm16)
+        {
+            name=`SW`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doSW(rt, rs, (int)(short)imm16);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRTIMMRS("sw", rt, rs, (int)(short)imm16);`
+        }
+
+        op SWL(101010:rs:rt:imm16)
+        {
+            name=`SWL`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doSWL(rt, rs, (int)(short)imm16);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRTIMMRS("swl", rt, rs, (int)(short)imm16);`
+        }
+
+        op SWR(101110:rs:rt:imm16)
+        {
+            name=`SWR`
+
+            category=`MIPS I`
+
+            interpret = `
+                processor.cpu.doSWR(rt, rs, (int)(short)imm16);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRTIMMRS("swr", rt, rs, (int)(short)imm16);`
+        }
+
+        op LL(110000:rs:rt:imm16)
+        {
+            name=`LL`
+
+            category=`ALLEGREX`
+
+            interpret = `
+                processor.cpu.doLL(rt, rs, (int)(short)imm16);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRTIMMRS("ll", rt, rs, (int)(short)imm16);`
+        }
+
+        op LWC1(110001:rs:ft:imm16)
+        {
+            name=`LWC1`
+
+            category=`MIPS I/FPU`
+
+            interpret = `
+                processor.cpu.doLWC1(ft, rs, (int)(short)imm16);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmFTIMMRS("lwc1", ft, rs, (int)(short)imm16);`
+        }
+
+        op LVS(110010:rs:vt5:imm14:vt2)
+        {
+            name=`LVS`
+
+            category=`MIPS I/VFPU`
+
+            interpret = `
+                processor.cpu.doLVS((vt5 + (vt2 << 32)), rs, (int)(short)(imm14 << 2));
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVTIMMRS("lv", 1, (vt5|(vt2<<5)), rs, (int)(short)(imm14 << 2));`
+        }
+
+        op LVLQ(110101:rs:vt5:imm14:0:vt1)
+        {
+            name=`LVLQ`
+
+            category=`MIPS I/VFPU`
+
+            interpret = `
+                processor.cpu.doLVLQ((vt5 + (vt1 << 32)), rs, (int)(short)(imm14 << 2));
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVTIMMRS("lvl", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));`
+        }
+
+        op LVRQ(110101:rs:vt5:imm14:1:vt1)
+        {
+            name=`LVRQ`
+
+            category=`MIPS I/VFPU`
+
+            interpret = `
+                processor.cpu.doLVRQ((vt5 + (vt1 << 32)), rs, (int)(short)(imm14 << 2));
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVTIMMRS("lvr", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));`
+        }
+
+        op LVQ(110110:rs:vt5:imm14:0:vt1)
+        {
+            name=`LVQ`
+
+            category=`MIPS I/VFPU`
+
+            interpret = `
+                processor.cpu.doLVQ((vt5 + (vt1 << 32)), rs, (((int)(short)imm14) << 2));
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVTIMMRS("lv", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));`
+        }
+
+        op SC(111000:rs:rt:imm16)
+        {
+            name=`SC`
+
+            category=`ALLEGREX`
+
+            interpret = `
+                processor.cpu.doSC(rt, rs, (int)(short)imm16);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmRTIMMRS("sc", rt, rs, (int)(short)imm16);`
+        }
+
+        op SWC1(111001:rs:ft:imm16)
+        {
+            name=`SWC1`
+
+            category=`MIPS I/FPU`
+
+            interpret = `
+                processor.cpu.doSWC1(ft, rs, (int)(short)imm16);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmFTIMMRS("swc1", ft, rs, (int)(short)imm16);`
+        }
+
+        op SVS(111010:rs:vt5:imm14:vt2)
+        {
+            name=`SVS`
+
+            category=`MIPS I/VFPU`
+
+            interpret = `
+                processor.cpu.doSVS((vt5 + (vt2 << 32)), rs, (((int)(short)imm14) << 2));
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVTIMMRS("sv", 1, (vt5|(vt2<<5)), rs, (int)(short)(imm14 << 2));`
+        }
+
+        op SVLQ(111101:rs:vt5:imm14:0:vt1)
+        {
+            name=`SVLQ`
+
+            category=`MIPS I/VFPU`
+
+            interpret = `
+                processor.cpu.doSVLQ((vt5 + (vt1 << 32)), rs, (((int)(short)imm14) << 2));
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVTIMMRS("svl", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));`
+        }
+
+        op SVRQ(111101:rs:vt5:imm14:1:vt1)
+        {
+            name=`SVRQ`
+
+            category=`MIPS I/VFPU`
+
+            interpret = `
+                processor.cpu.doSVRQ((vt5 + (vt1 << 32)), rs, (((int)(short)imm14) << 2));
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVTIMMRS("svr", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));`
+        }
+
+        op SVQ(111110:rs:vt5:imm14:0:vt1)
+        {
+            name=`SVQ`
+
+            category=`MIPS I/VFPU`
+
+            interpret = `
+                processor.cpu.doSVQ((vt5 + (vt1 << 32)), rs, (((int)(short)imm14) << 2));
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVTIMMRS("sv", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));`
+        }
+
+        op SWB(111110:rs:vt5:imm14:1:vt1)
+        {
+            name=`SWB`
+
+            category=`MIPS I/VFPU`
+
+            interpret = `
+                processor.cpu.doSVQ((vt5 + (vt1 << 32)), rs, (((int)(short)imm14) << 2));
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVTIMMRS("swb", 4, (vt5|(vt1<<5)), rs, (int)(short)(imm14 << 2));`
+        }
+    }
+
+    group FPU
+    {
+        // cycles = `pitch/latency/repeat rate`
+
+        op ADD_S(010001:10000:ft:fs:fd:000000)
+        {
+            name=`ADD.S`
+
+            category=`FPU`
+
+            interpret = `
+                processor.cpu.doADDS(fd, fs, ft);
+            `
+
+            compile = `
+                if (processor.tracked_fpr[fs].fixed & processor.tracked_fpr[ft].fixed) {
+                    processor.fix_fpr(fd, processor.fpr[fs] + processor.fpr[ft]);
+                } else {
+                    processor.load_fpr(fs, false);
+                    processor.load_fpr(ft, false);
+                    processor.alter_fpr(fd);
+                    processor.current_bb.emit(
+                        processor.get_fpr(fd) +
+                        " = (" +
+                        processor.get_fpr(fs) +
+                        " + " +
+                        processor.get_fpr(ft) +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmFDFSFT("add.s", fd, fs, ft);`
+        }
+
+        op SUB_S(010001:10000:ft:fs:fd:000001)
+        {
+            name=`SUB.S`
+
+            category=`FPU`
+
+            interpret = `
+                processor.cpu.doSUBS(fd, fs, ft);
+            `
+
+            compile = `
+                if (processor.tracked_fpr[fs].fixed & processor.tracked_fpr[ft].fixed) {
+                    processor.fix_fpr(fd, processor.fpr[fs] - processor.fpr[ft]);
+                } else {
+                    processor.load_fpr(fs, false);
+                    processor.load_fpr(ft, false);
+                    processor.alter_fpr(fd);
+                    processor.current_bb.emit(
+                        processor.get_fpr(fd) +
+                        " = (" +
+                        processor.get_fpr(fs) +
+                        " - " +
+                        processor.get_fpr(ft) +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmFDFSFT("sub.s", fd, fs, ft);`
+        }
+
+        op MUL_S(010001:10000:ft:fs:fd:000010)
+        {
+            name=`MUL.S`
+
+            category=`FPU`
+
+            interpret = `
+                processor.cpu.doMULS(fd, fs, ft);
+            `
+
+            compile = `
+                if (processor.tracked_fpr[fs].fixed & processor.tracked_fpr[ft].fixed) {
+                    processor.fix_fpr(fd, processor.fpr[fs] * processor.fpr[ft]);
+                } else {
+                    processor.load_fpr(fs, false);
+                    processor.load_fpr(ft, false);
+                    processor.alter_fpr(fd);
+                    processor.current_bb.emit(
+                        processor.get_fpr(fd) +
+                        " = (" +
+                        processor.get_fpr(fs) +
+                        " * " +
+                        processor.get_fpr(ft) +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmFDFSFT("mul.s", fd, fs, ft);`
+        }
+
+        op DIV_S(010001:10000:ft:fs:fd:000011)
+        {
+            name=`DIV.S`
+
+            category=`FPU`
+
+            interpret = `
+                processor.cpu.doDIVS(fd, fs, ft);
+            `
+
+            compile = `
+                if (processor.tracked_fpr[fs].fixed & processor.tracked_fpr[ft].fixed) {
+                    processor.fix_fpr(fd, processor.fpr[fs] / processor.fpr[ft]);
+                } else {
+                    processor.load_fpr(fs, false);
+                    processor.load_fpr(ft, false);
+                    processor.alter_fpr(fd);
+                    processor.current_bb.emit(
+                        processor.get_fpr(fd) +
+                        " = (" +
+                        processor.get_fpr(fs) +
+                        " / " +
+                        processor.get_fpr(ft) +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmFDFSFT("div.s", fd, fs, ft);`
+        }
+
+        op SQRT_S(010001:10000:00000:fs:fd:000100)
+        {
+            name=`SQRT.S`
+
+            category=`FPU`
+
+            interpret = `
+                processor.cpu.doSQRTS(fd, fs);
+            `
+
+            compile = `
+                if (processor.tracked_fpr[fs].fixed) {
+                    processor.fix_fpr(fd, (float) Math.sqrt(processor.fpr[fs]));
+                } else {
+                    processor.load_fpr(fs, false);
+                    processor.alter_fpr(fd);
+                    processor.current_bb.emit(
+                        processor.get_fpr(fd) +
+                        " = (float) Math.sqrt(" +
+                        processor.get_fpr(fs) +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmFDFS("sqrt.s", fd, fs);`
+        }
+
+        op ABS_S(010001:10000:00000:fs:fd:000101)
+        {
+            name=`ABS.S`
+
+            category=`FPU`
+
+            interpret = `
+                processor.cpu.doABSS(fd, fs);
+            `
+
+            compile = `
+                if (processor.tracked_fpr[fs].fixed) {
+                    processor.fix_fpr(fd, Math.abs(processor.fpr[fs]));
+                } else {
+                    processor.load_fpr(fs, false);
+                    processor.alter_fpr(fd);
+                    processor.current_bb.emit(
+                        processor.get_fpr(fd) +
+                        " = Math.abs(" +
+                        processor.get_fpr(fs) +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmFDFS("abs.s", fd, fs);`
+        }
+
+        op MOV_S(010001:10000:00000:fs:fd:000110)
+        {
+            name=`MOV.S`
+
+            category=`FPU`
+
+            interpret = `
+                processor.cpu.doMOVS(fd, fs);
+            `
+
+            compile = `
+                if (processor.tracked_fpr[fs].fixed) {
+                    processor.fix_fpr(fd, processor.fpr[fs]);
+                } else {
+                    processor.load_fpr(fs, false);
+                    processor.alter_fpr(fd);
+                    processor.current_bb.emit(
+                        processor.get_fpr(fd) +
+                        " = (" +
+                        processor.get_fpr(fs) +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmFDFS("mov.s", fd, fs);`
+        }
+
+        op NEG_S(010001:10000:00000:fs:fd:000111)
+        {
+            name=`NEG.S`
+
+            category=`FPU`
+
+            interpret = `
+                processor.cpu.doNEGS(fd, fs);
+            `
+
+            compile = `
+                if (processor.tracked_fpr[fs].fixed) {
+                    processor.fix_fpr(fd, 0.0f - processor.fpr[fs]);
+                } else {
+                    processor.load_fpr(fs, false);
+                    processor.alter_fpr(fd);
+                    processor.current_bb.emit(
+                        processor.get_fpr(fd) +
+                        " = 0.0f - (" +
+                        processor.get_fpr(fs) +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmFDFS("neg.s", fd, fs);`
+        }
+
+        op ROUND_W_S(010001:10000:00000:fs:fd:001100)
+        {
+            name=`ROUND.W.S`
+
+            category=`FPU`
+
+            interpret = `
+                processor.cpu.doROUNDWS(fd, fs);
+            `
+
+            compile = `
+                if (processor.tracked_fpr[fs].fixed) {
+                    processor.fix_fpr(fd, Float.intBitsToFloat(Math.round(processor.fpr[fs])));
+                } else {
+                    processor.load_fpr(fs, false);
+                    processor.alter_fpr(fd);
+                    processor.current_bb.emit(
+                        processor.get_fpr(fd) +
+                        " = Float.intBitsToFloat(Math.round(" +
+                        processor.get_fpr(fs) +
+                        "));"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmFDFS("round.w.s", fd, fs);`
+        }
+
+        op TRUNC_W_S(010001:10000:00000:fs:fd:001101)
+        {
+            name=`TRUNC.W.S`
+
+            category=`FPU`
+
+            interpret = `
+                processor.cpu.doTRUNCWS(fd, fs);
+            `
+
+            compile = `
+                if (processor.tracked_fpr[fs].fixed) {
+                    processor.fix_fpr(fd, Float.intBitsToFloat((int) (processor.fpr[fs])));
+                } else {
+                    processor.load_fpr(fs, false);
+                    processor.alter_fpr(fd);
+                    processor.current_bb.emit(
+                        processor.get_fpr(fd) +
+                        " = Float.intBitsToFloat((int) (" +
+                        processor.get_fpr(fs) +
+                        "));"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmFDFS("trunc.w.s", fd, fs);`
+        }
+
+        op CEIL_W_S(010001:10000:00000:fs:fd:001110)
+        {
+            name=`CEIL.W.S`
+
+            category=`FPU`
+
+            interpret = `
+                processor.cpu.doCEILWS(fd, fs);
+            `
+
+            compile = `
+                if (processor.tracked_fpr[fs].fixed) {
+                    processor.fix_fpr(fd, Float.intBitsToFloat((int) Math.ceil(processor.fpr[fs])));
+                } else {
+                    processor.load_fpr(fs, false);
+                    processor.alter_fpr(fd);
+                    processor.current_bb.emit(
+                        processor.get_fpr(fd) +
+                        " = Float.intBitsToFloat((int) Math.ceil(" +
+                        processor.get_fpr(fs) +
+                        "));"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmFDFS("ceil.w.s", fd, fs);`
+        }
+
+        op FLOOR_W_S(010001:10000:00000:fs:fd:001111)
+        {
+            name=`FLOOR.W.S`
+
+            category=`FPU`
+
+            interpret = `
+                processor.cpu.doFLOORWS(fd, fs);
+            `
+
+            compile = `
+                if (processor.tracked_fpr[fs].fixed) {
+                    processor.fix_fpr(fd, Float.intBitsToFloat((int) Math.floor(processor.fpr[fs])));
+                } else {
+                    processor.load_fpr(fs, false);
+                    processor.alter_fpr(fd);
+                    processor.current_bb.emit(
+                        processor.get_fpr(fd) +
+                        " = Float.intBitsToFloat((int) Math.floor(" +
+                        processor.get_fpr(fs) +
+                        "));"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmFDFS("floor.w.s", fd, fs);`
+        }
+
+        op CVT_S_W(010001:10100:00000:fs:fd:100000)
+        {
+            name=`CVT.S.W`
+
+            category=`FPU`
+
+            interpret = `
+                processor.cpu.doCVTSW(fd, fs);
+            `
+
+            compile = `
+                if (processor.tracked_fpr[fs].fixed) {
+                    processor.fix_fpr(fd, (float) Float.floatToRawIntBits(processor.fpr[fs]));
+                } else {
+                    processor.load_fpr(fs, false);
+                    processor.alter_fpr(fd);
+                    processor.current_bb.emit(
+                        processor.get_fpr(fd) +
+                        " = (float) Float.floatToRawIntBits(" +
+                        processor.get_fpr(fs) +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmFDFS("cvt.s.w", fd, fs);`
+        }
+
+        op CVT_W_S(010001:10000:00000:fs:fd:100100)
+        {
+            name=`CVT.W.S`
+
+            category=`FPU`
+
+            interpret = `
+                processor.cpu.doCVTWS(fd, fs);
+            `
+
+            compile = `
+                processor.load_fpr(fs, false);
+                processor.alter_fpr(fd);
+                processor.current_bb.emit(
+                    "switch (processor.fcr31_rm) {\n" +
+                        "case 1:\n" +
+                            processor.get_fpr(fd) +
+                            " = Float.intBitsToFloat((int) (" +
+                            processor.get_fpr(fs) +
+                            "));\n" +
+                            "break;\n" +
+                        "case 2:\n" +
+                            processor.get_fpr(fd) +
+                            " = Float.intBitsToFloat((int) Math.ceil(" +
+                            processor.get_fpr(fs) +
+                            "));\n" +
+                            "break;\n" +
+                        "case 3:\n" +
+                            processor.get_fpr(fd) +
+                            " = Float.intBitsToFloat((int) Math.floor(" +
+                            processor.get_fpr(fs) +
+                            "));\n" +
+                            "break;\n" +
+                        "default:\n" + 
+                            processor.get_fpr(fd) +
+                            " = Float.intBitsToFloat((int) Math.rint(" + 
+                            processor.get_fpr(fs) +
+                            "));\n" +
+                            "break;\n" +
+                    "}\n"
+                );
+            `
+
+            disasm = `return Common.disasmFDFS("cvt.w.s", fd, fs);`
+        }
+
+        op C_COND_S(010001:10000:ft:fs:00000:11:fcond)
+        {
+            name=`C.cond.S`
+
+            category=`FPU`
+
+            interpret = `
+                processor.cpu.doCCONDS(fs, ft, fcond);
+            `
+
+            compile = `
+                processor.load_fpr(fs, false);
+                processor.load_fpr(ft, false);
+                processor.current_bb.emit(
+                    "{\n" +
+                    "float x = " + processor.get_fpr(fs) + ";" +
+                    "float y = " + processor.get_fpr(ft) + ";" +
+                    "boolean unordered = ((" + fcond + " & 1) != 0) && (Float.isNaN(x) || Float.isNaN(y));" +
+                    "if (unordered) {\n" +
+                        "// we ignore float exception as it is useless for games\n" +
+                        "//if ((" + fcond + " & 8) != 0) {\n" +
+                        "//}\n" +
+                        "processor.fcr31_c = true;" +
+                    "} else {\n" +
+                        "boolean equal = ((" + fcond + " & 2) != 0) && (x == y);" +
+                        "boolean less = ((" + fcond + " & 4) != 0) && (x < y);" +
+                        "processor.fcr31_c = less || equal;" +
+                    "}\n}\n"
+                );
+            `
+
+            disasm = `return Common.disasmCcondS(fcond, fs, ft);`
+        }
+
+        op MFC1(010001:00000:rt:c1dr:00000:000000)
+        {
+            name=`MFC1`
+
+            category=`MIPS I/FPU`
+
+            interpret = `
+                processor.cpu.doMFC1(rt, c1dr);
+            `
+
+            compile = `
+                if (rt != 0) {
+                    if (processor.tracked_fpr[c1dr].fixed) {
+                        processor.fix_gpr(rt, Float.floatToRawIntBits(processor.fpr[c1dr]));
+                    } else {
+                        processor.load_fpr(c1dr, false);
+                        processor.alter_gpr(rt);
+                        processor.current_bb.emit(
+                            processor.get_gpr(rt) +
+                            " = Float.floatToRawIntBits(" +
+                            processor.get_fpr(c1dr) +
+                            ");"
+                        );
+                    }
+                }
+            `
+
+            disasm = `return Common.disasmRTFS("mfc1", rt, c1dr);`
+        }
+
+        op CFC1(010001:00010:rt:c1cr:00000:000000)
+        {
+            name=`CFC1`
+
+            category=`MIPS I/FPU`
+
+            interpret = `
+                processor.cpu.doCFC1(rt, c1cr);
+            `
+
+            compile = `
+                if (rt != 0) {
+                    switch (c1cr) {
+                    case 0:
+                        processor.alter_gpr(rt);
+                        processor.current_bb.emit(
+                            processor.get_gpr(rt) +
+                            " = (Processor.fcr0_imp << 8) | (Processor.fcr0_rev);"
+                        );
+                        break;
+
+                    case 31:
+                        processor.alter_gpr(rt);
+                        processor.current_bb.emit(
+                            processor.get_gpr(rt) +
+                            " = (processor.fcr31_fs ? (1 << 24) : 0) | (processor.fcr31_c ? (1 << 23) : 0) | (processor.fcr31_rm & 3);"
+                        );
+                        break;
+                    }
+                }
+            `
+
+
+            disasm = `return Common.disasmRTFC("cfc1", rt, c1cr);`
+        }
+
+        op MTC1(010001:00100:rt:c1dr:00000:000000)
+        {
+            name=`MTC1`
+
+            category=`MIPS I/FPU`
+
+            interpret = `
+                processor.cpu.doMTC1(rt, c1dr);
+            `
+
+            compile = `
+                if (processor.tracked_gpr[rt].fixed) {
+                    processor.fix_fpr(c1dr, Float.intBitsToFloat(processor.gpr[rt]));
+                } else {
+                    processor.load_gpr(rt, false);
+                    processor.alter_fpr(c1dr);
+                    processor.current_bb.emit(
+                        processor.get_fpr(c1dr) +
+                        " = Float.intBitsToFloat(" +
+                        processor.get_gpr(rt) +
+                        ");"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRTFS("mtc1", rt, c1dr);`
+        }
+
+        op CTC1(010001:00110:rt:c1cr:00000:000000)
+        {
+            name=`CTC1`
+
+            category=`MIPS I/FPU`
+
+            interpret = `
+                processor.cpu.doCFC1(rt, c1cr);
+            `
+
+            compile = `
+                if (c1cr == 31) {
+                    processor.load_gpr(rt, false);
+                    processor.current_bb.emit(
+                        "{\n" +
+                            "int bits = " + processor.get_gpr(rt) + " & 0x01800003;" +
+                            "processor.fcr31_rm = bits & 3;" +
+                            "bits >>= 23;" +
+                            "processor.fcr31_fs = (bits > 1);" +
+                            "processor.fcr31_c = (bits >> 1) == 1;" +
+                        "}\n"
+                    );
+                }
+            `
+
+            disasm = `return Common.disasmRTFC("ctc1", rt, c1cr);`
+        }
+    }
+
+    group COP0
+    {
+        op MFC0(010000:00000:rt:c0dr:00000:000000)
+        {
+            name=`MFC0`
+
+            category=`MIPS I`
+
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented MFC0";`
+        }
+
+        op CFC0(010000:00010:rt:c0cr:00000:000000)
+        {
+            name=`CFC0`
+
+            category=`ALLEGREX`
+
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented CFC0";`
+        }
+
+        op MTC0(010000:00100:rt:c0dr:00000:000000)
+        {
+            name=`MTC0`
+
+            category=`MIPS I`
+
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented MTC0";`
+        }
+
+        op CTC0(010000:00110:rt:c0cr:00000:000000)
+        {
+            name=`CTC0`
+
+            category=`ALLEGREX`
+
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented CTC0";`
+        }
+    }
+
+    group VFPU0
+    {
+        op VADD(011000:000:vt:two:vs:one:vd)
+        {
+            name=`VADD`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVADD(1 + one + (two<<1), vd, vs, vt);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVSVT("vadd", 1+one+(two<<1), vd, vs, vt);`
+        }
+ 
+ 
+        op VSUB(011000:001:vt:two:vs:one:vd)
+        {
+            name=`VSUB`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVSUB(1 + one + (two<<1), vd, vs, vt);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVSVT("vsub", 1+one+(two<<1), vd, vs, vt);`
+        }
+ 
+        op VSBN(011000:010:vt:two:vs:one:vd)
+        {
+            name=`VSBN`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVSBN(1 + one + (two<<1), vd, vs, vt);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVSVT("vsbn", 1+one+(two<<1), vd, vs, vt);`
+        }
+
+        op VDIV(011000:111:vt:two:vs:one:vd)
+        {
+            name=`VDIV`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVDIV(1 + one + (two<<1), vd, vs, vt);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVSVT("vdiv", 1+one+(two<<1), vd, vs, vt);`
+        }
+
+    }
+
+    group VFPU1
+    {
+        op VMUL(011001:000:vt:two:vs:one:vd)
+        {
+            name=`VMUL`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVMUL(1 + one + (two<<1), vd, vs, vt);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVSVT("vmul", 1+one+(two<<1), vd, vs, vt);`
+        }
+
+        op VDOT(011001:001:vt:two:vs:one:vd)
+        {
+            name=`VDOT`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVDOT(1 + one + (two<<1), vd, vs, vt);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVD1VSVT("vdot", 1+one+(two<<1), vd, vs, vt);`
+        }
+ 
+        op VSCL(011001:010:vt:two:vs:one:vd)
+        {
+            name=`VSCL`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVSCL(1 + one + (two<<1), vd, vs, vt);               
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVSVT1("vscl", 1+one+(two<<1), vd, vs, vt);`
+        }
+ 
+        op VHDP(011001:100:vt:two:vs:one:vd)
+        {
+            name=`VHDP`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVHDP(1 + one + (two<<1), vd, vs, vt);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVD1VSVT("vhdp", 1+one+(two<<1), vd, vs, vt);`
+        }
+ 
+        op VCRS(011001:101:vt:two:vs:one:vd)
+        {
+            name=`VCRS`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVCRS(1 + one + (two<<1), vd, vs, vt);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVSVT("vcrs", 1+one+(two<<1), vd, vs, vt);`
+        }
+
+        op VDET(011001:110:vt:two:vs:one:vd)
+        {
+            name=`VDET`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVDET(1 + one + (two<<1), vd, vs, vt);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVD1VSVT("vdet", 1+one+(two<<1), vd, vs, vt);`
+        }
+ 
+    }
+
+    group VFPU2
+    {
+       op MFV(010010:00:011:rt:0:0000000:0:imm7)
+        {
+            name=`MFV`
+
+            category=`MIPS I/VFPU`
+
+            interpret = `
+                processor.cpu.doMFV(rt, imm7);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented MFV";`
+        }
+ 
+        op MFVC(010010:00:011:rt:0:0000000:1:imm7)
+        {
+            name=`MFVC`
+
+            category=`MIPS I/VFPU`
+
+            interpret = `
+                processor.cpu.doMFVC(rt, imm7);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented MFVC";`
+        }
+ 
+        op MTV(010010:00:111:rt:0:0000000:0:imm7)
+        {
+            name=`MTV`
+
+            category=`MIPS I/VFPU`
+
+            interpret = `
+                processor.cpu.doMTV(rt, imm7);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDRS("MTV", imm7, rt);`
+        }
+ 
+        op MTVC(010010:00:111:rt:0:0000000:1:imm7)
+        {
+            name=`MTVC`
+
+            category=`MIPS I/VFPU`
+
+            interpret = `
+                processor.cpu.doMTVC(rt, imm7);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented MTVC";`
+        } 
+    }
+
+    group VFPU3
+    {
+        op VCMP(011011:000:vt:two:vs:one:0000:imm3)
+        {
+            name=`VCMP`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVCMP(1+one+(two<<1), vs, vt, imm3);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VCMP";`
+        }
+ 
+        op VMIN(011011:010:vt:two:vs:one:vd)
+        {
+            name=`VMIN`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVMIN(1+one+(two<<1), vd, vs, vt);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVSVT("vmin", 1+one+(two<<1), vd, vs, vt);`
+        }
+ 
+        op VMAX(011011:011:vt:two:vs:one:vd)
+        {
+            name=`VMAX`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVMAX(1+one+(two<<1), vd, vs, vt);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVSVT("vmax", 1+one+(two<<1), vd, vs, vt);`
+        }
+ 
+        op VSCMP(011011:101:vt:two:vs:one:vd)
+        {
+            name=`VSCMP`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVSCMP(1+one+(two<<1), vd, vs, vt);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVSVT("vscmp", 1+one+(two<<1), vd, vs, vt);`
+        }
+
+        op VSGE(011011:110:vt:two:vs:one:vd)
+        {
+            name=`VSGE`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVSGE(1+one+(two<<1), vd, vs, vt);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVSVT("vsge", 1+one+(two<<1), vd, vs, vt);`
+        }
+
+        op VSLT(011011:100:vt:two:vs:one:vd)
+        {
+            name=`VSLT`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVSLT(1+one+(two<<1), vd, vs, vt);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVSVT("vslt", 1+one+(two<<1), vd, vs, vt);`
+        }
+    }
+
+    group VFPU4
+    {
+        op VMOV(110100:00:000:0:0000:two:vs:one:vd)
+        {
+            name=`VMOV`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVMOV(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVS("vmov", 1+one+(two<<1), vd, vs);`
+        }
+
+ 
+        op VABS(110100:00:000:0:0001:two:vs:one:vd)
+        {
+            name=`VABS`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVABS(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVS("vabs", 1+one+(two<<1), vd, vs);`
+        }
+
+        op VNEG(110100:00:000:0:0010:two:vs:one:vd)
+        {
+            name=`VNEG`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVNEG(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVS("vneg", 1+one+(two<<1), vd, vs);`
+        }
+ 
+        op VIDT(110100:00:000:0:0011:two:0000000:one:vd)
+        {
+            name=`VIDT`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVIDT(1+one+(two<<1), vd);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVD("vidt", 1+one+(two<<1), vd);`
+        }
+  
+        op VSAT0(110100:00:000:0:0100:two:vs:one:vd)
+        {
+            name=`VSAT0`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVSAT0(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVS("vsat0", 1+one+(two<<1), vd, vs);`
+        }
+  
+        op VSAT1(110100:00:000:0:0101:two:vs:one:vd)
+        {
+            name=`VSAT1`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVSAT1(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVS("vsat1", 1+one+(two<<1), vd, vs);`
+        }
+ 
+        op VZERO(110100:00:000:0:0110:two:0000000:one:vd)
+        {
+            name=`VZERO`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVZERO(1+one+(two<<1), vd);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVD("vzero", 1+one+(two<<1), vd);`
+        }
+ 
+        op VONE(110100:00:000:0:0111:two:0000000:one:vd)
+        {
+            name=`VONE`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVONE(1+one+(two<<1), vd);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVD("vone", 1+one+(two<<1), vd);`
+        }
+ 
+        op VRCP(110100:00:000:1:0000:two:vs:one:vd)
+        {
+            name=`VRCP`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVRCP(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVS("vrcp", 1+one+(two<<1), vd, vs);`
+        }
+ 
+        op VRSQ(110100:00:000:1:0001:two:vs:one:vd)
+        {
+            name=`VRSQ`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVRSQ(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVS("vrsq", 1+one+(two<<1), vd, vs);`
+        }
+ 
+        op VSIN(110100:00:000:1:0010:two:vs:one:vd)
+        {
+            name=`VSIN`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVSIN(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVS("vsin", 1+one+(two<<1), vd, vs);`
+        }
+ 
+        op VCOS(110100:00:000:1:0011:two:vs:one:vd)
+        {
+            name=`VCOS`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVCOS(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVS("vcos", 1+one+(two<<1), vd, vs);`
+        }
+ 
+        op VEXP2(110100:00:000:1:0100:two:vs:one:vd)
+        {
+            name=`VEXP2`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVEXP2(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVS("vexp2", 1+one+(two<<1), vd, vs);`
+        }
+ 
+        op VLOG2(110100:00:000:1:0101:two:vs:one:vd)
+        {
+            name=`VLOG2`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVLOG2(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVS("vlog2", 1+one+(two<<1), vd, vs);`
+        }
+ 
+        op VSQRT(110100:00:000:1:0110:two:vs:one:vd)
+        {
+            name=`VSQRT`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVSQRT(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVS("vsqrt", 1+one+(two<<1), vd, vs);`
+        }
+ 
+        op VASIN(110100:00:000:1:0111:two:vs:one:vd)
+        {
+            name=`VASIN`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVASIN(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVS("vasin", 1+one+(two<<1), vd, vs);`
+        }
+ 
+        op VNRCP(110100:00:000:1:1000:two:vs:one:vd)
+        {
+            name=`VNRCP`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVNRCP(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVS("vnrcp", 1+one+(two<<1), vd, vs);`
+        }
+ 
+        op VNSIN(110100:00:000:1:1010:two:vs:one:vd)
+        {
+            name=`VNSIN`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVNSIN(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVS("vnsin", 1+one+(two<<1), vd, vs);`
+        }
+ 
+        op VREXP2(110100:00:000:1:1100:two:vs:one:vd)
+        {
+            name=`VREXP2`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVREXP2(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVS("vrexp2", 1+one+(two<<1), vd, vs);`
+        }
+ 
+        op VRNDS(110100:00:001:00:000:two:vs:one:0000000)
+        {
+            name=`VRNDS`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVRNDS(1+one+(two<<1), vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVS("vrnds", 1+one+(two<<1), vs);`
+        }
+ 
+        op VRNDI(110100:00:001:00:001:two:0000000:one:vd)
+        {
+            name=`VRNDI`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVRNDI(1+one+(two<<1), vd);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVD("vrndi", 1+one+(two<<1), vd);`
+        }
+ 
+        op VRNDF1(110100:00:001:00:010:two:0000000:one:vd)
+        {
+            name=`VRNDF1`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVRNDF1(1+one+(two<<1), vd);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVD("vrndf1", 1+one+(two<<1), vd);`
+        }
+ 
+        op VRNDF2(110100:00:001:00:011:two:0000000:one:vd)
+        {
+            name=`VRNDF2`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVRNDF2(1+one+(two<<1), vd);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVD("vrndf2", 1+one+(two<<1), vd);`
+        }
+ 
+        op VF2H(110100:00:001:10:010:two:vs:one:vd)
+        {
+            name=`VF2H`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVF2H(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VF2H";`
+        }
+ 
+        op VH2F(110100:00:001:10:011:two:vs:one:vd)
+        {
+            name=`VH2F`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVH2F(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VH2F";`
+        }
+ 
+        op VSBZ(110100:00:001:10:110:two:vs:one:vd)
+        {
+            name=`VSBZ`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVSBZ(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VSBZ";`
+        }
+ 
+        op VLGB(110100:00:001:10:111:two:vs:one:vd)
+        {
+            name=`VLGB`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVLGB(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVS("vlgb", 1+one+(two<<1), vd, vs);`
+        }
+ 
+        op VUC2I(110100:00:001:11:000:two:vs:one:vd)
+        {
+            name=`VUC2I`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVUC2I(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VUC2I";`
+        }
+ 
+        op VC2I(110100:00:001:11:001:two:vs:one:vd)
+        {
+            name=`VC2I`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVC2I(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VC2I";`
+        }
+ 
+        op VUS2I(110100:00:001:11:010:two:vs:one:vd)
+        {
+            name=`VUS2I`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVUS2I(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VUS2I";`
+        }
+ 
+        op VS2I(110100:00:001:11:011:two:vs:one:vd)
+        {
+            name=`VS2I`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVS2I(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VS2I";`
+        }
+ 
+        op VI2UC(110100:00:001:11:100:two:vs:one:vd)
+        {
+            name=`VI2UC`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVI2UC(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VI2UC";`
+        }
+ 
+        op VI2C(110100:00:001:11:101:two:vs:one:vd)
+        {
+            name=`VI2C`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVI2C(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VI2C";`
+        }
+ 
+        op VI2US(110100:00:001:11:110:two:vs:one:vd)
+        {
+            name=`VI2US`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVI2US(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VI2US";`
+        }
+ 
+        op VI2S(110100:00:001:11:111:two:vs:one:vd)
+        {
+            name=`VI2S`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVI2S(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VI2S";`
+        }
+ 
+        op VSRT1(110100:00:010:00000:two:vs:one:vd)
+        {
+            name=`VSRT1`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVSRT1(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVS("vsrt1", 1+one+(two<<1), vd, vs);`
+        }
+ 
+        op VSRT2(110100:00:010:00001:two:vs:one:vd)
+        {
+            name=`VSRT2`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVSRT2(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVS("vsrt2", 1+one+(two<<1), vd, vs);`
+        }
+ 
+        op VBFY1(110100:00:010:00010:two:vs:one:vd)
+        {
+            name=`VBFY1`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVBFY1(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VBFY1";`
+        }
+ 
+        op VBFY2(110100:00:010:00011:two:vs:one:vd)
+        {
+            name=`VBFY2`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVBFY2(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VBFY2";`
+        }
+ 
+        op VOCP(110100:00:010:00100:two:vs:one:vd)
+        {
+            name=`VOCP`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVOCP(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVS("vocp", 1+one+(two<<1), vd, vs);`
+        }
+ 
+        op VSOCP(110100:00:010:00101:two:vs:one:vd)
+        {
+            name=`VSOCP`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVSOCP(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VSOCP";`
+        }
+ 
+        op VFAD(110100:00:010:00110:two:vs:one:vd)
+        {
+            name=`VFAD`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVFAD(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVD1VS("vfad", 1+one+(two<<1), vd, vs);`
+        }
+ 
+        op VAVG(110100:00:010:00111:two:vs:one:vd)
+        {
+            name=`VAVG`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVAVG(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVD1VS("vavg", 1+one+(two<<1), vd, vs);`
+        }
+ 
+        op VSRT3(110100:00:010:01000:two:vs:one:vd)
+        {
+            name=`VSRT3`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVSRT3(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVS("vsrt3", 1+one+(two<<1), vd, vs);`
+        }
+ 
+        op VSRT4(110100:00:010:01001:two:vs:one:vd)
+        {
+            name=`VSRT4`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVSRT4(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVS("vsrt4", 1+one+(two<<1), vd, vs);`
+        }
+ 
+        op VMFVC(110100:00:010:10000:1:imm7:0:vd)
+        {
+            name=`VMFVC`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVMFVC(vd, imm7);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VMFVC";`
+        }
+ 
+        op VMTVC(110100:00:010:10001:0:vs:1:imm7)
+        {
+            name=`VMTVC`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVMTVC(vs, imm7);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VMTVC";`
+        }
+ 
+        op VT4444(110100:00:010:11001:two:vs:one:vd)
+        {
+            name=`VT4444`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVT4444(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VT4444";`
+        }
+ 
+        op VT5551(110100:00:010:11010:two:vs:one:vd)
+        {
+            name=`VT5551`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVT5551(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VT5551";`
+        }
+ 
+        op VT5650(110100:00:010:11011:two:vs:one:vd)
+        {
+            name=`VT5650`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVT5650(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VT5650";`
+        }
+ 
+        op VCST(110100:00:011:imm5:two:0000000:one:vd)
+        {
+            name=`VCST`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVCST(1+one+(two<<1), vd, imm5);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDCST("VCST", 1+one+(two<<1), vd, imm5);`
+        }
+ 
+        op VF2IN(110100:10:000:imm5:two:vs:one:vd)
+        {
+            name=`VF2IN`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVF2IN(1+one+(two<<1), vd, vs, imm5);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VF2IN";`
+        }
+ 
+        op VF2IZ(110100:10:001:imm5:two:vs:one:vd)
+        {
+            name=`VF2IZ`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVF2IZ(1+one+(two<<1), vd, vs, imm5);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VF2IZ";`
+        }
+ 
+        op VF2IU(110100:10:010:imm5:two:vs:one:vd)
+        {
+            name=`VF2IU`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVF2IU(1+one+(two<<1), vd, vs, imm5);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VF2IU";`
+        }
+ 
+        op VF2ID(110100:10:011:imm5:two:vs:one:vd)
+        {
+            name=`VF2ID`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVF2ID(1+one+(two<<1), vd, vs, imm5);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VF2ID";`
+        }
+ 
+        op VI2F(110100:10:100:imm5:two:vs:one:vd)
+        {
+            name=`VI2F`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVI2F(1+one+(two<<1), vd, vs, imm5);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VI2F";`
+        }
+ 
+        op VCMOVT(110100:10:101:00:imm3:two:vs:one:vd)
+        {
+            name=`VCMOVT`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVCMOVT(1+one+(two<<1), imm3, vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VCMOVT";`
+        }
+ 
+        op VCMOVF(110100:10:101:01:imm3:two:vs:one:vd)
+        {
+            name=`VCMOVF`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVCMOVF(1+one+(two<<1), imm3, vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VCMOVF";`
+        }
+ 
+        op VWBN(110100:11:imm8:two:vs:one:vd)
+        {
+            name=`VWBN`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVWBN(1+one+(two<<1), vd, vs, imm8);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VWBN";`
+        }
+ 
+    }
+
+    group VFPU5
+    {
+        op VPFXS(110111:00:----:negw:negz:negy:negx:cstw:cstz:csty:cstx:absw:absz:absy:absx:swzw:swzz:swzy:swzx)
+        {
+            name=`VPFXS`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVPFXS(
+                    negw, negz, negy, negx,
+                    cstw, cstz, csty, cstx, 
+                    absw, absz, absy, absx, 
+                    swzw, swzz, swzy, swzx
+                );
+            `
+
+            compile = `
+            `
+
+            disasm = `
+            int[] swz = new int[4];
+			boolean[] abs, cst, neg;
+			abs = new boolean[4];
+			cst = new boolean[4];
+			neg = new boolean[4];
+			
+			swz[0] = swzx;
+		    swz[1] = swzy;
+		    swz[2] = swzz;
+		    swz[3] = swzw;
+		    abs[0] = absx != 0;
+		    abs[1] = absy != 0;
+		    abs[2] = absz != 0;
+		    abs[3] = absw != 0;
+		    cst[0] = cstx != 0;
+		    cst[1] = csty != 0;
+		    cst[2] = cstz != 0;
+		    cst[3] = cstw != 0;
+		    neg[0] = negx != 0;
+		    neg[1] = negy != 0;
+		    neg[2] = negz != 0;
+		    neg[3] = negw != 0;
+		
+			return Common.disasmVPFX("VPFXS", swz, abs, cst, neg);`
+        }
+
+        op VPFXT(110111:01:----:negw:negz:negy:negx:cstw:cstz:csty:cstx:absw:absz:absy:absx:swzw:swzz:swzy:swzx)
+        {
+            name=`VPFXT`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVPFXT(
+                    negw, negz, negy, negx,
+                    cstw, cstz, csty, cstx, 
+                    absw, absz, absy, absx, 
+                    swzw, swzz, swzy, swzx
+                );
+            `
+
+            compile = `
+            `
+
+            disasm = `
+            int[] swz = new int[4];
+	boolean[] abs, cst, neg;
+	abs = new boolean[4];
+	cst = new boolean[4];
+	neg = new boolean[4];
+	
+	swz[0] = swzx;
+    swz[1] = swzy;
+    swz[2] = swzz;
+    swz[3] = swzw;
+    abs[0] = absx != 0;
+    abs[1] = absy != 0;
+    abs[2] = absz != 0;
+    abs[3] = absw != 0;
+    cst[0] = cstx != 0;
+    cst[1] = csty != 0;
+    cst[2] = cstz != 0;
+    cst[3] = cstw != 0;
+    neg[0] = negx != 0;
+    neg[1] = negy != 0;
+    neg[2] = negz != 0;
+    neg[3] = negw != 0;
+
+return Common.disasmVPFX("VPFXT", swz, abs, cst, neg);`
+        }
+
+        op VPFXD(110111:10:------------:mskw:mskz:msky:mskx:satw:satz:saty:satx)
+        {
+            name=`VPFXD`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVPFXD(
+                    mskw, mskz, msky, mskx,
+                    satw, satz, saty, satx
+                );
+            `
+
+            compile = `
+            `
+
+            disasm = `
+            	int[] sat, msk;
+				sat = new int[4];
+				msk = new int[4];
+				sat[0] = satx;
+				sat[1] = saty;
+				sat[2] = satz;
+				sat[3] = satw;
+				msk[0] = mskx;
+				msk[1] = msky;
+				msk[2] = mskz;
+				msk[3] = mskw;
+			
+				return Common.disasmVPFXD("VPFXD", sat, msk);`
+        }
+
+        op VIIM(110111:11:0:vd:imm16)
+        {
+            name=`VIIM`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVIIM(vd, imm16);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDIIM("VIIM", 1, vd, imm16);`
+        }
+ 
+        op VFIM(110111:11:1:vd:imm16)
+        {
+            name=`VFIM`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVFIM(vd, imm16);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDFIM("VFIM", 1, vd, imm16);`
+        }
+    }
+
+    group VFPU6
+    {
+        op VMMUL(111100:000:vt:two:vs:one:vd)
+        {
+            name=`VMMUL`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVMMUL(1+one+(two<<1), vd, vs, vt);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDMVSMVTM("VMMUL", 1+one+(two<<1), vd, vs, vt);`
+        }
+
+        op VHTFM2(111100:001:vt:0:vs:0:vd)
+        {
+            name=`VHTFM2`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVHTFM2(vd, vs, vt);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VHTFM2";`
+        }
+
+        op VTFM2(111100:001:vt:0:vs:1:vd)
+        {
+            name=`VTFM2`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVTFM2(vd, vs, vt);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VTFM2";`
+        }
+
+        op VHTFM3(111100:010:vt:0:vs:1:vd)
+        {
+            name=`VHTFM3`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVHTFM3(vd, vs, vt);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VHTFM3";`
+        }
+
+        op VTFM3(111100:010:vt:1:vs:0:vd)
+        {
+            name=`VTFM3`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVTFM3(vd, vs, vt);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VTFM3";`
+        }
+
+        op VHTFM4(111100:011:vt:1:vs:0:vd)
+        {
+            name=`VHTFM4`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVHTFM4(vd, vs, vt);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VHTFM4";`
+        }
+
+        op VTFM4(111100:011:vt:1:vs:1:vd)
+        {
+            name=`VTFM4`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVTFM4(vd, vs, vt);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VTFM4";`
+        }
+
+        op VMSCL(111100:100:vt:two:vs:one:vd)
+        {
+            name=`VMSCL`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVMSCL(1+one+(two<<1), vd, vs, vt);
+            `
+
+            compile = `
+            `
+
+            disasm = `return "Unimplemented VMSCL";`
+        }
+
+        op VCRSP(111100:101:vt:1:vs:0:vd)
+        {
+            name=`VCRSP`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVCRSP(vd, vs, vt);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVSVT("VCRSP", 1+one+(two<<1), vd, vs, vt);`
+        }
+
+        op VQMUL(111100:101:vt:1:vs:1:vd)
+        {
+            name=`VQMUL`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVQMUL(vd, vs, vt);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDVSVT("VQMUL", 4, vd, vs, vt);`
+        }
+
+        op VMMOV(111100:111:00:00000:two:vs:one:vd)
+        {
+            name=`VMMOV`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVMMOV(1+one+(two<<1), vd, vs);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDMVSM("VMMOV", 1+one+(two<<1), vd, vs);`
+        }
+
+        op VMIDT(111100:111:00:00011:two:0000000:one:vd)
+        {
+            name=`VMIDT`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVMIDT(1+one+(two<<1), vd);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDM("VMIDT", 1+one+(two<<1), vd);`
+        }
+
+        op VMZERO(111100:111:00:00110:two:0000000:one:vd)
+        {
+            name=`VMZERO`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVMZERO(1+one+(two<<1), vd);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDM("VMZERO", 1+one+(two<<1), vd);`
+        }
+
+        op VMONE(111100:111:00:00111:two:0000000:one:vd)
+        {
+            name=`VMONE`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVMONE(1+one+(two<<1), vd);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVDM("VMONE", 1+one+(two<<1), vd);`
+        }
+
+        op VROT(111100:111:01:imm5:two:vs:one:vd)
+        {
+            name=`VROT`
+
+            category=`VFPU`
+
+            interpret = `
+                processor.cpu.doVROT(1+one+(two<<1), vd, vs, imm5);
+            `
+
+            compile = `
+            `
+
+            disasm = `return Common.disasmVROT("VROT", 1+one+(two<<1), vd, vs, imm5);`
+        }
+
+    }
+
+    group VFPU7
+    {
+        op VNOP(111111:1111111111:00000:00000000000)
+        {
+            name=`VNOT`
+
+            category=`VFPU`
+
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "vnop";`
+        }
+
+        op VFLUSH(111111:1111111111:00000:10000001101)
+        {
+            name=`VFLUSH`
+
+            category=`VFPU`
+
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "vflush";`
+        }
+
+        op VSYNC(111111:1111111111:00000:01100100000)
+        {
+            name=`VSYNC`
+
+            category=`VFPU`
+
+            interpret = `
+            `
+
+            compile = `
+            `
+
+            disasm = `return "vsync";`
+        }
+    }
+}
