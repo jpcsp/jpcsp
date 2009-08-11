@@ -361,7 +361,7 @@ public class pspge {
     /**
      * arg1 = lower 16-bits of GE command argument
      * arg2 = user data from PspGeCallbackData struct
-     * arg3 = user data from sceGeListEnQueue
+     * arg3 = always 0(?) possibly related to option data from sceGeListEnQueue?
      */
     public void sceGeSetCallback(int cbdata_addr) {
         pspGeCallbackData cbdata = new pspGeCallbackData();
@@ -374,7 +374,6 @@ public class pspge {
                               + ", finishArg=0x" + Integer.toHexString(cbdata.finishArgument)
                               + ", result uid=" + Integer.toHexString(cbdata.uid));
 
-        // I checked and arg3 is 0, but I expect this to crash, just need to find the game so we can fix it (fiveofhearts)
         SceKernelCallbackInfo callbackSignal = Managers.callbacks.hleKernelCreateCallback("GeCallbackSignal", cbdata.signalFunction, 0);
         SceKernelCallbackInfo callbackFinish = Managers.callbacks.hleKernelCreateCallback("GeCallbackFinish", cbdata.finishFunction, 0);
         cbdata.signalId = callbackSignal.uid;

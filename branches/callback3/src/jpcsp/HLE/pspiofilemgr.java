@@ -776,6 +776,9 @@ public class pspiofilemgr {
         if (info == null) {
             Modules.log.warn("sceIoSetAsyncCallback - unknown uid " + Integer.toHexString(uid));
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
+        } else if (!Managers.callbacks.isCallbackUid(cbid)) {
+            Modules.log.warn("sceIoSetAsyncCallback - not a callback uid " + Integer.toHexString(uid));
+            Emulator.getProcessor().cpu.gpr[2] = -1;
         } else {
             info.cbid = cbid;
             info.notifyArg = notifyArg;

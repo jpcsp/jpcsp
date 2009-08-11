@@ -18,6 +18,7 @@ package jpcsp.HLE;
 
 
 import jpcsp.Emulator;
+import jpcsp.Memory;
 import jpcsp.GeneralJpcspException;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.kernel.Managers;
@@ -52,19 +53,25 @@ public class SyscallHandler {
 		//  case 0x200b: //sceKernelReleaseThreadEventHandler
 		//  case 0x200c: //sceKernelReferThreadEventHandlerStatus
                 case 0x200d:
-                    ThreadMan.getInstance().ThreadMan_sceKernelCreateCallback(gpr[4], gpr[5], gpr[6]);
+                    Managers.callbacks.sceKernelCreateCallback(gpr[4], gpr[5], gpr[6]);
                     break;
                 case 0x200e:
-                    ThreadMan.getInstance().ThreadMan_sceKernelDeleteCallback(gpr[4]);
+                    Managers.callbacks.sceKernelDeleteCallback(gpr[4]);
                     break;
-               // case 0x200f: //sceKernelNotifyCallback
-              //  case 0x2010: //sceKernelCancelCallback
-              //  case 0x2011: //sceKernelGetCallbackCount
+                case 0x200f:
+                    Managers.callbacks.sceKernelNotifyCallback(gpr[4], gpr[5]);
+                    break;
+                case 0x2010:
+                    Managers.callbacks.sceKernelCancelCallback(gpr[4]);
+                    break;
+                case 0x2011:
+                    Managers.callbacks.sceKernelGetCallbackCount(gpr[4]);
+                    break;
                 case 0x2012:
-                    ThreadMan.getInstance().ThreadMan_sceKernelCheckCallback();
+                    Managers.callbacks.sceKernelCheckCallback();
                     break;
                 case 0x2013:
-                    ThreadMan.getInstance().ThreadMan_sceKernelReferCallbackStatus(gpr[4], gpr[5]);
+                    Managers.callbacks.sceKernelReferCallbackStatus(gpr[4], gpr[5]);
                     break;
                 case 0x2014:
                     ThreadMan.getInstance().ThreadMan_sceKernelSleepThread();
@@ -963,6 +970,17 @@ public class SyscallHandler {
                     break;
                 }
 
+                // special codes for HLE syscalls
+                //case 0x6f000:
+                //    ThreadMan.getInstance().hleKernelExitThread();
+                //    break;
+                case 0x6f001:
+                    Managers.callbacks.hleKernelExitCallback();
+                    break;
+                case 0x6f002:
+                    Memory.getInstance().memset(gpr[4], (byte)(gpr[5] & 0xFF), gpr[6]);
+                    break;
+
                 default:
                 {
                     // Try and handle as an HLE module export
@@ -981,10 +999,12 @@ public class SyscallHandler {
                         for (jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls c : jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls.values()) {
                             if (c.getSyscall() == code) {
                                 Modules.log.warn("Unsupported syscall " + Integer.toHexString(code) + " " + c + " " + params);
+                                //jpcsp.Emulator.PauseEmu();
                                 return;
                             }
                         }
                         Modules.log.warn("Unsupported syscall " + Integer.toHexString(code) + " " + params);
+                        //jpcsp.Emulator.PauseEmu();
                     }
                 }
                 break;
