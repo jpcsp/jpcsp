@@ -14,12 +14,20 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.Allegrex.compiler;
+package jpcsp.Allegrex.compiler.nativeCode;
 
 /**
  * @author gid15
  *
  */
-public interface IExecutable {
-	public int exec(int returnAddress, int alternativeReturnAddress, boolean isJump) throws Exception;
+public class Memcpy extends AbstractNativeCodeSequence {
+	static public void call() {
+		int dstAddr = getGprA0();
+		int srcAddr = getGprA1();
+		int n = getGprA2();
+
+		getMemory().memcpy(dstAddr, srcAddr, n);
+
+		setGprV0(dstAddr);
+	}
 }

@@ -16,14 +16,24 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Stack;
 
-import org.apache.log4j.Logger;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
+import org.apache.log4j.Logger;
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
+
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.Common.Instruction;
+import jpcsp.Allegrex.compiler.nativeCode.NativeCodeManager;
 import jpcsp.util.DurationStatistics;
 
 /*
@@ -116,6 +126,8 @@ public class Compiler implements ICompiler {
 	private Memory mem;
 	private CompilerClassLoader classLoader;
 	private DurationStatistics compileDuration = new DurationStatistics("Compilation Time");
+	private Document configuration;
+	private NativeCodeManager nativeCodeManager;
 
 	public static Compiler getInstance() {
 		if (instance == null) {
@@ -139,10 +151,28 @@ public class Compiler implements ICompiler {
 		resetCount++;
 		classLoader = new CompilerClassLoader(this);
 		compileDuration.reset();
+		nativeCodeManager.reset();
 	}
 
 	private void Initialise() {
 		mem = Memory.getInstance();
+		DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+		documentBuilderFactory.setIgnoringElementContentWhitespace(true);
+		documentBuilderFactory.setIgnoringComments(true);
+		documentBuilderFactory.setCoalescing(true);
+//		documentBuilderFactory.setValidating(true);
+		try {
+			DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+			configuration = documentBuilder.parse(new File("Compiler.xml"));
+		} catch (ParserConfigurationException e) {
+			Compiler.log.error(e);
+		} catch (SAXException e) {
+			Compiler.log.error(e);
+		} catch (IOException e) {
+			Compiler.log.error(e);
+		}
+
+		nativeCodeManager = new NativeCodeManager(configuration.getDocumentElement());
 
 		reset();
 	}
@@ -259,7 +289,13 @@ public class Compiler implements ICompiler {
 
     @Override
     public IExecutable compile(int address) {
-        compileDuration.start();
+    	if (!mem.isAddressGood(address)) {
+    		log.error(String.format("Trying to compile an invalid address 0x%08X", address));
+    		Emulator.PauseEmu();
+    		return null;
+    	}
+
+    	compileDuration.start();
         CompilerContext context = new CompilerContext(classLoader);
         IExecutable executable = null;
         ClassFormatError error = null;
@@ -313,5 +349,9 @@ public class Compiler implements ICompiler {
 
 	public static void setResetCount(int resetCount) {
 		Compiler.resetCount = resetCount;
+	}
+
+	public NativeCodeManager getNativeCodeManager() {
+		return nativeCodeManager;
 	}
 }

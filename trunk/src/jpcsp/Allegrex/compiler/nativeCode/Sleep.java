@@ -14,12 +14,26 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.Allegrex.compiler;
+package jpcsp.Allegrex.compiler.nativeCode;
+
+import jpcsp.Allegrex.compiler.Compiler;
 
 /**
  * @author gid15
  *
  */
-public interface IExecutable {
-	public int exec(int returnAddress, int alternativeReturnAddress, boolean isJump) throws Exception;
+public class Sleep extends AbstractNativeCodeSequence {
+	static public void call(int regDoubleLow, int regDoubleHigh) {
+		int doubleLow = getRegisterValue(regDoubleLow);
+		int doubleHigh = getRegisterValue(regDoubleHigh);
+		Double sleepSeconds = Double.longBitsToDouble(getLong(doubleLow, doubleHigh));
+
+		Compiler.log.info("Sleeping " + sleepSeconds + " s");
+
+		try {
+            Thread.sleep((long) (sleepSeconds * 1000));
+        } catch (InterruptedException e) {
+        	// Ignore exception
+        }
+	}
 }

@@ -14,12 +14,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.Allegrex.compiler;
+package jpcsp.Allegrex.compiler.nativeCode;
 
 /**
  * @author gid15
  *
  */
-public interface IExecutable {
-	public int exec(int returnAddress, int alternativeReturnAddress, boolean isJump) throws Exception;
+public interface INativeCodeSequence {
+	// The interface has to implement a static "call()" method taking n "int" parameters.
 }

@@ -14,12 +14,32 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.Allegrex.compiler;
+package jpcsp.Allegrex.compiler.nativeCode;
+
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.MemoryReader;
 
 /**
  * @author gid15
  *
  */
-public interface IExecutable {
-	public int exec(int returnAddress, int alternativeReturnAddress, boolean isJump) throws Exception;
+public class Memcmp extends AbstractNativeCodeSequence {
+	static public void call() {
+		int src1Addr = getGprA0();
+		int src2Addr = getGprA1();
+		int n = getGprA2();
+
+		IMemoryReader memoryReader1 = MemoryReader.getMemoryReader(src1Addr, n, 1);
+		IMemoryReader memoryReader2 = MemoryReader.getMemoryReader(src2Addr, n, 1);
+		for (int i = 0; i < n; i++) {
+			int c1 = memoryReader1.readNext();
+			int c2 = memoryReader2.readNext();
+			if (c1 != c2) {
+				setGprV0(c1 - c2);
+				return;
+			}
+		}
+
+		setGprV0(0);
+	}
 }

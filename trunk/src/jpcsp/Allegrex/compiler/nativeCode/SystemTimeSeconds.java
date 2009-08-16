@@ -14,12 +14,17 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.Allegrex.compiler;
+package jpcsp.Allegrex.compiler.nativeCode;
+
+import jpcsp.Emulator;
 
 /**
  * @author gid15
  *
  */
-public interface IExecutable {
-	public int exec(int returnAddress, int alternativeReturnAddress, boolean isJump) throws Exception;
+public class SystemTimeSeconds extends AbstractNativeCodeSequence {
+	static public void call() {
+		long milliTime = Emulator.getClock().milliTime();
+		getCpu().fpr[0] = milliTime / 1000.0f;
+	}
 }

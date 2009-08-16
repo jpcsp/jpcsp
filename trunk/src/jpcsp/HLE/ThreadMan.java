@@ -218,7 +218,7 @@ public class ThreadMan {
             }
 
             statistics.endTimeMillis = System.currentTimeMillis();
-            Modules.log.info("ThreadMan Statistics (" + statistics.allCycles + " cycles in " + String.format("%.3f", statistics.getDurationMillis() / 1000.0) + "s):");
+            Modules.log.info(String.format("ThreadMan Statistics (%,d cycles in %.3fs):", statistics.allCycles, statistics.getDurationMillis() / 1000.0));
             for (Iterator<Statistics.ThreadStatistics> it = statistics.threads.iterator(); it.hasNext(); ) {
                 Statistics.ThreadStatistics threadStatistics = it.next();
                 double percentage = 0;
@@ -307,14 +307,14 @@ public class ThreadMan {
                     Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_WDT_HOG);
                 }
             }
-        } else {
+        } else if (!exitCalled) {
             // We always need to be in a thread! we shouldn't get here.
             Modules.log.error("No ready threads!");
         }
 
         if (!waitingThreads.isEmpty()) {
             long microTimeNow = Emulator.getClock().microTime();
-            ArrayList<SceKernelThreadInfo> workList = new ArrayList(waitingThreads.size());
+            ArrayList<SceKernelThreadInfo> workList = new ArrayList<SceKernelThreadInfo>(waitingThreads.size());
 
             // Access waitingThreads using array indexing because
             // this is more efficient than iterator access for short lists
@@ -335,7 +335,7 @@ public class ThreadMan {
 
             // Cleanup stopped threads (deferred deletion)
         if (!toBeDeletedThreads.isEmpty()) {
-            ArrayList<SceKernelThreadInfo> workList = new ArrayList(toBeDeletedThreads.size());
+            ArrayList<SceKernelThreadInfo> workList = new ArrayList<SceKernelThreadInfo>(toBeDeletedThreads.size());
 
             for (int i = 0; i < toBeDeletedThreads.size(); i++) {
                 SceKernelThreadInfo thread = toBeDeletedThreads.get(i);

@@ -170,7 +170,17 @@ public abstract class Memory {
     public abstract Buffer getMainMemoryByteBuffer();
     public abstract Buffer getBuffer(int address, int length);
     public abstract void copyToMemory(int address, ByteBuffer source, int length);
-    public abstract void memcpy(int destination, int source, int length);
+    protected abstract void memcpy(int destination, int source, int length, boolean checkOverlap);
+
+    // memcpy does not check overlapping source and destination areas
+    public void memcpy(int destination, int source, int length) {
+    	memcpy(destination, source, length, false);
+    }
+
+    // memmove reproduces the bytes correctly at destination even if the two areas overlap
+    public void memmove(int destination, int source, int length) {
+    	memcpy(destination, source, length, true);
+    }
 
     public int normalizeAddress(int address) {
     	address = address & addressMask;

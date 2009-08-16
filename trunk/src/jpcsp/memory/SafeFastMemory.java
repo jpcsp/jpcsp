@@ -20,7 +20,6 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 import jpcsp.Emulator;
-import jpcsp.Memory;
 import jpcsp.MemoryMap;
 
 public class SafeFastMemory extends FastMemory {
@@ -158,6 +157,10 @@ public class SafeFastMemory extends FastMemory {
 
 	@Override
 	public void memset(int address, byte data, int length) {
+		if (length <= 0) {
+			return;
+		}
+
 		if (!isAddressGood(address, length)) {
 			invalidMemoryAddress(address, "memset", Emulator.EMU_STATUS_MEM_WRITE);
 			return;
@@ -195,6 +198,10 @@ public class SafeFastMemory extends FastMemory {
 
 	@Override
 	public void memcpy(int destination, int source, int length) {
+		if (length <= 0) {
+			return;
+		}
+
 		if (!isAddressGood(destination, length)) {
 			invalidMemoryAddress(destination, "memcpy", Emulator.EMU_STATUS_MEM_WRITE);
 			return;

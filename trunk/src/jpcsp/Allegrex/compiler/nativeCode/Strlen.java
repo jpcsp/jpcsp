@@ -14,12 +14,23 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.Allegrex.compiler;
+package jpcsp.Allegrex.compiler.nativeCode;
 
 /**
  * @author gid15
  *
  */
-public interface IExecutable {
-	public int exec(int returnAddress, int alternativeReturnAddress, boolean isJump) throws Exception;
+public class Strlen extends AbstractNativeCodeSequence {
+	static public void call() {
+		int srcAddr = getGprA0();
+
+		int srcLength = getStrlen(srcAddr);
+		setGprV0(srcLength);
+
+		// Some games are also assuming that the other registers
+		// have been modified... dirty programming
+		getGpr()[4] = srcAddr + srcLength;
+		getGpr()[5] = srcAddr;
+		getGpr()[6] = 0;
+	}
 }

@@ -17,11 +17,33 @@
     </layout>
   </appender>
 
+  <appender name="TxtAppender" class="org.apache.log4j.FileAppender">
+    <param name="File" value="log.txt" />
+    <param name="Append" value="false" />
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="%d{HH:mm:ss} %5p %8c - %t - %m%n" />
+    </layout>
+  </appender>
+
+  <appender name="ProfilerTxtAppender" class="org.apache.log4j.FileAppender">
+    <param name="File" value="profiler.txt" />
+    <param name="Append" value="false" />
+    <layout class="org.apache.log4j.PatternLayout">
+      <param name="ConversionPattern" value="%m%n" />
+    </layout>
+  </appender>
+
   <logger name="cpu" />
   <logger name="hle" />
   <logger name="memory" />
   <logger name="ge" />
   <logger name="misc" />
+
+  <!-- Output profiler info to "profiler.txt" -->
+  <logger name="profiler" additivity="false">
+    <level value="info" />
+    <appender-ref ref="ProfilerTxtAppender" />
+  </logger>
 
   <root>
     <level value ="off" />
