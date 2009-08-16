@@ -254,6 +254,8 @@ public class StandardMemory extends Memory {
 
 	@Override
 	public ByteBuffer getBuffer(int address, int length) {
+		address = normalizeAddress(address);
+
 		int endAddress = address + length - 1;
         if (address >= MemoryMap.START_RAM && endAddress <= MemoryMap.END_RAM) {
         	return ByteBuffer.wrap(mainmemory.array(),
