@@ -276,6 +276,7 @@ public class FastMemory extends Memory {
 		for (int i = address / 4; count4 > 0; i++, count4--) {
 			all[i] = data4;
 		}
+		count4 = length / 4;
 		address += count4 * 4;
 		length -= count4 * 4;
 
@@ -319,24 +320,58 @@ public class FastMemory extends Memory {
 	    return all;
 	}
 
+	// Source, destination and length are "int"-aligned
+	private void memcpyAligned4(int destination, int source, int length, boolean checkOverlap) {
+		if (checkOverlap || !areOverlapping(destination, source, length)) {
+			IntBuffer sourceBuffer = getBuffer(source, length);
+			IntBuffer destinationBuffer = getBuffer(destination, length);
+			// Direct copy, IntBuffer is handling correctly overlapping buffers
+			destinationBuffer.put(sourceBuffer);
+		} else {
+			// Buffers are overlapping, but we have to copy as they would not overlap.
+			// Unfortunately, IntBuffer operation are always checking for overlapping buffers,
+			// so we have to copy manually...
+			IMemoryReader sourceReader = MemoryReader.getMemoryReader(source, length, 4);
+			for (int i = 0; i < length; i += 4) {
+				write32(destination + i, sourceReader.readNext());
+			}
+		}
+	}
+
 	@Override
-	public void memcpy(int destination, int source, int length) {
-		destination = normalizeAddress(destination);
+    protected void memcpy(int destination, int source, int length, boolean checkOverlap) {
+    	if (length <= 0) {
+    		return;
+    	}
+
+    	destination = normalizeAddress(destination);
 		source = normalizeAddress(source);
 
 		if (isIntAligned(source) && isIntAligned(destination) && isIntAligned(length)) {
 			// Source, destination and length are "int"-aligned
-			IntBuffer sourceBuffer = getBuffer(source, length);
-			IntBuffer destinationBuffer = getBuffer(destination, length);
+			memcpyAligned4(destination, source, length, checkOverlap);
+		} else if ((source & 0x03) == (destination & 0x03) && (!checkOverlap || !areOverlapping(destination, source, length))) {
+			// Source and destination have the same alignment and are not overlapping
+			while (!isIntAligned(source) && length > 0) {
+				write8(destination, (byte) read8(source));
+				source++;
+				destination++;
+				length--;
+			}
 
-			if (!areOverlapping(destination, source, length)) {
-				// Direct copy if buffers do not overlap
-				destinationBuffer.put(sourceBuffer);
-			} else {
-				// Buffers are overlapping, copy first to a temporary array
-				int[] data = new int[length / 4];
-				sourceBuffer.get(data);
-				destinationBuffer.put(data);
+			int length4 = length & ~0x03;
+			if (length4 > 0) {
+				memcpyAligned4(destination, source, length4, checkOverlap);
+				source += length4;
+				destination += length4;
+				length -= length4;
+			}
+
+			while (length > 0) {
+				write8(destination, (byte) read8(source));
+				destination++;
+				source++;
+				length--;
 			}
 		} else {
 			//
@@ -351,9 +386,17 @@ public class FastMemory extends Memory {
 			//                 [---destination---]
 			//      => Copy from the tail
 			//
-			if (source >= destination || !areOverlapping(destination, source, length)) {
-				for (int i = 0; i < length; i++) {
-					write8(destination + i, (byte) read8(source + i));
+			if (!checkOverlap || source >= destination || !areOverlapping(destination, source, length)) {
+				if (areOverlapping(destination, source, 4)) {
+					// Cannot use MemoryReader if source and destination are overlapping in less than 4 bytes
+					for (int i = 0; i < length; i++) {
+						write8(destination + i, (byte) read8(source + i));
+					}
+				} else {
+					IMemoryReader sourceReader = MemoryReader.getMemoryReader(source, length, 1);
+					for (int i = 0; i < length; i++) {
+						write8(destination + i, (byte) sourceReader.readNext());
+					}
 				}
 			} else {
 				for (int i = length - 1; i >= 0; i--) {

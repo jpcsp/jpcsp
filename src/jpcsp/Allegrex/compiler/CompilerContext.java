@@ -28,6 +28,9 @@ import jpcsp.Allegrex.Instructions;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.FpuState.Fcr31;
 import jpcsp.Allegrex.VfpuState.Vcr;
+import jpcsp.Allegrex.compiler.nativeCode.NativeCodeManager;
+import jpcsp.Allegrex.compiler.nativeCode.NativeCodeSequence;
+import jpcsp.Allegrex.compiler.nativeCode.Nop;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.memory.SafeFastMemory;
 
@@ -44,7 +47,8 @@ import org.objectweb.asm.Type;
 public class CompilerContext implements ICompilerContext {
 	private CompilerClassLoader classLoader;
 	private CodeBlock codeBlock;
-	private boolean skipNextIntruction;
+	private int numberInstructionsToBeSkipped;
+	private boolean skipDelaySlot;
 	private MethodVisitor mv;
 	private CodeInstruction codeInstruction;
 	private static final boolean storeGprLocal = true;
@@ -67,6 +71,8 @@ public class CompilerContext implements ICompilerContext {
     private boolean memWrite32prepared = false;
     private boolean hiloPrepared = false;
     private int methodMaxInstructions = 3000;
+    private NativeCodeManager nativeCodeManager;
+    private NativeCodeSequence nativeCodeSequence = null;
     private static final String runtimeContextInternalName = Type.getInternalName(RuntimeContext.class);
     private static final String processorDescriptor = Type.getDescriptor(Processor.class);
     private static final String cpuDescriptor = Type.getDescriptor(CpuState.class);
@@ -79,9 +85,11 @@ public class CompilerContext implements ICompilerContext {
     private static final String stringDescriptor = Type.getDescriptor(String.class);
     private static final String memoryDescriptor = Type.getDescriptor(Memory.class);
     private static final String memoryInternalName = Type.getInternalName(Memory.class);
+    private static final String profilerInternalName = Type.getInternalName(Profiler.class);
 
     public CompilerContext(CompilerClassLoader classLoader) {
         this.classLoader = classLoader;
+        nativeCodeManager = Compiler.getInstance().getNativeCodeManager();
     }
 
     public CompilerClassLoader getClassLoader() {
@@ -98,14 +106,6 @@ public class CompilerContext implements ICompilerContext {
 
     public void setCodeBlock(CodeBlock codeBlock) {
         this.codeBlock = codeBlock;
-    }
-
-    public boolean isSkipNextIntruction() {
-        return skipNextIntruction;
-    }
-
-    public void setSkipNextIntruction(boolean skipNextIntruction) {
-        this.skipNextIntruction = skipNextIntruction;
     }
 
     private void loadGpr() {
@@ -271,37 +271,59 @@ public class CompilerContext implements ICompilerContext {
     }
 
     public void visitCall(int address, int returnAddress, int returnRegister, boolean useAltervativeReturnAddress) {
-    	if (useAltervativeReturnAddress) {
-    		loadLocalVar(LOCAL_RETURN_ADDRESS);
-    		loadImm(returnAddress);
-	        if (returnRegister != 0) {
-	        	prepareRegisterForStore(returnRegister);
-	    		loadImm(returnAddress);
-	            storeRegister(returnRegister);
-	        }
-    	} else {
-	        mv.visitLdcInsn(returnAddress);
-	        if (returnRegister != 0) {
-	        	prepareRegisterForStore(returnRegister);
-	    		loadImm(returnAddress);
-	            storeRegister(returnRegister);
-	        }
-	    	mv.visitInsn(Opcodes.DUP);			// alternativeReturnAddress = returnAddress
-    	}
-        mv.visitInsn(Opcodes.ICONST_0);		// isJump = false
-        mv.visitMethodInsn(Opcodes.INVOKESTATIC, getClassName(address), getStaticExecMethodName(), getStaticExecMethodDesc());
-        if (useAltervativeReturnAddress) {
-        	Label doNotReturnImmediately = new Label();
-        	mv.visitInsn(Opcodes.DUP);
-        	loadLocalVar(LOCAL_RETURN_ADDRESS);
-    		mv.visitJumpInsn(Opcodes.IF_ICMPNE, doNotReturnImmediately);
-    		endMethod();
-    		mv.visitInsn(Opcodes.IRETURN);
-        	mv.visitLabel(doNotReturnImmediately);
-        	mv.visitInsn(Opcodes.POP);
-        } else {
-        	mv.visitInsn(Opcodes.POP);
+    	NativeCodeSequence calledNativeCodeBlock = null;
+
+    	// Do not call native block directly if we are profiling,
+        // this would loose profiler information
+        if (!Profiler.enableProfiler) {
+        	// Is a native equivalent for this CodeBlock available?
+        	calledNativeCodeBlock = nativeCodeManager.getCompiledNativeCodeBlock(address);
         }
+
+        if (calledNativeCodeBlock != null) {
+    		if (calledNativeCodeBlock.getNativeCodeSequenceClass().equals(Nop.class)) {
+        		// NativeCodeSequence Nop means nothing to do!
+    		} else {
+    			// Call NativeCodeSequence
+    			if (Compiler.log.isDebugEnabled()) {
+    				Compiler.log.debug(String.format("Inlining call at 0x%08X to %s", getCodeInstruction().getAddress(), calledNativeCodeBlock));
+    			}
+
+    			visitNativeCodeSequence(calledNativeCodeBlock);
+    		}
+    	} else {
+	    	if (useAltervativeReturnAddress) {
+	    		loadLocalVar(LOCAL_RETURN_ADDRESS);
+	    		loadImm(returnAddress);
+		        if (returnRegister != 0) {
+		        	prepareRegisterForStore(returnRegister);
+		    		loadImm(returnAddress);
+		            storeRegister(returnRegister);
+		        }
+	    	} else {
+		        mv.visitLdcInsn(returnAddress);
+		        if (returnRegister != 0) {
+		        	prepareRegisterForStore(returnRegister);
+		    		loadImm(returnAddress);
+		            storeRegister(returnRegister);
+		        }
+		    	mv.visitInsn(Opcodes.DUP);			// alternativeReturnAddress = returnAddress
+	    	}
+	        mv.visitInsn(Opcodes.ICONST_0);		// isJump = false
+	        mv.visitMethodInsn(Opcodes.INVOKESTATIC, getClassName(address), getStaticExecMethodName(), getStaticExecMethodDesc());
+	        if (useAltervativeReturnAddress) {
+	        	Label doNotReturnImmediately = new Label();
+	        	mv.visitInsn(Opcodes.DUP);
+	        	loadLocalVar(LOCAL_RETURN_ADDRESS);
+	    		mv.visitJumpInsn(Opcodes.IF_ICMPNE, doNotReturnImmediately);
+	    		endMethod();
+	    		mv.visitInsn(Opcodes.IRETURN);
+	        	mv.visitLabel(doNotReturnImmediately);
+	        	mv.visitInsn(Opcodes.POP);
+	        } else {
+	        	mv.visitInsn(Opcodes.POP);
+	        }
+    	}
     }
 
     public void visitCall(int returnAddress, int returnRegister) {
@@ -386,24 +408,25 @@ public class CompilerContext implements ICompilerContext {
     	}
     }
 
-    public void startMethod() {
+    private void startInternalMethod() {
     	checkSync();
 
-    	if (RuntimeContext.enableCallCount) {
-	    	mv.visitFieldInsn(Opcodes.GETSTATIC, codeBlock.getClassName(), "callCount", "I");
-	    	mv.visitInsn(Opcodes.ICONST_1);
-	    	mv.visitInsn(Opcodes.IADD);
-	    	mv.visitFieldInsn(Opcodes.PUTSTATIC, codeBlock.getClassName(), "callCount", "I");
+    	if (Profiler.enableProfiler) {
+    		mv.visitLdcInsn(getCodeBlock().getStartAddress());
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, profilerInternalName, "addCall", "(I)V");
     	}
 
-    	if (RuntimeContext.debugCodeBlockCalls && RuntimeContext.log.isDebugEnabled()) {
+    	if (RuntimeContext.debugCodeBlockCalls) {
         	mv.visitLdcInsn(getCodeBlock().getStartAddress());
         	loadLocalVar(LOCAL_RETURN_ADDRESS);
         	loadLocalVar(LOCAL_ALTERVATIVE_RETURN_ADDRESS);
         	loadLocalVar(LOCAL_IS_JUMP);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.debugCodeBlockStart, "(IIIZ)V");
         }
+    }
 
+    public void startMethod() {
+    	startInternalMethod();
     	startSequenceMethod();
     }
 
@@ -422,6 +445,11 @@ public class CompilerContext implements ICompilerContext {
 		        	mv.visitLdcInsn(currentInstructionCount);
 			        mv.visitInsn(Opcodes.IADD);
 		        }
+		        if (Profiler.enableProfiler) {
+			        mv.visitInsn(Opcodes.DUP);
+		    		mv.visitLdcInsn(getCodeBlock().getStartAddress());
+		            mv.visitMethodInsn(Opcodes.INVOKESTATIC, profilerInternalName, "addInstructionCount", "(II)V");
+		        }
 		        mv.visitInsn(Opcodes.I2L);
 		        mv.visitInsn(Opcodes.LADD);
 		        mv.visitFieldInsn(Opcodes.PUTFIELD, sceKernalThreadInfoInternalName, "runClocks", "J");
@@ -434,13 +462,17 @@ public class CompilerContext implements ICompilerContext {
         }
     }
 
-    public void endMethod() {
-        if (RuntimeContext.debugCodeBlockCalls && RuntimeContext.log.isDebugEnabled()) {
+    private void endInternalMethod() {
+        if (RuntimeContext.debugCodeBlockCalls) {
             mv.visitInsn(Opcodes.DUP);
         	mv.visitLdcInsn(getCodeBlock().getStartAddress());
             mv.visitInsn(Opcodes.SWAP);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.debugCodeBlockEnd, "(II)V");
         }
+    }
+
+    public void endMethod() {
+    	endInternalMethod();
     	flushInstructionCount(false, true);
     }
 
@@ -484,6 +516,21 @@ public class CompilerContext implements ICompilerContext {
 	    	mv.visitLdcInsn(codeInstruction.getAddress());
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, RuntimeContext.debuggerName, "(I)V");
 	    }
+
+	    nativeCodeSequence = nativeCodeManager.getNativeCodeSequence(getCodeInstruction(), getCodeBlock());
+    }
+
+    public void visitJump(int opcode, CodeInstruction target) {
+    	// Back branch? i.e probably a loop
+        if (target.getAddress() < getCodeInstruction().getAddress()) {
+        	checkSync();
+
+        	if (Profiler.enableProfiler) {
+        		mv.visitLdcInsn(getCodeInstruction().getAddress());
+                mv.visitMethodInsn(Opcodes.INVOKESTATIC, profilerInternalName, "addBackBranch", "(I)V");
+        	}
+        }
+        visitJump(opcode, target.getLabel());
     }
 
     public void visitJump(int opcode, Label label) {
@@ -1024,4 +1071,85 @@ public class CompilerContext implements ICompilerContext {
         endMethod();
         mv.visitInsn(Opcodes.IRETURN);
     }
+
+	public boolean isNativeCodeSequence() {
+		return nativeCodeSequence != null;
+	}
+
+	private void visitNativeCodeSequence(NativeCodeSequence nativeCodeSequence) {
+    	StringBuffer methodSignature = new StringBuffer("(");
+    	int numberParameters = nativeCodeSequence.getNumberParameters();
+    	for (int i = 0; i < numberParameters; i++) {
+    		loadImm(nativeCodeSequence.getParameter(i));
+    		methodSignature.append("I");
+    	}
+    	methodSignature.append(")V");
+	    mv.visitMethodInsn(Opcodes.INVOKESTATIC, Type.getInternalName(nativeCodeSequence.getNativeCodeSequenceClass()), "call", methodSignature.toString());
+
+	    if (nativeCodeSequence.hasBranchInstruction()) {
+	    	int branchInstructionAddress = getCodeInstruction().getAddress() + nativeCodeSequence.getBranchInstructionAddressOffset();
+
+	    	CodeInstruction branchInstruction = getCodeBlock().getCodeInstruction(branchInstructionAddress);
+	    	if (branchInstruction != null) {
+	    		int branchingTo = branchInstruction.getBranchingTo();
+	    		CodeInstruction targetInstruction = getCodeBlock().getCodeInstruction(branchingTo);
+	    		if (targetInstruction != null) {
+	    			visitJump(Opcodes.GOTO, targetInstruction);
+	    		} else {
+	    			visitJump(Opcodes.GOTO, branchingTo);
+	    		}
+	    	}
+	    }
+	}
+
+	public void compileNativeCodeSequence() {
+	    if (nativeCodeSequence == null) {
+	    	return;
+	    }
+
+    	int numOpcodes = nativeCodeSequence.getNumOpcodes();
+	    skipInstructions(numOpcodes - 1, true);
+
+	    visitNativeCodeSequence(nativeCodeSequence);
+
+	    if (nativeCodeSequence.isReturning()) {
+	    	loadLocalVar(LOCAL_RETURN_ADDRESS);
+	        endInternalMethod();
+	        mv.visitInsn(Opcodes.IRETURN);
+	    }
+
+	    // Replacing the whole CodeBlock?
+	    if (numOpcodes == getCodeBlock().getLength()) {
+        	nativeCodeManager.setCompiledNativeCodeBlock(getCodeBlock().getStartAddress(), nativeCodeSequence);
+
+        	// Be more verbose when Debug enabled
+	        if (Compiler.log.isDebugEnabled()) {
+	        	Compiler.log.info(String.format("Replacing CodeBlock at 0x%08X (%08X-0x%08X, length %d) by %s", getCodeBlock().getStartAddress(), getCodeBlock().getLowestAddress(), codeBlock.getHighestAddress(), codeBlock.getLength(), nativeCodeSequence));
+	        } else if (Compiler.log.isInfoEnabled()) {
+	        	Compiler.log.info(String.format("Replacing CodeBlock at 0x%08X by Native Code '%s'", getCodeBlock().getStartAddress(), nativeCodeSequence.getName()));
+	        }
+	    } else {
+        	// Be more verbose when Debug enabled
+	    	if (Compiler.log.isDebugEnabled()) {
+		    	Compiler.log.debug(String.format("Replacing CodeSequence at 0x%08X-0x%08X by Native Code %s", getCodeInstruction().getAddress(), getCodeInstruction().getAddress() + (numOpcodes - 1) * 4, nativeCodeSequence));
+	        } else if (Compiler.log.isInfoEnabled()) {
+		    	Compiler.log.info(String.format("Replacing CodeSequence at 0x%08X-0x%08X by Native Code '%s'", getCodeInstruction().getAddress(), getCodeInstruction().getAddress() + (numOpcodes - 1) * 4, nativeCodeSequence.getName()));
+	    	}
+	    }
+
+	    nativeCodeSequence = null;
+	}
+
+	public int getNumberInstructionsToBeSkipped() {
+		return numberInstructionsToBeSkipped;
+	}
+
+	public boolean isSkipDelaySlot() {
+		return skipDelaySlot;
+	}
+
+	public void skipInstructions(int numberInstructionsToBeSkipped, boolean skipDelaySlot) {
+		this.numberInstructionsToBeSkipped = numberInstructionsToBeSkipped;
+		this.skipDelaySlot = skipDelaySlot;
+	}
 }

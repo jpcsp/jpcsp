@@ -59,6 +59,9 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         enabled = Settings.getInstance().readBool("emu.compiler");
         compilerCheck.setSelected(enabled);
         
+        enabled = Settings.getInstance().readBool("emu.profiler");
+        profilerCheck.setSelected(enabled);
+        
         enabled = Settings.getInstance().readBool("emu.useshaders");
         shadersCheck.setSelected(enabled);
         
@@ -243,6 +246,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         openLogwindowCheck = new javax.swing.JCheckBox();
         snapConsoleCheck = new javax.swing.JCheckBox();
         compilerCheck = new javax.swing.JCheckBox();
+        profilerCheck = new javax.swing.JCheckBox();
         umdBrowser = new javax.swing.JRadioButton();
         ClassicOpenDialogumd = new javax.swing.JRadioButton();
         umdpath = new javax.swing.JTextField();
@@ -318,6 +322,8 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
 
         compilerCheck.setText("Use compiler (dynarec)");
 
+        profilerCheck.setText("Output profiler info to profiler.txt (only for compiler)");
+
         buttonGroup1.add(umdBrowser);
         umdBrowser.setText("Use UMD Browser");
 
@@ -365,7 +371,8 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                                     .addComponent(saveWindowPosCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 388, Short.MAX_VALUE)
                                     .addComponent(openLogwindowCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 388, Short.MAX_VALUE)
                                     .addComponent(snapConsoleCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 388, Short.MAX_VALUE)
-                                    .addComponent(compilerCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 388, Short.MAX_VALUE))
+                                    .addComponent(compilerCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 388, Short.MAX_VALUE)
+                                    .addComponent(profilerCheck, javax.swing.GroupLayout.DEFAULT_SIZE, 388, Short.MAX_VALUE))
                                 .addGap(216, 216, 216))
                             .addGroup(generalPanelLayout.createSequentialGroup()
                                 .addComponent(jLabel1)
@@ -388,6 +395,8 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                 .addComponent(snapConsoleCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(compilerCheck)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(profilerCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(shadersCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -994,6 +1003,7 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
    Settings.getInstance().writeBool("gui.openLogwindow", openLogwindowCheck.isSelected());
    Settings.getInstance().writeBool("gui.snapLogwindow", snapConsoleCheck.isSelected());
    Settings.getInstance().writeBool("emu.compiler", compilerCheck.isSelected());
+   Settings.getInstance().writeBool("emu.profiler", profilerCheck.isSelected());
    Settings.getInstance().writeBool("emu.useshaders", shadersCheck.isSelected());
    Settings.getInstance().writeBool("emu.debug.enablefilelogger", filelogCheck.isSelected());
    Settings.getInstance().writeBool("emu.disablege", disableGECheck.isSelected());
@@ -1124,6 +1134,7 @@ private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.JPanel compatibilityPanel;
     private javax.swing.JCheckBox compilerCheck;
+    private javax.swing.JCheckBox profilerCheck;
     private javax.swing.JCheckBox disableBlockingAudioCheck;
     private javax.swing.JCheckBox disableGECheck;
     private javax.swing.JCheckBox disableReservedThreadMemoryCheck;

@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 import jpcsp.Memory;
+import jpcsp.MemoryMap;
 
 /**
  * @author gid15
@@ -33,8 +34,8 @@ public class MemoryReader {
 		if (buffer instanceof IntBuffer) {
 			IntBuffer intBuffer = (IntBuffer) buffer;
 			switch (step) {
-			case 1: return new MemoryReaderInt8(intBuffer);
-			case 2: return new MemoryReaderInt16(intBuffer);
+			case 1: return new MemoryReaderInt8(intBuffer, address & 0x03);
+			case 2: return new MemoryReaderInt16(intBuffer, (address & 0x02) >> 1);
 			case 4: return new MemoryReaderInt32(intBuffer);
 			}
 		} else if (buffer instanceof ByteBuffer) {
@@ -48,6 +49,22 @@ public class MemoryReader {
 
 		// Default (generic) MemoryReader
 		return new MemoryReaderGeneric(address, length, step);
+	}
+
+	public static IMemoryReader getMemoryReader(int address, int step) {
+		int length;
+
+		if (address >= MemoryMap.START_RAM && address <= MemoryMap.END_RAM) {
+			length = MemoryMap.END_RAM - address + 1;
+		} else if (address >= MemoryMap.START_VRAM && address <= MemoryMap.END_VRAM) {
+			length = MemoryMap.END_VRAM - address + 1;
+		} else if (address >= MemoryMap.START_SCRATCHPAD && address <= MemoryMap.END_SCRATCHPAD) {
+			length = MemoryMap.END_SCRATCHPAD - address + 1;
+		} else {
+			length = 0;
+		}
+
+		return getMemoryReader(address, length, step);
 	}
 
 	private static class MemoryReaderGeneric implements IMemoryReader {
@@ -90,10 +107,12 @@ public class MemoryReader {
 		private int value;
 		private IntBuffer buffer;
 
-		public MemoryReaderInt8(IntBuffer buffer) {
+		public MemoryReaderInt8(IntBuffer buffer, int index) {
 			this.buffer = buffer;
-			index = 0;
-			value = buffer.get();
+			this.index = index;
+			if (buffer.capacity() > 0) {
+				value = buffer.get() >> (8 * index);
+			}
 		}
 
 		@Override
@@ -117,9 +136,12 @@ public class MemoryReader {
 		private int value;
 		private IntBuffer buffer;
 
-		public MemoryReaderInt16(IntBuffer buffer) {
+		public MemoryReaderInt16(IntBuffer buffer, int index) {
 			this.buffer = buffer;
-			index = 0;
+			this.index = index;
+			if (index != 0 && buffer.capacity() > 0) {
+				value = buffer.get();
+			}
 		}
 
 		@Override
@@ -129,7 +151,7 @@ public class MemoryReader {
 			if (index == 0) {
 				value = buffer.get();
 				n = value & 0xFFFF;
-				index++;
+				index = 1;
 			} else {
 				index = 0;
 				n = value >>> 16;

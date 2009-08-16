@@ -143,7 +143,9 @@ public class CodeInstruction {
     public void compile(CompilerContext context, MethodVisitor mv) {
         startCompile(context, mv);
 
-	    if (isBranching()) {
+        if (context.isNativeCodeSequence()) {
+        	context.compileNativeCodeSequence();
+        } else if (isBranching()) {
 	        compileBranch(context, mv);
 	    } else if (insn == Instructions.JR) {
 	        compileJr(context, mv);
@@ -174,11 +176,7 @@ public class CodeInstruction {
         if (branchingOpcode != Opcodes.NOP) {
             CodeInstruction branchingToCodeInstruction = context.getCodeBlock().getCodeInstruction(getBranchingTo());
             if (branchingToCodeInstruction != null) {
-                Label branchingToLabel = branchingToCodeInstruction.getLabel();
-                if (branchingToCodeInstruction.getAddress() < getAddress()) {
-                	context.checkSync();
-                }
-                context.visitJump(branchingOpcode, branchingToLabel);
+                context.visitJump(branchingOpcode, branchingToCodeInstruction);
             } else {
                 context.visitJump(branchingOpcode, getBranchingTo());
             }
@@ -213,7 +211,7 @@ public class CodeInstruction {
         	delaySlotCodeInstruction.forceNewLabel();
         }
         context.setCodeInstruction(this);
-        context.setSkipNextIntruction(true);
+        context.skipInstructions(1, false);
     }
 
     private int getBranchingOpcodeBranch0(CompilerContext context, MethodVisitor mv) {
@@ -244,7 +242,7 @@ public class CodeInstruction {
     private int getBranchingOpcodeBranch1L(CompilerContext context, MethodVisitor mv, int branchingOpcode, int notBranchingOpcode) {
     	context.loadRs();
         CodeInstruction afterDelaySlotCodeInstruction = getAfterDelaySlotCodeInstruction(context);
-        context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction.getLabel());
+        context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction);
         compileDelaySlot(context, mv);
 
         return Opcodes.GOTO;
@@ -254,7 +252,7 @@ public class CodeInstruction {
     	context.loadRs();
         compileDelaySlot(context, mv);
         CodeInstruction afterDelaySlotCodeInstruction = getAfterDelaySlotCodeInstruction(context);
-        context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction.getLabel());
+        context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction);
         context.visitCall(getBranchingTo(), getAddress() + 8, 31, true);
 
         return Opcodes.NOP;
@@ -263,7 +261,7 @@ public class CodeInstruction {
     private int getBranchingOpcodeCall1L(CompilerContext context, MethodVisitor mv, int branchingOpcode, int notBranchingOpcode) {
     	context.loadRs();
         CodeInstruction afterDelaySlotCodeInstruction = getAfterDelaySlotCodeInstruction(context);
-        context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction.getLabel());
+        context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction);
         compileDelaySlot(context, mv);
         context.visitCall(getBranchingTo(), getAddress() + 8, 31, true);
 
@@ -287,7 +285,7 @@ public class CodeInstruction {
         context.loadRs();
         context.loadRt();
         CodeInstruction afterDelaySlotCodeInstruction = getAfterDelaySlotCodeInstruction(context);
-        context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction.getLabel());
+        context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction);
         compileDelaySlot(context, mv);
 
         return Opcodes.GOTO;
@@ -303,7 +301,7 @@ public class CodeInstruction {
     private int getBranchingOpcodeBC1L(CompilerContext context, MethodVisitor mv, int branchingOpcode, int notBranchingOpcode) {
     	context.loadFcr31c();
         CodeInstruction afterDelaySlotCodeInstruction = getAfterDelaySlotCodeInstruction(context);
-        context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction.getLabel());
+        context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction);
         compileDelaySlot(context, mv);
 
         return Opcodes.GOTO;
@@ -319,7 +317,7 @@ public class CodeInstruction {
     private int getBranchingOpcodeBVL(CompilerContext context, MethodVisitor mv, int branchingOpcode, int notBranchingOpcode) {
     	context.loadVcrCc();
         CodeInstruction afterDelaySlotCodeInstruction = getAfterDelaySlotCodeInstruction(context);
-        context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction.getLabel());
+        context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction);
         compileDelaySlot(context, mv);
 
         return Opcodes.GOTO;

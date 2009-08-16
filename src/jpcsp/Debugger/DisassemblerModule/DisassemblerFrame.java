@@ -1130,11 +1130,11 @@ private void DumpCodeToTextActionPerformed(java.awt.event.ActionEvent evt) {//GE
 
                     Instruction insn = Decoder.instruction(opcode);
 
-                    bufferedWriter.write(String.format("%08x:[%08x]: %s", i, opcode, insn.disasm(i, opcode)));
+                    bufferedWriter.write(String.format("%08X:[%08X]: %s", i, opcode, insn.disasm(i, opcode)));
                     bufferedWriter.newLine();
                 } else {
                     // Should we even both printing these?
-                    bufferedWriter.write(String.format("%08x: invalid address", i));
+                    bufferedWriter.write(String.format("%08X: invalid address", i));
                     bufferedWriter.newLine();
                 }
             }
