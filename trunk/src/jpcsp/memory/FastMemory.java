@@ -253,6 +253,8 @@ public class FastMemory extends Memory {
 
 	@Override
 	public IntBuffer getBuffer(int address, int length) {
+		address = normalizeAddress(address);
+
 		IntBuffer buffer = getMainMemoryByteBuffer();
 		buffer.position(address / 4);
 		buffer.limit((address + length + 3) / 4);
@@ -266,6 +268,8 @@ public class FastMemory extends Memory {
 
 	@Override
 	public void memset(int address, byte data, int length) {
+		address = normalizeAddress(address);
+
 		for (; !isIntAligned(address) && length > 0; address++, length--) {
 			write8(address, data);
 		}
