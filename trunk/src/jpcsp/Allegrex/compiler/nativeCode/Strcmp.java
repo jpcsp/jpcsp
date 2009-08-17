@@ -25,6 +25,10 @@ import jpcsp.memory.MemoryReader;
  */
 public class Strcmp extends AbstractNativeCodeSequence {
 	static public void call() {
+		call(0, -1, 1);
+	}
+
+	static public void call(int valueEqual, int valueLower, int valueHigher) {
 		int src1Addr = getGprA0();
 		int src2Addr = getGprA1();
 
@@ -36,7 +40,7 @@ public class Strcmp extends AbstractNativeCodeSequence {
 				int c1 = memoryReader1.readNext();
 				int c2 = memoryReader2.readNext();
 				if (c1 != c2) {
-					setGprV0(c1 - c2);
+					setGprV0(c1 > c2 ? valueHigher : valueLower);
 					return;
 				} else if (c1 == 0) {
 					// c1 == 0 and c2 == 0
@@ -45,6 +49,6 @@ public class Strcmp extends AbstractNativeCodeSequence {
 			}
 		}
 
-		setGprV0(0);
+		setGprV0(valueEqual);
 	}
 }

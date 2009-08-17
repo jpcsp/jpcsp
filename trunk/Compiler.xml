@@ -31,6 +31,29 @@
 08AE067C:[00000000]: nop
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="memchr">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memchr</Class>
+		<IsReturning>true</IsReturning>
+		<Parameters>$a0,$a2,$a1</Parameters>
+		<!-- Returning index of char found or "n" if not found -->
+		<CodeInstructions><![CDATA[
+08865BC4:[00063E00]: sll        $a3, $a2, 0x0018
+08865BC8:[34020000]: ori        $v0, $zr, 0 <=> li $v0, 0
+08865BCC:[00073E03]: sra        $a3, $a3, 0x0018
+08865BD0:[0045302A]: slt        $a2, $v0, $a1
+08865BD4:[10C00008]: beq        $a2, $zr, 0x08865BF8
+08865BD8:[00000000]: nop
+08865BDC:[80860000]: lb         $a2, 0($a0)
+08865BE0:[10C70005]: beq        $a2, $a3, 0x08865BF8
+08865BE4:[00000000]: nop
+08865BE8:[24420001]: addiu      $v0, $v0, 1
+08865BEC:[24840001]: addiu      $a0, $a0, 1
+08865BF0:[1000FFF8]: b          0x08865BD4
+08865BF4:[0045302A]: slt        $a2, $v0, $a1
+08865BF8:[03E00008]: jr         $ra
+08865BFC:[00000000]: nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="memmove">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Memmove</Class>
 		<IsReturning>true</IsReturning>
@@ -962,6 +985,31 @@
 0886E558:[90A40000]: lbu        $a0, 0($a1)
 0886E55C:[03E00008]: jr         $ra
 0886E560:[00441023]: subu       $v0, $v0, $a0
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="strcmp">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Strcmp</Class>
+		<IsReturning>true</IsReturning>
+		<Parameters>0,1,1</Parameters>
+		<CodeInstructions><![CDATA[
+089CF974:[80870000]: lb         $a3, 0($a0)
+089CF978:[10E0000A]: beq        $a3, $zr, 0x089CF9A4
+089CF97C:[80A60000]: lb         $a2, 0($a1)
+089CF980:[10C00008]: beq        $a2, $zr, 0x089CF9A4
+089CF984:[00000000]: nop
+089CF988:[80860000]: lb         $a2, 0($a0)
+089CF98C:[80A70000]: lb         $a3, 0($a1)
+089CF990:[24840001]: addiu      $a0, $a0, 1
+089CF994:[10C7FFF7]: beq        $a2, $a3, 0x089CF974
+089CF998:[24A50001]: addiu      $a1, $a1, 1
+089CF99C:[03E00008]: jr         $ra
+089CF9A0:[34020001]: ori        $v0, $zr, 1 <=> li $v0, 1
+089CF9A4:[10E60003]: beq        $a3, $a2, 0x089CF9B4
+089CF9A8:[00000000]: nop
+089CF9AC:[03E00008]: jr         $ra
+089CF9B0:[34020001]: ori        $v0, $zr, 1 <=> li $v0, 1
+089CF9B4:[03E00008]: jr         $ra
+089CF9B8:[00001025]: or         $v0, $zr, $zr <=> li $v0, 0
 ]]></CodeInstructions>
 	</NativeCodeSequence>
 	<NativeCodeSequence name="strncmp">

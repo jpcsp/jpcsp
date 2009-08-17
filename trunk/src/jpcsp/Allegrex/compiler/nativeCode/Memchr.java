@@ -42,4 +42,25 @@ public class Memchr extends AbstractNativeCodeSequence {
 
 		setGprV0(0);
 	}
+
+	// Returns index of char found or "n" if not found
+	static public void call(int srcAddrReg, int cReg, int nReg) {
+		int[] gpr = getGpr();
+		int srcAddr = gpr[srcAddrReg];
+		int c1 = gpr[cReg] & 0xFF;
+		int n = gpr[nReg];
+
+		IMemoryReader memoryReader = MemoryReader.getMemoryReader(srcAddr, n, 1);
+		if (memoryReader != null) {
+			for (int i = 0; i < n; i++) {
+				int c2 = memoryReader.readNext();
+				if (c1 == c2) {
+					setGprV0(i);
+					return;
+				}
+			}
+		}
+
+		setGprV0(n);
+	}
 }
