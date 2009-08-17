@@ -275,14 +275,13 @@ public class FastMemory extends Memory {
 		}
 
 		int count4 = length / 4;
-		int data1 = data & 0xFF;
-		int data4 = (data1 << 24) | (data1 << 16) | (data1 << 8) | data1;
-		for (int i = address / 4; count4 > 0; i++, count4--) {
-			all[i] = data4;
+		if (count4 > 0) {
+			int data1 = data & 0xFF;
+			int data4 = (data1 << 24) | (data1 << 16) | (data1 << 8) | data1;
+			Arrays.fill(all, address / 4, address / 4 + count4, data4);
+			address += count4 * 4;
+			length -= count4 * 4;
 		}
-		count4 = length / 4;
-		address += count4 * 4;
-		length -= count4 * 4;
 
 		for (; length > 0; address++, length--) {
 			write8(address, data);

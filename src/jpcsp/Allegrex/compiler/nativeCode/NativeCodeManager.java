@@ -60,6 +60,7 @@ public class NativeCodeManager {
 		try {
 			return (Class<INativeCodeSequence>) Class.forName(className);
 		} catch (ClassNotFoundException e) {
+			Compiler.log.error(e);
 			return null;
 		}
 	}
@@ -162,6 +163,9 @@ public class NativeCodeManager {
 		String className = getContent(element.getElementsByTagName("Class"));
 
 		Class<INativeCodeSequence> nativeCodeSequenceClass = getNativeCodeSequenceClass(className);
+		if (nativeCodeSequenceClass == null) {
+			return;
+		}
 
 		NativeCodeSequence nativeCodeSequence = new NativeCodeSequence(name, nativeCodeSequenceClass);
 
