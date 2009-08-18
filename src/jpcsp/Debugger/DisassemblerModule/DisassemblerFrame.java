@@ -73,6 +73,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
     private final Color selectedAddressColor = new Color(255, 128, 255);
     private String selectedAddress;
 
+    private int srcounter;
+
     /** Creates new form DisassemblerFrame */
     public DisassemblerFrame(Emulator emu) {
         this.emu=emu;
@@ -385,6 +387,8 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         replayButton = new javax.swing.JButton();
         jLabel2 = new javax.swing.JLabel();
         dumpDebugStateButton = new javax.swing.JButton();
+        SearchField = new javax.swing.JTextField();
+        jLabel3 = new javax.swing.JLabel();
 
         CopyAddress.setText("Copy Address");
         CopyAddress.addActionListener(new java.awt.event.ActionListener() {
@@ -890,6 +894,14 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             }
         });
 
+        SearchField.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                SearchFieldActionPerformed(evt);
+            }
+        });
+
+        jLabel3.setText("Search");
+
         javax.swing.GroupLayout miscPanelLayout = new javax.swing.GroupLayout(miscPanel);
         miscPanel.setLayout(miscPanelLayout);
         miscPanelLayout.setHorizontalGroup(
@@ -897,6 +909,12 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             .addGroup(miscPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(miscPanelLayout.createSequentialGroup()
+                        .addComponent(SearchField, javax.swing.GroupLayout.DEFAULT_SIZE, 198, Short.MAX_VALUE)
+                        .addContainerGap())
+                    .addGroup(miscPanelLayout.createSequentialGroup()
+                        .addComponent(jLabel3)
+                        .addContainerGap())
                     .addGroup(miscPanelLayout.createSequentialGroup()
                         .addComponent(gpioLabel)
                         .addContainerGap(166, Short.MAX_VALUE))
@@ -937,9 +955,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                         .addComponent(jLabel1)
                         .addContainerGap(116, Short.MAX_VALUE))
                     .addGroup(miscPanelLayout.createSequentialGroup()
-                        .addComponent(replayButton)
-                        .addContainerGap(35, Short.MAX_VALUE))
-                    .addGroup(miscPanelLayout.createSequentialGroup()
                         .addComponent(jLabel2)
                         .addContainerGap(120, Short.MAX_VALUE))
                     .addGroup(miscPanelLayout.createSequentialGroup()
@@ -947,7 +962,10 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                         .addContainerGap(97, Short.MAX_VALUE))
                     .addGroup(miscPanelLayout.createSequentialGroup()
                         .addComponent(captureButton)
-                        .addContainerGap(81, Short.MAX_VALUE))))
+                        .addContainerGap(81, Short.MAX_VALUE))
+                    .addGroup(miscPanelLayout.createSequentialGroup()
+                        .addComponent(replayButton)
+                        .addContainerGap(35, Short.MAX_VALUE))))
         );
         miscPanelLayout.setVerticalGroup(
             miscPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -984,7 +1002,11 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 .addComponent(jLabel2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(dumpDebugStateButton)
-                .addContainerGap(348, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 11, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(SearchField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(300, Short.MAX_VALUE))
         );
 
         disasmTabs.addTab("Misc", miscPanel);
@@ -1473,6 +1495,28 @@ private void dumpDebugStateButtonActionPerformed(java.awt.event.ActionEvent evt)
     DumpDebugState.dumpDebugState();
 }//GEN-LAST:event_dumpDebugStateButtonActionPerformed
 
+private void SearchFieldActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SearchFieldActionPerformed
+
+    //Basic text-based search function
+    //TODO: Figure out an effective method of optimizing the search and avoid
+    //hogging the emulator
+
+    String text = SearchField.getText();
+    String current = "";
+
+    disasmList.setSelectedIndex(srcounter);
+
+    while(!current.contains(text)){
+        DebuggerPC += 4;
+        SelectedPC = DebuggerPC;
+        RefreshDebugger(false);
+        updateSelectedIndex();
+
+        current = (String)disasmListGetSelectedValue();
+        srcounter++;
+    }
+}//GEN-LAST:event_SearchFieldActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton AddBreakpoint;
     private javax.swing.JMenuItem BranchOrJump;
@@ -1488,6 +1532,7 @@ private void dumpDebugStateButtonActionPerformed(java.awt.event.ActionEvent evt)
     private javax.swing.JPopupMenu RegMenu;
     private javax.swing.JButton ResetToPCbutton;
     private javax.swing.JToggleButton RunDebugger;
+    private javax.swing.JTextField SearchField;
     private javax.swing.JMenuItem SetPCToCursor;
     private javax.swing.JButton StepInto;
     private javax.swing.JButton captureButton;
@@ -1519,6 +1564,7 @@ private void dumpDebugStateButtonActionPerformed(java.awt.event.ActionEvent evt)
     private javax.swing.JButton jButton3;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
     private javax.swing.JToolBar.Separator jSeparator1;
     private javax.swing.JToolBar.Separator jSeparator2;
     private javax.swing.JToolBar.Separator jSeparator3;

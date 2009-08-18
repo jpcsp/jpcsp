@@ -5,6 +5,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.awt.event.MouseWheelEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.BufferedWriter;
@@ -112,7 +113,7 @@ public class LogWindow extends JFrame {
 			}
 		});
         JLabel loglevellabel = new JLabel("Choose Log Level");
-        JComboBox loglevelcombo = new JComboBox(loglevels);
+        final JComboBox loglevelcombo = new JComboBox(loglevels);
         final Logger rootLogger = Logger.getRootLogger();
         Level getlevelfromconfig = rootLogger.getLevel();
 
@@ -139,6 +140,29 @@ public class LogWindow extends JFrame {
                    if(itemEvent.getItem().equals("FATAL")) rootLogger.setLevel(Level.FATAL);
                    if(itemEvent.getItem().equals("OFF"))   rootLogger.setLevel(Level.OFF);
                }}});
+
+
+         loglevelcombo.addMouseWheelListener(new java.awt.event.MouseWheelListener() {
+
+            @Override
+            public void mouseWheelMoved(MouseWheelEvent wheelEvent) {
+                switch(wheelEvent.getWheelRotation()){
+                    case 1:
+                        if(loglevelcombo.getSelectedIndex() != 7)
+                                loglevelcombo.setSelectedIndex(loglevelcombo.getSelectedIndex()+1);
+
+                        break;
+
+                    case -1:
+                        if(loglevelcombo.getSelectedIndex() != 0)
+                                loglevelcombo.setSelectedIndex(loglevelcombo.getSelectedIndex()-1);
+
+                        break;
+
+                    default: break;
+                }
+            }
+        });
 
 
 		GroupLayout layout = new GroupLayout(getRootPane());
