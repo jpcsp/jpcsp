@@ -130,18 +130,40 @@ public class Profiler {
 		logCode(codeBlock, codeBlock.getLowestAddress(), codeBlock.getLength(), 0, 0, -1);
 	}
 
-	private static void logCode(CodeBlock codeBlock, int startAddress, int length, int contextBefore, int contextAfter, int highlightAddress) {
-		for (int i = -contextBefore; i < length + contextAfter; i++) {
-			int address = startAddress + (i * 4);
-			CodeInstruction codeInstruction = codeBlock.getCodeInstruction(address);
-			if (codeInstruction != null) {
+	private static void logCode(SequenceCodeInstruction sequenceCodeInstruction, int highlightAddress) {
+		for (Iterator<CodeInstruction> it = sequenceCodeInstruction.getCodeSequence().getInstructions().iterator(); it.hasNext(); ) {
+			CodeInstruction codeInstruction = it.next();
+			logCode(codeInstruction, highlightAddress);
+		}
+	}
+
+	private static void logCode(CodeInstruction codeInstruction, int highlightAddress) {
+		if (codeInstruction != null) {
+			int address = codeInstruction.getAddress();
+			if (codeInstruction instanceof SequenceCodeInstruction) {
+				logCode((SequenceCodeInstruction) codeInstruction, highlightAddress);
+			} else {
 				int opcode = codeInstruction.getOpcode();
 				String prefix = "   ";
 				if (address == highlightAddress) {
 					prefix = "-->";
 				}
-				log.info(String.format("%s %08X:[%08X]: %s", prefix, address, opcode, codeInstruction.getInsn().disasm(address, opcode)));
+				String disasm;
+				if (codeInstruction.getInsn() != null) {
+					disasm = codeInstruction.getInsn().disasm(address, opcode);
+				} else {
+					disasm = codeInstruction.toString();
+				}
+				log.info(String.format("%s %08X:[%08X]: %s", prefix, address, opcode, disasm));
 			}
+		}
+	}
+
+	private static void logCode(CodeBlock codeBlock, int startAddress, int length, int contextBefore, int contextAfter, int highlightAddress) {
+		for (int i = -contextBefore; i < length + contextAfter; i++) {
+			int address = startAddress + (i * 4);
+			CodeInstruction codeInstruction = codeBlock.getCodeInstruction(address);
+			logCode(codeInstruction, highlightAddress);
 		}
 	}
 
