@@ -126,6 +126,7 @@ public class CallbackManager {
             Modules.log.warn(msg + " unknown uid");
             success = false;
         } else {
+            // spams on GE finish callback
             if (Modules.log.isDebugEnabled()) {
                 Modules.log.debug(msg);
             }
@@ -133,7 +134,11 @@ public class CallbackManager {
             // update callback
             info.notifyCount = arg1;
             info.notifyArg = arg2;
-            info.forceNotify = forceNotify;
+
+            // Ignore "forceNotify" for now because previous implementation didn't pre-empt it worked ok
+            // If we do want faster response we could "pre-empt" in any syscall, not just waitCB syscalls
+            //info.forceNotify = forceNotify;
+            info.forceNotify = false;
 
             // add to ready list
             if (!readyCallbacks.contains(info)) {
@@ -245,12 +250,14 @@ public class CallbackManager {
                 //if (info.threadId != currentThread.uid) {
 
                     if (Modules.log.isDebugEnabled()) {
+                        // spams on GE finish callback
                         Modules.log.debug("hleKernelCheckCallback switching in CB thread '" + currentThread.name + "' -> '" + callbackThread.name + "'");
                     }
 
                     threadMan.contextSwitch(callbackThread);
                 } else {
                     if (Modules.log.isDebugEnabled()) {
+                        // spams on GE finish callback
                         Modules.log.debug("hleKernelCheckCallback CB thread '" + callbackThread.name + "' already current thread");
                     }
                 }

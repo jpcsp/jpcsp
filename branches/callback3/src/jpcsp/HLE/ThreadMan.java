@@ -94,8 +94,8 @@ public class ThreadMan {
     public final static int SCE_KERNEL_TMID_DormantThread      = 67;
 
     public static final int IDLE_THREAD_ADDRESS           = MemoryMap.START_RAM;
-    public static final int THREAD_EXIT_HANDLER_ADDRESS   = MemoryMap.START_RAM + 0x10;
-    public static final int CALLBACK_EXIT_HANDLER_ADDRESS = MemoryMap.START_RAM + 0x20;
+    public static final int THREAD_EXIT_HANDLER_ADDRESS   = MemoryMap.START_RAM + 0x20;
+    public static final int CALLBACK_EXIT_HANDLER_ADDRESS = MemoryMap.START_RAM + 0x30;
 
     //private static int stackAllocated;
 
