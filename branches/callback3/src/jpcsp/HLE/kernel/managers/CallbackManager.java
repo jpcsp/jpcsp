@@ -50,6 +50,14 @@ public class CallbackManager {
     public void step() {
         if (dirty) {
             //Modules.log.info("hleKernelCheckCallback (from step)");
+            //hleKernelCheckCallback(false);
+            //Modules.log.info("hleKernelCheckCallback (from step) DONE");
+        }
+    }
+
+    public void afterSyscall() {
+        if (dirty) {
+            //Modules.log.info("hleKernelCheckCallback (from step)");
             hleKernelCheckCallback(false);
             //Modules.log.info("hleKernelCheckCallback (from step) DONE");
         }
@@ -137,8 +145,8 @@ public class CallbackManager {
 
             // Ignore "forceNotify" for now because previous implementation didn't pre-empt it worked ok
             // If we do want faster response we could "pre-empt" in any syscall, not just waitCB syscalls
-            //info.forceNotify = forceNotify;
-            info.forceNotify = false;
+            info.forceNotify = forceNotify;
+            //info.forceNotify = false;
 
             // add to ready list
             if (!readyCallbacks.contains(info)) {

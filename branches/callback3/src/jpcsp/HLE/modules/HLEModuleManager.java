@@ -81,6 +81,7 @@ public class HLEModuleManager {
         Modules.sceSuspendForUserModule,
         Modules.sceDmacModule,
         Modules.sceHprmModule, // check if loaded by default
+        Modules.InterruptManagerModule,
 
         // HACK: we should only load this when the game tries to load sc_sascore.prx,
         // or if the firmware version has it built in.

@@ -42,6 +42,7 @@ import jpcsp.Settings;
 import jpcsp.State;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.capture.CaptureManager;
+import jpcsp.HLE.modules.InterruptManager;
 import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
 
@@ -140,6 +141,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     private int vcount;
     private float accumulatedHcount;
     private float currentHcount;
+    private boolean notifyVblank;
 
     // Texture state
     private float[] texRgbScale = new float[2];
@@ -223,9 +225,16 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 	            }
 	            lastUpdate = now;
         	}
+
             vcount++;
             accumulatedHcount += 286.15f;
             currentHcount += 0.15f;
+
+            // Only notify vblank handler if one of the waitVblank functions was called, this prevents the handler hogging the cpu
+            if (notifyVblank) {
+                notifyVblank = false;
+                Modules.InterruptManagerModule.hleKernelNotifySubIntr(InterruptManager.PSP_VBLANK_INT);
+            }
         }
     }
 
@@ -418,7 +427,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
             texS1 = texS4 = texS;
             texT1 = texT2 = texT;
-            
+
             texS2 = texS3 = texT3 = texT4 = 0.0f;
         }
 
@@ -682,7 +691,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                 0, 0, bufferwidthFb, height,
                 pixelFormatGL == GL.GL_UNSIGNED_SHORT_5_6_5_REV ? GL.GL_RGB : GL.GL_RGBA,
                 pixelFormatGL, pixelsFb);
-            
+
             //Call the rotating function (if needed)
             if(ang != 4)
                 rotate(ang);
@@ -854,12 +863,14 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
     public void sceDisplayWaitVblankStart() {
         // TODO: implement sceDisplayWaitVblankStart
+        notifyVblank = true;
         Emulator.getProcessor().cpu.gpr[2] = 0;
         ThreadMan.getInstance().yieldCurrentThread();
     }
 
     public void sceDisplayWaitVblankStartCB() {
         // TODO: implement sceDisplayWaitVblankStartCB
+        notifyVblank = true;
         Emulator.getProcessor().cpu.gpr[2] = 0;
         ThreadMan.getInstance().yieldCurrentThreadCB();
     }
@@ -868,6 +879,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
      * 1 = something like sceDisplayWaitVblankStart was called before calling this but not exactly. */
     public void sceDisplayWaitVblank() {
         // TODO: implement sceDisplayWaitVblank
+        notifyVblank = true;
         Emulator.getProcessor().cpu.gpr[2] = 0;
         ThreadMan.getInstance().yieldCurrentThread();
     }
@@ -876,6 +888,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
      * 1 = something like sceDisplayWaitVblankStart was called before calling this but not exactly. */
     public void sceDisplayWaitVblankCB() {
         // TODO: implement sceDisplayWaitVblankCB
+        notifyVblank = true;
         Emulator.getProcessor().cpu.gpr[2] = 0;
         ThreadMan.getInstance().yieldCurrentThreadCB();
     }

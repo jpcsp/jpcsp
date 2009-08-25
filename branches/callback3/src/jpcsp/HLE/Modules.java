@@ -47,6 +47,7 @@ public class Modules {
     public static sceDmac sceDmacModule = new sceDmac();
     public static sceSasCore sceSasCoreModule = new sceSasCore();
     public static sceHprm sceHprmModule = new sceHprm();
+    public static InterruptManager InterruptManagerModule = new InterruptManager();
 
 
     public static Logger log = Logger.getLogger("hle");

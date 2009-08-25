@@ -996,19 +996,26 @@ public class SyscallHandler {
                             cpu.gpr[5], cpu.gpr[6]);
 
                         // TODO replace this enum with a dynamically generated hashmap, this way we can avoid numbering mistakes
+                        boolean found = false;
                         for (jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls c : jpcsp.Debugger.DisassemblerModule.syscallsFirm15.calls.values()) {
                             if (c.getSyscall() == code) {
                                 Modules.log.warn("Unsupported syscall " + Integer.toHexString(code) + " " + c + " " + params);
-                                //jpcsp.Emulator.PauseEmu();
-                                return;
+                                found = true;
+                                break;
                             }
                         }
-                        Modules.log.warn("Unsupported syscall " + Integer.toHexString(code) + " " + params);
+                        if (!found) {
+                            Modules.log.warn("Unsupported syscall " + Integer.toHexString(code) + " " + params);
+                        }
                         //jpcsp.Emulator.PauseEmu();
                     }
                 }
                 break;
             }
+
+            // Do it after the actual syscall incase context switching was involved
+            Managers.callbacks.afterSyscall();
+
         } catch(GeneralJpcspException e) {
             System.out.println(e.getMessage());
         }
