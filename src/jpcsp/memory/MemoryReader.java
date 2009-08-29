@@ -54,6 +54,7 @@ public class MemoryReader {
 	public static IMemoryReader getMemoryReader(int address, int step) {
 		int length;
 
+		address &= Memory.addressMask;
 		if (address >= MemoryMap.START_RAM && address <= MemoryMap.END_RAM) {
 			length = MemoryMap.END_RAM - address + 1;
 		} else if (address >= MemoryMap.START_VRAM && address <= MemoryMap.END_VRAM) {
