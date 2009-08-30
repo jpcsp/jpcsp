@@ -291,7 +291,7 @@ public class RuntimeContext {
     	IExecutable executable = getExecutable(pc);
         int newPc = 0;
 		try {
-			newPc = executable.exec(0, 0, false);
+			newPc = executable.exec(cpu.gpr[31], 0, false);
 		} catch (StopThreadException e) {
 			// Ignore exception
 		} catch (Exception e) {

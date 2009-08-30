@@ -215,12 +215,17 @@ public class ThreadMan {
     }
 
     private void install_callback_exit_handler() {
+        Memory mem = Memory.getInstance();
+
         int instruction_syscall = // syscall 0x6f001 [hleKernelExitCallback]
             ((AllegrexOpcodes.SPECIAL & 0x3f) << 26)
             | (AllegrexOpcodes.SYSCALL & 0x3f)
             | ((syscallsFirm15.calls.hleKernelExitCallback.getSyscall() & 0x000fffff) << 6);
+        mem.write32(CALLBACK_EXIT_HANDLER_ADDRESS + 0, instruction_syscall);
 
-        Memory.getInstance().write32(CALLBACK_EXIT_HANDLER_ADDRESS + 0, instruction_syscall);
+        // Add a "jr $ra" instruction to indicate the end to the CodeBlock to the compiler
+        int instruction_jr = AllegrexOpcodes.JR | (31 << 21);
+        mem.write32(CALLBACK_EXIT_HANDLER_ADDRESS + 4, instruction_jr);
     }
 
     /** to be called when exiting the emulation */
