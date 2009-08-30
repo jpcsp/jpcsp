@@ -1864,7 +1864,7 @@ public class VideoEngine {
                 Memory mem = Memory.getInstance();
                 vertexStatistics.start();
 
-                if (vinfo.index == 0 && type != PRIM_SPRITES) {
+                if (vinfo.index == 0 && type != PRIM_SPRITES && mem.isAddressGood(vinfo.ptr_vertex)) {
                 	// Optimized VertexInfo reading:
                 	// - do not copy the info already available in the OpenGL format
                 	//   (native format), load it into nativeBuffer (a direct buffer
