@@ -21,7 +21,7 @@ import jpcsp.Memory;
 // Based on soywiz/pspemulator
 public class VertexInfo {
     // vtype
-    private int transform2D; // for logging purposes (got moved into VideoEngine.java)
+    public boolean transform2D;
     public int skinningWeightCount;
     public int morphingVertexCount;
     public int texture;
@@ -37,9 +37,16 @@ public class VertexInfo {
 
     // other data
     public int vertexSize;
+    public int textureOffset;
+    public int colorOffset;
+    public int normalOffset;
+    public int positionOffset;
+    public int alignmentSize;
 
     private static int[] size_mapping = new int[] { 0, 1, 2, 4 };
     private static int[] size_padding = new int[] { 0, 0, 1, 3 };
+    private static int[] color_size_mapping = new int[] { 0, 0, 0, 0, 2, 2, 2, 4 };
+    private static int[] color_size_padding = new int[] { 0, 0, 0, 0, 1, 1, 1, 3 };
 
     private static String[] texture_info = new String[] {
         null, "GU_TEXTURE_8BIT", "GU_TEXTURE_16BIT", "GU_TEXTURE_32BITF"
@@ -73,29 +80,37 @@ public class VertexInfo {
         index               = (param >> 11) & 0x3;
         skinningWeightCount = ((param >> 14) & 0x7) + 1;
         morphingVertexCount = ((param >> 18) & 0x7) + 1;
-        transform2D         = (param >> 23) & 0x1;
+        transform2D         = ((param >> 23) & 0x1) != 0;
 
         vertexSize = 0;
         vertexSize += size_mapping[weight] * skinningWeightCount;
         vertexSize = (vertexSize + size_padding[texture]) & ~size_padding[texture];
+
+        textureOffset = vertexSize;
         vertexSize += size_mapping[texture] * 2;
-        vertexSize = (vertexSize + ((color != 0) ? ((color == 7) ? 3 : 1) : 0)) & ~((color != 0) ? ((color == 7) ? 3 : 1) : 0);
-        vertexSize += (color != 0) ? ((color == 7) ? 4 : 2) : 0;
+        vertexSize = (vertexSize + color_size_padding[color]) & ~color_size_padding[color];
+
+        colorOffset = vertexSize;
+        vertexSize += color_size_mapping[color];
         vertexSize = (vertexSize + size_padding[normal]) & ~size_padding[normal];
+
+        normalOffset = vertexSize;
         vertexSize += size_mapping[normal] * 3;
         vertexSize = (vertexSize + size_padding[position]) & ~size_padding[position];
-        vertexSize += size_mapping[position] * 3;
-        int maxsize = Math.max(size_mapping[weight],
-        		Math.max((color != 0) ? ((color == 7) ? 4 : 2) : 0,
-        		Math.max(size_padding[normal],
-        		Math.max(size_padding[texture],
-        				size_padding[position]))));
 
-        vertexSize = (vertexSize + maxsize - 1) & ~(maxsize - 1);
+        positionOffset = vertexSize;
+        vertexSize += size_mapping[position] * 3;
+
+        alignmentSize = Math.max(size_mapping[weight],
+                        Math.max(color_size_mapping[color],
+                        Math.max(size_mapping[normal],
+                        Math.max(size_mapping[texture],
+                                 size_mapping[position]))));
+        vertexSize = (vertexSize + alignmentSize - 1) & ~(alignmentSize - 1);
     }
 
     public int getAddress(Memory mem, int i) {
-        if (ptr_index != 0) {
+        if (ptr_index != 0 && index != 0) {
             int addr = ptr_index + i * index;
             switch(index) {
                 case 1: i = mem.read8(addr); break;
@@ -163,7 +178,7 @@ public class VertexInfo {
             	// Unsigned 8 bit
         		v.t[0] = mem.read8(addr) & 0xFF; addr += 1;
         		v.t[1] = mem.read8(addr) & 0xFF; addr += 1;
-            	if (transform2D == 0) {
+            	if (!transform2D) {
             		// To be mapped to [0..2] for 3D
             		v.t[0] /= 0x80;
             		v.t[1] /= 0x80;
@@ -177,7 +192,7 @@ public class VertexInfo {
             	// Unsigned 16 bit
         		v.t[0] = mem.read16(addr) & 0xFFFF; addr += 2;
         		v.t[1] = mem.read16(addr) & 0xFFFF; addr += 2;
-            	if (transform2D == 0) {
+            	if (!transform2D) {
             		// To be mapped to [0..2] for 3D
             		v.t[0] /= 0x8000;
             		v.t[1] /= 0x8000;
@@ -261,7 +276,7 @@ public class VertexInfo {
                 v.n[0] = (byte)mem.read8(addr); addr += 1;
                 v.n[1] = (byte)mem.read8(addr); addr += 1;
                 v.n[2] = (byte)mem.read8(addr); addr += 1;
-            	if (transform2D == 0) {
+            	if (!transform2D) {
             		// To be mapped to [-1..1] for 3D
             		v.n[0] /= 0x7f;
             		v.n[1] /= 0x7f;
@@ -278,7 +293,7 @@ public class VertexInfo {
                 v.n[0] = (short)mem.read16(addr); addr += 2;
                 v.n[1] = (short)mem.read16(addr); addr += 2;
                 v.n[2] = (short)mem.read16(addr); addr += 2;
-            	if (transform2D == 0) {
+            	if (!transform2D) {
             		// To be mapped to [-1..1] for 3D
             		v.n[0] /= 0x7fff;
             		v.n[1] /= 0x7fff;
@@ -299,7 +314,7 @@ public class VertexInfo {
         //VideoEngine.log.debug("position " + String.format("0x%08x", addr));
         switch (position) {
             case 1:
-            	if (transform2D == 1) {
+            	if (transform2D) {
             		// X and Y are signed 8 bit, Z is unsigned 8 bit
                     v.p[0] = (byte) mem.read8(addr); addr += 1;
                     v.p[1] = (byte) mem.read8(addr); addr += 1;
@@ -316,7 +331,7 @@ public class VertexInfo {
                 break;
             case 2:
             	addr = (addr + 1) & ~1;
-            	if (transform2D == 1) {
+            	if (transform2D) {
             		// X and Y are signed 16 bit, Z is unsigned 16 bit
 	        		v.p[0] = (short)mem.read16(addr); addr += 2;
 	        		v.p[1] = (short)mem.read16(addr); addr += 2;
@@ -336,7 +351,7 @@ public class VertexInfo {
                 v.p[0] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
                 v.p[1] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
                 v.p[2] = Float.intBitsToFloat(mem.read32(addr)); addr += 4;
-                if (transform2D == 1) {
+                if (transform2D) {
                 	// Negative Z are interpreted as 0
                 	if (v.p[2] < 0) {
                 		v.p[2] = 0;
@@ -372,8 +387,8 @@ public class VertexInfo {
             sb.append(weight_info[weight] + "|");
         if (index_info[index] != null)
             sb.append(index_info[index] + "|");
-        if (transform_info[transform2D] != null)
-            sb.append(transform_info[transform2D]);
+        if (transform_info[transform2D ? 1 : 0] != null)
+            sb.append(transform_info[transform2D ? 1 : 0]);
 
         sb.append(" size=" + vertexSize);
         return sb.toString();

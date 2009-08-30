@@ -23,6 +23,8 @@ import static jpcsp.graphics.GeCommands.*;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.nio.Buffer;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
@@ -79,8 +81,10 @@ public class VideoEngine {
     public static final boolean useTextureCache = true;
     private static GeCommands helper;
     private VertexInfo vinfo = new VertexInfo();
+    private VertexInfoReader vertexInfoReader = new VertexInfoReader();
     private static final char SPACE = ' ';
     private DurationStatistics statistics;
+    private DurationStatistics vertexStatistics = new DurationStatistics("Vertex");
     private DurationStatistics[] commandStatistics;
     private boolean openGL1_2;
     private boolean openGL1_5;
@@ -216,8 +220,11 @@ public class VideoEngine {
 
     private boolean useVBO = true;
     private int[] vboBufferId = new int[1];
-    private static final int vboBufferSize = 1024 * 1024;
-    private FloatBuffer vboBuffer = BufferUtil.newFloatBuffer(vboBufferSize);
+    private static final int vboBufferSize = 1024 * 1024 * BufferUtil.SIZEOF_FLOAT;
+    private ByteBuffer vboBuffer = ByteBuffer.allocateDirect(vboBufferSize).order(ByteOrder.nativeOrder());
+    private FloatBuffer vboFloatBuffer = vboBuffer.asFloatBuffer();
+    private static final int nativeBufferSize = vboBufferSize;
+    private ByteBuffer nativeBuffer = ByteBuffer.allocateDirect(nativeBufferSize).order(ByteOrder.LITTLE_ENDIAN);
 
     private boolean useShaders = true;
     private int shaderProgram;
@@ -306,13 +313,11 @@ public class VideoEngine {
         if (openGL1_5) {
             gl.glGenBuffers(1, vboBufferId, 0);
             gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vboBufferId[0]);
-            gl.glBufferData(GL.GL_ARRAY_BUFFER, vboBufferSize *
-                    BufferUtil.SIZEOF_FLOAT, vboBuffer, GL.GL_STREAM_DRAW);
+            gl.glBufferData(GL.GL_ARRAY_BUFFER, vboBufferSize, vboFloatBuffer, GL.GL_STREAM_DRAW);
         } else {
             gl.glGenBuffersARB(1, vboBufferId, 0);
             gl.glBindBufferARB(GL.GL_ARRAY_BUFFER, vboBufferId[0]);
-            gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, vboBufferSize *
-                    BufferUtil.SIZEOF_FLOAT, vboBuffer, GL.GL_STREAM_DRAW);
+            gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, vboBufferSize, vboFloatBuffer, GL.GL_STREAM_DRAW);
         }
     }
 
@@ -406,6 +411,7 @@ public class VideoEngine {
             for (int i = 0; i < numberCommands; i++) {
                 VideoEngine.log.info("    " + instance.commandStatistics[i].toString());
             }
+            log.info(instance.vertexStatistics);
         }
     }
 
@@ -1856,103 +1862,173 @@ public class VideoEngine {
                 }
 
                 Memory mem = Memory.getInstance();
-                bindBuffers(useVertexColor, useTexture);
-                vboBuffer.clear();
+                vertexStatistics.start();
 
-                switch (type) {
-                    case PRIM_POINT:
-                    case PRIM_LINE:
-                    case PRIM_LINES_STRIPS:
-                    case PRIM_TRIANGLE:
-                    case PRIM_TRIANGLE_STRIPS:
-                    case PRIM_TRIANGLE_FANS:
-                        for (int i = 0; i < numberOfVertex; i++) {
-                            int addr = vinfo.getAddress(mem, i);
-                            VertexState v = vinfo.readVertex(mem, addr);
+                if (vinfo.index == 0 && type != PRIM_SPRITES) {
+                	// Optimized VertexInfo reading:
+                	// - do not copy the info already available in the OpenGL format
+                	//   (native format), load it into nativeBuffer (a direct buffer
+                	//   is required by OpenGL).
+                	// - try to keep the info in "int" format when possible, convert
+                	//   to "float" only when necessary
+                	// The best case is no reading and no conversion at all when all the
+                	// vertex info are available in a format usable by OpenGL.
+                	//
+                	// The optimized reading cannot currently handle
+                	// indexed vertex info (vinfo.index != 0) and PRIM_SPRITES.
+                	//
+                    Buffer buffer = vertexInfoReader.read(vinfo, vinfo.ptr_vertex, numberOfVertex);
 
-                            // Do skinning first as it modifies v.p and v.n
-                            if (vinfo.position != 0 && vinfo.weight != 0) {
-                                doSkinning(vinfo, v);
-                            }
+                    enableClientState(useVertexColor, useTexture);
 
-                            if (vinfo.texture  != 0) vboBuffer.put(v.t);
-                            else if (useTextureFromNormal) vboBuffer.put(v.n, 0, 2);
-                            else if (useTextureFromPosition) vboBuffer.put(v.p, 0, 2);
-                            if (useVertexColor) vboBuffer.put(v.c);
-                            if (vinfo.normal   != 0) vboBuffer.put(v.n);
-                            if (vinfo.position != 0) vboBuffer.put(v.p);
+                    int stride = vertexInfoReader.getStride();
+					glBindBuffer();
+					if (buffer != null) {
+						if (useVBO) {
+	                        if (openGL1_5) {
+	                        	gl.glBufferData(GL.GL_ARRAY_BUFFER, stride * numberOfVertex, buffer, GL.GL_STREAM_DRAW);
+	                        } else {
+	                        	gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, stride * numberOfVertex, buffer, GL.GL_STREAM_DRAW);
+	                        }
+						} else {
+							vboBuffer.clear();
+							Utilities.putBuffer(vboBuffer, buffer, ByteOrder.nativeOrder());
+						}
+                    }
 
-                            if (log.isTraceEnabled()) {
-                            	if (vinfo.texture != 0 && vinfo.position != 0) {
-                            		log.trace("  vertex#" + i + " (" + ((int) v.t[0]) + "," + ((int) v.t[1]) + ") at (" + ((int) v.p[0]) + "," + ((int) v.p[1]) + "," + ((int) v.p[2]) + ")");
-                            	}
-                            }
-                        }
+                	if (vertexInfoReader.hasNative()) {
+                		// Copy the VertexInfo from Memory to the nativeBuffer
+                		// (a direct buffer is required by glXXXPointer())
+                		nativeBuffer.clear();
+                    	Buffer memBuffer = mem.getBuffer(vinfo.ptr_vertex, vinfo.vertexSize * numberOfVertex);
+                    	Utilities.putBuffer(nativeBuffer, memBuffer, ByteOrder.LITTLE_ENDIAN);
+                	}
 
-                        if(useVBO) {
-                            if (openGL1_5)
-                                gl.glBufferData(GL.GL_ARRAY_BUFFER, vboBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboBuffer.rewind(), GL.GL_STREAM_DRAW);
-                            else
-                                gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, vboBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboBuffer.rewind(), GL.GL_STREAM_DRAW);
-                        }
-                        gl.glDrawArrays(prim_mapping[type], 0, numberOfVertex);
+                	if (vinfo.texture != 0 || useTexture) {
+                		boolean textureNative;
+                		int textureOffset;
+                		int textureType;
+                		if (useTextureFromNormal) {
+                			textureNative = vertexInfoReader.isNormalNative();
+                			textureOffset = vertexInfoReader.getNormalOffset();
+                			textureType = vertexInfoReader.getNormalType();
+                		} else if (useTextureFromPosition) {
+                			textureNative = vertexInfoReader.isPositionNative();
+                			textureOffset = vertexInfoReader.getPositionOffset();
+                			textureType = vertexInfoReader.getPositionType();
+                		} else {
+                			textureNative = vertexInfoReader.isTextureNative();
+	                		textureOffset = vertexInfoReader.getTextureOffset();
+	                		textureType = vertexInfoReader.getTextureType();
+                		}
+                		glTexCoordPointer(useTexture, textureType, stride, textureOffset, textureNative, false);
+                    }
 
-                        // VADDR is updated after vertex rendering.
-                        // Some games rely on this and don't reload VADDR between 2 PRIM calls.
-                        vinfo.ptr_vertex = vinfo.getAddress(mem, numberOfVertex);
-                        break;
+                	glColorPointer(useVertexColor, vertexInfoReader.getColorType(), stride, vertexInfoReader.getColorOffset(), vertexInfoReader.isColorNative(), false);
+                	glNormalPointer(vertexInfoReader.getNormalType(), stride, vertexInfoReader.getNormalOffset(), vertexInfoReader.isNormalNative(), false);
+                	glVertexPointer(vertexInfoReader.getPositionType(), stride, vertexInfoReader.getPositionOffset(), vertexInfoReader.isPositionNative(), false);
 
-                    case PRIM_SPRITES:
-                        gl.glPushAttrib(GL.GL_ENABLE_BIT);
-                        gl.glDisable(GL.GL_CULL_FACE);
-                        for (int i = 0; i < numberOfVertex; i += 2) {
-                            int addr1 = vinfo.getAddress(mem, i);
-                            int addr2 = vinfo.getAddress(mem, i + 1);
-                            VertexState v1 = vinfo.readVertex(mem, addr1);
-                            VertexState v2 = vinfo.readVertex(mem, addr2);
+                    gl.glDrawArrays(prim_mapping[type], 0, numberOfVertex);
 
-                            v1.p[2] = v2.p[2];
+                } else {
+                	// Non-optimized VertexInfo reading
 
-                            if (log.isDebugEnabled() && transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
-                                log("  sprite (" + ((int) v1.t[0]) + "," + ((int) v1.t[1]) + ")-(" + ((int) v2.t[0]) + "," + ((int) v2.t[1]) + ") at (" + ((int) v1.p[0]) + "," + ((int) v1.p[1]) + "," + ((int) v1.p[2]) + ")-(" + + ((int) v2.p[0]) + "," + ((int) v2.p[1]) + "," + ((int) v2.p[2]) + ")");
-                            }
+                	bindBuffers(useVertexColor, useTexture);
+                	vboFloatBuffer.clear();
 
-                            // V1
-                            if (vinfo.texture  != 0) vboBuffer.put(v1.t);
-                            if (useVertexColor) vboBuffer.put(v2.c);
-                            if (vinfo.normal   != 0) vboBuffer.put(v2.n);
-                            if (vinfo.position != 0) vboBuffer.put(v1.p);
+	                switch (type) {
+	                    case PRIM_POINT:
+	                    case PRIM_LINE:
+	                    case PRIM_LINES_STRIPS:
+	                    case PRIM_TRIANGLE:
+	                    case PRIM_TRIANGLE_STRIPS:
+	                    case PRIM_TRIANGLE_FANS:
+	                        for (int i = 0; i < numberOfVertex; i++) {
+	                            int addr = vinfo.getAddress(mem, i);
+	                            VertexState v = vinfo.readVertex(mem, addr);
 
-                            if (vinfo.texture  != 0) vboBuffer.put(v2.t[0]).put(v1.t[1]);
-                            if (useVertexColor) vboBuffer.put(v2.c);
-                            if (vinfo.normal   != 0) vboBuffer.put(v2.n);
-                            if (vinfo.position != 0) vboBuffer.put(v2.p[0]).put(v1.p[1]).put(v2.p[2]);
+	                            // Do skinning first as it modifies v.p and v.n
+	                            if (vinfo.position != 0 && vinfo.weight != 0) {
+	                                doSkinning(vinfo, v);
+	                            }
 
-                            // V2
-                            if (vinfo.texture  != 0) vboBuffer.put(v2.t);
-                            if (useVertexColor) vboBuffer.put(v2.c);
-                            if (vinfo.normal   != 0) vboBuffer.put(v2.n);
-                            if (vinfo.position != 0) vboBuffer.put(v2.p);
+	                            if (vinfo.texture  != 0) vboFloatBuffer.put(v.t);
+	                            else if (useTextureFromNormal) vboFloatBuffer.put(v.n, 0, 2);
+	                            else if (useTextureFromPosition) vboFloatBuffer.put(v.p, 0, 2);
+	                            if (useVertexColor) vboFloatBuffer.put(v.c);
+	                            if (vinfo.normal   != 0) vboFloatBuffer.put(v.n);
+	                            if (vinfo.position != 0) vboFloatBuffer.put(v.p);
 
-                            if (vinfo.texture  != 0) vboBuffer.put(v1.t[0]).put(v2.t[1]);
-                            if (useVertexColor) vboBuffer.put(v2.c);
-                            if (vinfo.normal   != 0) vboBuffer.put(v2.n);
-                            if (vinfo.position != 0) vboBuffer.put(v1.p[0]).put(v2.p[1]).put(v2.p[2]);
-                        }
-                        if(useVBO) {
-                            if (openGL1_5)
-                                gl.glBufferData(GL.GL_ARRAY_BUFFER, vboBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboBuffer.rewind(), GL.GL_STREAM_DRAW);
-                            else
-                                gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, vboBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboBuffer.rewind(), GL.GL_STREAM_DRAW);
-                        }
-                        gl.glDrawArrays(GL.GL_QUADS, 0, numberOfVertex * 2);
-                        gl.glPopAttrib();
+	                            if (log.isTraceEnabled()) {
+	                            	if (vinfo.texture != 0 && vinfo.position != 0) {
+	                            		log.trace("  vertex#" + i + " (" + ((int) v.t[0]) + "," + ((int) v.t[1]) + ") at (" + ((int) v.p[0]) + "," + ((int) v.p[1]) + "," + ((int) v.p[2]) + ")");
+	                            	}
+	                            }
+	                        }
 
-                        // VADDR is updated after vertex rendering.
-                        // Some games rely on this and don't reload VADDR between 2 PRIM calls.
-                        vinfo.ptr_vertex = vinfo.getAddress(mem, numberOfVertex);
-                        break;
+	                        if(useVBO) {
+	                            if (openGL1_5)
+	                                gl.glBufferData(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
+	                            else
+	                                gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
+	                        }
+	                        gl.glDrawArrays(prim_mapping[type], 0, numberOfVertex);
+	                        break;
+
+	                    case PRIM_SPRITES:
+	                        gl.glPushAttrib(GL.GL_ENABLE_BIT);
+	                        gl.glDisable(GL.GL_CULL_FACE);
+	                        for (int i = 0; i < numberOfVertex; i += 2) {
+	                            int addr1 = vinfo.getAddress(mem, i);
+	                            int addr2 = vinfo.getAddress(mem, i + 1);
+	                            VertexState v1 = vinfo.readVertex(mem, addr1);
+	                            VertexState v2 = vinfo.readVertex(mem, addr2);
+
+	                            v1.p[2] = v2.p[2];
+
+	                            if (log.isDebugEnabled() && transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
+	                                log("  sprite (" + ((int) v1.t[0]) + "," + ((int) v1.t[1]) + ")-(" + ((int) v2.t[0]) + "," + ((int) v2.t[1]) + ") at (" + ((int) v1.p[0]) + "," + ((int) v1.p[1]) + "," + ((int) v1.p[2]) + ")-(" + + ((int) v2.p[0]) + "," + ((int) v2.p[1]) + "," + ((int) v2.p[2]) + ")");
+	                            }
+
+	                            // V1
+	                            if (vinfo.texture  != 0) vboFloatBuffer.put(v1.t);
+	                            if (useVertexColor) vboFloatBuffer.put(v2.c);
+	                            if (vinfo.normal   != 0) vboFloatBuffer.put(v2.n);
+	                            if (vinfo.position != 0) vboFloatBuffer.put(v1.p);
+
+	                            if (vinfo.texture  != 0) vboFloatBuffer.put(v2.t[0]).put(v1.t[1]);
+	                            if (useVertexColor) vboFloatBuffer.put(v2.c);
+	                            if (vinfo.normal   != 0) vboFloatBuffer.put(v2.n);
+	                            if (vinfo.position != 0) vboFloatBuffer.put(v2.p[0]).put(v1.p[1]).put(v2.p[2]);
+
+	                            // V2
+	                            if (vinfo.texture  != 0) vboFloatBuffer.put(v2.t);
+	                            if (useVertexColor) vboFloatBuffer.put(v2.c);
+	                            if (vinfo.normal   != 0) vboFloatBuffer.put(v2.n);
+	                            if (vinfo.position != 0) vboFloatBuffer.put(v2.p);
+
+	                            if (vinfo.texture  != 0) vboFloatBuffer.put(v1.t[0]).put(v2.t[1]);
+	                            if (useVertexColor) vboFloatBuffer.put(v2.c);
+	                            if (vinfo.normal   != 0) vboFloatBuffer.put(v2.n);
+	                            if (vinfo.position != 0) vboFloatBuffer.put(v1.p[0]).put(v2.p[1]).put(v2.p[2]);
+	                        }
+	                        if(useVBO) {
+	                            if (openGL1_5)
+	                                gl.glBufferData(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
+	                            else
+	                                gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
+	                        }
+	                        gl.glDrawArrays(GL.GL_QUADS, 0, numberOfVertex * 2);
+	                        gl.glPopAttrib();
+	                        break;
+	                }
                 }
+
+                // VADDR is updated after vertex rendering.
+                // Some games rely on this and don't reload VADDR between 2 PRIM calls.
+                vinfo.ptr_vertex = vinfo.getAddress(mem, numberOfVertex);
+
+                vertexStatistics.end();
 
                 // Don't capture the ram if the vertex list is embedded in the display list. TODO handle stall_addr == 0 better
                 // TODO may need to move inside the loop if indices are used, or find the largest index so we can calculate the size of the vertex list
@@ -2804,58 +2880,179 @@ public class VideoEngine {
         commandStatistics[command].end();
     }
 
+    private void enableClientState(boolean useVertexColor, boolean useTexture) {
+        if (vinfo.texture != 0 || useTexture) {
+        	gl.glEnableClientState(GL.GL_TEXTURE_COORD_ARRAY);
+        }
+        if (useVertexColor) {
+        	gl.glEnableClientState(GL.GL_COLOR_ARRAY);
+        }
+        if (vinfo.normal != 0) {
+        	gl.glEnableClientState(GL.GL_NORMAL_ARRAY);
+        }
+        gl.glEnableClientState(GL.GL_VERTEX_ARRAY);
+    }
+
+    private void glTexCoordPointer(boolean useTexture, int type, int stride, int offset, boolean isNative, boolean useVboFloatBuffer) {
+	    if (vinfo.texture != 0 || useTexture) {
+			if (isNative) {
+				glBindBuffer(0);
+				gl.glTexCoordPointer(2, type, vinfo.vertexSize, nativeBuffer.position(offset));
+			} else {
+		        glBindBuffer();
+		        if (useVBO) {
+		        	gl.glTexCoordPointer(2, type, stride, offset);
+		        } else if (useVboFloatBuffer) {
+		        	gl.glTexCoordPointer(2, type, stride, vboFloatBuffer.position(offset / BufferUtil.SIZEOF_FLOAT));
+		        } else {
+		        	gl.glTexCoordPointer(2, type, stride, vboBuffer.position(offset));
+		        }
+			}
+	    }
+    }
+
+    private void glColorPointer(boolean useVertexColor, int type, int stride, int offset, boolean isNative, boolean useVboFloatBuffer) {
+    	if (useVertexColor) {
+        	if (isNative) {
+            	glBindBuffer(0);
+        		gl.glColorPointer(4, type, vinfo.vertexSize, nativeBuffer.position(offset));
+        	} else {
+                glBindBuffer();
+                if (useVBO) {
+                	gl.glColorPointer(4, type, stride, offset);
+                } else if (useVboFloatBuffer) {
+                	gl.glColorPointer(4, type, stride, vboFloatBuffer.position(offset / BufferUtil.SIZEOF_FLOAT));
+                } else {
+                	gl.glColorPointer(4, type, stride, vboBuffer.position(offset));
+                }
+            }
+    	}
+    }
+
+    private void glVertexPointer(int type, int stride, int offset, boolean isNative, boolean useVboFloatBuffer) {
+    	if (isNative) {
+        	glBindBuffer(0);
+        	gl.glVertexPointer(3, type, vinfo.vertexSize, nativeBuffer.position(offset));
+        } else {
+            glBindBuffer();
+            if (useVBO) {
+            	gl.glVertexPointer(3, type, stride, offset);
+            } else if (useVboFloatBuffer) {
+            	gl.glVertexPointer(3, type, stride, vboFloatBuffer.position(offset / BufferUtil.SIZEOF_FLOAT));
+            } else {
+            	gl.glVertexPointer(3, type, stride, vboBuffer.position(offset));
+            }
+        }
+    	
+    }
+
+    private void glNormalPointer(int type, int stride, int offset, boolean isNative, boolean useVboFloatBuffer) {
+    	if (vinfo.normal != 0) {
+			if (isNative) {
+	        	glBindBuffer(0);
+	    		gl.glNormalPointer(type, vinfo.vertexSize, nativeBuffer.position(offset));
+			} else {
+	            glBindBuffer();
+	            if (useVBO) {
+	            	gl.glNormalPointer(type, stride, offset);
+	            } else if (useVboFloatBuffer) {
+	            	gl.glNormalPointer(type, stride, vboFloatBuffer.position(offset / BufferUtil.SIZEOF_FLOAT));
+	            } else {
+	            	gl.glNormalPointer(type, stride, vboBuffer.position(offset));
+	            }
+			}
+    	}
+    }
+
     private void bindBuffers(boolean useVertexColor, boolean useTexture) {
     	int stride = 0, cpos = 0, npos = 0, vpos = 0;
 
-    	if(vinfo.texture != 0 || useTexture) {
-        	gl.glEnableClientState(GL.GL_TEXTURE_COORD_ARRAY);
+    	if (vinfo.texture != 0 || useTexture) {
         	stride += BufferUtil.SIZEOF_FLOAT * 2;
         	cpos = npos = vpos = stride;
         }
-        if(useVertexColor) {
-        	gl.glEnableClientState(GL.GL_COLOR_ARRAY);
+        if (useVertexColor) {
         	stride += BufferUtil.SIZEOF_FLOAT * 4;
         	npos = vpos = stride;
         }
-        if(vinfo.normal != 0) {
-        	gl.glEnableClientState(GL.GL_NORMAL_ARRAY);
+        if (vinfo.normal != 0) {
         	stride += BufferUtil.SIZEOF_FLOAT * 3;
         	vpos = stride;
         }
-        gl.glEnableClientState(GL.GL_VERTEX_ARRAY);
         stride += BufferUtil.SIZEOF_FLOAT * 3;
 
-    	if(useVBO) {
-            if (openGL1_5)
-                gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vboBufferId[0]);
-            else
-                gl.glBindBufferARB(GL.GL_ARRAY_BUFFER, vboBufferId[0]);
-
-        	if(vinfo.texture != 0 || useTexture) {
-            	gl.glTexCoordPointer(2, GL.GL_FLOAT, stride, 0);
-            }
-            if(useVertexColor) {
-            	gl.glColorPointer(4, GL.GL_FLOAT, stride, cpos);
-            }
-            if(vinfo.normal != 0) {
-            	gl.glNormalPointer(GL.GL_FLOAT, stride, npos);
-            }
-            gl.glVertexPointer(3, GL.GL_FLOAT, stride, vpos);
-        } else {
-		    if(vinfo.texture != 0 || useTexture) {
-		    	gl.glTexCoordPointer(2, GL.GL_FLOAT, stride, vboBuffer.position(0));
-		    }
-		    if(useVertexColor) {
-		    	gl.glColorPointer(4, GL.GL_FLOAT, stride, vboBuffer.position(cpos / BufferUtil.SIZEOF_FLOAT));
-		    }
-		    if(vinfo.normal != 0) {
-		    	gl.glNormalPointer(GL.GL_FLOAT, stride, vboBuffer.position(npos / BufferUtil.SIZEOF_FLOAT));
-		    }
-		    gl.glVertexPointer(3, GL.GL_FLOAT, stride, vboBuffer.position(vpos / BufferUtil.SIZEOF_FLOAT));
-        }
+    	enableClientState(useVertexColor, useTexture);
+        glTexCoordPointer(useTexture, GL.GL_FLOAT, stride, 0, false, true);
+        glColorPointer(useVertexColor, GL.GL_FLOAT, stride, cpos, false, true);
+        glNormalPointer(GL.GL_FLOAT, stride, npos, false, true);
+    	glVertexPointer(GL.GL_FLOAT, stride, vpos, false, true);
 	}
 
-	private void doSkinning(VertexInfo vinfo, VertexState v) {
+    public void doPositionSkinning(VertexInfo vinfo, float[] boneWeights, float[] position) {
+    	float x = 0, y = 0, z = 0;
+    	for (int i = 0; i < vinfo.skinningWeightCount; i++) {
+    		if (boneWeights[i] != 0) {
+				x += (	position[0] * bone_uploaded_matrix[i][0]
+  				     + 	position[1] * bone_uploaded_matrix[i][3]
+  				     + 	position[2] * bone_uploaded_matrix[i][6]
+  				     +           bone_uploaded_matrix[i][9]) * boneWeights[i];
+
+  				y += (	position[0] * bone_uploaded_matrix[i][1]
+  				     + 	position[1] * bone_uploaded_matrix[i][4]
+  				     + 	position[2] * bone_uploaded_matrix[i][7]
+  				     +           bone_uploaded_matrix[i][10]) * boneWeights[i];
+
+  				z += (	position[0] * bone_uploaded_matrix[i][2]
+  				     + 	position[1] * bone_uploaded_matrix[i][5]
+  				     + 	position[2] * bone_uploaded_matrix[i][8]
+  				     +           bone_uploaded_matrix[i][11]) * boneWeights[i];
+    		}
+    	}
+
+    	position[0] = x;
+    	position[1] = y;
+    	position[2] = z;
+    }
+
+    public void doNormalSkinning(VertexInfo vinfo, float[] boneWeights, float[] normal) {
+    	float nx = 0, ny = 0, nz = 0;
+    	for (int i = 0; i < vinfo.skinningWeightCount; i++) {
+    		if (boneWeights[i] != 0) {
+				// Normals shouldn't be translated :)
+				nx += (	normal[0] * bone_uploaded_matrix[i][0]
+				   + 	normal[1] * bone_uploaded_matrix[i][3]
+				   +	normal[2] * bone_uploaded_matrix[i][6]) * boneWeights[i];
+
+				ny += (	normal[0] * bone_uploaded_matrix[i][1]
+				   + 	normal[1] * bone_uploaded_matrix[i][4]
+				   + 	normal[2] * bone_uploaded_matrix[i][7]) * boneWeights[i];
+
+				nz += (	normal[0] * bone_uploaded_matrix[i][2]
+				   + 	normal[1] * bone_uploaded_matrix[i][5]
+				   + 	normal[2] * bone_uploaded_matrix[i][8]) * boneWeights[i];
+    		}
+    	}
+
+		/*
+		// TODO: I doubt psp hardware normalizes normals after skinning,
+		// but if it does, this should be uncommented :)
+		float length = nx*nx + ny*ny + nz*nz;
+
+		if (length > 0.f) {
+			length = 1.f / (float)Math.sqrt(length);
+
+			nx *= length;
+			ny *= length;
+			nz *= length;
+		}
+		*/
+
+    	normal[0] = nx;
+    	normal[1] = ny;
+    	normal[2] = nz;
+    }
+
+    private void doSkinning(VertexInfo vinfo, VertexState v) {
     	float x = 0, y = 0, z = 0;
     	float nx = 0, ny = 0, nz = 0;
 		for(int i = 0; i < vinfo.skinningWeightCount; ++i) {
@@ -3447,7 +3644,11 @@ public class VideoEngine {
 	            }
 
 	            if (State.captureGeNextFrame) {
-	            	CaptureManager.captureImage(texaddr, level, final_buffer, texture_width[level], texture_height[level], texture_buffer_width[level], texture_type, compressedTexture, compressedTextureSize);
+	            	if (pspdisplay.getInstance().isGeAddress(tex_addr)) {
+	            		CaptureManager.captureImage(texaddr, level, final_buffer, texture_width[level], texture_height[level], texture_buffer_width[level], texture_type, compressedTexture, compressedTextureSize, false);
+	                } else if (!CaptureManager.isImageCaptured(texaddr)) {
+	            		CaptureManager.captureImage(texaddr, level, final_buffer, texture_width[level], texture_height[level], texture_buffer_width[level], texture_type, compressedTexture, compressedTextureSize, true);
+	            	}
 	            }
 
 	            if (texture != null) {
@@ -3768,7 +3969,7 @@ public class VideoEngine {
                  Bernstein(temp[i], py, anchors[i]);
             }
 
-            vboBuffer.clear();
+            vboFloatBuffer.clear();
 
             for (int v = 0; v <= vdivs; v++) {
                 // Percent Along The X-Axis
@@ -3776,33 +3977,33 @@ public class VideoEngine {
 
                 // Apply The Old Texture Coords
                 if (vinfo.texture != 0) {
-                    vboBuffer.put(last[v].t);
+                    vboFloatBuffer.put(last[v].t);
                 } else {
-                    vboBuffer.put(1 - pyold);
-                    vboBuffer.put(1 - px);
+                    vboFloatBuffer.put(1 - pyold);
+                    vboFloatBuffer.put(1 - px);
                 }
                 // Old Point
-                vboBuffer.put(last[v].p);
+                vboFloatBuffer.put(last[v].p);
 
                 // Generate New Point
                 Bernstein(last[v], px, temp);
 
                 // Apply The New Texture Coords
                 if (vinfo.texture != 0) {
-                    vboBuffer.put(last[v].t);
+                    vboFloatBuffer.put(last[v].t);
                 } else {
-                    vboBuffer.put(1 - py);
-                    vboBuffer.put(1 - px);
+                    vboFloatBuffer.put(1 - py);
+                    vboFloatBuffer.put(1 - px);
                 }
                 // New Point
-                vboBuffer.put(last[v].p);
+                vboFloatBuffer.put(last[v].p);
             }
 
             if(useVBO) {
                 if (openGL1_5)
-                    gl.glBufferData(GL.GL_ARRAY_BUFFER, vboBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboBuffer.rewind(), GL.GL_STREAM_DRAW);
+                    gl.glBufferData(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
                 else
-                    gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, vboBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboBuffer.rewind(), GL.GL_STREAM_DRAW);
+                    gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
             }
             gl.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, (vdivs + 1) * 2);
 
@@ -3909,6 +4110,20 @@ public class VideoEngine {
         return compressedTextureSize;
     }
 
+
+    private void glBindBuffer() {
+    	glBindBuffer(vboBufferId[0]);
+    }
+
+    private void glBindBuffer(int bufferId) {
+        if (useVBO) {
+        	if (openGL1_5) {
+        		gl.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferId);
+        	} else {
+        		gl.glBindBufferARB(GL.GL_ARRAY_BUFFER, bufferId);
+        	}
+        }
+    }
 
     // For capture/replay
 
