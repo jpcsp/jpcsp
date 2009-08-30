@@ -1043,20 +1043,16 @@ public class VertexInfoReader {
 	private class Position2Reader implements IVertexInfoReader {
 		@Override
 		public void read() {
-    		// X and Y are signed 16 bit, Z is unsigned 16 bit
-			int positionX = (short) memoryReader.readNext16();
-			int positionY = (short) memoryReader.readNext16();
-			int positionZ =         memoryReader.readNext16();
-
 			if (vertexInfo.transform2D) {
-				vertexDataBuffer.put(positionX);
-				vertexDataBuffer.put(positionY);
-				vertexDataBuffer.put(positionZ);
+	    		// X and Y are signed 16 bit, Z is unsigned 16 bit
+				vertexDataBuffer.put((short) memoryReader.readNext16());
+				vertexDataBuffer.put((short) memoryReader.readNext16());
+				vertexDataBuffer.put(        memoryReader.readNext16());
 			} else {
-            	// To be mapped to [-1..1] for 3D
-				position[0] = positionX / 32767f;
-				position[1] = positionY / 32767f;
-				position[2] = positionZ / 32767f;
+            	// Signed 16 bit, to be mapped to [-1..1] for 3D
+				position[0] = ((short) memoryReader.readNext16()) / 32767f;
+				position[1] = ((short) memoryReader.readNext16()) / 32767f;
+				position[2] = ((short) memoryReader.readNext16()) / 32767f;
 				if (vertexInfo.weight != 0) {
 					videoEngine.doPositionSkinning(vertexInfo, boneWeights, position);
 				}
@@ -1068,18 +1064,18 @@ public class VertexInfoReader {
 
 		@Override
 		public boolean isNative() {
-			// Cannot be native because X and Y are signed and Z is unsigned
+			// Cannot be native in 2D because X and Y are signed and Z is unsigned
 			return false;
 		}
 
 		@Override
 		public int size() {
-			return (isNative() ? 0 : 12);
+			return 12;
 		}
 
 		@Override
 		public int type() {
-			return (isNative() ? typeInt16 : (vertexInfo.transform2D ? typeInt32 : typeFloat));
+			return (vertexInfo.transform2D ? typeInt32 : typeFloat);
 		}
 	}
 
