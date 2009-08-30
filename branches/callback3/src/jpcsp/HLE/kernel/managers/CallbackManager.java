@@ -143,10 +143,8 @@ public class CallbackManager {
             info.notifyCount = arg1;
             info.notifyArg = arg2;
 
-            // Ignore "forceNotify" for now because previous implementation didn't pre-empt it worked ok
-            // If we do want faster response we could "pre-empt" in any syscall, not just waitCB syscalls
+            // We allow "pre-emption" in any syscall, not just waitCB syscalls, but this might not have a high enough frequency/response time
             info.forceNotify = forceNotify;
-            //info.forceNotify = false;
 
             // add to ready list
             if (!readyCallbacks.contains(info)) {
@@ -197,11 +195,19 @@ public class CallbackManager {
 
         Modules.log.info("Callback V3 exit detected");
 
+        if (!currentThread.insideCallbackV3) {
+            Modules.log.error("Callback V3 exit detected but not inside callback");
+            Emulator.PauseEmu();
+        }
+
         // Restore thread context
         currentThread.restoreContext(); // also sets pc = npc
 
         // housekeeping
         currentThread.insideCallbackV3 = false;
+
+        // Restore previous thread status (otherwise we go to ready, when it may have been a sleepcb thread)
+        threadMan.changeThreadState(currentThread, currentThread.realStatus);
 
         // Go back to a ready thread
         threadMan.contextSwitch(threadMan.nextThread());
@@ -244,12 +250,20 @@ public class CallbackManager {
                 // when sleepCB and delayCB are called on a thread it will have allowCallbacks set to true and perform an initial checkCB
                 // either if-statement should work
                 if (callbackThread.allowCallbacks &&
-                    callbackThread == currentThread &&
+                    callbackThread == currentThread && // should be the same as info.threadId == currentThread.uid
                     callbackThread.waitType != SceKernelThreadInfo.PSP_WAIT_SLEEP &&
                     callbackThread.waitType != SceKernelThreadInfo.PSP_WAIT_DELAY) {
-                //if (callbackThread.allowCallbacks && info.threadId == currentThread.uid) {
                     Modules.log.error("current thread '" + currentThread.name + "' should not have allowCallbacks set!");
                 }
+
+                // Backup thread status
+                callbackThread.realStatus = callbackThread.status;
+
+                // housekeeping
+                callbackThread.numWaitCallbacks--;
+                callbackThread.insideCallbackV3 = true;
+                // info.notifyCount = 0; // already done in info.startContext()
+                readyCallbacks.remove(i); // this operation is safe because we're going to break out of the loop
 
                 // Switch out current thread
                 // Switch in callback thread
@@ -264,6 +278,8 @@ public class CallbackManager {
 
                     threadMan.contextSwitch(callbackThread);
                 } else {
+                    threadMan.changeThreadState(callbackThread, SceKernelThreadInfo.PSP_THREAD_RUNNING);
+
                     if (Modules.log.isDebugEnabled()) {
                         // spams on GE finish callback
                         Modules.log.debug("hleKernelCheckCallback CB thread '" + callbackThread.name + "' already current thread");
@@ -277,12 +293,6 @@ public class CallbackManager {
                 // we run in the thread the callback was created in
                 // even if it's the same as the current thread we still need to setup the function parameters
                 info.startContext(callbackThread);
-
-                // housekeeping
-                callbackThread.numWaitCallbacks--;
-                callbackThread.insideCallbackV3 = true;
-                // info.notifyCount = 0; // already done in info.startContext()
-                readyCallbacks.remove(i); // this operation is safe because we're going to break out of the loop
 
                 handled = true;
                 break;

@@ -113,6 +113,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public boolean insideCallbackV3;
     public boolean allowCallbacks; // set in waitCB functions, these threads have status=waiting/sleeping
     public boolean forceAllowCallbacks; // set in sceKernelCheckCallback, this is the only place where the running thread can process callbacks
+    public int realStatus; // backup thread status before entering the callback and restore it afterwards
 
     // HLE -> PSP -> HLE callback system, lets a syscall execute game code, currently only used by mpeg module
     public boolean insideCallbackV2;

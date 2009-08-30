@@ -211,6 +211,7 @@ public class pspiofilemgr {
         if (found != null) {
             found.asyncPending = false;
 
+            // IO callback
             if (found.cbid >= 0) {
                 Modules.log.info("hleKernelNotifyCallback (from IO)");
                 Managers.callbacks.hleKernelNotifyCallback(found.cbid, found.notifyArg);

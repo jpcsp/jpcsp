@@ -682,7 +682,9 @@ public class ThreadMan {
             thread.waitType = PSP_WAIT_NONE;
         } else if (thread.status == PSP_THREAD_RUNNING) {
             // debug
-            if (thread.waitType != PSP_WAIT_NONE) {
+            // When inside a callback we set the thread status to running,
+            // but we want to restore the status afterwards so we also need to preserve the wait info
+            if (thread.waitType != PSP_WAIT_NONE && !thread.insideCallbackV3) {
                 Modules.log.error("changeThreadState thread '" + thread.name + "' => PSP_THREAD_RUNNING. waitType should be PSP_WAIT_NONE. caller:" + getCallingFunction());
             }
         }
