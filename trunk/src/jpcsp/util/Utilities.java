@@ -18,13 +18,18 @@ package jpcsp.util;
 
 import java.io.IOException;
 
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.HLE.Modules;
 import jpcsp.filesystems.*;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.nio.ShortBuffer;
 
 public class Utilities {
 
@@ -333,5 +338,27 @@ public class Utilities {
     	}
 
     	return s;
+    }
+
+    public static void putBuffer(ByteBuffer destination, Buffer source, ByteOrder sourceByteOrder) {
+		// Set the destination to the desired ByteOrder
+		ByteOrder order = destination.order();
+		destination.order(sourceByteOrder);
+
+		if (source instanceof IntBuffer) {
+    		destination.asIntBuffer().put((IntBuffer) source);
+    	} else if (source instanceof ShortBuffer) {
+    		destination.asShortBuffer().put((ShortBuffer) source);
+    	} else if (source instanceof ByteBuffer) {
+    		destination.put((ByteBuffer) source);
+    	} else if (source instanceof FloatBuffer) {
+    		destination.asFloatBuffer().put((FloatBuffer) source);
+    	} else {
+    		Modules.log.error("Utilities.putBuffer: Unsupported Buffer type " + source.getClass().getName());
+    		Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
+    	}
+
+		// Reset the original ByteOrder of the destination
+		destination.order(order);
     }
 }

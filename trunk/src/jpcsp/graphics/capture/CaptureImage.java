@@ -16,16 +16,20 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.capture;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.Buffer;
+import java.nio.BufferUnderflowException;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 
 import javax.media.opengl.GL;
 
 import jpcsp.graphics.VideoEngine;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.MemoryReader;
 
 /**
  * @author gid15
@@ -41,6 +45,7 @@ public class CaptureImage {
 	private int imageType;
 	private boolean compressedImage;
 	private int compressedImageSize;
+	private boolean overwriteFile;
 
 	public CaptureImage(int imageaddr, int level, Buffer buffer, int width, int height, int bufferWidth, int imageType, boolean compressedImage, int compressedImageSize) {
 		this.imageaddr = imageaddr;
@@ -52,6 +57,20 @@ public class CaptureImage {
 		this.imageType = imageType;
 		this.compressedImage = compressedImage;
 		this.compressedImageSize = compressedImageSize;
+		this.overwriteFile = false;
+	}
+
+	public CaptureImage(int imageaddr, int level, Buffer buffer, int width, int height, int bufferWidth, int imageType, boolean compressedImage, int compressedImageSize, boolean overwriteFile) {
+		this.imageaddr = imageaddr;
+		this.level = level;
+		this.buffer = buffer;
+		this.width = width;
+		this.height = height;
+		this.bufferWidth = bufferWidth;
+		this.imageType = imageType;
+		this.compressedImage = compressedImage;
+		this.compressedImageSize = compressedImageSize;
+		this.overwriteFile = overwriteFile;
 	}
 
     public void write() throws IOException {
@@ -59,7 +78,20 @@ public class CaptureImage {
     	if (level > 0) {
     		levelName = "_" + level;
     	}
-		String fileName = String.format("tmp/Image%08X%s.bmp", imageaddr, levelName);
+
+    	String fileName = null;
+    	for (int i = 0; ; i++) {
+    		String id = (i == 0 ? "" : "-" + i);
+    		fileName = String.format("tmp/Image%08X%s%s.bmp", imageaddr, levelName, id);
+    		if (overwriteFile) {
+    			break;
+    		}
+
+    		File file = new File(fileName);
+    		if (!file.exists()) {
+    			break;
+    		}
+    	}
 
     	if (compressedImage) {
     		decompressImage();
@@ -102,22 +134,31 @@ public class CaptureImage {
 		outBmp.write(dibHeader);
 		byte[] rowPadBytes = new byte[rowPad];
 		byte[] pixelBytes = new byte[3];
-    	if (buffer instanceof IntBuffer) {
+    	if (buffer instanceof IntBuffer && imageType == GL.GL_UNSIGNED_BYTE) {
     		IntBuffer intBuffer = (IntBuffer) buffer;
 			for (int y = 0; y < height; y++) {
 				for (int x = 0; x < width; x++) {
-					int pixel = intBuffer.get();
-					pixelBytes[0] = (byte) (pixel >> 16);
-					pixelBytes[1] = (byte) (pixel >>  8);
-					pixelBytes[2] = (byte) (pixel      );
-					outBmp.write(pixelBytes);
+					try {
+						int pixel = intBuffer.get();
+						pixelBytes[0] = (byte) (pixel >> 16);
+						pixelBytes[1] = (byte) (pixel >>  8);
+						pixelBytes[2] = (byte) (pixel      );
+						outBmp.write(pixelBytes);
+					} catch (BufferUnderflowException e) {
+						pixelBytes[0] = pixelBytes[1] = pixelBytes[2] = 0;
+						outBmp.write(pixelBytes);
+					}
 				}
 				outBmp.write(rowPadBytes);
 				for (int x = width; x < bufferWidth; x++) {
-					intBuffer.get();
+					try {
+						intBuffer.get();
+					} catch (BufferUnderflowException e) {
+						// Ignore exception
+					}
 				}
 			}
-    	} else if (buffer instanceof ShortBuffer) {
+    	} else if (buffer instanceof ShortBuffer && imageType != GL.GL_UNSIGNED_BYTE) {
     		ShortBuffer shortBuffer = (ShortBuffer) buffer;
 			for (int y = 0; y < height; y++) {
 				for (int x = 0; x < width; x++) {
@@ -128,6 +169,34 @@ public class CaptureImage {
 				outBmp.write(rowPadBytes);
 				for (int x = width; x < bufferWidth; x++) {
 					shortBuffer.get();
+				}
+			}
+    	} else if (imageType == GL.GL_UNSIGNED_BYTE) {
+    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(imageaddr, bufferWidth * height * 4, 4);
+			for (int y = 0; y < height; y++) {
+				for (int x = 0; x < width; x++) {
+					int pixel = memoryReader.readNext();
+					pixelBytes[0] = (byte) (pixel >> 16);
+					pixelBytes[1] = (byte) (pixel >>  8);
+					pixelBytes[2] = (byte) (pixel      );
+					outBmp.write(pixelBytes);
+				}
+				outBmp.write(rowPadBytes);
+				for (int x = width; x < bufferWidth; x++) {
+					memoryReader.readNext();
+				}
+			}
+    	} else {
+    		IMemoryReader memoryReader = MemoryReader.getMemoryReader(imageaddr, bufferWidth * height * 2, 2);
+			for (int y = 0; y < height; y++) {
+				for (int x = 0; x < width; x++) {
+					short pixel = (short) memoryReader.readNext();
+					getPixelBytes(pixel, imageType, pixelBytes);
+					outBmp.write(pixelBytes);
+				}
+				outBmp.write(rowPadBytes);
+				for (int x = width; x < bufferWidth; x++) {
+					memoryReader.readNext();
 				}
 			}
     	}

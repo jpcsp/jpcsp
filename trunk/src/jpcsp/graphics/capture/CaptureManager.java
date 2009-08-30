@@ -39,6 +39,7 @@ import java.io.InputStream;
 import java.io.FileInputStream;
 import java.io.BufferedInputStream;
 import java.nio.Buffer;
+import java.util.HashSet;
 
 import org.apache.log4j.Level;
 
@@ -54,6 +55,7 @@ public class CaptureManager {
     private static boolean listExecuted;
     private static CaptureFrameBufDetails replayFrameBufDetails;
     private static Level logLevel;
+    private static HashSet<Integer> capturedImages;
 
     public static void startReplay(String filename) {
         if (captureInProgress) {
@@ -126,6 +128,7 @@ public class CaptureManager {
         // the information in the log file is also interesting
         logLevel = VideoEngine.log.getLevel();
         VideoEngine.log.setLevel(Level.TRACE);
+        capturedImages = new HashSet<Integer>();
 
         try {
             VideoEngine.log.info("Starting capture... (list=" + list.id + ")");
@@ -200,7 +203,7 @@ public class CaptureManager {
         }
     }
 
-    public static void captureImage(int imageaddr, int level, Buffer buffer, int width, int height, int bufferWidth, int imageType, boolean compressedImage, int compressedImageSize) {
+    public static void captureImage(int imageaddr, int level, Buffer buffer, int width, int height, int bufferWidth, int imageType, boolean compressedImage, int compressedImageSize, boolean overwriteFile) {
         if (!captureInProgress) {
             VideoEngine.log.warn("Ignoring captureImage, capture hasn't been started");
             return;
@@ -208,13 +211,24 @@ public class CaptureManager {
 
         try {
             // write image to the file system, not to the capture file itself
-            CaptureImage captureImage = new CaptureImage(imageaddr, level, buffer, width, height, bufferWidth, imageType, compressedImage, compressedImageSize);
+            CaptureImage captureImage = new CaptureImage(imageaddr, level, buffer, width, height, bufferWidth, imageType, compressedImage, compressedImageSize, overwriteFile);
             captureImage.write();
+            if (capturedImages != null) {
+            	capturedImages.add(imageaddr);
+            }
         } catch(Exception e) {
             VideoEngine.log.error("Failed to capture Image: " + e.getMessage());
             e.printStackTrace();
             Emulator.PauseEmu();
         }
+    }
+
+    public static boolean isImageCaptured(int imageaddr) {
+    	if (capturedImages == null) {
+    		return false;
+    	}
+
+    	return capturedImages.contains(imageaddr);
     }
 
     public static void captureFrameBufDetails() {
