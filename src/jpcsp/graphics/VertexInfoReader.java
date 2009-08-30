@@ -996,20 +996,16 @@ public class VertexInfoReader {
 	private class Position1Reader implements IVertexInfoReader {
 		@Override
 		public void read() {
-    		// X and Y are signed 8 bit, Z is unsigned 8 bit
-			int positionX = (byte) memoryReader.readNext8();
-			int positionY = (byte) memoryReader.readNext8();
-			int positionZ =        memoryReader.readNext8();
-
 			if (vertexInfo.transform2D) {
-				vertexDataBuffer.put(positionX);
-				vertexDataBuffer.put(positionY);
-				vertexDataBuffer.put(positionZ);
+	    		// X and Y are signed 8 bit, Z is unsigned 8 bit
+				vertexDataBuffer.put((byte) memoryReader.readNext8());
+				vertexDataBuffer.put((byte) memoryReader.readNext8());
+				vertexDataBuffer.put(       memoryReader.readNext8());
 			} else {
-            	// To be mapped to [-1..1] for 3D
-				position[0] = positionX / 127f;
-				position[1] = positionY / 127f;
-				position[2] = positionZ / 127f;
+            	// Signed 8 bit, to be mapped to [-1..1] for 3D
+				position[0] = ((byte) memoryReader.readNext8()) / 127f;
+				position[1] = ((byte) memoryReader.readNext8()) / 127f;
+				position[2] = ((byte) memoryReader.readNext8()) / 127f;
 				if (vertexInfo.weight != 0) {
 					videoEngine.doPositionSkinning(vertexInfo, boneWeights, position);
 				}

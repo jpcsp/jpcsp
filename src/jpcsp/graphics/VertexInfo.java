@@ -383,8 +383,10 @@ public class VertexInfo {
             sb.append(normal_info[normal] + "|");
         if (vertex_info[position] != null)
             sb.append(vertex_info[position] + "|");
-        if (weight_info[weight] != null)
+        if (weight_info[weight] != null) {
             sb.append(weight_info[weight] + "|");
+            sb.append("GU_WEIGHTS(" + skinningWeightCount + ")|");
+        }
         if (index_info[index] != null)
             sb.append(index_info[index] + "|");
         if (transform_info[transform2D ? 1 : 0] != null)
