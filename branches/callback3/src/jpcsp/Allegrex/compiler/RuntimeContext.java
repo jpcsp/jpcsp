@@ -21,6 +21,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
@@ -67,7 +69,6 @@ public class RuntimeContext {
 	public  static final boolean debugMemoryReadWriteNoSP = true;
 	public  static final boolean enableInstructionTypeCounting = false;
 	public  static final String instructionTypeCount = "instructionTypeCount";
-	public  static final boolean enableCallCount = false;
 	public  static final String logInfo = "logInfo";
 	public  static final String pauseEmuWithStatus = "pauseEmuWithStatus";
 	public  static final boolean enableLineNumbers = true;
@@ -95,6 +96,7 @@ public class RuntimeContext {
 	public  static volatile boolean wantSync = false;
 	private static long lastSyncTime;
 	private static RuntimeSyncThread runtimeSyncThread = null;
+	private static Set<Integer> fastSyscalls;
 
 	public static void execute(Instruction insn, int opcode) {
 		insn.interpret(processor, opcode);
@@ -199,6 +201,11 @@ public class RuntimeContext {
             return false;
         }
 
+        fastSyscalls = new TreeSet<Integer>();
+        fastSyscalls.add(0x2058);	// sceKernelGetSystemTime
+        fastSyscalls.add(0x2059);	// sceKernelGetSystemTimeWide
+        fastSyscalls.add(0x205a);	// sceKernelGetSystemTimeLow (used very often by Skate Park City)
+
         if (enableDaemonThreadSync && runtimeSyncThread == null) {
         	runtimeSyncThread = new RuntimeSyncThread(syncIntervalMillis);
         	runtimeSyncThread.setName("Sync Daemon");
@@ -218,6 +225,8 @@ public class RuntimeContext {
         } else {
         	enableDebugger = true;
         }
+
+        Profiler.initialise();
 
         return true;
     }
@@ -524,18 +533,23 @@ public class RuntimeContext {
     }
 
     public static void syscall(int code) throws StopThreadException {
-    	RuntimeThread runtimeThread = getRuntimeThread();
-    	if (runtimeThread != null) {
-    		runtimeThread.setInSyscall(true);
-    	}
-    	checkStoppedThread();
-    	syncPause();
+    	if (fastSyscalls.contains(code)) {
+    		// Fast syscall: no context switching
+    		SyscallHandler.syscall(code);
+    	} else {
+	    	RuntimeThread runtimeThread = getRuntimeThread();
+	    	if (runtimeThread != null) {
+	    		runtimeThread.setInSyscall(true);
+	    	}
+	    	checkStoppedThread();
+	    	syncPause();
 
-    	SyscallHandler.syscall(code);
+	    	SyscallHandler.syscall(code);
 
-    	sync();
-    	if (runtimeThread != null) {
-    		runtimeThread.setInSyscall(false);
+	    	sync();
+	    	if (runtimeThread != null) {
+	    		runtimeThread.setInSyscall(false);
+	    	}
     	}
     }
 
@@ -621,6 +635,10 @@ public class RuntimeContext {
 
     public static boolean hasCodeBlock(int address) {
         return codeBlocks.containsKey(address);
+    }
+
+    public static Map<Integer, CodeBlock> getCodeBlocks() {
+    	return codeBlocks;
     }
 
     public static IExecutable getExecutable(int address) {
@@ -775,13 +793,6 @@ public class RuntimeContext {
                 	}
                 	instructionTypeCounts.remove(highestCountInsn);
             		log.info(String.format("  %10s %s %d", highestCountInsn.name(), (highestCountInsn.hasFlags(Instruction.FLAG_INTERPRETED) ? "I" : "C"), highestCount));
-            	}
-            }
-
-            if (enableCallCount) {
-            	for (CodeBlock codeBlock : codeBlocks.values()) {
-            		IExecutable executable = codeBlock.getExecutable();
-            		log.info(String.format("%s %d calls", codeBlock.getClassName(), executable.getCallCount()));
             	}
             }
         }

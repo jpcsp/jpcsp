@@ -940,7 +940,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         ang = angleid;
 
         switch(angleid){
-            case 0:
+            case 0: //Rotate screen - 90º CW
                 texS1 = texS2 = texS;
                 texT2 = texT3 = texT;
 
@@ -950,7 +950,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
                 break;
 
-            case 1:
+            case 1: //Rotate screen - 90º CCW
                 texS3 = texS4 = texS;
                 texT1 = texT4 = texT;
 
@@ -960,7 +960,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
                 break;
 
-            case 2:
+            case 2: //Rotate screen - 180º (inverted, y axis)
                 texS1 = texS4 = texS;
                 texT3 = texT4 = texT;
 
@@ -970,7 +970,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
                 break;
 
-            case 3:
+            case 3: //Rotate screen - Mirror (inverted, x axis)
                 texS2 = texS3 = texS;
                 texT1 = texT2 = texT;
 
@@ -980,7 +980,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
                 break;
 
-            case 4:
+            case 4: //Normal display (reset)
             default:
                 isrotating = false;
 

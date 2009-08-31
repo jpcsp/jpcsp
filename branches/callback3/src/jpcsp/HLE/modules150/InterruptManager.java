@@ -241,13 +241,14 @@ public class InterruptManager implements HLEModule {
         if (intno == PSP_VBLANK_INT) {
             int slot = no % vblankInterrupts.length;
             if (vblankInterrupts[slot] != null) {
+                Modules.log.info("sceKernelEnableSubIntr(intno=" + intno + ",no=" + no + ") PSP_VBLANK_INT");
                 vblankInterrupts[slot].enabled = 1;
                 handled = true;
             }
         }
 
         if (handled) {
-            Modules.log.info("sceKernelEnableSubIntr(intno=" + intno + ",no=" + no + ")");
+            //Modules.log.info("sceKernelEnableSubIntr(intno=" + intno + ",no=" + no + ")");
             cpu.gpr[2] = 0;
         } else {
             Modules.log.warn("sceKernelEnableSubIntr(intno=" + intno + ",no=" + no + ") sub intr not found");

@@ -167,6 +167,8 @@ public class ThreadMan {
     }
 
     private void install_idle_threads() {
+        Memory mem = Memory.getInstance();
+
         // Generate 2 idle threads which can toggle between each other when there are no ready threads
         int instruction_addiu = // addiu a0, zr, 0
             ((AllegrexOpcodes.ADDIU & 0x3f) << 26)
@@ -188,10 +190,10 @@ public class ThreadMan {
         // TODO
         //pspSysMem.getInstance().malloc(1, pspSysMem.PSP_SMEM_Addr, 16, MemoryMap.START_RAM);
 
-        Memory.getInstance().write32(IDLE_THREAD_ADDRESS + 0, instruction_addiu);
-        Memory.getInstance().write32(IDLE_THREAD_ADDRESS + 4, instruction_lui);
-        Memory.getInstance().write32(IDLE_THREAD_ADDRESS + 8, instruction_jr);
-        Memory.getInstance().write32(IDLE_THREAD_ADDRESS + 12, instruction_syscall);
+        mem.write32(IDLE_THREAD_ADDRESS + 0, instruction_addiu);
+        mem.write32(IDLE_THREAD_ADDRESS + 4, instruction_lui);
+        mem.write32(IDLE_THREAD_ADDRESS + 8, instruction_jr);
+        mem.write32(IDLE_THREAD_ADDRESS + 12, instruction_syscall);
 
         // lowest allowed priority is 0x77, so we are ok at 0x7f
         idle0 = new SceKernelThreadInfo("idle0", IDLE_THREAD_ADDRESS | 0x80000000, 0x7f, 0x0, PSP_THREAD_ATTR_KERNEL);
@@ -206,12 +208,18 @@ public class ThreadMan {
     }
 
     private void install_thread_exit_handler() {
+        Memory mem = Memory.getInstance();
+
         int instruction_syscall = // syscall 0x6f000 [hleKernelExitThread]
             ((AllegrexOpcodes.SPECIAL & 0x3f) << 26)
             | (AllegrexOpcodes.SYSCALL & 0x3f)
             | ((syscallsFirm15.calls.hleKernelExitThread.getSyscall() & 0x000fffff) << 6);
 
-        Memory.getInstance().write32(THREAD_EXIT_HANDLER_ADDRESS + 0, instruction_syscall);
+        // Add a "jr $ra" instruction to indicate the end to the CodeBlock to the compiler
+        int instruction_jr = AllegrexOpcodes.JR | (31 << 21);
+
+        mem.write32(THREAD_EXIT_HANDLER_ADDRESS + 0, instruction_syscall);
+        mem.write32(CALLBACK_EXIT_HANDLER_ADDRESS + 4, instruction_jr);
     }
 
     private void install_callback_exit_handler() {
@@ -221,10 +229,11 @@ public class ThreadMan {
             ((AllegrexOpcodes.SPECIAL & 0x3f) << 26)
             | (AllegrexOpcodes.SYSCALL & 0x3f)
             | ((syscallsFirm15.calls.hleKernelExitCallback.getSyscall() & 0x000fffff) << 6);
-        mem.write32(CALLBACK_EXIT_HANDLER_ADDRESS + 0, instruction_syscall);
 
         // Add a "jr $ra" instruction to indicate the end to the CodeBlock to the compiler
         int instruction_jr = AllegrexOpcodes.JR | (31 << 21);
+
+        mem.write32(CALLBACK_EXIT_HANDLER_ADDRESS + 0, instruction_syscall);
         mem.write32(CALLBACK_EXIT_HANDLER_ADDRESS + 4, instruction_jr);
     }
 
@@ -242,7 +251,7 @@ public class ThreadMan {
             }
 
             statistics.endTimeMillis = System.currentTimeMillis();
-            Modules.log.info("ThreadMan Statistics (" + statistics.allCycles + " cycles in " + String.format("%.3f", statistics.getDurationMillis() / 1000.0) + "s):");
+            Modules.log.info(String.format("ThreadMan Statistics (%,d cycles in %.3fs):", statistics.allCycles, statistics.getDurationMillis() / 1000.0));
             for (Iterator<Statistics.ThreadStatistics> it = statistics.threads.iterator(); it.hasNext(); ) {
                 Statistics.ThreadStatistics threadStatistics = it.next();
                 double percentage = 0;
@@ -318,14 +327,14 @@ public class ThreadMan {
                     Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_WDT_HOG);
                 }
             }
-        } else {
+        } else if (!exitCalled) {
             // We always need to be in a thread! we shouldn't get here.
             Modules.log.error("No ready threads!");
         }
 
         if (!waitingThreads.isEmpty()) {
             long microTimeNow = Emulator.getClock().microTime();
-            ArrayList<SceKernelThreadInfo> workList = new ArrayList(waitingThreads.size());
+            ArrayList<SceKernelThreadInfo> workList = new ArrayList<SceKernelThreadInfo>(waitingThreads.size());
 
             // Access waitingThreads using array indexing because
             // this is more efficient than iterator access for short lists
@@ -346,7 +355,7 @@ public class ThreadMan {
 
             // Cleanup stopped threads (deferred deletion)
         if (!toBeDeletedThreads.isEmpty()) {
-            ArrayList<SceKernelThreadInfo> workList = new ArrayList(toBeDeletedThreads.size());
+            ArrayList<SceKernelThreadInfo> workList = new ArrayList<SceKernelThreadInfo>(toBeDeletedThreads.size());
 
             for (int i = 0; i < toBeDeletedThreads.size(); i++) {
                 SceKernelThreadInfo thread = toBeDeletedThreads.get(i);
@@ -523,10 +532,31 @@ public class ThreadMan {
     {
         if (SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", false)) {
             SceKernelThreadInfo thread = threadMap.get(uid);
-            changeThreadState(thread, PSP_THREAD_READY);
+            // There is a side case when reseting the emulator where the GL thread may still be drawing,
+            // after it finishes it will post the thread id to wakeup back to pspge module,
+            // but of course emulator was reset so it's no longer valid.
+            if (thread != null) {
+                if (!thread.insideCallbackV3) {
+                    changeThreadState(thread, PSP_THREAD_READY);
+                } else {
+                    if (thread.realStatus != PSP_THREAD_SUSPEND) {
+                        Modules.log.error("unblockThread '" + thread.name
+                            + "' called when inside callback. realStatus got=0x" + Integer.toHexString(thread.realStatus)
+                            + " expected=0x" + Integer.toHexString(PSP_THREAD_SUSPEND));
+                    }
 
-            if (LOG_CONTEXT_SWITCHING && thread != null)
-                Modules.log.debug("-------------------- unblock SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' caller:" + getCallingFunction());
+                    // We expect this from pspge waking the render/sync thread
+                    Modules.log.info("Overriding backed up callback thread '" + thread.name
+                        + "' status 0x" + Integer.toHexString(thread.realStatus)
+                        + " -> 0x" + Integer.toHexString(PSP_THREAD_READY)
+                        + " (from unblockThread)");
+
+                    thread.realStatus = PSP_THREAD_READY;
+                }
+
+                if (LOG_CONTEXT_SWITCHING)
+                    Modules.log.debug("-------------------- unblock SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "' caller:" + getCallingFunction());
+            }
         }
     }
 
@@ -660,6 +690,12 @@ public class ThreadMan {
         thread.status = newStatus;
 
         if (thread.status == PSP_THREAD_WAITING) {
+            /* debug
+            if (!isIdleThread(thread)) {
+                Modules.log.info("changeThreadState thread '" + thread.name + "' => PSP_THREAD_WAITING. caller:" + getCallingFunction());
+            }
+            */
+
             if (!thread.wait.forever) {
                 waitingThreads.add(thread);
             }
@@ -684,6 +720,18 @@ public class ThreadMan {
             onThreadStopped(thread);
         } else if (thread.status == PSP_THREAD_READY) {
         	readyThreads.add(thread);
+
+            /* debug
+            if (!isIdleThread(thread)) {
+                if (thread.waitType != PSP_WAIT_NONE) {
+                    // from "step" = wait timeout
+                    Modules.log.warn("changeThreadState thread '" + thread.name + "' => PSP_THREAD_READY. clearing waitType=" + thread.waitType + ". caller:" + getCallingFunction());
+                } else {
+                    Modules.log.debug("changeThreadState thread '" + thread.name + "' => PSP_THREAD_READY. caller:" + getCallingFunction());
+                }
+            }
+            */
+
             thread.waitType = PSP_WAIT_NONE;
         } else if (thread.status == PSP_THREAD_RUNNING) {
             // debug
@@ -1182,7 +1230,7 @@ public class ThreadMan {
             micros = 0;
 
         if (Modules.log.isDebugEnabled() && !isIdleThread(current_thread)) {
-            //Modules.log.debug("hleKernelDelayThread micros=" + micros + ", callbacks=" + allowCallbacks);
+            Modules.log.debug("hleKernelDelayThread '" + current_thread.name + "' micros=" + micros + ", callbacks=" + allowCallbacks);
         }
 
         // Wait on a timeout only

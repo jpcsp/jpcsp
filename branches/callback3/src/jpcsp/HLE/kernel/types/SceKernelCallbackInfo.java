@@ -71,7 +71,8 @@ public class SceKernelCallbackInfo {
      * @param thread the thread this callback belongs to.
      */
     public void startContext(SceKernelThreadInfo thread) {
-        Modules.log.info("Entering callback '" + name
+        Modules.log.info("Entering callback 0x" + Integer.toHexString(uid)
+            + " '" + name
             + "' @ 0x" + Integer.toHexString(callback_addr)
             + " arg1=0x" + Integer.toHexString(notifyCount)
             + " arg2=0x" + Integer.toHexString(notifyArg)

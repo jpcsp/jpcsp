@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.compiler.Compiler;
+import jpcsp.Allegrex.compiler.Profiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Debugger.InstructionCounter;
 import jpcsp.Debugger.StepLogger;
@@ -61,6 +62,7 @@ public class Emulator implements Runnable {
         log.info(TextureCache.getInstance().statistics.toString());
         Compiler.exit();
         RuntimeContext.exit();
+        Profiler.exit();
         if (ThreadMan.getInstance().statistics != null && pspdisplay.getInstance().statistics != null) {
             long totalMillis = getClock().milliTime();
             long displayMillis = pspdisplay.getInstance().statistics.cumulatedTimeMillis;
@@ -151,6 +153,7 @@ public class Emulator implements Runnable {
         moduleLoaded = false;
 
         RuntimeContext.reset();
+        Profiler.reset();
         getClock().reset();
         getProcessor().reset();
         Memory.getInstance().Initialise();
@@ -178,6 +181,7 @@ public class Emulator implements Runnable {
     public void run()
     {
         RuntimeContext.isActive = Settings.getInstance().readBool("emu.compiler");
+        Profiler.enableProfiler = Settings.getInstance().readBool("emu.profiler");
 
         clock.resume();
 

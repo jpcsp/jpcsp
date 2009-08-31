@@ -254,6 +254,8 @@ public class StandardMemory extends Memory {
 
 	@Override
 	public ByteBuffer getBuffer(int address, int length) {
+		address = normalizeAddress(address);
+
 		int endAddress = address + length - 1;
         if (address >= MemoryMap.START_RAM && endAddress <= MemoryMap.END_RAM) {
         	return ByteBuffer.wrap(mainmemory.array(),
@@ -287,21 +289,22 @@ public class StandardMemory extends Memory {
 	}
 
 	@Override
-	public void memcpy(int destination, int source, int length) {
+	protected void memcpy(int destination, int source, int length, boolean checkOverlap) {
 		destination = normalizeAddress(destination);
 		source = normalizeAddress(source);
 
-		ByteBuffer destinationBuffer = getBuffer(destination, length);
-		ByteBuffer sourceBuffer = getBuffer(source, length);
-
-		if (!areOverlapping(destination, source, length)) {
-			// Direct copy if buffers do not overlap
+		if (checkOverlap || !areOverlapping(destination, source, length)) {
+			// Direct copy if buffers do not overlap.
+			// ByteBuffer operations are handling correctly overlapping buffers.
+			ByteBuffer destinationBuffer = getBuffer(destination, length);
+			ByteBuffer sourceBuffer = getBuffer(source, length);
 			destinationBuffer.put(sourceBuffer);
 		} else {
-			// Buffers are overlapping, copy first to a temporary array
-			byte[] data = new byte[length];
-			sourceBuffer.get(data);
-			destinationBuffer.put(data);
+			// Buffers are overlapping and we have to copy them as they would not overlap.
+			IMemoryReader sourceReader = MemoryReader.getMemoryReader(source, length, 1);
+			for (int i = 0; i < length; i++) {
+				write8(destination + i, (byte) sourceReader.readNext());
+			}
 		}
 	}
 }

@@ -379,7 +379,9 @@ public class sceSasCore implements HLEModule {
         // 99% sure there are no more parameters
         // probably matches __sceSasGetEndFlag
 
-        Modules.log.debug("IGNORING:__sceSasGetPauseFlag(sasCore=0x" + Integer.toHexString(sasCore) + ") " + makeLogParams(cpu));
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug("IGNORING:__sceSasGetPauseFlag(sasCore=0x" + Integer.toHexString(sasCore) + ") " + makeLogParams(cpu));
+        }
 
         if (isSasHandleGood(sasCore, "__sceSasGetPauseFlag", cpu)) {
             // Fake all voices NOT paused
@@ -510,7 +512,9 @@ public class sceSasCore implements HLEModule {
         			endFlag |= (1 << i);
         		}
         	}
-            Modules.log.info("__sceSasGetEndFlag(sasCore=0x" + Integer.toHexString(sasCore) + "): 0x" + Integer.toHexString(endFlag));
+        	if (Modules.log.isDebugEnabled()) {
+        		Modules.log.debug("__sceSasGetEndFlag(sasCore=0x" + Integer.toHexString(sasCore) + "): 0x" + Integer.toHexString(endFlag));
+        	}
             cpu.gpr[2] = endFlag;
         }
     }
@@ -539,9 +543,11 @@ public class sceSasCore implements HLEModule {
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
 
-        Modules.log.info("PARTIAL __sceSasSetKeyOn: "
-            + String.format("sasCore=%08x, voice=%d",
-            sasCore, voice));
+        if (Modules.log.isDebugEnabled()) {
+	        Modules.log.debug("PARTIAL __sceSasSetKeyOn: "
+	            + String.format("sasCore=%08x, voice=%d",
+	            sasCore, voice));
+        }
 
         if (isSasHandleGood(sasCore, "__sceSasSetKeyOn", cpu) && isVoiceNumberGood(voice, "__sceSasSetKeyOn", cpu)) {
         	cpu.gpr[2] = voices[voice].on();
@@ -689,9 +695,11 @@ public class sceSasCore implements HLEModule {
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
 
-        Modules.log.info("PARTIAL __sceSasSetKeyOff: "
-                + String.format("sasCore=%08x, voice=%d",
-                sasCore, voice));
+        if (Modules.log.isDebugEnabled()) {
+	        Modules.log.debug("PARTIAL __sceSasSetKeyOff: "
+	                + String.format("sasCore=%08x, voice=%d",
+	                sasCore, voice));
+        }
 
         if (isSasHandleGood(sasCore, "__sceSasSetKeyOff", cpu) && isVoiceNumberGood(voice, "__sceSasSetKeyOff", cpu)) {
         	cpu.gpr[2] = voices[voice].off();

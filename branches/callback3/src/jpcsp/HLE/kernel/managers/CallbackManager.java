@@ -207,6 +207,9 @@ public class CallbackManager {
         currentThread.insideCallbackV3 = false;
 
         // Restore previous thread status (otherwise we go to ready, when it may have been a sleepcb thread)
+        Modules.log.info("Restoring callback thread '" + currentThread.name
+            + "' status=0x" + Integer.toHexString(currentThread.status)
+            + " -> 0x" + Integer.toHexString(currentThread.realStatus));
         threadMan.changeThreadState(currentThread, currentThread.realStatus);
 
         // Go back to a ready thread
@@ -233,7 +236,8 @@ public class CallbackManager {
 
         if (false) {
             Modules.log.info("hleKernelCheckCallback thread:'" + currentThread.name
-                + "' allowCurrentThread=" + allowCurrentThread
+                + "' status=0x" + Integer.toHexString(currentThread.status)
+                + " allowCurrentThread=" + allowCurrentThread
                 + " readyCallbacks=" + readyCallbacks.size());
         }
 
@@ -258,6 +262,8 @@ public class CallbackManager {
 
                 // Backup thread status
                 callbackThread.realStatus = callbackThread.status;
+                Modules.log.info("Backing up callback thread '" + callbackThread.name
+                    + "' status=0x" + Integer.toHexString(callbackThread.status));
 
                 // housekeeping
                 callbackThread.numWaitCallbacks--;
@@ -278,6 +284,7 @@ public class CallbackManager {
 
                     threadMan.contextSwitch(callbackThread);
                 } else {
+                    // We may have come from hleKernelSleepThread or some other non-running state, just make sure we are actually in the running state
                     threadMan.changeThreadState(callbackThread, SceKernelThreadInfo.PSP_THREAD_RUNNING);
 
                     if (Modules.log.isDebugEnabled()) {
@@ -293,6 +300,11 @@ public class CallbackManager {
                 // we run in the thread the callback was created in
                 // even if it's the same as the current thread we still need to setup the function parameters
                 info.startContext(callbackThread);
+
+                // TODO check stack address in CB on PSP and check ABI for recommended stack alignment
+                if ((callbackThread.cpuContext.gpr[29] & 0xF) != 0) {
+                    Modules.log.warn("entering callback without 16-byte aligned stack (0x" + Integer.toHexString(callbackThread.cpuContext.gpr[29]) + ")");
+                }
 
                 handled = true;
                 break;

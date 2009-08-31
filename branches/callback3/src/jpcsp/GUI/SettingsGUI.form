@@ -115,6 +115,7 @@
                                           <Component id="openLogwindowCheck" alignment="0" pref="388" max="32767" attributes="1"/>
                                           <Component id="snapConsoleCheck" alignment="0" pref="388" max="32767" attributes="1"/>
                                           <Component id="compilerCheck" alignment="0" pref="388" max="32767" attributes="1"/>
+                                          <Component id="profilerCheck" alignment="0" pref="388" max="32767" attributes="1"/>
                                       </Group>
                                       <EmptySpace min="-2" pref="216" max="-2" attributes="0"/>
                                   </Group>
@@ -145,6 +146,8 @@
                       <Component id="snapConsoleCheck" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="compilerCheck" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Component id="profilerCheck" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="shadersCheck" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
@@ -188,6 +191,11 @@
             <Component class="javax.swing.JCheckBox" name="compilerCheck">
               <Properties>
                 <Property name="text" type="java.lang.String" value="Use compiler (dynarec)"/>
+              </Properties>
+            </Component>
+            <Component class="javax.swing.JCheckBox" name="profilerCheck">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="Output profiler info to profiler.txt (only for compiler)"/>
               </Properties>
             </Component>
             <Component class="javax.swing.JRadioButton" name="umdBrowser">

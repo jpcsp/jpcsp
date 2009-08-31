@@ -41,6 +41,7 @@ import jpcsp.Allegrex.Common.Instruction;
 public class CodeBlock {
 	private int startAddress;
 	private int lowestAddress;
+	private int highestAddress;
 	private LinkedList<CodeInstruction> codeInstructions = new LinkedList<CodeInstruction>();
 	private LinkedList<SequenceCodeInstruction> sequenceCodeInstructions = new LinkedList<SequenceCodeInstruction>();
 	private SequenceCodeInstruction currentSequence = null;
@@ -52,6 +53,7 @@ public class CodeBlock {
 	public CodeBlock(int startAddress) {
 		this.startAddress = startAddress;
 		this.lowestAddress = startAddress;
+		this.highestAddress = startAddress;
 
 		RuntimeContext.addCodeBlock(startAddress, this);
 	}
@@ -81,6 +83,10 @@ public class CodeBlock {
 				lowestAddress = address;
 			}
 		}
+
+		if (address > highestAddress) {
+			highestAddress = address;
+		}
 	}
 
 	public void setIsBranchTarget(int address) {
@@ -100,6 +106,14 @@ public class CodeBlock {
 
 	public int getLowestAddress() {
 		return lowestAddress;
+	}
+
+	public int getHighestAddress() {
+		return highestAddress;
+	}
+
+	public int getLength() {
+		return (getHighestAddress() - getLowestAddress()) / 4 + 1;
 	}
 
 	public CodeInstruction getCodeInstruction(int address) {
@@ -153,15 +167,6 @@ public class CodeBlock {
         mv.visitInsn(Opcodes.IRETURN);
         mv.visitMaxs(0, 0);
         mv.visitEnd();
-
-        mv = cv.visitMethod(Opcodes.ACC_PUBLIC, "getCallCount", "()I", null, null);
-        mv.visitCode();
-        mv.visitFieldInsn(Opcodes.GETSTATIC, getClassName(), "callCount", "I");
-        mv.visitInsn(Opcodes.IRETURN);
-        mv.visitMaxs(0, 0);
-        mv.visitEnd();
-
-        cv.visitField(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC, "callCount", "I", null, 0);
     }
 
     private void generateCodeSequences(List<CodeSequence> codeSequences, int sequenceMaxInstructions) {
@@ -269,17 +274,20 @@ public class CodeBlock {
     }
 
     private void compile(CompilerContext context, MethodVisitor mv, List<CodeInstruction> codeInstructions) {
-        boolean skipNextInstruction = false;
+    	int numberInstructionsToBeSkipped = 0;
         for (CodeInstruction codeInstruction : codeInstructions) {
-            if (skipNextInstruction) {
-            	if (codeInstruction.isBranchTarget()) {
+            if (numberInstructionsToBeSkipped > 0) {
+            	if (!context.isSkipDelaySlot() && codeInstruction.isBranchTarget()) {
             		context.compileDelaySlotAsBranchTarget(codeInstruction);
             	}
-                skipNextInstruction = false;
+            	numberInstructionsToBeSkipped--;
+
+            	if (numberInstructionsToBeSkipped <= 0) {
+                    context.skipInstructions(0, false);
+            	}
             } else {
                 codeInstruction.compile(context, mv);
-                skipNextInstruction = context.isSkipNextIntruction();
-                context.setSkipNextIntruction(false);
+                numberInstructionsToBeSkipped = context.getNumberInstructionsToBeSkipped();
             }
         }
     }

@@ -45,6 +45,7 @@ import javax.swing.JPopupMenu;
 import javax.swing.ToolTipManager;
 import javax.swing.UIManager;
 
+import jpcsp.Allegrex.compiler.Profiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Debugger.ElfHeaderInfo;
 import jpcsp.Debugger.InstructionCounter;
@@ -177,6 +178,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         FileLog = new javax.swing.JMenuItem();
         ToggleDebugLog = new javax.swing.JMenuItem();
         DumpIso = new javax.swing.JMenuItem();
+        ResetProfiler = new javax.swing.JMenuItem();
         HelpMenu = new javax.swing.JMenu();
         About = new javax.swing.JMenuItem();
 
@@ -408,6 +410,14 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         DebugMenu.add(DumpIso);
 
+        ResetProfiler.setText("Reset Profiler Information");
+        ResetProfiler.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	ResetProfilerActionPerformed(evt);
+            }
+        });
+        DebugMenu.add(ResetProfiler);
+
         MenuBar.add(DebugMenu);
 
         HelpMenu.setText("Help");
@@ -469,9 +479,6 @@ private void ToggleConsoleActionPerformed(java.awt.event.ActionEvent evt) {//GEN
 }//GEN-LAST:event_ToggleConsoleActionPerformed
 
 private void EnterDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterDebuggerActionPerformed
-    if (Settings.getInstance().readBool("emu.recompiler"))
-        return;
-
     PauseEmu();
     if (State.debugger == null)
     {
@@ -1006,6 +1013,10 @@ private void DumpIsoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
     }
 }//GEN-LAST:event_DumpIsoActionPerformed
 
+private void ResetProfilerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetProfilerActionPerformed
+	Profiler.reset();
+}//GEN-LAST:event_ResetProfilerActionPerformed
+
 private void MenuBarMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_MenuBarMouseExited
 pspdisplay.getInstance().repaint();
 }//GEN-LAST:event_MenuBarMouseExited
@@ -1197,6 +1208,7 @@ private void processArgs(String[] args) {
     private javax.swing.JMenuItem ShotItem;
     private javax.swing.JMenuItem ToggleConsole;
     private javax.swing.JMenuItem ToggleDebugLog;
+    private javax.swing.JMenuItem ResetProfiler;
     private javax.swing.JMenuItem VfpuRegisters;
     private javax.swing.JToolBar jToolBar1;
     private javax.swing.JMenuItem openUmd;

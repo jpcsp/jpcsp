@@ -167,9 +167,15 @@ public class pspge {
             PspGeList list = it.next();
             if (list.id == id) {
                 list.stall_addr = stall_addr;
-                if (list.currentStatus == PSP_GE_LIST_STALL_REACHED)
+
+                if (list.currentStatus == PSP_GE_LIST_STALL_REACHED) {
                     list.currentStatus = PSP_GE_LIST_QUEUED;
-                VideoEngine.log.trace("sceGeListUpdateStallAddr(id=" + id + ",stall=0x" + Integer.toHexString(stall_addr) + ") ok");
+                }
+
+                if (VideoEngine.log.isTraceEnabled()) {
+                    VideoEngine.log.trace("sceGeListUpdateStallAddr(id=" + id + ",stall=0x" + Integer.toHexString(stall_addr) + ") ok");
+                }
+
                 Emulator.getProcessor().cpu.gpr[2] = 0;
                 found = true;
                 break;
