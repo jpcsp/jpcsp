@@ -1086,7 +1086,9 @@ public class VertexInfoReader {
 			position[0] = memoryReader.readNextFloat();
 			position[1] = memoryReader.readNextFloat();
 			position[2] = memoryReader.readNextFloat();
-			videoEngine.doPositionSkinning(vertexInfo, boneWeights, position);
+			if (vertexInfo.weight != 0) {
+				videoEngine.doPositionSkinning(vertexInfo, boneWeights, position);
+			}
 			if (vertexInfo.transform2D) {
 				if (position[2] < 0) {
 	            	// Negative Z are interpreted as 0
@@ -1103,7 +1105,8 @@ public class VertexInfoReader {
 
 		@Override
 		public boolean isNative() {
-			return vertexInfo.weight == 0;
+			// 2D needs some corrections of the Z coord.
+			return vertexInfo.weight == 0 && !vertexInfo.transform2D;
 		}
 
 		@Override
