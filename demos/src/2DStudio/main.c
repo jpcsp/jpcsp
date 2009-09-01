@@ -273,7 +273,9 @@ struct Color
 	int g;
 	int b;
 	int a;
+	int type;
 };
+char *colorTypeNames[] = { "Type 0", "Type 1", "Type 2", "Type 3", "GU_COLOR_5650", "GU_COLOR_5551", "GU_COLOR_4444", "GU_COLOR_8888" };
 
 struct Point
 {
@@ -348,14 +350,17 @@ int texture2_a2 = 0;
 
 void addColorAttribute(char *label, struct Color *pcolor, int x, int y, int hasAlpha)
 {
-	addAttribute(label, &pcolor->r, x +  0, y, 0, 0xFF, 10);
+	addAttribute(label, &pcolor->r, x +  0, y, 0, 0xFF, 1);
 	x += strlen(label);
-	addAttribute(", G", &pcolor->g, x +  5, y, 0, 0xFF, 10);
-	addAttribute(", B", &pcolor->b, x + 13, y, 0, 0xFF, 10);
+	addAttribute(", G", &pcolor->g, x +  5, y, 0, 0xFF, 1);
+	addAttribute(", B", &pcolor->b, x + 13, y, 0, 0xFF, 1);
 	if (hasAlpha)
 	{
-		addAttribute(", A", &pcolor->a, x + 21, y, 0, 0xFF, 10);
+		addAttribute(", A", &pcolor->a, x + 21, y, 0, 0xFF, 1);
+		x += 8;
 	}
+	addAttribute(", Type", &pcolor->type, x + 21, y, 4, 7, 1);
+	setAttributeValueNames(&colorTypeNames[0]);
 }
 
 
@@ -382,9 +387,25 @@ unsigned int getColor(struct Color *pcolor)
 	unsigned int g = pcolor->g & 0xFF;
 	unsigned int b = pcolor->b & 0xFF;
 
-	return (a << 24) | (b << 16) | (g << 8) | (r << 0);
-}
+	if (pcolor->type == 4)	// GU_COLOR_5650
+	{
+		return (((b >> 3) << 11) | ((g >> 2) << 5) | ((r >> 3) << 0));
+	}
+	else if (pcolor->type == 5)	// GU_COLOR_5551
+	{
+		return (((a >> 7) << 15) | ((b >> 3) << 10) | ((g >> 3) << 5) | ((r >> 3) << 0));
+	}
+	else if (pcolor->type == 6)	// GU_COLOR_4444
+	{
+		return (((a >> 4) << 12) | ((b >> 4) << 8) | ((g >> 4) << 4) | ((r >> 4) << 0));
+	}
+	else if (pcolor->type == 7)	// GU_COLOR_8888
+	{
+		return (a << 24) | (b << 16) | (g << 8) | (r << 0);
+	}
 
+	return 0;
+}
 
 void setVertexColor(struct Color *pcolor, struct Vertex *pvertex)
 {
@@ -567,8 +588,12 @@ void drawRectangles()
 #ifdef USE_VERTEX_32BITF
 	vertexFlags |= GU_VERTEX_32BITF;
 #endif
-	if (vertexColorFlag) vertexFlags |= GU_COLOR_8888;
-	sceGuDrawArray(GU_TRIANGLE_STRIP, vertexFlags, sizeof(vertices1) / sizeof(struct Vertex), 0, vertices1);
+	int vertex1Flags = vertexFlags;
+	int vertex2Flags = vertexFlags;
+
+	if (vertexColorFlag) vertex1Flags |= GU_COLOR_SHIFT(rectangle1color.type);
+	if (vertexColorFlag) vertex2Flags |= GU_COLOR_SHIFT(rectangle2color.type);
+	sceGuDrawArray(GU_TRIANGLE_STRIP, vertex1Flags, sizeof(vertices1) / sizeof(struct Vertex), 0, vertices1);
 
 	drawStates(stateValues2);
 	sceGuTexMode(GU_PSM_8888, 0, texture2_a2, 0);
@@ -579,7 +604,7 @@ void drawRectangles()
 	sceGuTexScale(1,1);
 	sceGuTexOffset(0,0);
 	sceGuAmbientColor(0xffffffff);
-	sceGuDrawArray(GU_TRIANGLE_STRIP, vertexFlags, sizeof(vertices2) / sizeof(struct Vertex), 0, vertices2);
+	sceGuDrawArray(GU_TRIANGLE_STRIP, vertex2Flags, sizeof(vertices2) / sizeof(struct Vertex), 0, vertices2);
 
 	if (clearMode != 0)
 	{
@@ -679,6 +704,7 @@ void init()
 	rectangle1color.g = 0xFF;
 	rectangle1color.b = 0x00;
 	rectangle1color.a = 0xFF;
+	rectangle1color.type = 7;
 	rectangle1point.x = 350;
 	rectangle1point.y = 100;
 	rectangle1point.z = 0;
@@ -708,6 +734,7 @@ void init()
 	rectangle2color.g = 0x00;
 	rectangle2color.b = 0x00;
 	rectangle2color.a = 0xFF;
+	rectangle2color.type = 7;
 	rectangle2point.x = rectangle1point.x + 50;
 	rectangle2point.y = rectangle1point.y + 50;
 	rectangle2point.z = 0;
