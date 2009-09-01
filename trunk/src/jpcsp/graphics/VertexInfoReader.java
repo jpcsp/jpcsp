@@ -786,7 +786,8 @@ public class VertexInfoReader {
 			int packedColor = memoryReader.readNext16();
 			int color = ((packedColor << 3) & 0x0000F8) |
                         ((packedColor << 5) & 0x00FC00) |
-                        ((packedColor << 8) & 0xF80000);
+                        ((packedColor << 8) & 0xF80000) |
+                        0xFF000000;
 			vertexDataBuffer.put(color);
 		}
 
@@ -818,7 +819,7 @@ public class VertexInfoReader {
 			int color = ((packedColor <<  3) & 0x000000F8) |
                         ((packedColor <<  6) & 0x0000F800) |
                         ((packedColor <<  9) & 0x00F80000) |
-                        ((packedColor << 16) & 0x80000000);
+                        ((packedColor >> 15) * 0xFF000000);
 			vertexDataBuffer.put(color);
 		}
 

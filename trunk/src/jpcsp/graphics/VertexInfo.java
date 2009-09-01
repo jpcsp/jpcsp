@@ -221,28 +221,29 @@ public class VertexInfo {
             case 4: { // GU_COLOR_5650
             	addr = (addr + 1) & ~1;
             	int packed = mem.read16(addr); addr += 2;
+                // All components checked on PSP
                 v.c[0] = ((packed      ) & 0x1f) / 31.0f;
                 v.c[1] = ((packed >>  5) & 0x3f) / 63.0f;
                 v.c[2] = ((packed >> 11) & 0x1f) / 31.0f;
-                v.c[3] = 0.0f; // 1.0f
-                // Alpha needs confirming, other components have been checked (fiveofhearts)
-                VideoEngine.log.debug("color type " + color + " untested");
+                v.c[3] = 1.0f;
             	break;
             }
 
             case 5: { // GU_COLOR_5551
             	addr = (addr + 1) & ~1;
             	int packed = mem.read16(addr); addr += 2;
+                // All components checked on PSP
                 v.c[0] = ((packed      ) & 0x1f) / 31.0f;
                 v.c[1] = ((packed >>  5) & 0x1f) / 31.0f;
                 v.c[2] = ((packed >> 10) & 0x1f) / 31.0f;
-                v.c[3] = ((packed >> 15) & 0x1) / 1.0f;
+                v.c[3] = ((packed >> 15) & 0x01) /  1.0f;
             	break;
             }
 
             case 6: { // GU_COLOR_4444
             	addr = (addr + 1) & ~1;
                 int packed = mem.read16(addr); addr += 2;
+                // All components checked on PSP
                 v.c[0] = ((packed      ) & 0xf) / 15.0f;
                 v.c[1] = ((packed >>  4) & 0xf) / 15.0f;
                 v.c[2] = ((packed >>  8) & 0xf) / 15.0f;
