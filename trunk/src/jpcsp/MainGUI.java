@@ -1027,7 +1027,7 @@ private void ShotItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
 
 private void RotateItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RotateItemActionPerformed
 pspdisplay screen = pspdisplay.getInstance();
-Object[] options = {"90º CW","90º CCW","180º","Mirror","Normal"};
+Object[] options = {"90 CW","90 CCW","180","Mirror","Normal"};
 
 int jop = JOptionPane.showOptionDialog(null, "Choose the angle of rotation", "Rotate", JOptionPane.UNDEFINED_CONDITION, JOptionPane.QUESTION_MESSAGE, null, options, options[4]);
 
