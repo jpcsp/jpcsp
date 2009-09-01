@@ -3724,21 +3724,19 @@ public class VideoEngine {
         gl.glLoadIdentity();
 
         if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
-            gl.glDepthFunc(depthFunc3D);
+        	// Use non-inverted depthFunc (which is depthFunc2D, see ZTST)
+        	// TODO Clean-up depthFunc3D when the depth-handling works correctly...
+            gl.glDepthFunc(depthFunc2D);
+            if (true) {
+            	gl.glDepthRange(zpos - zscale, zpos + zscale);
+            } else {
+            	gl.glDepthRange(nearZ, farZ);
+            }
             gl.glLoadMatrixf(proj_uploaded_matrix, 0);
         } else {
             gl.glDepthFunc(depthFunc2D);
-
-            // Do not set the Z clipping plane for glOrtho:
-            // I don't know what are the min. and max. allowed values,
-            // but using Double.MAX_VALUE and Double.MIN_VALUE does not work.
-            // So try using some other large value (1000000)...
-            // ... reverted as this seems to break some 3D games (e.g. Skate Park City)
-            if (false) {
-            	gl.glOrtho(0.0, 480, 272, 0, 1000000, -1000000);
-            } else {
-            	gl.glOrtho(0.0, 480, 272, 0, Double.MAX_VALUE, Double.MIN_VALUE);
-            }
+            gl.glDepthRange(0, 1);
+            gl.glOrtho(0, 480, 272, 0, 0, -0xFFFF);
 
         	// 2D mode shouldn't be affected by the lighting
             gl.glPushAttrib(GL.GL_LIGHTING_BIT);
