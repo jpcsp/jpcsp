@@ -27,6 +27,27 @@ import jpcsp.memory.MemoryReader;
  *
  */
 public abstract class AbstractNativeCodeSequence implements INativeCodeSequence {
+	protected static char[] toUpperCase = buildToUpperCase();
+	protected static char[] toLowerCase = buildToLowerCase();
+
+	static char[] buildToUpperCase() {
+		char[] toUpperCase = new char[256];
+		for (int i = 0; i <= 0xFF; i++) {
+			toUpperCase[i] = Character.toUpperCase((char) i);
+		}
+
+		return toUpperCase;
+	}
+
+	static char[] buildToLowerCase() {
+		char[] toLowerCase = new char[256];
+		for (int i = 0; i <= 0xFF; i++) {
+			toLowerCase[i] = Character.toLowerCase((char) i);
+		}
+
+		return toLowerCase;
+	}
+
 	static protected int[] getGpr() {
 		return RuntimeContext.gpr;
 	}
