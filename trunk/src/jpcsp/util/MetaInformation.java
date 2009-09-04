@@ -17,12 +17,40 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.util;
 
+import java.io.File;
+import java.io.FileReader;
+import java.io.BufferedReader;
+
 public class MetaInformation {
-    public final static String NAME = "Jpcsp";
-    public final static String VERSION = "v0.3";
-    public final static String FULL_NAME = NAME + " " + VERSION;
-    public final static String OFFICIAL_SITE = "http://jpcsp.org/";
-    public final static String OFFICIAL_FORUM = "http://jpcsp.org/forum/";
-    public final static String OFFICIAL_REPOSITORY = "http://code.google.com/p/jpcsp/";
-    public final static String TEAM = "shadow, mad, dreampeppers99, wrayal, fiveofhearts,hlide,Nutzje<br />aisesal,shashClp,spip2, mozvip, Orphis,gigaherz,gid15";
+    public static String NAME = "Jpcsp";
+    public static String VERSION = "v0.3";
+    public static String FULL_NAME = NAME + " " + VERSION;
+    public static String FULL_CUSTOM_NAME = NAME + " " + VERSION;
+    public static String OFFICIAL_SITE = "http://jpcsp.org/";
+    public static String OFFICIAL_FORUM = "http://jpcsp.org/forum/";
+    public static String OFFICIAL_REPOSITORY = "http://code.google.com/p/jpcsp/";
+    public static String TEAM = "shadow, mad, dreampeppers99, wrayal, fiveofhearts, hlide, Nutzje<br />aisesal, shashClp, spip2, mozvip, Orphis, gigaherz, gid15";
+
+    private static MetaInformation singleton;
+
+    private MetaInformation() {
+        try {
+            File f = new File(getClass().getResource("/jpcsp/title.txt").toURI());
+            FileReader fr = new FileReader(f);
+            BufferedReader br = new BufferedReader(fr);
+            String customName = br.readLine();
+
+            if (customName != null)
+                FULL_CUSTOM_NAME = NAME + " " + VERSION + " " + customName;
+
+			br.close();
+			fr.close();
+		} catch(Exception e) {
+			// just ignore it, custom title is optional
+		}
+    }
+
+    static {
+        singleton = new MetaInformation();
+    }
 }
