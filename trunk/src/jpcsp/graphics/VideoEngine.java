@@ -238,6 +238,7 @@ public class VideoEngine {
 
     private ConcurrentLinkedQueue<PspGeList> drawListQueue;
     private boolean somethingDisplayed;
+    private boolean geBufChanged;
 
     private static void log(String msg) {
         log.debug(msg);
@@ -744,6 +745,7 @@ public class VideoEngine {
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(END));
                 }
+                updateGeBuf();
                 break;
 
             case FINISH:
@@ -1767,16 +1769,17 @@ public class VideoEngine {
             	// FBP can be called before or after FBW
                 fbp = (fbp & 0xff000000) | normalArgument;
                 if (log.isDebugEnabled()) {
-                    log("fbp=" + Integer.toHexString(fbp) + ", fbw=" + fbw);
+                    log(helper.getCommandString(FBP) + " fbp=" + Integer.toHexString(fbp) + ", fbw=" + fbw);
                 }
+                geBufChanged = true;
                 break;
             case FBW:
                 fbp = (fbp & 0x00ffffff) | ((normalArgument << 8) & 0xff000000);
                 fbw = normalArgument & 0xffff;
                 if (log.isDebugEnabled()) {
-                    log("fbp=" + Integer.toHexString(fbp) + ", fbw=" + fbw);
+                    log(helper.getCommandString(FBW) + " fbp=" + Integer.toHexString(fbp) + ", fbw=" + fbw);
                 }
-                pspdisplay.getInstance().hleDisplaySetGeBuf(gl, fbp, fbw, psm, somethingDisplayed);
+                geBufChanged = true;
                 break;
 
             case ZBP:
@@ -1805,6 +1808,7 @@ public class VideoEngine {
                 int numberOfVertex = normalArgument & 0xFFFF;
                 int type = ((normalArgument >> 16) & 0x7);
 
+                updateGeBuf();
             	somethingDisplayed = true;
 
                 loadTexture();
@@ -2838,6 +2842,7 @@ public class VideoEngine {
                     log(helper.getCommandString(BEZIER) + " ucount=" + ucount + ", vcount=" + vcount);
                 }
 
+                updateGeBuf();
                 loadTexture();
 
                 drawBezier(ucount, vcount);
@@ -4185,6 +4190,12 @@ public class VideoEngine {
         }
     }
 
+    private void updateGeBuf() {
+    	if (geBufChanged) {
+    		pspdisplay.getInstance().hleDisplaySetGeBuf(gl, fbp, fbw, psm, somethingDisplayed);
+    		geBufChanged = false;
+    	}
+    }
     // For capture/replay
 
     public int getFBP() { return fbp; }

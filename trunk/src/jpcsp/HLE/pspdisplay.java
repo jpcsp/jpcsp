@@ -273,11 +273,17 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     public void hleDisplaySetGeBuf(GL gl,
         int topaddr, int bufferwidth, int pixelformat, boolean copyGEToMemory)
     {
-        topaddr &= 0x3fffffff;
+        topaddr &= Memory.addressMask;
         // We can get the address relative to 0 or already relative to START_VRAM
         if (topaddr < MemoryMap.START_VRAM) {
         	topaddr += MemoryMap.START_VRAM;
         }
+
+        if (topaddr == topaddrGe && bufferwidth == bufferwidthGe && pixelformat == pixelformatGe) {
+        	// Nothing changed
+        	return;
+        }
+
         if (topaddr < MemoryMap.START_VRAM || topaddr >= MemoryMap.END_VRAM ||
             bufferwidth <= 0 || (bufferwidth & (bufferwidth - 1)) != 0 ||
             pixelformat < 0 || pixelformat > 3 ||
