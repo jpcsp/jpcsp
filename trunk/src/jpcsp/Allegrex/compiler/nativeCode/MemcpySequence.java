@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler.nativeCode;
 
+import jpcsp.Allegrex.compiler.Compiler;
+
 /**
  * @author gid15
  *
@@ -63,7 +65,7 @@ public class MemcpySequence extends AbstractNativeCodeSequence implements INativ
 		gpr[srcAddrReg] = srcAddr + length;
 	}
 
-	static public void call(int dstAddrReg, int srcAddrReg, int targetAddrReg, int targetReg, int dstOffset, int srcOffset) {
+	static public void call(int dstAddrReg, int srcAddrReg, int targetAddrReg, int targetReg, int dstOffset, int srcOffset, int valueReg, int valueBytes) {
 		int[] gpr = getGpr();
 		int dstAddr = gpr[dstAddrReg];
 		int srcAddr = gpr[srcAddrReg];
@@ -75,5 +77,16 @@ public class MemcpySequence extends AbstractNativeCodeSequence implements INativ
 		// Update registers
 		gpr[dstAddrReg] = dstAddr + length;
 		gpr[srcAddrReg] = srcAddr + length;
+
+		// Update the register "valueReg" with the last value processed by the memcpy loop
+		int valueAddr = srcAddr + length - valueBytes;
+		int value;
+		switch (valueBytes) {
+		case 1: value = getMemory().read8(valueAddr);  break;
+		case 2: value = getMemory().read16(valueAddr); break;
+		case 4: value = getMemory().read32(valueAddr); break;
+		default: value = 0; Compiler.log.error("MemcpySequence.call(): Unimplemented valueBytes=" + valueBytes); break;
+		}
+		gpr[valueReg] = value;
 	}
 }

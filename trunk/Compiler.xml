@@ -1803,19 +1803,6 @@
 	</NativeCodeSequence>
 	<NativeCodeSequence name="memcpySequence">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.MemcpySequence</Class>
-		<Parameters>$a0,$s4,$at,$a0,-1,-1</Parameters>
-		<BranchInstruction>3</BranchInstruction>
-		<CodeInstructions><![CDATA[
-088DFF04:[9288FFFF]: lbu        $t0, -1($s4)
-088DFF08:[26940001]: addiu      $s4, $s4, 1
-088DFF0C:[1024FFE8]: beq        $at, $a0, 0x088DFEB0
-088DFF10:[A088FFFF]: sb         $t0, -1($a0)
-088DFF14:[0A237FC1]: j          0x088DFF04
-088DFF18:[24840001]: addiu      $a0, $a0, 1
-]]></CodeInstructions>
-	</NativeCodeSequence>
-	<NativeCodeSequence name="memcpySequence">
-		<Class>jpcsp.Allegrex.compiler.nativeCode.MemcpySequence</Class>
 		<Parameters>$t2,$t7,$s4,$t7</Parameters>
 		<CodeInstructions><![CDATA[
 088DFD48:[8DEB0000]: lw         $t3, 0($t7)
@@ -1827,7 +1814,7 @@
 	</NativeCodeSequence>
 	<NativeCodeSequence name="memcpySequence">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.MemcpySequence</Class>
-		<Parameters>$t2,$t7,$s4,$t7,284,0</Parameters>
+		<Parameters>$t2,$t7,$s4,$t7,284,0,$t3,4</Parameters>
 		<CodeInstructions><![CDATA[
 088DFD98:[8DEB0000]: lw         $t3, 0($t7)
 088DFD9C:[254A0004]: addiu      $t2, $t2, 4
