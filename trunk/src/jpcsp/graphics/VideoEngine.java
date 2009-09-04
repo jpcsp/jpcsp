@@ -73,6 +73,13 @@ public class VideoEngine {
         "PSM_DXT3",
         "PSM_DXT5"
     };
+    private static final int[] texturetype_mapping = {
+            GL.GL_UNSIGNED_SHORT_5_6_5_REV,
+            GL.GL_UNSIGNED_SHORT_1_5_5_5_REV,
+            GL.GL_UNSIGNED_SHORT_4_4_4_4_REV,
+            GL.GL_UNSIGNED_BYTE,
+        };
+    private static final int[] textureByteAlignmentMapping = { 2, 2, 2, 4 };
 
     private static VideoEngine instance;
     private GL gl;
@@ -653,12 +660,10 @@ public class VideoEngine {
     }
 
     private short[] readClut16() {
-    	Memory mem = Memory.getInstance();
 		int clutNumEntries = tex_clut_num_blocks * 16;
-		for (int i = tex_clut_start; i < clutNumEntries; i += 2) {
-			int n = mem.read32(tex_clut_addr + i * 2);
-			tmp_clut_buffer16[i    ] = (short)  n;
-			tmp_clut_buffer16[i + 1] = (short) (n >> 16);
+		IMemoryReader memoryReader = MemoryReader.getMemoryReader(tex_clut_addr + tex_clut_start * 2, (clutNumEntries - tex_clut_start) * 2, 2);
+		for (int i = tex_clut_start; i < clutNumEntries; i++) {
+			tmp_clut_buffer16[i] = (short) memoryReader.readNext();
 		}
 
         if (State.captureGeNextFrame) {
@@ -670,10 +675,10 @@ public class VideoEngine {
     }
 
     private int[] readClut32() {
-    	Memory mem = Memory.getInstance();
 		int clutNumEntries = tex_clut_num_blocks * 8;
+		IMemoryReader memoryReader = MemoryReader.getMemoryReader(tex_clut_addr + tex_clut_start * 4, (clutNumEntries - tex_clut_start) * 4, 4);
 		for (int i = tex_clut_start; i < clutNumEntries; i++) {
-			tmp_clut_buffer32[i] = mem.read32(tex_clut_addr + i * 4);
+			tmp_clut_buffer32[i] = memoryReader.readNext();
 		}
 
         if (State.captureGeNextFrame) {
@@ -3228,13 +3233,6 @@ public class VideoEngine {
             int     texclut = tex_clut_addr;
             int     texaddr;
 
-            final int[] texturetype_mapping = {
-                GL.GL_UNSIGNED_SHORT_5_6_5_REV,
-                GL.GL_UNSIGNED_SHORT_1_5_5_5_REV,
-                GL.GL_UNSIGNED_SHORT_4_4_4_4_REV,
-                GL.GL_UNSIGNED_BYTE,
-            };
-
             int textureByteAlignment = 4;   // 32 bits
             int texture_format = GL.GL_RGBA;
             boolean compressedTexture = false;
@@ -3243,7 +3241,7 @@ public class VideoEngine {
 	            // Extract texture information with the minor conversion possible
 	            // TODO: Get rid of information copying, and implement all the available formats
 	            texaddr = texture_base_pointer[level];
-	            texaddr &= 0xFFFFFFF;
+	            texaddr &= Memory.addressMask;
 	            texture_format = GL.GL_RGBA;
 	            compressedTexture = false;
 	            int compressedTextureSize = 0;
@@ -3367,100 +3365,23 @@ public class VideoEngine {
 	                    break;
 	                }
 	                case TPSM_PIXEL_STORAGE_MODE_8BIT_INDEXED: {
-
-	                    switch (tex_clut_mode) {
-	                        case CMODE_FORMAT_16BIT_BGR5650:
-	                        case CMODE_FORMAT_16BIT_ABGR5551:
-	                        case CMODE_FORMAT_16BIT_ABGR4444: {
-	                            if (texclut == 0)
-	                                return;
-
-	                            texture_type = texturetype_mapping[tex_clut_mode];
-	                            textureByteAlignment = 2;  // 16 bits
-	                            short[] clut = readClut16();
-
-	                            if (!texture_swizzle) {
-	                            	int length = texture_buffer_width[level]*texture_height[level];
-	                            	IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length, 1);
-	                                for (int i = 0; i < length; i++) {
-	                                    int index = memoryReader.readNext();
-	                                    tmp_texture_buffer16[i]     = clut[getClutIndex(index)];
-	                                }
-	                                final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
-
-                                    if (State.captureGeNextFrame) {
-                                        log.info("Capture loadTexture clut 8/16 unswizzled");
-                                        CaptureManager.captureRAM(texaddr, length);
-                                    }
-	                            } else {
-	                                unswizzleTextureFromMemory(texaddr, 1, level);
-	                                for (int i = 0, j = 0; i < texture_buffer_width[level]*texture_height[level]; i += 4, j++) {
-	                                    int n = tmp_texture_buffer32[j];
-	                                    int index = n & 0xFF;
-	                                    tmp_texture_buffer16[i + 0] = clut[getClutIndex(index)];
-	                                    index = (n >> 8) & 0xFF;
-	                                    tmp_texture_buffer16[i + 1] = clut[getClutIndex(index)];
-	                                    index = (n >> 16) & 0xFF;
-	                                    tmp_texture_buffer16[i + 2] = clut[getClutIndex(index)];
-	                                    index = (n >> 24) & 0xFF;
-	                                    tmp_texture_buffer16[i + 3] = clut[getClutIndex(index)];
-	                                }
-	                                final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
-	                            }
-
-	                            break;
-	                        }
-
-	                        case CMODE_FORMAT_32BIT_ABGR8888: {
-	                            if (texclut == 0)
-	                                return;
-
-	                            texture_type = GL.GL_UNSIGNED_BYTE;
-	                            int[] clut = readClut32();
-
-	                            if (!texture_swizzle) {
-	                            	int length = texture_buffer_width[level]*texture_height[level];
-	                            	IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length, 1);
-	                                for (int i = 0; i < length; i++) {
-	                                    int index = memoryReader.readNext();
-	                                    tmp_texture_buffer32[i] = clut[getClutIndex(index)];
-	                                }
-	                                final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
-
-                                    if (State.captureGeNextFrame) {
-                                        log.info("Capture loadTexture clut 8/32 unswizzled");
-                                        CaptureManager.captureRAM(texaddr, length);
-                                    }
-	                            } else {
-	                                unswizzleTextureFromMemory(texaddr, 1, level);
-	                                int pixels = texture_buffer_width[level] * texture_height[level];
-	                                for (int i = pixels - 4, j = (pixels / 4) - 1; i >= 0; i -= 4, j--) {
-	                                    int n = tmp_texture_buffer32[j];
-	                                    int index = n & 0xFF;
-	                                    tmp_texture_buffer32[i + 0] = clut[getClutIndex(index)];
-	                                    index = (n >> 8) & 0xFF;
-	                                    tmp_texture_buffer32[i + 1] = clut[getClutIndex(index)];
-	                                    index = (n >> 16) & 0xFF;
-	                                    tmp_texture_buffer32[i + 2] = clut[getClutIndex(index)];
-	                                    index = (n >> 24) & 0xFF;
-	                                    tmp_texture_buffer32[i + 3] = clut[getClutIndex(index)];
-	                                }
-	                                final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
-	                            }
-
-	                            break;
-	                        }
-
-	                        default: {
-	                            VideoEngine.log.error("Unhandled clut8 texture mode " + tex_clut_mode);
-	                            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
-	                            break;
-	                        }
-	                    }
-
+	                	final_buffer = readIndexedTexture(level, texaddr, texclut, 1);
+	                    texture_type = texturetype_mapping[tex_clut_mode];
+	                    textureByteAlignment = textureByteAlignmentMapping[tex_clut_mode];
 	                    break;
 	                }
-
+	                case TPSM_PIXEL_STORAGE_MODE_16BIT_INDEXED: {
+	                	final_buffer = readIndexedTexture(level, texaddr, texclut, 2);
+	                    texture_type = texturetype_mapping[tex_clut_mode];
+	                    textureByteAlignment = textureByteAlignmentMapping[tex_clut_mode];
+	                	break;
+	                }
+	                case TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED: {
+	                	final_buffer = readIndexedTexture(level, texaddr, texclut, 4);
+	                    texture_type = texturetype_mapping[tex_clut_mode];
+	                    textureByteAlignment = textureByteAlignmentMapping[tex_clut_mode];
+	                	break;
+	                }
 	                case TPSM_PIXEL_STORAGE_MODE_16BIT_BGR5650:
 	                case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR5551:
 	                case TPSM_PIXEL_STORAGE_MODE_16BIT_ABGR4444: {
@@ -3710,7 +3631,138 @@ public class VideoEngine {
 		}
 	}
 
-    private boolean initRendering() {
+	private Buffer readIndexedTexture(int level, int texaddr, int texclut, int bytesPerIndex) {
+		Buffer buffer = null;
+
+    	int length = texture_buffer_width[level]*texture_height[level];
+        switch (tex_clut_mode) {
+            case CMODE_FORMAT_16BIT_BGR5650:
+            case CMODE_FORMAT_16BIT_ABGR5551:
+            case CMODE_FORMAT_16BIT_ABGR4444: {
+                if (texclut == 0)
+                    return null;
+
+                short[] clut = readClut16();
+
+                if (!texture_swizzle) {
+                	IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length * bytesPerIndex, bytesPerIndex);
+                    for (int i = 0; i < length; i++) {
+                        int index = memoryReader.readNext();
+                        tmp_texture_buffer16[i] = clut[getClutIndex(index)];
+                    }
+                    buffer = ShortBuffer.wrap(tmp_texture_buffer16);
+
+                    if (State.captureGeNextFrame) {
+                        log.info("Capture loadTexture clut 8/16 unswizzled");
+                        CaptureManager.captureRAM(texaddr, length * bytesPerIndex);
+                    }
+                } else {
+                    unswizzleTextureFromMemory(texaddr, bytesPerIndex, level);
+                    switch (bytesPerIndex) {
+                        case 1: {
+	                        for (int i = 0, j = 0; i < length; i += 4, j++) {
+	                            int n = tmp_texture_buffer32[j];
+	                            int index = n & 0xFF;
+	                            tmp_texture_buffer16[i + 0] = clut[getClutIndex(index)];
+	                            index = (n >> 8) & 0xFF;
+	                            tmp_texture_buffer16[i + 1] = clut[getClutIndex(index)];
+	                            index = (n >> 16) & 0xFF;
+	                            tmp_texture_buffer16[i + 2] = clut[getClutIndex(index)];
+	                            index = (n >> 24) & 0xFF;
+	                            tmp_texture_buffer16[i + 3] = clut[getClutIndex(index)];
+	                        }
+	                    	break;
+                        }
+                        case 2: {
+	                        for (int i = 0, j = 0; i < length; i += 2, j++) {
+	                            int n = tmp_texture_buffer32[j];
+	                            tmp_texture_buffer16[i + 0] = clut[getClutIndex(n & 0xFFFF)];
+	                            tmp_texture_buffer16[i + 1] = clut[getClutIndex(n >>> 16  )];
+	                        }
+                        	break;
+                        }
+                        case 4: {
+	                        for (int i = 0; i < length; i++) {
+	                            int n = tmp_texture_buffer32[i];
+	                        	tmp_texture_buffer16[i] = clut[getClutIndex(n)];
+	                        }
+                        	break;
+                        }
+                    }
+                    buffer = ShortBuffer.wrap(tmp_texture_buffer16);
+                }
+
+                break;
+            }
+
+            case CMODE_FORMAT_32BIT_ABGR8888: {
+                if (texclut == 0)
+                    return null;
+
+                int[] clut = readClut32();
+
+                if (!texture_swizzle) {
+                	IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length * bytesPerIndex, bytesPerIndex);
+                    for (int i = 0; i < length; i++) {
+                        int index = memoryReader.readNext();
+                        tmp_texture_buffer32[i] = clut[getClutIndex(index)];
+                    }
+                    buffer = IntBuffer.wrap(tmp_texture_buffer32);
+
+                    if (State.captureGeNextFrame) {
+                        log.info("Capture loadTexture clut 8/32 unswizzled");
+                        CaptureManager.captureRAM(texaddr, length * bytesPerIndex);
+                    }
+                } else {
+                    unswizzleTextureFromMemory(texaddr, bytesPerIndex, level);
+                    switch (bytesPerIndex) {
+	                    case 1: {
+	                        for (int i = length - 4, j = (length / 4) - 1; i >= 0; i -= 4, j--) {
+	                            int n = tmp_texture_buffer32[j];
+	                            int index = n & 0xFF;
+	                            tmp_texture_buffer32[i + 0] = clut[getClutIndex(index)];
+	                            index = (n >> 8) & 0xFF;
+	                            tmp_texture_buffer32[i + 1] = clut[getClutIndex(index)];
+	                            index = (n >> 16) & 0xFF;
+	                            tmp_texture_buffer32[i + 2] = clut[getClutIndex(index)];
+	                            index = (n >> 24) & 0xFF;
+	                            tmp_texture_buffer32[i + 3] = clut[getClutIndex(index)];
+	                        }
+	                    	break;
+	                    }
+	                    case 2: {
+	                        for (int i = length - 2, j = (length / 2) - 1; i >= 0; i -= 2, j--) {
+	                            int n = tmp_texture_buffer32[j];
+	                            tmp_texture_buffer32[i + 0] = clut[getClutIndex(n & 0xFFFF)];
+	                            tmp_texture_buffer32[i + 1] = clut[getClutIndex(n >>> 16  )];
+	                        }
+	                    	break;
+	                    }
+	                    case 4: {
+	                        for (int i = 0; i < length; i++) {
+	                            int n = tmp_texture_buffer32[i];
+	                        	tmp_texture_buffer32[i] = clut[getClutIndex(n)];
+	                        }
+	                    	break;
+	                    }
+                    }
+                    buffer = IntBuffer.wrap(tmp_texture_buffer32);
+                }
+
+                break;
+            }
+
+            default: {
+                VideoEngine.log.error("Unhandled clut8 texture mode " + tex_clut_mode);
+                Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
+                break;
+            }
+        }
+
+        return buffer;
+	}
+
+	private boolean initRendering() {
         /*
          * Apply Blending
          */
