@@ -2549,7 +2549,12 @@ public class VideoEngine {
             			gl.glStencilFunc(GL.GL_ALWAYS, 0, 0);
             			gl.glStencilOp(GL.GL_KEEP, GL.GL_KEEP, GL.GL_ZERO);
             		}
-            		gl.glDepthMask((normalArgument & 0x400) != 0);
+            		if ((normalArgument & 0x400) != 0) {
+	            		gl.glEnable(GL.GL_DEPTH_TEST);
+	            		gl.glDepthMask(true);
+            		} else {
+	            		gl.glDepthMask(false);
+            		}
             		depthFuncClearMode = depthFunc2D;
             		depthFunc2D = GL.GL_ALWAYS;
             		gl.glColorMask(color, color, color, alpha);
