@@ -43,11 +43,11 @@ public class MetaInformation {
             if (customName != null)
                 FULL_CUSTOM_NAME = NAME + " " + VERSION + " " + customName;
 
-			br.close();
-			fr.close();
-		} catch(Exception e) {
-			// just ignore it, custom title is optional
-		}
+            br.close();
+            fr.close();
+        } catch(Exception e) {
+            // just ignore it, custom title is optional
+        }
     }
 
     static {
