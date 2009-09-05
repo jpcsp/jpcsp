@@ -1,0 +1,7 @@
+# TITLE = Dragoneer's Aria
+emu.disablesceAudio=0
+emu.ignoreaudiothreads=0
+emu.disableblockingaudio=0
+emu.onlyGEGraphics=1
+emu.ignoreInvalidMemoryAccess=1
+emu.enablewaitthreadendcb=0
