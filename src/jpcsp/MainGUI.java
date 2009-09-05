@@ -520,9 +520,22 @@ private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
 }//GEN-LAST:event_OpenFileActionPerformed
 
 private String pspifyFilename(String pcfilename) {
-    // Files on memstick
-    if (pcfilename.startsWith("ms0"))
+    // Files relative to ms0 directory
+    if (pcfilename.startsWith("ms0")) {
         return "ms0:" + pcfilename.substring(3).replaceAll("\\\\", "/");
+    }
+
+    // Files with absolute path but also in ms0 directory
+    try {
+        String ms0path = new File("ms0").getCanonicalPath();
+        if (pcfilename.startsWith(ms0path)) {
+            // Strip off absolute prefix
+            return "ms0:" + pcfilename.substring(ms0path.length()).replaceAll("\\\\", "/");
+        }
+    } catch(Exception e) {
+        // Required by File.getCanonicalPath
+        e.printStackTrace();
+    }
 
     // Files anywhere on user's hard drive, may not work
     // use host0:/ ?
@@ -567,9 +580,14 @@ public void loadFile(File file) {
         setTitle(MetaInformation.FULL_NAME + " - " + title);
         addRecentFile(file, title);
 
-        String findpath = file.getParent();
-        //System.out.println(findpath);
-        pspiofilemgr.getInstance().setfilepath(findpath);
+        // Strip off absolute file path if the file is inside our ms0 directory
+        String filepath = file.getParent();
+        String ms0path = new File("ms0").getCanonicalPath();
+        if (filepath.startsWith(ms0path)) {
+            filepath = filepath.substring(ms0path.length() - 3); // path must start with "ms0"
+        }
+
+        pspiofilemgr.getInstance().setfilepath(filepath);
         pspiofilemgr.getInstance().setIsoReader(null);
         jpcsp.HLE.Modules.sceUmdUserModule.setIsoReader(null);
 
