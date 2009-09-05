@@ -73,6 +73,24 @@ public class VideoEngine {
         "PSM_DXT3",
         "PSM_DXT5"
     };
+    public final static String[] logical_ops_names = new String[] {
+        "LOP_CLEAR",
+        "LOP_AND",
+        "LOP_REVERSE_AND",
+        "LOP_COPY",
+        "LOP_INVERTED_AND",
+        "LOP_NO_OPERATION",
+        "LOP_EXLUSIVE_OR",
+        "LOP_OR",
+        "LOP_NEGATED_OR",
+        "LOP_EQUIVALENCE",
+        "LOP_INVERTED",
+        "LOP_REVERSE_OR",
+        "LOP_INVERTED_COPY",
+        "LOP_INVERTED_OR",
+        "LOP_NEGATED_AND",
+        "LOP_SET"
+    };
     private static final int[] texturetype_mapping = {
             GL.GL_UNSIGNED_SHORT_5_6_5_REV,
             GL.GL_UNSIGNED_SHORT_1_5_5_5_REV,
@@ -578,6 +596,44 @@ public class VideoEngine {
 
     	log ("UNKNOWN stencil op "+ pspOP);
     	return GL.GL_KEEP;
+    }
+
+    private int getLogicalOp (int pspLOP) {
+        switch(pspLOP){
+            case LOP_CLEAR:
+                return GL.GL_CLEAR;
+            case LOP_AND:
+                return GL.GL_AND;
+            case LOP_REVERSE_AND:
+                return GL.GL_AND_REVERSE;
+            case LOP_COPY:
+                return GL.GL_COPY;
+            case LOP_INVERTED_AND:
+                return GL.GL_AND_INVERTED;
+            case LOP_NO_OPERATION:
+                return GL.GL_NOOP;
+            case LOP_EXLUSIVE_OR:
+                return GL.GL_XOR;
+            case LOP_OR:
+                return GL.GL_OR;
+            case LOP_NEGATED_OR:
+                return GL.GL_NOR;
+            case LOP_EQUIVALENCE:
+                return GL.GL_EQUIV;
+            case LOP_INVERTED:
+                return GL.GL_INVERT;
+            case LOP_REVERSE_OR:
+                return GL.GL_OR_REVERSE;
+            case LOP_INVERTED_COPY:
+                return GL.GL_COPY_INVERTED;
+            case LOP_INVERTED_OR:
+                return GL.GL_OR_INVERTED;
+            case LOP_NEGATED_AND:
+                return GL.GL_NAND;
+            case LOP_SET:
+                return GL.GL_SET;
+        }
+        return GL.GL_COPY;
     }
 
     private int getBlendFix(float[] fix_color) {
@@ -1254,7 +1310,7 @@ public class VideoEngine {
             case SLF3: {
             	int lnum = command - SLF0;
             	// PSP Cutoff is cosine of angle, OpenGL expects degrees
-            	float degreeCutoff = (float) Math.toDegrees(Math.acos(floatArgument));
+            	float degreeCutoff = (float) Math.toDegrees(Math.acos(floatArgument)); // why arc cosine here?
             	if ((degreeCutoff >= 0 && degreeCutoff <= 90) || degreeCutoff == 180) {
 	                gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_SPOT_CUTOFF, degreeCutoff);
 	                if (log.isDebugEnabled()) {
@@ -2888,6 +2944,11 @@ public class VideoEngine {
                     log(String.format("%s : 0x%08X", helper.getCommandString(command), normalArgument));
                 }
                 break;
+            case LOP:
+                int LogicOp = getLogicalOp(normalArgument & 0x0F);
+                gl.glLogicOp(LogicOp);
+                log.debug("sceGuLogicalOp( LogicOp = " + normalArgument + "(" +getLOpName(normalArgument) + ")" );
+                break;
 
             default:
                 log.warn("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "](int="+normalArgument+",float="+floatArgument+")");
@@ -3805,6 +3866,8 @@ public class VideoEngine {
             gl.glDisable(GL.GL_LIGHTING);
             if(useShaders) {
             	gl.glUniform1i(Uniforms.lightingEnable.getId(), 0);
+                gl.glUniform1f(Uniforms.zPos.getId(), zpos);
+                gl.glUniform1f(Uniforms.zScale.getId(), zscale);
             }
         }
 
@@ -4161,6 +4224,11 @@ public class VideoEngine {
         return (psm >= 0 && psm < psm_names.length)
             ? psm_names[psm % psm_names.length]
             : "PSM_UNKNOWN" + psm;
+    }
+    public final static String getLOpName(final int ops) {
+        return (ops >= 0 && ops < logical_ops_names.length)
+            ? logical_ops_names[ops % logical_ops_names.length]
+            : "UNKNOWN_LOP" + ops;
     }
 
     private int getCompressedTextureSize(int level, int compressionRatio) {

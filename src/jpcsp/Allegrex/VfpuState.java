@@ -1235,6 +1235,12 @@ public class VfpuState extends FpuState {
                 ((y > 0) ? ((y >>> 23) << 8) : 0) |
                 ((z > 0) ? ((z >>> 23) << 16) : 0) |
                 ((w > 0) ? ((w >>> 23) << 24) : 0));
+        
+        /*v3[0] = Float.intBitsToFloat(
+                ((x & 0xFF) << 0) |
+                ((y & 0xFF) << 8) |
+                ((z & 0xFF) << 16)|
+                ((w & 0xFF) << 24));*/
 
         saveVd(1, vd, v3);
     }
@@ -1253,11 +1259,18 @@ public class VfpuState extends FpuState {
         int z = Float.floatToRawIntBits(v1[2]);
         int w = Float.floatToRawIntBits(v1[3]);
 
-        v3[0] = Float.intBitsToFloat(
+        /*v3[0] = Float.intBitsToFloat(
                 ((x >>> 24) << 0) |
                 ((y >>> 24) << 8) |
                 ((z >>> 24) << 16) |
-                ((w >>> 24) << 24));
+                ((w >>> 24) << 24));*/
+        //Check this!
+        v3[0] = Float.intBitsToFloat(
+                (((x & 0x7F) | ((x & 0x80000000) >>> 24)) << 0 )|
+                (((y & 0x7F) | ((y & 0x80000000) >>> 24)) << 8 )|
+                (((z & 0x7F) | ((z & 0x80000000) >>> 24)) << 16)|
+                (((w & 0x7F) | ((w & 0x80000000) >>> 24)) << 24)
+                );
 
         saveVd(1, vd, v3);
     }
