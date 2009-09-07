@@ -169,10 +169,10 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         }
 
         // address highlighting
-        if (selectedAddress != null && text.contains("0x" + selectedAddress)) {
+        if (selectedAddress != null && text.contains("0x" + selectedAddress) && !text.contains("syscall")) {
             int find = text.indexOf("0x" + selectedAddress);
             label.addStyleRange(new StyleRange(find, 10, Font.PLAIN, Color.BLACK, selectedAddressColor, 0));
-        } else if (selectedAddress != null && text.contains(selectedAddress)) {
+        } else if (selectedAddress != null && text.contains(selectedAddress) && !text.contains("syscall")) {
             int find = text.indexOf(selectedAddress);
             label.addStyleRange(new StyleRange(find, 8, Font.PLAIN, Color.BLACK, selectedAddressColor, 0));
         }
