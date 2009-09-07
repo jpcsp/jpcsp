@@ -732,6 +732,8 @@ public class sceSasCore implements HLEModule {
         //int unk1 = cpu.gpr[5]; // looks like a heap address, bss, 0x40 aligned
         // 99% sure there are no more parameters
 
+        //unk1 matches the buffer address referenced by sceAudioOutput2xxx functions (Hykem)
+
         Modules.log.debug("IGNORING:__sceSasCore " + makeLogParams(cpu));
 
         if (isSasHandleGood(sasCore, "__sceSasCore", cpu)) {
