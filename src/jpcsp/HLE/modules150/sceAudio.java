@@ -904,13 +904,15 @@ public class sceAudio implements HLEModule, HLEThread {
         //and set the sample count and frequency for each one.
 
         for (int i = 0; i < channels; i++) {
-
             if (!pspchannels[i].reserved){
                 pspchannels[i].reserved = true;
-                pspchannels[i].allocatedSamples = samplecount;
-                sampleRate = freq;
             }
         }
+        
+        //Only setting the sample count for the first channel.
+        pspchannels[0].allocatedSamples = samplecount;
+
+        sampleRate = freq;
 
         output2 = false;
 
