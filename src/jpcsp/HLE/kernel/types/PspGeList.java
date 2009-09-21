@@ -55,7 +55,7 @@ public class PspGeList
         //    VideoEngine.log.warn("UNIMPLEMENTED: PspGeList GE context at 0x" + Integer.toHexString(context_addr));
 
         // check
-        base = 0x08000000; // old
+        //base = 0x08000000; // old
         //base = 0x0;
 
         pc = list_addr;
