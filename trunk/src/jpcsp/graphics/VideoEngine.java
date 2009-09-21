@@ -830,14 +830,14 @@ public class VideoEngine {
                 break;
 
             case IADDR:
-                vinfo.ptr_index = currentList.base | normalArgument;
+                vinfo.ptr_index = (currentList.base & 0xff000000) | (normalArgument & 0x00ffffff);
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(IADDR) + " " + String.format("%08x", vinfo.ptr_index));
                 }
                 break;
 
             case VADDR:
-                vinfo.ptr_vertex = currentList.base | normalArgument;
+                vinfo.ptr_vertex = (currentList.base & 0xff000000) | (normalArgument & 0x00ffffff);
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(VADDR) + " " + String.format("%08x", vinfo.ptr_vertex));
                 }
@@ -1310,7 +1310,7 @@ public class VideoEngine {
             case SLF3: {
             	int lnum = command - SLF0;
             	// PSP Cutoff is cosine of angle, OpenGL expects degrees
-            	float degreeCutoff = (float) Math.toDegrees(Math.acos(floatArgument)); // why arc cosine here?
+            	float degreeCutoff = (float) Math.toDegrees(Math.acos(floatArgument));
             	if ((degreeCutoff >= 0 && degreeCutoff <= 90) || degreeCutoff == 180) {
 	                gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_SPOT_CUTOFF, degreeCutoff);
 	                if (log.isDebugEnabled()) {
@@ -2307,7 +2307,7 @@ public class VideoEngine {
                 break;
             case JUMP:
             {
-                int npc = (normalArgument | currentList.base) & 0xFFFFFFFC;
+                int npc = (currentList.base & 0xff000000) | (normalArgument & 0x00ffffff);
                 //I guess it must be unsign as psp player emulator
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(JUMP) + " old PC:" + String.format("%08x", currentList.pc)
@@ -2319,7 +2319,7 @@ public class VideoEngine {
             case CALL:
             {
                 currentList.stack[currentList.stackIndex++] = currentList.pc;
-                int npc = (normalArgument | currentList.base) & 0xFFFFFFFC;
+                int npc = (currentList.base & 0xff000000) | (normalArgument & 0x00ffffff);
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(CALL) + " old PC:" + String.format("%08x", currentList.pc)
                             + " new PC:" + String.format("%08x", npc));
