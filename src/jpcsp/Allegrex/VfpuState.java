@@ -1167,10 +1167,11 @@ public class VfpuState extends FpuState {
         }
         loadVs(1, vs);
         int n = Float.floatToRawIntBits(v1[0]);
-        v3[0] = Float.intBitsToFloat((((n      ) & 0xFF) * 0x01010101) >> 1);
-        v3[1] = Float.intBitsToFloat((((n >>  8) & 0xFF) * 0x01010101) >> 1);
-        v3[2] = Float.intBitsToFloat((((n >> 16) & 0xFF) * 0x01010101) >> 1);
-        v3[3] = Float.intBitsToFloat((((n >> 24) & 0xFF) * 0x01010101) >> 1);
+        // Performs pseudo-full-scale conversion
+        v3[0] = Float.intBitsToFloat((((n      ) & 0xFF) * 0x01010101) >>> 1);
+        v3[1] = Float.intBitsToFloat((((n >>  8) & 0xFF) * 0x01010101) >>> 1);
+        v3[2] = Float.intBitsToFloat((((n >> 16) & 0xFF) * 0x01010101) >>> 1);
+        v3[3] = Float.intBitsToFloat((((n >> 24) & 0xFF) * 0x01010101) >>> 1);
         saveVd(4, vd, v3);
     }
     // VFPU4:VC2I
@@ -1274,16 +1275,16 @@ public class VfpuState extends FpuState {
         int y = Float.floatToRawIntBits(v1[1]);
 
         v3[0] = Float.intBitsToFloat(
-                ((x > 0) ? ((x >>> 15) << 0) : 0) |
-                ((y > 0) ? ((y >>> 15) << 16) : 0));
+                ((x < 0) ? 0 : ((x >> 15) << 0 )) |
+                ((y < 0) ? 0 : ((y >> 15) << 16)));
 
         if (vsize == 4) {
             int z = Float.floatToRawIntBits(v1[2]);
             int w = Float.floatToRawIntBits(v1[3]);
 
             v3[1] = Float.intBitsToFloat(
-                    ((z > 0) ? ((z >>> 15) << 0) : 0) |
-                    ((w > 0) ? ((w >>> 15) << 16) : 0));
+                    ((z < 0) ? 0 : ((z >> 15) << 0 )) |
+                    ((w < 0) ? 0 : ((w >> 15) << 16)));
             saveVd(2, vd, v3);
         } else {
             saveVd(1, vd, v3);
@@ -1302,7 +1303,7 @@ public class VfpuState extends FpuState {
         int y = Float.floatToRawIntBits(v1[1]);
 
         v3[0] = Float.intBitsToFloat(
-                ((x >>> 16) << 0) |
+                ((x >>> 16) << 0 ) |
                 ((y >>> 16) << 16));
 
         if (vsize == 4) {
@@ -1310,7 +1311,7 @@ public class VfpuState extends FpuState {
             int w = Float.floatToRawIntBits(v1[3]);
 
             v3[1] = Float.intBitsToFloat(
-                    ((z >>> 16) << 0) |
+                    ((z >>> 16) << 0 ) |
                     ((w >>> 16) << 16));
             saveVd(2, vd, v3);
         } else {
