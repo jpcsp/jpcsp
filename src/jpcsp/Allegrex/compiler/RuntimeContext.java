@@ -432,7 +432,9 @@ public class RuntimeContext {
 	    			log.debug("Waiting to be scheduled...");
 					runtimeThread.suspendRuntimeExecution();
 	    			log.debug("Scheduled, restarting...");
-	                updateStaticVariables();
+	    	        checkStoppedThread();
+
+	    	        updateStaticVariables();
 
 	    			if (pendingCallbackThread == RuntimeContext.currentThread) {
 	    			    pendingCallbackThread = null;
@@ -546,6 +548,7 @@ public class RuntimeContext {
 
 	    	SyscallHandler.syscall(code);
 
+	    	checkStoppedThread();
 	    	sync();
 	    	if (runtimeThread != null) {
 	    		runtimeThread.setInSyscall(false);
@@ -594,10 +597,12 @@ public class RuntimeContext {
 			threadManager.changeThreadState(threadInfo, SceKernelThreadInfo.PSP_THREAD_STOPPED);
 			threadManager.contextSwitch(threadManager.nextThread());
 
-			try {
-				sync();
-			} catch (StopThreadException e) {
-	    		// Ignore Exception
+			if (!reset) {
+				try {
+					sync();
+				} catch (StopThreadException e) {
+		    		// Ignore Exception
+				}
 			}
     	}
 
@@ -605,13 +610,15 @@ public class RuntimeContext {
 		toBeStoppedThreads.remove(threadInfo);
 		toBeDeletedThreads.remove(threadInfo);
 
-		// Go out of the idle state before really ending this thread
-		// otherwise, no thread will break the idle state...
-		try {
-			if (isIdle) {
-				syncThread();
+		if (!reset) {
+			// Go out of the idle state before really ending this thread
+			// otherwise, no thread will break the idle state...
+			try {
+				if (isIdle) {
+					syncThread();
+				}
+			} catch (StopThreadException e) {
 			}
-		} catch (StopThreadException e) {
 		}
 
 		alreadyStoppedThreads.remove(threadInfo);

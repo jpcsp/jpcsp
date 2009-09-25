@@ -79,6 +79,7 @@ public class LoadExec {
                 ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
 
                 SceModule module = Emulator.getInstance().load(name, moduleBuffer);
+                Emulator.getClock().resume();
 
                 if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {
                     cpu.gpr[2] = 0;
