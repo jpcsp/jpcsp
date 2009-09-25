@@ -155,7 +155,7 @@ public class sceSasCore implements HLEModule {
     		int wantedBufferSize = 0;
     		if (samples != null) {
     			wantedBufferSize = samples.length * 4;
-    		} else {
+    		} else if (outputDataLine != null){
     			wantedBufferSize = outputDataLine.getBufferSize();
     		}
 
