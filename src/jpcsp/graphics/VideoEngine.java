@@ -1911,7 +1911,9 @@ public class VideoEngine {
                 		// What is the difference between MODE_NORMAL and MODE_NORMALIZED_NORMAL?
                 		case TMAP_TEXTURE_PROJECTION_MODE_NORMAL:
                 		case TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL:
-                			log.warn("Texture mode not tested: " + tex_proj_map_mode);
+                			if (tex_proj_map_mode == TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL) {
+                				log.warn("Texture mode TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL not tested");
+                			}
                 			if (vinfo.normal != 0) {
                 				useTexture = true;
                 				useTextureFromNormal = true;
