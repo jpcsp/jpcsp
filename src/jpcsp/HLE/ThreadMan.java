@@ -1689,6 +1689,7 @@ public class ThreadMan {
         // catch ra 0
         current_thread.cpuContext.gpr[31] = 0;
 
+        RuntimeContext.executeCallback(current_thread);
         // TODO make it work in dynarec
         // problem is PC and NPC are not valid? (08800000)
     }
