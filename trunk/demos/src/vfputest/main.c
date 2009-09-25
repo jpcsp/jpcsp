@@ -558,6 +558,33 @@ void __attribute__((noinline)) vcmovfq(ScePspFVector4 *v0, ScePspFVector4 *v1, S
    : "+m" (*v0) : "m" (*v1));
 }
 
+void __attribute__((noinline)) vi2c(ScePspFVector4 *v0, ScePspFVector4 *v1)
+{
+	asm volatile (
+   "lv.q   C000, %0\n"
+
+   "lv.q   C100, %1\n"
+
+   "vi2c.q S000, C100\n"
+
+   "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*v1));
+}
+
+void __attribute__((noinline)) vi2uc(ScePspFVector4 *v0, ScePspFVector4 *v1)
+{
+	asm volatile (
+   "lv.q   C000, %0\n"
+
+   "lv.q   C100, %1\n"
+
+   "vi2uc.q S000, C100\n"
+
+   "sv.q   C000, %0\n"
+   : "+m" (*v0) : "m" (*v1));
+}
+
+
 
 ScePspFVector4 v0;
 ScePspFVector4 v1;
@@ -663,6 +690,7 @@ int main(int argc, char *argv[])
     struct timeval repeatStart;
     struct timeval repeatDelay;
 	int i;
+	int *pint;
 
     repeatStart.tv_sec = 0;
     repeatStart.tv_usec = 0;
@@ -918,6 +946,26 @@ int main(int argc, char *argv[])
 			initValues();
 			vcrspt(&v0, &v1, &v2);
 			printf("vcrsp.t : %f %f %f %f\n", v0.x, v0.y, v0.z, v0.w);
+
+			initValues();
+			pint = (int *) &v1;
+			pint[0] = 0x11223344;
+			pint[1] = 0x55667788;
+			pint[2] = 0x99aabbcc;
+			pint[3] = 0xddee00ff;
+			vi2c(&v0, &v1);
+			pint = (int *) &v0;
+			printf("vi2c.q : %08x\n", *pint);
+
+			initValues();
+			pint = (int *) &v1;
+			pint[0] = 0x11223344;
+			pint[1] = 0x55667788;
+			pint[2] = 0x99aabbcc;
+			pint[3] = 0xddee00ff;
+			vi2uc(&v0, &v1);
+			pint = (int *) &v0;
+			printf("vi2uc.q : %08x\n", *pint);
 		}
 
 		if (buttonDown & PSP_CTRL_CIRCLE)
