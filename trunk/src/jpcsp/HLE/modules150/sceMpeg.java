@@ -159,7 +159,7 @@ public class sceMpeg implements HLEModule {
         }
     }
 
-    public static final boolean enableMpeg = false;
+    public static boolean enableMpeg = false;
 
     public static final int PSMF_MAGIC = 0x464D5350;
     protected static final int MPEG_MEMSIZE = 0x10000; // 64k
@@ -183,6 +183,14 @@ public class sceMpeg implements HLEModule {
     protected long mpegLastTimestamp;
     protected Date mpegLastDate;
 
+
+	public static boolean isEnableMpeg() {
+		return enableMpeg;
+	}
+
+	public static void setEnableMpeg(boolean enableMpeg) {
+		sceMpeg.enableMpeg = enableMpeg;
+	}
 
     protected Date convertTimestampToDate(long timestamp) {
     	long millis = timestamp / (mpegTimestampPerSecond / 1000);
@@ -899,12 +907,14 @@ public class sceMpeg implements HLEModule {
                 dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
                 String displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(mpegLastDate));
                 Debug.printFramebuffer(buffer, frameWidth, 10, 10, 0xFFFFFFFF, 0xFF000000, 2, displayedString);
-                if (Modules.log.isInfoEnabled()) {
-	                int packetsInRingbuffer = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
-	                int processedPackets = mpegRingbuffer.packetsRead - packetsInRingbuffer;
-	                int processedSize = processedPackets * mpegRingbuffer.packetSize;
-	                Debug.printFramebuffer(buffer, frameWidth, 10, 30, 0xFFFFFFFF, 0xFF000000, 2, String.format(" %d/%d (%.0f%%) ", processedSize, mpegStreamSize, processedSize * 100f / mpegStreamSize));
-                }
+
+                int packetsInRingbuffer = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
+                int processedPackets = mpegRingbuffer.packetsRead - packetsInRingbuffer;
+                int processedSize = processedPackets * mpegRingbuffer.packetSize;
+                Debug.printFramebuffer(buffer, frameWidth, 10, 30, 0xFFFFFFFF, 0xFF000000, 2, String.format(" %d/%d (%.0f%%) ", processedSize, mpegStreamSize, processedSize * 100f / mpegStreamSize));
+
+                Debug.printFramebuffer(buffer, frameWidth, 10, 250, 0xFFFFFFFF, 0xFF000000, 1, " This is a faked MPEG video ");
+                Debug.printFramebuffer(buffer, frameWidth, 10, 258, 0xFFFFFFFF, 0xFF000000, 1, " (video decoding is not yet implemented) ");
 
                 if (mpegRingbuffer != null) {
                     if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets) {
