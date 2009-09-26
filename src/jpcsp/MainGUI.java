@@ -61,6 +61,7 @@ import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.pspiofilemgr;
 import jpcsp.HLE.kernel.types.SceModule;
+import jpcsp.HLE.modules.sceMpeg;
 import jpcsp.HLE.pspSysMem;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
@@ -81,7 +82,7 @@ import org.apache.log4j.xml.DOMConfigurator;
  */
 public class MainGUI extends javax.swing.JFrame implements KeyListener, ComponentListener {
     private static final long serialVersionUID = -3647025845406693230L;
-    public static final int MAX_RECENT = 4;
+    public static final int MAX_RECENT = 10;
     LogWindow consolewin;
     ElfHeaderInfo elfheader;
     SettingsGUI setgui;
@@ -905,6 +906,9 @@ private void installCompatibilitySettings()
     boolean onlyGEGraphics = Settings.getInstance().readBool("emu.onlyGEGraphics");
     pspdisplay.getInstance().setOnlyGEGraphics(onlyGEGraphics);
 
+    boolean enableMpeg = Settings.getInstance().readBool("emu.enableMpeg");
+    sceMpeg.setEnableMpeg(enableMpeg);
+
     boolean disableAudio = Settings.getInstance().readBool("emu.disablesceAudio");
     jpcsp.HLE.Modules.sceAudioModule.setChReserveEnabled(!disableAudio);
 
@@ -962,6 +966,10 @@ public boolean installCompatibilityPatches(String filename)
         String onlyGEGraphics = patchSettings.getProperty("emu.onlyGEGraphics");
         if (onlyGEGraphics != null)
             pspdisplay.getInstance().setOnlyGEGraphics(Integer.parseInt(onlyGEGraphics) != 0);
+
+        String enableMpeg = patchSettings.getProperty("emu.enableMpeg");
+        if (enableMpeg != null)
+            sceMpeg.setEnableMpeg(Integer.parseInt(enableMpeg) != 0);
 
         String disableReservedThreadMemory = patchSettings.getProperty("emu.disablereservedthreadmemory");
         if (disableReservedThreadMemory != null)

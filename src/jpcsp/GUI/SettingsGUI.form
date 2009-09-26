@@ -368,6 +368,7 @@
                               <Component id="disableGECheck" min="-2" max="-2" attributes="0"/>
                               <Component id="disableVBOCheck" alignment="0" min="-2" max="-2" attributes="0"/>
                               <Component id="onlyGEGraphicsCheck" alignment="0" min="-2" max="-2" attributes="0"/>
+                              <Component id="enableMpeg" alignment="0" min="-2" max="-2" attributes="0"/>
                           </Group>
                           <EmptySpace min="-2" max="-2" attributes="0"/>
                       </Group>
@@ -381,6 +382,8 @@
                           <Component id="disableVBOCheck" min="-2" max="-2" attributes="0"/>
                           <EmptySpace max="-2" attributes="0"/>
                           <Component id="onlyGEGraphicsCheck" min="-2" max="-2" attributes="0"/>
+                          <EmptySpace max="-2" attributes="0"/>
+                          <Component id="enableMpeg" min="-2" max="-2" attributes="0"/>
                           <EmptySpace pref="42" max="32767" attributes="0"/>
                       </Group>
                   </Group>
@@ -400,6 +403,11 @@
                 <Component class="javax.swing.JCheckBox" name="onlyGEGraphicsCheck">
                   <Properties>
                     <Property name="text" type="java.lang.String" value="Only GE graphics (not recommended for homebrew)"/>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JCheckBox" name="enableMpeg">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" value="Enable faked MPEG Video"/>
                   </Properties>
                 </Component>
               </SubComponents>
