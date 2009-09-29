@@ -820,7 +820,7 @@ public class VideoEngine {
                 break;
 
             case BASE:
-                currentList.base = normalArgument << 8;
+                currentList.base = (normalArgument << 8) & 0xff000000;
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(BASE) + " " + String.format("%08x", currentList.base));
                 }
@@ -830,14 +830,14 @@ public class VideoEngine {
                 break;
 
             case IADDR:
-                vinfo.ptr_index = (currentList.base & 0xff000000) | (normalArgument & 0x00ffffff);
+                vinfo.ptr_index = currentList.base | normalArgument ;
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(IADDR) + " " + String.format("%08x", vinfo.ptr_index));
                 }
                 break;
 
             case VADDR:
-                vinfo.ptr_vertex = (currentList.base & 0xff000000) | (normalArgument & 0x00ffffff);
+                vinfo.ptr_vertex = currentList.base | normalArgument ;
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(VADDR) + " " + String.format("%08x", vinfo.ptr_vertex));
                 }
@@ -2309,7 +2309,7 @@ public class VideoEngine {
                 break;
             case JUMP:
             {
-                int npc = (currentList.base & 0xff000000) | (normalArgument & 0x00ffffff);
+                int npc = (currentList.base | normalArgument) & 0xFFFFFFFC;
                 //I guess it must be unsign as psp player emulator
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(JUMP) + " old PC:" + String.format("%08x", currentList.pc)
@@ -2321,7 +2321,7 @@ public class VideoEngine {
             case CALL:
             {
                 currentList.stack[currentList.stackIndex++] = currentList.pc;
-                int npc = (currentList.base & 0xff000000) | (normalArgument & 0x00ffffff);
+                int npc = (currentList.base | normalArgument) & 0xFFFFFFFC;
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(CALL) + " old PC:" + String.format("%08x", currentList.pc)
                             + " new PC:" + String.format("%08x", npc));
@@ -3983,6 +3983,7 @@ public class VideoEngine {
             gl.glMaterialfv(GL.GL_FRONT, GL.GL_AMBIENT, mat_ambient, 0);
             gl.glMaterialfv(GL.GL_FRONT, GL.GL_DIFFUSE, mat_diffuse, 0);
             gl.glMaterialfv(GL.GL_FRONT, GL.GL_SPECULAR, mat_specular, 0);
+            gl.glColor4fv(mat_ambient, 0);
             if(useShaders) {
             	int[] bvec = new int[4];
             	bvec[0] = 0;
