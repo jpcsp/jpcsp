@@ -3462,7 +3462,7 @@ public class VideoEngine {
 	                    textureByteAlignment = 2;  // 16 bits
 
 	                    if (!texture_swizzle) {
-                        	int length = texture_buffer_width[level] * texture_height[level];
+                        	int length = Math.max(texture_buffer_width[level], texture_width[level]) * texture_height[level];
 	                    	final_buffer = Memory.getInstance().getBuffer(texaddr, length * 2);
 	                    	if (final_buffer == null) {
 		                    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length * 2, 2);
