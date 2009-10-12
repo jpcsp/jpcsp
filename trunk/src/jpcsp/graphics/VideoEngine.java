@@ -230,6 +230,8 @@ public class VideoEngine {
     private int depthFunc2D;
     private int depthFunc3D;
 
+    private int[] dither_matrix = new int[16];
+
     // opengl needed information/buffers
     private int[] gl_texture_id = new int[1];
     private int[] tmp_texture_buffer32 = new int[1024*1024];
@@ -2950,6 +2952,102 @@ public class VideoEngine {
                 int LogicOp = getLogicalOp(normalArgument & 0x0F);
                 gl.glLogicOp(LogicOp);
                 log.debug("sceGuLogicalOp( LogicOp = " + normalArgument + "(" +getLOpName(normalArgument) + ")" );
+                break;
+
+            case DTH0:
+                dither_matrix[0] = (normalArgument      ) & 0x0F;
+                dither_matrix[1] = (normalArgument >> 4 ) & 0x0F;
+                dither_matrix[2] = (normalArgument >> 8 ) & 0x0F;
+                dither_matrix[3] = (normalArgument >> 12) & 0x0F;
+
+                //The dither matrix's values can vary between -4 and 4.
+                //Check for values superior to 4 and inferior to -4 and
+                //translate them properly.
+
+                for(int i = 0; i < 16; i++){
+                    if(dither_matrix[i] > 4){
+                        dither_matrix[i] -= 16;
+                    }
+
+                    else if(dither_matrix[i] < -4){
+                        dither_matrix[i] += 16;
+                    }
+                }
+
+                if (log.isDebugEnabled()) {
+                    log("DTH0:" + "  " + dither_matrix[0] + "  " + dither_matrix[1] + "  "
+                        + dither_matrix[2] + "  " + dither_matrix[3]);
+                }
+
+                break;
+
+            case DTH1:
+                dither_matrix[4] = (normalArgument      ) & 0x0F;
+                dither_matrix[5] = (normalArgument >> 4 ) & 0x0F;
+                dither_matrix[6] = (normalArgument >> 8 ) & 0x0F;
+                dither_matrix[7] = (normalArgument >> 12) & 0x0F;
+
+                for(int i = 0; i < 16; i++){
+                    if(dither_matrix[i] > 4){
+                        dither_matrix[i] -= 16;
+                    }
+
+                    else if(dither_matrix[i] < -4){
+                        dither_matrix[i] += 16;
+                    }
+                }
+
+                if (log.isDebugEnabled()) {
+                log("DTH1:" + "  " + dither_matrix[4] + "  " + dither_matrix[5] + "  "
+                        + dither_matrix[6] + "  " + dither_matrix[7]);
+                }
+
+                break;
+
+            case DTH2:
+                dither_matrix[8] = (normalArgument      ) & 0x0F;
+                dither_matrix[9] = (normalArgument >> 4 ) & 0x0F;
+                dither_matrix[10] = (normalArgument >> 8 ) & 0x0F;
+                dither_matrix[11] = (normalArgument >> 12) & 0x0F;
+
+                for(int i = 0; i < 16; i++){
+                    if(dither_matrix[i] > 4){
+                        dither_matrix[i] -= 16;
+                    }
+
+                    else if(dither_matrix[i] < -4){
+                        dither_matrix[i] += 16;
+                    }
+                }
+
+                if (log.isDebugEnabled()) {
+                log("DTH2:" + "  " + dither_matrix[8] + "  " + dither_matrix[9] + "  "
+                        + dither_matrix[10] + "  " + dither_matrix[11]);
+                }
+
+                break;
+
+            case DTH3:
+                dither_matrix[12] = (normalArgument      ) & 0x0F;
+                dither_matrix[13] = (normalArgument >> 4 ) & 0x0F;
+                dither_matrix[14] = (normalArgument >> 8 ) & 0x0F;
+                dither_matrix[15] = (normalArgument >> 12) & 0x0F;
+
+                for(int i = 0; i < 16; i++){
+                    if(dither_matrix[i] > 4){
+                        dither_matrix[i] -= 16;
+                    }
+
+                    else if(dither_matrix[i] < -4){
+                        dither_matrix[i] += 16;
+                    }
+                }
+
+                if (log.isDebugEnabled()) {
+                log("DTH3:" + "  " + dither_matrix[12] + "  " + dither_matrix[13] + "  "
+                        + dither_matrix[14] + "  " + dither_matrix[15]);
+                }
+
                 break;
 
             default:
