@@ -853,35 +853,30 @@ public class sceAudio implements HLEModule, HLEThread {
     public void sceAudioOutput2GetRestSample(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        Memory mem = Processor.memory;
+        //Retrieve the unplayed samples' count only for the first channel.
+        int unplayed = pspchannels[0].outputDataLine.getBufferSize() - pspchannels[0].outputDataLine.available();
 
-        /* put your own code here instead */
-
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-        System.out.println("Unimplemented NID function sceAudioOutput2GetRestSample [0x647CEF33]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        cpu.gpr[2] = unplayed;
     }
 
     public void sceAudioOutput2ChangeLength(Processor processor) {
         CpuState cpu = processor.cpu;
 
-        Memory mem = Processor.memory;
+        int samplecount = cpu.gpr[4];
+        int ret = -1;
 
-        /* put your own code here instead */
+        for(int i = 0; i < pspchannels.length; i++) {
+            if(pspchannels[i].reserved){
+                pspchannels[i].allocatedSamples = samplecount;
+                ret = 0;
+            }
+        }
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        if(ret != 0){
+            Modules.log.warn("sceAudioOutput2ChangeLength audio output is not reserved");
+        }
 
-        System.out.println("Unimplemented NID function sceAudioOutput2ChangeLength [0x63F2889C]");
-
-        cpu.gpr[2] = 0xDEADC0DE;
-
-        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        cpu.gpr[2] = ret;
     }
 
     public void sceAudioSRCChReserve(Processor processor) {
@@ -922,12 +917,13 @@ public class sceAudio implements HLEModule, HLEThread {
     public void sceAudioSRCChRelease(Processor processor) {
        CpuState cpu = processor.cpu;
 
-       for(int i = 0; i < pspchannels.length; i++)
+       for(int i = 0; i < pspchannels.length; i++) {
        if(pspchannels[i].reserved)
         {
         	pspchannels[i].release();
             pspchannels[i].reserved=false;
         }
+       }
 
        cpu.gpr[2] = 0;
     }
