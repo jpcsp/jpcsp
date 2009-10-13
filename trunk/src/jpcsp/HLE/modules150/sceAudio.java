@@ -853,8 +853,12 @@ public class sceAudio implements HLEModule, HLEThread {
     public void sceAudioOutput2GetRestSample(Processor processor) {
         CpuState cpu = processor.cpu;
 
+        int unplayed = 0;
+
         //Retrieve the unplayed samples' count only for the first channel.
-        int unplayed = pspchannels[0].outputDataLine.getBufferSize() - pspchannels[0].outputDataLine.available();
+        if(pspchannels[0].outputDataLine != null){
+            unplayed = pspchannels[0].outputDataLine.getBufferSize() - pspchannels[0].outputDataLine.available();
+        }
 
         cpu.gpr[2] = unplayed;
     }
