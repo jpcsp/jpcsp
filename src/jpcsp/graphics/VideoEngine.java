@@ -280,6 +280,7 @@ public class VideoEngine {
         view_matrix[0] = view_matrix[5] = view_matrix[10] = view_matrix[15] = 1.f;
         tex_envmap_matrix[0] = tex_envmap_matrix[5] = tex_envmap_matrix[10] = tex_envmap_matrix[15] = 1.f;
         light_pos[0][3] = light_pos[1][3] = light_pos[2][3] = light_pos[3][3] = 1.f;
+        morph_weight[0] = 1.f;
 
         statistics = new DurationStatistics("VideoEngine Statistics");
         commandStatistics = new DurationStatistics[256];
@@ -2014,6 +2015,8 @@ public class VideoEngine {
 	                    case PRIM_TRIANGLE_FANS:
 	                        for (int i = 0; i < numberOfVertex; i++) {
 	                            int addr = vinfo.getAddress(mem, i);
+	                            
+	                            vinfo.setMorphWeights(morph_weight);
 	                            VertexState v = vinfo.readVertex(mem, addr);
 
 	                            // Do skinning first as it modifies v.p and v.n
@@ -2050,6 +2053,7 @@ public class VideoEngine {
 	                        for (int i = 0; i < numberOfVertex; i += 2) {
 	                            int addr1 = vinfo.getAddress(mem, i);
 	                            int addr2 = vinfo.getAddress(mem, i + 1);
+	                            vinfo.setMorphWeights(morph_weight);
 	                            VertexState v1 = vinfo.readVertex(mem, addr1);
 	                            VertexState v2 = vinfo.readVertex(mem, addr2);
 
