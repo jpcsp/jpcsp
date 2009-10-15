@@ -905,9 +905,10 @@ public class sceMpeg implements HLEModule {
                 Modules.log.info("currentDate: " + currentDate.toString());
                 SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
                 dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+                if(mpegLastDate != null){
                 String displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(mpegLastDate));
                 Debug.printFramebuffer(buffer, frameWidth, 10, 10, 0xFFFFFFFF, 0xFF000000, 2, displayedString);
-
+                }
                 int packetsInRingbuffer = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
                 int processedPackets = mpegRingbuffer.packetsRead - packetsInRingbuffer;
                 int processedSize = processedPackets * mpegRingbuffer.packetSize;
