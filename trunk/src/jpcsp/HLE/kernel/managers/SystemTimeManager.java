@@ -125,19 +125,23 @@ public class SystemTimeManager {
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
+    private long getSystemTime() {
+    	// System time is number of microseconds since program start
+    	return Emulator.getClock().microTime();
+    }
+
     /** SceKernelSysClock time_addr http://psp.jim.sh/pspsdk-doc/structSceKernelSysClock.html
      * +1mil every second
      * high 32-bits never set on real psp? */
     public void sceKernelGetSystemTime(int time_addr) {
-        Modules.log.debug("sceKernelGetSystemTime pointer=0x" + Integer.toHexString(time_addr));
-        Memory mem = Memory.getInstance();
-        if (mem.isAddressGood(time_addr)) {
-            long systemTime = System.nanoTime() / 1000L;
-            int low = (int)(systemTime & 0xffffffffL);
-            int hi = (int)((systemTime >> 32) & 0xffffffffL);
+    	if (Modules.log.isDebugEnabled()) {
+    		Modules.log.debug("sceKernelGetSystemTime pointer=0x" + Integer.toHexString(time_addr));
+    	}
 
-            mem.write32(time_addr, low);
-            mem.write32(time_addr + 4, hi);
+    	Memory mem = Memory.getInstance();
+        if (mem.isAddressGood(time_addr)) {
+            long systemTime = getSystemTime();
+            mem.write64(time_addr, systemTime);
             Emulator.getProcessor().cpu.gpr[2] = 0;
         } else {
             Emulator.getProcessor().cpu.gpr[2] = -1;
@@ -145,18 +149,17 @@ public class SystemTimeManager {
     }
 
     public void sceKernelGetSystemTimeWide() {
-        long systemTime = System.nanoTime() / 1000L;
-        Modules.log.debug("sceKernelGetSystemTimeWide ret:" + systemTime);
+        long systemTime = getSystemTime();
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug("sceKernelGetSystemTimeWide ret:" + systemTime);
+        }
         Emulator.getProcessor().cpu.gpr[2] = (int)(systemTime & 0xffffffffL);
         Emulator.getProcessor().cpu.gpr[3] = (int)((systemTime >> 32) & 0xffffffffL);
     }
 
-    //private int timeLow = 0;
-    // microseconds
     public void sceKernelGetSystemTimeLow() {
-        long systemTime = System.nanoTime() / 1000L;
+        long systemTime = getSystemTime();
         int low = (int)(systemTime & 0x7fffffffL); // check, don't use msb?
-        //int low = timeLow; timeLow += 10;
         //Modules.log.debug("sceKernelGetSystemTimeLow return:" + low);
         Emulator.getProcessor().cpu.gpr[2] = low;
     }
