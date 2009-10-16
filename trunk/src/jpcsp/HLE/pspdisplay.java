@@ -137,9 +137,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     private long reportCount;
     private double averageFPS = 0.0;
 
-    private int vcount;
-    private float accumulatedHcount;
-    private float currentHcount;
+    private long startVcount = 0;
 
     // Texture state
     private float[] texRgbScale = new float[2];
@@ -199,9 +197,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         reportCount = 0;
         averageFPS = 0.0;
 
-        vcount = 0;
-        accumulatedHcount = 0.0f;
-        currentHcount = 0.0f;
+        startVcount = Emulator.getClock().currentTimeMillis();
     }
 
     public void exit() {
@@ -221,11 +217,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 	                displayDirty = false;
 	                geDirty = false;
 	            }
-	            lastUpdate = now;
         	}
-            vcount++;
-            accumulatedHcount += 286.15f;
-            currentHcount += 0.15f;
+            lastUpdate = now;
         }
     }
 
@@ -854,8 +847,17 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         }
     }
 
+    private int getVcount() {
+    	// Vcount increases by 60 units per second
+        long now = Emulator.getClock().currentTimeMillis();
+        int vcount = (int) ((now - startVcount) * 60 / 1000);
+
+        return vcount;
+    }
+
     public void sceDisplayGetVcount() {
-        Emulator.getProcessor().cpu.gpr[2] = vcount;
+    	// 60 units per second
+        Emulator.getProcessor().cpu.gpr[2] = getVcount();
     }
 
     public void sceDisplayWaitVblankStart() {
@@ -887,11 +889,13 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     }
 
     public void sceDisplayGetCurrentHcount() {
-        Emulator.getProcessor().cpu.gpr[2] = (int)currentHcount;
+    	// TODO This is not matching the PSP
+        Emulator.getProcessor().cpu.gpr[2] = (int) (getVcount() * 0.15f);
     }
 
     public void sceDisplayGetAccumulatedHcount() {
-        Emulator.getProcessor().cpu.gpr[2] = (int)accumulatedHcount;
+    	// 17143 units per second
+        Emulator.getProcessor().cpu.gpr[2] = (int) (getVcount() * 285.72f);
     }
 
     public void sceDisplayGetFramePerSec() {
