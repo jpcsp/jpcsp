@@ -1015,7 +1015,7 @@ public class Loader {
                 }
 
                 entCount++;
-                //Emulator.log.debug(String.format("Export found at 0x%08X [0x%08X]", exportAddress, nid));
+                Emulator.log.debug(String.format("Export found at 0x%08X [0x%08X]", exportAddress, nid));
             }
         }
 

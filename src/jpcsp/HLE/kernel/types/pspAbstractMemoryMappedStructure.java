@@ -16,11 +16,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import java.nio.charset.Charset;
+
 import jpcsp.Memory;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.MemoryReader;
 import jpcsp.util.Utilities;
 
 public abstract class pspAbstractMemoryMappedStructure {
     private final static int unknown = 0x11111111;
+	private final static Charset charset16 = Charset.forName("UTF-16LE");
 
     private int baseAddress;
     private int maxSize = Integer.MAX_VALUE;
@@ -177,6 +182,60 @@ public abstract class pspAbstractMemoryMappedStructure {
         offset += n;
 
         return s;
+    }
+
+    /**
+     * Read a string in UTF16, until '\0\0'
+     * @param addr address of the string
+     * @return the string
+     */
+    protected String readStringUTF16Z(int addr) {
+    	if (addr == 0) {
+    		return null;
+    	}
+
+    	IMemoryReader memoryReader = MemoryReader.getMemoryReader(addr, 2);
+    	StringBuffer s = new StringBuffer();
+    	while (true) {
+    		int char16 = memoryReader.readNext();
+    		if (char16 == 0) {
+    			break;
+    		}
+    		byte[] bytes = new byte[2];
+    		bytes[0] = (byte) char16;
+    		bytes[1] = (byte) (char16 >> 8);
+    		s.append(new String(bytes, charset16));
+    	}
+
+    	return s.toString();
+    }
+
+    // Write a string in UTF16
+    /**
+     * Write a string in UTF16, including a trailing '\0\0'
+     * @param addr address where to write the string
+     * @param s the string to write
+     * @return the number of bytes written (not including the trailing '\0\0')
+     */
+    protected int writeStringUTF16Z(int addr, String s) {
+    	if (addr == 0 || s == null) {
+    		return 0;
+    	}
+
+    	byte[] bytes = s.getBytes(charset16);
+    	if (bytes == null) {
+    		return 0;
+    	}
+
+    	for (int i = 0; i < bytes.length; i++) {
+    		mem.write8(addr + i, bytes[i]);
+    	}
+
+    	// Write trailing '\0\0'
+    	mem.write8(addr + bytes.length    , (byte) 0);
+    	mem.write8(addr + bytes.length + 1, (byte) 0);
+
+    	return bytes.length;
     }
 
     protected void read(pspAbstractMemoryMappedStructure object) {

@@ -143,6 +143,9 @@ public class pspiofilemgr {
     public final static int PSP_MEMORYSTICK_STATE_INSERTING = 4; // mscmhc0 0x02015804 only
     private int memoryStickState;
 
+    // available size on memory stick, in bytes.
+    private long freeMemoryStickSize = 1 * 1024 * 1024 * 1024;	// 1GB
+
     public static pspiofilemgr getInstance() {
         if (instance == null) {
             instance = new pspiofilemgr();
@@ -1496,11 +1499,11 @@ public class pspiofilemgr {
             case 0x02425818: // Free space on ms
             // use PSP_ERROR_NO_SUCH_DEVICE if ms is not in
             {
-                // 32mb empty formatted mem stick
+                // empty formatted mem stick
                 int sectorSize = 0x200;
                 int sectorCount = 0x08;
                 // Perform operation using long integers to avoid overflow
-                int maxClusters = (int) ((32000000 * 95L / 100) / (sectorSize * sectorCount)); // reserve 5% for fs house keeping
+                int maxClusters = (int) ((freeMemoryStickSize * 95L / 100) / (sectorSize * sectorCount)); // reserve 5% for fs house keeping
                 int freeClusters = maxClusters;
                 int maxSectors = 512; // TODO
 
