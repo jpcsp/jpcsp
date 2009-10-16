@@ -22,6 +22,7 @@ import java.io.IOException;
 
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceUtilityMsgDialogParams;
+import jpcsp.HLE.kernel.types.SceUtilityOskParams;
 import jpcsp.HLE.kernel.types.SceUtilitySavedataParam;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -726,7 +727,7 @@ public class sceUtility implements HLEModule {
         if (mem.isAddressGood(params_addr)) {
             msgdialog_params.read(mem, params_addr);
 
-            Modules.log.warn("PARTIAL:sceUtilityMsgDialogInitStart");
+            Modules.log.warn("PARTIAL:sceUtilityMsgDialogInitStart message='" + msgdialog_params.message + "'");
             Modules.log.debug(msgdialog_params.toString());
 
             msgdialog_status = PSP_UTILITY_DIALOG_QUIT;
@@ -813,20 +814,26 @@ public class sceUtility implements HLEModule {
     }
 
 	public void sceUtilityOskInitStart(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu;
 		Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+        int oskParamAddr = cpu.gpr[4];
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        SceUtilityOskParams sceUtilityOskParams = new SceUtilityOskParams();
+        sceUtilityOskParams.read(mem, oskParamAddr);
 
-		Modules.log.warn("Unimplemented NID function sceUtilityOskInitStart [0xF6269B82]");
+        Modules.log.warn("PARTIAL:sceUtilityOskInitStart oskParamAddr=0x" + Integer.toHexString(oskParamAddr) +
+            ", desc=" + sceUtilityOskParams.oskData.desc +
+            ", inText=" + sceUtilityOskParams.oskData.inText +
+            ", outText=" + sceUtilityOskParams.oskData.outText);
 
-		cpu.gpr[2] = 0xDEADC0DE;
+        osk_status = PSP_UTILITY_DIALOG_QUIT;
 
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+        sceUtilityOskParams.base.result = 0;
+        sceUtilityOskParams.oskData.result = 0;
+        sceUtilityOskParams.write(mem, oskParamAddr);
+
+        cpu.gpr[2] = 0;
 	}
 
 	public void sceUtilityOskShutdownStart(Processor processor) {
