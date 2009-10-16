@@ -59,10 +59,10 @@ public class RuntimeContext {
 	public  static final boolean enableIntructionCounting = true;
 	public  static       boolean enableDebugger = true;
 	public  static final String debuggerName = "syncDebugger";
-	public  static final boolean debugCodeBlockCalls = true;
+	public  static final boolean debugCodeBlockCalls = false;
 	public  static final String debugCodeBlockStart = "debugCodeBlockStart";
 	public  static final String debugCodeBlockEnd = "debugCodeBlockEnd";
-	public  static final boolean debugCodeInstruction = true;
+	public  static final boolean debugCodeInstruction = false;
 	public  static final String debugCodeInstructionName = "debugCodeInstruction";
 	public  static final boolean debugMemoryRead = false;
 	public  static final boolean debugMemoryWrite = false;

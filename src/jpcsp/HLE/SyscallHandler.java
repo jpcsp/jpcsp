@@ -24,8 +24,6 @@ import jpcsp.HLE.kernel.Managers;
 import jpcsp.Allegrex.CpuState;
 
 public class SyscallHandler {
-	static String sceFontGetCharInfo = "";
-
     // Change this to return the number of cycles used?
     public static void syscall(int code) {
         int gpr[] = Emulator.getProcessor().cpu.gpr;
@@ -976,11 +974,6 @@ public class SyscallHandler {
                         cpu.gpr[2] = 0;
                         //Emulator.getProcessor().gpr[2] = 0xb515ca11;
 
-                        if (code == 0x3010 && cpu.gpr[5] != 0x3013) {
-                        	char c = (char) cpu.gpr[5];
-                        	sceFontGetCharInfo += c;
-                        	Modules.log.info("sceFontGetCharInfo '" + c + "' " + sceFontGetCharInfo);
-                        }
                         // Display debug info
                         String params = String.format("%08x %08x %08x", cpu.gpr[4],
                             cpu.gpr[5], cpu.gpr[6]);
