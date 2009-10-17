@@ -332,6 +332,9 @@ public class ModuleMgrForUser implements HLEModule {
                 thread.moduleid = sceModule.modid;
                 cpu.gpr[2] = sceModule.modid; // return the module id
                 threadMan.hleKernelStartThread(thread, argsize, argp_addr, sceModule.gp_value);
+            } else if (sceModule.entry_addr == -1) {
+                Modules.log.info("sceKernelStartModule - module has no entry point");
+                cpu.gpr[2] = 0;
             } else {
                 Modules.log.warn("sceKernelStartModule - invalid entry address 0x" + Integer.toHexString(sceModule.entry_addr));
                 cpu.gpr[2] = -1;
