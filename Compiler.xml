@@ -1323,6 +1323,38 @@
 	<NativeCodeSequence name="strcmp">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Strcmp</Class>
 		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+088955A8:[00851025]: or         $v0, $a0, $a1
+088955AC:[38420001]: xori       $v0, $v0, 1
+088955B0:[30420001]: andi       $v0, $v0, 1
+088955B4:[1040000E]: beq        $v0, $zr, 0x088955F0
+088955B8:[90820000]: lbu        $v0, 0($a0)
+088955BC:[90A30000]: lbu        $v1, 0($a1)
+088955C0:[10400011]: beq        $v0, $zr, 0x08895608
+088955C4:[24870002]: addiu      $a3, $a0, 2
+088955C8:[1443000F]: bne        $v0, $v1, 0x08895608
+088955CC:[90860001]: lbu        $a2, 1($a0)
+088955D0:[90A30001]: lbu        $v1, 1($a1)
+088955D4:[10C00004]: beq        $a2, $zr, 0x088955E8
+088955D8:[24A50002]: addiu      $a1, $a1, 2
+088955DC:[90820002]: lbu        $v0, 2($a0)
+088955E0:[10C3FFF6]: beq        $a2, $v1, 0x088955BC
+088955E4:[00E02021]: addu       $a0, $a3, $zr <=> move $a0, $a3
+088955E8:[03E00008]: jr         $ra
+088955EC:[00C31023]: subu       $v0, $a2, $v1
+088955F0:[90A30000]: lbu        $v1, 0($a1)
+088955F4:[24840001]: addiu      $a0, $a0, 1
+088955F8:[10400003]: beq        $v0, $zr, 0x08895608
+088955FC:[24A50001]: addiu      $a1, $a1, 1
+08895600:[5043FFFB]: beql       $v0, $v1, 0x088955F0
+08895604:[90820000]: lbu        $v0, 0($a0)
+08895608:[03E00008]: jr         $ra
+0889560C:[00431023]: subu       $v0, $v0, $v1
+]]></CodeInstructions>
+	</NativeCodeSequence>
+	<NativeCodeSequence name="strcmp">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Strcmp</Class>
+		<IsReturning>true</IsReturning>
 		<Parameters>0,1,1</Parameters>
 		<CodeInstructions><![CDATA[
 089CF974:[80870000]: lb         $a3, 0($a0)
