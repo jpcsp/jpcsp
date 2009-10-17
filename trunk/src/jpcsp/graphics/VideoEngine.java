@@ -192,6 +192,9 @@ public class VideoEngine {
     private int[] texture_buffer_width = new int[8];
     private int tex_min_filter = GL.GL_NEAREST;
     private int tex_mag_filter = GL.GL_NEAREST;
+    private int tex_mipmap_mode;
+    private float tex_mipmap_bias;
+    private int tex_mipmap_bias_int;
 
     private float tex_translate_x = 0.f, tex_translate_y = 0.f;
     private float tex_scale_x = 1.f, tex_scale_y = 1.f;
@@ -281,6 +284,9 @@ public class VideoEngine {
         tex_envmap_matrix[0] = tex_envmap_matrix[5] = tex_envmap_matrix[10] = tex_envmap_matrix[15] = 1.f;
         light_pos[0][3] = light_pos[1][3] = light_pos[2][3] = light_pos[3][3] = 1.f;
         morph_weight[0] = 1.f;
+        tex_mipmap_mode = TBIAS_MODE_AUTO;
+        tex_mipmap_bias = 0.f;
+        tex_mipmap_bias_int = 0;
 
         statistics = new DurationStatistics("VideoEngine Statistics");
         commandStatistics = new DurationStatistics[256];
@@ -1354,6 +1360,10 @@ public class VideoEngine {
 
             case AMA:
             	mat_ambient[3] = ((normalArgument      ) & 255) / 255.f;
+                if (log.isDebugEnabled()) {
+                    log(String.format("material ambient a=%.1f (%02X)",
+                            mat_ambient[3], normalArgument & 255));
+                }
             	break;
 
             case AMC:
@@ -1730,9 +1740,10 @@ public class VideoEngine {
             }
 
             case TBIAS: {
-                int mode = normalArgument & 0xFFFF;
-                float bias = (normalArgument >> 16) / 16.0f;
-                log.warn("Unimplemented sceGuTexLevelMode(mode=" + mode + ", bias=" + bias + ")");
+                tex_mipmap_mode = normalArgument & 0xFFFF;
+                tex_mipmap_bias_int = normalArgument >> 16;
+                tex_mipmap_bias = tex_mipmap_bias_int / 16.0f;
+                log.warn("Unimplemented sceGuTexLevelMode(mode=" + tex_mipmap_mode + ", bias=" + tex_mipmap_bias + ")");
                 break;
             }
 
@@ -3412,7 +3423,16 @@ public class VideoEngine {
             int texture_format = GL.GL_RGBA;
             boolean compressedTexture = false;
 
-            for(int level = 0; level <= texture_num_mip_maps; ++level) {
+            int numberMipmaps = texture_num_mip_maps;
+            // I'm not sure about the exact meaning of TBIAS_MODE_CONST.
+            // I'm interpreting it here as forcing a specific mipmap (from bias parameter).
+            // This seems to work with TBIAS_MODE_CONST and bias=0.
+            if (tex_mipmap_mode == TBIAS_MODE_CONST) {
+            	numberMipmaps = tex_mipmap_bias_int;
+            	log.debug("TBIAS_MODE_CONST " + tex_mipmap_bias_int);
+            }
+
+            for(int level = 0; level <= numberMipmaps; ++level) {
 	            // Extract texture information with the minor conversion possible
 	            // TODO: Get rid of information copying, and implement all the available formats
 	            texaddr = texture_base_pointer[level];
@@ -3708,7 +3728,6 @@ public class VideoEngine {
 	            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_mag_filter);
 	            gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, textureByteAlignment);
 	            gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, texture_buffer_width[level]);
-	            checkTextureMinFilter(compressedTexture);
 
                 // apparently w > tbw still works, but I think we should log it just incase (fiveofhearts)
                 // update: seems some games are using tbw greater AND less than w, now I haven't got a clue what the meaning of the 2 variables are
@@ -3755,25 +3774,27 @@ public class VideoEngine {
 	            }
             }
 
+            checkTextureMinFilter(compressedTexture, numberMipmaps);
+
             // OpenGL cannot build mipmaps on compressed textures
-            if (texture_num_mip_maps != 0 && final_buffer != null && !compressedTexture) {
+            if (numberMipmaps != 0 && final_buffer != null && !compressedTexture) {
 				if (log.isDebugEnabled()) {
-	            	for(int level = 0; level <= texture_num_mip_maps; ++level)
+	            	for(int level = 0; level <= numberMipmaps; ++level)
 	            		log(String.format("Mipmap PSP Texture level %d size %dx%d", level, texture_width[level], texture_height[level]));
 				}
-	            int maxLevel = (int) (Math.log(Math.max(texture_width[texture_num_mip_maps], texture_height[texture_num_mip_maps]) * (1 << texture_num_mip_maps))/Math.log(2));
+	            int maxLevel = (int) (Math.log(Math.max(texture_width[numberMipmaps], texture_height[numberMipmaps]) * (1 << numberMipmaps))/Math.log(2));
 
-	            if(maxLevel != texture_num_mip_maps) {
+	            if(maxLevel != numberMipmaps) {
 	            	if (log.isDebugEnabled()) {
-	            		log(String.format("Generating mipmaps from level %d Size %dx%d to maxLevel %d", texture_num_mip_maps, texture_width[0], texture_height[0], maxLevel));
+	            		log(String.format("Generating mipmaps from level %d Size %dx%d to maxLevel %d", numberMipmaps, texture_width[0], texture_height[0], maxLevel));
 	            	}
 		            // Build the other mipmaps level
 		            glu.gluBuild2DMipmapLevels(GL.GL_TEXTURE_2D,
 		            		texture_format,
-		            		texture_width[texture_num_mip_maps], texture_height[texture_num_mip_maps],
+		            		texture_width[numberMipmaps], texture_height[numberMipmaps],
 		            		texture_format,
 		            		texture_type,
-		            		texture_num_mip_maps, texture_num_mip_maps + 1, maxLevel, final_buffer);
+		            		numberMipmaps, numberMipmaps + 1, maxLevel, final_buffer);
 		            if (log.isDebugEnabled()) {
 			            for(int i = 0; i <= maxLevel; ++i) {
 			            	float[] size = new float[2];
@@ -3791,11 +3812,11 @@ public class VideoEngine {
         }
     }
 
-	private void checkTextureMinFilter(boolean compressedTexture) {
+	private void checkTextureMinFilter(boolean compressedTexture, int numberMipmaps) {
 		// OpenGL/Hardware cannot interpolate between compressed textures;
 		// this restriction has been checked on NVIDIA GeForce 8500 GT and 9800 GT
 		if (compressedTexture ||
-		    (texture_num_mip_maps == 0 && !(tex_min_filter == GL.GL_LINEAR || tex_min_filter == GL.GL_NEAREST))) {
+		    (numberMipmaps == 0 && !(tex_min_filter == GL.GL_LINEAR || tex_min_filter == GL.GL_NEAREST))) {
 			int nex_tex_min_filter;
 			if(tex_min_filter == GL.GL_NEAREST_MIPMAP_LINEAR || tex_min_filter == GL.GL_NEAREST_MIPMAP_NEAREST)
 				nex_tex_min_filter = GL.GL_NEAREST;

@@ -320,6 +320,9 @@ public class GeCommands {
         public final static int TWRAP_WRAP_MODE_REPEAT = 0X00;
         public final static int TWRAP_WRAP_MODE_CLAMP = 0X01;
     public final static int TBIAS = 0xC8;// 	TBIAS 	Texture Level Bias (???)
+    	public final static int TBIAS_MODE_AUTO  = 0;
+    	public final static int TBIAS_MODE_CONST = 1;
+    	public final static int TBIAS_MODE_SLOPE = 2;
     public final static int TFUNC = 0xC9;// 	TFUNC 	Texture Function
         public final static int TFUNC_FRAGMENT_DOUBLE_ENABLE_COLOR_UNTOUCHED = 0X00;
         public final static int TFUNC_FRAGMENT_DOUBLE_ENABLE_COLOR_DOUBLED = 0X01;
