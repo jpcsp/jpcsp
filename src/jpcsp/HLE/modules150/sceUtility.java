@@ -20,6 +20,8 @@ package jpcsp.HLE.modules150;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import javax.swing.JOptionPane;
+
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceUtilityMsgDialogParams;
 import jpcsp.HLE.kernel.types.SceUtilityOskParams;
@@ -829,6 +831,7 @@ public class sceUtility implements HLEModule {
 
         osk_status = PSP_UTILITY_DIALOG_QUIT;
 
+        sceUtilityOskParams.oskData.outText = JOptionPane.showInputDialog(sceUtilityOskParams.oskData.desc, sceUtilityOskParams.oskData.inText);
         sceUtilityOskParams.base.result = 0;
         sceUtilityOskParams.oskData.result = 0;
         sceUtilityOskParams.write(mem, oskParamAddr);

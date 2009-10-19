@@ -1024,4 +1024,24 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     public int getBufferWidthFb() { return bufferwidthFb; }
     public int getPixelFormatFb() { return pixelformatFb; }
     public int getSync() { return sync; }
+
+    public void captureGeImage(GL gl) {
+        gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
+
+        gl.glPixelStorei(GL.GL_PACK_ALIGNMENT, getPixelFormatBytes(pixelformatGe));
+        gl.glPixelStorei(GL.GL_PACK_ROW_LENGTH, bufferwidthGe);
+
+        // Copy screen to the current texture
+        gl.glCopyTexSubImage2D(
+            GL.GL_TEXTURE_2D, 0,
+            0, 0, 0, 0, widthGe, heightGe);
+
+        // Copy the current texture into memory
+        temp.clear();
+        int pixelFormatGL = getPixelFormatGL(pixelformatGe);
+        gl.glGetTexImage(
+            GL.GL_TEXTURE_2D, 0, pixelFormatGL == GL.GL_UNSIGNED_SHORT_5_6_5_REV ? GL.GL_RGB : GL.GL_RGBA,
+            pixelFormatGL, temp);
+    	CaptureManager.captureImage(topaddrGe, 0, temp, widthGe, heightGe, bufferwidthGe, getPixelFormatGL(pixelformatGe), false, 0, false);
+    }
 }
