@@ -20,12 +20,12 @@ package jpcsp.HLE.modules;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.NIDMapper;
-import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.pspSysMem;
@@ -54,7 +54,7 @@ public class HLEModuleManager {
 
     private List<HLEThread> hleThreadList;
 
-    //private HashMap<String, List<HLEModule>> flash0prxMap;
+    private HashMap<String, List<HLEModule>> flash0prxMap;
 
     /** The current firmware version we are using
      * was supposed to be one of pspSysMem.PSP_FIRMWARE_* but there's a mistake
@@ -72,19 +72,15 @@ public class HLEModuleManager {
         Modules.sceRtcModule,
         Modules.Kernel_LibraryModule,
         Modules.ModuleMgrForUserModule,
-        Modules.sceMpegModule,
         Modules.LoadCoreForKernelModule,
-        Modules.sceAttrac3plusModule,
         Modules.sceCtrlModule,
         Modules.sceAudioModule,
         Modules.sceImposeModule,
         Modules.sceSuspendForUserModule,
         Modules.sceDmacModule,
+        Modules.sceSasCoreModule,	// Loaded by default (at least in v2.82)
+        Modules.sceMpegModule,		// Loaded by default (at least in v2.82)
         Modules.sceHprmModule, // check if loaded by default
-
-        // HACK: we should only load this when the game tries to load sc_sascore.prx,
-        // or if the firmware version has it built in.
-        Modules.sceSasCoreModule,
     };
 
     public static HLEModuleManager getInstance() {
@@ -125,7 +121,7 @@ public class HLEModuleManager {
 
         this.firmwareVersion = firmwareVersion;
         installDefaultModules();
-        //initialiseFlash0PRXMap();
+        initialiseFlash0PRXMap();
     }
 
     private void installDefaultModules() {
@@ -135,10 +131,27 @@ public class HLEModuleManager {
         }
     }
 
+    private void addToFlash0PRXMap(String prxName, HLEModule module) {
+    	List<HLEModule> modules = new LinkedList<HLEModule>();
+    	modules.add(module);
+    	flash0prxMap.put(prxName, modules);
+    }
+
     // TODO add here modules in flash that aren't loaded by default
     // We could add all modules but I think we just need the unloaded ones (fiveofhearts)
     private void initialiseFlash0PRXMap() {
-        //flash0prxMap = new HashMap<String, List<HLEModule>>();
+        flash0prxMap = new HashMap<String, List<HLEModule>>();
+
+        addToFlash0PRXMap("libfont", Modules.sceFontModule);
+        addToFlash0PRXMap("libatrac3plus", Modules.sceAtrac3plusModule);
+
+        // These are loaded by default:
+        if (false) {
+        	addToFlash0PRXMap("sc_sascore", Modules.sceSasCoreModule);
+        	addToFlash0PRXMap("mpeg", Modules.sceMpegModule);
+        	addToFlash0PRXMap("mpeg_vsh", Modules.sceMpegModule);
+        }
+
         /* TODO
         List<HLEModule> prx;
 
@@ -171,23 +184,45 @@ public class HLEModuleManager {
 
     /** @return the UID assigned to the module or negative on error
      * TODO need to figure out how the uids work when 1 prx contains several modules. */
-    /* unused
     public int LoadFlash0Module(String prxname) {
-        int uid = -1;
-        List<HLEModule> prx = flash0prxMap.get(prxname);
-        if (prx != null) {
-            for (HLEModule module : prx) {
+        List<HLEModule> modules = flash0prxMap.get(prxname);
+        if (modules != null) {
+            for (HLEModule module : modules) {
                 module.installModule(this, firmwareVersion);
             }
-            SceModule fakeModule = new SceModule(true);
-            fakeModule.modname = prxname;
-            fakeModule.write(Memory.getInstance(), fakeModule.address);
-            Managers.modules.addModule(fakeModule);
-            uid = fakeModule.modid;
         }
-        return uid;
+
+        SceModule fakeModule = new SceModule(true);
+        fakeModule.modname = prxname;
+        fakeModule.write(Memory.getInstance(), fakeModule.address);
+        Managers.modules.addModule(fakeModule);
+
+        return fakeModule.modid;
     }
-    */
+
+    public void UnloadFlash0Module(SceModule sceModule) {
+    	if (sceModule == null) {
+    		return;
+    	}
+
+    	List<HLEModule> prx = flash0prxMap.get(sceModule.modname);
+        if (prx != null) {
+            for (HLEModule module : prx) {
+                module.uninstallModule(this, firmwareVersion);
+            }
+        }
+
+        // TODO terminate delete all threads that belong to this module
+
+        pspSysMem sysMem = pspSysMem.getInstance();
+        for (int i = 0; i < sceModule.nsegment; i++) {
+            sysMem.free(sceModule.segmentaddr[i]);
+        }
+
+        sceModule.free();
+
+        Managers.modules.removeModule(sceModule.modid);
+    }
 
     /** Instead use addFunction. */
     @Deprecated

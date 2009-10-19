@@ -190,26 +190,17 @@ public class ModuleMgrForUser implements HLEModule {
         if (name.startsWith("flash0:")) {
             // Simulate a successful loading
             Modules.log.warn("PARTIAL:sceKernelLoadModule(path='" + name + "'): module from flash0 not loaded");
-            SceModule fakeModule = new SceModule(true);
-            fakeModule.modname = prxname;
-            fakeModule.write(mem, fakeModule.address);
-            Managers.modules.addModule(fakeModule);
-            cpu.gpr[2] = fakeModule.modid;
-            // TODO cpu.gpr[2] = HLEModuleManager.getInstance().LoadFlash0Module(prxname);
+            cpu.gpr[2] = HLEModuleManager.getInstance().LoadFlash0Module(prxname);
             return;
         }
 
         // Ban some modules
         for (bannedModulesList bannedModuleName : bannedModulesList.values())
         {
-            if (bannedModuleName.name().matches(prxname))
+            if (bannedModuleName.name().equalsIgnoreCase(prxname))
             {
                 Modules.log.warn("IGNORED:sceKernelLoadModule(path='" + name + "'): module from banlist not loaded");
-                SceModule fakeModule = new SceModule(true);
-                fakeModule.modname = prxname;
-                fakeModule.write(mem, fakeModule.address);
-                Managers.modules.addModule(fakeModule);
-                cpu.gpr[2] = fakeModule.modid;
+                cpu.gpr[2] = HLEModuleManager.getInstance().LoadFlash0Module(prxname);
                 return;
             }
         }
@@ -389,17 +380,7 @@ public class ModuleMgrForUser implements HLEModule {
         } else {
             Modules.log.warn("PARTIAL:sceKernelUnloadModule(uid=" + Integer.toHexString(uid) + ") modname:'" + sceModule.modname + "'");
 
-            // TODO terminate delete all threads that belong to this module
-
-            pspSysMem sysMem = pspSysMem.getInstance();
-            for (int i = 0; i < sceModule.nsegment; i++) {
-                sysMem.free(sceModule.segmentaddr[i]);
-            }
-
-            sceModule.free();
-
-            Managers.modules.removeModule(uid);
-
+            HLEModuleManager.getInstance().UnloadFlash0Module(sceModule);
             cpu.gpr[2] = 0;
         }
     }

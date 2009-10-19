@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.modules.*;
+import jpcsp.HLE.modules150.sceFont;
 
 public class Modules {
 
@@ -40,13 +41,14 @@ public class Modules {
     public static ModuleMgrForUser ModuleMgrForUserModule = new ModuleMgrForUser();
     public static sceMpeg sceMpegModule = new sceMpeg();
     public static LoadCoreForKernel LoadCoreForKernelModule = new LoadCoreForKernel();
-    public static sceAtrac3plus sceAttrac3plusModule = new sceAtrac3plus();
+    public static sceAtrac3plus sceAtrac3plusModule = new sceAtrac3plus();
     public static sceAudio sceAudioModule = new sceAudio();
     public static sceImpose sceImposeModule = new sceImpose();
     public static sceSuspendForUser sceSuspendForUserModule = new sceSuspendForUser();
     public static sceDmac sceDmacModule = new sceDmac();
     public static sceSasCore sceSasCoreModule = new sceSasCore();
     public static sceHprm sceHprmModule = new sceHprm();
+    public static sceFont sceFontModule = new sceFont();
 
 
     public static Logger log = Logger.getLogger("hle");

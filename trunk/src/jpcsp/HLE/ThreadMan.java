@@ -1807,13 +1807,15 @@ public class ThreadMan {
 
         for (int i = 0; i < SceKernelThreadInfo.THREAD_CALLBACK_SIZE && !handled; i++) {
             if (thread.callbackRegistered[i] && thread.callbackReady[i]) {
-                Modules.log.debug("Entering callback type " + i + " name:'" + thread.callbackInfo[i].name + "'"
-                    + " PC:" + Integer.toHexString(thread.callbackInfo[i].callback_addr)
-                    + " thread:'" + thread.name + "'"
-                    + " $a0:" + Integer.toHexString(thread.callbackInfo[i].notifyCount)
-                    + " $a1:" + Integer.toHexString(thread.callbackInfo[i].notifyArg)
-                    + " $a2:" + Integer.toHexString(thread.callbackInfo[i].callback_arg_addr)
-                    );
+            	if (Modules.log.isDebugEnabled()) {
+            		Modules.log.debug("Entering callback type " + i + " name:'" + thread.callbackInfo[i].name + "'"
+                        + " PC:" + Integer.toHexString(thread.callbackInfo[i].callback_addr)
+                        + " thread:'" + thread.name + "'"
+                        + " $a0:" + Integer.toHexString(thread.callbackInfo[i].notifyCount)
+                        + " $a1:" + Integer.toHexString(thread.callbackInfo[i].notifyArg)
+                        + " $a2:" + Integer.toHexString(thread.callbackInfo[i].callback_arg_addr)
+                    	);
+            	}
 
                 // Callbacks can pre-empt, save the current thread's context
                 current_thread.saveContext();
