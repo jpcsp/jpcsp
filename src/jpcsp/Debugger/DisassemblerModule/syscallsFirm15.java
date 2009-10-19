@@ -975,9 +975,6 @@ public class syscallsFirm15 {
                 sceUtilityHtmlViewerInitStart(0x3092, 0xCDC3AA41), // 2.00+
                 sceUtilityHtmlViewerUpdate(0x3093, 0x05AFB9E4), // 2.00+
                 sceUtilityHtmlViewerGetStatus(0x3094, 0xBDA7D894), // 2.00+
-                sceUtilityHtmlViewerShutdownStart(0x3095, 0xF5CE1134), // 2.00+
-                sceHttpSaveSystemCookie(0x3096, 0x76D1363B), // 2.00+
-                sceHttpLoadSystemCookie(0x3097, 0xF1657B22), // 2.00+
 
                 sceFontOpenUserMemory(0x3095, 0xBB8E7FE6), // 2.00+
                 sceUtilityUnloadAvModule(0x3096, 0xF7D8D092), // 2.71+
@@ -1101,6 +1098,10 @@ public class syscallsFirm15 {
                 sceHttpsDisableOption(0x3101, 0xB3FAF831), // 1.50+
                 sceMpegAvcCopyYCbCr(0x3102, 0x0558B075), // 2.71+
                 sceMpegRingbufferQueryPackNum(0x3103, 0x769BEBB6), // 2.50+
+
+                sceUtilityHtmlViewerShutdownStart(0x3104, 0xF5CE1134), // 2.00+
+                sceHttpSaveSystemCookie(0x3105, 0x76D1363B), // 2.00+
+                sceHttpLoadSystemCookie(0x3105, 0xF1657B22), // 2.00+
 
                 // We choose to start HLEModuleManager at 0x4000
 
