@@ -448,7 +448,7 @@ public class ThreadMan {
         synchronized (readyThreads) {
             for (Iterator<SceKernelThreadInfo> it = readyThreads.iterator(); it.hasNext(); ) {
             	SceKernelThreadInfo thread = it.next();
-        		if (found == null || thread.currentPriority < found.currentPriority) {
+        		if (found == null || (thread != null && thread.currentPriority < found.currentPriority)) {
         			found = thread;
             	}
             }
