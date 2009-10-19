@@ -231,7 +231,7 @@ public class scePower implements HLEModule {
 		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
 		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
 
-		System.out.println("Unimplemented NID function scePowerTick [0xEFD3C963]");
+		Modules.log.debug("Unimplemented NID function scePowerTick [0xEFD3C963]");
 
 		cpu.gpr[2] = 0xDEADC0DE;
 
