@@ -162,6 +162,9 @@ public class sceMpeg implements HLEModule {
     public static boolean enableMpeg = false;
 
     public static final int PSMF_MAGIC = 0x464D5350;
+    public static final int PSMF_VERSION_0012 = 0x32313030;
+    public static final int PSMF_VERSION_0013 = 0x33313030;
+    public static final int PSMF_VERSION_0014 = 0x34313030;
     protected static final int MPEG_MEMSIZE = 0x10000; // 64k
     protected static final int MPEG_ESBUF_HANDLE = 1; // assume we only need 1 esBuf
     protected static final int atracDecodeDelay = 50;       // milliseconds
@@ -182,6 +185,15 @@ public class sceMpeg implements HLEModule {
     protected int atracAuAddr;
     protected long mpegLastTimestamp;
     protected Date mpegLastDate;
+    protected final int numberAvcEsBuffers = 2;
+    protected boolean[] avcEsBufferAllocated = new boolean[numberAvcEsBuffers];
+    protected int videoFrameCount;
+    protected int audioFrameCount;
+
+    protected static final int MPEG_VERSION_0012 = 0;
+    protected static final int MPEG_VERSION_0013 = 1;
+    protected static final int MPEG_VERSION_0014 = 2;
+    protected int mpegVersion;
 
 
 	public static boolean isEnableMpeg() {
@@ -232,8 +244,7 @@ public class sceMpeg implements HLEModule {
 
 
     public void sceMpegQueryStreamOffset(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
         int mpeg = cpu.gpr[4];
@@ -256,11 +267,31 @@ public class sceMpeg implements HLEModule {
                 + " version=0x%08X offset=0x%08X size=0x%08X", magic, version, offset, size));
 
             if (magic == PSMF_MAGIC) {
-                mem.write32(offset_addr, offset);
-                cpu.gpr[2] = 0;
+            	switch (version) {
+            		case PSMF_VERSION_0012: mpegVersion = MPEG_VERSION_0012; break;
+            		case PSMF_VERSION_0013: mpegVersion = MPEG_VERSION_0013; break;
+            		case PSMF_VERSION_0014: mpegVersion = MPEG_VERSION_0014; break;
+            		default: mpegVersion = -1; break;
+            	}
+
+            	if (mpegVersion < 0) {
+                    Modules.log.warn("sceMpegQueryStreamOffset bad version " + String.format("0x%08X", version));
+        			mem.write32(offset_addr, 0);
+                    cpu.gpr[2] = 0x80610002;
+            	} else {
+            		if ((offset & 2047) != 0 || offset == 0) {
+                        Modules.log.warn("sceMpegQueryStreamOffset bad offset " + String.format("0x%08X", offset));
+            			mem.write32(offset_addr, 0);
+            			cpu.gpr[2] = 0x806101FE;
+            		} else {
+            			mem.write32(offset_addr, offset);
+            			cpu.gpr[2] = 0;
+            		}
+            	}
             } else {
                 Modules.log.warn("sceMpegQueryStreamOffset bad magic " + String.format("0x%08X", magic));
-                cpu.gpr[2] = -1;
+    			mem.write32(offset_addr, 0);
+                cpu.gpr[2] = 0x806101FE;
             }
         } else {
             Modules.log.warn("sceMpegQueryStreamOffset bad address "
@@ -270,8 +301,7 @@ public class sceMpeg implements HLEModule {
     }
 
     public void sceMpegQueryStreamSize(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
         int buffer_addr = cpu.gpr[4];
@@ -292,12 +322,6 @@ public class sceMpeg implements HLEModule {
                 // HACK: if fake 0 size maybe it won't play :)
                 Modules.log.warn("sceMpegQueryStreamSize using fake size 0");
                 size = 0;
-            } else {
-                // Round size to next block size
-                // update: why? if we make the size larger than it really is the
-                // game may have trouble trying to ioRead a packet that is off
-                // the end of the file (fiveofhearts)
-                size = (size + 2047) & ~2047;
             }
 
             mpegStreamSize = size;
@@ -306,8 +330,13 @@ public class sceMpeg implements HLEModule {
             Modules.log.info("sceMpegQueryStreamSize lastTimeStamp=" + mpegLastTimestamp);
 
             if (magic == PSMF_MAGIC) {
-                mem.write32(size_addr, size);
-                cpu.gpr[2] = 0;
+            	if ((size & 2047) == 0) {
+	                mem.write32(size_addr, size);
+	                cpu.gpr[2] = 0;
+            	} else {
+            		mem.write32(size_addr, 0);
+            		cpu.gpr[2] = 0x806101FE;
+            	}
             } else {
                 Modules.log.warn("sceMpegQueryStreamSize bad magic " + String.format("0x%08X", magic));
                 cpu.gpr[2] = -1;
@@ -320,8 +349,7 @@ public class sceMpeg implements HLEModule {
     }
 
     public void sceMpegInit(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
 
         Modules.log.warn("PARTIAL:sceMpegInit");
 
@@ -336,19 +364,16 @@ public class sceMpeg implements HLEModule {
 
     public void sceMpegFinish(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
 
         Modules.log.warn("PARTIAL:sceMpegFinish");
 
         mpegHandle = 0;
-
-        // no return value
+        cpu.gpr[2] = 0;
     }
 
     // user app will malloc this amount of memory
     public void sceMpegQueryMemSize(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
 
         int mode = cpu.gpr[4];
 
@@ -359,8 +384,7 @@ public class sceMpeg implements HLEModule {
     }
 
     public void sceMpegCreate(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
         int mpeg = cpu.gpr[4];
@@ -406,10 +430,16 @@ public class sceMpeg implements HLEModule {
             mem.write32(mpegHandle + 16, ringbuffer_addr);
             mem.write32(mpegHandle + 20, ringbuffer.dataUpperBound);
 
+            for (int i = 0; i < numberAvcEsBuffers; i++) {
+            	avcEsBufferAllocated[i] = false;
+            }
+
             mpegRingbufferAddr = ringbuffer_addr;
             mpegRingbuffer = ringbuffer;
             mpegAtracCurrentTimestamp = 0;
             mpegAvcCurrentTimestamp = 0;
+            videoFrameCount = 0;
+            audioFrameCount = 0;
 
             cpu.gpr[2] = 0;
         } else {
@@ -420,8 +450,7 @@ public class sceMpeg implements HLEModule {
     }
 
     public void sceMpegDelete(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
 
         int mpeg = cpu.gpr[4];
 
@@ -436,9 +465,7 @@ public class sceMpeg implements HLEModule {
     }
 
     public void sceMpegRegistStream(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
+        CpuState cpu = processor.cpu;
 
         int mpeg = cpu.gpr[4];
         int stream = cpu.gpr[5];
@@ -459,8 +486,7 @@ public class sceMpeg implements HLEModule {
     }
 
     public void sceMpegUnRegistStream(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
 
         int mpeg = cpu.gpr[4];
         int stream_addr = cpu.gpr[5];
@@ -480,8 +506,7 @@ public class sceMpeg implements HLEModule {
     }
 
     public void sceMpegMallocAvcEsBuf(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
 
         int mpeg = cpu.gpr[4];
 
@@ -489,16 +514,26 @@ public class sceMpeg implements HLEModule {
             Modules.log.warn("sceMpegMallocAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg) + ") bad mpeg handle");
             cpu.gpr[2] = -1;
         } else {
-            // This may need to be a valid pointer for older games that loaded mpeg from prx instead of via sceUtility
-            // Hopefully these old games were only checking for <= 0 instead of a valid mem range
-            cpu.gpr[2] = MPEG_ESBUF_HANDLE;
+        	int allocatedBuffer = -1;
+        	for (int i = 0; i < numberAvcEsBuffers; i++) {
+        		if (!avcEsBufferAllocated[i]) {
+        			allocatedBuffer = i;
+        			avcEsBufferAllocated[i] = true;
+        			break;
+        		}
+        	}
+
+        	if (allocatedBuffer < 0) {
+        		cpu.gpr[2] = 0;
+        	} else {
+        		cpu.gpr[2] = allocatedBuffer + 1;
+        	}
             Modules.log.debug("sceMpegMallocAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg) + ") ret=0x" + Integer.toHexString(cpu.gpr[2]));
         }
     }
 
     public void sceMpegFreeAvcEsBuf(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
 
         int mpeg = cpu.gpr[4];
         int esBuf = cpu.gpr[5];
@@ -507,63 +542,72 @@ public class sceMpeg implements HLEModule {
             Modules.log.warn("sceMpegFreeAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg)
             + ",esBuf=0x" + Integer.toHexString(esBuf) + ") bad mpeg handle");
             cpu.gpr[2] = -1;
-        } else if (esBuf != MPEG_ESBUF_HANDLE) {
+        } else if (esBuf <= 0 || esBuf > numberAvcEsBuffers) {
             Modules.log.warn("sceMpegFreeAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg)
-            + ",esBuf=0x" + Integer.toHexString(esBuf) + ") bad esBuf handle");
-            cpu.gpr[2] = -1;
+                    + ",esBuf=0x" + Integer.toHexString(esBuf) + ") bad esBuf handle");
+        	cpu.gpr[2] = 0x806101FE;
         } else {
             Modules.log.debug("sceMpegFreeAvcEsBuf(mpeg=0x" + Integer.toHexString(mpeg)
                 + ",buffer=0x" + Integer.toHexString(esBuf) + ")");
+            avcEsBufferAllocated[esBuf - 1] = false;
             cpu.gpr[2] = 0;
         }
     }
 
     public void sceMpegQueryAtracEsSize(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
         int mpeg = cpu.gpr[4];
         int esSize_addr = cpu.gpr[5];
-        int size_addr = cpu.gpr[6];
+        int outSize_addr = cpu.gpr[6];
 
         if (getMpegHandle(mpeg) != mpegHandle) {
             Modules.log.warn("sceMpegQueryAtracEsSize bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
-        } else if (mem.isAddressGood(esSize_addr) && mem.isAddressGood(size_addr)) {
+        } else if (mem.isAddressGood(esSize_addr) && mem.isAddressGood(outSize_addr)) {
             Modules.log.debug("sceMpegQueryAtracEsSize(mpeg=0x" + Integer.toHexString(mpeg)
                 + ",esSize=0x" + Integer.toHexString(esSize_addr)
-                + ",size=0x" + Integer.toHexString(size_addr) + ")");
+                + ",size=0x" + Integer.toHexString(outSize_addr) + ")");
 
-            // TODO get the required data out of the mpeg stream? or is it always constant?
-
-            // copied from noxa/pspplayer and checked on psp
+            // copied from noxa/pspplayer and checked on psp: always constant
             mem.write32(esSize_addr, 2112);
-            mem.write32(size_addr, 8192);
+            mem.write32(outSize_addr, 8192);
 
             cpu.gpr[2] = 0;
         } else {
             Modules.log.warn("sceMpegQueryAtracEsSize bad address "
-                + String.format("0x%08X 0x%08X", esSize_addr, size_addr));
+                + String.format("0x%08X 0x%08X", esSize_addr, outSize_addr));
             cpu.gpr[2] = -1;
         }
     }
 
     public void sceMpegQueryPcmEsSize(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        int mpeg = cpu.gpr[4];
+        int esSize_addr = cpu.gpr[5];
+        int outSize_addr = cpu.gpr[6];
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        if (getMpegHandle(mpeg) != mpegHandle) {
+            Modules.log.warn("sceMpegQueryPcmEsSize bad mpeg handle 0x" + Integer.toHexString(mpeg));
+            cpu.gpr[2] = -1;
+        } else if (mem.isAddressGood(esSize_addr) && mem.isAddressGood(outSize_addr)) {
+            Modules.log.debug("sceMpegQueryPcmEsSize(mpeg=0x" + Integer.toHexString(mpeg)
+                + ",esSize=0x" + Integer.toHexString(esSize_addr)
+                + ",size=0x" + Integer.toHexString(outSize_addr) + ")");
 
-        System.out.println("Unimplemented NID function sceMpegQueryPcmEsSize [0xC02CF6B5]");
+            // always constant
+            mem.write32(esSize_addr, 320);
+            mem.write32(outSize_addr, 320);
 
-        cpu.gpr[2] = 0xDEADC0DE;
-
-        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+            cpu.gpr[2] = 0;
+        } else {
+            Modules.log.warn("sceMpegQueryPcmEsSize bad address "
+                + String.format("0x%08X 0x%08X", esSize_addr, outSize_addr));
+            cpu.gpr[2] = -1;
+        }
     }
 
     public void sceMpegInitAu(Processor processor) {
@@ -841,7 +885,7 @@ public class sceMpeg implements HLEModule {
         int buffer_addr = cpu.gpr[7];
         int init_addr = cpu.gpr[8];
 
-        Modules.log.warn("UNIMPLEMENTED:sceMpegAvcDecode(mpeg=0x" + Integer.toHexString(mpeg)
+        Modules.log.warn("PARTIAL:sceMpegAvcDecode(mpeg=0x" + Integer.toHexString(mpeg)
             + ",au=0x" + Integer.toHexString(au_addr)
             + ",frameWidth=" + frameWidth
             + ",buffer=0x" + Integer.toHexString(buffer_addr)
@@ -880,8 +924,9 @@ public class sceMpeg implements HLEModule {
                 }
 
                 mpegAvcCurrentTimestamp += (int)(90000 / 29.97); // value based on pmfplayer
-                Modules.log.debug("sceMpegAvcDecode currentTimestamp=" + mpegAvcCurrentTimestamp);
-                mem.write32(init_addr, 1);
+
+                // let's go with 3 packets per frame for now
+                int packetsConsumed = 3;
 
                 // Generate a random image...
                 Random random = new Random();
@@ -901,26 +946,31 @@ public class sceMpeg implements HLEModule {
                     }
                 }
 
+                Debug.printFramebuffer(buffer, frameWidth, 10, 250, 0xFFFFFFFF, 0xFF000000, 1, " This is a faked MPEG video ");
+                Debug.printFramebuffer(buffer, frameWidth, 10, 258, 0xFFFFFFFF, 0xFF000000, 1, " (video decoding is not yet implemented) ");
+                videoFrameCount++;
+
+                if (Modules.log.isDebugEnabled()) {
+                	Modules.log.debug("sceMpegAvcDecode currentTimestamp=" + mpegAvcCurrentTimestamp);
+                }
+                mem.write32(init_addr, 1);
+
                 Date currentDate = convertTimestampToDate(mpegAvcCurrentTimestamp);
                 Modules.log.info("currentDate: " + currentDate.toString());
                 SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
                 dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-                if(mpegLastDate != null){
-                String displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(mpegLastDate));
-                Debug.printFramebuffer(buffer, frameWidth, 10, 10, 0xFFFFFFFF, 0xFF000000, 2, displayedString);
+                if (mpegLastDate != null) {
+                	String displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(mpegLastDate));
+                	Debug.printFramebuffer(buffer, frameWidth, 10, 10, 0xFFFFFFFF, 0xFF000000, 2, displayedString);
                 }
                 int packetsInRingbuffer = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
                 int processedPackets = mpegRingbuffer.packetsRead - packetsInRingbuffer;
                 int processedSize = processedPackets * mpegRingbuffer.packetSize;
                 Debug.printFramebuffer(buffer, frameWidth, 10, 30, 0xFFFFFFFF, 0xFF000000, 2, String.format(" %d/%d (%.0f%%) ", processedSize, mpegStreamSize, processedSize * 100f / mpegStreamSize));
 
-                Debug.printFramebuffer(buffer, frameWidth, 10, 250, 0xFFFFFFFF, 0xFF000000, 1, " This is a faked MPEG video ");
-                Debug.printFramebuffer(buffer, frameWidth, 10, 258, 0xFFFFFFFF, 0xFF000000, 1, " (video decoding is not yet implemented) ");
-
                 if (mpegRingbuffer != null) {
                     if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets) {
-                        // let's go with 3 packets per frame for now
-                        mpegRingbuffer.packetsFree = Math.min(mpegRingbuffer.packets, mpegRingbuffer.packetsFree + 3);
+                        mpegRingbuffer.packetsFree = Math.min(mpegRingbuffer.packets, mpegRingbuffer.packetsFree + packetsConsumed);
                         mpegRingbuffer.write(mem, mpegRingbufferAddr);
                     }
                 }
@@ -1038,13 +1088,34 @@ public class sceMpeg implements HLEModule {
     }
 
     public void sceMpegAvcQueryYCbCrSize(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
+        Memory mem = Memory.getInstance();
 
-        Modules.log.warn("UNIMPLEMENTED:sceMpegAvcQueryYCbCrSize "
-            + String.format("%08X %08X %08X %08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]));
+        int mpeg = cpu.gpr[4];
+        int unknown = cpu.gpr[5];  // 1
+        int width = cpu.gpr[6];    // 480
+        int height = cpu.gpr[7];   // 272
+        int resultAddr = cpu.gpr[8]; // where to store the result
 
-        cpu.gpr[2] = 0;
+        Modules.log.warn("IGNORING:sceMpegAvcQueryYCbCrSize(mpeg=0x" + Integer.toHexString(mpeg)
+                + ",unknown=" + unknown
+                + ",width=" + width
+                + ",height=" + height
+                + ",resultAddr=0x" + Integer.toHexString(resultAddr)
+                + ")");
+
+        if (getMpegHandle(mpeg) != mpegHandle) {
+            Modules.log.warn("sceMpegAvcQueryYCbCrSize bad mpeg handle 0x" + Integer.toHexString(mpeg));
+            cpu.gpr[2] = -1;
+        } else if (mem.isAddressGood(resultAddr)) {
+            int size = 0; // TODO
+
+            mem.write32(resultAddr, size);
+            cpu.gpr[2] = 0;
+        } else {
+            Modules.log.warn("sceMpegAvcQueryYCbCrSize bad result address 0x" + Integer.toHexString(resultAddr));
+            cpu.gpr[2] = -1;
+        }
     }
 
     public void sceMpegAvcInitYCbCr(Processor processor) {
@@ -1052,7 +1123,7 @@ public class sceMpeg implements HLEModule {
         // Processor cpu = processor; // Old-Style Processor
 
         Modules.log.warn("UNIMPLEMENTED:sceMpegAvcInitYCbCr "
-            + String.format("%08X %08X %08X %08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]));
+            + String.format("%08X %08X %08X %08X %08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]));
 
         cpu.gpr[2] = 0;
     }
@@ -1111,7 +1182,7 @@ public class sceMpeg implements HLEModule {
         int buffer_addr = cpu.gpr[6];
         int init = cpu.gpr[7]; // in parameter
 
-        Modules.log.warn("IGNORING:sceMpegAtracDecode(mpeg=0x" + Integer.toHexString(mpeg)
+        Modules.log.warn("PARTIAL:sceMpegAtracDecode(mpeg=0x" + Integer.toHexString(mpeg)
             + ",au=0x" + Integer.toHexString(au_addr)
             + ",buffer=0x" + Integer.toHexString(buffer_addr)
             + ",init=0x" + Integer.toHexString(init) + ")");
@@ -1120,9 +1191,9 @@ public class sceMpeg implements HLEModule {
             Modules.log.warn("sceMpegAtracDecode bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
         } else if (mem.isAddressGood(au_addr) && mem.isAddressGood(buffer_addr)) {
-            // TODO
+            mpegAtracCurrentTimestamp += 4180;      // value based on pmfplayer
 
-        	if (enableMpeg) {
+            if (enableMpeg) {
 	            long currentSystemTime = Emulator.getClock().milliTime();
 	            int elapsedTime = (int) (currentSystemTime - lastAtracSystemTime);
 	            if (elapsedTime >= 0 && elapsedTime <= atracDecodeDelay) {
@@ -1133,10 +1204,14 @@ public class sceMpeg implements HLEModule {
 	            } else {
 	            	lastAtracSystemTime = currentSystemTime;
 	            }
+
+            	mem.memset(buffer_addr, (byte) 0, 8192);
+                audioFrameCount++;
         	}
 
-            mpegAtracCurrentTimestamp += 4180;      // value based on pmfplayer
-            Modules.log.debug("sceMpegAtracDecode currentTimestamp=" + mpegAtracCurrentTimestamp);
+            if (Modules.log.isDebugEnabled()) {
+            	Modules.log.debug("sceMpegAtracDecode currentTimestamp=" + mpegAtracCurrentTimestamp);
+            }
             cpu.gpr[2] = 0;
         } else {
             Modules.log.warn("sceMpegAtracDecode bad address "
@@ -1147,20 +1222,18 @@ public class sceMpeg implements HLEModule {
         Modules.log.info("sceMpegAtracDecode ret:0x" + Integer.toHexString(cpu.gpr[2]));
     }
 
+    private int getSizeFromPackets(int packets) {
+    	return (packets * 104) + (packets * 2048);
+    }
+
     public void sceMpegRingbufferQueryMemSize(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
         // Processor cpu = processor; // Old-Style Processor
 
         int packets = cpu.gpr[4];
 
-        Modules.log.warn("PARTIAL:sceMpegRingbufferQueryMemSize(packets=" + packets + ")");
-
-        int size = 0;
-
-        // copied from noxa/pspplayer
-        // packets = 4800, approx 10mb, too big?
-        size = ( packets * 104 ) + ( packets * 2048 );
-        Modules.log.debug("sceMpegRingbufferQueryMemSize noxa/pspplayer size=0x" + Integer.toHexString(size));
+        int size = getSizeFromPackets(packets);
+        Modules.log.debug("sceMpegRingbufferQueryMemSize packets=" + packets + ", size=0x" + Integer.toHexString(size));
 
         // for now remove the cap, some games check if sceMpegRingbufferAvailableSize is the requested size
         if (!enableMpeg) {
@@ -1170,7 +1243,6 @@ public class sceMpeg implements HLEModule {
         }
 
         cpu.gpr[2] = size;
-        Modules.log.debug("sceMpegRingbufferQueryMemSize ret=0x" + Integer.toHexString(cpu.gpr[2]));
     }
 
     public void sceMpegRingbufferConstruct(Processor processor) {
@@ -1181,21 +1253,23 @@ public class sceMpeg implements HLEModule {
         int ringbuffer_addr = cpu.gpr[4];
         int packets = cpu.gpr[5];
         int data = cpu.gpr[6];
-        int size = cpu.gpr[7]; // seems to match sceMpegQueryMemSize
+        int size = cpu.gpr[7]; // matching sceMpegQueryMemSize
         int callback_addr = cpu.gpr[8];
         int callback_args = cpu.gpr[9];
 
-        Modules.log.warn("PARTIAL:sceMpegRingbufferConstruct(ringbuffer=0x" + Integer.toHexString(ringbuffer_addr)
+        Modules.log.debug("sceMpegRingbufferConstruct(ringbuffer=0x" + Integer.toHexString(ringbuffer_addr)
             + ",packets=" + packets
             + ",data=0x" + Integer.toHexString(data)
             + ",size=" + size
             + ",callback=0x" + Integer.toHexString(callback_addr)
             + ",args=0x" + Integer.toHexString(callback_args) + ")");
 
-        if (mem.isAddressGood(ringbuffer_addr)) {
+        if (size < getSizeFromPackets(packets)) {
+            Modules.log.warn("sceMpegRingbufferConstruct insufficient space: size=" + size + ", packets=" + packets);
+        	cpu.gpr[2] = 0x80610022;
+        } else if (mem.isAddressGood(ringbuffer_addr)) {
             SceMpegRingbuffer ringbuffer = new SceMpegRingbuffer(packets, data, size, callback_addr, callback_args);
             ringbuffer.write(mem, ringbuffer_addr);
-
             cpu.gpr[2] = 0;
         } else {
             Modules.log.warn("sceMpegRingbufferConstruct bad address "
@@ -1206,15 +1280,7 @@ public class sceMpeg implements HLEModule {
 
     public void sceMpegRingbufferDestruct(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        int ringbuffer_addr = cpu.gpr[4];
-
-        Modules.log.warn("PARTIAL:sceMpegRingbufferDestruct(ringbuffer=0x" + Integer.toHexString(ringbuffer_addr) + ")");
-
-        // nothing to do ... ?
-
+        // nothing to do...
         cpu.gpr[2] = 0;
     }
 
