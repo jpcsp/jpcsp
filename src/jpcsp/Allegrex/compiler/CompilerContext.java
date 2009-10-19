@@ -522,7 +522,7 @@ public class CompilerContext implements ICompilerContext {
 
     public void visitJump(int opcode, CodeInstruction target) {
     	// Back branch? i.e probably a loop
-        if (target.getAddress() < getCodeInstruction().getAddress()) {
+        if (target.getAddress() <= getCodeInstruction().getAddress()) {
         	checkSync();
 
         	if (Profiler.enableProfiler) {
