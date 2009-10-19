@@ -221,19 +221,19 @@ public class CaptureImage {
     private void getPixelBytes(short pixel, int imageType, byte[] pixelBytes) {
     	switch (imageType) {
     	case GL.GL_UNSIGNED_SHORT_5_6_5_REV:
-    		pixelBytes[0] = (byte) ((pixel >> 11) & 0x1F);
-    		pixelBytes[1] = (byte) ((pixel >>  5) & 0x3F);
-    		pixelBytes[2] = (byte) ((pixel      ) & 0x1F);
+    		pixelBytes[0] = (byte) ((pixel >> 8) & 0xF8);
+    		pixelBytes[1] = (byte) ((pixel >> 3) & 0xFC);
+    		pixelBytes[2] = (byte) ((pixel << 3) & 0xF8);
     		break;
     	case GL.GL_UNSIGNED_SHORT_1_5_5_5_REV:
-    		pixelBytes[0] = (byte) ((pixel >> 10) & 0x1F);
-    		pixelBytes[1] = (byte) ((pixel >>  5) & 0x1F);
-    		pixelBytes[2] = (byte) ((pixel      ) & 0x1F);
+    		pixelBytes[0] = (byte) ((pixel >> 7) & 0xF8);
+    		pixelBytes[1] = (byte) ((pixel >> 2) & 0xF8);
+    		pixelBytes[2] = (byte) ((pixel << 3) & 0xF8);
     		break;
     	case GL.GL_UNSIGNED_SHORT_4_4_4_4_REV:
-    		pixelBytes[0] = (byte) ((pixel >>  8) & 0x0F);
-    		pixelBytes[1] = (byte) ((pixel >>  4) & 0x0F);
-    		pixelBytes[2] = (byte) ((pixel      ) & 0x0F);
+    		pixelBytes[0] = (byte) ((pixel >> 4) & 0xF0);
+    		pixelBytes[1] = (byte) ((pixel     ) & 0xF0);
+    		pixelBytes[2] = (byte) ((pixel << 4) & 0xF0);
     		break;
 		default:
 			pixelBytes[0] = 0;
