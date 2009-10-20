@@ -83,9 +83,9 @@ public class HLEModuleManager {
         sceSuspendForUser(Modules.sceSuspendForUserModule),
         sceDmac(Modules.sceDmacModule),
         sceHprm(Modules.sceHprmModule),		// check if loaded by default
-        sceAtrac3plus(Modules.sceAtrac3plusModule, new String[] { "libatrac3plus", "PSP_MODULE_AV_ATRAC3PLUS" }),
-        sceSasCore(Modules.sceSasCoreModule, new String[] { "sc_sascore", "PSP_MODULE_AV_SASCORE"} ),
-        sceMpeg(Modules.sceMpegModule, new String[] { "mpeg", "mpeg_vsh", "PSP_MODULE_AV_MPEGBASE" }),
+        sceAtrac3plus(Modules.sceAtrac3plusModule, new String[] { "libatrac3plus", "PSP_AV_MODULE_ATRAC3PLUS", "PSP_MODULE_AV_ATRAC3PLUS" }),
+        sceSasCore(Modules.sceSasCoreModule, new String[] { "sc_sascore", "PSP_AV_MODULE_SASCORE", "PSP_MODULE_AV_SASCORE" } ),
+        sceMpeg(Modules.sceMpegModule, new String[] { "mpeg", "mpeg_vsh", "PSP_AV_MODULE_MPEGBASE", "PSP_MODULE_AV_MPEGBASE" }),
         sceFont(Modules.sceFontModule, new String[] { "libfont" }),
         // For testing purposes
     	SampleModule(Modules.SampleModule);

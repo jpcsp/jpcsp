@@ -199,7 +199,12 @@ public class ModuleMgrForUser implements HLEModule {
         {
             if (bannedModuleName.name().equalsIgnoreCase(prxname))
             {
-                Modules.log.warn("IGNORED:sceKernelLoadModule(path='" + name + "'): module from banlist not loaded");
+            	HLEModuleManager moduleManager = HLEModuleManager.getInstance();
+            	if (moduleManager.hasFlash0Module(prxname)) {
+            		Modules.log.info("sceKernelLoadModule(path='" + name + "') HLE module loaded");
+            	} else {
+            		Modules.log.warn("IGNORED:sceKernelLoadModule(path='" + name + "'): module from banlist not loaded");
+            	}
                 cpu.gpr[2] = HLEModuleManager.getInstance().LoadFlash0Module(prxname);
                 return;
             }
@@ -308,7 +313,11 @@ public class ModuleMgrForUser implements HLEModule {
         } else  if (sceModule.isFlashModule) {
             // Trying to start a module loaded from flash0:
             // Do nothing...
-            Modules.log.warn("IGNORING:sceKernelStartModule flash module '" + sceModule.modname + "'");
+        	if (HLEModuleManager.getInstance().hasFlash0Module(sceModule.modname)) {
+        		Modules.log.info("IGNORING:sceKernelStartModule HLE module '" + sceModule.modname + "'");
+        	} else {
+        		Modules.log.warn("IGNORING:sceKernelStartModule flash module '" + sceModule.modname + "'");
+        	}
             cpu.gpr[2] = sceModule.modid; // return the module id
         } else {
             ThreadMan threadMan = ThreadMan.getInstance();

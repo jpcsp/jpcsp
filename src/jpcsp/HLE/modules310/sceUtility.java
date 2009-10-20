@@ -87,7 +87,6 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
         }
     }
 
-    @Override
     protected String hleUtilityLoadModuleName(int module) {
         for (UtilityModule m : UtilityModule.values()) {
             if (m.getID() == module) {
@@ -105,7 +104,7 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
         int module = cpu.gpr[4];
 
         String moduleName = hleUtilityLoadModuleName(module);
-        if (loadModule(module)) {
+        if (loadModule(module, moduleName)) {
             Modules.log.info(String.format("sceUtilityLoadModule(module=0x%04X) %s loaded", module, moduleName));
         } else {
             Modules.log.info(String.format("IGNORING:sceUtilityLoadModule(module=0x%04X) %s", module, moduleName));
@@ -121,7 +120,7 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
         int module = cpu.gpr[4];
 
         String moduleName = hleUtilityLoadModuleName(module);
-        if (loadModule(module)) {
+        if (loadModule(module, moduleName)) {
             Modules.log.info(String.format("sceUtilityUnloadModule(module=0x%04X) %s unloaded", module, moduleName));
         } else {
             Modules.log.info(String.format("IGNORING:sceUtilityUnloadModule(module=0x%04X) %s", module, moduleName));
