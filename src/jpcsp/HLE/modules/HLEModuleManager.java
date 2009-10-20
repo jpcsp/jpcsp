@@ -62,25 +62,67 @@ public class HLEModuleManager {
      * ABB, where A = major and B = minor, for example 271 */
     private int firmwareVersion;
 
-    // TODO add more modules here
-    private HLEModule[] defaultModules = new HLEModule[] {
-        Modules.SampleModule, // For testing purposes
-        Modules.StdioForUserModule,
-        Modules.sceUmdUserModule,
-        Modules.scePowerModule,
-        Modules.sceUtilityModule,
-        Modules.sceRtcModule,
-        Modules.Kernel_LibraryModule,
-        Modules.ModuleMgrForUserModule,
-        Modules.LoadCoreForKernelModule,
-        Modules.sceCtrlModule,
-        Modules.sceAudioModule,
-        Modules.sceImposeModule,
-        Modules.sceSuspendForUserModule,
-        Modules.sceDmacModule,
-        Modules.sceSasCoreModule,	// Loaded by default (at least in v2.82)
-        Modules.sceMpegModule,		// Loaded by default (at least in v2.82)
-        Modules.sceHprmModule, // check if loaded by default
+    /**
+     * List of modules that can be loaded
+     * - by default in all firmwares (or only from a given FirmwareVersion)
+     * - by sceKernelLoadModule/sceUtilityLoadModule from the flash0 or from the UMD (.prx)
+     */
+    private enum DefaultModule {
+    	// Modules loaded by default in all firmware version...
+        StdioForUser(Modules.StdioForUserModule),
+        sceUmdUser(Modules.sceUmdUserModule),
+        scePower(Modules.scePowerModule),
+        sceUtility(Modules.sceUtilityModule),
+        sceRtc(Modules.sceRtcModule),
+        KernelLibrary(Modules.Kernel_LibraryModule),
+        ModuleMgrForUser(Modules.ModuleMgrForUserModule),
+        LoadCoreForKernel(Modules.LoadCoreForKernelModule),
+        sceCtrl(Modules.sceCtrlModule),
+        sceAudio(Modules.sceAudioModule),
+        sceImpose(Modules.sceImposeModule),
+        sceSuspendForUser(Modules.sceSuspendForUserModule),
+        sceDmac(Modules.sceDmacModule),
+        sceHprm(Modules.sceHprmModule),		// check if loaded by default
+        sceAtrac3plus(Modules.sceAtrac3plusModule, new String[] { "libatrac3plus", "PSP_MODULE_AV_ATRAC3PLUS" }),
+        sceSasCore(Modules.sceSasCoreModule, new String[] { "sc_sascore", "PSP_MODULE_AV_SASCORE"} ),
+        sceMpeg(Modules.sceMpegModule, new String[] { "mpeg", "mpeg_vsh", "PSP_MODULE_AV_MPEGBASE" }),
+        sceFont(Modules.sceFontModule, new String[] { "libfont" }),
+        // For testing purposes
+    	SampleModule(Modules.SampleModule);
+
+    	private HLEModule module;
+    	private int firmwareVersionAsDefault;	// FirmwareVersion where the module is loaded by default
+    	private String[] prxNames;
+
+    	// Module loaded by default in all Firmware versions
+    	DefaultModule(HLEModule module) {
+    		this.module = module;
+    		this.firmwareVersionAsDefault = 100;	// Loaded by default in all firmwares (from 1.00)
+    		this.prxNames = null;
+    	}
+
+    	// Module only loaded as a PRX, under different names
+    	DefaultModule(HLEModule module, String[] prxNames) {
+    		this.module = module;
+    		this.firmwareVersionAsDefault = Integer.MAX_VALUE;	// Never loaded by default
+    		this.prxNames = prxNames;
+    	}
+
+    	public HLEModule getModule() {
+    		return module;
+    	}
+
+    	public int getFirmwareVersionAsDefault() {
+    		return firmwareVersionAsDefault;
+    	}
+
+    	public String[] getPrxNames() {
+    		return prxNames;
+    	}
+
+    	public boolean isLoadedByDefault(int firmwareVersion) {
+    		return firmwareVersion >= firmwareVersionAsDefault;
+    	}
     };
 
     public static HLEModuleManager getInstance() {
@@ -124,10 +166,13 @@ public class HLEModuleManager {
         initialiseFlash0PRXMap();
     }
 
+    // Add modules in flash that are loaded by default on this firmwareVersion
     private void installDefaultModules() {
         Modules.log.debug("Loading HLE firmware up to version " + firmwareVersion);
-        for (HLEModule module : defaultModules) {
-            module.installModule(this, firmwareVersion);
+        for (DefaultModule defaultModule : DefaultModule.values()) {
+        	if (defaultModule.isLoadedByDefault(firmwareVersion)) {
+        		defaultModule.getModule().installModule(this, firmwareVersion);
+        	}
         }
     }
 
@@ -137,35 +182,18 @@ public class HLEModuleManager {
     	flash0prxMap.put(prxName, modules);
     }
 
-    // TODO add here modules in flash that aren't loaded by default
-    // We could add all modules but I think we just need the unloaded ones (fiveofhearts)
+    // Add modules in flash (or on UMD) that aren't loaded by default on this firmwareVersion
     private void initialiseFlash0PRXMap() {
         flash0prxMap = new HashMap<String, List<HLEModule>>();
 
-        addToFlash0PRXMap("libfont", Modules.sceFontModule);
-        addToFlash0PRXMap("libatrac3plus", Modules.sceAtrac3plusModule);
-
-        // These are loaded by default:
-        if (false) {
-        	addToFlash0PRXMap("sc_sascore", Modules.sceSasCoreModule);
-        	addToFlash0PRXMap("mpeg", Modules.sceMpegModule);
-        	addToFlash0PRXMap("mpeg_vsh", Modules.sceMpegModule);
+        for (DefaultModule defaultModule : DefaultModule.values()) {
+        	if (!defaultModule.isLoadedByDefault(firmwareVersion)) {
+        		String[] prxNames = defaultModule.getPrxNames();
+        		for (int i = 0; prxNames != null && i < prxNames.length; i++) {
+        			addToFlash0PRXMap(prxNames[i], defaultModule.getModule());
+        		}
+        	}
         }
-
-        /* TODO
-        List<HLEModule> prx;
-
-        prx = new LinkedList<HLEModule>();
-        prx.add(Modules.sceNetIfhandleModule);
-        prx.add(Modules.sceNetIfhandle_libModule);
-        prx.add(Modules.sceNetIfhandle_driverModule);
-        flash0prxMap.put("ifhandle.prx", prx);
-
-        prx = new LinkedList<HLEModule>();
-        prx.add(Modules.sceNetModule);
-        prx.add(Modules.sceNet_libModule);
-        flash0prxMap.put("pspnet.prx", prx);
-        */
     }
 
     /** @return the UID assigned to the module or negative on error */
@@ -181,6 +209,10 @@ public class HLEModuleManager {
         return uid;
     }
     */
+
+    public boolean hasFlash0Module(String prxname) {
+        return flash0prxMap.containsKey(prxname);
+    }
 
     /** @return the UID assigned to the module or negative on error
      * TODO need to figure out how the uids work when 1 prx contains several modules. */
@@ -222,18 +254,6 @@ public class HLEModuleManager {
         sceModule.free();
 
         Managers.modules.removeModule(sceModule.modid);
-    }
-
-    /** Instead use addFunction. */
-    @Deprecated
-    public void add(HLEModuleFunction func, int nid) {
-        addFunction(func, nid);
-    }
-
-    /** Instead use removeFunction. */
-    @Deprecated
-    public void remove(HLEModuleFunction func) {
-        removeFunction(func);
     }
 
     public void addFunction(HLEModuleFunction func, int nid) {

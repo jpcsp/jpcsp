@@ -17,24 +17,16 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules200;
 
 import java.util.HashMap;
-import java.util.Iterator;
-import jpcsp.HLE.modules.HLEModule;
+
+import jpcsp.HLE.kernel.Managers;
+import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.Modules;
 
-import jpcsp.Emulator;
-import jpcsp.MemoryMap;
-import jpcsp.Memory;
 import jpcsp.Processor;
-import static jpcsp.util.Utilities.*;
 
-import jpcsp.Allegrex.CpuState; // New-Style Processor
-import jpcsp.HLE.ThreadMan;
-import jpcsp.filesystems.umdiso.UmdIsoReader;
-
-import jpcsp.HLE.kernel.types.*;
-import jpcsp.HLE.kernel.managers.*;
+import jpcsp.Allegrex.CpuState;
 
 public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
 
@@ -47,6 +39,7 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
             mm.addFunction(sceUtilityLoadNetModuleFunction, 0x1579A159);
             mm.addFunction(sceUtilityUnloadNetModuleFunction, 0x64D50C56);
 
+            loadedModules = new HashMap<Integer, SceModule>();
         }
     }
 
@@ -82,6 +75,53 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
     public static final int PSP_NET_MODULE_HTTP = 6;
     public static final int PSP_NET_MODULE_SSL = 7;
 
+    protected HashMap<Integer, SceModule> loadedModules;
+
+    protected String hleUtilityLoadModuleName(int module) {
+    	if (module < 0 || module >= utilityNetModuleNames.length) {
+    		return "PSP_NET_MODULE_UNKNOWN_" + module;
+    	}
+
+    	return utilityNetModuleNames[module];
+    }
+
+    protected boolean loadModule(int module) {
+    	// Already loaded?
+    	if (loadedModules.containsKey(module)) {
+    		return false;
+    	}
+
+    	HLEModuleManager moduleManager = HLEModuleManager.getInstance();
+    	String moduleName = hleUtilityLoadModuleName(module);
+
+    	// Can be loaded?
+    	if (!moduleManager.hasFlash0Module(moduleName)) {
+    		return false;
+    	}
+
+    	// Load it and remember the SceModule in loadedModules
+    	int sceModuleId = moduleManager.LoadFlash0Module(moduleName);
+        SceModule sceModule = Managers.modules.getModuleByUID(sceModuleId);
+
+    	loadedModules.put(module, sceModule);
+
+    	return true;
+    }
+
+    protected boolean unloadModule(int module, int sceModuleId) {
+    	SceModule sceModule = loadedModules.remove(module);
+
+    	// Has been loaded?
+    	if (sceModule == null) {
+    		return false;
+    	}
+
+    	HLEModuleManager moduleManager = HLEModuleManager.getInstance();
+    	moduleManager.UnloadFlash0Module(sceModule);
+
+    	return true;
+    }
+
     // Export functions
 
     public void sceUtilityLoadNetModule(Processor processor) {
@@ -89,11 +129,12 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
 
         int module = cpu.gpr[4];
 
-        String msg = "sceUtilityLoadNetModule(module=" + module + ")";
-        if (module >= 0 && module < utilityNetModuleNames.length)
-            msg += " " + utilityNetModuleNames[module];
-
-        Modules.log.warn("IGNORING:" + msg);
+        String moduleName = hleUtilityLoadModuleName(module);
+        if (loadModule(module)) {
+            Modules.log.info(String.format("sceUtilityLoadNetModule(module=0x%04X) %s loaded", module, moduleName));
+        } else {
+            Modules.log.info(String.format("IGNORING:sceUtilityLoadNetModule(module=0x%04X) %s", module, moduleName));
+        }
 
         cpu.gpr[2] = 0;
         jpcsp.HLE.ThreadMan.getInstance().yieldCurrentThread();
@@ -104,11 +145,12 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
 
         int module = cpu.gpr[4];
 
-        String msg = "sceUtilityUnloadNetModule(module=" + module + ")";
-        if (module >= 0 && module < utilityNetModuleNames.length)
-            msg += " " + utilityNetModuleNames[module];
-
-        Modules.log.warn("IGNORING:" + msg);
+        String moduleName = hleUtilityLoadModuleName(module);
+        if (loadModule(module)) {
+            Modules.log.info(String.format("sceUtilityUnloadNetModule(module=0x%04X) %s unloaded", module, moduleName));
+        } else {
+            Modules.log.info(String.format("IGNORING:sceUtilityUnloadNetModule(module=0x%04X) %s", module, moduleName));
+        }
 
         cpu.gpr[2] = 0;
         jpcsp.HLE.ThreadMan.getInstance().yieldCurrentThread();
