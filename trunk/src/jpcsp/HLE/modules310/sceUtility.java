@@ -16,25 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules310;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.Modules;
 
-import jpcsp.Emulator;
-import jpcsp.MemoryMap;
-import jpcsp.Memory;
 import jpcsp.Processor;
-import static jpcsp.util.Utilities.*;
 
-import jpcsp.Allegrex.CpuState; // New-Style Processor
-import jpcsp.HLE.ThreadMan;
-import jpcsp.filesystems.umdiso.UmdIsoReader;
-
-import jpcsp.HLE.kernel.types.*;
-import jpcsp.HLE.kernel.managers.*;
+import jpcsp.Allegrex.CpuState;
 
 public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
 
@@ -99,6 +87,7 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
         }
     }
 
+    @Override
     protected String hleUtilityLoadModuleName(int module) {
         for (UtilityModule m : UtilityModule.values()) {
             if (m.getID() == module) {
@@ -115,8 +104,12 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
 
         int module = cpu.gpr[4];
 
-        Modules.log.warn("IGNORING:sceUtilityLoadModule(module=0x" + Integer.toHexString(module) + ") "
-            + hleUtilityLoadModuleName(module));
+        String moduleName = hleUtilityLoadModuleName(module);
+        if (loadModule(module)) {
+            Modules.log.info(String.format("sceUtilityLoadModule(module=0x%04X) %s loaded", module, moduleName));
+        } else {
+            Modules.log.info(String.format("IGNORING:sceUtilityLoadModule(module=0x%04X) %s", module, moduleName));
+        }
 
         cpu.gpr[2] = 0;
         jpcsp.HLE.ThreadMan.getInstance().yieldCurrentThread();
@@ -127,8 +120,12 @@ public class sceUtility extends jpcsp.HLE.modules271.sceUtility {
 
         int module = cpu.gpr[4];
 
-        Modules.log.warn("IGNORING:sceUtilityUnloadModule(module=0x" + Integer.toHexString(module) + ") "
-            + hleUtilityLoadModuleName(module));
+        String moduleName = hleUtilityLoadModuleName(module);
+        if (loadModule(module)) {
+            Modules.log.info(String.format("sceUtilityUnloadModule(module=0x%04X) %s unloaded", module, moduleName));
+        } else {
+            Modules.log.info(String.format("IGNORING:sceUtilityUnloadModule(module=0x%04X) %s", module, moduleName));
+        }
 
         cpu.gpr[2] = 0;
         jpcsp.HLE.ThreadMan.getInstance().yieldCurrentThread();

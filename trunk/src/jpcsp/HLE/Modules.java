@@ -22,7 +22,6 @@ import java.nio.ByteBuffer;
 import org.apache.log4j.Logger;
 
 import jpcsp.HLE.modules.*;
-import jpcsp.HLE.modules150.sceFont;
 
 public class Modules {
 
