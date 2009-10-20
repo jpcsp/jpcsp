@@ -1101,7 +1101,7 @@ public class syscallsFirm15 {
 
                 sceUtilityHtmlViewerShutdownStart(0x3104, 0xF5CE1134), // 2.00+
                 sceHttpSaveSystemCookie(0x3105, 0x76D1363B), // 2.00+
-                sceHttpLoadSystemCookie(0x3105, 0xF1657B22), // 2.00+
+                sceHttpLoadSystemCookie(0x3106, 0xF1657B22), // 2.00+
 
                 // We choose to start HLEModuleManager at 0x4000
 
