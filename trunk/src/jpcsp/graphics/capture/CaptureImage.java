@@ -134,7 +134,8 @@ public class CaptureImage {
 		outBmp.write(dibHeader);
 		byte[] rowPadBytes = new byte[rowPad];
 		byte[] pixelBytes = new byte[3];
-    	if (buffer instanceof IntBuffer && imageType == GL.GL_UNSIGNED_BYTE) {
+		boolean imageType32Bit = imageType == GL.GL_UNSIGNED_BYTE || imageType == GL.GL_UNSIGNED_INT_8_8_8_8_REV;
+    	if (buffer instanceof IntBuffer && imageType32Bit) {
     		IntBuffer intBuffer = (IntBuffer) buffer;
 			for (int y = 0; y < height; y++) {
 				for (int x = 0; x < width; x++) {
@@ -158,7 +159,7 @@ public class CaptureImage {
 					}
 				}
 			}
-    	} else if (buffer instanceof ShortBuffer && imageType != GL.GL_UNSIGNED_BYTE) {
+    	} else if (buffer instanceof ShortBuffer && !imageType32Bit) {
     		ShortBuffer shortBuffer = (ShortBuffer) buffer;
 			for (int y = 0; y < height; y++) {
 				for (int x = 0; x < width; x++) {
@@ -171,7 +172,7 @@ public class CaptureImage {
 					shortBuffer.get();
 				}
 			}
-    	} else if (imageType == GL.GL_UNSIGNED_BYTE) {
+    	} else if (imageType32Bit) {
     		IMemoryReader memoryReader = MemoryReader.getMemoryReader(imageaddr, bufferWidth * height * 4, 4);
 			for (int y = 0; y < height; y++) {
 				for (int x = 0; x < width; x++) {
