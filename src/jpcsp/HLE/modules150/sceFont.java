@@ -340,16 +340,47 @@ public class sceFont implements HLEModule {
 
 	public void sceFontGetNumFontList(Processor processor) {
 		CpuState cpu = processor.cpu;
+		Memory mem = Memory.getInstance();
 
-		Modules.log.warn(String.format("Unimplemented sceFontGetNumFontList 0x%08X, 0x%08X, 0x%08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
-		cpu.gpr[2] = 0;
+		int libHandle = cpu.gpr[4];
+		int errorCodeAddr = cpu.gpr[5];
+
+		Modules.log.warn(String.format("Unimplemented sceFontGetNumFontList libHandle=0x%08X, errorCodeAddr=0x%08X", libHandle, errorCodeAddr));
+
+		if (libHandle != fontLibHandle) {
+			Modules.log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
+			cpu.gpr[2] = -1;
+		} else {
+			if (mem.isAddressGood(errorCodeAddr)) {
+				mem.write32(errorCodeAddr, 0);
+			}
+
+			cpu.gpr[2] = 0;
+		}
 	}
 
 	public void sceFontGetFontList(Processor processor) {
 		CpuState cpu = processor.cpu;
 
-		Modules.log.warn(String.format("Unimplemented sceFontGetFontList 0x%08X, 0x%08X, 0x%08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
-		cpu.gpr[2] = 0;
+		int libHandle = cpu.gpr[4];
+		int fontListAddr = cpu.gpr[5];	// points to 168 bytes per font entry (i.e. numFont * 168 bytes)
+		int numFonts = cpu.gpr[6];	// Value returned by sceFontGetNumFontList
+
+		/* 
+		 * FontList entry: 168 bytes per entry
+		 *	offset+4: float value
+		 *	offset+22: u16 value
+		 *	offset+32..168?: stringZ (font name?)
+		 */
+
+		Modules.log.warn(String.format("Unimplemented sceFontGetFontList libHandle=0x%08X, fontListAddr=0x%08X, numFonts=%d", libHandle, fontListAddr, numFonts));
+
+		if (libHandle != fontLibHandle) {
+			Modules.log.warn("Unknown libHandle: 0x" + Integer.toHexString(libHandle));
+			cpu.gpr[2] = -1;
+		} else {
+			cpu.gpr[2] = 0;
+		}
 	}
 
 	public void sceFontSetAltCharacterCode(Processor processor) {
