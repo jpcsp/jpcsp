@@ -77,7 +77,7 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
 
     protected HashMap<Integer, SceModule> loadedModules;
 
-    protected String hleUtilityLoadModuleName(int module) {
+    private String hleUtilityLoadNetModuleName(int module) {
     	if (module < 0 || module >= utilityNetModuleNames.length) {
     		return "PSP_NET_MODULE_UNKNOWN_" + module;
     	}
@@ -85,14 +85,13 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
     	return utilityNetModuleNames[module];
     }
 
-    protected boolean loadModule(int module) {
+    protected boolean loadModule(int module, String moduleName) {
     	// Already loaded?
     	if (loadedModules.containsKey(module)) {
     		return false;
     	}
 
     	HLEModuleManager moduleManager = HLEModuleManager.getInstance();
-    	String moduleName = hleUtilityLoadModuleName(module);
 
     	// Can be loaded?
     	if (!moduleManager.hasFlash0Module(moduleName)) {
@@ -129,8 +128,8 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
 
         int module = cpu.gpr[4];
 
-        String moduleName = hleUtilityLoadModuleName(module);
-        if (loadModule(module)) {
+        String moduleName = hleUtilityLoadNetModuleName(module);
+        if (loadModule(module, moduleName)) {
             Modules.log.info(String.format("sceUtilityLoadNetModule(module=0x%04X) %s loaded", module, moduleName));
         } else {
             Modules.log.info(String.format("IGNORING:sceUtilityLoadNetModule(module=0x%04X) %s", module, moduleName));
@@ -145,8 +144,8 @@ public class sceUtility extends jpcsp.HLE.modules150.sceUtility {
 
         int module = cpu.gpr[4];
 
-        String moduleName = hleUtilityLoadModuleName(module);
-        if (loadModule(module)) {
+        String moduleName = hleUtilityLoadNetModuleName(module);
+        if (loadModule(module, moduleName)) {
             Modules.log.info(String.format("sceUtilityUnloadNetModule(module=0x%04X) %s unloaded", module, moduleName));
         } else {
             Modules.log.info(String.format("IGNORING:sceUtilityUnloadNetModule(module=0x%04X) %s", module, moduleName));

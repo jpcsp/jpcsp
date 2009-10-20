@@ -16,25 +16,13 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules271;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.Modules;
 
-import jpcsp.Emulator;
-import jpcsp.MemoryMap;
-import jpcsp.Memory;
 import jpcsp.Processor;
-import static jpcsp.util.Utilities.*;
 
-import jpcsp.Allegrex.CpuState; // New-Style Processor
-import jpcsp.HLE.ThreadMan;
-import jpcsp.filesystems.umdiso.UmdIsoReader;
-
-import jpcsp.HLE.kernel.types.*;
-import jpcsp.HLE.kernel.managers.*;
+import jpcsp.Allegrex.CpuState;
 
 public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
 
@@ -84,6 +72,14 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
     public static final int PSP_AV_MODULE_AAC = 6;
     public static final int PSP_AV_MODULE_G729 = 7;
 
+    private String hleUtilityLoadAvModuleName(int module) {
+    	if (module < 0 || module >= utilityAvModuleNames.length) {
+    		return "PSP_AV_MODULE_UNKNOWN_" + module;
+    	}
+
+    	return utilityAvModuleNames[module];
+    }
+
     // Export functions
 
     public void sceUtilityLoadAvModule(Processor processor) {
@@ -91,11 +87,12 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
 
         int module = cpu.gpr[4];
 
-        String msg = "sceUtilityLoadAvModule(module=" + module + ")";
-        if (module >= 0 && module < utilityAvModuleNames.length)
-            msg += " " + utilityAvModuleNames[module];
-
-        Modules.log.warn("IGNORING:" + msg);
+        String moduleName = hleUtilityLoadAvModuleName(module);
+        if (loadModule(module, moduleName)) {
+            Modules.log.info(String.format("sceUtilityLoadAvModule(module=0x%04X) %s loaded", module, moduleName));
+        } else {
+            Modules.log.info(String.format("IGNORING:sceUtilityLoadAvModule(module=0x%04X) %s", module, moduleName));
+        }
 
         cpu.gpr[2] = 0;
         jpcsp.HLE.ThreadMan.getInstance().yieldCurrentThread();
@@ -106,11 +103,12 @@ public class sceUtility extends jpcsp.HLE.modules200.sceUtility {
 
         int module = cpu.gpr[4];
 
-        String msg = "sceUtilityUnloadAvModule(module=" + module + ")";
-        if (module >= 0 && module < utilityAvModuleNames.length)
-            msg += " " + utilityAvModuleNames[module];
-
-        Modules.log.warn("IGNORING:" + msg);
+        String moduleName = hleUtilityLoadAvModuleName(module);
+        if (loadModule(module, moduleName)) {
+            Modules.log.info(String.format("sceUtilityUnloadAvModule(module=0x%04X) %s unloaded", module, moduleName));
+        } else {
+            Modules.log.info(String.format("IGNORING:sceUtilityUnloadAvModule(module=0x%04X) %s", module, moduleName));
+        }
 
         cpu.gpr[2] = 0;
         jpcsp.HLE.ThreadMan.getInstance().yieldCurrentThread();
