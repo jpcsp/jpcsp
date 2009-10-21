@@ -268,12 +268,61 @@ public class CodeInstruction {
         return Opcodes.NOP;
     }
 
+    private int loadRegistersForBranchingOpcodeBranch2(CompilerContext context, MethodVisitor mv, int branchingOpcode) {
+    	boolean loadRs = true;
+    	boolean loadRt = true;
+
+    	if (context.getRsRegisterIndex() == context.getRtRegisterIndex()) {
+    		if (branchingOpcode == Opcodes.IF_ICMPEQ) {
+    			loadRs = false;
+    			loadRt = false;
+    			if (false) {
+    				branchingOpcode = Opcodes.GOTO;
+    			} else {
+    				// The ASM library has problems with small frames having no
+    				// stack (NullPointerException). Generate a dummy stack requirement.
+    				// "IFEQ 0" is equivalent to GOTO
+    				context.loadImm(0);
+    				branchingOpcode = Opcodes.IFEQ;
+    			}
+    		} else if (branchingOpcode == Opcodes.IF_ICMPNE) {
+    			loadRs = false;
+    			loadRt = false;
+    			branchingOpcode = Opcodes.NOP;
+    		}
+    	} else if (context.isRsRegister0()) {
+    		if (branchingOpcode == Opcodes.IF_ICMPEQ) {
+    			loadRs = false;
+    			branchingOpcode = Opcodes.IFEQ;
+    		} else if (branchingOpcode == Opcodes.IF_ICMPNE) {
+    			loadRs = false;
+    			branchingOpcode = Opcodes.IFNE;
+    		}
+    	} else if (context.isRtRegister0()) {
+    		if (branchingOpcode == Opcodes.IF_ICMPEQ) {
+    			loadRt = false;
+    			branchingOpcode = Opcodes.IFEQ;
+    		} else if (branchingOpcode == Opcodes.IF_ICMPNE) {
+    			loadRt = false;
+    			branchingOpcode = Opcodes.IFNE;
+    		}
+    	}
+
+    	if (loadRs) {
+    		context.loadRs();
+    	}
+    	if (loadRt) {
+    		context.loadRt();
+    	}
+
+    	return branchingOpcode;
+    }
+
     private int getBranchingOpcodeBranch2(CompilerContext context, MethodVisitor mv, int branchingOpcode, int notBranchingOpcode) {
-    	context.loadRs();
-    	context.loadRt();
+    	branchingOpcode = loadRegistersForBranchingOpcodeBranch2(context, mv, branchingOpcode);
 		compileDelaySlot(context, mv);
 
-    	if (branchingOpcode == Opcodes.IF_ICMPEQ && context.getRsRegisterIndex() == context.getRtRegisterIndex() && getBranchingTo() == getAddress()) {
+    	if (branchingOpcode == Opcodes.GOTO && getBranchingTo() == getAddress()) {
     		context.visitLogInfo(mv, "Pausing emulator - branch to self (death loop)");
     		context.visitPauseEmuWithStatus(mv, Emulator.EMU_STATUS_JUMPSELF);
     	}
@@ -282,8 +331,7 @@ public class CodeInstruction {
     }
 
     private int getBranchingOpcodeBranch2L(CompilerContext context, MethodVisitor mv, int branchingOpcode, int notBranchingOpcode) {
-        context.loadRs();
-        context.loadRt();
+    	notBranchingOpcode = loadRegistersForBranchingOpcodeBranch2(context, mv, notBranchingOpcode);
         CodeInstruction afterDelaySlotCodeInstruction = getAfterDelaySlotCodeInstruction(context);
         context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction);
         compileDelaySlot(context, mv);
@@ -393,6 +441,15 @@ public class CodeInstruction {
     }
 
     public String toString() {
-        return "0x" + Integer.toHexString(getAddress()).toUpperCase() + " - " + getInsn().disasm(getAddress(), getOpcode());
+    	StringBuffer result = new StringBuffer();
+
+    	result.append(isBranching()    ? "<" : " ");
+    	result.append(isBranchTarget() ? ">" : " ");
+    	result.append(" 0x");
+    	result.append(Integer.toHexString(getAddress()).toUpperCase());
+    	result.append(" - ");
+    	result.append(getInsn().disasm(getAddress(), getOpcode()));
+
+    	return result.toString();
     }
 }

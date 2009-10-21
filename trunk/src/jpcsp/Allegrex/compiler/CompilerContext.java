@@ -64,6 +64,7 @@ public class CompilerContext implements ICompilerContext {
     private static final int LOCAL_TMP = 7;
     private static final int LOCAL_MAX = 8;
     private static final int STACK_MAX = 10;
+    private static final int spRegisterIndex = 29;
     public Set<Integer> analysedAddresses = new HashSet<Integer>();
     public Stack<Integer> blocksToBeAnalysed = new Stack<Integer>();
     private int currentInstructionCount;
@@ -805,7 +806,7 @@ public class CompilerContext implements ICompilerContext {
 			mv.visitInsn(Opcodes.IADD);
 		}
 
-		if (RuntimeContext.debugMemoryRead && (!RuntimeContext.debugMemoryReadWriteNoSP || registerIndex != 29)) {
+		if (RuntimeContext.debugMemoryRead && (!RuntimeContext.debugMemoryReadWriteNoSP || registerIndex != spRegisterIndex)) {
 			mv.visitInsn(Opcodes.DUP);
 			loadImm(0);
             mv.visitLdcInsn(codeInstruction.getAddress());
@@ -817,7 +818,11 @@ public class CompilerContext implements ICompilerContext {
 		if (RuntimeContext.memoryInt == null) {
 	        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, memoryInternalName, "read32", "(I)I");
 		} else {
-            if (checkMemoryAccess()) {
+			if (registerIndex == spRegisterIndex) {
+				// No need to check for a valid memory access when referencing the $sp register
+				loadImm(2);
+    			mv.visitInsn(Opcodes.IUSHR);
+			} else if (checkMemoryAccess()) {
                 mv.visitLdcInsn(codeInstruction.getAddress());
                 mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryRead32", "(II)I");
                 loadImm(2);
@@ -954,7 +959,11 @@ public class CompilerContext implements ICompilerContext {
 		}
 
 		if (RuntimeContext.memoryInt != null) {
-	        if (checkMemoryAccess()) {
+			if (registerIndex == spRegisterIndex) {
+				// No need to check for a valid memory access when referencing the $sp register
+				loadImm(2);
+    			mv.visitInsn(Opcodes.IUSHR);
+			} else if (checkMemoryAccess()) {
 	            mv.visitLdcInsn(codeInstruction.getAddress());
 	            mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeContextInternalName, "checkMemoryWrite32", "(II)I");
                 loadImm(2);
@@ -993,7 +1002,7 @@ public class CompilerContext implements ICompilerContext {
 			mv.visitInsn(Opcodes.SWAP);
 		}
 
-		if (RuntimeContext.debugMemoryWrite && (!RuntimeContext.debugMemoryReadWriteNoSP || registerIndex != 29)) {
+		if (RuntimeContext.debugMemoryWrite && (!RuntimeContext.debugMemoryReadWriteNoSP || registerIndex != spRegisterIndex)) {
 			mv.visitInsn(Opcodes.DUP2);
 			mv.visitInsn(Opcodes.SWAP);
 			loadImm(2);
