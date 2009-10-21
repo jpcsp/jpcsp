@@ -1562,6 +1562,71 @@
     08B6AC2C:[00000000]: nop
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="strncasecmp">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Strncasecmp</Class>
+		<IsReturning>true</IsReturning>
+		<CodeInstructions><![CDATA[
+    088C19D8:[10C00005]: beq        $a2, $zr, 0x088C19F0
+    088C19DC:[3C070890]: lui        $a3, 0x0890 <=> li $a3, 0x08900000
+    088C19E0:[24E7BA70]: addiu      $a3, $a3, -17808
+    088C19E4:[24C2FFFF]: addiu      $v0, $a2, -1
+    088C19E8:[10000003]: b          0x088C19F8
+    088C19EC:[24E70001]: addiu      $a3, $a3, 1
+    088C19F0:[03E00008]: jr         $ra
+    088C19F4:[00001025]: or         $v0, $zr, $zr <=> li $v0, 0
+    088C19F8:[00C04025]: or         $t0, $a2, $zr <=> move $t0, $a2
+    088C19FC:[1100001D]: beq        $t0, $zr, 0x088C1A74
+    088C1A00:[00403025]: or         $a2, $v0, $zr <=> move $a2, $v0
+    088C1A04:[808B0000]: lb         $t3, 0($a0)
+    088C1A08:[00EB4021]: addu       $t0, $a3, $t3
+    088C1A0C:[81080000]: lb         $t0, 0($t0)
+    088C1A10:[31080001]: andi       $t0, $t0, 1
+    088C1A14:[11000003]: beq        $t0, $zr, 0x088C1A24
+    088C1A18:[80A90000]: lb         $t1, 0($a1)
+    088C1A1C:[10000002]: b          0x088C1A28
+    088C1A20:[256A0020]: addiu      $t2, $t3, 32
+    088C1A24:[01605025]: or         $t2, $t3, $zr <=> move $t2, $t3
+    088C1A28:[00E94021]: addu       $t0, $a3, $t1
+    088C1A2C:[81080000]: lb         $t0, 0($t0)
+    088C1A30:[31080001]: andi       $t0, $t0, 1
+    088C1A34:[11000003]: beq        $t0, $zr, 0x088C1A44
+    088C1A38:[01204025]: or         $t0, $t1, $zr <=> move $t0, $t1
+    088C1A3C:[10000001]: b          0x088C1A44
+    088C1A40:[25280020]: addiu      $t0, $t1, 32
+    088C1A44:[5548000C]: bnel       $t2, $t0, 0x088C1A78
+    088C1A48:[00A03025]: or         $a2, $a1, $zr <=> move $a2, $a1
+    088C1A4C:[5040000A]: beql       $v0, $zr, 0x088C1A78
+    088C1A50:[00A03025]: or         $a2, $a1, $zr <=> move $a2, $a1
+    088C1A54:[51600008]: beql       $t3, $zr, 0x088C1A78
+    088C1A58:[00A03025]: or         $a2, $a1, $zr <=> move $a2, $a1
+    088C1A5C:[51200006]: beql       $t1, $zr, 0x088C1A78
+    088C1A60:[00A03025]: or         $a2, $a1, $zr <=> move $a2, $a1
+    088C1A64:[24840001]: addiu      $a0, $a0, 1
+    088C1A68:[24A50001]: addiu      $a1, $a1, 1
+    088C1A6C:[1000FFE2]: b          0x088C19F8
+    088C1A70:[24C2FFFF]: addiu      $v0, $a2, -1
+    088C1A74:[00A03025]: or         $a2, $a1, $zr <=> move $a2, $a1
+    088C1A78:[90850000]: lbu        $a1, 0($a0)
+    088C1A7C:[00E52021]: addu       $a0, $a3, $a1
+    088C1A80:[80880000]: lb         $t0, 0($a0)
+    088C1A84:[90C40000]: lbu        $a0, 0($a2)
+    088C1A88:[31060001]: andi       $a2, $t0, 1
+    088C1A8C:[10C00003]: beq        $a2, $zr, 0x088C1A9C
+    088C1A90:[00000000]: nop
+    088C1A94:[10000001]: b          0x088C1A9C
+    088C1A98:[24A50020]: addiu      $a1, $a1, 32
+    088C1A9C:[00E43021]: addu       $a2, $a3, $a0
+    088C1AA0:[80C60000]: lb         $a2, 0($a2)
+    088C1AA4:[30C60001]: andi       $a2, $a2, 1
+    088C1AA8:[10C00004]: beq        $a2, $zr, 0x088C1ABC
+    088C1AAC:[00A41023]: subu       $v0, $a1, $a0
+    088C1AB0:[24820020]: addiu      $v0, $a0, 32
+    088C1AB4:[03E00008]: jr         $ra
+    088C1AB8:[00A21023]: subu       $v0, $a1, $v0
+    088C1ABC:[03E00008]: jr         $ra
+    088C1AC0:[00000000]: nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="strcpy">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Strcpy</Class>
 		<IsReturning>true</IsReturning>
