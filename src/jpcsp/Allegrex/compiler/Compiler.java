@@ -201,8 +201,8 @@ public class Compiler implements ICompiler {
 	}
 
 	private IExecutable analyse(CompilerContext context, int startAddress, boolean recursive) {
-        if (log.isDebugEnabled()) {
-            log.debug("Compiler.analyse Block 0x" + Integer.toHexString(startAddress));
+        if (log.isTraceEnabled()) {
+            log.trace("Compiler.analyse Block 0x" + Integer.toHexString(startAddress));
         }
         startAddress = startAddress & Memory.addressMask;
         CodeBlock codeBlock = new CodeBlock(startAddress);
@@ -255,8 +255,8 @@ public class Compiler implements ICompiler {
         }
 
         IExecutable executable = codeBlock.getExecutable(context);
-        if (log.isDebugEnabled()) {
-            log.debug("Executable: " + executable);
+        if (log.isTraceEnabled()) {
+            log.trace("Executable: " + executable);
         }
 
         return executable;

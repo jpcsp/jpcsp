@@ -724,16 +724,7 @@ public void interpret(Processor processor, int insn) {
 }
 @Override
 public void compile(ICompilerContext context, int insn) {
-	if (!context.isRtRegister0()) {
-		context.prepareRtForStore();
-		context.loadRs();
-		int imm = context.getImm16(true);
-		if (imm != 0) {
-			context.loadImm(imm);
-			context.getMethodVisitor().visitInsn(Opcodes.IADD);
-		}
-		context.storeRt();
-	}
+	ADDIU.compile(context, insn);
 }
 @Override
 public String disasm(int address, int insn) {
@@ -766,11 +757,15 @@ public void interpret(Processor processor, int insn) {
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRtRegister0()) {
 		context.prepareRtForStore();
-		context.loadRs();
 		int imm = context.getImm16(true);
-		if (imm != 0) {
+		if (context.isRsRegister0()) {
 			context.loadImm(imm);
-			context.getMethodVisitor().visitInsn(Opcodes.IADD);
+		} else {
+			context.loadRs();
+			if (imm != 0) {
+				context.loadImm(imm);
+				context.getMethodVisitor().visitInsn(Opcodes.IADD);
+			}
 		}
 		context.storeRt();
 	}
@@ -920,9 +915,19 @@ public void interpret(Processor processor, int insn) {
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRdRegister0()) {
 		context.prepareRdForStore();
-		context.loadRs();
-		context.loadRt();
-		context.getMethodVisitor().visitInsn(Opcodes.IOR);
+		if (context.isRsRegister0()) {
+			if (context.isRtRegister0()) {
+				context.loadImm(0);
+			} else {
+				context.loadRt();
+			}
+		} else {
+			context.loadRs();
+			if (!context.isRtRegister0()) {
+				context.loadRt();
+				context.getMethodVisitor().visitInsn(Opcodes.IOR);
+			}
+		}
 		context.storeRd();
 	}
 }
@@ -957,11 +962,15 @@ public void interpret(Processor processor, int insn) {
 public void compile(ICompilerContext context, int insn) {
 	if (!context.isRtRegister0()) {
 		context.prepareRtForStore();
-		context.loadRs();
 		int imm = context.getImm16(false);
-		if (imm != 0) {
+		if (context.isRsRegister0()) {
 			context.loadImm(imm);
-			context.getMethodVisitor().visitInsn(Opcodes.IOR);
+		} else {
+			context.loadRs();
+			if (imm != 0) {
+				context.loadImm(imm);
+				context.getMethodVisitor().visitInsn(Opcodes.IOR);
+			}
 		}
 		context.storeRt();
 	}

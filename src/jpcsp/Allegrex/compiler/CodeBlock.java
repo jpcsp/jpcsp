@@ -59,8 +59,8 @@ public class CodeBlock {
 	}
 
 	public void addInstruction(int address, int opcode, Instruction insn, boolean isBranchTarget, boolean isBranching, int branchingTo) {
-		if (Compiler.log.isDebugEnabled()) {
-			Compiler.log.debug("CodeBlock.addInstruction 0x" + Integer.toHexString(address).toUpperCase() + " - " + insn.disasm(address, opcode));
+		if (Compiler.log.isTraceEnabled()) {
+			Compiler.log.trace("CodeBlock.addInstruction 0x" + Integer.toHexString(address).toUpperCase() + " - " + insn.disasm(address, opcode));
 		}
 
 		CodeInstruction codeInstruction = new CodeInstruction(address, opcode, insn, isBranchTarget, isBranching, branchingTo);
@@ -90,8 +90,8 @@ public class CodeBlock {
 	}
 
 	public void setIsBranchTarget(int address) {
-		if (Compiler.log.isDebugEnabled()) {
-			Compiler.log.debug("CodeBlock.setIsBranchTarget 0x" + Integer.toHexString(address).toUpperCase());
+		if (Compiler.log.isTraceEnabled()) {
+			Compiler.log.trace("CodeBlock.setIsBranchTarget 0x" + Integer.toHexString(address).toUpperCase());
 		}
 
 		CodeInstruction codeInstruction = getCodeInstruction(address);
@@ -366,7 +366,7 @@ public class CodeBlock {
     		cv = new CheckClassAdapter(cv);
     	}
         StringWriter debugOutput = null;
-    	if (Compiler.log.isDebugEnabled()) {
+    	if (Compiler.log.isTraceEnabled()) {
     	    debugOutput = new StringWriter();
     	    PrintWriter debugPrintWriter = new PrintWriter(debugOutput);
     	    cv = new TraceClassVisitor(cv, debugPrintWriter);
@@ -412,10 +412,14 @@ public class CodeBlock {
         cv.visitEnd();
 
     	if (debugOutput != null) {
-    	    Compiler.log.debug(debugOutput.toString());
+    	    Compiler.log.trace(debugOutput.toString());
     	}
 
-	    compiledClass = loadExecutable(context, className, cw.toByteArray());
+    	try {
+    		compiledClass = loadExecutable(context, className, cw.toByteArray());
+    	} catch (NullPointerException e) {
+    		Compiler.log.error("Error while compiling " + className + ": " + e);
+    	}
 
     	return compiledClass;
 	}

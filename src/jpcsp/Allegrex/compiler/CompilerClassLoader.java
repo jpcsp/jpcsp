@@ -44,8 +44,8 @@ public class CompilerClassLoader extends ClassLoader {
         Class<?> loadedClass = findLoadedClass(name);
 
         if (loadedClass == null && compiler != null) {
-        	if (log.isDebugEnabled()) {
-        		log.debug("ClassLoader creating class " + name);
+        	if (log.isTraceEnabled()) {
+        		log.trace("ClassLoader creating class " + name);
         	}
             IExecutable executable = compiler.compile(name);
             if (executable != null) {
