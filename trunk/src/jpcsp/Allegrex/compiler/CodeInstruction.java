@@ -332,8 +332,10 @@ public class CodeInstruction {
 
     private int getBranchingOpcodeBranch2L(CompilerContext context, MethodVisitor mv, int branchingOpcode, int notBranchingOpcode) {
     	notBranchingOpcode = loadRegistersForBranchingOpcodeBranch2(context, mv, notBranchingOpcode);
-        CodeInstruction afterDelaySlotCodeInstruction = getAfterDelaySlotCodeInstruction(context);
-        context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction);
+    	if (notBranchingOpcode != Opcodes.NOP) {
+    		CodeInstruction afterDelaySlotCodeInstruction = getAfterDelaySlotCodeInstruction(context);
+    		context.visitJump(notBranchingOpcode, afterDelaySlotCodeInstruction);
+    	}
         compileDelaySlot(context, mv);
 
         return Opcodes.GOTO;
