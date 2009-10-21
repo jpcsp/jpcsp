@@ -1878,6 +1878,13 @@ public class VideoEngine {
                 int numberOfVertex = normalArgument & 0xFFFF;
                 int type = ((normalArgument >> 16) & 0x7);
 
+                Memory mem = Memory.getInstance();
+                if (!mem.isAddressGood(vinfo.ptr_vertex)) {
+                	// Abort here to avoid a lot of useless memory read errors...
+                	log.error(helper.getCommandString(PRIM) + " Invalid vertex address 0x" + Integer.toHexString(vinfo.ptr_vertex));
+                	break;
+                }
+
                 updateGeBuf();
             	somethingDisplayed = true;
 
@@ -1942,7 +1949,6 @@ public class VideoEngine {
                 	}
                 }
 
-                Memory mem = Memory.getInstance();
                 vertexStatistics.start();
 
                 // Do not use optimized VertexInfo reading when tracing is enabled,
