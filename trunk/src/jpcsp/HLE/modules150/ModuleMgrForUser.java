@@ -109,7 +109,7 @@ public class ModuleMgrForUser implements HLEModule {
         Memory mem = Processor.memory;
 
         int uid = cpu.gpr[4];
-        int option_addr = cpu.gpr[5] & 0x3fffffff;
+        int option_addr = cpu.gpr[5];
         String name = pspiofilemgr.getInstance().getFileFilename(uid);
 
         Modules.log.debug("sceKernelLoadModuleByID(uid=0x" + Integer.toHexString(uid)
@@ -172,9 +172,9 @@ public class ModuleMgrForUser implements HLEModule {
         CpuState cpu = processor.cpu; // New-Style Processor
         Memory mem = Processor.memory;
 
-        int path_addr = cpu.gpr[4] & 0x3fffffff;
+        int path_addr = cpu.gpr[4];
         int flags = cpu.gpr[5];
-        int option_addr = cpu.gpr[6] & 0x3fffffff;
+        int option_addr = cpu.gpr[6];
         String name = Utilities.readStringZ(path_addr);
         Modules.log.debug("sceKernelLoadModule(path='" + name
             + "',flags=0x" + Integer.toHexString(flags)
@@ -189,7 +189,12 @@ public class ModuleMgrForUser implements HLEModule {
         // Load flash0 modules as Java HLE modules
         if (name.startsWith("flash0:")) {
             // Simulate a successful loading
-            Modules.log.warn("PARTIAL:sceKernelLoadModule(path='" + name + "'): module from flash0 not loaded");
+        	HLEModuleManager moduleManager = HLEModuleManager.getInstance();
+        	if (moduleManager.hasFlash0Module(prxname)) {
+        		Modules.log.info("sceKernelLoadModule(path='" + name + "') HLE module loaded");
+        	} else {
+                Modules.log.warn("IGNORED:sceKernelLoadModule(path='" + name + "'): module from flash0 not loaded");
+        	}
             cpu.gpr[2] = HLEModuleManager.getInstance().LoadFlash0Module(prxname);
             return;
         }
