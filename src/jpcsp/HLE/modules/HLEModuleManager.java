@@ -179,7 +179,7 @@ public class HLEModuleManager {
     private void addToFlash0PRXMap(String prxName, HLEModule module) {
     	List<HLEModule> modules = new LinkedList<HLEModule>();
     	modules.add(module);
-    	flash0prxMap.put(prxName, modules);
+    	flash0prxMap.put(prxName.toLowerCase(), modules);
     }
 
     // Add modules in flash (or on UMD) that aren't loaded by default on this firmwareVersion
@@ -211,18 +211,24 @@ public class HLEModuleManager {
     */
 
     public boolean hasFlash0Module(String prxname) {
-        return flash0prxMap.containsKey(prxname);
+    	if (prxname == null) {
+    		return false;
+    	}
+
+    	return flash0prxMap.containsKey(prxname.toLowerCase());
     }
 
     /** @return the UID assigned to the module or negative on error
      * TODO need to figure out how the uids work when 1 prx contains several modules. */
     public int LoadFlash0Module(String prxname) {
-        List<HLEModule> modules = flash0prxMap.get(prxname);
-        if (modules != null) {
-            for (HLEModule module : modules) {
-                module.installModule(this, firmwareVersion);
-            }
-        }
+    	if (prxname != null) {
+	        List<HLEModule> modules = flash0prxMap.get(prxname.toLowerCase());
+	        if (modules != null) {
+	            for (HLEModule module : modules) {
+	                module.installModule(this, firmwareVersion);
+	            }
+	        }
+    	}
 
         SceModule fakeModule = new SceModule(true);
         fakeModule.modname = prxname;
@@ -237,12 +243,14 @@ public class HLEModuleManager {
     		return;
     	}
 
-    	List<HLEModule> prx = flash0prxMap.get(sceModule.modname);
-        if (prx != null) {
-            for (HLEModule module : prx) {
-                module.uninstallModule(this, firmwareVersion);
-            }
-        }
+    	if (sceModule.modname != null) {
+	    	List<HLEModule> prx = flash0prxMap.get(sceModule.modname.toLowerCase());
+	        if (prx != null) {
+	            for (HLEModule module : prx) {
+	                module.uninstallModule(this, firmwareVersion);
+	            }
+	        }
+    	}
 
         // TODO terminate delete all threads that belong to this module
 
