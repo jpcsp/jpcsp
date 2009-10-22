@@ -34,7 +34,11 @@ public class PspGeList
     public int currentStatus;
     public int syncStatus;
     public int id;
-    public int originAddr; // has to be added to the "base"
+
+    // The value of baseOffset has to be added (not ORed) to the base value.
+    // baseOffset is updated by the ORIGIN_ADDR and OFFSET_ADDR commands,
+    // and both commands share the same value field.
+    public int baseOffset;
 
     public int thid; // the thread we are blocking
     public boolean listHasFinished;
@@ -59,7 +63,7 @@ public class PspGeList
 
         currentStatus = (pc == stall_addr) ? PSP_GE_LIST_STALL_REACHED : PSP_GE_LIST_QUEUED;
         syncStatus = currentStatus;
-        originAddr = 0;
+        baseOffset = 0;
     }
 
     public void pushSignalCallback(int arg) {
