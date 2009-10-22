@@ -838,23 +838,30 @@ public class VideoEngine {
                 break;
 
             case ORIGIN_ADDR:
-            	currentList.originAddr = currentList.pc - 4;
+            	currentList.baseOffset = currentList.pc - 4;
             	if (normalArgument != 0) {
                     log.warn(String.format("%s unknown argument 0x%08X", helper.getCommandString(ORIGIN_ADDR), normalArgument));
             	} else if (log.isDebugEnabled()) {
-                    log(String.format("%s 0x%08X originAddr=0x%08X", helper.getCommandString(ORIGIN_ADDR), normalArgument, currentList.originAddr));
+                    log(String.format("%s 0x%08X originAddr=0x%08X", helper.getCommandString(ORIGIN_ADDR), normalArgument, currentList.baseOffset));
+                }
+            	break;
+
+            case OFFSET_ADDR:
+            	currentList.baseOffset = normalArgument << 8;
+            	if (log.isDebugEnabled()) {
+                    log(String.format("%s 0x%08X", helper.getCommandString(OFFSET_ADDR), currentList.baseOffset));
                 }
             	break;
 
             case IADDR:
-                vinfo.ptr_index = (currentList.base | normalArgument) + currentList.originAddr;
+                vinfo.ptr_index = (currentList.base | normalArgument) + currentList.baseOffset;
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(IADDR) + " " + String.format("%08x", vinfo.ptr_index));
                 }
                 break;
 
             case VADDR:
-                vinfo.ptr_vertex = (currentList.base | normalArgument) + currentList.originAddr;
+                vinfo.ptr_vertex = (currentList.base | normalArgument) + currentList.baseOffset;
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(VADDR) + " " + String.format("%08x", vinfo.ptr_vertex));
                 }
@@ -2342,7 +2349,7 @@ public class VideoEngine {
                 break;
             case JUMP:
             {
-                int npc = (currentList.base | normalArgument) & 0xFFFFFFFC;
+                int npc = ((currentList.base | normalArgument) & 0xFFFFFFFC) + currentList.baseOffset;
                 //I guess it must be unsign as psp player emulator
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(JUMP) + " old PC:" + String.format("%08x", currentList.pc)
@@ -2354,7 +2361,7 @@ public class VideoEngine {
             case CALL:
             {
                 currentList.stack[currentList.stackIndex++] = currentList.pc;
-                int npc = (currentList.base | normalArgument) & 0xFFFFFFFC;
+                int npc = ((currentList.base | normalArgument) & 0xFFFFFFFC) + currentList.baseOffset;
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(CALL) + " old PC:" + String.format("%08x", currentList.pc)
                             + " new PC:" + String.format("%08x", npc));
@@ -2371,9 +2378,9 @@ public class VideoEngine {
                 }
                 currentList.pc = npc;
 
-                // Not sure when the originAddr is reset:
+                // Not sure when the baseOffset is reset:
                 // at RET or at the second BASE command after ORIGIN_ADDR?
-                currentList.originAddr = 0;
+                currentList.baseOffset = 0;
                 break;
             }
 
