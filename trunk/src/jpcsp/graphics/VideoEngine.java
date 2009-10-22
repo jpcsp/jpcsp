@@ -829,24 +829,32 @@ public class VideoEngine {
                 break;
 
             case BASE:
-                currentList.base = (normalArgument << 8) & 0xff000000;
+        		currentList.base = (normalArgument << 8) & 0xff000000;
+        		// Bits of (normalArgument & 0x0000FFFF) are ignored
+        		// (tested: "Ape Escape On the Loose")
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(BASE) + " " + String.format("%08x", currentList.base));
                 }
-                if ((currentList.base & 0x00FFFFFF) != 0) {
-                    log.warn(helper.getCommandString(BASE) + " has lower bits set " + String.format("%08x", currentList.base));
-                }
                 break;
 
+            case ORIGIN_ADDR:
+            	currentList.originAddr = currentList.pc - 4;
+            	if (normalArgument != 0) {
+                    log.warn(String.format("%s unknown argument 0x%08X", helper.getCommandString(ORIGIN_ADDR), normalArgument));
+            	} else if (log.isDebugEnabled()) {
+                    log(String.format("%s 0x%08X originAddr=0x%08X", helper.getCommandString(ORIGIN_ADDR), normalArgument, currentList.originAddr));
+                }
+            	break;
+
             case IADDR:
-                vinfo.ptr_index = currentList.base | normalArgument ;
+                vinfo.ptr_index = (currentList.base | normalArgument) + currentList.originAddr;
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(IADDR) + " " + String.format("%08x", vinfo.ptr_index));
                 }
                 break;
 
             case VADDR:
-                vinfo.ptr_vertex = currentList.base | normalArgument ;
+                vinfo.ptr_vertex = (currentList.base | normalArgument) + currentList.originAddr;
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(VADDR) + " " + String.format("%08x", vinfo.ptr_vertex));
                 }
@@ -1523,7 +1531,6 @@ public class VideoEngine {
             case TBP6:
             case TBP7: {
             	int level = command - TBP0;
-                //texture_base_pointer[level] = (currentList.base & 0xff000000) | normalArgument;
                 texture_base_pointer[level] = (texture_base_pointer[level] & 0xff000000) | normalArgument;
                 if (log.isDebugEnabled()) {
                     log ("sceGuTexImage(level=" + level + ", X, X, X, lo(pointer=0x" + Integer.toHexString(texture_base_pointer[level]) + "))");
@@ -2127,6 +2134,7 @@ public class VideoEngine {
                 if (State.captureGeNextFrame && !isVertexBufferEmbedded()) {
                     log.info("Capture PRIM");
                     CaptureManager.captureRAM(vinfo.ptr_vertex, vinfo.vertexSize * numberOfVertex);
+                    pspdisplay.getInstance().captureGeImage(gl);
                 }
 
                 endRendering(useVertexColor, useTexture);
@@ -2362,6 +2370,10 @@ public class VideoEngine {
                             + " new PC:" + String.format("%08x", npc));
                 }
                 currentList.pc = npc;
+
+                // Not sure when the originAddr is reset:
+                // at RET or at the second BASE command after ORIGIN_ADDR?
+                currentList.originAddr = 0;
                 break;
             }
 

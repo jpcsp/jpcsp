@@ -765,7 +765,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     public void sceDisplaySetFrameBuf(
         int topaddr, int bufferwidth, int pixelformat, int sync)
     {
-        topaddr &= 0x3FFFFFFF;
+        topaddr &= Memory.addressMask;
         if (topaddr < MemoryMap.START_VRAM || topaddr >= MemoryMap.END_VRAM ||
             bufferwidth <= 0 || (bufferwidth & (bufferwidth - 1)) != 0 ||
             pixelformat < 0 || pixelformat > 3 ||
@@ -831,18 +831,18 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     public void sceDisplayGetFrameBuf(
         int topaddr, int bufferwidth, int pixelformat, int sync)
     {
-        Memory memory = Memory.getInstance();
+    	// Parameter sync can have the values 0 or 1. Unknown meaning.
+
+    	Memory memory = Memory.getInstance();
         if (!memory.isAddressGood(topaddr    ) ||
             !memory.isAddressGood(bufferwidth) ||
-            !memory.isAddressGood(pixelformat) ||
-            !memory.isAddressGood(sync))
+            !memory.isAddressGood(pixelformat))
         {
             Emulator.getProcessor().cpu.gpr[2] = -1;
         } else {
             memory.write32(topaddr    , this.topaddrFb    );
             memory.write32(bufferwidth, this.bufferwidthFb);
             memory.write32(pixelformat, this.pixelformatFb);
-            memory.write32(sync       , this.sync         );
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
     }
@@ -905,7 +905,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     }
 
     public boolean isGeAddress(int address) {
-        address &= 0x3FFFFFFF;
+        address &= Memory.addressMask;
         if (address >= topaddrGe && address < bottomaddrGe) {
             return true;
         }
@@ -914,7 +914,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     }
 
     public boolean isFbAddress(int address) {
-        address &= 0x3FFFFFFF;
+        address &= Memory.addressMask;
         if (address >= topaddrFb && address < bottomaddrFb) {
             return true;
         }
@@ -1026,22 +1026,41 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     public int getSync() { return sync; }
 
     public void captureGeImage(GL gl) {
-        gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
+    	// Create a GE texture (the texture texFb might not have the right size)
+        int[] textures = new int[1];
+        gl.glGenTextures(1, textures, 0);
+        int texGe = textures[0];
 
+        gl.glBindTexture(GL.GL_TEXTURE_2D, texGe);
+        gl.glTexImage2D(
+            GL.GL_TEXTURE_2D, 0,
+            GL.GL_RGB, // GL.GL_RGBA
+            bufferwidthGe, Utilities.makePow2(heightGe), 0,
+            GL.GL_RGBA,
+            getPixelFormatGL(pixelformatGe), null);
+        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
+        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
+        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP);
+        gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP);
         gl.glPixelStorei(GL.GL_PACK_ALIGNMENT, getPixelFormatBytes(pixelformatGe));
         gl.glPixelStorei(GL.GL_PACK_ROW_LENGTH, bufferwidthGe);
 
-        // Copy screen to the current texture
+        // Copy screen to the GE texture
         gl.glCopyTexSubImage2D(
             GL.GL_TEXTURE_2D, 0,
             0, 0, 0, 0, widthGe, heightGe);
 
-        // Copy the current texture into memory
+        // Copy the GE texture into temp buffer
         temp.clear();
         int pixelFormatGL = getPixelFormatGL(pixelformatGe);
         gl.glGetTexImage(
             GL.GL_TEXTURE_2D, 0, pixelFormatGL == GL.GL_UNSIGNED_SHORT_5_6_5_REV ? GL.GL_RGB : GL.GL_RGBA,
             pixelFormatGL, temp);
-    	CaptureManager.captureImage(topaddrGe, 0, temp, widthGe, heightGe, bufferwidthGe, getPixelFormatGL(pixelformatGe), false, 0, false);
+
+        // Capture the GE image
+        CaptureManager.captureImage(topaddrGe, 0, temp, widthGe, heightGe, bufferwidthGe, pixelFormatGL, false, 0, false);
+
+    	// Delete the GE texture
+        gl.glDeleteTextures(1, textures, 0);
     }
 }
