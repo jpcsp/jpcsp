@@ -215,7 +215,8 @@ public class sceFont implements HLEModule {
 		int charInfoAddr = cpu.gpr[6];
 		Modules.log.warn(String.format("PARTIAL: sceFontGetCharInfo fontAddr=0x%08X, charCode=%04X (%c), charInfoAddr=%08X", fontAddr, charCode, (charCode <= 0xFF ? (char) charCode : '?'), charInfoAddr));
 
-		if (fontAddr != fontHandle) {
+		// Accept fontAddr == NULL as long as we have no real font list
+		if (fontAddr != fontHandle && fontAddr != 0) {
 			Modules.log.warn("Unknown fontAddr: 0x" + Integer.toHexString(fontAddr));
 			cpu.gpr[2] = -1;
 		} else {
@@ -240,7 +241,8 @@ public class sceFont implements HLEModule {
 		int glyphImageAddr = cpu.gpr[6];
 		Modules.log.warn(String.format("PARTIAL: sceFontGetCharGlyphImage fontAddr=0x%08X, charCode=%04X (%c), charInfoAddr=%08X", fontAddr, charCode, (charCode <= 0xFF ? (char) charCode : '?'), glyphImageAddr));
 
-		if (fontAddr != fontHandle) {
+		// Accept fontAddr == NULL as long as we have no real font list
+		if (fontAddr != fontHandle && fontAddr != 0) {
 			Modules.log.warn("Unknown fontAddr: 0x" + Integer.toHexString(fontAddr));
 			cpu.gpr[2] = -1;
 		} else {
