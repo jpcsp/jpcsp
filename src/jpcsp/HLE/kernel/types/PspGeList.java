@@ -16,11 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import java.util.Iterator;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
 import jpcsp.HLE.pspge;
-import jpcsp.graphics.VideoEngine;
 import static jpcsp.HLE.pspge.*;
 
 public class PspGeList
@@ -38,6 +34,7 @@ public class PspGeList
     public int currentStatus;
     public int syncStatus;
     public int id;
+    public int originAddr; // has to be added to the "base"
 
     public int thid; // the thread we are blocking
     public boolean listHasFinished;
@@ -62,6 +59,7 @@ public class PspGeList
 
         currentStatus = (pc == stall_addr) ? PSP_GE_LIST_STALL_REACHED : PSP_GE_LIST_QUEUED;
         syncStatus = currentStatus;
+        originAddr = 0;
     }
 
     public void pushSignalCallback(int arg) {
