@@ -527,12 +527,20 @@ public class VideoEngine {
             log("executeList id=" + list.id);
         }
 
-        Memory mem = Memory.getInstance();
+        IMemoryReader memoryReader = MemoryReader.getMemoryReader(currentList.pc, 4);
+        int memoryReaderPc = currentList.pc;
         while (!listHasEnded &&
                 currentList.pc != currentList.stall_addr
                 && !Emulator.pause) {
-            int ins = mem.read32(currentList.pc);
+        	if (currentList.pc != memoryReaderPc) {
+        		// The currentList.pc is no longer reading in sequence
+        		// and has jumped to a next location, get a new memory reader.
+        		memoryReader = MemoryReader.getMemoryReader(currentList.pc, 4);
+        	}
+            int ins = memoryReader.readNext();
             currentList.pc += 4;
+            memoryReaderPc = currentList.pc;
+
             executeCommand(ins);
         }
 
@@ -761,14 +769,14 @@ public class VideoEngine {
 
     // UnSwizzling based on pspplayer
     private Buffer unswizzleTextureFromMemory(int texaddr, int bytesPerPixel, int level) {
-        Memory mem = Memory.getInstance();
         int rowWidth = (bytesPerPixel > 0) ? (texture_buffer_width[level] * bytesPerPixel) : (texture_buffer_width[level] / 2);
         int pitch = ( rowWidth - 16 ) / 4;
         int bxc = rowWidth / 16;
         int byc = texture_height[level] / 8;
 
-        int src = texaddr, ydest = 0;
+        int ydest = 0;
 
+        IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, 4);
         for( int by = 0; by < byc; by++ )
         {
             int xdest = ydest;
@@ -777,13 +785,12 @@ public class VideoEngine {
                 int dest = xdest;
                 for( int n = 0; n < 8; n++ )
                 {
-                    tmp_texture_buffer32[dest] = mem.read32(src);
-                    tmp_texture_buffer32[dest+1] = mem.read32(src + 4);
-                    tmp_texture_buffer32[dest+2] = mem.read32(src + 8);
-                    tmp_texture_buffer32[dest+3] = mem.read32(src + 12);
+                    tmp_texture_buffer32[dest  ] = memoryReader.readNext();
+                    tmp_texture_buffer32[dest+1] = memoryReader.readNext();
+                    tmp_texture_buffer32[dest+2] = memoryReader.readNext();
+                    tmp_texture_buffer32[dest+3] = memoryReader.readNext();
 
-                    src     += 4*4;
-                    dest    += pitch+4;
+                    dest += pitch+4;
                 }
                 xdest += (16/4);
             }

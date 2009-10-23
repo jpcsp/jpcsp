@@ -27,6 +27,8 @@ import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.MemoryReader;
 
 import jpcsp.Memory;
 import jpcsp.Processor;
@@ -591,9 +593,9 @@ public class sceSasCore implements HLEModule {
         		{  98.0 / 64.0, -55.0 / 64.0 },
         		{ 122.0 / 64.0, -60.0 / 64.0 }
         		};
-        for (int i = 0; i <= (size - 16); ) {
-        	int n = mem.read8(vagAddr + i);
-        	i++;
+        IMemoryReader memoryReader = MemoryReader.getMemoryReader(vagAddr, 1);
+        for (int i = 0; i <= (size - 16); i += 16) {
+        	int n = memoryReader.readNext();
         	int predict_nr = n >> 4;
         	if (predict_nr >= VAG_f.length) {
         		// predict_nr is supposed to be included in [0..4].
@@ -603,14 +605,12 @@ public class sceSasCore implements HLEModule {
         		predict_nr = 0;
         	}
         	int shift_factor = n & 0x0F;
-        	int flag = mem.read8(vagAddr + i);
-        	i++;
+        	int flag = memoryReader.readNext();
         	if (flag == 0x07) {
         		break;	// End of stream flag
         	}
         	for (int j = 0; j < 28; j += 2) {
-        		int d = mem.read8(vagAddr + i);
-        		i++;
+        		int d = memoryReader.readNext();
         		int s = (short) ((d & 0x0F) << 12);
         		unpackedSamples[j] = s >> shift_factor;
         		s = (short) ((d & 0xF0) << 8);
