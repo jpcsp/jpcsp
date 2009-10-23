@@ -658,7 +658,9 @@ public class ThreadMan {
         } else if (thread.status == PSP_THREAD_STOPPED) {
             toBeDeletedThreads.remove(thread);
         } else if (thread.status == PSP_THREAD_READY) {
-        	readyThreads.remove(thread);
+        	synchronized (readyThreads) {
+        		readyThreads.remove(thread);
+        	}
         }
 
         thread.status = newStatus;
@@ -687,7 +689,9 @@ public class ThreadMan {
             }
             onThreadStopped(thread);
         } else if (thread.status == PSP_THREAD_READY) {
-        	readyThreads.add(thread);
+        	synchronized (readyThreads) {
+        		readyThreads.add(thread);
+        	}
             thread.waitType = PSP_WAIT_NONE;
         } else if (thread.status == PSP_THREAD_RUNNING) {
             // debug
