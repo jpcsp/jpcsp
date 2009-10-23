@@ -10,7 +10,7 @@ LIBDIR =
 LDFLAGS =
 
 EXTRA_TARGETS = EBOOT.PBP
-PSP_EBOOT_TITLE = Template
+PSP_EBOOT_TITLE = Fpu Test
 
 PSPSDK=$(shell psp-config --pspsdk-path)
 include $(PSPSDK)/lib/build.mak

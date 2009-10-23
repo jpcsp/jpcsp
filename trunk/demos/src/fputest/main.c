@@ -1,4 +1,10 @@
 #include <pspkernel.h>
+#include <pspdebug.h>
+#include <pspctrl.h>
+#include <pspdisplay.h>
+
+#define printf  pspDebugScreenPrintf
+
 
 PSP_MODULE_INFO("fpu test", 0, 1, 1);
 
@@ -81,23 +87,75 @@ float __attribute__((noinline)) negs(float x)
 	return result;
 }
 
+int __attribute__((noinline)) cvtws(float x, int rm)
+{
+	float resultFloat;
+	asm volatile("ctc1 %0, $31" : : "r"(rm));
+	asm volatile("cvt.w.s %0, %1" : "=f"(resultFloat) : "f"(x));
+	int result = *((int *) &resultFloat);
+	return result;
+}
+
+
 static int results[32];
 
 int main(int argc, char *argv[])
 {
-	results[0] = (adds(1.0, 1.0) == 2.0);
-	results[1] = (subs(3.0, 1.0) == 2.0);
-	results[2] = (muls(2.0, 1.0) == 2.0);
-	results[3] = (divs(4.0, 2.0) == 2.0);
-	results[4] = (abss(+2.0) == 2.0);
-	results[5] = (abss(-2.0) == 2.0);
-	results[6] = (negs(negs(+2.0)) == 2.0);
-	results[7] = (sqrts(4.0)) == 2.0);
+	int n = 0;
+	results[n++] = (adds(1.0, 1.0) == 2.0);
+	results[n++] = (subs(3.0, 1.0) == 2.0);
+	results[n++] = (muls(2.0, 1.0) == 2.0);
+	results[n++] = (divs(4.0, 2.0) == 2.0);
+	results[n++] = (abss(+2.0) == 2.0);
+	results[n++] = (abss(-2.0) == 2.0);
+	results[n++] = (negs(negs(+2.0)) == 2.0);
+	results[n++] = (sqrts(4.0) == 2.0);
 
-	int result = 0, i;
+	results[n++] = (cvtws(1.1, 0) == 1);
+	results[n++] = (cvtws(1.1, 1) == 1);
+	results[n++] = (cvtws(1.1, 2) == 2);
+	results[n++] = (cvtws(1.1, 3) == 1);
 
-	for (i = 0; i < 32; ++i)
-		if (results[i]) result |= 1 << i;
+	results[n++] = (cvtws(-1.1, 0) == -1);
+	results[n++] = (cvtws(-1.1, 1) == -1);
+	results[n++] = (cvtws(-1.1, 2) == -1);
+	results[n++] = (cvtws(-1.1, 3) == -2);
+
+	results[n++] = (cvtws(1.9, 0) == 2);
+	results[n++] = (cvtws(1.9, 1) == 1);
+	results[n++] = (cvtws(1.9, 2) == 2);
+	results[n++] = (cvtws(1.9, 3) == 1);
+
+	results[n++] = (cvtws(1.5, 0) == 2);
+	results[n++] = (cvtws(1.5, 1) == 1);
+	results[n++] = (cvtws(1.5, 2) == 2);
+	results[n++] = (cvtws(1.5, 3) == 1);
+
+	int i;
+
+	pspDebugScreenInit();
+	for (i = 0; i < n; ++i) {
+		printf("Test#%d: %s\n", i, results[i] ? "OK" : "Failed");
+	}
+
+    SceCtrlData pad;
+    int oldButtons = 0;
+	int done = 0;
+
+	printf("Press Cross to Exit\n");
+	while(!done)
+	{
+		sceCtrlReadBufferPositive(&pad, 1);
+		int buttonDown = (oldButtons ^ pad.Buttons) & pad.Buttons;
+
+		if (buttonDown & PSP_CTRL_CROSS)
+		{
+			done = 1;
+		}
+
+		oldButtons = pad.Buttons;
+		sceDisplayWaitVblank();
+	}
 
 	return 0;
 }
