@@ -159,6 +159,31 @@ public class CaptureImage {
 					}
 				}
 			}
+    	} else if (buffer instanceof IntBuffer && !imageType32Bit) {
+    		IntBuffer intBuffer = (IntBuffer) buffer;
+			for (int y = 0; y < height; y++) {
+				for (int x = 0; x < width; x += 2) {
+					try {
+						int twoPixels = intBuffer.get();
+						getPixelBytes((short) twoPixels, imageType, pixelBytes);
+						outBmp.write(pixelBytes);
+						getPixelBytes((short) (twoPixels >>> 16), imageType, pixelBytes);
+						outBmp.write(pixelBytes);
+					} catch (BufferUnderflowException e) {
+						pixelBytes[0] = pixelBytes[1] = pixelBytes[2] = 0;
+						outBmp.write(pixelBytes);
+						outBmp.write(pixelBytes);
+					}
+				}
+				outBmp.write(rowPadBytes);
+				for (int x = width; x < bufferWidth; x += 2) {
+					try {
+						intBuffer.get();
+					} catch (BufferUnderflowException e) {
+						// Ignore exception
+					}
+				}
+			}
     	} else if (buffer instanceof ShortBuffer && !imageType32Bit) {
     		ShortBuffer shortBuffer = (ShortBuffer) buffer;
 			for (int y = 0; y < height; y++) {

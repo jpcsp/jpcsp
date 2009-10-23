@@ -163,7 +163,12 @@ public class Profiler {
 		for (int i = -contextBefore; i < length + contextAfter; i++) {
 			int address = startAddress + (i * 4);
 			CodeInstruction codeInstruction = codeBlock.getCodeInstruction(address);
-			logCode(codeInstruction, highlightAddress);
+			if (highlightAddress >= 0 && address == startAddress) {
+				// Also highlight startAddress
+				logCode(codeInstruction, startAddress);
+			} else {
+				logCode(codeInstruction, highlightAddress);
+			}
 		}
 	}
 
