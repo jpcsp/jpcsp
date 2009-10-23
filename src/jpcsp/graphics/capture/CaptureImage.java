@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.graphics.capture;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -104,17 +105,15 @@ public class CaptureImage {
 		// Unfortunately, I was not able to generate the image file
 		// using the ImageIO API :-(
 		// This is why I'm generating a BMP file manually...
-		OutputStream outBmp = new FileOutputStream(fileName);
 		byte[] fileHeader = new byte[14];
 		byte[] dibHeader = new byte[40];
-		fileHeader[0] = 'B';
-		fileHeader[1] = 'M';
-		int rowPad = 4 - ((width * 3) & 3);
-		if (rowPad == 4) {
-			rowPad = 0;
-		}
+		int rowPad = (4 - ((width * 3) & 3)) & 3;
 		int imageSize = height * ((width * 3) + rowPad);
 		int fileSize = fileHeader.length + dibHeader.length + imageSize;
+		OutputStream outBmp = new BufferedOutputStream(new FileOutputStream(fileName), fileSize);
+
+		fileHeader[0] = 'B';
+		fileHeader[1] = 'M';
 		storeLittleEndianInt(fileHeader, 2, fileSize);
 		storeLittleEndianInt(fileHeader, 10, fileHeader.length + dibHeader.length);
 

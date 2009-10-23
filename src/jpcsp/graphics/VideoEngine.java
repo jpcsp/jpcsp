@@ -2151,10 +2151,13 @@ public class VideoEngine {
                     pspdisplay.getInstance().captureGeImage(gl);
                 }
 
-                // VADDR is updated after vertex rendering (only when not indexed).
-                // Some games rely on this and don't reload VADDR between 2 PRIM calls.
+                // VADDR/IADDR are updated after vertex rendering
+                // (IADDR when indexed and VADDR when not).
+                // Some games rely on this and don't reload VADDR/IADDR between 2 PRIM calls.
                 if (vinfo.index == 0) {
                 	vinfo.ptr_vertex = vinfo.getAddress(mem, numberOfVertex);
+                } else {
+                	vinfo.ptr_index += numberOfVertex * vinfo.index;
                 }
 
                 endRendering(useVertexColor, useTexture);
@@ -3496,7 +3499,7 @@ public class VideoEngine {
             // I'm interpreting it here as forcing a specific mipmap (from bias parameter).
             // This seems to work with TBIAS_MODE_CONST and bias=0.
             if (tex_mipmap_mode == TBIAS_MODE_CONST) {
-            	numberMipmaps = tex_mipmap_bias_int;
+            	numberMipmaps = Math.min(tex_mipmap_bias_int, texture_base_pointer.length - 1);
             	log.debug("TBIAS_MODE_CONST " + tex_mipmap_bias_int);
             }
 
