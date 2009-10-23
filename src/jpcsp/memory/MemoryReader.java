@@ -29,21 +29,33 @@ import jpcsp.MemoryMap;
  */
 public class MemoryReader {
 	public static IMemoryReader getMemoryReader(int address, int length, int step) {
-		Buffer buffer = Memory.getInstance().getBuffer(address, length);
+		Memory mem = Memory.getInstance();
 
-		if (buffer instanceof IntBuffer) {
-			IntBuffer intBuffer = (IntBuffer) buffer;
+		if (mem instanceof FastMemory) {
+			int[] memoryInt = ((FastMemory) mem).getAll();
+
 			switch (step) {
-			case 1: return new MemoryReaderInt8(intBuffer, address & 0x03);
-			case 2: return new MemoryReaderInt16(intBuffer, (address & 0x02) >> 1);
-			case 4: return new MemoryReaderInt32(intBuffer);
+			case 1: return new MemoryReaderIntArray8(memoryInt, address);
+			case 2: return new MemoryReaderIntArray16(memoryInt, address);
+			case 4: return new MemoryReaderIntArray32(memoryInt, address);
 			}
-		} else if (buffer instanceof ByteBuffer) {
-			ByteBuffer byteBuffer = (ByteBuffer) buffer;
-			switch (step) {
-			case 1: return new MemoryReaderByte8(byteBuffer);
-			case 2: return new MemoryReaderByte16(byteBuffer);
-			case 4: return new MemoryReaderByte32(byteBuffer);
+		} else {
+			Buffer buffer = Memory.getInstance().getBuffer(address, length);
+
+			if (buffer instanceof IntBuffer) {
+				IntBuffer intBuffer = (IntBuffer) buffer;
+				switch (step) {
+				case 1: return new MemoryReaderInt8(intBuffer, address & 0x03);
+				case 2: return new MemoryReaderInt16(intBuffer, (address & 0x02) >> 1);
+				case 4: return new MemoryReaderInt32(intBuffer);
+				}
+			} else if (buffer instanceof ByteBuffer) {
+				ByteBuffer byteBuffer = (ByteBuffer) buffer;
+				switch (step) {
+				case 1: return new MemoryReaderByte8(byteBuffer);
+				case 2: return new MemoryReaderByte16(byteBuffer);
+				case 4: return new MemoryReaderByte32(byteBuffer);
+				}
 			}
 		}
 
@@ -100,6 +112,83 @@ public class MemoryReader {
 			length -= step;
 
 			return n;
+		}
+	}
+
+	private static class MemoryReaderIntArray8 implements IMemoryReader {
+		private int index;
+		private int offset;
+		private int value;
+		private int[] buffer;
+
+		public MemoryReaderIntArray8(int[] buffer, int addr) {
+			this.buffer = buffer;
+			offset = addr / 4;
+			index = addr & 3;
+			value = buffer[offset] >> (8 * index);
+		}
+
+		@Override
+		public int readNext() {
+			int n;
+
+			if (index == 4) {
+				index = 0;
+				offset++;
+				value = buffer[offset];
+			}
+			n = value & 0xFF;
+			value >>= 8;
+			index++;
+
+			return n;
+		}
+	}
+
+	private static class MemoryReaderIntArray16 implements IMemoryReader {
+		private int index;
+		private int offset;
+		private int value;
+		private int[] buffer;
+
+		public MemoryReaderIntArray16(int[] buffer, int addr) {
+			this.buffer = buffer;
+			offset = addr / 4;
+			index = (addr / 2) & 1;
+			if (index != 0) {
+				value = buffer[offset++];
+			}
+		}
+
+		@Override
+		public int readNext() {
+			int n;
+
+			if (index == 0) {
+				value = buffer[offset++];
+				n = value & 0xFFFF;
+				index = 1;
+			} else {
+				index = 0;
+				n = value >>> 16;
+			}
+
+			return n;
+		}
+	}
+
+	private static class MemoryReaderIntArray32 implements IMemoryReader {
+		private int offset;
+		private int[] buffer;
+
+		public MemoryReaderIntArray32(int[] buffer, int addr) {
+			offset = addr / 4;
+			this.buffer = buffer;
+		}
+
+		@Override
+		public int readNext() {
+			return buffer[offset++];
 		}
 	}
 

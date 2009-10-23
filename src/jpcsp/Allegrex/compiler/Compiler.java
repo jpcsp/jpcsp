@@ -34,6 +34,8 @@ import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.Allegrex.compiler.nativeCode.NativeCodeManager;
+import jpcsp.memory.IMemoryReader;
+import jpcsp.memory.MemoryReader;
 import jpcsp.util.DurationStatistics;
 
 /*
@@ -216,8 +218,9 @@ public class Compiler implements ICompiler {
             if (context.analysedAddresses.contains(pc) && isBranchTarget) {
                 codeBlock.setIsBranchTarget(pc);
             } else {
+            	IMemoryReader memoryReader = MemoryReader.getMemoryReader(pc, 4);
                 while (!context.analysedAddresses.contains(pc) && pc <= endPc) {
-                    int opcode = mem.read32(pc);
+                    int opcode = memoryReader.readNext();
 
                     Common.Instruction insn = Decoder.instruction(opcode);
 
