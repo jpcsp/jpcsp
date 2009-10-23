@@ -534,7 +534,7 @@ public class VideoEngine {
         int memoryReaderPc = currentList.pc;
         while (!listHasEnded &&
                 currentList.pc != currentList.stall_addr
-                && !Emulator.pause) {
+                && (!Emulator.pause || State.captureGeNextFrame)) {
         	if (currentList.pc != memoryReaderPc) {
         		// The currentList.pc is no longer reading in sequence
         		// and has jumped to a next location, get a new memory reader.
@@ -1895,6 +1895,7 @@ public class VideoEngine {
                 if (log.isDebugEnabled()) {
                     log("psm=" + normalArgument + "(" + getPsmName(normalArgument) + ")");
                 }
+                geBufChanged = true;
                 break;
 
             case PRIM:
