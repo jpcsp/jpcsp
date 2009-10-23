@@ -235,6 +235,8 @@ public class VideoEngine {
 
     private int[] dither_matrix = new int[16];
 
+    private boolean takeConditionalJump;
+
     // opengl needed information/buffers
     private int[] gl_texture_id = new int[1];
     private int[] tmp_texture_buffer32 = new int[1024*1024];
@@ -287,6 +289,7 @@ public class VideoEngine {
         tex_mipmap_mode = TBIAS_MODE_AUTO;
         tex_mipmap_bias = 0.f;
         tex_mipmap_bias_int = 0;
+        takeConditionalJump = false;
 
         statistics = new DurationStatistics("VideoEngine Statistics");
         commandStatistics = new DurationStatistics[256];
@@ -2137,10 +2140,6 @@ public class VideoEngine {
 	                }
                 }
 
-                // VADDR is updated after vertex rendering.
-                // Some games rely on this and don't reload VADDR between 2 PRIM calls.
-                vinfo.ptr_vertex = vinfo.getAddress(mem, numberOfVertex);
-
                 vertexStatistics.end();
 
                 // Don't capture the ram if the vertex list is embedded in the display list. TODO handle stall_addr == 0 better
@@ -2149,6 +2148,12 @@ public class VideoEngine {
                     log.info("Capture PRIM");
                     CaptureManager.captureRAM(vinfo.ptr_vertex, vinfo.vertexSize * numberOfVertex);
                     pspdisplay.getInstance().captureGeImage(gl);
+                }
+
+                // VADDR is updated after vertex rendering (only when not indexed).
+                // Some games rely on this and don't reload VADDR between 2 PRIM calls.
+                if (vinfo.index == 0) {
+                	vinfo.ptr_vertex = vinfo.getAddress(mem, numberOfVertex);
                 }
 
                 endRendering(useVertexColor, useTexture);
@@ -3098,6 +3103,34 @@ public class VideoEngine {
                 }
 
                 break;
+
+            case BBOX:
+            {
+                int numberOfVertexBoundingBox = normalArgument;
+                // TODO Check if the bounding box is visible
+                if (log.isInfoEnabled()) {
+                    log.info("Not implemented (but can be ignored): " + helper.getCommandString(BBOX) + " numberOfVertex=" + numberOfVertexBoundingBox);
+                }
+                // If not visible, set takeConditionalJump to true.
+            	takeConditionalJump = false;
+            	break;
+            }
+            case BJUMP:
+            {
+            	if (takeConditionalJump) {
+	                int npc = ((currentList.base | normalArgument) & 0xFFFFFFFC) + currentList.baseOffset;
+	                if (log.isDebugEnabled()) {
+	                    log(helper.getCommandString(BJUMP) + " old PC:" + String.format("%08x", currentList.pc)
+	                            + " new PC:" + String.format("%08x", npc));
+	                }
+	                currentList.pc = npc;
+            	} else {
+	                if (log.isDebugEnabled()) {
+	                    log(helper.getCommandString(BJUMP) + " not taking Conditional Jump");
+	                }
+            	}
+                break;
+            }
 
             default:
                 log.warn("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "](int="+normalArgument+",float="+floatArgument+")");
