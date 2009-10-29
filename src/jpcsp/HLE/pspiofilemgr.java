@@ -67,10 +67,29 @@ public class pspiofilemgr {
     public final static int PSP_O_CREAT    = 0x0200;
     public final static int PSP_O_TRUNC    = 0x0400;
     public final static int PSP_O_EXCL     = 0x0800;
-    public final static int PSP_O_UNKNOWN1 = 0x4000; // something async?
+    public final static int PSP_O_NOBUF    = 0x4000; //No device buffer and console interrupt
     public final static int PSP_O_NOWAIT   = 0x8000;
-    public final static int PSP_O_UNKNOWN2 = 0xf0000; // seen on Wipeout Pure and Infected
-    public final static int PSP_O_UNKNOWN3 = 0x2000000; // seen on Puzzle Guzzle, Hammerin' Hero
+    public final static int PSP_O_FDEXCL   = 0x1000000; //Exclusive access (async?)
+    public final static int PSP_O_PWLOCK   = 0x2000000; //Power control lock (???)
+
+    //Retry count:
+    //Every flag seems to be ORed with a retry count.
+    public final static int PSP_O_RETRY_0   = 0x00000;
+    public final static int PSP_O_RETRY_1   = 0x10000;
+    public final static int PSP_O_RETRY_2   = 0x20000;
+    public final static int PSP_O_RETRY_3   = 0x30000;
+    public final static int PSP_O_RETRY_4   = 0x40000;
+    public final static int PSP_O_RETRY_5   = 0x50000;
+    public final static int PSP_O_RETRY_6   = 0x60000;
+    public final static int PSP_O_RETRY_7   = 0x70000;
+    public final static int PSP_O_RETRY_8   = 0x80000;
+    public final static int PSP_O_RETRY_9   = 0x90000;
+    public final static int PSP_O_RETRY_10  = 0xa0000;
+    public final static int PSP_O_RETRY_11  = 0xb0000;
+    public final static int PSP_O_RETRY_12  = 0xc0000;
+    public final static int PSP_O_RETRY_13  = 0xd0000;
+    public final static int PSP_O_RETRY_14  = 0xe0000;
+    public final static int PSP_O_RETRY_15  = 0xf0000;
 
     public final static int PSP_SEEK_SET  = 0;
     public final static int PSP_SEEK_CUR  = 1;
@@ -626,10 +645,10 @@ public class pspiofilemgr {
             if ((flags & PSP_O_TRUNC) == PSP_O_TRUNC) Modules.log.debug("PSP_O_TRUNC");
             if ((flags & PSP_O_EXCL) == PSP_O_EXCL) Modules.log.debug("PSP_O_EXCL");
             if ((flags & PSP_O_NOWAIT) == PSP_O_NOWAIT) Modules.log.debug("PSP_O_NOWAIT");
+            if ((flags & PSP_O_NOBUF) == PSP_O_NOBUF) Modules.log.debug("PSP_O_NOBUF");
+            if ((flags & PSP_O_FDEXCL) == PSP_O_FDEXCL) Modules.log.debug("PSP_O_FDEXCL");
+            if ((flags & PSP_O_PWLOCK) == PSP_O_PWLOCK) Modules.log.debug("PSP_O_PWLOCK");
         }
-        if ((flags & PSP_O_UNKNOWN1) == PSP_O_UNKNOWN1) Modules.log.warn("UNIMPLEMENTED:sceIoOpen flags=PSP_O_UNKNOWN1 file='" + filename + "'");
-        if ((flags & PSP_O_UNKNOWN2) == PSP_O_UNKNOWN2) Modules.log.warn("UNIMPLEMENTED:sceIoOpen flags=PSP_O_UNKNOWN2 file='" + filename + "'");
-        if ((flags & PSP_O_UNKNOWN3) == PSP_O_UNKNOWN3) Modules.log.warn("UNIMPLEMENTED:sceIoOpen flags=PSP_O_UNKNOWN3 file='" + filename + "'");
 
         String mode = getMode(flags);
 
@@ -1616,6 +1635,29 @@ public class pspiofilemgr {
                         }
                     } else {
                         Modules.log.warn("hleIoIoctl cmd=0x01010005 " + String.format("0x%08X %d", indata_addr, inlen) + " unsupported parameters");
+                        result = PSP_ERROR_INVALID_ARGUMENT;
+                    }
+                    break;
+                }
+
+                //Get UMD file pointer
+                case 0x01020004:
+                {
+                    if (mem.isAddressGood(outdata_addr) && outlen >= 4) {
+                        if (info.isUmdFile()) {
+                            try {
+                                long fPointer = info.readOnlyFile.getFilePointer();
+                                mem.write64(outdata_addr, fPointer);
+                                Modules.log.debug("hleIoIoctl umd file get file pointer " + fPointer);
+                                result = 0;
+                            } catch (IOException e) {
+                                Modules.log.warn("hleIoIoctl cmd=0x01020004 exception: " + e.getMessage());
+                            }
+                        } else {
+                            Modules.log.warn("hleIoIoctl cmd=0x01020004 only allowed on UMD files");
+                        }
+                    } else {
+                        Modules.log.warn("hleIoIoctl cmd=0x01020004 " + String.format("0x%08X %d", outdata_addr, outlen) + " unsupported parameters");
                         result = PSP_ERROR_INVALID_ARGUMENT;
                     }
                     break;
