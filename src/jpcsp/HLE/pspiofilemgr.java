@@ -67,13 +67,13 @@ public class pspiofilemgr {
     public final static int PSP_O_CREAT    = 0x0200;
     public final static int PSP_O_TRUNC    = 0x0400;
     public final static int PSP_O_EXCL     = 0x0800;
-    public final static int PSP_O_NOBUF    = 0x4000; //No device buffer and console interrupt
+    public final static int PSP_O_UNKNOWN1 = 0x4000; // something async?
     public final static int PSP_O_NOWAIT   = 0x8000;
-    public final static int PSP_O_FDEXCL   = 0x1000000; //Exclusive access (async?)
-    public final static int PSP_O_PWLOCK   = 0x2000000; //Power control lock (???)
+    public final static int PSP_O_UNKNOWN2 = 0x2000000; // seen on Puzzle Guzzle, Hammerin' Hero
 
-    //Retry count:
     //Every flag seems to be ORed with a retry count.
+    //In Activision Hits Remixed, an error is produced after
+    //the retry count (0xf0000/15) is over.
     public final static int PSP_O_RETRY_0   = 0x00000;
     public final static int PSP_O_RETRY_1   = 0x10000;
     public final static int PSP_O_RETRY_2   = 0x20000;
@@ -645,10 +645,9 @@ public class pspiofilemgr {
             if ((flags & PSP_O_TRUNC) == PSP_O_TRUNC) Modules.log.debug("PSP_O_TRUNC");
             if ((flags & PSP_O_EXCL) == PSP_O_EXCL) Modules.log.debug("PSP_O_EXCL");
             if ((flags & PSP_O_NOWAIT) == PSP_O_NOWAIT) Modules.log.debug("PSP_O_NOWAIT");
-            if ((flags & PSP_O_NOBUF) == PSP_O_NOBUF) Modules.log.debug("PSP_O_NOBUF");
-            if ((flags & PSP_O_FDEXCL) == PSP_O_FDEXCL) Modules.log.debug("PSP_O_FDEXCL");
-            if ((flags & PSP_O_PWLOCK) == PSP_O_PWLOCK) Modules.log.debug("PSP_O_PWLOCK");
         }
+        if ((flags & PSP_O_UNKNOWN1) == PSP_O_UNKNOWN1) Modules.log.warn("UNIMPLEMENTED:sceIoOpen flags=PSP_O_UNKNOWN1 file='" + filename + "'");
+        if ((flags & PSP_O_UNKNOWN2) == PSP_O_UNKNOWN2) Modules.log.warn("UNIMPLEMENTED:sceIoOpen flags=PSP_O_UNKNOWN2 file='" + filename + "'");
 
         String mode = getMode(flags);
 

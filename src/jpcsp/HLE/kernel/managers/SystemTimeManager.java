@@ -68,6 +68,14 @@ public class SystemTimeManager {
         }
     }
 
+    public void sceKernelUSec2SysClockWide(int usec) {
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug("sceKernelUSec2SysClockWide usec:" + usec);
+        }
+        Emulator.getProcessor().cpu.gpr[2] = (usec & 0xffffffff);
+        Emulator.getProcessor().cpu.gpr[3] = ((usec >> 32) & 0xffffffff);
+    }
+
     public void sceKernelSysClock2USec(int clock_addr, int low_addr, int high_addr) {
         Memory mem = Memory.getInstance();
         if (!mem.isAddressGood(clock_addr)) {
