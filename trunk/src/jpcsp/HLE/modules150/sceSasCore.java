@@ -125,50 +125,6 @@ public class sceSasCore implements HLEModule {
         }
     }
 
-    public static final int PSP_SAS_ERROR_ADDRESS = 0x80420005;
-    public static final int PSP_SAS_ERROR_VOICE_INDEX = 0x80420010;
-    public static final int PSP_SAS_ERROR_NOISE_CLOCK = 0x80420011;
-    public static final int PSP_SAS_ERROR_PITCH_VAL = 0x80420012;
-    public static final int PSP_SAS_ERROR_ADSR_MODE = 0x80420013;
-    public static final int PSP_SAS_ERROR_ADPCM_SIZE = 0x80420014;
-    public static final int PSP_SAS_ERROR_LOOP_MODE = 0x80420015;
-    public static final int PSP_SAS_ERROR_INVALID_STATE = 0x80420016;
-    public static final int PSP_SAS_ERROR_VOLUME_VAL = 0x80420018;
-    public static final int PSP_SAS_ERROR_ADSR_VAL = 0x80420019;
-    public static final int PSP_SAS_ERROR_FX_TYPE = 0x80420020;
-    public static final int PSP_SAS_ERROR_FX_FEEDBACK = 0x80420021;
-    public static final int PSP_SAS_ERROR_FX_DELAY = 0x80420022;
-    public static final int PSP_SAS_ERROR_FX_VOLUME_VAL = 0x80420023;
-    public static final int PSP_SAS_ERROR_BUSY = 0x80420030;
-    public static final int PSP_SAS_ERROR_NOTINIT = 0x80420100;
-    public static final int PSP_SAS_ERROR_ALRDYINIT = 0x80420101;
-
-    public static final int PSP_SAS_VOICE_MAX = 32;
-    public static final int PSP_SAS_VOLUME_MAX = 0x1000;
-
-    public static final int PSP_SAS_GRAIN_SAMPLES = 256;
-
-    public static final int PSP_SAS_PITCH_MIN = 1;
-    public static final int PSP_SAS_PITCH_MAX = 0x4000;
-    public static final int PSP_SAS_PITCH_BASE = 0x1000;
-    public static final int PSP_SAS_NOISE_CLOCK_MAX = 0x3f;
-    public static final int PSP_SAS_ENVELOPE_HEIGHT_MAX = 0x40000000;
-    public static final int PSP_SAS_ENVELOPE_RATE_MAX = 0x7fffffff;
-
-    //ADSR Mode flags
-    public static final int PSP_SAS_ADSR_MODE_LINEAR_INC = 0;
-    public static final int PSP_SAS_ADSR_MODE_LINEAR_DEC = 1;
-    public static final int PSP_SAS_ADSR_MODE_BENT_LINEAR = 2;
-    public static final int PSP_SAS_ADSR_MODE_REVEXPONENT = 3;
-    public static final int PSP_SAS_ADSR_MODE_EXPONENT = 4;
-    public static final int PSP_SAS_ADSR_MODE_DIRECT = 5;
-
-    //ADSR flags
-    public static final int PSP_SAS_ATTACK_VALID = 1;
-    public static final int PSP_SAS_DECAY_VALID = 2;
-    public static final int PSP_SAS_SUSTAIN_VALID = 4;
-    public static final int PSP_SAS_RELEASE_VALID = 8;
-
     protected class pspVoice {
     	public SourceDataLine outputDataLine;
     	public float outputDataLineSampleRate;
@@ -381,15 +337,15 @@ public class sceSasCore implements HLEModule {
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
-        int flag = cpu.gpr[6]; // 8, 0xf   (ADSR Flag)
-        int a = cpu.gpr[7]; // 0, 0x40000000  (Attack)
-        int d = cpu.gpr[8]; // 0x64  (Decay)
-        int s = cpu.gpr[9]; // 0x64  (Sustain)
-        int r = cpu.gpr[10]; // 0x10000000  (Release)
+        //int unk2 = cpu.gpr[6]; // 8, 0xf
+        //int unk3 = cpu.gpr[7]; // 0, 0x40000000
+        //int unk4 = cpu.gpr[8]; // 0x64
+        //int unk5 = cpu.gpr[9]; // 0x64
+        //int unk6 = cpu.gpr[10]; // 0x10000000
 
         Modules.log.warn("Unimplemented NID function __sceSasSetADSR [0x019B25EB] "
             + String.format("sasCore=%08x, voice=%d %08x %08x %08x %08x %08x",
-            sasCore, voice, flag, a, d, s, r));
+            sasCore, voice, cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9], cpu.gpr[10]));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -722,15 +678,13 @@ public class sceSasCore implements HLEModule {
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
-        int flag = cpu.gpr[6]; // 8/0xf  (ADSR Mode flag)
-        int a = cpu.gpr[7]; // 0
-        int d = cpu.gpr[8];
-        int s = cpu.gpr[9];
-        int r = cpu.gpr[10];
+        //int unk2 = cpu.gpr[6]; // 8/0xf
+        //int unk3 = cpu.gpr[7]; // 0
+        // may be more parameters
 
         Modules.log.warn("Unimplemented NID function __sceSasSetADSRmode [0x9EC3676A] "
-            + String.format("%08x %08x %08x %08x %08x %08x %08x",
-            sasCore, voice, flag, a, d, s, r));
+            + String.format("%08x %08x %08x %08x %08x %08x",
+            cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]));
 
         cpu.gpr[2] = 0xDEADC0DE;
 
@@ -777,10 +731,10 @@ public class sceSasCore implements HLEModule {
         // Processor cpu = processor; // Old-Style Processor
 
         int sasCore = cpu.gpr[4];
-        int pOut = cpu.gpr[5]; // looks like a heap address, bss, 0x40 aligned
+        //int unk1 = cpu.gpr[5]; // looks like a heap address, bss, 0x40 aligned
         // 99% sure there are no more parameters
 
-        //pOut matches the buffer address referenced by sceAudioOutput2xxx functions (Hykem)
+        //unk1 matches the buffer address referenced by sceAudioOutput2xxx functions (Hykem)
 
         Modules.log.debug("IGNORING:__sceSasCore " + makeLogParams(cpu));
 
@@ -812,19 +766,19 @@ public class sceSasCore implements HLEModule {
     }
 
     public void __sceSasSetNoise(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
+         CpuState cpu = processor.cpu;
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
-        int uClk = cpu.gpr[6];
+        int freq = cpu.gpr[6];
 
         Modules.log.info("IGNORING:__sceSasSetNoise: "
             + String.format("sasCore=%08x, voice=%d, freq=0x%04x",
-            sasCore, voice, uClk));
+            sasCore, voice, freq));
 
         //Faking
-        if (isSasHandleGood(sasCore, "__sceSasSetPitch", cpu) && isVoiceNumberGood(voice, "__sceSasSetPitch", cpu)) {
-        	voices[voice].noise = uClk;
+        if (isSasHandleGood(sasCore, "__sceSasSetNoise", cpu) && isVoiceNumberGood(voice, "__sceSasSetNoise", cpu)) {
+        	voices[voice].noise = freq;
         	cpu.gpr[2] = 0;
         }
     }
@@ -855,12 +809,13 @@ public class sceSasCore implements HLEModule {
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
-        int ADSR1 = cpu.gpr[6]; // 0xff
-        int ADSR2 = cpu.gpr[7]; // 0x1fc6
+        //int unk1 = cpu.gpr[6]; // 0xff
+        //int unk2 = cpu.gpr[7]; // 0x1fc6
+        // doesn't look like any more parameters, they look like error codes
 
         Modules.log.warn("Unimplemented NID function __sceSasSetSimpleADSR [0xCBCD4F79] "
-            + String.format("%08x %08x %08x %08x",
-            sasCore, voice, ADSR1, ADSR2));
+            + String.format("%08x %08x %08x %08x %08x %08x",
+            cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9]));
 
         cpu.gpr[2] = 0xDEADC0DE;
 

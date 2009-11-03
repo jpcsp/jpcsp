@@ -241,7 +241,9 @@ public class SyscallHandler {
                 case 0x2054:
                     Managers.systime.sceKernelUSec2SysClock(gpr[4], gpr[5]);
                     break;
-		// sceKernelUSec2SysClockWide(0x2055),
+                case 0x2055:
+                    Managers.systime.sceKernelUSec2SysClockWide(gpr[4]);
+                    break;
                 case 0x2056:
                     Managers.systime.sceKernelSysClock2USec(gpr[4], gpr[5], gpr[6]);
                     break;
