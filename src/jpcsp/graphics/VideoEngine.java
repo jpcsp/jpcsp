@@ -126,29 +126,17 @@ public class VideoEngine {
     private int viewport_width, viewport_height; // derived from xyscale
     private int viewport_cx, viewport_cy;
 
-    private boolean proj_upload_start;
-    private int proj_upload_x;
-    private int proj_upload_y;
-    private float[] proj_matrix = new float[4 * 4];
     private float[] proj_uploaded_matrix = new float[4 * 4];
+    private MatrixUpload projectionMatrixUpload;
 
-    private boolean texture_upload_start;
-    private int texture_upload_x;
-    private int texture_upload_y;
-    private float[] texture_matrix = new float[4 * 4];
     private float[] texture_uploaded_matrix = new float[4 * 4];
+    private MatrixUpload textureMatrixUpload;
 
-    private boolean model_upload_start;
-    private int     model_upload_x;
-    private int     model_upload_y;
-    private float[] model_matrix = new float[4 * 4];
     private float[] model_uploaded_matrix = new float[4 * 4];
+    private MatrixUpload modelMatrixUpload;
 
-    private boolean view_upload_start;
-    private int view_upload_x;
-    private int view_upload_y;
-    private float[] view_matrix = new float[4 * 4];
     private float[] view_uploaded_matrix = new float[4 * 4];
+    private MatrixUpload viewMatrixUpload;
 
     private boolean bone_upload_start;
     private int bone_upload_x;
@@ -228,7 +216,9 @@ public class VideoEngine {
     private int blend_dst;
 
     private boolean clearMode;
-    private int depthFuncClearMode;
+    private int clearModeDepthFunc;
+    private float[] clearModeRgbScale = new float[1];
+    private int[] clearModeTextureEnvMode = new int[1];
 
     private int depthFunc2D;
     private int depthFunc3D;
@@ -265,6 +255,47 @@ public class VideoEngine {
     private boolean somethingDisplayed;
     private boolean geBufChanged;
 
+    private class MatrixUpload {
+    	float[] matrix;
+    	int matrixWidth;
+    	int matrixHeight;
+    	int currentX;
+    	int currentY;
+
+    	public MatrixUpload(float[] matrix, int matrixWidth, int matrixHeight) {
+    		this.matrix = matrix;
+    		this.matrixWidth = matrixWidth;
+    		this.matrixHeight = matrixHeight;
+
+    		for (int y = 0; y < 4; y++) {
+    			for (int x = 0; x < 4; x++) {
+    				matrix[y * 4 + x] = (x == y ? 1 : 0);
+    			}
+    		}
+    	}
+
+    	public void startUpload(int startIndex) {
+    		currentX = startIndex % matrixWidth;
+    		currentY = startIndex / matrixWidth;
+    	}
+
+    	public boolean uploadValue(float value) {
+    		boolean done = false;
+
+    		matrix[currentY * 4 + currentX] = value;
+    		currentX++;
+    		if (currentX >= matrixWidth) {
+    			currentX = 0;
+    			currentY++;
+    			if (currentY >= matrixHeight) {
+    				done = true;
+    			}
+    		}
+
+    		return done;
+    	}
+    }
+
     private static void log(String msg) {
         log.debug(msg);
         /*if (isDebugMode) {
@@ -281,8 +312,10 @@ public class VideoEngine {
     }
 
     private VideoEngine() {
-        model_matrix[0] = model_matrix[5] = model_matrix[10] = model_matrix[15] = 1.f;
-        view_matrix[0] = view_matrix[5] = view_matrix[10] = view_matrix[15] = 1.f;
+    	modelMatrixUpload = new MatrixUpload(model_uploaded_matrix, 3, 4);
+    	viewMatrixUpload = new MatrixUpload(view_uploaded_matrix, 3, 4);
+    	textureMatrixUpload = new MatrixUpload(texture_uploaded_matrix, 3, 4);
+    	projectionMatrixUpload = new MatrixUpload(proj_uploaded_matrix, 4, 4);
         tex_envmap_matrix[0] = tex_envmap_matrix[5] = tex_envmap_matrix[10] = tex_envmap_matrix[15] = 1.f;
         light_pos[0][3] = light_pos[1][3] = light_pos[2][3] = light_pos[3][3] = 1.f;
         morph_weight[0] = 1.f;
@@ -917,66 +950,28 @@ public class VideoEngine {
                 break;
 
             case VMS:
-                view_upload_start = true;
-                log("sceGumMatrixMode GU_VIEW");
+            	viewMatrixUpload.startUpload(normalArgument);
+            	if (log.isDebugEnabled()) {
+            		log("sceGumMatrixMode GU_VIEW " + normalArgument);
+            	}
                 break;
 
             case VIEW:
-                if (view_upload_start) {
-                    view_upload_x = 0;
-                    view_upload_y = 0;
-                    view_upload_start = false;
-                }
-
-                if (view_upload_y < 4) {
-                    if (view_upload_x < 3) {
-                    	view_matrix[view_upload_x + view_upload_y * 4] = floatArgument;
-
-                    	view_upload_x++;
-                        if (view_upload_x == 3) {
-                        	view_matrix[view_upload_x + view_upload_y * 4] = (view_upload_y == 3) ? 1.0f : 0.0f;
-                        	view_upload_x = 0;
-                        	view_upload_y++;
-                            if (view_upload_y == 4) {
-                                log("glLoadMatrixf", view_matrix);
-
-                                for (int i = 0; i < 4*4; i++)
-                                	view_uploaded_matrix[i] = view_matrix[i];
-                            }
-                        }
-                    }
-                }
+            	if (viewMatrixUpload.uploadValue(floatArgument)) {
+                    log("glLoadMatrixf", view_uploaded_matrix);
+            	}
                 break;
 
             case MMS:
-                model_upload_start = true;
-                log("sceGumMatrixMode GU_MODEL");
+            	modelMatrixUpload.startUpload(normalArgument);
+            	if (log.isDebugEnabled()) {
+            		log("sceGumMatrixMode GU_MODEL " + normalArgument);
+            	}
                 break;
 
             case MODEL:
-                if (model_upload_start) {
-                    model_upload_x = 0;
-                    model_upload_y = 0;
-                    model_upload_start = false;
-                }
-
-                if (model_upload_y < 4) {
-                    if (model_upload_x < 3) {
-                        model_matrix[model_upload_x + model_upload_y * 4] = floatArgument;
-
-                        model_upload_x++;
-                        if (model_upload_x == 3) {
-                            model_matrix[model_upload_x + model_upload_y * 4] = (model_upload_y == 3) ? 1.0f : 0.0f;
-                            model_upload_x = 0;
-                            model_upload_y++;
-                            if (model_upload_y == 4) {
-                                log("glLoadMatrixf", model_matrix);
-
-                                for (int i = 0; i < 4*4; i++)
-                                	model_uploaded_matrix[i] = model_matrix[i];
-                            }
-                        }
-                    }
+                if (modelMatrixUpload.uploadValue(floatArgument)) {
+                	log("glLoadMatrixf", model_uploaded_matrix);
                 }
                 break;
 
@@ -1251,6 +1246,10 @@ public class VideoEngine {
                 if (log.isDebugEnabled()) {
                     VideoEngine.log.info("sceGuLightMode(" + ((normalArgument != 0) ? "GU_SEPARATE_SPECULAR_COLOR" : "GU_SINGLE_COLOR") + ")");
                 }
+                // Check if other values than 0 and 1 are set
+                if ((normalArgument & ~1) != 0) {
+                    VideoEngine.log.warn(String.format("Unknown light mode sceGuLightMode(%06X)", normalArgument));
+                }
                 break;
             }
 
@@ -1459,64 +1458,29 @@ public class VideoEngine {
             	break;
 
             case TMS:
-            	texture_upload_start = true;
-            	log("sceGumMatrixMode GU_TEXTURE");
+            	textureMatrixUpload.startUpload(normalArgument);
+            	if (log.isDebugEnabled()) {
+            		log("sceGumMatrixMode GU_TEXTURE " + normalArgument);
+            	}
                 break;
 
             case TMATRIX:
-                if (texture_upload_start) {
-                	texture_upload_x = 0;
-                	texture_upload_y = 0;
-                	texture_upload_start = false;
-                }
-
-                if (texture_upload_y < 4) {
-                    if (texture_upload_x < 3) {
-                        texture_matrix[texture_upload_x + texture_upload_y * 4] = floatArgument;
-
-                        texture_upload_x++;
-                        if (texture_upload_x == 3) {
-                            texture_matrix[texture_upload_x + texture_upload_y * 4] = (texture_upload_y == 3) ? 1.0f : 0.0f;
-                            texture_upload_x = 0;
-                            texture_upload_y++;
-                            if (texture_upload_y == 4) {
-                                log("glLoadMatrixf", texture_matrix);
-                                for (int i = 0; i < 4*4; i++)
-                                	texture_uploaded_matrix[i] = texture_matrix[i];
-                            }
-                        }
-                    }
-                }
+            	if (textureMatrixUpload.uploadValue(floatArgument)) {
+                    log("glLoadMatrixf", texture_uploaded_matrix);
+            	}
                 break;
 
             case PMS:
-                proj_upload_start = true;
-                log("sceGumMatrixMode GU_PROJECTION");
+            	projectionMatrixUpload.startUpload(normalArgument);
+            	if (log.isDebugEnabled()) {
+            		log("sceGumMatrixMode GU_PROJECTION " + normalArgument);
+            	}
                 break;
 
             case PROJ:
-                if (proj_upload_start) {
-                    proj_upload_x = 0;
-                    proj_upload_y = 0;
-                    proj_upload_start = false;
-                }
-
-                if (proj_upload_y < 4) {
-                    if (proj_upload_x < 4) {
-                        proj_matrix[proj_upload_x + proj_upload_y * 4] = floatArgument;
-
-                        proj_upload_x++;
-                        if (proj_upload_x == 4) {
-                            proj_upload_x = 0;
-                            proj_upload_y++;
-                            if (proj_upload_y == 4) {
-                                log("glLoadMatrixf", proj_matrix);
-                                for (int i = 0; i < 4*4; i++)
-                                	proj_uploaded_matrix[i] = proj_matrix[i];
-                            }
-                        }
-                    }
-                }
+            	if (projectionMatrixUpload.uploadValue(floatArgument)) {
+                    log("glLoadMatrixf", proj_uploaded_matrix);
+            	}
                 break;
 
             /*
@@ -1772,7 +1736,6 @@ public class VideoEngine {
             }
 
             case TFUNC:
-           		gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, (normalArgument & 0x10000) != 0 ? 1.0f : 2.0f);
            		int env_mode = GL.GL_MODULATE;
            		switch(normalArgument & 7) {
 	           		case 0: env_mode = GL.GL_MODULATE; break;
@@ -1783,11 +1746,125 @@ public class VideoEngine {
            			default: VideoEngine.log.warn("Unimplemented tfunc mode " + (normalArgument & 7));
            		}
            		if(useShaders) gl.glUniform1i(Uniforms.texEnvMode.getId(), normalArgument & 7);
+
+           		int rgbScaleParam = (normalArgument >> 16) & 0xFF;
+           		float rgbScale = 1;
+           		if (rgbScaleParam == TFUNC_FRAGMENT_DOUBLE_ENABLE_COLOR_DOUBLED) {
+           			rgbScale = 2;
+           		} else if (rgbScaleParam != TFUNC_FRAGMENT_DOUBLE_ENABLE_COLOR_UNTOUCHED) {
+           			log.warn(String.format("sceGuTexFunc unknown RGB scale parameter %06X", normalArgument));
+           		}
+
+           		int alphaParam = (normalArgument >> 8) & 0xFF;
+           		boolean alphaIsOne = false;
+           		if (alphaParam == TFUNC_FRAGMENT_DOUBLE_TEXTURE_COLOR_ALPHA_IS_IGNORED) {
+       				// DECAL mode with ignored Alpha is always using
+       				// the equivalent of Alpha = 1.0 on PSP.
+           			alphaIsOne = true;
+           		} else if (alphaParam != TFUNC_FRAGMENT_DOUBLE_TEXTURE_COLOR_ALPHA_IS_READ) {
+           			log.warn(String.format("sceGuTexFunc unknown alpha parameter %06X", normalArgument));
+           		}
+
+           		if (rgbScale != 1 || alphaIsOne) {
+               		// GL_RGB_SCALE is only used in OpenGL when GL_TEXTURE_ENV_MODE is GL_COMBINE
+           			// See http://www.opengl.org/sdk/docs/man/xhtml/glTexEnv.xml
+           			switch (env_mode) {
+	       				case GL.GL_MODULATE:
+	       					// Cv = Cp * Cs
+	       					// Av = Ap * As
+	       					env_mode = GL.GL_COMBINE;
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_RGB, GL.GL_MODULATE);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_RGB, GL.GL_TEXTURE);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_RGB, GL.GL_SRC_COLOR);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_RGB, GL.GL_PREVIOUS);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_RGB, GL.GL_SRC_COLOR);
+
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_ALPHA, GL.GL_MODULATE);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, GL.GL_TEXTURE);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_ALPHA, GL.GL_SRC_ALPHA);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_ALPHA, GL.GL_PREVIOUS);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_ALPHA, GL.GL_SRC_ALPHA);
+	       					break;
+           				case GL.GL_DECAL:
+           					env_mode = GL.GL_COMBINE;
+           					// Cv = Cs * As + Cp * (1 - As)
+           					// Av = Ap
+           					if (alphaIsOne) {
+           						// Simplified version when As == 1:
+           						// Cv = Cs
+        		           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_RGB, GL.GL_REPLACE);
+        		           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_RGB, GL.GL_TEXTURE);
+        		           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_RGB, GL.GL_SRC_COLOR);
+           					} else {
+				           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_RGB, GL.GL_INTERPOLATE);
+				           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_RGB, GL.GL_TEXTURE);
+				           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_RGB, GL.GL_SRC_COLOR);
+				           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_RGB, GL.GL_PREVIOUS);
+				           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_RGB, GL.GL_SRC_COLOR);
+				           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC2_RGB, GL.GL_TEXTURE);
+				           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND2_RGB, GL.GL_SRC_ALPHA);
+           					}
+
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_ALPHA, GL.GL_REPLACE);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, GL.GL_PREVIOUS);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_ALPHA, GL.GL_SRC_ALPHA);
+           					break;
+           				case GL.GL_BLEND:
+           					// Cv = Cc * Cs + Cp * (1 - Cs)
+           					// Av = As * Ap
+           					env_mode = GL.GL_COMBINE;
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_RGB, GL.GL_INTERPOLATE);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_RGB, GL.GL_CONSTANT);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_RGB, GL.GL_SRC_COLOR);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_RGB, GL.GL_PREVIOUS);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_RGB, GL.GL_SRC_COLOR);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC2_RGB, GL.GL_TEXTURE);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND2_RGB, GL.GL_SRC_COLOR);
+
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_ALPHA, GL.GL_MODULATE);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, GL.GL_TEXTURE);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_ALPHA, GL.GL_SRC_ALPHA);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_ALPHA, GL.GL_PREVIOUS);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_ALPHA, GL.GL_SRC_ALPHA);
+           					break;
+           				case GL.GL_REPLACE:
+           					// Cv = Cs
+           					// Av = As
+	           				env_mode = GL.GL_COMBINE;
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_RGB, GL.GL_REPLACE);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_RGB, GL.GL_TEXTURE);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_RGB, GL.GL_SRC_COLOR);
+
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_ALPHA, GL.GL_REPLACE);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, GL.GL_TEXTURE);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_ALPHA, GL.GL_SRC_ALPHA);
+			           		break;
+	       				case GL.GL_ADD:
+	       					// Cv = Cp + Cs
+	       					// Av = Ap * As
+	       					env_mode = GL.GL_COMBINE;
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_RGB, GL.GL_ADD);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_RGB, GL.GL_TEXTURE);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_RGB, GL.GL_SRC_COLOR);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_RGB, GL.GL_PREVIOUS);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_RGB, GL.GL_SRC_COLOR);
+
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_ALPHA, GL.GL_MODULATE);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, GL.GL_TEXTURE);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_ALPHA, GL.GL_SRC_ALPHA);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_ALPHA, GL.GL_PREVIOUS);
+			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_ALPHA, GL.GL_SRC_ALPHA);
+	       					break;
+       					default:
+       	           			log.warn(String.format("Unimplemented sceGuTexFunc RGB doubled for env_mode=" + env_mode));
+       						break;
+           			}
+           		}
+           		gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, rgbScale);
            		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, env_mode);
-           		// TODO : check this
-           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, (normalArgument & 0x100) == 0 ? GL.GL_PREVIOUS : GL.GL_TEXTURE);
+
            		if (log.isDebugEnabled()) {
-           		    log(String.format("sceGuTexFunc mode %08X", normalArgument)
+           		    log(String.format("sceGuTexFunc mode %06X", normalArgument)
            		            + (((normalArgument & 0x10000) != 0) ? " SCALE" : "")
            		            + (((normalArgument & 0x100) != 0) ? " ALPHA" : ""));
            		}
@@ -2629,9 +2706,14 @@ public class VideoEngine {
             case CLEAR:
             	if(clearMode && (normalArgument & 1) == 0) {
             		clearMode = false;
-            		depthFunc2D = depthFuncClearMode;
+            		depthFunc2D = clearModeDepthFunc;
             		gl.glPopAttrib();
-            		// TODO Remove this glClear
+            		// These attributes were not restored by glPopAttrib,
+            		// restore saved copy.
+                    gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, clearModeRgbScale[0]);
+                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, clearModeTextureEnvMode[0]);
+
+                    // TODO Remove this glClear
             		// We should not use it at all but demos won't work at all without it and our current implementation
             		// We need to tweak the Z values written to the depth buffer, but I think this is impossible to do properly
             		// without a fragment shader
@@ -2646,7 +2728,11 @@ public class VideoEngine {
             		log("clear mode end");
             	} else if((normalArgument & 1) != 0) {
             		clearMode = true;
-            		gl.glPushAttrib(GL.GL_ALL_ATTRIB_BITS);
+            		// Save these attributes manually, they are not saved by glPushAttrib
+                    gl.glGetTexEnvfv(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, clearModeRgbScale, 0);
+                    gl.glGetTexEnviv(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, clearModeTextureEnvMode, 0);
+
+                    gl.glPushAttrib(GL.GL_ALL_ATTRIB_BITS);
             		gl.glDisable(GL.GL_BLEND);
             		gl.glDisable(GL.GL_STENCIL_TEST);
             		gl.glDisable(GL.GL_LIGHTING);
@@ -2677,7 +2763,7 @@ public class VideoEngine {
             		} else {
 	            		gl.glDepthMask(false);
             		}
-            		depthFuncClearMode = depthFunc2D;
+            		clearModeDepthFunc = depthFunc2D;
             		depthFunc2D = GL.GL_ALWAYS;
             		gl.glColorMask(color, color, color, alpha);
                     if (log.isDebugEnabled()) {
@@ -4587,7 +4673,7 @@ public class VideoEngine {
         context.blend_dst = blend_dst;
 
         context.clearMode = clearMode;
-        context.depthFuncClearMode = depthFuncClearMode;
+        context.depthFuncClearMode = clearModeDepthFunc;
 
         context.depthFunc2D = depthFunc2D;
         context.depthFunc3D = depthFunc3D;
@@ -4711,7 +4797,7 @@ public class VideoEngine {
         blend_dst = context.blend_dst;
 
         clearMode = context.clearMode;
-        depthFuncClearMode = context.depthFuncClearMode;
+        clearModeDepthFunc = context.depthFuncClearMode;
 
         depthFunc2D = context.depthFunc2D;
         depthFunc3D = context.depthFunc3D;
