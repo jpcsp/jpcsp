@@ -15,7 +15,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package jpcsp.HLE.modules150;
 
 import java.io.IOException;
@@ -35,17 +34,13 @@ import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.Emulator;
 import jpcsp.Loader;
 import jpcsp.Memory;
-import jpcsp.MemoryMap;
 import jpcsp.Processor;
 import jpcsp.filesystems.SeekableDataInput;
 import jpcsp.util.Utilities;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
-import jpcsp.HLE.kernel.types.SceModule;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 
-import jpcsp.Allegrex.CpuState; // New-Style Processor
-
-
+import jpcsp.Allegrex.CpuState;
 
 public class ModuleMgrForUser implements HLEModule {
    // String[] bannedModulesList = {};
@@ -104,81 +99,9 @@ public class ModuleMgrForUser implements HLEModule {
 	}
 
 
-    public void sceKernelLoadModuleByID(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
+	private void hleKernelLoadModule(Processor processor, String name, int flags, int uid, boolean byUid) {
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
-
-        int uid = cpu.gpr[4];
-        int option_addr = cpu.gpr[5];
-        String name = pspiofilemgr.getInstance().getFileFilename(uid);
-
-        Modules.log.debug("sceKernelLoadModuleByID(uid=0x" + Integer.toHexString(uid)
-            + "('" + name + "')"
-            + ",option=0x" + Integer.toHexString(option_addr) + ")");
-
-        // TODO refactor this with sceKernelLoadModule
-
-        String prxname = "UNKNOWN";
-        int findprx = name.lastIndexOf("/");
-        int endprx = name.toLowerCase().indexOf(".prx");
-        if (endprx >= 0)
-            prxname = name.substring(findprx+1, endprx);
-
-        // Load module as ELF
-        try {
-            SeekableDataInput moduleInput = pspiofilemgr.getInstance().getFile(uid);
-            if (moduleInput != null) {
-                byte[] moduleBytes = new byte[(int) moduleInput.length()];
-                moduleInput.readFully(moduleBytes);
-                ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
-
-                // TODO
-                // We need to get a load address, we can either add getHeapBottom to pspsysmem, or we can malloc something small
-                // We're going to need to write a SceModule struct somewhere, so we could malloc that, and add the size of the struct to the address
-                // For now we'll just malloc 64 bytes :P (the loadBase needs to be aligned anyway)
-                int loadBase = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_Low, 64, 0) + 64;
-                pspSysMem.getInstance().addSysMemInfo(2, "ModuleMgr", pspSysMem.PSP_SMEM_Low, 64, loadBase);
-                SceModule module = Loader.getInstance().LoadModule(name, moduleBuffer, loadBase);
-
-                if ((module.fileFormat & Loader.FORMAT_SCE) == Loader.FORMAT_SCE ||
-                    (module.fileFormat & Loader.FORMAT_PSP) == Loader.FORMAT_PSP) {
-                    // Simulate a successful loading
-                    Modules.log.warn("IGNORED:sceKernelLoadModuleByID(path='" + name + "') encrypted module not loaded");
-                    SceModule fakeModule = new SceModule(true);
-                    fakeModule.modname = prxname;
-                    fakeModule.write(mem, fakeModule.address);
-                    Managers.modules.addModule(fakeModule);
-                    cpu.gpr[2] = fakeModule.modid;
-                } else if ((module.fileFormat & Loader.FORMAT_ELF) == Loader.FORMAT_ELF) {
-                    cpu.gpr[2] = module.modid;
-                } else {
-                    // The Loader class now manages the module's memory footprint, it won't allocate if it failed to load
-                    //pspSysMem.getInstance().free(loadBase);
-                    cpu.gpr[2] = -1;
-                }
-
-                moduleInput.close();
-            } else {
-                Modules.log.warn("sceKernelLoadModuleByID(path='" + name + "') can't find file");
-                cpu.gpr[2] = -1;
-            }
-        } catch (IOException e) {
-            Modules.log.error("sceKernelLoadModuleByID - Error while loading module " + name + ": " + e.getMessage());
-            cpu.gpr[2] = -1;
-        }
-    }
-
-    public void sceKernelLoadModule(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        Memory mem = Processor.memory;
-
-        int path_addr = cpu.gpr[4];
-        int flags = cpu.gpr[5];
-        int option_addr = cpu.gpr[6];
-        String name = Utilities.readStringZ(path_addr);
-        Modules.log.debug("sceKernelLoadModule(path='" + name
-            + "',flags=0x" + Integer.toHexString(flags)
-            + ",option=0x" + Integer.toHexString(option_addr) + ")");
 
         String prxname = "UNKNOWN";
         int findprx = name.lastIndexOf("/");
@@ -191,9 +114,9 @@ public class ModuleMgrForUser implements HLEModule {
             // Simulate a successful loading
         	HLEModuleManager moduleManager = HLEModuleManager.getInstance();
         	if (moduleManager.hasFlash0Module(prxname)) {
-        		Modules.log.info("sceKernelLoadModule(path='" + name + "') HLE module loaded");
+        		Modules.log.info("hleKernelLoadModule(path='" + name + "') HLE module loaded");
         	} else {
-                Modules.log.warn("IGNORED:sceKernelLoadModule(path='" + name + "'): module from flash0 not loaded");
+                Modules.log.warn("IGNORED:hleKernelLoadModule(path='" + name + "'): module from flash0 not loaded");
         	}
             cpu.gpr[2] = HLEModuleManager.getInstance().LoadFlash0Module(prxname);
             return;
@@ -206,9 +129,9 @@ public class ModuleMgrForUser implements HLEModule {
             {
             	HLEModuleManager moduleManager = HLEModuleManager.getInstance();
             	if (moduleManager.hasFlash0Module(prxname)) {
-            		Modules.log.info("sceKernelLoadModule(path='" + name + "') HLE module loaded");
+            		Modules.log.info("hleKernelLoadModule(path='" + name + "') HLE module loaded");
             	} else {
-            		Modules.log.warn("IGNORED:sceKernelLoadModule(path='" + name + "'): module from banlist not loaded");
+            		Modules.log.warn("IGNORED:hleKernelLoadModule(path='" + name + "'): module from banlist not loaded");
             	}
                 cpu.gpr[2] = HLEModuleManager.getInstance().LoadFlash0Module(prxname);
                 return;
@@ -234,7 +157,7 @@ public class ModuleMgrForUser implements HLEModule {
                 if ((module.fileFormat & Loader.FORMAT_SCE) == Loader.FORMAT_SCE ||
                     (module.fileFormat & Loader.FORMAT_PSP) == Loader.FORMAT_PSP) {
                     // Simulate a successful loading
-                    Modules.log.warn("IGNORED:sceKernelLoadModule(path='" + name + "') encrypted module not loaded");
+                    Modules.log.warn("IGNORED:hleKernelLoadModule(path='" + name + "') encrypted module not loaded");
                     SceModule fakeModule = new SceModule(true);
                     fakeModule.modname = prxname;
                     fakeModule.write(mem, fakeModule.address);
@@ -250,13 +173,41 @@ public class ModuleMgrForUser implements HLEModule {
 
                 moduleInput.close();
             } else {
-                Modules.log.warn("sceKernelLoadModule(path='" + name + "') can't find file");
+                Modules.log.warn("hleKernelLoadModule(path='" + name + "') can't find file");
                 cpu.gpr[2] = pspiofilemgr.PSP_ERROR_FILE_NOT_FOUND;
             }
         } catch (IOException e) {
-            Modules.log.error("sceKernelLoadModule - Error while loading module " + name + ": " + e.getMessage());
+            Modules.log.error("hleKernelLoadModule - Error while loading module " + name + ": " + e.getMessage());
             cpu.gpr[2] = -1;
         }
+	}
+
+	public void sceKernelLoadModuleByID(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        int uid = cpu.gpr[4];
+        int option_addr = cpu.gpr[5];
+        String name = pspiofilemgr.getInstance().getFileFilename(uid);
+
+        Modules.log.debug("sceKernelLoadModuleByID(uid=0x" + Integer.toHexString(uid)
+            + "('" + name + "')"
+            + ",option=0x" + Integer.toHexString(option_addr) + ")");
+
+        hleKernelLoadModule(processor, name, 0, uid, true);
+    }
+
+    public void sceKernelLoadModule(Processor processor) {
+        CpuState cpu = processor.cpu;
+
+        int path_addr = cpu.gpr[4];
+        int flags = cpu.gpr[5];
+        int option_addr = cpu.gpr[6];
+        String name = Utilities.readStringZ(path_addr);
+        Modules.log.debug("sceKernelLoadModule(path='" + name
+            + "',flags=0x" + Integer.toHexString(flags)
+            + ",option=0x" + Integer.toHexString(option_addr) + ")");
+
+        hleKernelLoadModule(processor, name, flags, 0, false);
     }
 
 	public void sceKernelLoadModuleMs(Processor processor) {
