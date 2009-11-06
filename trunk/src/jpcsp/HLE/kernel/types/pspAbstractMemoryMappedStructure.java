@@ -150,6 +150,12 @@ public abstract class pspAbstractMemoryMappedStructure {
     	return (value != 0);
     }
 
+    protected void readBooleanArray(boolean[] array) {
+    	for (int i = 0; array != null && i < array.length; i++) {
+    		array[i] = readBoolean();
+    	}
+    }
+
     protected float readFloat() {
     	int int32 = read32();
 
@@ -295,6 +301,12 @@ public abstract class pspAbstractMemoryMappedStructure {
 
     protected void writeBoolean(boolean data) {
     	write8(data ? (byte) 1 : (byte) 0);
+    }
+
+    protected void writeBooleanArray(boolean[] array) {
+    	for (int i = 0; array != null && i < array.length; i++) {
+    		writeBoolean(array[i]);
+    	}
     }
 
     protected void writeFloat(float data) {
