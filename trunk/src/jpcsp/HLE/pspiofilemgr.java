@@ -1901,7 +1901,7 @@ public class pspiofilemgr {
      */
     public void sceIoChstat(int file_addr, int stat_addr, int bits) {
         String filename = readStringZ(file_addr);
-        if (debug) Modules.log.debug("sceIoRemove - file = " + filename);
+        if (debug) Modules.log.debug("sceIoChstat - file = " + filename + ", bits=0x" + Integer.toHexString(bits));
 
         String pcfilename = getDeviceFilePath(filename);
 

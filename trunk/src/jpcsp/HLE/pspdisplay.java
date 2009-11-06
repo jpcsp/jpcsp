@@ -440,6 +440,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         gl.glDisable(GL.GL_LOGIC_OP);
         gl.glDisable(GL.GL_STENCIL_TEST);
         gl.glDisable(GL.GL_SCISSOR_TEST);
+        gl.glColorMask(true, true, true, false);
 
         pushTexEnv(gl);
         gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, 1.0f);
