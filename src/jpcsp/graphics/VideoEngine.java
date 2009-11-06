@@ -227,7 +227,9 @@ public class VideoEngine {
 
     private boolean takeConditionalJump;
 
-    // opengl needed information/buffers
+    private boolean glColorMask[];
+
+	// opengl needed information/buffers
     private int[] gl_texture_id = new int[1];
     private int[] tmp_texture_buffer32 = new int[1024*1024];
     private short[] tmp_texture_buffer16 = new short[1024*1024];
@@ -323,6 +325,7 @@ public class VideoEngine {
         tex_mipmap_bias = 0.f;
         tex_mipmap_bias_int = 0;
         takeConditionalJump = false;
+        glColorMask = new boolean[] { true, true, true, true };
 
         statistics = new DurationStatistics("VideoEngine Statistics");
         commandStatistics = new DurationStatistics[256];
@@ -839,6 +842,21 @@ public class VideoEngine {
         }
 
         return IntBuffer.wrap(tmp_texture_buffer32);
+    }
+
+    private boolean getGLMask(String name, int bitMask) {
+    	if (bitMask == 0x00) {
+    		return true;
+    	} else if (bitMask == 0xFF) {
+    		return false;
+    	} else {
+    		log.warn(String.format("Unimplemented %s 0x%02X", name, bitMask));
+    		return true;
+    	}
+    }
+
+    private void setGLColorMask() {
+    	gl.glColorMask(glColorMask[0], glColorMask[1], glColorMask[2], glColorMask[3]);
     }
 
     public void executeCommand(int instruction) {
@@ -2731,6 +2749,8 @@ public class VideoEngine {
             		// Save these attributes manually, they are not saved by glPushAttrib
                     gl.glGetTexEnvfv(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, clearModeRgbScale, 0);
                     gl.glGetTexEnviv(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, clearModeTextureEnvMode, 0);
+                    gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, 1.0f);
+                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_REPLACE);
 
                     gl.glPushAttrib(GL.GL_ALL_ATTRIB_BITS);
             		gl.glDisable(GL.GL_BLEND);
@@ -2748,10 +2768,17 @@ public class VideoEngine {
             		}
 
             		// TODO Add more disabling in clear mode, we also need to reflect the change to the internal GE registers
-            		boolean color = false, alpha = false;
-            		if((normalArgument & 0x100) != 0) color = true;
+            		boolean colorRed   = glColorMask[0];
+            		boolean colorGreen = glColorMask[1];
+            		boolean colorBlue  = glColorMask[2];
+            		boolean colorAlpha = glColorMask[3];
+            		if((normalArgument & 0x100) != 0) {
+            			colorRed   = true;
+            			colorGreen = true;
+            			colorBlue  = true;
+            		}
             		if((normalArgument & 0x200) != 0) {
-            			alpha = true;
+            			colorAlpha = true;
             			// TODO Stencil not perfect, pspsdk clear code is doing more things
                 		gl.glEnable(GL.GL_STENCIL_TEST);
             			gl.glStencilFunc(GL.GL_ALWAYS, 0, 0);
@@ -2765,7 +2792,7 @@ public class VideoEngine {
             		}
             		clearModeDepthFunc = depthFunc2D;
             		depthFunc2D = GL.GL_ALWAYS;
-            		gl.glColorMask(color, color, color, alpha);
+            		gl.glColorMask(colorRed, colorGreen, colorBlue, colorAlpha);
                     if (log.isDebugEnabled()) {
                         log("clear mode : " + (normalArgument >> 8));
                     }
@@ -3194,8 +3221,7 @@ public class VideoEngine {
 
                 break;
 
-            case BBOX:
-            {
+            case BBOX: {
                 int numberOfVertexBoundingBox = normalArgument;
                 // TODO Check if the bounding box is visible
                 if (log.isInfoEnabled()) {
@@ -3205,8 +3231,7 @@ public class VideoEngine {
             	takeConditionalJump = false;
             	break;
             }
-            case BJUMP:
-            {
+            case BJUMP: {
             	if (takeConditionalJump) {
 	                int npc = ((currentList.base | normalArgument) & 0xFFFFFFFC) + currentList.baseOffset;
 	                if (log.isDebugEnabled()) {
@@ -3219,6 +3244,25 @@ public class VideoEngine {
 	                    log(helper.getCommandString(BJUMP) + " not taking Conditional Jump");
 	                }
             	}
+                break;
+            }
+
+            case PMSKC: {
+                if (log.isDebugEnabled()) {
+                    log(String.format("%s color mask=0x%06X", helper.getCommandString(PMSKC), normalArgument));
+                }
+            	glColorMask[0] = getGLMask("Red color mask"  , (normalArgument      ) & 0xFF);
+            	glColorMask[1] = getGLMask("Green color mask", (normalArgument >>  8) & 0xFF);
+            	glColorMask[2] = getGLMask("Blue color mask" , (normalArgument >> 16) & 0xFF);
+            	setGLColorMask();
+                break;
+            }
+            case PMSKA: {
+                if (log.isDebugEnabled()) {
+                    log(String.format("%s alpha mask=0x%02X", helper.getCommandString(PMSKA), normalArgument));
+                }
+            	glColorMask[3] = getGLMask("Alpha color mask", normalArgument & 0xFF);
+            	setGLColorMask();
                 break;
             }
 
@@ -4681,6 +4725,8 @@ public class VideoEngine {
         context.tex_map_mode = tex_map_mode;
         context.tex_proj_map_mode = tex_proj_map_mode;
 
+        System.arraycopy(glColorMask, 0, context.glColorMask, 0, glColorMask.length);
+
         context.copyGLToContext(gl);
     }
 
@@ -4804,6 +4850,8 @@ public class VideoEngine {
 
         tex_map_mode = context.tex_map_mode;
         tex_proj_map_mode = context.tex_proj_map_mode;
+
+        System.arraycopy(context.glColorMask, 0, glColorMask, 0, glColorMask.length);
 
         context.copyContextToGL(gl);
     }
