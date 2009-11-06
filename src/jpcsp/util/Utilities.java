@@ -129,6 +129,7 @@ public class Utilities {
     }
     public static String readStringNZ(Memory mem, int address, int n) {
         StringBuffer sb = new StringBuffer();
+    	address &= Memory.addressMask;
         if (address + n > MemoryMap.END_RAM) {
         	n = MemoryMap.END_RAM - address + 1;
         }
@@ -142,6 +143,7 @@ public class Utilities {
         return sb.toString();
     }
     public static String readStringZ(Memory mem, int address) {
+    	address &= Memory.addressMask;
     	return readStringNZ(mem, address, MemoryMap.END_RAM - address + 1);
     }
     public static String readStringZ(int address) {
