@@ -2768,17 +2768,13 @@ public class VideoEngine {
             		}
 
             		// TODO Add more disabling in clear mode, we also need to reflect the change to the internal GE registers
-            		boolean colorRed   = glColorMask[0];
-            		boolean colorGreen = glColorMask[1];
-            		boolean colorBlue  = glColorMask[2];
-            		boolean colorAlpha = glColorMask[3];
+            		boolean color = false;
+            		boolean alpha = false;
             		if((normalArgument & 0x100) != 0) {
-            			colorRed   = true;
-            			colorGreen = true;
-            			colorBlue  = true;
+            			color = true;
             		}
             		if((normalArgument & 0x200) != 0) {
-            			colorAlpha = true;
+            			alpha = true;
             			// TODO Stencil not perfect, pspsdk clear code is doing more things
                 		gl.glEnable(GL.GL_STENCIL_TEST);
             			gl.glStencilFunc(GL.GL_ALWAYS, 0, 0);
@@ -2792,7 +2788,7 @@ public class VideoEngine {
             		}
             		clearModeDepthFunc = depthFunc2D;
             		depthFunc2D = GL.GL_ALWAYS;
-            		gl.glColorMask(colorRed, colorGreen, colorBlue, colorAlpha);
+            		gl.glColorMask(color, color, color, alpha);
                     if (log.isDebugEnabled()) {
                         log("clear mode : " + (normalArgument >> 8));
                     }
@@ -4187,9 +4183,10 @@ public class VideoEngine {
             gl.glDepthRange(0, 1);
             gl.glOrtho(0, 480, 272, 0, 0, -0xFFFF);
 
-        	// 2D mode shouldn't be affected by the lighting
-            gl.glPushAttrib(GL.GL_LIGHTING_BIT);
+        	// 2D mode shouldn't be affected by the lighting and fog
+            gl.glPushAttrib(GL.GL_LIGHTING_BIT | GL.GL_FOG_BIT);
             gl.glDisable(GL.GL_LIGHTING);
+            gl.glDisable(GL.GL_FOG);
             if(useShaders) {
             	gl.glUniform1i(Uniforms.lightingEnable.getId(), 0);
                 gl.glUniform1f(Uniforms.zPos.getId(), zpos);
