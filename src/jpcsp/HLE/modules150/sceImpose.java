@@ -22,6 +22,7 @@ import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.Modules;
+import jpcsp.hardware.Battery;
 
 import jpcsp.Memory;
 import jpcsp.Processor;
@@ -219,10 +220,10 @@ public class sceImpose implements HLEModule {
 
         int addrCharging = cpu.gpr[4];
         int addrIconStatus = cpu.gpr[5];
-        int batteryPowerPercent = scePower.getBatteryPowerPercent();
+        int batteryPowerPercent = Battery.getCurrentPowerPercent();
         // Possible values for iconStatus: 0..3
         int iconStatus = Math.min(batteryPowerPercent / 25, 3);
-        boolean charging = scePower.isBatteryCharging();
+        boolean charging = Battery.isCharging();
 
         if (mem.isAddressGood(addrCharging)) {
             mem.write32(addrCharging, charging ? 1 : 0); // Values: 0..1

@@ -22,6 +22,7 @@ import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.Modules;
+import jpcsp.hardware.Battery;
 
 import jpcsp.Memory;
 import jpcsp.Processor;
@@ -177,23 +178,6 @@ public class scePower implements HLEModule {
 	private int cpuClock = 222;
     private int busClock = 111;
 
-    //battery life time in minutes
-    private int batteryLifeTime = (5 * 60);		// 5 hours
-    //some standard battery temperature 28 deg C
-    private int batteryTemp = 28;
-    //battery voltage 4,135 in slim
-    private int batteryVoltage = 4135;
-
-    private static final boolean pluggedIn = true;
-    private static final boolean batteryPresent = true;
-    private static final int batteryPowerPercent = 100;
-    // led starts flashing at 12%
-    private static final int batteryLowPercent = 12;
-	// PSP auto suspends at 4%
-    private static final int batteryForceSuspendPercent = 4;
-	// battery capacity in mAh when it is full
-    private static final int fullBatteryCapacity = 1800;
-    private static final boolean batteryCharging = false;
     private static final int backlightMaximum = 4;
 
 	public void scePower_2B51FE2F(Processor processor) {
@@ -214,7 +198,7 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerGetBacklightMaximum(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
+		CpuState cpu = processor.cpu;
 
 		Modules.log.debug("scePowerGetBacklightMaximum backlightMaxium=" + backlightMaximum);
 
@@ -307,59 +291,58 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerGetForceSuspendCapacity(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
+		CpuState cpu = processor.cpu;
 
-		int forceSuspendCapacity = (batteryForceSuspendPercent * fullBatteryCapacity) / 100;
+		int forceSuspendCapacity = (Battery.getForceSuspendPercent() * Battery.getFullCapacity()) / 100;
 		Modules.log.debug("scePowerGetForceSuspendCapacity " + forceSuspendCapacity + "mAh");
 
 		cpu.gpr[2] = forceSuspendCapacity;
 	}
 
 	public void scePowerGetLowBatteryCapacity(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
+		CpuState cpu = processor.cpu;
 
-		int lowBatteryCapacity = (batteryLowPercent * fullBatteryCapacity) / 100;
+		int lowBatteryCapacity = (Battery.getLowPercent() * Battery.getFullCapacity()) / 100;
 		Modules.log.debug("scePowerGetLowBatteryCapacity " + lowBatteryCapacity + "mAh");
 
 		cpu.gpr[2] = lowBatteryCapacity;
 	}
 
 	public void scePowerIsPowerOnline(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
+		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("scePowerIsPowerOnline pluggedIn=" + pluggedIn);
+		Modules.log.debug("scePowerIsPowerOnline pluggedIn=" + Battery.isPluggedIn());
 
-		cpu.gpr[2] = pluggedIn ? 1 : 0;
+		cpu.gpr[2] = Battery.isPluggedIn() ? 1 : 0;
 	}
 
 	public void scePowerIsBatteryExist(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("scePowerIsBatteryExist batteryPresent=" + batteryPresent);
+		Modules.log.debug("scePowerIsBatteryExist batteryPresent=" + Battery.isPresent());
 
-		cpu.gpr[2] = batteryPresent ? 1 : 0;
+		cpu.gpr[2] = Battery.isPresent() ? 1 : 0;
 	}
 
 	public void scePowerIsBatteryCharging(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
+		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("scePowerIsBatteryCharging batteryCharging=" + batteryCharging);
+		Modules.log.debug("scePowerIsBatteryCharging batteryCharging=" + Battery.isCharging());
 
-		cpu.gpr[2] = batteryCharging ? 1 : 0;
+		cpu.gpr[2] = Battery.isCharging() ? 1 : 0;
 	}
 
 	public void scePowerGetBatteryChargingStatus(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
+		CpuState cpu = processor.cpu;
 
 		int status = 0;
-		if (batteryPresent) {
+		if (Battery.isPresent()) {
 			status |= PSP_POWER_CB_BATTERY_EXIST;
 		}
-		if (pluggedIn) {
+		if (Battery.isPluggedIn()) {
 			status |= PSP_POWER_CB_AC_POWER;
 		}
-		if (batteryCharging) {
+		if (Battery.isCharging()) {
 			// I don't know exactly what to return under PSP_POWER_CB_BATTPOWER
 			status |= PSP_POWER_CB_BATTPOWER;
 		}
@@ -370,11 +353,12 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerIsLowBattery(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
+		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("scePowerIsLowBattery " + (batteryPowerPercent <= batteryLowPercent));
+		int isLow = (Battery.getCurrentPowerPercent() <= Battery.getLowPercent()) ? 1 : 0;
+		Modules.log.debug("scePowerIsLowBattery " + isLow);
 
-		cpu.gpr[2] = (batteryPowerPercent <= batteryLowPercent) ? 1 : 0;
+		cpu.gpr[2] = isLow;
 	}
 
 	/** 
@@ -387,56 +371,53 @@ public class scePower implements HLEModule {
 	 * @return 1 if suspend is requided, otherwise 0 
 	 */
 	public void scePowerIsSuspendRequired(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
+		CpuState cpu = processor.cpu;
 
-		int isSuspendRequired = (batteryPowerPercent <= batteryForceSuspendPercent ? 1 : 0);
+		int isSuspendRequired = (Battery.getCurrentPowerPercent() <= Battery.getForceSuspendPercent() ? 1 : 0);
 		Modules.log.debug("scePowerIsSuspendRequired isSuspendRequired=" + isSuspendRequired);
 
 		cpu.gpr[2] = isSuspendRequired;
 	}
 
 	public void scePowerGetBatteryRemainCapacity(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
+		CpuState cpu = processor.cpu;
 
-		int batteryRemainCapacity = (batteryPowerPercent * fullBatteryCapacity) / 100; 
+		int batteryRemainCapacity = (Battery.getCurrentPowerPercent() * Battery.getFullCapacity()) / 100; 
 		Modules.log.debug("scePowerGetBatteryRemainCapacity " + batteryRemainCapacity + "mAh");
 
 		cpu.gpr[2] = batteryRemainCapacity;
 	}
 
 	public void scePowerGetBatteryFullCapacity(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
+		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("scePowerGetBatteryFullCapacity " + fullBatteryCapacity + "mAh");
+		Modules.log.debug("scePowerGetBatteryFullCapacity " + Battery.getFullCapacity() + "mAh");
 
-		cpu.gpr[2] = fullBatteryCapacity;
+		cpu.gpr[2] = Battery.getFullCapacity();
 	}
 
 	public void scePowerGetBatteryLifePercent(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("scePowerGetBatteryLifePercent percent=" + batteryPowerPercent);
+		Modules.log.debug("scePowerGetBatteryLifePercent percent=" + Battery.getCurrentPowerPercent());
 
-		cpu.gpr[2] = batteryPowerPercent;
+		cpu.gpr[2] = Battery.getCurrentPowerPercent();
 	}
 
 	public void scePowerGetBatteryLifeTime(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("scePowerGetBatteryLifeTime batteryLifeTime=" + batteryLifeTime);
+		Modules.log.debug("scePowerGetBatteryLifeTime batteryLifeTime=" + Battery.getLifeTime());
 
-		cpu.gpr[2] = batteryLifeTime;
+		cpu.gpr[2] = Battery.getLifeTime();
 	}
 
 	public void scePowerGetBatteryTemp(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("scePowerGetBatteryTemp batteryTemp=" + batteryTemp);
+		Modules.log.debug("scePowerGetBatteryTemp batteryTemp=" + Battery.getTemperature());
 
-		cpu.gpr[2] = batteryTemp;
+		cpu.gpr[2] = Battery.getTemperature();
 	}
 
 	public void scePowerGetBatteryElec(Processor processor) {
@@ -457,12 +438,11 @@ public class scePower implements HLEModule {
 	}
 
 	public void scePowerGetBatteryVolt(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu;
 
-		Modules.log.debug("scePowerGetBatteryVolt batteryVoltage=" + batteryVoltage);
+		Modules.log.debug("scePowerGetBatteryVolt batteryVoltage=" + Battery.getVoltage());
 
-		cpu.gpr[2] = batteryVoltage;
+		cpu.gpr[2] = Battery.getVoltage();
 	}
 
 	public void scePower_23436A4A(Processor processor) {
@@ -1467,16 +1447,4 @@ public class scePower implements HLEModule {
 			return "jpcsp.HLE.Modules.scePowerModule.scePowerSetClockFrequency(processor);";
 		}
 	};
-
-    public static int getBatteryPowerPercent() {
-        return batteryPowerPercent;
-    }
-
-    public static boolean isPluggedIn() {
-        return pluggedIn;
-    }
-
-    public static boolean isBatteryCharging() {
-        return batteryCharging;
-    }
 };

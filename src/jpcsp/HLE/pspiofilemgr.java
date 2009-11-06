@@ -24,6 +24,7 @@ package jpcsp.HLE;
 
 import jpcsp.filesystems.*;
 import jpcsp.filesystems.umdiso.*;
+import jpcsp.hardware.MemoryStick;
 import jpcsp.util.Utilities;
 
 import java.io.File;
@@ -157,14 +158,6 @@ public class pspiofilemgr {
     private String filepath; // current working directory on PC
     private UmdIsoReader iso;
 
-    public final static int PSP_MEMORYSTICK_STATE_INSERTED  = 1;
-    public final static int PSP_MEMORYSTICK_STATE_EJECTED   = 2;
-    public final static int PSP_MEMORYSTICK_STATE_INSERTING = 4; // mscmhc0 0x02015804 only
-    private int memoryStickState;
-
-    // available size on memory stick, in bytes.
-    private long freeMemoryStickSize = 1 * 1024 * 1024 * 1024;	// 1GB
-
     public static pspiofilemgr getInstance() {
         if (instance == null) {
             instance = new pspiofilemgr();
@@ -190,7 +183,7 @@ public class pspiofilemgr {
 
         filelist = new HashMap<Integer, IoInfo>();
         dirlist = new HashMap<Integer, IoDirInfo>();
-        memoryStickState = PSP_MEMORYSTICK_STATE_INSERTED;
+        MemoryStick.setState(MemoryStick.PSP_MEMORYSTICK_STATE_INSERTED);
     }
 
     /** To properly emulate async io we cannot allow async io operations to
@@ -1401,7 +1394,7 @@ public class pspiofilemgr {
                     int cbid = mem.read32(indata_addr);
                     if (threadMan.setCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid)) {
                         // Trigger callback immediately
-                        threadMan.pushCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, memoryStickState);
+                        threadMan.pushCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, MemoryStick.getState());
                         Emulator.getProcessor().cpu.gpr[2] = 0; // Success
                     } else {
 
@@ -1462,7 +1455,7 @@ public class pspiofilemgr {
                 } else if (mem.isAddressGood(outdata_addr)) {
                     // 1 = inserted
                     // 2 = not inserted
-                    mem.write32(outdata_addr, memoryStickState);
+                    mem.write32(outdata_addr, MemoryStick.getState());
                     Emulator.getProcessor().cpu.gpr[2] = 0;
                 } else {
                     Emulator.getProcessor().cpu.gpr[2] = -1;
@@ -1482,7 +1475,7 @@ public class pspiofilemgr {
                     int cbid = mem.read32(indata_addr);
                     threadMan.setCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, cbid);
                     // Trigger callback immediately
-                    threadMan.pushCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, memoryStickState);
+                    threadMan.pushCallback(SceKernelThreadInfo.THREAD_CALLBACK_MEMORYSTICK, MemoryStick.getState());
                     Emulator.getProcessor().cpu.gpr[2] = 0;  // Success
                 } else {
                     Emulator.getProcessor().cpu.gpr[2] = -1; // Invalid parameters
@@ -1521,7 +1514,7 @@ public class pspiofilemgr {
                 int sectorSize = 0x200;
                 int sectorCount = 0x08;
                 // Perform operation using long integers to avoid overflow
-                int maxClusters = (int) ((freeMemoryStickSize * 95L / 100) / (sectorSize * sectorCount)); // reserve 5% for fs house keeping
+                int maxClusters = (int) ((MemoryStick.getFreeSize() * 95L / 100) / (sectorSize * sectorCount)); // reserve 5% for fs house keeping
                 int freeClusters = maxClusters;
                 int maxSectors = 512; // TODO
 
