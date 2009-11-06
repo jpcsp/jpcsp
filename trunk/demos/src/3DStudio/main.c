@@ -381,6 +381,8 @@ char *texFuncDoubleNames[] = { "RGBx1", "RGBx2" };
 int depthMask = 0;
 char *depthMaskNames[] = { "enableWrites", "disableWrites" };
 
+struct Color pixelMask;
+
 int alphaFunc = 7;
 char *testFuncNames[] = { "GU_NEVER", "GU_ALWAYS", "GU_EQUAL", "GU_NOTEQUAL", "GU_LESS", "GU_LEQUAL", "GU_GREATER", "GU_GEQUAL" };
 int alphaReference = 0;
@@ -714,6 +716,7 @@ void drawRectangles()
 	sceGumLoadIdentity();
 
 	sceGuDepthMask(depthMask);
+	sceGuPixelMask(getColor(&pixelMask));
 	sceGuDepthFunc(depthFunc);
 	sceGuAlphaFunc(alphaFunc, alphaReference, 0xFF);
 	sceGuBlendFunc(blendOp, blendFuncSrc, blendFuncDst, 0, 0);
@@ -1074,6 +1077,14 @@ void init()
 
 	addAttribute("sceGuDepthMask", &depthMask, NULL, x, y, 0, 1, 1);
 	setAttributeValueNames(&depthMaskNames[0]);
+	y++;
+
+	pixelMask.r = 0x00;
+	pixelMask.g = 0x00;
+	pixelMask.b = 0x00;
+	pixelMask.a = 0x00;
+
+	addColorAttribute("Pixel Mask R", &pixelMask, x, y, 1);
 	y++;
 
 	addAttribute("sceGuDepthFunc", &depthFunc, NULL, x, y, 0, 7, 1);
