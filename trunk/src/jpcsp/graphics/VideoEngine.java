@@ -58,6 +58,7 @@ import org.apache.log4j.Logger;
 import com.sun.opengl.util.BufferUtil;
 
 public class VideoEngine {
+	private static final boolean useViewport = false;
     public static final int NUM_LIGHTS = 4;
     private final int[] prim_mapping = new int[] { GL.GL_POINTS, GL.GL_LINES, GL.GL_LINE_STRIP, GL.GL_TRIANGLES, GL.GL_TRIANGLE_STRIP, GL.GL_TRIANGLE_FAN, GL.GL_QUADS };
 
@@ -1915,7 +1916,9 @@ public class VideoEngine {
                     log.debug("sceGuViewport(X, X, w=" + viewport_width + ", h=" + viewport_height + ")");
                 }
 
-                pspdisplay.getInstance().hleDisplaySetGeMode(viewport_width, viewport_height);
+                if (!useViewport) {
+                	pspdisplay.getInstance().hleDisplaySetGeMode(viewport_width, viewport_height);
+                }
                 break;
 
             case ZSCALE:
@@ -4172,6 +4175,9 @@ public class VideoEngine {
         gl.glLoadIdentity();
 
         if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
+        	if (useViewport) {
+        		gl.glViewport(viewport_cx - offset_x - viewport_width / 2, 272 - (viewport_cy - offset_y) - viewport_height / 2, viewport_width, viewport_height);
+        	}
         	// Use non-inverted depthFunc (which is depthFunc2D, see ZTST)
         	// TODO Clean-up depthFunc3D when the depth-handling works correctly...
             gl.glDepthFunc(depthFunc2D);
@@ -4182,6 +4188,9 @@ public class VideoEngine {
             }
             gl.glLoadMatrixf(proj_uploaded_matrix, 0);
         } else {
+        	if (useViewport) {
+        		gl.glViewport(0, 0, 480, 272);
+        	}
             gl.glDepthFunc(depthFunc2D);
             gl.glDepthRange(0, 1);
             gl.glOrtho(0, 480, 272, 0, 0, -0xFFFF);
