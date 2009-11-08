@@ -102,7 +102,8 @@ public class Texture {
 
 			IMemoryReader memoryReader = MemoryReader.getMemoryReader(addr, bufferLengthInBytes, 4);
 			for (int i = 0; i < bufferLengthInBytes; i += 4) {
-				hashCode ^= memoryReader.readNext() + i;
+				hashCode ^= memoryReader.readNext() + i + addr;
+				hashCode += i + addr;
 			}
 		}
 
