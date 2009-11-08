@@ -19,6 +19,7 @@ package jpcsp.HLE.kernel.types;
 import javax.media.opengl.GL;
 
 import jpcsp.HLE.Modules;
+import static jpcsp.graphics.VideoEngine.NUM_LIGHTS;;
 
 public class pspGeContext extends pspAbstractMemoryMappedStructure {
 	//
@@ -53,13 +54,15 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
     public float[][] bone_uploaded_matrix = new float[8][4 * 3];
     public float[] morph_weight = new float[8];
     public float[] tex_envmap_matrix = new float[4*4];
-    public float[][] light_pos = new float[4][4];
-    public float[][] light_dir = new float[4][3];
+    public float[][] light_pos = new float[NUM_LIGHTS][4];
+    public float[][] light_dir = new float[NUM_LIGHTS][3];
 
-    public int[] light_enabled = new int[4];
-    public int[] light_type = new int[4];
-    public int[] light_kind = new int[4];
+    public int[] light_enabled = new int[NUM_LIGHTS];
+    public int[] light_type = new int[NUM_LIGHTS];
+    public int[] light_kind = new int[NUM_LIGHTS];
     public boolean lighting;
+    public float[] spotLightExponent = new float[NUM_LIGHTS];
+    public float[] spotLightCutoff = new float[NUM_LIGHTS];
 
     public float[] fog_color = new float[4];
     public float fog_far, fog_dist;
@@ -151,10 +154,6 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 	private float[][] glLightAmbient = new float[4][4];
 	private float[][] glLightDiffuse = new float[4][4];
 	private float[][] glLightSpecular = new float[4][4];
-	private float[][] glLightPosition = new float[4][4];
-	private float[][] glLightSpotDirection = new float[4][4];
-	private float[][] glLightSpotExponent = new float[4][1];
-	private float[][] glLightSpotCutoff = new float[4][4];
 	private float[][] glLightConstantAttenuation = new float[4][1];
 	private float[][] glLightLinearAttenuation = new float[4][1];
 	private float[][] glLightQuadraticAttenuation = new float[4][1];
@@ -246,6 +245,8 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 		read32Array(light_type);
 		read32Array(light_kind);
 		lighting = readBoolean();
+		readFloatArray(spotLightExponent);
+		readFloatArray(spotLightCutoff);
 
 		readFloatArray(fog_color);
 		fog_far = readFloat();
@@ -344,10 +345,6 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 		readFloatArray(glLightAmbient);
 		readFloatArray(glLightDiffuse);
 		readFloatArray(glLightSpecular);
-		readFloatArray(glLightPosition);
-		readFloatArray(glLightSpotDirection);
-		readFloatArray(glLightSpotExponent);
-		readFloatArray(glLightSpotCutoff);
 		readFloatArray(glLightConstantAttenuation);
 		readFloatArray(glLightLinearAttenuation);
 		readFloatArray(glLightQuadraticAttenuation);
@@ -435,6 +432,8 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 		write32Array(light_type);
 		write32Array(light_kind);
 		writeBoolean(lighting);
+		writeFloatArray(spotLightExponent);
+		writeFloatArray(spotLightCutoff);
 
 		writeFloatArray(fog_color);
 		writeFloat(fog_far);
@@ -533,10 +532,6 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 		writeFloatArray(glLightAmbient);
 		writeFloatArray(glLightDiffuse);
 		writeFloatArray(glLightSpecular);
-		writeFloatArray(glLightPosition);
-		writeFloatArray(glLightSpotDirection);
-		writeFloatArray(glLightSpotExponent);
-		writeFloatArray(glLightSpotCutoff);
 		writeFloatArray(glLightConstantAttenuation);
 		writeFloatArray(glLightLinearAttenuation);
 		writeFloatArray(glLightQuadraticAttenuation);
@@ -621,10 +616,6 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 			gl.glGetLightfv(GL.GL_LIGHT0 + light, GL.GL_AMBIENT, glLightAmbient[light], 0);
 			gl.glGetLightfv(GL.GL_LIGHT0 + light, GL.GL_DIFFUSE, glLightDiffuse[light], 0);
 			gl.glGetLightfv(GL.GL_LIGHT0 + light, GL.GL_SPECULAR, glLightSpecular[light], 0);
-			gl.glGetLightfv(GL.GL_LIGHT0 + light, GL.GL_POSITION, glLightPosition[light], 0);
-			gl.glGetLightfv(GL.GL_LIGHT0 + light, GL.GL_SPOT_DIRECTION, glLightSpotDirection[light], 0);
-			gl.glGetLightfv(GL.GL_LIGHT0 + light, GL.GL_SPOT_EXPONENT, glLightSpotExponent[light], 0);
-			gl.glGetLightfv(GL.GL_LIGHT0 + light, GL.GL_SPOT_CUTOFF, glLightSpotCutoff[light], 0);
 			gl.glGetLightfv(GL.GL_LIGHT0 + light, GL.GL_CONSTANT_ATTENUATION, glLightConstantAttenuation[light], 0);
 			gl.glGetLightfv(GL.GL_LIGHT0 + light, GL.GL_LINEAR_ATTENUATION, glLightLinearAttenuation[light], 0);
 			gl.glGetLightfv(GL.GL_LIGHT0 + light, GL.GL_QUADRATIC_ATTENUATION, glLightQuadraticAttenuation[light], 0);
@@ -704,10 +695,6 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 			gl.glLightfv(GL.GL_LIGHT0 + light, GL.GL_AMBIENT, glLightAmbient[light], 0);
 			gl.glLightfv(GL.GL_LIGHT0 + light, GL.GL_DIFFUSE, glLightDiffuse[light], 0);
 			gl.glLightfv(GL.GL_LIGHT0 + light, GL.GL_SPECULAR, glLightSpecular[light], 0);
-			gl.glLightfv(GL.GL_LIGHT0 + light, GL.GL_POSITION, glLightPosition[light], 0);
-			gl.glLightfv(GL.GL_LIGHT0 + light, GL.GL_SPOT_DIRECTION, glLightSpotDirection[light], 0);
-			gl.glLightfv(GL.GL_LIGHT0 + light, GL.GL_SPOT_EXPONENT, glLightSpotExponent[light], 0);
-			gl.glLightfv(GL.GL_LIGHT0 + light, GL.GL_SPOT_CUTOFF, glLightSpotCutoff[light], 0);
 			gl.glLightfv(GL.GL_LIGHT0 + light, GL.GL_CONSTANT_ATTENUATION, glLightConstantAttenuation[light], 0);
 			gl.glLightfv(GL.GL_LIGHT0 + light, GL.GL_LINEAR_ATTENUATION, glLightLinearAttenuation[light], 0);
 			gl.glLightfv(GL.GL_LIGHT0 + light, GL.GL_QUADRATIC_ATTENUATION, glLightQuadraticAttenuation[light], 0);

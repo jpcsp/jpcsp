@@ -58,6 +58,7 @@ import org.apache.log4j.Logger;
 import com.sun.opengl.util.BufferUtil;
 
 public class VideoEngine {
+    public static final int NUM_LIGHTS = 4;
     private final int[] prim_mapping = new int[] { GL.GL_POINTS, GL.GL_LINES, GL.GL_LINE_STRIP, GL.GL_TRIANGLES, GL.GL_TRIANGLE_STRIP, GL.GL_TRIANGLE_FAN, GL.GL_QUADS };
 
     public final static String[] psm_names = new String[] {
@@ -149,15 +150,17 @@ public class VideoEngine {
 
     private float[] tex_envmap_matrix = new float[4*4];
 
-    private float[][] light_pos = new float[4][4];
-    private float[][] light_dir = new float[4][3];
+    private float[][] light_pos = new float[NUM_LIGHTS][4];
+    private float[][] light_dir = new float[NUM_LIGHTS][3];
 
-    private int[] light_enabled = new int[4];
-    private int[] light_type = new int[4];
-    private int[] light_kind = new int[4];
+    private int[] light_enabled = new int[NUM_LIGHTS];
+    private int[] light_type = new int[NUM_LIGHTS];
+    private int[] light_kind = new int[NUM_LIGHTS];
     private boolean lighting = false;
-    private float[][] lightSpecularColor = new float[4][4];
+    private float[][] lightSpecularColor = new float[NUM_LIGHTS][4];
     private static final float[] blackColor = new float[] { 0, 0, 0, 0 };
+    private float[] spotLightExponent = new float[NUM_LIGHTS];
+    private float[] spotLightCutoff = new float[NUM_LIGHTS];
 
     private float[] fog_color = new float[4];
     private float fog_far = 0.0f,fog_dist = 0.0f;
@@ -1345,7 +1348,7 @@ public class VideoEngine {
             case SLE2:
             case SLE3: {
             	int lnum = command - SLE0;
-                gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_SPOT_EXPONENT, floatArgument);
+            	spotLightExponent[lnum] = floatArgument;
                 if (log.isDebugEnabled()) {
                     VideoEngine.log.debug("sceGuLightSpot(" + lnum + ",X," + floatArgument + ",X)");
                 }
@@ -1353,7 +1356,7 @@ public class VideoEngine {
             }
 
             /*
-             * Spot light exponent
+             * Spot light cutoff angle
              */
             case SLF0:
             case SLF1:
@@ -1363,9 +1366,9 @@ public class VideoEngine {
             	// PSP Cutoff is cosine of angle, OpenGL expects degrees
             	float degreeCutoff = (float) Math.toDegrees(Math.acos(floatArgument));
             	if ((degreeCutoff >= 0 && degreeCutoff <= 90) || degreeCutoff == 180) {
-	                gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_SPOT_CUTOFF, degreeCutoff);
+	                spotLightCutoff[lnum] = degreeCutoff;
 	                if (log.isDebugEnabled()) {
-	                    log.debug("sceGuLightSpot(" + lnum + ",X,X," + floatArgument + ")");
+	                    log.debug("sceGuLightSpot(" + lnum + ",X,X," + floatArgument + "=" + degreeCutoff + ")");
 	                }
             	} else {
                     log.warn("sceGuLightSpot(" + lnum + ",X,X," + floatArgument + ") invalid argument value");
@@ -4246,13 +4249,19 @@ public class VideoEngine {
         /*
          *  Setup lights on when view transformation is set up
          */
-        if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
-	        for (int i = 0; i < 4; i++) {
+        if (lighting && transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
+	        for (int i = 0; i < NUM_LIGHTS; i++) {
 	            if (light_enabled[i] != 0) {
 	            	gl.glLightfv(GL.GL_LIGHT0 + i, GL.GL_POSITION, light_pos[i], 0);
 
 	            	if (light_type[i] == LIGHT_SPOT) {
 	                   gl.glLightfv(GL.GL_LIGHT0 + i, GL.GL_SPOT_DIRECTION, light_dir[i], 0);
+	                   gl.glLightf(GL.GL_LIGHT0 + i, GL.GL_SPOT_EXPONENT, spotLightExponent[i]);
+	                   gl.glLightf(GL.GL_LIGHT0 + i, GL.GL_SPOT_CUTOFF, spotLightCutoff[i]);
+	                } else {
+	                	// uniform light distribution
+	                   gl.glLightf(GL.GL_LIGHT0 + i, GL.GL_SPOT_EXPONENT, 0);
+	                   gl.glLightf(GL.GL_LIGHT0 + i, GL.GL_SPOT_CUTOFF, 180);
 	                }
 
 	            	// Light kind:
@@ -4653,6 +4662,8 @@ public class VideoEngine {
     	System.arraycopy(light_type, 0, context.light_type, 0, light_type.length);
     	System.arraycopy(light_kind, 0, context.light_kind, 0, light_kind.length);
     	context.lighting = lighting;
+    	System.arraycopy(spotLightExponent, 0, context.spotLightExponent, 0, spotLightExponent.length);
+    	System.arraycopy(spotLightCutoff, 0, context.spotLightCutoff, 0, spotLightCutoff.length);
 
     	System.arraycopy(fog_color, 0, context.fog_color, 0, fog_color.length);
     	context.fog_far = fog_far;
@@ -4779,6 +4790,8 @@ public class VideoEngine {
     	System.arraycopy(context.light_type, 0, light_type, 0, light_type.length);
     	System.arraycopy(context.light_kind, 0, light_kind, 0, light_kind.length);
     	lighting = context.lighting;
+    	System.arraycopy(context.spotLightExponent, 0, spotLightExponent, 0, spotLightExponent.length);
+    	System.arraycopy(context.spotLightCutoff, 0, spotLightCutoff, 0, spotLightCutoff.length);
 
     	System.arraycopy(context.fog_color, 0, fog_color, 0, fog_color.length);
     	fog_far = context.fog_far;
