@@ -337,6 +337,8 @@ struct Color rectangle1color;
 struct Color rectangle2color;
 struct Point rectangle1point;
 struct Point rectangle2point;
+struct Point rectangle1normal;
+struct Point rectangle2normal;
 ScePspFVector3 rectangle1translation;
 ScePspFVector3 rectangle1rotation;
 ScePspFVector3 rectangle2translation;
@@ -584,55 +586,55 @@ void setVerticesColor(struct Color *pcolor, struct Vertex pvertices[], int sizeo
 }
 
 
-void setVertexPoint(struct Point *ppoint, struct Vertex *pvertex, float x, float y, float z, int u, int v)
+void setVertexPoint(struct Point *ppoint, struct Point *pnormal, struct Vertex *pvertex, float x, float y, float z, int u, int v)
 {
 	pvertex->u = u;
 	pvertex->v = v;
-	pvertex->nx = 0;
-	pvertex->ny = 0;
-	pvertex->nz = 1;
+	pvertex->nx = pnormal->x;
+	pvertex->ny = pnormal->y;
+	pvertex->nz = pnormal->z;
 	pvertex->x = x + ppoint->x;
 	pvertex->y = y + ppoint->y;
 	pvertex->z = z + ppoint->z;
 }
 
 
-void setVertexNoColorPoint(struct Point *ppoint, struct VertexNoColor *pvertex, float x, float y, float z, int u, int v)
+void setVertexNoColorPoint(struct Point *ppoint, struct Point *pnormal, struct VertexNoColor *pvertex, float x, float y, float z, int u, int v)
 {
 	pvertex->u = u;
 	pvertex->v = v;
-	pvertex->nx = 0;
-	pvertex->ny = 0;
-	pvertex->nz = 1;
+	pvertex->nx = pnormal->x;
+	pvertex->ny = pnormal->y;
+	pvertex->nz = pnormal->z;
 	pvertex->x = x + ppoint->x;
 	pvertex->y = y + ppoint->y;
 	pvertex->z = z + ppoint->z;
 }
 
 
-void setRectanglePoint(struct Point *ppoint, struct Vertex pvertices[], float width, float height, int textureWidth, int textureHeight)
+void setRectanglePoint(struct Point *ppoint, struct Point *pnormal, struct Vertex pvertices[], float width, float height, int textureWidth, int textureHeight)
 {
 	width  /= 2;
 	height /= 2;
-	setVertexPoint(ppoint, &pvertices[0], -width,  height, 0, 0,	            0);
-	setVertexPoint(ppoint, &pvertices[1], -width, -height, 0, 0,                textureHeight);
-	setVertexPoint(ppoint, &pvertices[2],      0,  height, 0, textureWidth / 2, 0);
-	setVertexPoint(ppoint, &pvertices[3],      0, -height, 0, textureWidth / 2, textureHeight);
-	setVertexPoint(ppoint, &pvertices[4],  width,  height, 0, textureWidth,     0);
-	setVertexPoint(ppoint, &pvertices[5],  width, -height, 0, textureWidth,     textureHeight);
+	setVertexPoint(ppoint, pnormal, &pvertices[0], -width,  height, 0, 0,	            0);
+	setVertexPoint(ppoint, pnormal, &pvertices[1], -width, -height, 0, 0,                textureHeight);
+	setVertexPoint(ppoint, pnormal, &pvertices[2],      0,  height, 0, textureWidth / 2, 0);
+	setVertexPoint(ppoint, pnormal, &pvertices[3],      0, -height, 0, textureWidth / 2, textureHeight);
+	setVertexPoint(ppoint, pnormal, &pvertices[4],  width,  height, 0, textureWidth,     0);
+	setVertexPoint(ppoint, pnormal, &pvertices[5],  width, -height, 0, textureWidth,     textureHeight);
 }
 
 
-void setNoColorRectanglePoint(struct Point *ppoint, struct VertexNoColor pvertices[], float width, float height, int textureWidth, int textureHeight)
+void setNoColorRectanglePoint(struct Point *ppoint, struct Point *pnormal, struct VertexNoColor pvertices[], float width, float height, int textureWidth, int textureHeight)
 {
 	width  /= 2;
 	height /= 2;
-	setVertexNoColorPoint(ppoint, &pvertices[0], -width,  height, 0, 0,	            0);
-	setVertexNoColorPoint(ppoint, &pvertices[1], -width, -height, 0, 0,                textureHeight);
-	setVertexNoColorPoint(ppoint, &pvertices[2],      0,  height, 0, textureWidth / 2, 0);
-	setVertexNoColorPoint(ppoint, &pvertices[3],      0, -height, 0, textureWidth / 2, textureHeight);
-	setVertexNoColorPoint(ppoint, &pvertices[4],  width,  height, 0, textureWidth,     0);
-	setVertexNoColorPoint(ppoint, &pvertices[5],  width, -height, 0, textureWidth,     textureHeight);
+	setVertexNoColorPoint(ppoint, pnormal, &pvertices[0], -width,  height, 0, 0,	            0);
+	setVertexNoColorPoint(ppoint, pnormal, &pvertices[1], -width, -height, 0, 0,                textureHeight);
+	setVertexNoColorPoint(ppoint, pnormal, &pvertices[2],      0,  height, 0, textureWidth / 2, 0);
+	setVertexNoColorPoint(ppoint, pnormal, &pvertices[3],      0, -height, 0, textureWidth / 2, textureHeight);
+	setVertexNoColorPoint(ppoint, pnormal, &pvertices[4],  width,  height, 0, textureWidth,     0);
+	setVertexNoColorPoint(ppoint, pnormal, &pvertices[5],  width, -height, 0, textureWidth,     textureHeight);
 }
 
 
@@ -810,7 +812,7 @@ void drawRectangles()
 		rectangle1point.z = 0;
 		if (vertexColorFlag)
 		{
-			setRectanglePoint(&rectangle1point, vertices1, rectangle1width, rectangle1height, textureScale, textureScale);
+			setRectanglePoint(&rectangle1point, &rectangle1normal, vertices1, rectangle1width, rectangle1height, textureScale, textureScale);
 			if (rectangle1PrimType == GU_SPRITES)
 			{
 				numberVertex1 /= 2;
@@ -824,7 +826,7 @@ void drawRectangles()
 		}
 		else
 		{
-			setNoColorRectanglePoint(&rectangle1point, (struct VertexNoColor *) vertices1, rectangle1width, rectangle1height, textureScale, textureScale);
+			setNoColorRectanglePoint(&rectangle1point, &rectangle1normal, (struct VertexNoColor *) vertices1, rectangle1width, rectangle1height, textureScale, textureScale);
 			if (rectangle1PrimType == GU_SPRITES)
 			{
 				numberVertex1 /= 2;
@@ -845,7 +847,7 @@ void drawRectangles()
 		rectangle1point.z =   0 + rectangle1translation.z;
 		if (vertexColorFlag)
 		{
-			setRectanglePoint(&rectangle1point, vertices1, rectangle1width * 50, rectangle1height * 50, TEXTURE_WIDTH, TEXTURE_HEIGHT);
+			setRectanglePoint(&rectangle1point, &rectangle1normal, vertices1, rectangle1width * 50, rectangle1height * 50, TEXTURE_WIDTH, TEXTURE_HEIGHT);
 			if (rectangle1PrimType == GU_SPRITES)
 			{
 				numberVertex1 /= 2;
@@ -859,7 +861,7 @@ void drawRectangles()
 		}
 		else
 		{
-			setNoColorRectanglePoint(&rectangle1point, (struct VertexNoColor *) vertices1, rectangle1width * 50, rectangle1height * 50, TEXTURE_WIDTH, TEXTURE_HEIGHT);
+			setNoColorRectanglePoint(&rectangle1point, &rectangle1normal, (struct VertexNoColor *) vertices1, rectangle1width * 50, rectangle1height * 50, TEXTURE_WIDTH, TEXTURE_HEIGHT);
 		}
 	}
 
@@ -928,7 +930,7 @@ void drawRectangles()
 		rectangle2point.z = 0;
 		if (vertexColorFlag)
 		{
-			setRectanglePoint(&rectangle2point, vertices2, rectangle2width, rectangle2height, textureScale, textureScale);
+			setRectanglePoint(&rectangle2point, &rectangle2normal, vertices2, rectangle2width, rectangle2height, textureScale, textureScale);
 			if (rectangle2PrimType == GU_SPRITES)
 			{
 				numberVertex2 /= 2;
@@ -942,7 +944,7 @@ void drawRectangles()
 		}
 		else
 		{
-			setNoColorRectanglePoint(&rectangle2point, (struct VertexNoColor *) vertices2, rectangle2width, rectangle2height, textureScale, textureScale);
+			setNoColorRectanglePoint(&rectangle2point, &rectangle2normal, (struct VertexNoColor *) vertices2, rectangle2width, rectangle2height, textureScale, textureScale);
 			if (rectangle2PrimType == GU_SPRITES)
 			{
 				numberVertex2 /= 2;
@@ -963,11 +965,11 @@ void drawRectangles()
 		rectangle2point.z =   0 + rectangle2translation.z;
 		if (vertexColorFlag)
 		{
-			setRectanglePoint(&rectangle2point, vertices2, rectangle2width * 50, rectangle2height * 50, TEXTURE_WIDTH, TEXTURE_HEIGHT);
+			setRectanglePoint(&rectangle2point, &rectangle2normal, vertices2, rectangle2width * 50, rectangle2height * 50, TEXTURE_WIDTH, TEXTURE_HEIGHT);
 		}
 		else
 		{
-			setNoColorRectanglePoint(&rectangle2point, (struct VertexNoColor *) vertices2, rectangle2width * 50, rectangle2height * 50, TEXTURE_WIDTH, TEXTURE_HEIGHT);
+			setNoColorRectanglePoint(&rectangle2point, &rectangle2normal, (struct VertexNoColor *) vertices2, rectangle2width * 50, rectangle2height * 50, TEXTURE_WIDTH, TEXTURE_HEIGHT);
 		}
 	}
 
@@ -1157,6 +1159,9 @@ void init()
 	rectangle1rotation.x = 0;
 	rectangle1rotation.y = 0;
 	rectangle1rotation.z = 0;
+	rectangle1normal.x = 0;
+	rectangle1normal.y = 0;
+	rectangle1normal.z = 1;
 
 	addAttribute("Rect1 pos X", NULL, &rectangle1translation.x, x, y, -10, 10, 0.1);
 	addAttribute(", Y", NULL, &rectangle1translation.y, x + 17, y, -10, 10, 0.1);
@@ -1168,6 +1173,10 @@ void init()
 	addAttribute("rot X", NULL, &rectangle1rotation.x, x + 6, y, -GU_PI, GU_PI, 0.1);
 	addAttribute(", Y", NULL, &rectangle1rotation.y, x + 17, y, -GU_PI, GU_PI, 0.1);
 	addAttribute(", Z", NULL, &rectangle1rotation.z, x + 26, y, -GU_PI, GU_PI, 0.1);
+	y++;
+	addAttribute("normal X", NULL, &rectangle1normal.x, x + 6, y, -10, 10, 0.1);
+	addAttribute(", Y", NULL, &rectangle1normal.y, x + 20, y, -10, 10, 0.1);
+	addAttribute(", Z", NULL, &rectangle1normal.z, x + 29, y, -10, 10, 0.1);
 	y++;
 	addColorAttribute("R", &rectangle1color, x + 6, y, 1);
 	y++;
@@ -1201,6 +1210,9 @@ void init()
 	rectangle2rotation.x = 0;
 	rectangle2rotation.y = 0;
 	rectangle2rotation.z = 0;
+	rectangle2normal.x = 0;
+	rectangle2normal.y = 0;
+	rectangle2normal.z = 1;
 
 	addAttribute("Rect2 pos X", NULL, &rectangle2translation.x,  x, y, -10, 10, 0.1);
 	addAttribute(", Y", NULL, &rectangle2translation.y, x + 17, y, -10, 10, 0.1);
@@ -1212,6 +1224,10 @@ void init()
 	addAttribute("rot X", NULL, &rectangle2rotation.x, x + 6, y, -GU_PI, GU_PI, 0.1);
 	addAttribute(", Y", NULL, &rectangle2rotation.y,  x + 17, y, -GU_PI, GU_PI, 0.1);
 	addAttribute(", Z", NULL, &rectangle2rotation.z,  x + 26, y, -GU_PI, GU_PI, 0.1);
+	y++;
+	addAttribute("normal X", NULL, &rectangle2normal.x, x + 6, y, -10, 10, 0.1);
+	addAttribute(", Y", NULL, &rectangle2normal.y, x + 20, y, -10, 10, 0.1);
+	addAttribute(", Z", NULL, &rectangle2normal.z, x + 29, y, -10, 10, 0.1);
 	y++;
 	addColorAttribute("R", &rectangle2color, x + 6, y, 1);
 	y++;
