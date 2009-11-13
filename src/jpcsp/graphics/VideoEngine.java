@@ -1627,7 +1627,7 @@ public class VideoEngine {
             }
 
             case TFLT: {
-            	log ("sceGuTexFilter(min, mag) (mm#" + texture_num_mip_maps + ")");
+            	log ("sceGuTexFilter(min=" + (normalArgument & 0xFF) + ", mag=" + ((normalArgument >> 8) & 0xFF) + " (mm#" + texture_num_mip_maps + ")");
 
             	switch ((normalArgument>>8) & 0xFF)
             	{
@@ -2344,31 +2344,35 @@ public class VideoEngine {
 	        	}
 	        	break;
             case BCE:
-                if(normalArgument != 0)
-                {
-                    gl.glEnable(GL.GL_CULL_FACE);
-                    log("sceGuEnable(GU_CULL_FACE)");
-                }
-                else
-                {
-                    gl.glDisable(GL.GL_CULL_FACE);
-                    log("sceGuDisable(GU_CULL_FACE)");
-                }
+            	if (!clearMode) {
+	                if(normalArgument != 0)
+	                {
+	                    gl.glEnable(GL.GL_CULL_FACE);
+	                    log("sceGuEnable(GU_CULL_FACE)");
+	                }
+	                else
+	                {
+	                    gl.glDisable(GL.GL_CULL_FACE);
+	                    log("sceGuDisable(GU_CULL_FACE)");
+	                }
+            	}
                 break;
             case FGE:
-                if(normalArgument != 0)
-                {
-                    gl.glEnable(GL.GL_FOG);
-                    gl.glFogi(GL.GL_FOG_MODE, GL.GL_LINEAR);
-				    gl.glFogf(GL.GL_FOG_DENSITY, 0.1f);
-				    gl.glHint(GL.GL_FOG_HINT, GL.GL_DONT_CARE);
-                    log("sceGuEnable(GL_FOG)");
-                }
-                else
-                {
-                    gl.glDisable(GL.GL_FOG);
-                    log("sceGuDisable(GL_FOG)");
-                }
+            	if (!clearMode) {
+	                if(normalArgument != 0)
+	                {
+	                    gl.glEnable(GL.GL_FOG);
+	                    gl.glFogi(GL.GL_FOG_MODE, GL.GL_LINEAR);
+					    gl.glFogf(GL.GL_FOG_DENSITY, 0.1f);
+					    gl.glHint(GL.GL_FOG_HINT, GL.GL_DONT_CARE);
+	                    log("sceGuEnable(GL_FOG)");
+	                }
+	                else
+	                {
+	                    gl.glDisable(GL.GL_FOG);
+	                    log("sceGuDisable(GL_FOG)");
+	                }
+            	}
                 break;
             case FCOL:
 	            	fog_color[0] = ((normalArgument      ) & 255) / 255.f;
@@ -2431,14 +2435,16 @@ public class VideoEngine {
                 }
                 break;
             case STE:
-                if(normalArgument != 0) {
-                    gl.glEnable(GL.GL_STENCIL_TEST);
-                    log("sceGuEnable(GU_STENCIL_TEST)");
-                }
-                else {
-                    gl.glDisable(GL.GL_STENCIL_TEST);
-                    log("sceGuDisable(GU_STENCIL_TEST)");
-                }
+            	if (!clearMode) {
+	                if(normalArgument != 0) {
+	                    gl.glEnable(GL.GL_STENCIL_TEST);
+	                    log("sceGuEnable(GU_STENCIL_TEST)");
+	                }
+	                else {
+	                    gl.glDisable(GL.GL_STENCIL_TEST);
+	                    log("sceGuDisable(GU_STENCIL_TEST)");
+	                }
+            	}
                 break;
             case AAE:
 	            	if(normalArgument != 0)
@@ -2453,16 +2459,18 @@ public class VideoEngine {
 	            	}
 	            	break;
             case LOE:
-                if(normalArgument != 0)
-                {
-                    gl.glEnable(GL.GL_COLOR_LOGIC_OP);
-                    log("sceGuEnable(GU_COLOR_LOGIC_OP)");
-                }
-                else
-                {
-                    gl.glDisable(GL.GL_COLOR_LOGIC_OP);
-                    log("sceGuDisable(GU_COLOR_LOGIC_OP)");
-                }
+            	if (!clearMode) {
+	                if(normalArgument != 0)
+	                {
+	                    gl.glEnable(GL.GL_COLOR_LOGIC_OP);
+	                    log("sceGuEnable(GU_COLOR_LOGIC_OP)");
+	                }
+	                else
+	                {
+	                    gl.glDisable(GL.GL_COLOR_LOGIC_OP);
+	                    log("sceGuDisable(GU_COLOR_LOGIC_OP)");
+	                }
+            	}
                 break;
             case JUMP:
             {
@@ -2502,13 +2510,15 @@ public class VideoEngine {
             }
 
             case ZMSK: {
-            	// NOTE: PSP depth mask as 1 is meant to avoid depth writes,
-            	//		on pc it's the opposite
-            	gl.glDepthMask(normalArgument == 1 ? false : true);
+            	if (!clearMode) {
+	            	// NOTE: PSP depth mask as 1 is meant to avoid depth writes,
+	            	//		on pc it's the opposite
+	            	gl.glDepthMask(normalArgument == 1 ? false : true);
 
-                if (log.isDebugEnabled()) {
-                    log("sceGuDepthMask(" + (normalArgument == 1 ? "disableWrites" : "enableWrites") + ")");
-                }
+	                if (log.isDebugEnabled()) {
+	                    log("sceGuDepthMask(" + (normalArgument == 1 ? "disableWrites" : "enableWrites") + ")");
+	                }
+            	}
             	break;
             }
 
@@ -2764,7 +2774,11 @@ public class VideoEngine {
             		gl.glDisable(GL.GL_LIGHTING);
             		gl.glDisable(GL.GL_TEXTURE_2D);
             		gl.glDisable(GL.GL_ALPHA_TEST);
-                    // TODO disable: fog, logic op, scissor?
+            		gl.glDisable(GL.GL_FOG);
+            		gl.glDisable(GL.GL_DEPTH_TEST);
+            		gl.glDisable(GL.GL_LOGIC_OP);
+            		gl.glDisable(GL.GL_CULL_FACE);
+                    // TODO disable: scissor?
 
             		if(useShaders) {
             			gl.glUniform1f(Uniforms.zPos.getId(), 0);
@@ -3256,7 +3270,9 @@ public class VideoEngine {
             	glColorMask[0] = getGLMask("Red color mask"  , (normalArgument      ) & 0xFF);
             	glColorMask[1] = getGLMask("Green color mask", (normalArgument >>  8) & 0xFF);
             	glColorMask[2] = getGLMask("Blue color mask" , (normalArgument >> 16) & 0xFF);
-            	setGLColorMask();
+            	if (!clearMode) {
+            		setGLColorMask();
+            	}
                 break;
             }
             case PMSKA: {
@@ -3264,7 +3280,9 @@ public class VideoEngine {
                     log(String.format("%s alpha mask=0x%02X", helper.getCommandString(PMSKA), normalArgument));
                 }
             	glColorMask[3] = getGLMask("Alpha color mask", normalArgument & 0xFF);
-            	setGLColorMask();
+            	if (!clearMode) {
+                	setGLColorMask();
+            	}
                 break;
             }
 
