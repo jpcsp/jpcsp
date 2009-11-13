@@ -275,9 +275,19 @@ public class VertexInfo {
 	            	addr = (addr + 1) & ~1;
 	            	int packed = mem.read16(addr); addr += 2;
 	                // All components checked on PSP
-	                r = ((packed      ) & 0x1f) / 31.0f;
-	                g = ((packed >>  5) & 0x3f) / 63.0f;
-	                b = ((packed >> 11) & 0x1f) / 31.0f;
+	            	//
+	            	//    5650 format: BBBBBGGGGGGRRRRR
+	            	//                 4321054321043210
+	            	// transformed into
+	            	//    8888 format: 11111111BBBBBBBBGGGGGGGGRRRRRRRR
+	            	//                         432104325432105443210432
+	            	//
+	            	int rBits = (packed      ) & 0x1F;
+	            	int gBits = (packed >>  5) & 0x3F;
+	            	int bBits = (packed >> 11) & 0x1F;
+	            	r = ((rBits << 3) | (rBits >> 2)) / 255.0f;
+	            	g = ((gBits << 2) | (gBits >> 4)) / 255.0f;
+	            	b = ((bBits << 3) | (bBits >> 2)) / 255.0f;
 	                a = 1.0f;
 	                
 	                v.c[0] += r * morph_weight[morphCounter];
@@ -297,11 +307,21 @@ public class VertexInfo {
 	            	addr = (addr + 1) & ~1;
 	            	int packed = mem.read16(addr); addr += 2;
 	                // All components checked on PSP
-	                r = ((packed      ) & 0x1f) / 31.0f;
-	                g = ((packed >>  5) & 0x1f) / 31.0f;
-	                b = ((packed >> 10) & 0x1f) / 31.0f;
+	            	//
+	            	//    5551 format: ABBBBBGGGGGRRRRR
+	            	//                  432104321043210
+	            	// transformed into
+	            	//    8888 format: AAAAAAAABBBBBBBBGGGGGGGGRRRRRRRR
+	            	//                         432104324321043243210432
+	            	//
+	            	int rBits = (packed      ) & 0x1F;
+	            	int gBits = (packed >>  5) & 0x1F;
+	            	int bBits = (packed >> 10) & 0x1F;
+	            	r = ((rBits << 3) | (rBits >> 2)) / 255.0f;
+	            	g = ((gBits << 3) | (gBits >> 2)) / 255.0f;
+	            	b = ((bBits << 3) | (bBits >> 2)) / 255.0f;
 	                a = ((packed >> 15) & 0x01) /  1.0f;
-	                
+
 	                v.c[0] += r * morph_weight[morphCounter];
 	                v.c[1] += g * morph_weight[morphCounter];
 	                v.c[2] += b * morph_weight[morphCounter];
@@ -318,11 +338,22 @@ public class VertexInfo {
 	            	addr = (addr + 1) & ~1;
 	                int packed = mem.read16(addr); addr += 2;
 	                // All components checked on PSP
-	                r = ((packed      ) & 0xf) / 15.0f;
-	                g = ((packed >>  4) & 0xf) / 15.0f;
-	                b = ((packed >>  8) & 0xf) / 15.0f;
-	                a = ((packed >> 12) & 0xf) / 15.0f;
-	                
+	            	//
+	            	//    4444 format: AAAABBBBGGGGRRRR
+	            	//                 3210321032103210
+	            	// transformed into
+	            	//    8888 format: AAAAAAAABBBBBBBBGGGGGGGGRRRRRRRR
+	            	//                 32103210321032103210321032103210
+	            	//
+	            	int rBits = (packed      ) & 0x0F;
+	            	int gBits = (packed >>  4) & 0x0F;
+	            	int bBits = (packed >>  8) & 0x0F;
+	            	int aBits = (packed >> 12) & 0x0F;
+	            	r = ((rBits << 4) | rBits) / 255.0f;
+	            	g = ((gBits << 4) | gBits) / 255.0f;
+	            	b = ((bBits << 4) | bBits) / 255.0f;
+	            	a = ((aBits << 4) | aBits) / 255.0f;
+
 	                v.c[0] += r * morph_weight[morphCounter];
 	                v.c[1] += g * morph_weight[morphCounter];
 	                v.c[2] += b * morph_weight[morphCounter];
