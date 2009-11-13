@@ -759,7 +759,30 @@ public class VfpuState extends FpuState {
     }
     // VFPU2:MFVC
     public void doMFVC(int rt, int imm7) {
-        doUNK("Unimplemented MFVC (rt=" + rt + ", imm7=" + imm7 + ")");
+    	if (rt != 0) {
+    		switch (imm7) {
+				case 0: /* 128 */
+				case 1: /* 129 */
+				case 2: /* 130 */
+					// TODO Which format is used to save these control registers?
+	    			doUNK("Unimplemented MFVC (rt=" + rt + ", imm7=" + imm7 + ")");
+		    		break;
+				case 3: /* 131 */
+	    			int value = 0;
+	    			for (int i = vcr.cc.length - 1; i >= 0; i--) {
+	    				value <<= 1;
+	    				if (vcr.cc[i]) {
+	    					value |= 1;
+	    				}
+	    			}
+	    			gpr[rt] = value;
+		    		break;
+	    		default:
+	    			// These values are not supported in Jpcsp
+	    			doUNK("Unimplemented MFVC (rt=" + rt + ", imm7=" + imm7 + ")");
+	    			break;
+    		}
+    	}
     }
     // VFPU2:MTV
     public void doMTV(int rt, int imm7) {
@@ -772,7 +795,26 @@ public class VfpuState extends FpuState {
 
     // VFPU2:MTVC
     public void doMTVC(int rt, int imm7) {
-        doUNK("Unimplemented MTVC");
+		int value = gpr[rt];
+
+		switch (imm7) {
+			case 0: /* 128 */
+			case 1: /* 129 */
+			case 2: /* 130 */
+				// TODO Which format is used to load these control registers?
+	    		doUNK("Unimplemented MTVC (rt=" + rt + ", imm7=" + imm7 + ", value=0x" + Integer.toHexString(value) + ")");
+	    		break;
+			case 3: /* 131 */
+	    		for (int i = 0; i < vcr.cc.length; i++) {
+	    			vcr.cc[i] = (value & 1) != 0;
+	    			value >>>= 1;
+	    		}
+	    		break;
+    		default:
+    			// These values are not supported in Jpcsp
+	    		doUNK("Unimplemented MTVC (rt=" + rt + ", imm7=" + imm7 + ", value=0x" + Integer.toHexString(value) + ")");
+    			break;
+		}
     }
 
     // VFPU2:BVF
