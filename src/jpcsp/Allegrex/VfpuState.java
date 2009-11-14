@@ -19,7 +19,6 @@ package jpcsp.Allegrex;
 import jpcsp.Memory;
 
 import java.util.Arrays;
-import java.util.Random;
 
 /**
  * Vectorial Floating Point Unit, handles scalar, vector and matrix operations.
@@ -52,6 +51,56 @@ public class VfpuState extends FpuState {
         (float) Math.sqrt(3.0) / 2.0f
     };
 
+    private class Random {
+        private long seed;
+
+        private final static long multiplier = 0x5DEECE66DL;
+        private final static long addend = 0xBL;
+        private final static long mask = (1L << 32) - 1;
+
+        public Random() { this(0x3f800001); }
+        
+        public Random(int seed) {
+            setSeed(seed);
+        }
+
+        public void setSeed(int seed) {
+            this.seed = ((long)seed) & mask;
+        }
+
+        public int getSeed() {
+            return (int)this.seed;
+        }       
+        
+        protected int next(int bits) {
+            this.seed = (this.seed * multiplier + addend) & mask;
+            return (int)(this.seed >>> (32 - bits));
+        }
+
+        public int nextInt() {
+            return next(32);
+        }
+
+        public int nextInt(int n) {
+            if (n <= 0)
+                throw new IllegalArgumentException("n must be positive");
+
+            if ((n & -n) == n)  // i.e., n is a power of 2
+                return (int)((n * (long)next(31)) >> 31);
+
+            int bits, val;
+            do {
+                bits = next(31);
+                val = bits % n;
+            } while (bits - val + (n-1) < 0);
+            return val;
+        }
+
+        public float nextFloat() {
+            return next(24) / ((float)(1 << 24));
+        }
+    }
+    
     private static Random rnd;
     
     public class Vcr {
@@ -760,28 +809,84 @@ public class VfpuState extends FpuState {
     // VFPU2:MFVC
     public void doMFVC(int rt, int imm7) {
     	if (rt != 0) {
-    		switch (imm7) {
-				case 0: /* 128 */
-				case 1: /* 129 */
-				case 2: /* 130 */
-					// TODO Which format is used to save these control registers?
-	    			doUNK("Unimplemented MFVC (rt=" + rt + ", imm7=" + imm7 + ")");
-		    		break;
-				case 3: /* 131 */
-	    			int value = 0;
-	    			for (int i = vcr.cc.length - 1; i >= 0; i--) {
-	    				value <<= 1;
-	    				if (vcr.cc[i]) {
-	    					value |= 1;
-	    				}
-	    			}
-	    			gpr[rt] = value;
-		    		break;
-	    		default:
-	    			// These values are not supported in Jpcsp
-	    			doUNK("Unimplemented MFVC (rt=" + rt + ", imm7=" + imm7 + ")");
-	    			break;
-    		}
+            int value = 0;
+            switch (imm7) {
+                case 0: /* 128 */
+                    value |= vcr.pfxs.swz[0] << 0;
+                    value |= vcr.pfxs.swz[1] << 2;
+                    value |= vcr.pfxs.swz[2] << 4;
+                    value |= vcr.pfxs.swz[3] << 6;
+                    if (vcr.pfxs.abs[0]) value |=  1 <<  8;
+                    if (vcr.pfxs.abs[1]) value |=  1 <<  9;
+                    if (vcr.pfxs.abs[2]) value |=  1 << 10;
+                    if (vcr.pfxs.abs[3]) value |=  1 << 11;
+                    if (vcr.pfxs.cst[0]) value |=  1 << 12;
+                    if (vcr.pfxs.cst[1]) value |=  1 << 13;
+                    if (vcr.pfxs.cst[2]) value |=  1 << 14;
+                    if (vcr.pfxs.cst[3]) value |=  1 << 15;
+                    if (vcr.pfxs.neg[0]) value |=  1 << 16;
+                    if (vcr.pfxs.neg[1]) value |=  1 << 17;
+                    if (vcr.pfxs.neg[2]) value |=  1 << 18;
+                    if (vcr.pfxs.neg[3]) value |=  1 << 19;
+                    gpr[rt] = value;
+                    break;
+		case 1: /* 129 */
+                    value |= vcr.pfxt.swz[0] << 0;
+                    value |= vcr.pfxt.swz[1] << 2;
+                    value |= vcr.pfxt.swz[2] << 4;
+                    value |= vcr.pfxt.swz[3] << 6;
+                    if (vcr.pfxt.abs[0]) value |=  1 <<  8;
+                    if (vcr.pfxt.abs[1]) value |=  1 <<  9;
+                    if (vcr.pfxt.abs[2]) value |=  1 << 10;
+                    if (vcr.pfxt.abs[3]) value |=  1 << 11;
+                    if (vcr.pfxt.cst[0]) value |=  1 << 12;
+                    if (vcr.pfxt.cst[1]) value |=  1 << 13;
+                    if (vcr.pfxt.cst[2]) value |=  1 << 14;
+                    if (vcr.pfxt.cst[3]) value |=  1 << 15;
+                    if (vcr.pfxt.neg[0]) value |=  1 << 16;
+                    if (vcr.pfxt.neg[1]) value |=  1 << 17;
+                    if (vcr.pfxt.neg[2]) value |=  1 << 18;
+                    if (vcr.pfxt.neg[3]) value |=  1 << 19;
+                    gpr[rt] = value;
+                    break;
+		case 2: /* 130 */
+                    value |= vcr.pfxd.sat[0] << 0;
+                    value |= vcr.pfxd.sat[1] << 2;
+                    value |= vcr.pfxd.sat[2] << 4;
+                    value |= vcr.pfxd.sat[3] << 6;
+                    if (vcr.pfxd.msk[0]) value |=  1 <<  8;
+                    if (vcr.pfxd.msk[1]) value |=  1 <<  9;
+                    if (vcr.pfxd.msk[2]) value |=  1 << 10;
+                    if (vcr.pfxd.msk[3]) value |=  1 << 11;
+                    gpr[rt] = value;
+                    break;
+                case 3: /* 131 */
+                    for (int i = vcr.cc.length - 1; i >= 0; i--) {
+                        value <<= 1;
+                        if (vcr.cc[i]) {
+                            value |= 1;
+                        }
+                    }
+                    gpr[rt] = value;
+                    break;
+                case 8: /* 136 - RCX0 */
+                    gpr[rt] = rnd.getSeed();
+                    break;
+                case 9:  /* 137 - RCX1 */
+                case 10: /* 138 - RCX2 */
+                case 11: /* 139 - RCX3 */
+                case 12: /* 140 - RCX4 */
+                case 13: /* 141 - RCX5 */
+                case 14: /* 142 - RCX6 */
+                case 15: /* 143 - RCX7 */
+                    // as we do not know how VFPU generates a random number through those 8 registers, we ignore 7 of them
+                    gpr[rt] = 0x3f800000;
+                    break;
+                default:
+                    // These values are not supported in Jpcsp
+                    doUNK("Unimplemented MFVC (rt=" + rt + ", imm7=" + imm7 + ")");
+                    break;
+            }
     	}
     }
     // VFPU2:MTV
@@ -795,26 +900,81 @@ public class VfpuState extends FpuState {
 
     // VFPU2:MTVC
     public void doMTVC(int rt, int imm7) {
-		int value = gpr[rt];
-
-		switch (imm7) {
-			case 0: /* 128 */
-			case 1: /* 129 */
-			case 2: /* 130 */
-				// TODO Which format is used to load these control registers?
-	    		doUNK("Unimplemented MTVC (rt=" + rt + ", imm7=" + imm7 + ", value=0x" + Integer.toHexString(value) + ")");
-	    		break;
-			case 3: /* 131 */
-	    		for (int i = 0; i < vcr.cc.length; i++) {
-	    			vcr.cc[i] = (value & 1) != 0;
-	    			value >>>= 1;
-	    		}
-	    		break;
-    		default:
-    			// These values are not supported in Jpcsp
-	    		doUNK("Unimplemented MTVC (rt=" + rt + ", imm7=" + imm7 + ", value=0x" + Integer.toHexString(value) + ")");
-    			break;
-		}
+        int value = gpr[rt]; 
+        
+        switch (imm7) {
+            case 0: /* 128 */
+                vcr.pfxs.swz[0] = ((value >> 0 ) & 3);
+                vcr.pfxs.swz[1] = ((value >> 2 ) & 3);
+                vcr.pfxs.swz[2] = ((value >> 4 ) & 3);
+                vcr.pfxs.swz[3] = ((value >> 6 ) & 3);
+                vcr.pfxs.abs[0] = ((value >> 8 ) & 1) == 1;
+                vcr.pfxs.abs[1] = ((value >> 9 ) & 1) == 1;
+                vcr.pfxs.abs[2] = ((value >> 10) & 1) == 1;
+                vcr.pfxs.abs[3] = ((value >> 11) & 1) == 1;
+                vcr.pfxs.cst[0] = ((value >> 12) & 1) == 1;
+                vcr.pfxs.cst[1] = ((value >> 13) & 1) == 1;
+                vcr.pfxs.cst[2] = ((value >> 14) & 1) == 1;
+                vcr.pfxs.cst[3] = ((value >> 15) & 1) == 1;
+                vcr.pfxs.neg[0] = ((value >> 16) & 1) == 1;
+                vcr.pfxs.neg[1] = ((value >> 17) & 1) == 1;
+                vcr.pfxs.neg[2] = ((value >> 18) & 1) == 1;
+                vcr.pfxs.neg[3] = ((value >> 19) & 1) == 1;
+                vcr.pfxs.enabled = true;
+                break;               
+            case 1: /* 129 */
+                vcr.pfxt.swz[0] = ((value >> 0 ) & 3);
+                vcr.pfxt.swz[1] = ((value >> 2 ) & 3);
+                vcr.pfxt.swz[2] = ((value >> 4 ) & 3);
+                vcr.pfxt.swz[3] = ((value >> 6 ) & 3);
+                vcr.pfxt.abs[0] = ((value >> 8 ) & 1) == 1;
+                vcr.pfxt.abs[1] = ((value >> 9 ) & 1) == 1;
+                vcr.pfxt.abs[2] = ((value >> 10) & 1) == 1;
+                vcr.pfxt.abs[3] = ((value >> 11) & 1) == 1;
+                vcr.pfxt.cst[0] = ((value >> 12) & 1) == 1;
+                vcr.pfxt.cst[1] = ((value >> 13) & 1) == 1;
+                vcr.pfxt.cst[2] = ((value >> 14) & 1) == 1;
+                vcr.pfxt.cst[3] = ((value >> 15) & 1) == 1;
+                vcr.pfxt.neg[0] = ((value >> 16) & 1) == 1;
+                vcr.pfxt.neg[1] = ((value >> 17) & 1) == 1;
+                vcr.pfxt.neg[2] = ((value >> 18) & 1) == 1;
+                vcr.pfxt.neg[3] = ((value >> 19) & 1) == 1;
+                vcr.pfxt.enabled = true;
+                break;
+            case 2: /* 130 */
+                vcr.pfxd.sat[0] = ((value >> 0 ) & 3);
+                vcr.pfxd.sat[1] = ((value >> 2 ) & 3);
+                vcr.pfxd.sat[2] = ((value >> 4 ) & 3);
+                vcr.pfxd.sat[3] = ((value >> 6 ) & 3);
+                vcr.pfxd.msk[0] = ((value >> 8 ) & 1) == 1;
+                vcr.pfxd.msk[1] = ((value >> 9 ) & 1) == 1;
+                vcr.pfxd.msk[2] = ((value >> 10) & 1) == 1;
+                vcr.pfxd.msk[3] = ((value >> 11) & 1) == 1;
+                vcr.pfxd.enabled = true;
+                break;
+            case 3: /* 131 */
+                for (int i = 0; i < vcr.cc.length; i++) {
+                    vcr.cc[i] = (value & 1) != 0;
+                    value >>>= 1;
+                }
+                break;
+            case 8: /* 136 - RCX0 */
+                rnd.setSeed(value);
+                break;
+            case 9:  /* 137 - RCX1 */
+            case 10: /* 138 - RCX2 */
+            case 11: /* 139 - RCX3 */
+            case 12: /* 140 - RCX4 */
+            case 13: /* 141 - RCX5 */
+            case 14: /* 142 - RCX6 */
+            case 15: /* 143 - RCX7 */
+                // as we do not know how VFPU generates a random number through those 8 registers, we ignore 7 of them
+                break;
+            default:
+                // These values are not supported in Jpcsp
+                doUNK("Unimplemented MTVC (rt=" + rt + ", imm7=" + imm7 + ", value=0x" + Integer.toHexString(value) + ")");
+                break;
+        }
     }
 
     // VFPU2:BVF
@@ -1546,11 +1706,168 @@ public class VfpuState extends FpuState {
     }
     // VFPU4:VMFVC
     public void doVMFVC(int vd, int imm7) {
-        doUNK("Unimplemented VMFVC");
+        int value = 0;
+        switch (imm7) {
+            case 0: /* 128 */
+                value |= vcr.pfxs.swz[0] << 0;
+                value |= vcr.pfxs.swz[1] << 2;
+                value |= vcr.pfxs.swz[2] << 4;
+                value |= vcr.pfxs.swz[3] << 6;
+                if (vcr.pfxs.abs[0]) value |=  1 <<  8;
+                if (vcr.pfxs.abs[1]) value |=  1 <<  9;
+                if (vcr.pfxs.abs[2]) value |=  1 << 10;
+                if (vcr.pfxs.abs[3]) value |=  1 << 11;
+                if (vcr.pfxs.cst[0]) value |=  1 << 12;
+                if (vcr.pfxs.cst[1]) value |=  1 << 13;
+                if (vcr.pfxs.cst[2]) value |=  1 << 14;
+                if (vcr.pfxs.cst[3]) value |=  1 << 15;
+                if (vcr.pfxs.neg[0]) value |=  1 << 16;
+                if (vcr.pfxs.neg[1]) value |=  1 << 17;
+                if (vcr.pfxs.neg[2]) value |=  1 << 18;
+                if (vcr.pfxs.neg[3]) value |=  1 << 19;
+                v3[0] = Float.intBitsToFloat(value);
+                saveVd(1, vd, v3);
+                break;
+            case 1: /* 129 */
+                value |= vcr.pfxt.swz[0] << 0;
+                value |= vcr.pfxt.swz[1] << 2;
+                value |= vcr.pfxt.swz[2] << 4;
+                value |= vcr.pfxt.swz[3] << 6;
+                if (vcr.pfxt.abs[0]) value |=  1 <<  8;
+                if (vcr.pfxt.abs[1]) value |=  1 <<  9;
+                if (vcr.pfxt.abs[2]) value |=  1 << 10;
+                if (vcr.pfxt.abs[3]) value |=  1 << 11;
+                if (vcr.pfxt.cst[0]) value |=  1 << 12;
+                if (vcr.pfxt.cst[1]) value |=  1 << 13;
+                if (vcr.pfxt.cst[2]) value |=  1 << 14;
+                if (vcr.pfxt.cst[3]) value |=  1 << 15;
+                if (vcr.pfxt.neg[0]) value |=  1 << 16;
+                if (vcr.pfxt.neg[1]) value |=  1 << 17;
+                if (vcr.pfxt.neg[2]) value |=  1 << 18;
+                if (vcr.pfxt.neg[3]) value |=  1 << 19;
+                v3[0] = Float.intBitsToFloat(value);
+                saveVd(1, vd, v3);
+                break;
+            case 2: /* 130 */
+                value |= vcr.pfxd.sat[0] << 0;
+                value |= vcr.pfxd.sat[1] << 2;
+                value |= vcr.pfxd.sat[2] << 4;
+                value |= vcr.pfxd.sat[3] << 6;
+                if (vcr.pfxd.msk[0]) value |=  1 <<  8;
+                if (vcr.pfxd.msk[1]) value |=  1 <<  9;
+                if (vcr.pfxd.msk[2]) value |=  1 << 10;
+                if (vcr.pfxd.msk[3]) value |=  1 << 11;
+                v3[0] = Float.intBitsToFloat(value);
+                saveVd(1, vd, v3);
+                break;
+            case 3: /* 131 */
+                for (int i = vcr.cc.length - 1; i >= 0; i--) {
+                    value <<= 1;
+                    if (vcr.cc[i]) {
+                        value |= 1;
+                    }
+                }
+                v3[0] = Float.intBitsToFloat(value);
+                saveVd(1, vd, v3);
+                break;
+            case 8: /* 136 - RCX0 */
+                v3[0] = Float.intBitsToFloat(rnd.getSeed());
+                saveVd(1, vd, v3);
+                break;
+            case 9:  /* 137 - RCX1 */
+            case 10: /* 138 - RCX2 */
+            case 11: /* 139 - RCX3 */
+            case 12: /* 140 - RCX4 */
+            case 13: /* 141 - RCX5 */
+            case 14: /* 142 - RCX6 */
+            case 15: /* 143 - RCX7 */
+                // as we do not know how VFPU generates a random number through those 8 registers, we ignore 7 of them
+                v3[0] = Float.intBitsToFloat(0x3f800000);
+                saveVd(1, vd, v3);
+                break;
+            default:
+                // These values are not supported in Jpcsp
+                doUNK("Unimplemented VMFVC (vd=" + vd + ", imm7=" + imm7 + ")");
+                break;
+        }
     }
     // VFPU4:VMTVC
     public void doVMTVC(int vd, int imm7) {
-        doUNK("Unimplemented VMTVC");
+        int value = Float.floatToRawIntBits(vd); 
+        
+        switch (imm7) {
+            case 0: /* 128 */
+                vcr.pfxs.swz[0] = ((value >> 0 ) & 3);
+                vcr.pfxs.swz[1] = ((value >> 2 ) & 3);
+                vcr.pfxs.swz[2] = ((value >> 4 ) & 3);
+                vcr.pfxs.swz[3] = ((value >> 6 ) & 3);
+                vcr.pfxs.abs[0] = ((value >> 8 ) & 1) == 1;
+                vcr.pfxs.abs[1] = ((value >> 9 ) & 1) == 1;
+                vcr.pfxs.abs[2] = ((value >> 10) & 1) == 1;
+                vcr.pfxs.abs[3] = ((value >> 11) & 1) == 1;
+                vcr.pfxs.cst[0] = ((value >> 12) & 1) == 1;
+                vcr.pfxs.cst[1] = ((value >> 13) & 1) == 1;
+                vcr.pfxs.cst[2] = ((value >> 14) & 1) == 1;
+                vcr.pfxs.cst[3] = ((value >> 15) & 1) == 1;
+                vcr.pfxs.neg[0] = ((value >> 16) & 1) == 1;
+                vcr.pfxs.neg[1] = ((value >> 17) & 1) == 1;
+                vcr.pfxs.neg[2] = ((value >> 18) & 1) == 1;
+                vcr.pfxs.neg[3] = ((value >> 19) & 1) == 1;
+                vcr.pfxs.enabled = true;
+                break;               
+            case 1: /* 129 */
+                vcr.pfxt.swz[0] = ((value >> 0 ) & 3);
+                vcr.pfxt.swz[1] = ((value >> 2 ) & 3);
+                vcr.pfxt.swz[2] = ((value >> 4 ) & 3);
+                vcr.pfxt.swz[3] = ((value >> 6 ) & 3);
+                vcr.pfxt.abs[0] = ((value >> 8 ) & 1) == 1;
+                vcr.pfxt.abs[1] = ((value >> 9 ) & 1) == 1;
+                vcr.pfxt.abs[2] = ((value >> 10) & 1) == 1;
+                vcr.pfxt.abs[3] = ((value >> 11) & 1) == 1;
+                vcr.pfxt.cst[0] = ((value >> 12) & 1) == 1;
+                vcr.pfxt.cst[1] = ((value >> 13) & 1) == 1;
+                vcr.pfxt.cst[2] = ((value >> 14) & 1) == 1;
+                vcr.pfxt.cst[3] = ((value >> 15) & 1) == 1;
+                vcr.pfxt.neg[0] = ((value >> 16) & 1) == 1;
+                vcr.pfxt.neg[1] = ((value >> 17) & 1) == 1;
+                vcr.pfxt.neg[2] = ((value >> 18) & 1) == 1;
+                vcr.pfxt.neg[3] = ((value >> 19) & 1) == 1;
+                vcr.pfxt.enabled = true;
+                break;
+            case 2: /* 130 */
+                vcr.pfxd.sat[0] = ((value >> 0 ) & 3);
+                vcr.pfxd.sat[1] = ((value >> 2 ) & 3);
+                vcr.pfxd.sat[2] = ((value >> 4 ) & 3);
+                vcr.pfxd.sat[3] = ((value >> 6 ) & 3);
+                vcr.pfxd.msk[0] = ((value >> 8 ) & 1) == 1;
+                vcr.pfxd.msk[1] = ((value >> 9 ) & 1) == 1;
+                vcr.pfxd.msk[2] = ((value >> 10) & 1) == 1;
+                vcr.pfxd.msk[3] = ((value >> 11) & 1) == 1;
+                vcr.pfxd.enabled = true;
+                break;
+            case 3: /* 131 */
+                for (int i = 0; i < vcr.cc.length; i++) {
+                    vcr.cc[i] = (value & 1) != 0;
+                    value >>>= 1;
+                }
+                break;
+            case 8: /* 136 - RCX0 */
+                rnd.setSeed(value);
+                break;
+            case 9:  /* 137 - RCX1 */
+            case 10: /* 138 - RCX2 */
+            case 11: /* 139 - RCX3 */
+            case 12: /* 140 - RCX4 */
+            case 13: /* 141 - RCX5 */
+            case 14: /* 142 - RCX6 */
+            case 15: /* 143 - RCX7 */
+                // as we do not know how VFPU generates a random number through those 8 registers, we ignore 7 of them
+                break;
+            default:
+                // These values are not supported in Jpcsp
+                doUNK("Unimplemented VMTVC (vd=" + vd + ", imm7=" + imm7 + ", value=0x" + Integer.toHexString(value) + ")");
+                break;
+        }
     }
     // VFPU4:VT4444
     public void doVT4444(int vsize, int vd, int vs) {
