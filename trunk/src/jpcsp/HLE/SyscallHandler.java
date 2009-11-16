@@ -958,6 +958,31 @@ public class SyscallHandler {
                     Managers.mutex.sceKernelReferMutexStatus(gpr[4], gpr[5]);
                     break;
 
+                case 0x30c3:
+                    Managers.mutex.sceKernelCreateLwMutex(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
+                    break;
+                case 0x30c4:
+                    Managers.mutex.sceKernelReferLwMutexStatusByID();
+                    break;
+                case 0x30c5:
+                    Managers.mutex.sceKernelDeleteLwMutex(gpr[4]);
+                    break;
+                case 0x30c6:
+                    Managers.mutex.sceKernelUnlockLwMutex(gpr[4], gpr[5]);
+                    break;
+                case 0x30c7:
+                    Managers.mutex.sceKernelLockLwMutexCB(gpr[4], gpr[5], gpr[6]);
+                    break;
+                case 0x30c8:
+                    Managers.mutex.sceKernelLockLwMutex(gpr[4], gpr[5], gpr[6]);
+                    break;
+                case 0x30c9:
+                    Managers.mutex.sceKernelReferLwMutexStatus(gpr[4], gpr[5]);
+                    break;
+                case 0x30ca:
+                    Managers.mutex.sceKernelTryLockLwMutex(gpr[4], gpr[5]);
+                    break;
+
                 case 0xfffff: { // special code for unmapped imports
                     CpuState cpu = Emulator.getProcessor().cpu;
                     Modules.log.error(String.format("Unmapped import @ 0x%08X - %08x %08x %08x",
