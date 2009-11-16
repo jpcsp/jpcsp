@@ -44,6 +44,7 @@ public class MutexManager {
 
     private final static int PSP_MUTEX_UNKNOWN_ATTR = 0x100; // TODO
     private final static int PSP_MUTEX_ALLOW_SAME_THREAD = 0x200;
+    private final static int PSP_LW_MUTEX_UNKNOWN_ATTR = 0x300; //TODO
 
     public void reset() {
         mutexMap = new HashMap<Integer, SceKernelMutexInfo>();
@@ -357,6 +358,151 @@ public class MutexManager {
             }
         }
     }
+
+    //Firmware 3.80+.
+    //Lightweight mutexes (a.k.a. Critical Sections).
+
+    //From tests with Kenka Banchou Portable (ULJS00235), the lightweight mutexes' functions
+    //seem to provide an output address, as the first argument, for writing the uid.
+    //This address is later read by other related functions.
+
+     public void sceKernelCreateLwMutex(int out_addr, int name_addr, int attr, int count, int option_addr) {
+        CpuState cpu = Emulator.getProcessor().cpu;
+        Memory mem = Processor.memory;
+
+        String name = Utilities.readStringNZ(mem, name_addr, 32);
+
+        Modules.log.info("sceKernelCreateLwMutex (uid addr='" + Integer.toHexString(out_addr) + "',name='" + name
+            + "',attr=0x" + Integer.toHexString(attr)
+            + ",count=0x" + Integer.toHexString(count)
+            + ",option_addr=0x" + Integer.toHexString(option_addr) + ")");
+
+        //TODO: Attr 0x300.
+        if (attr != 0) Modules.log.warn("PARTIAL:sceKernelCreateLwMutex attr value 0x" + Integer.toHexString(attr));
+
+        SceKernelMutexInfo info = new SceKernelMutexInfo(name, attr);
+        mutexMap.put(info.uid, info);
+
+        info.locked = count;
+        info.threadid = jpcsp.HLE.ThreadMan.getInstance().getCurrentThreadID();
+
+        cpu.gpr[2] = info.uid;  //TODO: Check if this is still needed.
+
+        mem.write32(out_addr, info.uid);
+    }
+
+     public void sceKernelDeleteLwMutex(int uid_addr) {
+        CpuState cpu = Emulator.getProcessor().cpu;
+        Memory mem = Processor.memory;
+
+        int uid = mem.read32(uid_addr);
+
+        Modules.log.debug("sceKernelDeleteLwMutex UID " +Integer.toHexString(uid)
+            + String.format(" %08X %08X %08X %08X", cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]));
+
+        SceKernelMutexInfo info = mutexMap.remove(uid);
+        if (info == null) {
+            Modules.log.warn("sceKernelDeleteLwMutex unknown UID " +Integer.toHexString(uid));
+            cpu.gpr[2] = ERROR_NOT_FOUND_MUTEX;
+        } else {
+            cpu.gpr[2] = 0;
+            mem.write32(uid_addr, 0); //Clear uid address.
+        }
+     }
+
+    //Currently redirecting the lock functions to hleKernelLockMutex.
+    //TODO: An hleKernelLockLwMutex or a new parameter for hleKernelLockMutex may be needed.
+
+     public void sceKernelLockLwMutex(int uid_addr, int count, int timeout_addr) {
+        Memory mem = Processor.memory;
+
+        int uid = mem.read32(uid_addr);
+
+        Modules.log.debug("sceKernelLockLwMutex redirecting to hleKernelLockMutex");
+        hleKernelLockMutex(uid, count, timeout_addr, true, false);
+    }
+
+    public void sceKernelLockLwMutexCB(int uid_addr, int count, int timeout_addr) {
+        Memory mem = Processor.memory;
+
+        int uid = mem.read32(uid_addr);
+
+        Modules.log.debug("sceKernelLockLwMutexCB redirecting to hleKernelLockMutex");
+        hleKernelLockMutex(uid, count, timeout_addr, true, true);
+    }
+
+    public void sceKernelTryLockLwMutex(int uid_addr, int count) {
+        Memory mem = Processor.memory;
+
+        int uid = mem.read32(uid_addr);
+
+        Modules.log.debug("sceKernelTryLockLwMutex redirecting to hleKernelLockMutex");
+        hleKernelLockMutex(uid, count, 0, false, false);
+    }
+
+     public void sceKernelUnlockLwMutex(int uid_addr, int count) {
+        CpuState cpu = Emulator.getProcessor().cpu;
+        Memory mem = Processor.memory;
+
+        int uid = mem.read32(uid_addr);
+
+        Modules.log.debug("sceKernelUnlockLwMutex(uid=" + Integer.toHexString(uid) + ",count=" + count + ")");
+
+        SceKernelMutexInfo info = mutexMap.get(uid);
+        if (info == null) {
+            Modules.log.warn("sceKernelUnlockLwMutex unknown uid");
+            cpu.gpr[2] = ERROR_NOT_FOUND_MUTEX;
+        } else if (info.locked == 0) {
+            Modules.log.warn("sceKernelUnlockLwMutex not locked");
+            cpu.gpr[2] = 0;
+        } else {
+            info.locked -= count;
+            if (info.locked < 0) {
+                Modules.log.warn("sceKernelUnlockLwMutex underflow " + info.locked);
+                info.locked  = 0;
+            }
+
+            if (info.locked == 0) {
+                wakeWaitMutexThreads(info, false);
+            }
+
+            cpu.gpr[2] = 0;
+        }
+     }
+
+      public void sceKernelReferLwMutexStatus(int uid_addr, int addr) {
+        CpuState cpu = Emulator.getProcessor().cpu;
+        Memory mem = Processor.memory;
+
+        int uid = mem.read32(uid_addr);
+
+        Modules.log.warn("PARTIAL:sceKernelReferLwMutexStatus UID " + Integer.toHexString(uid)
+            + "addr " + String.format("0x%08X", addr)
+            + String.format(" %08X %08X %08X %08X", cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]));
+
+        SceKernelMutexInfo info = mutexMap.get(uid);
+        if (info == null) {
+            Modules.log.warn("sceKernelReferLwMutexStatus unknown UID " + Integer.toHexString(uid));
+            cpu.gpr[2] = ERROR_NOT_FOUND_MUTEX;
+        } else {
+            if (mem.isAddressGood(addr)) {
+                info.write(mem, addr);
+                cpu.gpr[2] = 0;
+            } else {
+                Modules.log.warn("sceKernelReferLwMutexStatus bad address 0x" + Integer.toHexString(addr));
+                cpu.gpr[2] = -1;
+            }
+        }
+      }
+
+       public void sceKernelReferLwMutexStatusByID() {
+          CpuState cpu = Emulator.getProcessor().cpu;
+          Memory mem = Processor.memory;
+
+          Modules.log.warn("Unimplemented sceKernelReferLwMutexStatusByID "
+            + String.format("%08x %08x %08x %08x", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]));
+
+       }
 
 
     public static final MutexManager singleton;
