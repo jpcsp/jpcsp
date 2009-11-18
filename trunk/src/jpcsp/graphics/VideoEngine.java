@@ -199,6 +199,7 @@ public class VideoEngine {
     private int tex_wrap_s = GL.GL_REPEAT, tex_wrap_t = GL.GL_REPEAT;
     private int patch_div_s;
     private int patch_div_t;
+    private boolean clutIsDirty;
 
     private int transform_mode;
 
@@ -237,8 +238,8 @@ public class VideoEngine {
     private int[] gl_texture_id = new int[1];
     private int[] tmp_texture_buffer32 = new int[1024*1024];
     private short[] tmp_texture_buffer16 = new short[1024*1024];
-    private int[] tmp_clut_buffer32 = new int[4096];
-    private short[] tmp_clut_buffer16 = new short[4096];
+    private int[] clut_buffer32 = new int[4096];
+    private short[] clut_buffer16 = new short[4096];
     private int tex_map_mode = TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV;
     private int tex_proj_map_mode = TMAP_TEXTURE_PROJECTION_MODE_POSITION;
 
@@ -776,34 +777,65 @@ public class VideoEngine {
         }
     }
 
-    private short[] readClut16() {
+    private int getClutAddr(int level, int clutNumEntries, int clutEntrySize) {
+    	return tex_clut_addr + tex_clut_start * clutEntrySize;
+    }
+
+    private void readClut() {
+    	if (!clutIsDirty) {
+    		return;
+    	}
+
+    	// Texture using clut?
+    	if (texture_storage >= TPSM_PIXEL_STORAGE_MODE_4BIT_INDEXED && texture_storage <= TPSM_PIXEL_STORAGE_MODE_32BIT_INDEXED) {
+    		if (tex_clut_mode == CMODE_FORMAT_32BIT_ABGR8888) {
+    			readClut32(0);
+    		} else {
+    			readClut16(0);
+    		}
+    	}
+    }
+
+    private short[] readClut16(int level) {
 		int clutNumEntries = tex_clut_num_blocks * 16;
-		IMemoryReader memoryReader = MemoryReader.getMemoryReader(tex_clut_addr + tex_clut_start * 2, (clutNumEntries - tex_clut_start) * 2, 2);
-		for (int i = tex_clut_start; i < clutNumEntries; i++) {
-			tmp_clut_buffer16[i] = (short) memoryReader.readNext();
-		}
+
+		// Update the clut_buffer only if some clut parameters have been changed
+		// since last update.
+		if (clutIsDirty) {
+			IMemoryReader memoryReader = MemoryReader.getMemoryReader(getClutAddr(level, clutNumEntries, 2), (clutNumEntries - tex_clut_start) * 2, 2);
+			for (int i = tex_clut_start; i < clutNumEntries; i++) {
+				clut_buffer16[i] = (short) memoryReader.readNext();
+			}
+			clutIsDirty = false;
+    	}
 
         if (State.captureGeNextFrame) {
             log.info("Capture readClut16");
             CaptureManager.captureRAM(tex_clut_addr, clutNumEntries * 2);
         }
 
-    	return tmp_clut_buffer16;
+    	return clut_buffer16;
     }
 
-    private int[] readClut32() {
+    private int[] readClut32(int level) {
 		int clutNumEntries = tex_clut_num_blocks * 8;
-		IMemoryReader memoryReader = MemoryReader.getMemoryReader(tex_clut_addr + tex_clut_start * 4, (clutNumEntries - tex_clut_start) * 4, 4);
-		for (int i = tex_clut_start; i < clutNumEntries; i++) {
-			tmp_clut_buffer32[i] = memoryReader.readNext();
-		}
+
+		// Update the clut_buffer only if some clut parameters have been changed
+		// since last update.
+    	if (clutIsDirty) {
+			IMemoryReader memoryReader = MemoryReader.getMemoryReader(getClutAddr(level, clutNumEntries, 4), (clutNumEntries - tex_clut_start) * 4, 4);
+			for (int i = tex_clut_start; i < clutNumEntries; i++) {
+				clut_buffer32[i] = memoryReader.readNext();
+			}
+			clutIsDirty = false;
+    	}
 
         if (State.captureGeNextFrame) {
             log.info("Capture readClut32");
             CaptureManager.captureRAM(tex_clut_addr, clutNumEntries * 4);
         }
 
-    	return tmp_clut_buffer32;
+    	return clut_buffer32;
     }
 
     private int getClutIndex(int index) {
@@ -887,7 +919,9 @@ public class VideoEngine {
                 break;
 
             case SIGNAL:
-                if (log.isDebugEnabled()) {
+            	if ((normalArgument >> 16) != 0) {
+                    log.warn("Unimplemented " + helper.getCommandString(SIGNAL) + " (hex=" + Integer.toHexString(normalArgument) + ")");
+            	} else if (log.isDebugEnabled()) {
                     log(helper.getCommandString(SIGNAL) + " (hex="+Integer.toHexString(normalArgument)+",int="+normalArgument+",float="+floatArgument+")");
                 }
                 currentList.pushSignalCallback(normalArgument);
@@ -1562,11 +1596,13 @@ public class VideoEngine {
             }
 
             case TMODE: {
-            	texture_num_mip_maps = (normalArgument>>16) & 0xFF;
-                int a2 = (normalArgument>>8) & 0xFF;
-            	texture_swizzle 	 = ((normalArgument    ) & 0xFF) != 0;
-            	if (log.isDebugEnabled()) {
-            	    log ("sceGuTexMode(X, mipmaps=" + texture_num_mip_maps + ", a2=" + a2 + ", swizzle=" + texture_swizzle + ")");
+            	texture_num_mip_maps = ( normalArgument >> 16) & 0xFF;
+            	int a2               = ( normalArgument >>  8) & 0xFF;
+            	texture_swizzle 	 = ((normalArgument      ) & 0xFF) != 0;
+            	if (a2 != 0) {
+            	    log.warn("sceGuTexMode(X, mipmaps=" + texture_num_mip_maps + ", a2=" + a2 + ", swizzle=" + texture_swizzle + ") unimplemented a2");
+            	} else if (log.isDebugEnabled()) {
+            	    log("sceGuTexMode(X, mipmaps=" + texture_num_mip_maps + ", a2=" + a2 + ", swizzle=" + texture_swizzle + ")");
             	}
             	break;
             }
@@ -1583,6 +1619,7 @@ public class VideoEngine {
 
             case CBP: {
                 tex_clut_addr = (tex_clut_addr & 0xff000000) | normalArgument;
+                clutIsDirty = true;
                 if (log.isDebugEnabled()) {
                     log ("sceGuClutLoad(X, lo(cbp=0x" + Integer.toHexString(tex_clut_addr) + "))");
                 }
@@ -1591,6 +1628,7 @@ public class VideoEngine {
 
             case CBPH: {
                 tex_clut_addr = (tex_clut_addr & 0x00ffffff) | ((normalArgument << 8) & 0x0f000000);
+                clutIsDirty = true;
                 if (log.isDebugEnabled()) {
                     log ("sceGuClutLoad(X, hi(cbp=0x" + Integer.toHexString(tex_clut_addr) + "))");
                 }
@@ -1599,7 +1637,17 @@ public class VideoEngine {
 
             case CLOAD: {
             	tex_clut_num_blocks = normalArgument;
-                if (log.isDebugEnabled()) {
+                clutIsDirty = true;
+
+                // Some games use the following sequence:
+            	// - sceGuClutLoad(num_blocks=32, X)
+            	// - sceGuClutLoad(num_blocks=1, X)
+            	// - tflush
+            	// - prim ... (texture data is referencing the clut entries from 32 blocks)
+            	//
+            	readClut();
+
+            	if (log.isDebugEnabled()) {
                     log ("sceGuClutLoad(num_blocks=" + tex_clut_num_blocks + ", X)");
                 }
             	break;
@@ -1610,6 +1658,7 @@ public class VideoEngine {
                 tex_clut_shift  = (normalArgument >> 2) & 0x3F;
                 tex_clut_mask   = (normalArgument >> 8) & 0xFF;
                 tex_clut_start  = (normalArgument >> 16) & 0xFF;
+                clutIsDirty = true;
                 if (log.isDebugEnabled()) {
                     log ("sceGuClutMode(cpsm=" + tex_clut_mode + "(" + getPsmName(tex_clut_mode) + "), shift=" + tex_clut_shift + ", mask=0x" + Integer.toHexString(tex_clut_mask) + ", start=" + tex_clut_start + ")");
                 }
@@ -1627,7 +1676,7 @@ public class VideoEngine {
             }
 
             case TFLT: {
-            	log ("sceGuTexFilter(min=" + (normalArgument & 0xFF) + ", mag=" + ((normalArgument >> 8) & 0xFF) + " (mm#" + texture_num_mip_maps + ")");
+            	log ("sceGuTexFilter(min=" + (normalArgument & 0xFF) + ", mag=" + ((normalArgument >> 8) & 0xFF) + ") (mm#" + texture_num_mip_maps + ")");
 
             	switch ((normalArgument>>8) & 0xFF)
             	{
@@ -1751,7 +1800,7 @@ public class VideoEngine {
 
             case TBIAS: {
                 tex_mipmap_mode = normalArgument & 0xFFFF;
-                tex_mipmap_bias_int = normalArgument >> 16;
+                tex_mipmap_bias_int = (int)(byte) normalArgument >> 16;
                 tex_mipmap_bias = tex_mipmap_bias_int / 16.0f;
                 log.warn("Unimplemented sceGuTexLevelMode(mode=" + tex_mipmap_mode + ", bias=" + tex_mipmap_bias + ")");
                 break;
@@ -2363,7 +2412,6 @@ public class VideoEngine {
 	                {
 	                    gl.glEnable(GL.GL_FOG);
 	                    gl.glFogi(GL.GL_FOG_MODE, GL.GL_LINEAR);
-					    gl.glFogf(GL.GL_FOG_DENSITY, 0.1f);
 					    gl.glHint(GL.GL_FOG_HINT, GL.GL_DONT_CARE);
 	                    log("sceGuEnable(GL_FOG)");
 	                }
@@ -3565,6 +3613,11 @@ public class VideoEngine {
         if (texture_base_pointer[0] == 0)
             return;
 
+        // Texture not used in clear mode or when disabled.
+        if (clearMode || tex_enable == 0) {
+        	return;
+        }
+
         Texture texture;
         int tex_addr = texture_base_pointer[0] & Memory.addressMask;
         // Some games are storing compressed textures in VRAM (e.g. Skate Park City).
@@ -3673,7 +3726,7 @@ public class VideoEngine {
 
 	                            texture_type = texturetype_mapping[tex_clut_mode];
 	                            textureByteAlignment = 2;  // 16 bits
-	                            short[] clut = readClut16();
+	                            short[] clut = readClut16(level);
 
 	                            if (!texture_swizzle) {
 	                            	int length = texture_buffer_width[level]*texture_height[level];
@@ -3725,7 +3778,7 @@ public class VideoEngine {
 	                                return;
 
 	                            texture_type = GL.GL_UNSIGNED_BYTE;
-	                            int[] clut = readClut32();
+	                            int[] clut = readClut32(level);
 
 	                            if (!texture_swizzle) {
 	                            	int length = texture_buffer_width[level]*texture_height[level];
@@ -4059,7 +4112,7 @@ public class VideoEngine {
                 if (texclut == 0)
                     return null;
 
-                short[] clut = readClut16();
+                short[] clut = readClut16(level);
 
                 if (!texture_swizzle) {
                 	IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length * bytesPerIndex, bytesPerIndex);
@@ -4116,7 +4169,7 @@ public class VideoEngine {
                 if (texclut == 0)
                     return null;
 
-                int[] clut = readClut32();
+                int[] clut = readClut32(level);
 
                 if (!texture_swizzle) {
                 	IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, length * bytesPerIndex, bytesPerIndex);
