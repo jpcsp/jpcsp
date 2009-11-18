@@ -31,6 +31,7 @@ public class MemoryReader {
 	public static IMemoryReader getMemoryReader(int address, int length, int step) {
 		Memory mem = Memory.getInstance();
 
+		address &= Memory.addressMask;
 		if (mem instanceof FastMemory) {
 			int[] memoryInt = ((FastMemory) mem).getAll();
 
