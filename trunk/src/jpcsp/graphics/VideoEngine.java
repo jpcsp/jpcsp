@@ -1800,7 +1800,7 @@ public class VideoEngine {
 
             case TBIAS: {
                 tex_mipmap_mode = normalArgument & 0xFFFF;
-                tex_mipmap_bias_int = (int)(byte) normalArgument >> 16;
+                tex_mipmap_bias_int = (int)(byte) (normalArgument >> 16);
                 tex_mipmap_bias = tex_mipmap_bias_int / 16.0f;
                 log.warn("Unimplemented sceGuTexLevelMode(mode=" + tex_mipmap_mode + ", bias=" + tex_mipmap_bias + ")");
                 break;
