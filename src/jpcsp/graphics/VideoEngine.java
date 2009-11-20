@@ -4080,6 +4080,11 @@ public class VideoEngine {
 	            }
             }
         } else {
+        	boolean compressedTexture = (texture_storage >= TPSM_PIXEL_STORAGE_MODE_DXT1 && texture_storage <= TPSM_PIXEL_STORAGE_MODE_DXT5);
+            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, tex_min_filter);
+            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_mag_filter);
+            checkTextureMinFilter(compressedTexture, texture_num_mip_maps);
+
             if (log.isDebugEnabled()) {
                 log(helper.getCommandString(TFLUSH) + " Reusing cached texture " + texture.getGlId());
             }
