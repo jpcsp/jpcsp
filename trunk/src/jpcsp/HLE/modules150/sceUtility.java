@@ -833,27 +833,21 @@ public class sceUtility implements HLEModule {
 
         sceUtilityOskParams.oskData.outText = JOptionPane.showInputDialog(sceUtilityOskParams.oskData.desc, sceUtilityOskParams.oskData.inText);
         sceUtilityOskParams.base.result = 0;
-        sceUtilityOskParams.oskData.result = 0;
+        sceUtilityOskParams.oskData.result = 2;	// Unknown value, but required by "SEGA Rally"
         sceUtilityOskParams.write(mem, oskParamAddr);
+        Modules.log.info("sceUtilityOskInitStart returning '" + sceUtilityOskParams.oskData.outText + "'");
 
         cpu.gpr[2] = 0;
 	}
 
 	public void sceUtilityOskShutdownStart(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+		CpuState cpu = processor.cpu;
 
-		/* put your own code here instead */
+		Modules.log.warn("PARTIAL:sceUtilityOskShutdownStart");
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		Modules.log.warn("Unimplemented NID function sceUtilityOskShutdownStart [0x3DFAEBA9]");
         osk_status = PSP_UTILITY_DIALOG_FINISHED;
-		cpu.gpr[2] =osk_status; //0xDEADC0DE;
 
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+		cpu.gpr[2] = osk_status;
 	}
 
 	public void sceUtilityOskUpdate(Processor processor) {
@@ -874,22 +868,13 @@ public class sceUtility implements HLEModule {
 	}
 
 	public void sceUtilityOskGetStatus(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
-		Memory mem = Processor.memory;
+		CpuState cpu = processor.cpu;
 
-		/* put your own code here instead */
-
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
-
-		Modules.log.warn("Unimplemented NID function sceUtilityOskGetStatus [0xF3F76017]");
+        Modules.log.warn("PARTIAL:sceUtilityOskGetStatus return:0x" + Integer.toHexString(osk_status));
 
 		cpu.gpr[2] = osk_status;
         if (osk_status == PSP_UTILITY_DIALOG_FINISHED)
             osk_status = PSP_UTILITY_DIALOG_NONE;
-
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
 	}
 
 	public void sceUtilitySetSystemParamInt(Processor processor) {
