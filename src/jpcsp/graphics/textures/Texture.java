@@ -37,12 +37,13 @@ public class Texture {
 	private int clutNumBlocks;
 	private int hashCode;
 	private int mipmapLevels;
+	private boolean mipmapShareClut;
 	private boolean hashCodeComputed = false;
 	private int glId = -1;	// id created by glGenTextures
 	private boolean loaded = false;	// is the texture already loaded?
 	private TextureCache textureCache;
 
-	public Texture(TextureCache textureCache, int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks, int mipmapLevels) {
+	public Texture(TextureCache textureCache, int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks, int mipmapLevels, boolean mipmapShareClut) {
 		this.textureCache = textureCache;
 		this.addr = addr;
 		this.lineWidth = lineWidth;
@@ -56,6 +57,7 @@ public class Texture {
 		this.clutMask = clutMask;
 		this.clutNumBlocks = clutNumBlocks;
 		this.mipmapLevels = mipmapLevels;
+		this.mipmapShareClut = mipmapShareClut;
 	}
 
 	private static int hashCode(int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks, int mipmapLevels) {
@@ -136,7 +138,7 @@ public class Texture {
 		return hashCode;
 	}
 
-	public boolean equals(int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks, int mipmapLevels) {
+	public boolean equals(int addr, int lineWidth, int width, int height, int pixelStorage, int clutAddr, int clutMode, int clutStart, int clutShift, int clutMask, int clutNumBlocks, int mipmapLevels, boolean mipmapShareClut) {
 		if (this.addr != addr ||
 			this.lineWidth != lineWidth ||
 			this.width != width ||
@@ -148,7 +150,8 @@ public class Texture {
 			this.clutShift != clutShift ||
 			this.clutMask != clutMask ||
 			this.clutNumBlocks != clutNumBlocks ||
-			this.mipmapLevels != mipmapLevels)
+			this.mipmapLevels != mipmapLevels ||
+			this.mipmapShareClut != mipmapShareClut)
 		{
 			return false;
 		}
