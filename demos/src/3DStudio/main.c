@@ -20,6 +20,11 @@ PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER);
 #define SCR_WIDTH	480
 #define SCR_HEIGHT	272
 #define FONT_HEIGHT	8
+#define TEXTURE_WIDTH	128
+#define TEXTURE_HEIGHT	128
+#define NUMBER_MIPMAPS	8
+#define NUMBER_CLUT_ENTRIES	8
+
 
 //#define USE_VERTEX_8BIT	1
 //#define USE_VERTEX_16BIT	1
@@ -335,6 +340,14 @@ struct Point
 
 struct Color rectangle1color;
 struct Color rectangle2color;
+struct Color mipmapLevelsColor[] = {{ 0x00, 0x00, 0xFF, 0xFF },
+                                    { 0x00, 0xFF, 0xFF, 0xFF },
+                                    { 0xFF, 0x00, 0xFF, 0xFF },
+                                    { 0xFF, 0xFF, 0xFF, 0xFF },
+                                    { 0x00, 0x00, 0xFF, 0xFF },
+                                    { 0x00, 0xFF, 0xFF, 0xFF },
+                                    { 0xFF, 0x00, 0xFF, 0xFF },
+								   };
 struct Point rectangle1point;
 struct Point rectangle2point;
 struct Point rectangle1normal;
@@ -354,9 +367,6 @@ int rectangle1rendering = RENDERING_3D;
 int rectangle2rendering = RENDERING_3D;
 char *renderingNames[] = { "3D", "2D", "Off" };
 
-#define TEXTURE_WIDTH	8
-#define TEXTURE_HEIGHT	8
-
 int textureScale = 2;
 
 /* int zTestPixelX = 375; */
@@ -365,12 +375,45 @@ int zTestPixelY = 125 + 16;
 int geTestPixelX = 375;
 int geTestPixelY = 198;
 
-unsigned int texture1[TEXTURE_WIDTH * TEXTURE_HEIGHT];
-unsigned int texture2[TEXTURE_WIDTH * TEXTURE_HEIGHT];
+unsigned int __attribute__((aligned(16))) texture1level0[TEXTURE_WIDTH * TEXTURE_HEIGHT];
+unsigned int __attribute__((aligned(16))) texture1level1[TEXTURE_WIDTH * TEXTURE_HEIGHT / 4];
+unsigned int __attribute__((aligned(16))) texture1level2[TEXTURE_WIDTH * TEXTURE_HEIGHT / 16];
+unsigned int __attribute__((aligned(16))) texture1level3[TEXTURE_WIDTH * TEXTURE_HEIGHT / 64];
+unsigned int __attribute__((aligned(16))) texture1level4[TEXTURE_WIDTH * TEXTURE_HEIGHT / 256];
+unsigned int __attribute__((aligned(16))) texture1level5[TEXTURE_WIDTH * TEXTURE_HEIGHT / 1024];
+unsigned int __attribute__((aligned(16))) texture1level6[TEXTURE_WIDTH * TEXTURE_HEIGHT / 4096];
+unsigned int __attribute__((aligned(16))) texture1level7[TEXTURE_WIDTH * TEXTURE_HEIGHT / 16384];
+unsigned int* texture1[8] = { texture1level0, texture1level1, texture1level2, texture1level3, texture1level4, texture1level5, texture1level6, texture1level7 };
+unsigned int __attribute__((aligned(16))) texture2level0[TEXTURE_WIDTH * TEXTURE_HEIGHT];
+unsigned int __attribute__((aligned(16))) texture2level1[TEXTURE_WIDTH * TEXTURE_HEIGHT / 4];
+unsigned int __attribute__((aligned(16))) texture2level2[TEXTURE_WIDTH * TEXTURE_HEIGHT / 16];
+unsigned int __attribute__((aligned(16))) texture2level3[TEXTURE_WIDTH * TEXTURE_HEIGHT / 64];
+unsigned int __attribute__((aligned(16))) texture2level4[TEXTURE_WIDTH * TEXTURE_HEIGHT / 256];
+unsigned int __attribute__((aligned(16))) texture2level5[TEXTURE_WIDTH * TEXTURE_HEIGHT / 1024];
+unsigned int __attribute__((aligned(16))) texture2level6[TEXTURE_WIDTH * TEXTURE_HEIGHT / 4096];
+unsigned int __attribute__((aligned(16))) texture2level7[TEXTURE_WIDTH * TEXTURE_HEIGHT / 16384];
+unsigned int* texture2[8] = { texture2level0, texture2level1, texture2level2, texture2level3, texture2level4, texture2level5, texture2level6, texture2level7 };
+
+unsigned int __attribute__((aligned(16))) clut1[NUMBER_CLUT_ENTRIES * NUMBER_MIPMAPS];
+unsigned int __attribute__((aligned(16))) clut2[NUMBER_CLUT_ENTRIES * NUMBER_MIPMAPS];
+
+int texLevelMode1 = 0;
+int texLevelMode2 = 0;
+char *texModeNames[] = { "GU_TEXTURE_AUTO", "GU_TEXTURE_CONST", "GU_TEXTURE_SLOPE" };
+int texBias1 = 0;
+int texBias2 = 0;
+float texSlope1 = 0;
+float texSlope2 = 0;
 
 int texFunc1 = 0;
 int texFunc2 = 0;
 char *texFuncNames[] = { "GU_TFX_MODULATE", "GU_TFX_DECAL", "GU_TFX_BLEND", "GU_TFX_REPLACE", "GU_TFX_ADD" };
+
+int texMinFilter1 = 0;
+int texMinFilter2 = 0;
+int texMagFilter1 = 0;
+int texMagFilter2 = 0;
+char *texFilterNames[] = { "GU_NEAREST", "GU_LINEAR", "Unknown2", "Unknown3", "GU_NEAREST_MIPMAP_NEAREST", "GU_LINEAR_MIPMAP_NEAREST", "GU_NEAREST_MIPMAP_LINEAR", "GU_LINEAR_MIPMAP_LINEAR" };
 
 int texFuncAlpha1 = 1;
 int texFuncAlpha2 = 1;
@@ -398,6 +441,7 @@ char *blendFuncNames[] = { "GU_SRC_COLOR", "GU_ONE_MINUS_SRC_COLOR", "GU_SRC_ALP
 
 int textureType1 = 0;
 int textureType2 = 0;
+int mipmapLevel1Type = 1;
 char *textureTypeNames[] = { "Checkboard 1x1", "Checkboard 3x3", "Unicolor", "Vertical", "Horizontal", "Center" };
 
 struct Color backgroundColor;
@@ -427,14 +471,18 @@ int materialEmissiveFlag = 0;
 struct Color materialSpecular;
 int materialSpecularFlag = 0;
 int vertexColorFlag = 1;
+int tpsm1 = GU_PSM_8888;
+int tpsm2 = GU_PSM_8888;
+char *tpsmNames[] = { "GU_PSM_5650", "GU_PSM_5551", "GU_PSM_4444", "GU_PSM_8888", "GU_PSM_T4", "GU_PSM_T8", "GU_PSM_T16", "GU_PSM_T32" };
+
 struct Color ambientColor;
 struct Color texEnvColor;
 
 int texture1_a2 = 0;
 int texture2_a2 = 0;
 
-float fogNear = 0;
-float fogFar = 0;
+float fogNear = 3;
+float fogFar = 5;
 struct Color fogColor;
 
 struct Light
@@ -650,12 +698,13 @@ unsigned int getTextureColor(struct Color *pcolor, int textureType, int x, int y
 	{
 		case 0: color = (((x + y / 1 * 1) / 1) & 1) == 0 ? color1 : color2; break;	/* Checkboard 1x1 */
 		case 1: color = (((x + y / 3 * 3) / 3) & 1) == 0 ? color1 : color2; break;	/* Checkboard 3x3 */
-		case 2: color = color1; break;							/* Unicolor */
+		case 2: color = color1; break;									/* Unicolor */
 		case 3: factor = x * 256 / TEXTURE_WIDTH; break;				/* Vertical */
 		case 4: factor = y * 256 / TEXTURE_HEIGHT; break;				/* Horizontal */
 		case 5: a = x - (TEXTURE_WIDTH  / 2);
 			b = y - (TEXTURE_HEIGHT / 2);
-			factor = 8 * (32 - ((a * a) + (b * b))); break;				/* Center */
+			int a2 = TEXTURE_WIDTH * TEXTURE_WIDTH / 2;
+			factor = (256 * (a2 - ((a * a) + (b * b)))) / a2; break;	/* Center */
 	}
 
 	if (factor != -1)
@@ -682,10 +731,128 @@ void createTexture(struct Color *pcolor, int textureType, unsigned int *texture,
 }
 
 
+int getClutIndex(unsigned int *clut, int color)
+{
+	int i;
+
+	for (i = 0; i < NUMBER_CLUT_ENTRIES; i++)
+	{
+		if ((clut[i] & 0x00FFFFFF) == (color & 0x00FFFFFF))
+		{
+			return i;
+		}
+	}
+
+	return 0;
+}
+
+
+void createIndexedTexture(struct Color *pcolor, int textureType, void *texture, int width, int height, unsigned int *clut, int level, int tpsm)
+{
+	int x, y;
+
+	for (y = 0; y < height; y++)
+	{
+		for (x = 0; x < width; x++)
+		{
+			int color = getTextureColor(pcolor, textureType, x, y);
+			int index = getClutIndex(clut + NUMBER_CLUT_ENTRIES * level, color);
+			if (tpsm == GU_PSM_T4)
+			{
+				int offset = (y * width + x) / 2;
+				unsigned char *ptexture = (unsigned char *) texture;
+				if (x & 1)
+				{
+					ptexture[offset] = (ptexture[offset] & 0x0F) | (index << 4);
+				}
+				else
+				{
+					ptexture[offset] = (ptexture[offset] & 0xF0) | (index << 0);
+				}
+			}
+			else if (tpsm == GU_PSM_T8)
+			{
+				((unsigned char *) texture)[y * width + x] = index;
+			}
+			else if (tpsm == GU_PSM_T16)
+			{
+				((unsigned short *) texture)[y * width + x] = index;
+			}
+			else if (tpsm == GU_PSM_T32)
+			{
+				((unsigned int *) texture)[y * width + x] = index;
+			}
+		}
+	}
+}
+
+
 void drawRectangles()
 {
-	createTexture(&rectangle1color, textureType1, texture1, TEXTURE_WIDTH, TEXTURE_HEIGHT);
-	createTexture(&rectangle2color, textureType2, texture2, TEXTURE_WIDTH, TEXTURE_HEIGHT);
+	int level;
+	int width;
+	int height;
+	int numberMipmaps = 0;
+	int i;
+
+	int useClut1 = tpsm1 >= GU_PSM_T4 && tpsm1 <= GU_PSM_T32;
+	int useClut2 = tpsm2 >= GU_PSM_T4 && tpsm2 <= GU_PSM_T32;
+
+	if (useClut1 || useClut2)
+	{
+		for (i = 0; i < NUMBER_CLUT_ENTRIES; i++)
+		{
+			struct Color color;
+			color.r = (rectangle1color.r * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
+			color.g = (rectangle1color.g * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
+			color.b = (rectangle1color.b * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
+			color.a = (rectangle1color.a * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
+			clut1[i] = getColor(&color);
+
+			color.r = (rectangle2color.r * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
+			color.g = (rectangle2color.g * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
+			color.b = (rectangle2color.b * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
+			color.a = (rectangle2color.a * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
+			clut2[i] = getColor(&color);
+
+			for (level = 1; level < NUMBER_MIPMAPS; level++)
+			{
+				color.r = (mipmapLevelsColor[level - 1].r * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
+				color.g = (mipmapLevelsColor[level - 1].g * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
+				color.b = (mipmapLevelsColor[level - 1].b * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
+				color.a = (mipmapLevelsColor[level - 1].a * i / (NUMBER_CLUT_ENTRIES - 1)) & 0xFF;
+				clut1[i + level * NUMBER_CLUT_ENTRIES] = getColor(&color);
+				clut2[i + level * NUMBER_CLUT_ENTRIES] = getColor(&color);
+			}
+		}
+	}
+
+	for (level = 0, width = TEXTURE_WIDTH, height = TEXTURE_HEIGHT; level < NUMBER_MIPMAPS && width > 0 && height > 0; level++, width /= 2, height /= 2)
+	{
+		struct Color *pcolor;
+		pcolor = (level <= 0 ? &rectangle1color : &mipmapLevelsColor[level - 1]);
+		if (tpsm1 >= GU_PSM_T4 && tpsm1 <= GU_PSM_T32)
+		{
+			createIndexedTexture(pcolor, textureType1, texture1[level], width, height, clut1, level, tpsm1);
+		}
+		else
+		{
+			createTexture(pcolor, textureType1, texture1[level], width, height);
+		}
+
+		pcolor = (level <= 0 ? &rectangle2color : &mipmapLevelsColor[level - 1]);
+		if (tpsm2 >= GU_PSM_T4 && tpsm2 <= GU_PSM_T32)
+		{
+			createIndexedTexture(pcolor, textureType2, texture2[level], width, height, clut2, level, tpsm2);
+		}
+		else
+		{
+			createTexture(pcolor, textureType2, texture2[level], width, height);
+		}
+
+		numberMipmaps = level;
+	}
+
 	if (vertexColorFlag)
 	{
 		setVerticesColor(&rectangle1color, vertices1, sizeof(vertices1));
@@ -746,8 +913,8 @@ void drawRectangles()
 	sceGuStencilOp(stencilOpFail, stencilOpZFail, stencilOpZPass);
 	sceGuStencilFunc(stencilFunc, stencilReference, stencilMask);
 	sendCommandi(55, patchPrim);	// sceGuPatchPrim
+	sceGuFog(fogNear, fogFar, getColor(&fogColor));
 
-	int i;
 	for (i = 0; i < NUM_LIGHTS; i++)
 	{
 		struct Light *plight = &lights[i];
@@ -780,8 +947,18 @@ void drawRectangles()
 		sceGuFrontFace(frontFace1 - 1);
 	}
 	sceKernelDcacheWritebackAll();
-	sceGuTexMode(GU_PSM_8888, 0, texture1_a2, 0);
-	sceGuTexImage(0, TEXTURE_WIDTH, TEXTURE_HEIGHT, TEXTURE_WIDTH, texture1); 
+	if (useClut1)
+	{
+		sceGuClutMode(GU_PSM_8888, 0, 0xFF, 0);
+		sceGuClutLoad(NUMBER_CLUT_ENTRIES / 8 * (texture1_a2 ? 16 : 1), clut1);
+	}
+	sceGuTexMode(tpsm1, numberMipmaps, texture1_a2, 0);
+	sceGuTexLevelMode(texLevelMode1, texBias1 / 16.0);
+	sceGuTexSlope(texSlope1);
+	for (level = 0, width = TEXTURE_WIDTH, height = TEXTURE_HEIGHT; level <= numberMipmaps; level++, width /= 2, height /= 2)
+	{
+		sceGuTexImage(level, width, height, width, texture1[level]); 
+	}
 	if (texFuncDouble1)
 	{
 		sceGuEnable(GU_FRAGMENT_2X);
@@ -791,7 +968,7 @@ void drawRectangles()
 		sceGuDisable(GU_FRAGMENT_2X);
 	}
 	sceGuTexFunc(texFunc1, texFuncAlpha1);
-	sceGuTexFilter(GU_NEAREST, GU_NEAREST);
+	sceGuTexFilter(texMinFilter1, texMagFilter1);
 	sceGuTexWrap(GU_CLAMP, GU_CLAMP);
 	sceGuTexScale(1.0 / textureScale, 1.0 / textureScale);
 	sceGuTexOffset(0, 0);
@@ -898,8 +1075,18 @@ void drawRectangles()
 	{
 		sceGuFrontFace(frontFace2 - 1);
 	}
-	sceGuTexMode(GU_PSM_8888, 0, texture2_a2, 0);
-	sceGuTexImage(0, TEXTURE_WIDTH, TEXTURE_HEIGHT, TEXTURE_WIDTH, texture2);
+	if (useClut2)
+	{
+		sceGuClutMode(GU_PSM_8888, 0, 0xFF, 0);
+		sceGuClutLoad(NUMBER_CLUT_ENTRIES / 8 * (texture2_a2 ? 16 : 1), clut2);
+	}
+	sceGuTexMode(tpsm2, numberMipmaps, texture2_a2, 0);
+	sceGuTexLevelMode(texLevelMode2, texBias2 / 16.0);
+	sceGuTexSlope(texSlope2);
+	for (level = 0, width = TEXTURE_WIDTH, height = TEXTURE_HEIGHT; level <= numberMipmaps; level++, width /= 2, height /= 2)
+	{
+		sceGuTexImage(level, width, height, width, texture2[level]); 
+	}
 	if (texFuncDouble2)
 	{
 		sceGuEnable(GU_FRAGMENT_2X);
@@ -909,10 +1096,10 @@ void drawRectangles()
 		sceGuDisable(GU_FRAGMENT_2X);
 	}
 	sceGuTexFunc(texFunc2, texFuncAlpha2);
-	sceGuTexFilter(GU_NEAREST, GU_NEAREST);
+	sceGuTexFilter(texMinFilter2, texMagFilter2);
 	sceGuTexWrap(GU_CLAMP, GU_CLAMP);
 	sceGuTexScale(1.0 / textureScale, 1.0 / textureScale);
-	sceGuTexOffset(0,0);
+	sceGuTexOffset(0, 0);
 
 	sceGumMatrixMode(GU_VIEW);
 	sceGumLoadIdentity();
@@ -1046,6 +1233,9 @@ void init()
 	sceCtrlSetSamplingCycle(0);
 	sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
 
+	memset(clut1, 0, sizeof(clut1));
+	memset(clut2, 0, sizeof(clut2));
+
 	int x = 0;
 	int y = 0;
 
@@ -1165,7 +1355,7 @@ void init()
 
 	addAttribute("Rect1 pos X", NULL, &rectangle1translation.x, x, y, -10, 10, 0.1);
 	addAttribute(", Y", NULL, &rectangle1translation.y, x + 17, y, -10, 10, 0.1);
-	addAttribute(", Z", NULL, &rectangle1translation.z, x + 26, y, -10, 10, 0.1);
+	addAttribute(", Z", NULL, &rectangle1translation.z, x + 26, y, -20, 10, 0.1);
 	y++;
 	addAttribute("width", NULL, &rectangle1width, x + 6, y, 0, 20, 0.1);
 	addAttribute(", height", NULL, &rectangle1height, x + 17, y, 0, 20, 0.1);
@@ -1197,6 +1387,25 @@ void init()
 	addAttribute(", a2", &texture1_a2, NULL, x + 34, y, 0, 1, 1);
 	y++;
 
+	addAttribute("Tex Level Mode", &texLevelMode1, NULL, x + 6, y, 0, 2, 1);
+	setAttributeValueNames(&texModeNames[0]);
+	addAttribute(", Bias", &texBias1, NULL, x + 38, y, -127, 128, 1);
+	y++;
+
+	addAttribute("Slope", NULL, &texSlope1, x + 16, y, 0, 10, 0.1);
+	y++;
+
+	addAttribute("TextureFilter Min", &texMinFilter1, NULL, x + 6, y, 0, 7, 1);
+	setAttributeValueNames(&texFilterNames[0]);
+	y++;
+	addAttribute("Mag", &texMagFilter1, NULL, x + 20, y, 0, 7, 1);
+	setAttributeValueNames(&texFilterNames[0]);
+	y++;
+
+	addAttribute("Texture Format", &tpsm1, NULL, x + 6, y, GU_PSM_8888, GU_PSM_T32, 1);
+	setAttributeValueNames(&tpsmNames[0]);
+	y++;
+
 	rectangle2color.r = 0xFF;
 	rectangle2color.g = 0x00;
 	rectangle2color.b = 0x00;
@@ -1216,7 +1425,7 @@ void init()
 
 	addAttribute("Rect2 pos X", NULL, &rectangle2translation.x,  x, y, -10, 10, 0.1);
 	addAttribute(", Y", NULL, &rectangle2translation.y, x + 17, y, -10, 10, 0.1);
-	addAttribute(", Z", NULL, &rectangle2translation.z, x + 26, y, -10, 10, 0.1);
+	addAttribute(", Z", NULL, &rectangle2translation.z, x + 26, y, -20, 10, 0.1);
 	y++;
 	addAttribute("width", NULL, &rectangle2width, x + 6, y, 0, 20, 0.1);
 	addAttribute(", height", NULL, &rectangle2height, x + 17, y, 0, 20, 0.1);
@@ -1246,6 +1455,25 @@ void init()
 	addAttribute("Texture Type", &textureType2, NULL, x + 6, y, 0, 5, 1);
 	setAttributeValueNames(&textureTypeNames[0]);
 	addAttribute(", a2", &texture2_a2, NULL, x + 34, y, 0, 1, 1);
+	y++;
+
+	addAttribute("Tex Level Mode", &texLevelMode2, NULL, x + 6, y, 0, 2, 1);
+	setAttributeValueNames(&texModeNames[0]);
+	addAttribute(", Bias", &texBias2, NULL, x + 38, y, -127, 128, 1);
+	y++;
+
+	addAttribute("Slope", NULL, &texSlope2, x + 16, y, 0, 10, 0.1);
+	y++;
+
+	addAttribute("TextureFilter Min", &texMinFilter2, NULL, x + 6, y, 0, 7, 1);
+	setAttributeValueNames(&texFilterNames[0]);
+	y++;
+	addAttribute("Mag", &texMagFilter2, NULL, x + 20, y, 0, 7, 1);
+	setAttributeValueNames(&texFilterNames[0]);
+	y++;
+
+	addAttribute("Texture Format", &tpsm2, NULL, x + 6, y, GU_PSM_8888, GU_PSM_T32, 1);
+	setAttributeValueNames(&tpsmNames[0]);
 	y++;
 
 	addAttribute("Use Vertex Color", &vertexColorFlag, NULL, x, y, 0, 1, 1);
@@ -1296,9 +1524,9 @@ void init()
 	materialEmissive.g = 0xE0;
 	materialEmissive.b = 0xE0;
 
-	addColorAttribute("Ambient Color", &ambientColor, x, y, 1);
+	addColorAttribute("Ambient Color R", &ambientColor, x, y, 1);
 	y++;
-	addColorAttribute("TexEnv Color", &texEnvColor, x, y, 0);
+	addColorAttribute("TexEnv Color R", &texEnvColor, x, y, 0);
 	y++;
 	addAttribute("Material Emissive", &materialEmissiveFlag, NULL, x, y, 0, 1, 1);
 	setAttributeValueNames(&onOffNames[0]);
@@ -1321,10 +1549,10 @@ void init()
 	fogColor.g = 0xFF;
 	fogColor.b = 0xFF;
 
-	addAttribute("Fog Near", NULL, &fogNear, x, y, 0, 10000, 1);
-	addAttribute(", Far", NULL, &fogFar, x + 15, y, 0, 10000, 1);
+	addAttribute("Fog Near", NULL, &fogNear, x, y, -10, 10, 0.1);
+	addAttribute(", Far", NULL, &fogFar, x + 15, y, -10, 10, 0.1);
 	y++;
-	addColorAttribute("Fog Color", &fogColor, x, y, 0);
+	addColorAttribute("Fog Color R", &fogColor, x, y, 0);
 	y++;
 
 	addAttribute("Light Mode", &lightMode, NULL, x, y, 0, 1, 1);
