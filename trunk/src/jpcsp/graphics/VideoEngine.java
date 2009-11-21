@@ -187,6 +187,7 @@ public class VideoEngine {
     private int tex_mipmap_mode;
     private float tex_mipmap_bias;
     private int tex_mipmap_bias_int;
+    private boolean mipmapShareClut;
 
     private float tex_translate_x = 0.f, tex_translate_y = 0.f;
     private float tex_scale_x = 1.f, tex_scale_y = 1.f;
@@ -331,6 +332,7 @@ public class VideoEngine {
         tex_mipmap_bias_int = 0;
         takeConditionalJump = false;
         glColorMask = new boolean[] { true, true, true, true };
+        mipmapShareClut = true;
 
         statistics = new DurationStatistics("VideoEngine Statistics");
         commandStatistics = new DurationStatistics[256];
@@ -1597,12 +1599,14 @@ public class VideoEngine {
 
             case TMODE: {
             	texture_num_mip_maps = ( normalArgument >> 16) & 0xFF;
-            	int a2               = ( normalArgument >>  8) & 0xFF;
+            	// This parameter has only a meaning when
+            	//  texture_storage == GU_PSM_T4 and texture_num_mip_maps > 0
+            	// when parameter==0: all the mipmaps share the same clut entries (normal behavior)
+            	// when parameter==1: each mipmap has its own clut table, 16 entries each, stored sequentially
+            	mipmapShareClut      = ((normalArgument >>  8) & 0xFF) == 0;
             	texture_swizzle 	 = ((normalArgument      ) & 0xFF) != 0;
-            	if (a2 != 0) {
-            	    log.warn("sceGuTexMode(X, mipmaps=" + texture_num_mip_maps + ", a2=" + a2 + ", swizzle=" + texture_swizzle + ") unimplemented a2");
-            	} else if (log.isDebugEnabled()) {
-            	    log("sceGuTexMode(X, mipmaps=" + texture_num_mip_maps + ", a2=" + a2 + ", swizzle=" + texture_swizzle + ")");
+            	if (log.isDebugEnabled()) {
+            	    log("sceGuTexMode(X, mipmaps=" + texture_num_mip_maps + ", mipmapShareClut=" + mipmapShareClut + ", swizzle=" + texture_swizzle + ")");
             	}
             	break;
             }
@@ -3647,6 +3651,7 @@ public class VideoEngine {
                                                            , tex_clut_mask
                                                            , tex_clut_num_blocks
                                                            , texture_num_mip_maps
+                                                           , mipmapShareClut
                                                            );
 
             // Create the texture if not yet in the cache
@@ -3665,6 +3670,7 @@ public class VideoEngine {
                                      , tex_clut_mask
                                      , tex_clut_num_blocks
                                      , texture_num_mip_maps
+                                     , mipmapShareClut
                                      );
                 textureCache.addTexture(gl, texture);
             }
@@ -3727,6 +3733,7 @@ public class VideoEngine {
 	                            texture_type = texturetype_mapping[tex_clut_mode];
 	                            textureByteAlignment = 2;  // 16 bits
 	                            short[] clut = readClut16(level);
+	                            int clutSharingOffset = mipmapShareClut ? 0 : level * 16;
 
 	                            if (!texture_swizzle) {
 	                            	int length = texture_buffer_width[level]*texture_height[level];
@@ -3735,8 +3742,8 @@ public class VideoEngine {
 
 	                                    int index = memoryReader.readNext();
 
-	                                    tmp_texture_buffer16[i]     = clut[getClutIndex( index       & 0xF)];
-	                                    tmp_texture_buffer16[i+1]   = clut[getClutIndex((index >> 4) & 0xF)];
+	                                    tmp_texture_buffer16[i]     = clut[getClutIndex( index       & 0xF) + clutSharingOffset];
+	                                    tmp_texture_buffer16[i+1]   = clut[getClutIndex((index >> 4) & 0xF) + clutSharingOffset];
 	                                }
 	                                final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
 
@@ -3750,21 +3757,21 @@ public class VideoEngine {
 	                                for (int i = 0, j = 0; i < pixels; i += 8, j++) {
 	                                    int n = tmp_texture_buffer32[j];
 	                                    int index = n & 0xF;
-	                                    tmp_texture_buffer16[i + 0] = clut[getClutIndex(index)];
+	                                    tmp_texture_buffer16[i + 0] = clut[getClutIndex(index) + clutSharingOffset];
 	                                    index = (n >> 4) & 0xF;
-	                                    tmp_texture_buffer16[i + 1] = clut[getClutIndex(index)];
+	                                    tmp_texture_buffer16[i + 1] = clut[getClutIndex(index) + clutSharingOffset];
 	                                    index = (n >> 8) & 0xF;
-	                                    tmp_texture_buffer16[i + 2] = clut[getClutIndex(index)];
+	                                    tmp_texture_buffer16[i + 2] = clut[getClutIndex(index) + clutSharingOffset];
 	                                    index = (n >> 12) & 0xF;
-	                                    tmp_texture_buffer16[i + 3] = clut[getClutIndex(index)];
+	                                    tmp_texture_buffer16[i + 3] = clut[getClutIndex(index) + clutSharingOffset];
 	                                    index = (n >> 16) & 0xF;
-	                                    tmp_texture_buffer16[i + 4] = clut[getClutIndex(index)];
+	                                    tmp_texture_buffer16[i + 4] = clut[getClutIndex(index) + clutSharingOffset];
 	                                    index = (n >> 20) & 0xF;
-	                                    tmp_texture_buffer16[i + 5] = clut[getClutIndex(index)];
+	                                    tmp_texture_buffer16[i + 5] = clut[getClutIndex(index) + clutSharingOffset];
 	                                    index = (n >> 24) & 0xF;
-	                                    tmp_texture_buffer16[i + 6] = clut[getClutIndex(index)];
+	                                    tmp_texture_buffer16[i + 6] = clut[getClutIndex(index) + clutSharingOffset];
 	                                    index = (n >> 28) & 0xF;
-	                                    tmp_texture_buffer16[i + 7] = clut[getClutIndex(index)];
+	                                    tmp_texture_buffer16[i + 7] = clut[getClutIndex(index) + clutSharingOffset];
 	                                }
 	                                final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
 	                                break;
@@ -3779,6 +3786,7 @@ public class VideoEngine {
 
 	                            texture_type = GL.GL_UNSIGNED_BYTE;
 	                            int[] clut = readClut32(level);
+	                            int clutSharingOffset = mipmapShareClut ? 0 : level * 16;
 
 	                            if (!texture_swizzle) {
 	                            	int length = texture_buffer_width[level]*texture_height[level];
@@ -3787,8 +3795,8 @@ public class VideoEngine {
 
 	                                    int index = memoryReader.readNext();
 
-	                                    tmp_texture_buffer32[i+1] = clut[getClutIndex((index >> 4) & 0xF)];
-	                                    tmp_texture_buffer32[i]   = clut[getClutIndex( index       & 0xF)];
+	                                    tmp_texture_buffer32[i+1] = clut[getClutIndex((index >> 4) & 0xF) + clutSharingOffset];
+	                                    tmp_texture_buffer32[i]   = clut[getClutIndex( index       & 0xF) + clutSharingOffset];
 	                                }
 	                                final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
 
@@ -3802,21 +3810,21 @@ public class VideoEngine {
 	                                for (int i = pixels - 8, j = (pixels / 8) - 1; i >= 0; i -= 8, j--) {
 	                                    int n = tmp_texture_buffer32[j];
 	                                    int index = n & 0xF;
-	                                    tmp_texture_buffer32[i + 0] = clut[getClutIndex(index)];
+	                                    tmp_texture_buffer32[i + 0] = clut[getClutIndex(index) + clutSharingOffset];
 	                                    index = (n >> 4) & 0xF;
-	                                    tmp_texture_buffer32[i + 1] = clut[getClutIndex(index)];
+	                                    tmp_texture_buffer32[i + 1] = clut[getClutIndex(index) + clutSharingOffset];
 	                                    index = (n >> 8) & 0xF;
-	                                    tmp_texture_buffer32[i + 2] = clut[getClutIndex(index)];
+	                                    tmp_texture_buffer32[i + 2] = clut[getClutIndex(index) + clutSharingOffset];
 	                                    index = (n >> 12) & 0xF;
-	                                    tmp_texture_buffer32[i + 3] = clut[getClutIndex(index)];
+	                                    tmp_texture_buffer32[i + 3] = clut[getClutIndex(index) + clutSharingOffset];
 	                                    index = (n >> 16) & 0xF;
-	                                    tmp_texture_buffer32[i + 4] = clut[getClutIndex(index)];
+	                                    tmp_texture_buffer32[i + 4] = clut[getClutIndex(index) + clutSharingOffset];
 	                                    index = (n >> 20) & 0xF;
-	                                    tmp_texture_buffer32[i + 5] = clut[getClutIndex(index)];
+	                                    tmp_texture_buffer32[i + 5] = clut[getClutIndex(index) + clutSharingOffset];
 	                                    index = (n >> 24) & 0xF;
-	                                    tmp_texture_buffer32[i + 6] = clut[getClutIndex(index)];
+	                                    tmp_texture_buffer32[i + 6] = clut[getClutIndex(index) + clutSharingOffset];
 	                                    index = (n >> 28) & 0xF;
-	                                    tmp_texture_buffer32[i + 7] = clut[getClutIndex(index)];
+	                                    tmp_texture_buffer32[i + 7] = clut[getClutIndex(index) + clutSharingOffset];
 	                                }
 	                                final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
 	                            }
