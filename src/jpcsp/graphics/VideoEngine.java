@@ -140,11 +140,7 @@ public class VideoEngine {
     private float[] view_uploaded_matrix = new float[4 * 4];
     private MatrixUpload viewMatrixUpload;
 
-    private boolean bone_upload_start;
-    private int bone_upload_x;
-    private int bone_upload_y;
-    private int bone_matrix_offset;
-    private float[] bone_matrix = new float[4 * 3];
+    private int boneMatrixIndex;
     private float[][] bone_uploaded_matrix = new float[8][4 * 3];
 
     private float[] morph_weight = new float[8];
@@ -2876,46 +2872,36 @@ public class VideoEngine {
              * Skinning
              */
             case BOFS: {
-            	log("bone matrix offset", normalArgument);
-
-            	if(normalArgument % 12 != 0)
-            		VideoEngine.log.warn("bone matrix offset " + normalArgument + " isn't a multiple of 12");
-
-            	bone_matrix_offset = normalArgument / (4*3);
-            	bone_upload_start = true;
+            	boneMatrixIndex = normalArgument;
+            	if (log.isDebugEnabled()) {
+            		log("bone matrix offset", normalArgument);
+            	}
             	break;
             }
-
             case BONE: {
-            	if (bone_upload_start) {
-            		bone_upload_x = 0;
-            		bone_upload_y = 0;
-            		bone_upload_start = false;
-                }
+            	// Multiple BONE matrix can be loaded in sequence
+            	// without having to issue a BOFS for each matrix.
+            	int matrixIndex  = boneMatrixIndex / 12;
+            	int elementIndex = boneMatrixIndex % 12;
+            	bone_uploaded_matrix[matrixIndex][elementIndex] = floatArgument;
+            	boneMatrixIndex++;
 
-                if (bone_upload_x < 4) {
-                	if (bone_upload_y < 3) {
-                        bone_matrix[bone_upload_x + bone_upload_y * 4] = floatArgument;
-
-                        bone_upload_x++;
-                        if (bone_upload_x == 4) {
-                            bone_upload_x = 0;
-                            bone_upload_y++;
-                            if (bone_upload_y == 3) {
-                                if (log.isDebugEnabled()) {
-                                    for (int x = 0; x < 3; x++) {
-                                        log.debug(String.format("bone matrix %d %.2f %.2f %.2f %.2f", bone_matrix_offset, bone_matrix[x + 0], bone_matrix[x + 3], bone_matrix[x + 6], bone_matrix[x + 9]));
-                                    }
-                                }
-
-                                for (int i = 0; i < 4*3; i++)
-                                	bone_uploaded_matrix[bone_matrix_offset][i] = bone_matrix[i];
-                            }
-                        }
+            	if (log.isDebugEnabled() && (boneMatrixIndex % 12) == 0) {
+                    for (int x = 0; x < 3; x++) {
+                        log.debug(String.format("bone matrix %d %.2f %.2f %.2f %.2f",
+                        							matrixIndex,
+                        							bone_uploaded_matrix[matrixIndex][x + 0],
+					                        		bone_uploaded_matrix[matrixIndex][x + 3],
+					                        		bone_uploaded_matrix[matrixIndex][x + 6],
+					                        		bone_uploaded_matrix[matrixIndex][x + 9]));
                     }
-                }
+            	}
                 break;
             }
+
+            /*
+             * Morphing
+             */
             case MW0:
             case MW1:
             case MW2:
