@@ -704,7 +704,10 @@ public class sceMpeg implements HLEModule {
         if (getMpegHandle(mpeg) != mpegHandle) {
             Modules.log.warn("sceMpegGetAvcAu bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
-        } else if (mpegRingbuffer != null && mpegRingbuffer.packetsRead == 0) {
+        } else if (mpegRingbuffer == null) {
+            Modules.log.warn("sceMpegGetAvcAu ringbuffer not created");
+            cpu.gpr[2] = -1;
+        } else if (mpegRingbuffer.packetsRead == 0) {
             Modules.log.debug("sceMpegGetAvcAu ringbuffer empty");
             // TODO not sure about this check, either we check atracAuAddr or we check stream 1 is registered
             if (atracAuAddr != 0) {
@@ -764,7 +767,10 @@ public class sceMpeg implements HLEModule {
         if (getMpegHandle(mpeg) != mpegHandle) {
             Modules.log.warn("sceMpegGetPcmAu bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
-        } else if (mpegRingbuffer != null && mpegRingbuffer.packetsRead == 0) {
+        } else if (mpegRingbuffer == null) {
+            Modules.log.warn("sceMpegGetPcmAu ringbuffer not created");
+            cpu.gpr[2] = -1;
+        } else if (mpegRingbuffer.packetsRead == 0) {
             Modules.log.debug("sceMpegGetPcmAu ringbuffer empty");
             cpu.gpr[2] = -1; // TODO
         } else if (mem.isAddressGood(stream_addr) && mem.isAddressGood(au_addr)) {
@@ -807,7 +813,10 @@ public class sceMpeg implements HLEModule {
         if (getMpegHandle(mpeg) != mpegHandle) {
             Modules.log.warn("sceMpegGetAtracAu bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
-        } else if (mpegRingbuffer != null && mpegRingbuffer.packetsRead == 0) {
+        } else if (mpegRingbuffer == null) {
+            Modules.log.warn("sceMpegGetAtracAu ringbuffer not created");
+            cpu.gpr[2] = -1;
+        } else if (mpegRingbuffer.packetsRead == 0) {
             Modules.log.debug("sceMpegGetAtracAu ringbuffer empty");
             cpu.gpr[2] = 0x80618001; // no audio data in ring buffer (actual name unknown)
         } else if (mem.isAddressGood(stream_addr) && mem.isAddressGood(au_addr)) {
@@ -898,7 +907,10 @@ public class sceMpeg implements HLEModule {
         if (getMpegHandle(mpeg) != mpegHandle) {
             Modules.log.warn("sceMpegAvcDecode bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
-        } else if (mpegRingbuffer != null && mpegRingbuffer.packetsRead == 0) {
+        } else if (mpegRingbuffer == null) {
+            Modules.log.warn("sceMpegAvcDecode ringbuffer not created");
+            cpu.gpr[2] = -1;
+        } else if (mpegRingbuffer.packetsRead == 0) {
             Modules.log.debug("sceMpegAvcDecode ringbuffer empty");
             cpu.gpr[2] = 0x80628002; // no video data in ring buffer (actual name unknown)
         } else if (mem.isAddressGood(au_addr) && mem.isAddressGood(buffer_addr) && mem.isAddressGood(init_addr)) {
@@ -968,11 +980,9 @@ public class sceMpeg implements HLEModule {
                 int processedSize = processedPackets * mpegRingbuffer.packetSize;
                 Debug.printFramebuffer(buffer, frameWidth, 10, 30, 0xFFFFFFFF, 0xFF000000, 2, String.format(" %d/%d (%.0f%%) ", processedSize, mpegStreamSize, processedSize * 100f / mpegStreamSize));
 
-                if (mpegRingbuffer != null) {
-                    if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets) {
-                        mpegRingbuffer.packetsFree = Math.min(mpegRingbuffer.packets, mpegRingbuffer.packetsFree + packetsConsumed);
-                        mpegRingbuffer.write(mem, mpegRingbufferAddr);
-                    }
+                if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets) {
+                    mpegRingbuffer.packetsFree = Math.min(mpegRingbuffer.packets, mpegRingbuffer.packetsFree + packetsConsumed);
+                    mpegRingbuffer.write(mem, mpegRingbufferAddr);
                 }
 
                 if (isFakeAuHandle(au)) {
