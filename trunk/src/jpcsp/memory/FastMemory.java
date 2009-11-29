@@ -156,7 +156,7 @@ public class FastMemory extends Memory {
 	public long read64(int address) {
 		try {
 			address &= addressMask;
-			long data = (all[address / 4 + 1] << 32) | (all[address / 4] & 0xFFFFFFFFL);
+			long data = (((long) all[address / 4 + 1]) << 32) | (((long) all[address / 4]) & 0xFFFFFFFFL);
 
 			if (traceRead && log.isTraceEnabled()) {
 				log.trace("read64(0x" + Integer.toHexString(address).toUpperCase() + ")=0x" + Long.toHexString(data).toUpperCase());
