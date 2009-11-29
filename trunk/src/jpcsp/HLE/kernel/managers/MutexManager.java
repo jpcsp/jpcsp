@@ -502,6 +502,8 @@ public class MutexManager {
           Modules.log.warn("Unimplemented sceKernelReferLwMutexStatusByID "
             + String.format("%08x %08x %08x %08x", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]));
 
+          cpu.gpr[2] = 0xDEADC0DE;
+
        }
 
 
