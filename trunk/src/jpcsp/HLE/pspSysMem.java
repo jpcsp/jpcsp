@@ -397,7 +397,7 @@ public class pspSysMem {
 
     public void sceKernelTotalFreeMemSize()
     {
-        int totalFree = heapTop - heapBottom;
+        int totalFree = 1 + heapTop - heapBottom;
         Modules.log.debug("sceKernelTotalFreeMemSize " + totalFree
                 + " (hex=" + Integer.toHexString(totalFree) + ")");
         Emulator.getProcessor().cpu.gpr[2] = totalFree;
@@ -476,6 +476,71 @@ public class pspSysMem {
             Modules.log.debug("sceKernelGetBlockHeadAddr SceUID=" + Integer.toHexString(info.uid) + " name:'" + info.name + "' headAddr:" + Integer.toHexString(info.addr));
             Emulator.getProcessor().cpu.gpr[2] = info.addr;
         }
+    }
+
+    // 352+
+    // Create
+    public void SysMemUserForUser_FE707FDF(int name_addr, int unk2, int size, int unk4)
+    {
+        String name = readStringNZ(name_addr, 32);
+        String msg = "SysMemUserForUser_FE707FDF(name='" + name
+            + "',unk2=" + unk2
+            + ",size=" + size
+            + ",unk4=" + unk4 + ")";
+
+        // 256 byte aligned
+        size = (size + 0xFF) & ~0xFF;
+
+        int addr = malloc(2, PSP_SMEM_Low, size, 0);
+        if (addr != 0)
+        {
+            SysMemInfo info = new SysMemInfo(2, name, PSP_SMEM_Low, size, addr);
+
+            msg += " allocated uid " + Integer.toHexString(info.uid);
+            if (unk2 == 0 && unk4 == 0) {
+                Modules.log.debug(msg);
+            } else {
+                Modules.log.warn("PARTIAL:" + msg + " unimplemented parameters");
+            }
+
+            Emulator.getProcessor().cpu.gpr[2] = info.uid;
+        }
+        else
+        {
+            Modules.log.warn(msg + " failed");
+            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_FAILED_TO_ALLOCATE_MEMORY_BLOCK;
+        }
+    }
+
+    // 352+
+    // Delete
+    public void SysMemUserForUser_50F61D8A(int uid)
+    {
+        SysMemInfo info = blockList.remove(uid);
+        if (info == null) {
+            Modules.log.warn("SysMemUserForUser_50F61D8A(uid=0x" + Integer.toHexString(uid) + ") unknown uid");
+            Emulator.getProcessor().cpu.gpr[2] = 0x800200cb; // unknown uid
+        } else {
+            Modules.log.debug("SysMemUserForUser_50F61D8A(uid=0x" + Integer.toHexString(uid) + ")");
+            free(info);
+            Emulator.getProcessor().cpu.gpr[2] = 0;
+        }
+    }
+
+    // 352+
+    // Get
+    public void SysMemUserForUser_DB83A952(int uid, int addr)
+    {
+        SysMemInfo info = blockList.get(uid);
+        if (info == null) {
+            Modules.log.warn("SysMemUserForUser_DB83A952(uid=0x" + Integer.toHexString(uid)
+                + ",addr=0x" + Integer.toHexString(addr) + ") unknown uid");
+        } else {
+            Modules.log.debug("SysMemUserForUser_DB83A952(uid=0x" + Integer.toHexString(uid)
+                + ",addr=0x" + Integer.toHexString(addr) + ") addr 0x" + Integer.toHexString(info.addr));
+            jpcsp.Memory.getInstance().write32(addr, info.addr);
+        }
+        Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
     /** TODO implement format string parsing and reading variable number of parameters */
