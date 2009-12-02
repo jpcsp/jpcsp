@@ -31,6 +31,7 @@ import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.SceMpegRingbuffer;
 
 import jpcsp.Emulator;
@@ -1342,7 +1343,8 @@ public class sceMpeg implements HLEModule {
                 ringbuffer.callback_addr,
                 gpr,
                 new HLECallback() {
-                    public void execute(Processor processor) {
+					@Override
+                    public void execute(Processor processor, SceKernelThreadInfo thread) {
                         sceMpeg.this.hleMpegRingbufferPostPut(processor);
                     }
                 });
@@ -1390,7 +1392,8 @@ public class sceMpeg implements HLEModule {
                     ringbuffer.callback_addr,
                     gpr,
                     new HLECallback() {
-                        public void execute(Processor processor) {
+                    	@Override
+                        public void execute(Processor processor, SceKernelThreadInfo thread) {
                             sceMpeg.this.hleMpegRingbufferPostPut(processor);
                         }
                     });
