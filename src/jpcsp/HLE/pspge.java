@@ -23,18 +23,20 @@ package jpcsp.HLE;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
-//import java.util.concurrent.Semaphore;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.Processor;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelCallbackInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.kernel.types.pspGeCallbackData;
 import jpcsp.HLE.kernel.types.PspGeList;
 import jpcsp.HLE.kernel.types.pspGeContext;
+import jpcsp.HLE.modules.HLECallback;
 
+import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
 
 public class pspge {
@@ -42,7 +44,6 @@ public class pspge {
     private static pspge instance;
     private static final boolean DEFER_CALLBACKS = true;
 
-    private int syncThreadId;
     public volatile boolean waitingForSync;
     public volatile boolean syncDone;
     private HashMap<Integer, SceKernelCallbackInfo> signalCallbacks;
@@ -51,8 +52,7 @@ public class pspge {
     private ConcurrentLinkedQueue<PspGeList> listQueue;
     private int listIdAllocator;
 
-    private ConcurrentLinkedQueue<DeferredCallbackInfo> deferredSignalCallbackQueue;
-    private ConcurrentLinkedQueue<DeferredCallbackInfo> deferredFinishCallbackQueue;
+    private ConcurrentLinkedQueue<DeferredCallbackInfo> deferredCallbackQueue;
     private ConcurrentLinkedQueue<Integer> deferredThreadWakeupQueue;
 
 
@@ -61,6 +61,11 @@ public class pspge {
     public final static int PSP_GE_LIST_DRAWING_DONE = 2;
     public final static int PSP_GE_LIST_STALL_REACHED = 3;
     public final static int PSP_GE_LIST_CANCEL_DONE = 4;
+    public final static int PSP_GE_LIST_END_REACHED = 5;
+
+    public final static int PSP_GE_BEHAVIOR_SUSPEND  = 1;
+    public final static int PSP_GE_BEHAVIOR_CONTINUE = 2;
+    public final static int PSP_GE_BEHAVIOR_BREAK    = 3;
 
     public static pspge getInstance() {
         if (instance == null) {
@@ -73,8 +78,6 @@ public class pspge {
     }
 
     public void Initialise() {
-
-        syncThreadId = -1;
         waitingForSync = false;
         syncDone = false;
 
@@ -84,9 +87,12 @@ public class pspge {
         listQueue = new ConcurrentLinkedQueue<PspGeList>();
         listIdAllocator = 0;
 
-        deferredSignalCallbackQueue = new ConcurrentLinkedQueue<DeferredCallbackInfo>();
-        deferredFinishCallbackQueue = new ConcurrentLinkedQueue<DeferredCallbackInfo>();
+        deferredCallbackQueue = new ConcurrentLinkedQueue<DeferredCallbackInfo>();
         deferredThreadWakeupQueue = new ConcurrentLinkedQueue<Integer>();
+    }
+
+    private HashMap<Integer, SceKernelCallbackInfo> getCallbacks(int callbackIndex) {
+    	return callbackIndex == SceKernelThreadInfo.THREAD_CALLBACK_GE_SIGNAL ? signalCallbacks : finishCallbacks;
     }
 
     /** call from main emulation thread */
@@ -100,19 +106,17 @@ public class pspge {
         // Process deferred callbacks
         // TODO if these callbacks block GE we have more work to do...
         if (DEFER_CALLBACKS && !threadMan.isInsideCallback()) {
-            DeferredCallbackInfo info = deferredFinishCallbackQueue.poll();
+            DeferredCallbackInfo info = deferredCallbackQueue.poll();
             if (info != null) {
-                triggerCallback(info.cbid, info.callbackNotifyArg1, SceKernelThreadInfo.THREAD_CALLBACK_GE_FINISH, finishCallbacks);
-            }
-
-            info = deferredSignalCallbackQueue.poll();
-            if (info != null) {
-                triggerCallback(info.cbid, info.callbackNotifyArg1, SceKernelThreadInfo.THREAD_CALLBACK_GE_SIGNAL, signalCallbacks);
+            	int callbackIndex = info.callbackIndex;
+                triggerCallback(info.cbid, info.listId, info.behavior, info.callbackNotifyArg1, callbackIndex, getCallbacks(callbackIndex));
             }
         }
 
         for (Integer thid = deferredThreadWakeupQueue.poll(); thid != null; thid = deferredThreadWakeupQueue.poll()) {
-            VideoEngine.log.debug("really waking thread " + Integer.toHexString(thid));
+        	if (VideoEngine.log.isDebugEnabled()) {
+        		VideoEngine.log.debug("really waking thread " + Integer.toHexString(thid) + "(" + ThreadMan.getInstance().getThreadName(thid) + ")");
+        	}
             ThreadMan.getInstance().unblockThread(thid);
         }
     }
@@ -133,7 +137,15 @@ public class pspge {
 
         PspGeList list = new PspGeList(list_addr, stall_addr, cbid, arg_addr);
         list.id = listIdAllocator++;
-        listQueue.add(list);
+        if (true) {
+        	// Wait for sceGeDrawSync or sceGeListSync to start list processing
+        	listQueue.add(list);
+        } else {
+        	// Start list processing immediately
+	        if (list.currentStatus != PSP_GE_LIST_QUEUED || !hleGeListSync(list, PSP_GE_LIST_QUEUED)) {
+	            listQueue.add(list);
+	        }
+        }
 
         Emulator.getProcessor().cpu.gpr[2] = list.id;
     }
@@ -167,7 +179,9 @@ public class pspge {
                 list.stall_addr = stall_addr;
                 if (list.currentStatus == PSP_GE_LIST_STALL_REACHED)
                     list.currentStatus = PSP_GE_LIST_QUEUED;
-                VideoEngine.log.trace("sceGeListUpdateStallAddr(id=" + id + ",stall=0x" + Integer.toHexString(stall_addr) + ") ok");
+                if (VideoEngine.log.isTraceEnabled()) {
+                	VideoEngine.log.trace("sceGeListUpdateStallAddr(id=" + id + ",stall=0x" + Integer.toHexString(stall_addr) + ") ok");
+                }
                 Emulator.getProcessor().cpu.gpr[2] = 0;
                 found = true;
                 break;
@@ -194,14 +208,14 @@ public class pspge {
                 msg += ", discarding list";
             }
 
-            if (list.thid > 0) {
+            if (list.thid > 0 && list.currentStatus != PSP_GE_LIST_END_REACHED) {
                 msg += ", waking thread " + Integer.toHexString(list.thid);
             }
 
             VideoEngine.log.debug(msg);
         }
 
-        if (list.thid > 0) {
+        if (list.thid > 0 && list.currentStatus != PSP_GE_LIST_END_REACHED) {
             // things might go wrong if the thread already exists in the queue
             deferredThreadWakeupQueue.add(list.thid);
         }
@@ -211,6 +225,34 @@ public class pspge {
             // list probably stalled, add it back to our queue for reprocessing
             listQueue.add(list);
         }
+    }
+
+    public void hleGeOnAfterCallback(int listId, int behavior, int callbackIndex, SceKernelThreadInfo thread) {
+    	if (callbackIndex == SceKernelThreadInfo.THREAD_CALLBACK_GE_SIGNAL) {
+    		// (gid15) I could not make any difference between
+    		//    PSP_GE_BEHAVIOR_CONTINUE and PSP_GE_BEHAVIOR_SUSPEND
+    		// Both wait for the completion of the callback before continuing
+    		// the list processing...
+    		if (behavior == PSP_GE_BEHAVIOR_CONTINUE || behavior == PSP_GE_BEHAVIOR_SUSPEND) {
+		    	for (Iterator<PspGeList> it = listQueue.iterator(); it.hasNext(); ) {
+		            PspGeList list = it.next();
+		            if (list.id == listId) {
+		            	if (list.currentStatus == PSP_GE_LIST_END_REACHED) {
+			            	list.currentStatus = PSP_GE_LIST_QUEUED;
+			            	if (VideoEngine.log.isDebugEnabled()) {
+			            		VideoEngine.log.debug("hleGeOnAfterCallback(id=" + list.id + ",pc=0x" + Integer.toHexString(list.pc) + ") restarting");
+			            	}
+			            	if (hleGeListSync(list, PSP_GE_LIST_DONE)) {
+			            		it.remove();
+			            	}
+		            	}
+		                break;
+		            }
+		        }
+    		}
+
+	        thread.do_callbacks = true;
+    	}
     }
 
     /** @return true if the syncType is valid */
@@ -246,6 +288,10 @@ public class pspge {
     public void sceGeListSync(int id, int syncType) {
         boolean found = false;
 
+        if (VideoEngine.log.isDebugEnabled()) {
+        	VideoEngine.log.debug("hleGeListSync(id=" + id + ",syncType=" + syncType + ")");
+        }
+
         for (Iterator<PspGeList> it = listQueue.iterator(); it.hasNext(); ) {
             PspGeList list = it.next();
             if (list.id == id) {
@@ -253,9 +299,7 @@ public class pspge {
                 Emulator.getProcessor().cpu.gpr[2] = 0;
 
                 if (hleGeListSync(list, syncType)) {
-                    list.thid = threadMan.getCurrentThreadID();
-                    VideoEngine.log.debug("sceGeListSync(id=" + id + ",syncType=" + syncType + ") blocking thread " + Integer.toHexString(list.thid));
-                    threadMan.blockCurrentThread();
+                	blockThreadOnList(syncType, list);
                     it.remove();
                 } else {
                     threadMan.yieldCurrentThread();
@@ -271,6 +315,16 @@ public class pspge {
             VideoEngine.log.warn("sceGeListSync(id=" + id + ",syncType=" + syncType + ") failed (list not found, last allocated id=" + listIdAllocator + ")");
             Emulator.getProcessor().cpu.gpr[2] = -1;
         }
+    }
+
+    private void blockThreadOnList(int syncType, PspGeList list) {
+        ThreadMan threadMan = ThreadMan.getInstance();
+    	list.thid = threadMan.getCurrentThreadID();
+    	if (VideoEngine.log.isDebugEnabled()) {
+    		VideoEngine.log.debug("blockThreadOnList(syncType=" + syncType + ") blocking thread " + Integer.toHexString(list.thid) + " on list id=" + list.id);
+    	}
+        threadMan.getCurrentThread().do_callbacks = true;
+        threadMan.blockCurrentThread();
     }
 
     public void sceGeDrawSync(int syncType) {
@@ -315,6 +369,10 @@ public class pspge {
         }
         */
 
+    	if (VideoEngine.log.isDebugEnabled()) {
+    		VideoEngine.log.debug("sceGeDrawSync syncType=" + syncType);
+    	}
+
         boolean wait = false;
 
         PspGeList lastList = null;
@@ -328,15 +386,12 @@ public class pspge {
             // delete on failed syncs it.remove();
         }
 
-        ThreadMan threadMan = ThreadMan.getInstance();
         Emulator.getProcessor().cpu.gpr[2] = 0;
 
         if (wait && lastList != null) {
-            lastList.thid = threadMan.getCurrentThreadID();
-            VideoEngine.log.debug("sceGeDrawSync(syncType=" + syncType + ") blocking thread " + Integer.toHexString(lastList.thid) + " on list id=" + lastList.id);
-            threadMan.blockCurrentThread();
+        	blockThreadOnList(syncType, lastList);
         } else {
-            threadMan.yieldCurrentThread();
+            ThreadMan.getInstance().yieldCurrentThread();
         }
     }
 
@@ -401,43 +456,113 @@ public class pspge {
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
-    private void triggerCallback(int cbid, int callbackNotifyArg1, int callbackIndex, HashMap<Integer, SceKernelCallbackInfo> callbacks) {
+    public void sceGeContinue() {
+    	if (Modules.log.isDebugEnabled()) {
+    		Modules.log.debug("sceGeContinue()");
+    	}
+
+    	for (Iterator<PspGeList> it = listQueue.iterator(); it.hasNext(); ) {
+            PspGeList list = it.next();
+            if (list.currentStatus == PSP_GE_LIST_END_REACHED) {
+            	Memory mem = Memory.getInstance();
+            	if (mem.read32(list.pc) == (GeCommands.FINISH << 24) &&
+            		mem.read32(list.pc + 4) == (GeCommands.END << 24)) {
+            		list.pc += 8;
+            	}
+            	list.currentStatus = PSP_GE_LIST_QUEUED;
+            	if (Modules.log.isDebugEnabled()) {
+            		Modules.log.debug("sceGeContinue(id=" + list.id + ",pc=0x" + Integer.toHexString(list.pc) + ") restarting");
+            	}
+            	if (hleGeListSync(list, PSP_GE_LIST_DONE)) {
+            		it.remove();
+            	}
+            }
+        }
+
+        Emulator.getProcessor().cpu.gpr[2] = 0;
+    }
+
+    public void sceGeBreak() {
+    	Modules.log.warn("Unsupported sceGeBreak");
+        Emulator.getProcessor().cpu.gpr[2] = 0;
+    }
+
+    private void triggerCallback(int cbid, int listId, int behavior, int callbackNotifyArg1, int callbackIndex, HashMap<Integer, SceKernelCallbackInfo> callbacks) {
         SceKernelCallbackInfo callback = callbacks.get(cbid);
         if (callback != null) {
             if (VideoEngine.log.isDebugEnabled()) {
-                VideoEngine.log.debug("Triggering callback " + callbackIndex + ", addr=0x" + Integer.toHexString(callback.callback_addr) + ", cbid=" + Integer.toHexString(cbid) + ", callback notify arg=0x" + Integer.toHexString(callbackNotifyArg1));
+                VideoEngine.log.debug("Triggering callback " + callbackIndex + " (" + callback + "), addr=0x" + Integer.toHexString(callback.callback_addr) + ", cbid=" + Integer.toHexString(cbid) + ", callback notify arg=0x" + Integer.toHexString(callbackNotifyArg1));
             }
             ThreadMan threadMan = ThreadMan.getInstance();
+            HLECallback hleCallback = new HLESignalCallback(listId, behavior, callbackIndex);
 
             // HACK push GE callback using Kernel callback code
-            threadMan.pushGeCallback(callbackIndex, callback.uid, callbackNotifyArg1, callback.callback_arg_addr);
+            threadMan.pushGeCallback(callbackIndex, callback.uid, callbackNotifyArg1, callback.callback_arg_addr, hleCallback);
         }
     }
 
     /** safe to call from outside the main emulation thread if DEFER_CALLBACKS is true */
     public void triggerFinishCallback(int cbid, int callbackNotifyArg1) {
-        if (DEFER_CALLBACKS)
-            deferredFinishCallbackQueue.offer(new DeferredCallbackInfo(cbid, callbackNotifyArg1));
-        else
-            triggerCallback(cbid, callbackNotifyArg1, SceKernelThreadInfo.THREAD_CALLBACK_GE_FINISH, finishCallbacks);
-
+        if (DEFER_CALLBACKS) {
+        	if (VideoEngine.log.isDebugEnabled()) {
+        		VideoEngine.log.debug("Deferred Finish callback");
+        	}
+            deferredCallbackQueue.offer(new DeferredCallbackInfo(cbid, SceKernelThreadInfo.THREAD_CALLBACK_GE_FINISH, callbackNotifyArg1));
+        } else {
+            triggerCallback(cbid, PSP_GE_BEHAVIOR_SUSPEND, -1, callbackNotifyArg1, SceKernelThreadInfo.THREAD_CALLBACK_GE_FINISH, finishCallbacks);
+        }
     }
 
     /** safe to call from outside the main emulation thread if DEFER_CALLBACKS is true */
-    public void triggerSignalCallback(int cbid, int callbackNotifyArg1) {
-        if (DEFER_CALLBACKS)
-            deferredSignalCallbackQueue.offer(new DeferredCallbackInfo(cbid, callbackNotifyArg1));
-        else
-            triggerCallback(cbid, callbackNotifyArg1, SceKernelThreadInfo.THREAD_CALLBACK_GE_SIGNAL, signalCallbacks);
+    public void triggerSignalCallback(int cbid, int listId, int behavior, int callbackNotifyArg1) {
+        if (DEFER_CALLBACKS) {
+        	if (VideoEngine.log.isDebugEnabled()) {
+        		VideoEngine.log.debug("Deferred Signal callback");
+        	}
+            deferredCallbackQueue.offer(new DeferredCallbackInfo(cbid, SceKernelThreadInfo.THREAD_CALLBACK_GE_SIGNAL, listId, behavior, callbackNotifyArg1));
+        } else {
+            triggerCallback(cbid, listId, behavior, callbackNotifyArg1, SceKernelThreadInfo.THREAD_CALLBACK_GE_SIGNAL, signalCallbacks);
+        }
     }
 
     class DeferredCallbackInfo {
         public final int cbid;
+        public final int callbackIndex;
+        public final int listId;
+        public final int behavior;
         public final int callbackNotifyArg1;
 
-        public DeferredCallbackInfo(int cbid, int callbackNotifyArg1) {
+        public DeferredCallbackInfo(int cbid, int callbackIndex, int callbackNotifyArg1) {
             this.cbid = cbid;
+            this.callbackIndex = callbackIndex;
+            this.listId = -1;
+            this.behavior = PSP_GE_BEHAVIOR_SUSPEND;
             this.callbackNotifyArg1 = callbackNotifyArg1;
         }
+
+        public DeferredCallbackInfo(int cbid, int callbackIndex, int listId, int behavior, int callbackNotifyArg1) {
+            this.cbid = cbid;
+            this.callbackIndex = callbackIndex;
+            this.listId = listId;
+            this.behavior = behavior;
+            this.callbackNotifyArg1 = callbackNotifyArg1;
+        }
+    }
+
+    class HLESignalCallback implements HLECallback {
+    	public final int listId;
+    	public final int behavior;
+    	public final int callbackIndex;
+
+    	public HLESignalCallback(int listId, int behavior, int callbackIndex) {
+    		this.listId = listId;
+    		this.behavior = behavior;
+    		this.callbackIndex = callbackIndex;
+    	}
+
+		@Override
+		public void execute(Processor processor, SceKernelThreadInfo thread) {
+			hleGeOnAfterCallback(listId, behavior, callbackIndex, thread);
+		}
     }
 }

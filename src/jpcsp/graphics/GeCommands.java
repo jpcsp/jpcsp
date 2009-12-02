@@ -454,6 +454,7 @@ public class GeCommands {
     public final static int TRXDPOS = 0xEC;// 	TRXDPOS 	Transfer Destination Position
     public final static int UNKNOWNCOMMAND_0xED = 0XED;
     public final static int TRXSIZE = 0xEE;// 	TRXSIZE 	Transfer Size
+    public final static int UNKNOWNCOMMAND_0xFF = 0xFF;
 
 
     public GeCommands() {
