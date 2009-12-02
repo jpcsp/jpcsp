@@ -114,8 +114,10 @@ public class Loader {
             if (module.psf != null) {
                 Emulator.log.info("PBP meta data :\n" + module.psf);
 
-                if (!loadedFirstModule)
+                if (!loadedFirstModule) {
+                    // Set firmware version from PSF embedded in PBP
                     Emulator.getInstance().setFirmwareVersion(module.psf.getString("PSP_SYSTEM_VER"));
+                }
             }
 
             f.position(currentOffset);
@@ -197,7 +199,7 @@ public class Loader {
                 e.printStackTrace();
             }
         } else {
-            // Load unpacked PSF
+            // Load unpacked PSF in the same directory
             File[] psffile = pbpfile.getParentFile().listFiles(new FileFilter() {
                 @Override
                 public boolean accept(File arg0) {
@@ -360,14 +362,44 @@ public class Loader {
     /** Dummy loader for unrecognized file formats, put at the end of a loader chain.
      * @return true on success */
     private boolean LoadUNK(ByteBuffer f, SceModule module, int baseAddress) throws IOException {
-        Emulator.log.info("Unrecognized file format");
 
-        // print some debug info
         byte m0 = f.get();
         byte m1 = f.get();
         byte m2 = f.get();
         byte m3 = f.get();
-        Emulator.log.info(String.format("File magic %02X %02X %02X %02X", m0, m1, m2, m3));
+
+        // catch common user errors
+        if (m0 == 0x43 && m1 == 0x49 && m2 == 0x53 && m3 == 0x4F) { // CSO
+            Emulator.log.info("This is not an executable file!");
+            Emulator.log.info("Try using the Load UMD menu item");
+        } else if ((m0 == 0 && m1 == 0x50 && m2 == 0x53 && m3 == 0x46)) { // PSF
+            Emulator.log.info("This is not an executable file!");
+        } else {
+            boolean handled = false;
+
+            // check for ISO
+            if (f.limit() >= 16 * 2048 + 6) {
+                f.position(16 * 2048);
+                byte[] id = new byte[6];
+                f.get(id);
+                if((((char)id[1])=='C')&&
+                   (((char)id[2])=='D')&&
+                   (((char)id[3])=='0')&&
+                   (((char)id[4])=='0')&&
+                   (((char)id[5])=='1'))
+                {
+                    Emulator.log.info("This is not an executable file!");
+                    Emulator.log.info("Try using the Load UMD menu item");
+                    handled = true;
+                }
+            }
+
+            if (!handled) {
+                // print some debug info
+                Emulator.log.info("Unrecognized file format");
+                Emulator.log.info(String.format("File magic %02X %02X %02X %02X", m0, m1, m2, m3));
+            }
+        }
 
         return false;
     }
