@@ -280,11 +280,10 @@ public class ThreadMan {
                     //Emulator.getProcessor().cpu = current_thread.cpuContext;
                     current_thread.restoreContext(); // also sets pc = npc
 
-                    // keep processing callbacks
-                    checkCallbacks();
-
-                    // Check if a deferred GE callback is not waiting
+                    // convert deferred GE callbacks to real callbacks
                     pspge.getInstance().step();
+
+                    // keep processing callbacks
                     checkCallbacks();
 
                     if (callbackThread.hleCallback != null) {
