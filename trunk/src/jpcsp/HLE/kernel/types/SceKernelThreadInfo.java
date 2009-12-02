@@ -276,4 +276,9 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         mem.write32(address + 96, threadPreemptCount);
         mem.write32(address + 100, releaseCount);
     }
+
+	@Override
+	public String toString() {
+		return name;
+	}
 }

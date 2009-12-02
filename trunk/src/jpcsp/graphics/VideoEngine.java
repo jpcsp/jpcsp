@@ -606,16 +606,17 @@ public class VideoEngine {
             // No FINISH:
             // - Virtua Tennis: World Tour (1 instruction: signal)
             if (!currentList.listHasFinished) {
-                VideoEngine.log.warn("END without FINISH id=" + currentList.id);
+            	currentList.currentStatus = PSP_GE_LIST_END_REACHED;
+            } else {
+            	currentList.currentStatus = PSP_GE_LIST_DONE;
             }
-
-            currentList.currentStatus = PSP_GE_LIST_DONE;
         }
 
         if (list.currentStatus == list.syncStatus ||
             list.currentStatus == PSP_GE_LIST_DONE ||
             list.currentStatus == PSP_GE_LIST_STALL_REACHED ||
-            list.currentStatus == PSP_GE_LIST_CANCEL_DONE) {
+            list.currentStatus == PSP_GE_LIST_CANCEL_DONE ||
+            list.currentStatus == PSP_GE_LIST_END_REACHED) {
             pspge.getInstance().hleGeListSyncDone(list);
         }
     }
@@ -901,9 +902,9 @@ public class VideoEngine {
         commandStatistics[command].start();
         switch (command) {
             case END:
-                listHasEnded = true;
+        		listHasEnded = true;
                 if (log.isDebugEnabled()) {
-                    log(helper.getCommandString(END));
+                    log(helper.getCommandString(END) + " pc=0x" + Integer.toHexString(currentList.pc));
                 }
                 updateGeBuf();
                 break;
@@ -917,12 +918,12 @@ public class VideoEngine {
                 break;
 
             case SIGNAL:
-            	if ((normalArgument >> 16) != 0) {
-                    log.warn("Unimplemented " + helper.getCommandString(SIGNAL) + " (hex=" + Integer.toHexString(normalArgument) + ")");
-            	} else if (log.isDebugEnabled()) {
-                    log(helper.getCommandString(SIGNAL) + " (hex="+Integer.toHexString(normalArgument)+",int="+normalArgument+",float="+floatArgument+")");
+            	int behavior = (normalArgument >> 16);
+            	int signal = normalArgument & 0xFFFF;
+            	if (log.isDebugEnabled()) {
+                    log(helper.getCommandString(SIGNAL) + " (behavior=" + behavior + ",signal=0x" + Integer.toHexString(signal) + ")");
                 }
-                currentList.pushSignalCallback(normalArgument);
+                currentList.pushSignalCallback(currentList.id, behavior, signal);
                 break;
 
             case BASE:
@@ -3320,6 +3321,18 @@ public class VideoEngine {
             	glColorMask[3] = getGLMask("Alpha color mask", normalArgument & 0xFF);
             	if (!clearMode) {
                 	setGLColorMask();
+            	}
+                break;
+            }
+
+            case UNKNOWNCOMMAND_0xFF: {
+            	// This command always appears before a BOFS command and seems to have
+            	// no special meaning. Ignore it in that case.
+            	int nextCommand = Memory.getInstance().read8(currentList.pc + 3);
+            	if (nextCommand != BOFS || normalArgument != 0) {
+                    log.warn("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "](int="+normalArgument+",float="+floatArgument+")");
+            	} else if (log.isDebugEnabled()) {
+                    log.debug("Ignored video command [" + helper.getCommandString(command(instruction)) + "](int="+normalArgument+")");
             	}
                 break;
             }

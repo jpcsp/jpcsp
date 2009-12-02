@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Allegrex.compiler;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -77,6 +78,7 @@ public class RuntimeContext {
 	private static volatile Map<SceKernelThreadInfo, RuntimeThread> threads = Collections.synchronizedMap(new HashMap<SceKernelThreadInfo, RuntimeThread>());
 	private static volatile Map<SceKernelThreadInfo, RuntimeThread> toBeStoppedThreads = Collections.synchronizedMap(new HashMap<SceKernelThreadInfo, RuntimeThread>());
 	private static volatile Map<SceKernelThreadInfo, RuntimeThread> alreadyStoppedThreads = Collections.synchronizedMap(new HashMap<SceKernelThreadInfo, RuntimeThread>());
+	private static volatile List<Thread> alreadySwitchedStoppedThreads = Collections.synchronizedList(new ArrayList<Thread>());
 	private static volatile Map<SceKernelThreadInfo, RuntimeThread> toBeDeletedThreads = Collections.synchronizedMap(new HashMap<SceKernelThreadInfo, RuntimeThread>());
 	public  static volatile SceKernelThreadInfo currentThread = null;
 	private static volatile RuntimeThread currentRuntimeThread = null;
@@ -240,19 +242,7 @@ public class RuntimeContext {
         RuntimeThread callbackThread = threads.get(callbackThreadInfo);
 
         // The callback has to be executed by its thread
-    	if (currentThread == null) {
-    	    // We are idle, execute the callback immediately
-    	    switchThread(callbackThreadInfo);
-            executeCallbackImmediately(callbackCpuState);
-            switchThread(null);
-            // Check if we are still idle
-            try {
-                syncIdle();
-            } catch (StopThreadException e) {
-                // This exception is not expected at this point...
-                log.warn(e);
-            }
-    	} else if (Thread.currentThread() == callbackThread && currentThread == callbackThreadInfo) {
+    	if (Thread.currentThread() == callbackThread && currentThread == callbackThreadInfo) {
     	    // The current thread is the thread where the callback has to be executed.
     	    // Execute the callback immediately
     	    executeCallbackImmediately(callbackCpuState);
@@ -423,7 +413,7 @@ public class RuntimeContext {
     	if (log.isDebugEnabled()) {
     		log.debug("syncThread currentThread=" + currentThread.getName() + ", currentRuntimeThread=" + currentRuntimeThread.getName());
     	}
-    	if (currentThread != currentRuntimeThread) {
+    	if (currentThread != currentRuntimeThread && !alreadySwitchedStoppedThreads.contains(currentThread)) {
     		currentRuntimeThread.continueRuntimeExecution();
 
     		if (currentThread instanceof RuntimeThread) {
@@ -442,6 +432,8 @@ public class RuntimeContext {
 	    			    switchThread(pendingCallbackReturnThread);
 	    			    syncThread();
 	    			}
+    			} else {
+    				alreadySwitchedStoppedThreads.add(currentThread);
     			}
     		}
     	}
@@ -586,6 +578,10 @@ public class RuntimeContext {
 		SceKernelThreadInfo threadInfo = thread.getThreadInfo();
     	alreadyStoppedThreads.put(threadInfo, thread);
 
+    	if (log.isDebugEnabled()) {
+    		log.debug("End of Thread " + threadInfo.name + " - stopped");
+    	}
+
     	if (!thread.getThreadInfo().do_delete) {
     		thread.setInSyscall(true);
 
@@ -599,6 +595,10 @@ public class RuntimeContext {
 
 			if (!reset) {
 				try {
+			    	if (log.isDebugEnabled()) {
+			    		log.debug("End of Thread " + threadInfo.name + " - sync");
+			    	}
+
 					sync();
 				} catch (StopThreadException e) {
 		    		// Ignore Exception
@@ -615,6 +615,10 @@ public class RuntimeContext {
 			// otherwise, no thread will break the idle state...
 			try {
 				if (isIdle) {
+			    	if (log.isDebugEnabled()) {
+			    		log.debug("End of Thread " + threadInfo.name + " - syncThread");
+			    	}
+
 					syncThread();
 				}
 			} catch (StopThreadException e) {
@@ -622,6 +626,7 @@ public class RuntimeContext {
 		}
 
 		alreadyStoppedThreads.remove(threadInfo);
+		alreadySwitchedStoppedThreads.remove(thread);
 
 		if (log.isDebugEnabled()) {
 			log.debug("End of Thread " + thread.getName());
@@ -749,6 +754,7 @@ public class RuntimeContext {
     		toBeStoppedThreads.put(thread, runtimeThread);
     		if (runtimeThread.isInSyscall() && Thread.currentThread() != runtimeThread) {
     			toBeDeletedThreads.put(thread, runtimeThread);
+    			log.debug("Continue Thread " + runtimeThread.getName());
     			runtimeThread.continueRuntimeExecution();
     		}
     	}

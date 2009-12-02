@@ -17,7 +17,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules;
 
 import jpcsp.Processor;
+import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 
 public interface HLECallback {
-    public void execute(Processor processor);
+    public void execute(Processor processor, SceKernelThreadInfo thread);
 }

@@ -267,11 +267,12 @@ public class ThreadMan {
                         current_thread.hleCallback = null;
 
                         // this has to be the very last thing so it can call executeCallback again
-                        hleCallback.execute(Emulator.getProcessor());
+                        hleCallback.execute(Emulator.getProcessor(), current_thread);
                     }
                 } else if (insideCallback) {
                     // Callback has exited
                     Modules.log.debug("Callback exit detected");
+                    SceKernelThreadInfo callbackThread = current_thread;
 
                     current_thread = real_current_thread;
 
@@ -281,6 +282,17 @@ public class ThreadMan {
 
                     // keep processing callbacks
                     checkCallbacks();
+
+                    // Check if a deferred GE callback is not waiting
+                    pspge.getInstance().step();
+                    checkCallbacks();
+
+                    if (callbackThread.hleCallback != null) {
+                        HLECallback hleCallback = callbackThread.hleCallback;
+                        callbackThread.hleCallback = null;
+
+                        hleCallback.execute(Emulator.getProcessor(), callbackThread);
+                    }
                 } else {
                     // Thread has exited
                     Modules.log.debug("Thread exit detected SceUID=" + Integer.toHexString(current_thread.uid)
@@ -1754,7 +1766,7 @@ public class ThreadMan {
      * TODO test GE callbacks more thoroughly, they probably match generic callbacks
      * and don't need this special case code.
      */
-    public void pushGeCallback(int callbackType, int cbid, int notifyCount, int notifyArg) {
+    public void pushGeCallback(int callbackType, int cbid, int notifyCount, int notifyArg, HLECallback hleCallback) {
         boolean pushed = false;
 
         // GE callback is currently using Kernel callback implementation
@@ -1784,6 +1796,7 @@ public class ThreadMan {
                 cb.notifyArg = notifyArg;
 
                 thread.callbackReady[callbackType] = true;
+                thread.hleCallback = hleCallback;
                 pushed = true;
             }
         }
@@ -1812,13 +1825,7 @@ public class ThreadMan {
         for (int i = 0; i < SceKernelThreadInfo.THREAD_CALLBACK_SIZE && !handled; i++) {
             if (thread.callbackRegistered[i] && thread.callbackReady[i]) {
             	if (Modules.log.isDebugEnabled()) {
-            		Modules.log.debug("Entering callback type " + i + " name:'" + thread.callbackInfo[i].name + "'"
-                        + " PC:" + Integer.toHexString(thread.callbackInfo[i].callback_addr)
-                        + " thread:'" + thread.name + "'"
-                        + " $a0:" + Integer.toHexString(thread.callbackInfo[i].notifyCount)
-                        + " $a1:" + Integer.toHexString(thread.callbackInfo[i].notifyArg)
-                        + " $a2:" + Integer.toHexString(thread.callbackInfo[i].callback_arg_addr)
-                    	);
+            		Modules.log.debug("Entering callback type " + i + " " + thread.callbackInfo[i].toString());
             	}
 
                 // Callbacks can pre-empt, save the current thread's context
@@ -1887,8 +1894,8 @@ public class ThreadMan {
             // usually when we come from sceKernelCheckCallback or yieldCurrentThreadCB
             for (Iterator<SceKernelThreadInfo> it = threadMap.values().iterator(); it.hasNext(); ) {
                 SceKernelThreadInfo thread = it.next();
-                if (thread.status != PSP_THREAD_WAITING && thread.do_callbacks) {
-                    //Modules.log.debug("checkCallbacks: removing do_callbacks from non-waiting thread:'" + thread.name + "'");
+                if (thread.do_callbacks && (thread.status != PSP_THREAD_WAITING && thread.status != PSP_THREAD_SUSPEND)) {
+                    //Modules.log.debug("checkCallbacks: removing do_callbacks from non-waiting thread:'" + thread.name + "', status=" + thread.status);
 
                     thread.do_callbacks = false;
                 }

@@ -32,7 +32,11 @@ public class RuntimeThread extends Thread {
 	public RuntimeThread(SceKernelThreadInfo threadInfo) {
 		this.threadInfo = threadInfo;
 		this.isInSyscall = false;
-		setName(threadInfo.name);
+		if (RuntimeContext.log.isDebugEnabled()) {
+			setName(threadInfo.name + "_" + threadInfo.uid);
+		} else {
+			setName(threadInfo.name);
+		}
 		suspendRuntimeExecution();
 	}
 

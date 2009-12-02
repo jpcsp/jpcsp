@@ -593,8 +593,12 @@ public class SyscallHandler {
                 case 0x20fb:
                     pspge.getInstance().sceGeDrawSync(gpr[4]);
                     break;
-		// sceGeBreak(0x20fc),
-		// sceGeContinue(0x20fd),
+                case 0x20fc:
+                	pspge.getInstance().sceGeBreak();
+                	break;
+                case 0x20fd:
+                	pspge.getInstance().sceGeContinue();
+                	break;
                 case 0x20fe:
                     pspge.getInstance().sceGeSetCallback(gpr[4]);
                     break;

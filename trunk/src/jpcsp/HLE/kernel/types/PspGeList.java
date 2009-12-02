@@ -66,8 +66,8 @@ public class PspGeList
         baseOffset = 0;
     }
 
-    public void pushSignalCallback(int arg) {
-        pspge.getInstance().triggerSignalCallback(cbid, arg);
+    public void pushSignalCallback(int listId, int behavior, int signal) {
+        pspge.getInstance().triggerSignalCallback(cbid, listId, behavior, signal);
     }
 
     public void pushFinishCallback(int arg) {
