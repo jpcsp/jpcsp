@@ -987,6 +987,16 @@ public class SyscallHandler {
                     Managers.mutex.sceKernelTryLockLwMutex(gpr[4], gpr[5]);
                     break;
 
+                case 0x30db:
+                    pspSysMem.getInstance().SysMemUserForUser_FE707FDF(gpr[4], gpr[5], gpr[6], gpr[7]);
+                    break;
+                case 0x30dc:
+                    pspSysMem.getInstance().SysMemUserForUser_50F61D8A(gpr[4]);
+                    break;
+                case 0x30de:
+                    pspSysMem.getInstance().SysMemUserForUser_DB83A952(gpr[4], gpr[5]);
+                    break;
+
                 case 0xfffff: { // special code for unmapped imports
                     CpuState cpu = Emulator.getProcessor().cpu;
                     Modules.log.error(String.format("Unmapped import @ 0x%08X - %08x %08x %08x",
