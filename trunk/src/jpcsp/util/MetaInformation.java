@@ -17,9 +17,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.util;
 
-import java.io.File;
-import java.io.FileReader;
 import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 public class MetaInformation {
     public static String NAME = "Jpcsp";
@@ -29,24 +29,33 @@ public class MetaInformation {
     public static String OFFICIAL_SITE = "http://jpcsp.org/";
     public static String OFFICIAL_FORUM = "http://jpcsp.org/forum/";
     public static String OFFICIAL_REPOSITORY = "http://code.google.com/p/jpcsp/";
-    public static String TEAM = "shadow, mad, dreampeppers99, wrayal, fiveofhearts, hlide, Nutzje<br />aisesal, shashClp, spip2, mozvip, Orphis, gigaherz, gid15";
+    public static String TEAM = "shadow, mad, dreampeppers99, wrayal, fiveofhearts, hlide, Nutzje<br />aisesal, shashClp, spip2, mozvip, Orphis, gigaherz, gid15, hykem";
 
     private static MetaInformation singleton;
 
     private MetaInformation() {
+        //System.err.println("MetaInformation loading...");
+
         try {
-            File f = new File(getClass().getResource("/jpcsp/title.txt").toURI());
-            FileReader fr = new FileReader(f);
-            BufferedReader br = new BufferedReader(fr);
-            String customName = br.readLine();
+            InputStream is = getClass().getResourceAsStream("/jpcsp/title.txt");
+            if (is != null) {
+                InputStreamReader isr = new InputStreamReader(is);
+                BufferedReader br = new BufferedReader(isr);
+                String customName = br.readLine();
 
-            if (customName != null)
-                FULL_CUSTOM_NAME = NAME + " " + VERSION + " " + customName;
-
-            br.close();
-            fr.close();
+                if (customName != null) {
+                    //System.err.println("found title '" + customName + "'");
+                    FULL_CUSTOM_NAME = NAME + " " + VERSION + " " + customName;
+                } else {
+                    System.err.println("first line of title.txt is blank or file is empty");
+                }
+            } else {
+                // optional file ...
+                // System.err.println("title.txt is missing");
+            }
         } catch(Exception e) {
-            // just ignore it, custom title is optional
+            System.err.println("something went wrong: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
