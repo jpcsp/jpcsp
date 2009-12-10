@@ -224,6 +224,7 @@ public class SemaManager {
 
                 // wait type
                 currentThread.waitType = PSP_WAIT_SEMA;
+                currentThread.waitId = semaid;
 
                 // Go to wait state
                 threadMan.hleKernelThreadWait(currentThread.wait, micros, (timeout_addr == 0));
