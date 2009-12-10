@@ -846,7 +846,7 @@ public class VideoEngine {
         int rowWidth = (bytesPerPixel > 0) ? (texture_buffer_width[level] * bytesPerPixel) : (texture_buffer_width[level] / 2);
         int pitch = ( rowWidth - 16 ) / 4;
         int bxc = rowWidth / 16;
-        int byc = texture_height[level] / 8;
+        int byc = (texture_height[level] + 7) / 8;
 
         int ydest = 0;
 
@@ -3327,12 +3327,18 @@ public class VideoEngine {
 
             case UNKNOWNCOMMAND_0xFF: {
             	// This command always appears before a BOFS command and seems to have
-            	// no special meaning. Ignore it in that case.
-            	int nextCommand = Memory.getInstance().read8(currentList.pc + 3);
-            	if (nextCommand != BOFS || normalArgument != 0) {
-                    log.warn("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "](int="+normalArgument+",float="+floatArgument+")");
-            	} else if (log.isDebugEnabled()) {
-                    log.debug("Ignored video command [" + helper.getCommandString(command(instruction)) + "](int="+normalArgument+")");
+            	// no special meaning.
+            	// The command also appears sometimes after a PRIM command.
+            	// Ignore the command in these cases.
+            	if (log.isInfoEnabled()) {
+	            	Memory mem = Memory.getInstance();
+	            	int nextCommand     = mem.read8(currentList.pc + 3);
+	            	int previousCommand = mem.read8(currentList.pc - 5);
+	            	if ((nextCommand != BOFS && previousCommand != PRIM) || normalArgument != 0) {
+	                    log.warn("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "](int="+normalArgument+",float="+floatArgument+")");
+	            	} else if (log.isDebugEnabled()) {
+	                    log.debug("Ignored video command [" + helper.getCommandString(command(instruction)) + "](int="+normalArgument+")");
+	            	}
             	}
                 break;
             }
