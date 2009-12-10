@@ -165,10 +165,10 @@ public class MutexManager {
             cpu.gpr[2] = ERROR_NOT_FOUND_MUTEX;
         } else {
             ThreadMan threadMan = ThreadMan.getInstance();
-            SceKernelThreadInfo current_thread = threadMan.getCurrentThread();
+            SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
 
             boolean allowSameThread = false;
-            if (info.threadid == current_thread.uid &&
+            if (info.threadid == currentThread.uid &&
                 (info.attr & PSP_MUTEX_ALLOW_SAME_THREAD) == PSP_MUTEX_ALLOW_SAME_THREAD) {
                 allowSameThread = true;
             }
@@ -184,10 +184,11 @@ public class MutexManager {
                     info.numWaitThreads++;
 
                     // Do callbacks?
-                    current_thread.do_callbacks = do_callbacks;
+                    currentThread.do_callbacks = do_callbacks;
 
                     // wait type
-                    current_thread.waitType = PSP_WAIT_MUTEX;
+                    currentThread.waitType = PSP_WAIT_MUTEX;
+                    currentThread.waitId = uid;
 
                     // Go to wait state
                     int timeout = 0;
@@ -200,13 +201,13 @@ public class MutexManager {
                         }
                     }
 
-                    threadMan.hleKernelThreadWait(current_thread.wait, timeout, forever);
+                    threadMan.hleKernelThreadWait(currentThread.wait, timeout, forever);
 
                     // Wait on a specific mutex
-                    current_thread.wait.waitingOnMutex = true;
-                    current_thread.wait.Mutex_id = uid;
+                    currentThread.wait.waitingOnMutex = true;
+                    currentThread.wait.Mutex_id = uid;
 
-                    threadMan.changeThreadState(current_thread, PSP_THREAD_WAITING);
+                    threadMan.changeThreadState(currentThread, PSP_THREAD_WAITING);
                     threadMan.contextSwitch(threadMan.nextThread());
 
                     // doesn't really matter what we set this to, it's going to get changed before the thread will run again
@@ -217,7 +218,7 @@ public class MutexManager {
                 }
             } else {
                 Modules.log.debug(message + " - '" + info.name + "' fast check succeeded");
-                info.threadid = current_thread.uid;
+                info.threadid = currentThread.uid;
                 cpu.gpr[2] = 0;
             }
         }

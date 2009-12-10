@@ -265,6 +265,7 @@ public class MsgPipeManager {
 
                     // wait type
                     currentThread.waitType = PSP_WAIT_MSGPIPE;
+                    currentThread.waitId = uid;
 
                     // Go to wait state
                     threadMan.hleKernelThreadWait(currentThread.wait, micros, (timeout_addr == 0));
@@ -361,6 +362,7 @@ public class MsgPipeManager {
 
                     // wait type
                     currentThread.waitType = PSP_WAIT_MSGPIPE;
+                    currentThread.waitId = uid;
 
                     // Go to wait state
                     threadMan.hleKernelThreadWait(currentThread.wait, micros, (timeout_addr == 0));

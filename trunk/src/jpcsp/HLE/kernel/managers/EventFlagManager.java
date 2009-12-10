@@ -327,6 +327,7 @@ public class EventFlagManager {
                 SceKernelThreadInfo currentThread = ThreadMan.getInstance().getCurrentThread();
                 currentThread.do_callbacks = do_callbacks;
                 currentThread.waitType = PSP_WAIT_MISC;
+                currentThread.waitId = uid;
 
                 // Wait on a specific event flag
                 ThreadMan.getInstance().hleKernelThreadWait(currentThread.wait, micros, (timeout_addr == 0));
