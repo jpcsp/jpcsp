@@ -29,11 +29,11 @@ public class Iso9660Directory {
         while(directorySize>=1)
         {
             int entryLength = dataStream.read();
-            directorySize -= 1;
 
             // This is assuming that the padding bytes are always filled with 0's.
             if(entryLength==0)
             {
+            	directorySize--;
                 continue;
             }
 

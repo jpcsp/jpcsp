@@ -124,4 +124,9 @@ public class Iso9660File {
     {
     	return timestamp;
     }
+
+	@Override
+	public String toString() {
+		return fileName;
+	}
 }
