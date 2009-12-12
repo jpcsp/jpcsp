@@ -94,7 +94,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public int currentPriority;
     public int waitType;
     public int waitId;
-    public int wakeupCount;
+    public int wakeupCount; // number of sceKernelWakeupThread() calls pending
     public int exitStatus;
     public long runClocks;
     public int intrPreemptCount;
