@@ -115,6 +115,8 @@ public class VideoEngine {
     private DurationStatistics[] commandStatistics;
     private boolean openGL1_2;
     private boolean openGL1_5;
+    private int errorCount;
+    private static final int maxErrorCount = 5; // Abort list processing when detecting more errors
 
     private int fbp, fbw; // frame buffer pointer and width
     private int zbp, zbw; // depth buffer pointer and width
@@ -285,6 +287,11 @@ public class VideoEngine {
 
     	public boolean uploadValue(float value) {
     		boolean done = false;
+
+    		if (currentY >= matrixHeight) {
+    			error("Ignored Matrix upload value");
+    			return true;
+    		}
 
     		matrix[currentY * 4 + currentX] = value;
     		currentX++;
@@ -514,6 +521,7 @@ public class VideoEngine {
         statistics.start();
         TextureCache.getInstance().resetTextureAlreadyHashed();
         somethingDisplayed = false;
+        errorCount = 0;
 
         if (State.captureGeNextFrame) {
             CaptureManager.startCapture("capture.bin", list);
@@ -555,6 +563,54 @@ public class VideoEngine {
         return true;
     }
 
+    public void error(String message) {
+    	errorCount++;
+    	log.error(message);
+    	if (errorCount >= maxErrorCount) {
+    		if (tryToFallback()) {
+    			log.error("Aborting current list processing due to too many errors");
+    		}
+    	}
+    }
+
+    private boolean tryToFallback() {
+    	boolean abort = false;
+
+    	if (currentList.stackIndex > 0) {
+    		// When have some CALLs on the stack, try to return from the last CALL
+            int npc = currentList.stack[--currentList.stackIndex];
+            if (log.isDebugEnabled()) {
+                log(helper.getCommandString(NOP) + " old PC:" + String.format("%08x", currentList.pc)
+                        + " new PC:" + String.format("%08x", npc));
+            }
+            currentList.pc = npc;
+    	} else {
+    		// Finish this list
+    		currentList.listHasFinished = true;
+    		listHasEnded = true;
+    		abort = true;
+    	}
+
+    	return abort;
+    }
+
+    private void checkCurrentListPc() {
+    	Memory mem = Memory.getInstance();
+        while (!mem.isAddressGood(currentList.pc)) {
+        	if (!mem.isIgnoreInvalidMemoryAccess()) {
+        		error("Reading GE list from invalid address 0x" + Integer.toHexString(currentList.pc));
+        		break;
+        	} else {
+        		// Ignoring memory read errors.
+        		// Try to fall back and continue the list processing.
+        		log.warn("Reading GE list from invalid address 0x" + Integer.toHexString(currentList.pc));
+        		if (tryToFallback()) {
+        			break;
+        		}
+        	}
+        }
+    }
+
     // call from GL thread
     // There is an issue here with Emulator.pause
     // - We want to stop on errors
@@ -577,13 +633,17 @@ public class VideoEngine {
         	if (currentList.pc != memoryReaderPc) {
         		// The currentList.pc is no longer reading in sequence
         		// and has jumped to a next location, get a new memory reader.
-        		memoryReader = MemoryReader.getMemoryReader(currentList.pc, 4);
+        		checkCurrentListPc();
+        		if (listHasEnded || Emulator.pause) {
+        			break;
+        		}
+    			memoryReader = MemoryReader.getMemoryReader(currentList.pc, 4);
         	}
             int ins = memoryReader.readNext();
             currentList.pc += 4;
             memoryReaderPc = currentList.pc;
 
-            executeCommand(ins);
+        	executeCommand(ins);
         }
 
         if (currentList.pc == currentList.stall_addr) {
@@ -742,8 +802,7 @@ public class VideoEngine {
         case  9: gl_blend_src = GL.GL_ONE_MINUS_DST_ALPHA; break;
         case 10: gl_blend_src = getBlendFix(sfix_color);   break;
         default:
-            VideoEngine.log.error("Unhandled alpha blend src used " + blend_src);
-            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
+            error("Unhandled alpha blend src used " + blend_src);
         }
 
         int gl_blend_dst = GL.GL_DST_COLOR;
@@ -760,8 +819,7 @@ public class VideoEngine {
         case  9: gl_blend_dst = GL.GL_ONE_MINUS_DST_ALPHA; break;
         case 10: gl_blend_dst = getBlendFix(dfix_color);   break;
         default:
-            VideoEngine.log.error("Unhandled alpha blend dst used " + blend_dst);
-            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
+            error("Unhandled alpha blend dst used " + blend_dst);
         }
 
         try {
@@ -1343,7 +1401,7 @@ public class VideoEngine {
             		light_pos[lnum][3] = 1.f;
             		break;
             	default:
-            		log.error("Unknown light type : " + normalArgument);
+            		error("Unknown light type : " + normalArgument);
             	}
             	if(useShaders) {
             		gl.glUniform4iv(Uniforms.lightType.getId(), 1, light_type, 0);
@@ -2057,7 +2115,7 @@ public class VideoEngine {
                 Memory mem = Memory.getInstance();
                 if (!mem.isAddressGood(vinfo.ptr_vertex)) {
                 	// Abort here to avoid a lot of useless memory read errors...
-                	log.error(helper.getCommandString(PRIM) + " Invalid vertex address 0x" + Integer.toHexString(vinfo.ptr_vertex));
+                	error(helper.getCommandString(PRIM) + " Invalid vertex address 0x" + Integer.toHexString(vinfo.ptr_vertex));
                 	break;
                 }
 
@@ -2347,8 +2405,7 @@ public class VideoEngine {
 	                	break;
 
                     default:
-	                	VideoEngine.log.error("Unhandled blend mode " + op);
-                        Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
+	                	error("Unhandled blend mode " + op);
 	                	break;
             	}
 
@@ -2551,10 +2608,6 @@ public class VideoEngine {
                             + " new PC:" + String.format("%08x", npc));
                 }
                 currentList.pc = npc;
-
-                // Not sure when the baseOffset is reset:
-                // at RET or at the second BASE command after ORIGIN_ADDR?
-                currentList.baseOffset = 0;
                 break;
             }
 
@@ -2867,6 +2920,11 @@ public class VideoEngine {
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(NOP));
                 }
+
+                // Check if we are not reading from an invalid memory region.
+                // Abort the list if this is the case.
+                // This is only done in the NOP command to not impact performance.
+                checkCurrentListPc();
                 break;
 
             /*
@@ -2884,18 +2942,22 @@ public class VideoEngine {
             	// without having to issue a BOFS for each matrix.
             	int matrixIndex  = boneMatrixIndex / 12;
             	int elementIndex = boneMatrixIndex % 12;
-            	bone_uploaded_matrix[matrixIndex][elementIndex] = floatArgument;
-            	boneMatrixIndex++;
+            	if (matrixIndex >= 8) {
+            		error("Ignoring BONE matrix element: boneMatrixIndex=" + boneMatrixIndex);
+            	} else {
+	            	bone_uploaded_matrix[matrixIndex][elementIndex] = floatArgument;
+	            	boneMatrixIndex++;
 
-            	if (log.isDebugEnabled() && (boneMatrixIndex % 12) == 0) {
-                    for (int x = 0; x < 3; x++) {
-                        log.debug(String.format("bone matrix %d %.2f %.2f %.2f %.2f",
-                        							matrixIndex,
-                        							bone_uploaded_matrix[matrixIndex][x + 0],
-					                        		bone_uploaded_matrix[matrixIndex][x + 3],
-					                        		bone_uploaded_matrix[matrixIndex][x + 6],
-					                        		bone_uploaded_matrix[matrixIndex][x + 9]));
-                    }
+	            	if (log.isDebugEnabled() && (boneMatrixIndex % 12) == 0) {
+	                    for (int x = 0; x < 3; x++) {
+	                        log.debug(String.format("bone matrix %d %.2f %.2f %.2f %.2f",
+	                        							matrixIndex,
+	                        							bone_uploaded_matrix[matrixIndex][x + 0],
+						                        		bone_uploaded_matrix[matrixIndex][x + 3],
+						                        		bone_uploaded_matrix[matrixIndex][x + 6],
+						                        		bone_uploaded_matrix[matrixIndex][x + 9]));
+	                    }
+	            	}
             	}
                 break;
             }
@@ -2952,10 +3014,16 @@ public class VideoEngine {
             	textureTx_pixelSize = normalArgument & 0x1;
 
                 if (log.isDebugEnabled()) {
-                    log(helper.getCommandString(TRXKICK) + " from 0x" + Integer.toHexString(textureTx_sourceAddress) + "(" + textureTx_sx + "," + textureTx_sy + ") to 0x" + Integer.toHexString(textureTx_destinationAddress) + "(" + textureTx_dx + "," + textureTx_dy + "), width=" + textureTx_width + ", height=" + textureTx_height);
+                    log(helper.getCommandString(TRXKICK) + " from 0x" + Integer.toHexString(textureTx_sourceAddress) + "(" + textureTx_sx + "," + textureTx_sy + ") to 0x" + Integer.toHexString(textureTx_destinationAddress) + "(" + textureTx_dx + "," + textureTx_dy + "), width=" + textureTx_width + ", height=" + textureTx_height + ", pixelSize=" + textureTx_pixelSize);
                 }
-            	if (!pspdisplay.getInstance().isGeAddress(textureTx_destinationAddress)) {
-                    log(helper.getCommandString(TRXKICK) + " not in Ge Address space");
+
+                updateGeBuf();
+
+                pspdisplay display = pspdisplay.getInstance();
+            	if (!display.isGeAddress(textureTx_destinationAddress)) {
+            		if (log.isDebugEnabled()) {
+            			log(helper.getCommandString(TRXKICK) + " not in Ge Address space");
+            		}
                 	int width = textureTx_width;
                 	int height = textureTx_height;
                 	int bpp = ( textureTx_pixelSize == TRXKICK_16BIT_TEXEL_SIZE ) ? 2 : 4;
@@ -2963,22 +3031,33 @@ public class VideoEngine {
                 	int srcAddress = textureTx_sourceAddress      + (textureTx_sy * textureTx_sourceLineWidth      + textureTx_sx) * bpp;
             		int dstAddress = textureTx_destinationAddress + (textureTx_dy * textureTx_destinationLineWidth + textureTx_dx) * bpp;
             		Memory memory = Memory.getInstance();
-            		for (int y = 0; y < height; y++) {
-            			for (int x = 0; x < width; x++) {
-            				memory.write32(dstAddress, memory.read32(srcAddress));
-            				srcAddress += bpp;
-            				dstAddress += bpp;
+            		if (textureTx_sourceLineWidth == width && textureTx_destinationLineWidth == width) {
+            			// All the lines are adjacent in memory,
+            			// copy them all in a single memcpy operation.
+        				int copyLength = height * width * bpp;
+            			if (log.isDebugEnabled()) {
+            				log(String.format("%s memcpy(0x%08X-0x%08X, 0x%08X, 0x%X)", helper.getCommandString(TRXKICK), dstAddress, dstAddress + copyLength, srcAddress, copyLength));
             			}
-            			srcAddress += (textureTx_sourceLineWidth - width) * bpp;
-            			dstAddress += (textureTx_destinationLineWidth - width) * bpp;
+            			memory.memcpy(dstAddress, srcAddress, copyLength);
+            		} else {
+            			// The lines are not adjacent in memory: copy line by line.
+        				int copyLength = width * bpp;
+        				int srcLineLength = textureTx_sourceLineWidth * bpp;
+        				int dstLineLength = textureTx_destinationLineWidth * bpp;
+	            		for (int y = 0; y < height; y++) {
+	            			if (log.isDebugEnabled()) {
+	            				log(String.format("%s memcpy(0x%08X-0x%08X, 0x%08X, 0x%X)", helper.getCommandString(TRXKICK), dstAddress, dstAddress + copyLength, srcAddress, copyLength));
+	            			}
+	            			memory.memcpy(dstAddress, srcAddress, copyLength);
+	            			srcAddress += srcLineLength;
+	            			dstAddress += dstLineLength;
+	            		}
             		}
 
                     if (State.captureGeNextFrame) {
                         log.warn("TRXKICK outside of Ge Address space not supported in capture yet");
                     }
             	} else {
-                    log(helper.getCommandString(TRXKICK) + " in Ge Address space");
-
 	            	if (textureTx_pixelSize == TRXKICK_16BIT_TEXEL_SIZE) {
 	                    log.warn("Unsupported 16bit for video command [ " + helper.getCommandString(command(instruction)) + " ]");
 	            		break;
@@ -2990,6 +3069,14 @@ public class VideoEngine {
 	            	int dy = textureTx_dy;
 	            	int lineWidth = textureTx_sourceLineWidth;
 	            	int bpp = (textureTx_pixelSize == TRXKICK_16BIT_TEXEL_SIZE) ? 2 : 4;
+
+	            	int geAddr = display.getTopAddrGe();
+	            	dy +=  (textureTx_destinationAddress - geAddr) / (display.getBufferWidthGe() * bpp);
+	            	dx += ((textureTx_destinationAddress - geAddr) % (display.getBufferWidthGe() * bpp)) / bpp;
+
+            		if (log.isDebugEnabled()) {
+            			log(helper.getCommandString(TRXKICK) + " in Ge Address space: dx=" + dx + ", dy=" + dy + ", width=" + width + ", height=" + height);
+            		}
 
 	            	int[] textures = new int[1];
                 	gl.glGenTextures(1, textures, 0);
@@ -3334,7 +3421,12 @@ public class VideoEngine {
 	            	Memory mem = Memory.getInstance();
 	            	int nextCommand     = mem.read8(currentList.pc + 3);
 	            	int previousCommand = mem.read8(currentList.pc - 5);
-	            	if ((nextCommand != BOFS && previousCommand != PRIM) || normalArgument != 0) {
+	            	if (normalArgument != 0) {
+	            		// normalArgument != 0 means that we are executing some random
+	            		// command list. Display this as an error, which will abort
+	            		// the list processing when too many errors are displayed.
+	                    error("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "](int="+normalArgument+",float="+floatArgument+")");
+	            	} else if (nextCommand != BOFS && previousCommand != PRIM && previousCommand != UNKNOWNCOMMAND_0xFF) {
 	                    log.warn("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "](int="+normalArgument+",float="+floatArgument+")");
 	            	} else if (log.isDebugEnabled()) {
 	                    log.debug("Ignored video command [" + helper.getCommandString(command(instruction)) + "](int="+normalArgument+")");
@@ -3838,9 +3930,8 @@ public class VideoEngine {
 	                        }
 
 	                        default: {
-	                            VideoEngine.log.error("Unhandled clut4 texture mode " + tex_clut_mode);
-	                            Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
-	                            break;
+	                            error("Unhandled clut4 texture mode " + tex_clut_mode);
+	                            return;
 	                        }
 	                    }
 
@@ -3978,9 +4069,8 @@ public class VideoEngine {
                     }
 
                     default: {
-	                    VideoEngine.log.error("Unhandled texture storage " + texture_storage);
-	                    //Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
-	                    break;
+	                    error("Unhandled texture storage " + texture_storage);
+	                    return;
 	                }
 	            }
 
@@ -4241,8 +4331,7 @@ public class VideoEngine {
             }
 
             default: {
-                VideoEngine.log.error("Unhandled clut8 texture mode " + tex_clut_mode);
-                Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
+                error("Unhandled clut8 texture mode " + tex_clut_mode);
                 break;
             }
         }

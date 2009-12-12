@@ -33,7 +33,6 @@ import javax.media.opengl.GLAutoDrawable;
 import javax.media.opengl.GLCanvas;
 import javax.media.opengl.GLCapabilities;
 import javax.media.opengl.GLEventListener;
-import javax.media.opengl.glu.GLU;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
@@ -51,7 +50,8 @@ import com.sun.opengl.util.Screenshot;
  * @author shadow, aisesal
  */
 public final class pspdisplay extends GLCanvas implements GLEventListener {
-    private static pspdisplay instance;
+	private static final long serialVersionUID = 2267866365228834812L;
+	private static pspdisplay instance;
     public static pspdisplay getInstance() {
         if (instance == null) {
 
@@ -69,6 +69,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
     private static final boolean useGlReadPixels = true;
     private boolean onlyGEGraphics = false;
+    private static final boolean useDebugGL = false;
 
     // PspDisplayPixelFormats enum
     public static final int PSP_DISPLAY_PIXEL_FORMAT_565  = 0;
@@ -250,7 +251,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     }
 
     public void hleDisplaySetGeMode(int width, int height) {
-        if (width == 0 || height == 0) {
+        if (width <= 0 || height <= 0) {
             Modules.log.warn("hleDisplaySetGeMode(" + width + "," + height + ") bad params");
         } else {
             Modules.log.debug("hleDisplaySetGeMode(width=" + width + ",height=" + height + ")");
@@ -310,8 +311,11 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                     + "," + pixelformat + ")");
             }
 
+            boolean loadGEToScreen = false;
             if (copyGEToMemory && this.topaddrGe != topaddr) {
-            	VideoEngine.log.debug("Copy GE Screen to Memory");
+            	if (VideoEngine.log.isDebugEnabled()) {
+            		VideoEngine.log.debug(String.format("Copy GE Screen to Memory 0x%08X-0x%08X", topaddrGe, bottomaddrGe));
+            	}
 
             	// Set texFb as the current texture
                 gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
@@ -325,6 +329,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                 drawFrameBuffer(gl, true, true, widthGe, heightGe);
 
                 copyScreenToPixels(gl, pixelsGe, bufferwidthGe, pixelformatGe, widthGe, heightGe);
+                loadGEToScreen = true;
             }
 
             this.topaddrGe     = topaddr;
@@ -342,17 +347,44 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             // everytime, but we could be wasting time copying unnecessary pixels around.
             // For now use height but clamp it to the valid area (fiveofhearts)
             // update: I think we can get it from XSCALE/YSCALE GE command/sceGuViewport/hleDisplaySetGeMode
-            if (bottomaddrGe > MemoryMap.END_VRAM + 1) {
+            if (bottomaddrGe > MemoryMap.END_VRAM + 1 && !Memory.getInstance().isIgnoreInvalidMemoryAccess()) {
                 // We can probably remove this message since it's allowed on
                 // real PSP but it's interesting to see what games do it.
                 Modules.log.warn("clamping ge buf top=" + Integer.toHexString(topaddrGe)
                     + " bottom=" + Integer.toHexString(bottomaddrGe)
                     + " w=" + bufferwidthGe
                     + " bpp=" + (getPixelFormatBytes(pixelformatGe) * 8));
-                bottomaddrGe = MemoryMap.END_VRAM + 1;
+            	heightGe = (MemoryMap.END_VRAM + 1 - topaddrGe) / (bufferwidthGe * getPixelFormatBytes(pixelformatGe));
+                bottomaddrGe =
+                	topaddrGe + bufferwidthGe * heightGe *
+                    getPixelFormatBytes(pixelformatGe);
             }
 
             pixelsGe = getPixels(topaddrGe, bottomaddrGe);
+
+            if (loadGEToScreen) {
+            	if (VideoEngine.log.isDebugEnabled()) {
+            		VideoEngine.log.debug(String.format("Reloading GE Memory (0x%08X-0x%08X) to screen (%dx%d)", topaddrGe, bottomaddrGe, widthGe, heightGe));
+            	}
+
+            	// Set texFb as the current texture
+            	gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
+
+            	// Define the texture from the GE Memory
+	            int pixelFormatGL = getPixelFormatGL(pixelformatGe);
+				gl.glTexSubImage2D(
+	                GL.GL_TEXTURE_2D, 0,
+	                0, 0, bufferwidthGe, heightGe,
+	                getFormatGL(pixelformatGe),
+	                pixelFormatGL, pixelsGe);
+
+				// Draw the GE
+	            drawFrameBuffer(gl, false, true, widthGe, heightGe);
+
+	            if (State.captureGeNextFrame) {
+	            	captureGeImage(gl);
+	            }
+            }
         }
 
         setGeBufCalledAtLeastOnce = true;
@@ -560,7 +592,9 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     	// Not safe to use in release mode since people could have a few exceptions
     	// that remained silent when some operations fails but still output the
     	// intended result
-        //drawable.setGL(new DebugGL(drawable.getGL()));
+    	if (useDebugGL) {
+    		drawable.setGL(new DebugGL(drawable.getGL()));
+    	}
         final GL gl = drawable.getGL();
         VideoEngine.getInstance().setGL(gl); // Initialize shaders on startup
         gl.setSwapInterval(1);
@@ -719,7 +753,9 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             statistics.end();
         }
 
-        if(getscreen) savescreen(this.getInstance());
+        if (getscreen) {
+        	savescreen(this);
+        }
     }
 
     @Override
@@ -1046,6 +1082,14 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     public int getBufferWidthFb() { return bufferwidthFb; }
     public int getPixelFormatFb() { return pixelformatFb; }
     public int getSync() { return sync; }
+
+    public int getTopAddrGe() {
+    	return topaddrGe;
+    }
+
+    public int getBufferWidthGe() {
+    	return bufferwidthGe;
+    }
 
     public void captureGeImage(GL gl) {
     	// Create a GE texture (the texture texFb might not have the right size)
