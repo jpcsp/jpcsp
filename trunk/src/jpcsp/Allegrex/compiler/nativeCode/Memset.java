@@ -104,7 +104,7 @@ public class Memset extends AbstractNativeCodeSequence {
 				}
 			}
 		} else {
-			Compiler.log.error(String.format("Memset.call: unsupported cLength=", cLength));
+			Compiler.log.error("Memset.call: unsupported cLength=0x" + Integer.toHexString(cLength));
 		}
 
 		gpr[dstAddrReg] += n * cLength;
