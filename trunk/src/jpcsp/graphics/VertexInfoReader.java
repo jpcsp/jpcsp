@@ -22,7 +22,6 @@ import java.nio.IntBuffer;
 
 import javax.media.opengl.GL;
 
-import jpcsp.Emulator;
 import jpcsp.memory.BufferedMemoryReader;
 
 /**
@@ -492,8 +491,7 @@ public class VertexInfoReader {
 		@Override
 		public void read() {
 			// Raise error
-			VideoEngine.log.error("This vertex information is always native! " + vertexInfo.toString());
-			Emulator.PauseEmu();
+			VideoEngine.getInstance().error("This vertex information is always native! " + vertexInfo.toString());
 		}
 
 		@Override
@@ -548,8 +546,7 @@ public class VertexInfoReader {
 		@Override
 		public void read() {
 			// Raise error
-			VideoEngine.log.error(String.format("Unsupported Vertex Information %s for %s", comment, vertexInfo.toString()));
-			Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_UNIMPLEMENTED);
+			VideoEngine.getInstance().error(String.format("Unsupported Vertex Information %s for %s", comment, vertexInfo.toString()));
 		}
 	}
 
