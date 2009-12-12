@@ -299,8 +299,12 @@ public class SyscallHandler {
                 case 0x2074:
                     ThreadMan.getInstance().ThreadMan_sceKernelTerminateDeleteThread(gpr[4]);
                     break;
-		// sceKernelSuspendDispatchThread(0x2075),
-		 //sceKernelResumeDispatchThread(0x2076),
+                case 0x2075:
+                	ThreadMan.getInstance().ThreadMan_sceKernelSuspendDispatchThread();
+                	break;
+                case 0x2076:
+                	ThreadMan.getInstance().ThreadMan_sceKernelResumeDispatchThread(gpr[4]);
+                	break;
                 case 0x2077:
                     ThreadMan.getInstance().ThreadMan_sceKernelChangeCurrentThreadAttr(gpr[4], gpr[5]);
                     break;

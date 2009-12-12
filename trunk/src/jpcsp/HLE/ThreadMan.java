@@ -65,6 +65,10 @@ public class ThreadMan {
     private int syscallFreeCycles; // watch dog timer - number of cycles since last syscall
     public Statistics statistics;
 
+    private boolean dispatchThreadEnabled;
+    private static final int SCE_KERNEL_DISPATCHTHREAD_STATE_DISABLED = 0;
+    private static final int SCE_KERNEL_DISPATCHTHREAD_STATE_ENABLED = 1;
+
     // TODO figure out a decent number of cycles to wait
     private static final int WDT_THREAD_IDLE_CYCLES = 1000000;
     private static final int WDT_THREAD_HOG_CYCLES = (0x0A000000 - 0x08400000) * 3; // memset can take a while when you're using sb!
@@ -163,6 +167,7 @@ public class ThreadMan {
         current_thread.status = PSP_THREAD_RUNNING;
         current_thread.restoreContext();
         syscallFreeCycles = 0;
+        dispatchThreadEnabled = true;
     }
 
     private void install_idle_threads() {
@@ -382,6 +387,10 @@ public class ThreadMan {
 
     /** @param newthread The thread to switch in. */
     public void contextSwitch(SceKernelThreadInfo newthread) {
+    	if (!dispatchThreadEnabled) {
+            Modules.log.info("DispatchThread disabled, not context switching to " + newthread);
+    		return;
+    	}
 
         if (insideCallback) {
             Modules.log.warn("contextSwitch called from inside callback. caller:" + getCallingFunction());
@@ -659,6 +668,11 @@ public class ThreadMan {
      * deferred deletion list. */
     public void changeThreadState(SceKernelThreadInfo thread, int newStatus) {
         if (thread == null) {
+            return;
+        }
+
+        if (!dispatchThreadEnabled && thread == current_thread && newStatus != PSP_THREAD_RUNNING) {
+            Modules.log.info("DispatchThread disabled, not changing thread state of " + thread + " to " + newStatus);
             return;
         }
 
@@ -1590,6 +1604,40 @@ public class ThreadMan {
     		// Check if pending async IOs can be completed...
             pspiofilemgr.getInstance().onContextSwitch();
     	}
+    }
+
+    private int getDispatchThreadState() {
+    	return dispatchThreadEnabled ? SCE_KERNEL_DISPATCHTHREAD_STATE_ENABLED : SCE_KERNEL_DISPATCHTHREAD_STATE_DISABLED;
+    }
+    /**
+     * Suspend the dispatch thread
+     *
+     * @return The current state of the dispatch thread, < 0 on error
+     */
+    public void ThreadMan_sceKernelSuspendDispatchThread() {
+    	int state = getDispatchThreadState();
+    	if (Modules.log.isDebugEnabled()) {
+    		Modules.log.debug("sceKernelSuspendDispatchThread() state=" + state);
+    	}
+    	dispatchThreadEnabled = false;
+        Emulator.getProcessor().cpu.gpr[2] = state;
+    }
+
+    /**
+     * Resume the dispatch thread
+     *
+     * @param state - The state of the dispatch thread
+	 *                (from sceKernelSuspendDispatchThread)
+     * @return 0 on success, < 0 on error
+     */
+    public void ThreadMan_sceKernelResumeDispatchThread(int state) {
+    	if (Modules.log.isDebugEnabled()) {
+    		Modules.log.debug("sceKernelResumeDispatchThread(state=" + state + ")");
+    	}
+    	if (state == SCE_KERNEL_DISPATCHTHREAD_STATE_ENABLED) {
+    		dispatchThreadEnabled = true;
+    	}
+        Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
     /**
