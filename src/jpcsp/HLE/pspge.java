@@ -488,16 +488,19 @@ public class pspge {
     }
 
     private void triggerCallback(int cbid, int listId, int behavior, int callbackNotifyArg1, int callbackIndex, HashMap<Integer, SceKernelCallbackInfo> callbacks) {
+        ThreadMan threadMan = ThreadMan.getInstance();
+        HLECallback hleCallback = new HLESignalCallback(listId, behavior, callbackIndex);
         SceKernelCallbackInfo callback = callbacks.get(cbid);
         if (callback != null) {
             if (VideoEngine.log.isDebugEnabled()) {
                 VideoEngine.log.debug("Triggering callback " + callbackIndex + " (" + callback + "), addr=0x" + Integer.toHexString(callback.callback_addr) + ", cbid=" + Integer.toHexString(cbid) + ", callback notify arg=0x" + Integer.toHexString(callbackNotifyArg1));
             }
-            ThreadMan threadMan = ThreadMan.getInstance();
-            HLECallback hleCallback = new HLESignalCallback(listId, behavior, callbackIndex);
 
             // HACK push GE callback using Kernel callback code
             threadMan.pushGeCallback(callbackIndex, callback.uid, callbackNotifyArg1, callback.callback_arg_addr, hleCallback);
+        } else {
+        	// Execute at least the "onAfterCallback"
+        	hleCallback.execute(Emulator.getProcessor(), threadMan.getCurrentThread());
         }
     }
 
