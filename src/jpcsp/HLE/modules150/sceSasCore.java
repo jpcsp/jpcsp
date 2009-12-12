@@ -329,11 +329,8 @@ public class sceSasCore implements HLEModule {
     }
 
     public void __sceSasSetADSR(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
-
-        /* put your own code here instead */
 
         int sasCore = cpu.gpr[4];
         int voice = cpu.gpr[5];
@@ -347,9 +344,10 @@ public class sceSasCore implements HLEModule {
             + String.format("sasCore=%08x, voice=%d %08x %08x %08x %08x %08x",
             sasCore, voice, cpu.gpr[6], cpu.gpr[7], cpu.gpr[8], cpu.gpr[9], cpu.gpr[10]));
 
-        cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result >>> 32); cpu.fpr[0] = result;
+        if (isSasHandleGood(sasCore, "__sceSasSetADSR", cpu)) {
+            cpu.gpr[2] = 0;
+        }
+           // cpu.gpr[2] = 0xDEADC0DE;
     }
 
     public void __sceSasRevParam(Processor processor) {

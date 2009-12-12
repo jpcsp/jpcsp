@@ -156,6 +156,8 @@ public class VideoEngine {
     private int[] light_type = new int[NUM_LIGHTS];
     private int[] light_kind = new int[NUM_LIGHTS];
     private boolean lighting = false;
+    private float[][] lightAmbientColor = new float[NUM_LIGHTS][4];
+    private float[][] lightDiffuseColor = new float[NUM_LIGHTS][4];
     private float[][] lightSpecularColor = new float[NUM_LIGHTS][4];
     private static final float[] blackColor = new float[] { 0, 0, 0, 0 };
     private float[] spotLightExponent = new float[NUM_LIGHTS];
@@ -976,7 +978,7 @@ public class VideoEngine {
                 break;
 
             case SIGNAL:
-            	int behavior = (normalArgument >> 16);
+            	int behavior = (normalArgument >> 16) & 0xFF;
             	int signal = normalArgument & 0xFFFF;
             	if (log.isDebugEnabled()) {
                     log(helper.getCommandString(SIGNAL) + " (behavior=" + behavior + ",signal=0x" + Integer.toHexString(signal) + ")");
@@ -1089,269 +1091,115 @@ public class VideoEngine {
                 break;
 
             /*
-             *  Light 0 attributes
+             *  Light attributes
              */
 
             // Position
+
             case LXP0:
-            	light_pos[0][0] = floatArgument;
-            	break;
-            case LYP0:
-            	light_pos[0][1] = floatArgument;
-            	break;
-            case LZP0:
-            	light_pos[0][2] = floatArgument;
-            	break;
-
-            // Color
-            case ALC0: {
-            	float [] color = new float[4];
-
-
-            	color[0] = ((normalArgument      ) & 255) / 255.f;
-            	color[1] = ((normalArgument >>  8) & 255) / 255.f;
-            	color[2] = ((normalArgument >> 16) & 255) / 255.f;
-            	color[3] = 1.f;
-
-            	gl.glLightfv(GL.GL_LIGHT0, GL.GL_AMBIENT, color, 0);
-            	log("sceGuLightColor (GU_LIGHT0, GU_AMBIENT)");
+            case LXP1:
+            case LXP2:
+            case LXP3: {
+                int lnum = (command - LXP0) / 3;
+            	light_pos[lnum][0] = floatArgument;
             	break;
             }
 
-            case DLC0: {
-            	float [] color = new float[4];
+            case LYP0:
+            case LYP1:
+            case LYP2:
+            case LYP3: {
+                int lnum = (command - LYP0) / 3;
+            	light_pos[lnum][1] = floatArgument;
+            	break;
+            }
 
-            	color[0] = ((normalArgument      ) & 255) / 255.f;
-            	color[1] = ((normalArgument >>  8) & 255) / 255.f;
-            	color[2] = ((normalArgument >> 16) & 255) / 255.f;
-            	color[3] = 1.f;
+            case LZP0:
+            case LZP1:
+            case LZP2:
+            case LZP3: {
+                int lnum = (command - LZP0) / 3;
+            	light_pos[lnum][2] = floatArgument;
+            	break;
+            }
 
-            	gl.glLightfv(GL.GL_LIGHT0, GL.GL_DIFFUSE, color, 0);
+            // Color
+
+            // Ambient
+            case ALC0:
+            case ALC1:
+            case ALC2:
+            case ALC3: {
+                int lnum = (command - ALC0) / 3;
+            	lightAmbientColor[lnum][0] = ((normalArgument      ) & 255) / 255.f;
+            	lightAmbientColor[lnum][1] = ((normalArgument >>  8) & 255) / 255.f;
+            	lightAmbientColor[lnum][2] = ((normalArgument >> 16) & 255) / 255.f;
+            	lightAmbientColor[lnum][3] = 1.f;             
+            	gl.glLightfv(GL.GL_LIGHT0 + lnum, GL.GL_AMBIENT, lightAmbientColor[lnum], 0);
+            	log("sceGuLightColor (GU_LIGHT0, GU_AMBIENT)");
+            	break;
+            }
+            // Diffuse
+            case DLC0:
+            case DLC1:
+            case DLC2:
+            case DLC3: {
+                int lnum = (command - DLC0) / 3;
+            	lightDiffuseColor[lnum][0] = ((normalArgument      ) & 255) / 255.f;
+            	lightDiffuseColor[lnum][1] = ((normalArgument >>  8) & 255) / 255.f;
+            	lightDiffuseColor[lnum][2] = ((normalArgument >> 16) & 255) / 255.f;
+            	lightDiffuseColor[lnum][3] = 1.f;
+            	gl.glLightfv(GL.GL_LIGHT0 + lnum, GL.GL_DIFFUSE, lightDiffuseColor[lnum], 0);
             	log("sceGuLightColor (GU_LIGHT0, GU_DIFFUSE)");
             	break;
             }
 
-            case SLC0: {
-            	lightSpecularColor[0][0] = ((normalArgument      ) & 255) / 255.f;
-            	lightSpecularColor[0][1] = ((normalArgument >>  8) & 255) / 255.f;
-            	lightSpecularColor[0][2] = ((normalArgument >> 16) & 255) / 255.f;
-            	lightSpecularColor[0][3] = 1.f;
-
-            	gl.glLightfv(GL.GL_LIGHT0, GL.GL_SPECULAR, lightSpecularColor[0], 0);
+            // Specular
+            case SLC0:
+            case SLC1:
+            case SLC2:
+            case SLC3: {
+                int lnum = (command - SLC0) / 3;
+            	lightSpecularColor[lnum][0] = ((normalArgument      ) & 255) / 255.f;
+            	lightSpecularColor[lnum][1] = ((normalArgument >>  8) & 255) / 255.f;
+            	lightSpecularColor[lnum][2] = ((normalArgument >> 16) & 255) / 255.f;
+            	lightSpecularColor[lnum][3] = 1.f;
+            	gl.glLightfv(GL.GL_LIGHT0 + lnum, GL.GL_SPECULAR, lightSpecularColor[lnum], 0);
             	log("sceGuLightColor (GU_LIGHT0, GU_SPECULAR)");
             	break;
             }
 
-            // Attenuation
+            // Light Attenuation
+
+            // Constant
             case LCA0:
-            	gl.glLightf(GL.GL_LIGHT0, GL.GL_CONSTANT_ATTENUATION, floatArgument);
-            	break;
-
-            case LLA0:
-            	gl.glLightf(GL.GL_LIGHT0, GL.GL_LINEAR_ATTENUATION, floatArgument);
-            	break;
-
-            case LQA0:
-            	gl.glLightf(GL.GL_LIGHT0, GL.GL_QUADRATIC_ATTENUATION, floatArgument);
-            	break;
-
-        	/*
-             *  Light 1 attributes
-             */
-
-            // Position
-            case LXP1:
-            	light_pos[1][0] = floatArgument;
-            	break;
-            case LYP1:
-            	light_pos[1][1] = floatArgument;
-            	break;
-            case LZP1:
-            	light_pos[1][2] = floatArgument;
-            	break;
-
-            // Color
-            case ALC1: {
-            	float [] color = new float[4];
-
-            	color[0] = ((normalArgument      ) & 255) / 255.f;
-            	color[1] = ((normalArgument >>  8) & 255) / 255.f;
-            	color[2] = ((normalArgument >> 16) & 255) / 255.f;
-            	color[3] = 1.f;
-
-            	gl.glLightfv(GL.GL_LIGHT1, GL.GL_AMBIENT, color, 0);
-            	log("sceGuLightColor (GU_LIGHT1, GU_AMBIENT)");
-            	break;
-            }
-
-            case DLC1: {
-            	float [] color = new float[4];
-
-            	color[0] = ((normalArgument      ) & 255) / 255.f;
-            	color[1] = ((normalArgument >>  8) & 255) / 255.f;
-            	color[2] = ((normalArgument >> 16) & 255) / 255.f;
-            	color[3] = 1.f;
-
-            	gl.glLightfv(GL.GL_LIGHT1, GL.GL_DIFFUSE, color, 0);
-            	log("sceGuLightColor (GU_LIGHT1, GU_DIFFUSE)");
-            	break;
-            }
-
-            case SLC1: {
-            	lightSpecularColor[1][0] = ((normalArgument      ) & 255) / 255.f;
-            	lightSpecularColor[1][1] = ((normalArgument >>  8) & 255) / 255.f;
-            	lightSpecularColor[1][2] = ((normalArgument >> 16) & 255) / 255.f;
-            	lightSpecularColor[1][3] = 1.f;
-
-            	gl.glLightfv(GL.GL_LIGHT1, GL.GL_SPECULAR, lightSpecularColor[1], 0);
-            	log("sceGuLightColor (GU_LIGHT1, GU_SPECULAR)");
-            	break;
-            }
-
-            // Attenuation
             case LCA1:
-            	gl.glLightf(GL.GL_LIGHT1, GL.GL_CONSTANT_ATTENUATION, floatArgument);
-            	break;
-
-            case LLA1:
-            	gl.glLightf(GL.GL_LIGHT1, GL.GL_LINEAR_ATTENUATION, floatArgument);
-            	break;
-
-            case LQA1:
-            	gl.glLightf(GL.GL_LIGHT1, GL.GL_QUADRATIC_ATTENUATION, floatArgument);
-            	break;
-
-        	/*
-             *  Light 2 attributes
-             */
-
-            // Position
-            case LXP2:
-            	light_pos[2][0] = floatArgument;
-            	break;
-            case LYP2:
-            	light_pos[2][1] = floatArgument;
-            	break;
-            case LZP2:
-            	light_pos[2][2] = floatArgument;
-            	break;
-
-            // Color
-            case ALC2: {
-            	float [] color = new float[4];
-
-            	color[0] = ((normalArgument      ) & 255) / 255.f;
-            	color[1] = ((normalArgument >>  8) & 255) / 255.f;
-            	color[2] = ((normalArgument >> 16) & 255) / 255.f;
-            	color[3] = 1.f;
-
-            	gl.glLightfv(GL.GL_LIGHT2, GL.GL_AMBIENT, color, 0);
-            	log("sceGuLightColor (GU_LIGHT2, GU_AMBIENT)");
-            	break;
-            }
-
-            case DLC2: {
-            	float [] color = new float[4];
-
-            	color[0] = ((normalArgument      ) & 255) / 255.f;
-            	color[1] = ((normalArgument >>  8) & 255) / 255.f;
-            	color[2] = ((normalArgument >> 16) & 255) / 255.f;
-            	color[3] = 1.f;
-
-            	gl.glLightfv(GL.GL_LIGHT2, GL.GL_DIFFUSE, color, 0);
-            	log("sceGuLightColor (GU_LIGHT2, GU_DIFFUSE)");
-            	break;
-            }
-
-            case SLC2: {
-            	lightSpecularColor[2][0] = ((normalArgument      ) & 255) / 255.f;
-            	lightSpecularColor[2][1] = ((normalArgument >>  8) & 255) / 255.f;
-            	lightSpecularColor[2][2] = ((normalArgument >> 16) & 255) / 255.f;
-            	lightSpecularColor[2][3] = 1.f;
-
-            	gl.glLightfv(GL.GL_LIGHT2, GL.GL_SPECULAR, lightSpecularColor[2], 0);
-            	log("sceGuLightColor (GU_LIGHT2, GU_SPECULAR)");
-            	break;
-            }
-
-            // Attenuation
             case LCA2:
-            	gl.glLightf(GL.GL_LIGHT2, GL.GL_CONSTANT_ATTENUATION, floatArgument);
+            case LCA3: {
+                int lnum = (command - LCA0) / 3;
+            	gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_CONSTANT_ATTENUATION, floatArgument);
             	break;
+            }
 
+            // Linear
+            case LLA0:
+            case LLA1:
             case LLA2:
-            	gl.glLightf(GL.GL_LIGHT2, GL.GL_LINEAR_ATTENUATION, floatArgument);
+            case LLA3: {
+                int lnum = (command - LLA0) / 3;
+            	gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_LINEAR_ATTENUATION, floatArgument);
             	break;
+            }
 
+            // Quadratic
+            case LQA0:
+            case LQA1:
             case LQA2:
-            	gl.glLightf(GL.GL_LIGHT2, GL.GL_QUADRATIC_ATTENUATION, floatArgument);
-            	break;
-
-        	/*
-             *  Light 3 attributes
-             */
-
-            // Position
-            case LXP3:
-            	light_pos[3][0] = floatArgument;
-            	break;
-            case LYP3:
-            	light_pos[3][1] = floatArgument;
-            	break;
-            case LZP3:
-            	light_pos[3][2] = floatArgument;
-            	break;
-
-            // Color
-            case ALC3: {
-            	float [] color = new float[4];
-
-            	color[0] = ((normalArgument      ) & 255) / 255.f;
-            	color[1] = ((normalArgument >>  8) & 255) / 255.f;
-            	color[2] = ((normalArgument >> 16) & 255) / 255.f;
-            	color[3] = 1.f;
-
-            	gl.glLightfv(GL.GL_LIGHT3, GL.GL_AMBIENT, color, 0);
-            	log("sceGuLightColor (GU_LIGHT3, GU_AMBIENT)");
+            case LQA3: {
+                int lnum = (command - LQA0) / 3;
+            	gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_QUADRATIC_ATTENUATION, floatArgument);
             	break;
             }
-
-            case DLC3: {
-            	float [] color = new float[4];
-
-            	color[0] = ((normalArgument      ) & 255) / 255.f;
-            	color[1] = ((normalArgument >>  8) & 255) / 255.f;
-            	color[2] = ((normalArgument >> 16) & 255) / 255.f;
-            	color[3] = 1.f;
-
-            	gl.glLightfv(GL.GL_LIGHT3, GL.GL_DIFFUSE, color, 0);
-            	log("sceGuLightColor (GU_LIGHT3, GU_DIFFUSE)");
-            	break;
-            }
-
-            case SLC3: {
-            	lightSpecularColor[3][0] = ((normalArgument      ) & 255) / 255.f;
-            	lightSpecularColor[3][1] = ((normalArgument >>  8) & 255) / 255.f;
-            	lightSpecularColor[3][2] = ((normalArgument >> 16) & 255) / 255.f;
-            	lightSpecularColor[3][3] = 1.f;
-
-            	gl.glLightfv(GL.GL_LIGHT3, GL.GL_SPECULAR, lightSpecularColor[3], 0);
-            	log("sceGuLightColor (GU_LIGHT3, GU_SPECULAR)");
-            	break;
-            }
-
-            // Attenuation
-            case LCA3:
-            	gl.glLightf(GL.GL_LIGHT3, GL.GL_CONSTANT_ATTENUATION, floatArgument);
-            	break;
-
-            case LLA3:
-            	gl.glLightf(GL.GL_LIGHT3, GL.GL_LINEAR_ATTENUATION, floatArgument);
-            	break;
-
-            case LQA3:
-            	gl.glLightf(GL.GL_LIGHT3, GL.GL_QUADRATIC_ATTENUATION, floatArgument);
-            	break;
 
             case LMODE: {
                 int lightmode = (normalArgument != 0) ? GL.GL_SEPARATE_SPECULAR_COLOR : GL.GL_SINGLE_COLOR;
@@ -4500,7 +4348,6 @@ public class VideoEngine {
             gl.glMaterialfv(GL.GL_FRONT, GL.GL_AMBIENT, mat_ambient, 0);
             gl.glMaterialfv(GL.GL_FRONT, GL.GL_DIFFUSE, mat_diffuse, 0);
             gl.glMaterialfv(GL.GL_FRONT, GL.GL_SPECULAR, mat_specular, 0);
-            gl.glColor4fv(mat_ambient, 0);
             if(useShaders) {
             	int[] bvec = new int[4];
             	bvec[0] = 0;
