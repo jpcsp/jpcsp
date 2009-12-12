@@ -408,7 +408,6 @@ public class ThreadMan {
         if (newthread != null) {
             // Switch in new thread
             changeThreadState(newthread, PSP_THREAD_RUNNING);
-            newthread.wakeupCount++; // check
             // restore registers
             newthread.restoreContext();
 
@@ -993,20 +992,26 @@ public class ThreadMan {
     }
 
     private void hleKernelSleepThread(boolean do_callbacks) {
-        // Go to wait state
-        // callbacks
-        current_thread.do_callbacks = do_callbacks;
+    	if (current_thread.wakeupCount > 0) {
+    		// sceKernelWakeupThread() has been called before, do not sleep
+    		current_thread.wakeupCount--;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
+    	} else {
+	        // Go to wait state
+	        // callbacks
+	        current_thread.do_callbacks = do_callbacks;
 
-        // wait type
-        current_thread.waitType = PSP_WAIT_SLEEP;
+	        // wait type
+	        current_thread.waitType = PSP_WAIT_SLEEP;
 
-        // Wait forever (another thread will call sceKernelWakeupThread)
-        hleKernelThreadWait(current_thread.wait, 0, true);
+	        // Wait forever (another thread will call sceKernelWakeupThread)
+	        hleKernelThreadWait(current_thread.wait, 0, true);
 
-        changeThreadState(current_thread, PSP_THREAD_WAITING);
+	        changeThreadState(current_thread, PSP_THREAD_WAITING);
 
-        Emulator.getProcessor().cpu.gpr[2] = 0;
-        yieldCurrentThread(); // should be contextSwitch(nextThread()) but we get more logging this way
+	        Emulator.getProcessor().cpu.gpr[2] = 0;
+	        yieldCurrentThread(); // should be contextSwitch(nextThread()) but we get more logging this way
+    	}
     }
 
     /** sleep the current thread (using wait) */
@@ -1032,8 +1037,9 @@ public class ThreadMan {
             Modules.log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " unknown thread");
             Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
         } else if (thread.status != PSP_THREAD_WAITING) {
-            Modules.log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "' not sleeping/waiting (status=0x" + Integer.toHexString(thread.status) + ")");
-            Emulator.getProcessor().cpu.gpr[2] = 0; // ERROR_THREAD_IS_NOT_WAIT;
+            Modules.log.debug("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "' not sleeping/waiting (status=0x" + Integer.toHexString(thread.status) + "), incrementing wakeupCount");
+            thread.wakeupCount++;
+            Emulator.getProcessor().cpu.gpr[2] = 0;
         } else if (isBannedThread(thread)) {
             Modules.log.warn("sceKernelWakeupThread SceUID=" + Integer.toHexString(uid) + " name:'" + thread.name + "' banned, not waking up");
             Emulator.getProcessor().cpu.gpr[2] = 0;
@@ -1662,7 +1668,7 @@ public class ThreadMan {
     }
 
     public boolean isInsideCallback() {
-        return insideCallback;
+        return insideCallback || current_thread.insideCallback;
     }
 
     /** New style callback mechanism
