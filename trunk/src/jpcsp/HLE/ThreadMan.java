@@ -1716,7 +1716,7 @@ public class ThreadMan {
     }
 
     public boolean isInsideCallback() {
-        return insideCallback || current_thread.insideCallback;
+        return insideCallback || (current_thread != null && current_thread.insideCallback);
     }
 
     /** New style callback mechanism
