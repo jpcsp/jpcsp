@@ -34,6 +34,7 @@ public class Managers {
     public static MsgPipeManager msgPipes;
     public static ModuleManager modules;
     public static SystemTimeManager systime;
+    public static MbxManager mbx;
 
     /** call this when resetting the emulator */
     public static void reset() {
@@ -46,6 +47,7 @@ public class Managers {
         msgPipes.reset();
         modules.reset();
         systime.reset();
+        mbx.reset();
     }
 
     static {
@@ -60,5 +62,6 @@ public class Managers {
         msgPipes = MsgPipeManager.singleton;
         modules = ModuleManager.singleton;
         systime = SystemTimeManager.singleton;
+        mbx = MbxManager.singleton;
     }
 }

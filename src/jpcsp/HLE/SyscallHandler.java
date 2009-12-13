@@ -156,7 +156,9 @@ public class SyscallHandler {
 		// sceKernelSendMbx(0x2033),
 		// sceKernelReceiveMbx(0x2034),
 		// sceKernelReceiveMbxCB(0x2035),
-		// sceKernelPollMbx(0x2036),
+                case 0x2036:
+                	Managers.mbx.sceKernelPollMbx(gpr[4], gpr[5]);
+                	break;
 		// sceKernelCancelReceiveMbx(0x2037),
 		// sceKernelReferMbxStatus(0x2038),
                 case 0x2039:
