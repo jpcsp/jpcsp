@@ -58,6 +58,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             // We need to ask for stencil buffer
             GLCapabilities capabilities = new GLCapabilities();
             capabilities.setStencilBits(8);
+            capabilities.setAlphaBits(8);
 
             // Along with swapBuffers() seems to have no effect
             //capabilities.setDoubleBuffered(true);
@@ -70,6 +71,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     private static final boolean useGlReadPixels = true;
     private boolean onlyGEGraphics = false;
     private static final boolean useDebugGL = false;
+    private static final int internalTextureFormat = GL.GL_RGBA;
 
     // PspDisplayPixelFormats enum
     public static final int PSP_DISPLAY_PIXEL_FORMAT_565  = 0;
@@ -622,32 +624,26 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
             //
             // The format of the frame (or GE) buffer is
-            //   S the stencil value (and not the Alpha color component)
+            //   A the alpha & stencil value
             //   R the Red color component
             //   G the Green color component
             //   B the Blue color component
             //
-            // GU_PSM_8888 : 0xSSBBGGRR
-            // GU_PSM_4444 : 0xSBGR
-            // GU_PSM_5551 : SBBBBBGGGGGRRRRR
+            // GU_PSM_8888 : 0xAABBGGRR
+            // GU_PSM_4444 : 0xABGR
+            // GU_PSM_5551 : ABBBBBGGGGGRRRRR
             // GU_PSM_5650 : BBBBBGGGGGGRRRRR
-            //
-            // We only store the RGB values in the texture: internalFormat is GL_RGB.
             //
             gl.glTexImage2D(
                 GL.GL_TEXTURE_2D, 0,
-                GL.GL_RGB,
+                internalTextureFormat,
                 bufferwidthFb, Utilities.makePow2(height), 0,
                 getFormatGL(pixelformatFb),
                 getPixelFormatGL(pixelformatFb), null);
-            gl.glTexParameteri(
-                GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
-            gl.glTexParameteri(
-                GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
-            gl.glTexParameteri(
-                GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP);
-            gl.glTexParameteri(
-                GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP);
+            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
+            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
+            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP);
+            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP);
 
             if (Memory.getInstance().getMainMemoryByteBuffer() instanceof IntBuffer) {
             	temp = IntBuffer.allocate(
@@ -1103,7 +1099,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         gl.glBindTexture(GL.GL_TEXTURE_2D, texGe);
         gl.glTexImage2D(
             GL.GL_TEXTURE_2D, 0,
-            GL.GL_RGB,
+            internalTextureFormat,
             bufferwidthGe, Utilities.makePow2(heightGe), 0,
             formatGL,
             pixelFormatGL, null);
