@@ -29,8 +29,11 @@ public class PspGeList
 
     public int base;
     public int pc;
-    public int[] stack = new int[32];
-    public int stackIndex;
+
+    // a stack entry contains the PC and the baseOffset
+    private int[] stack = new int[32*2];
+    private int stackIndex;
+
     public int currentStatus;
     public int syncStatus;
     public int id;
@@ -64,6 +67,7 @@ public class PspGeList
         currentStatus = (pc == stall_addr) ? PSP_GE_LIST_STALL_REACHED : PSP_GE_LIST_QUEUED;
         syncStatus = currentStatus;
         baseOffset = 0;
+        stackIndex = 0;
     }
 
     public void pushSignalCallback(int listId, int behavior, int signal) {
@@ -72,5 +76,38 @@ public class PspGeList
 
     public void pushFinishCallback(int arg) {
         pspge.getInstance().triggerFinishCallback(cbid, arg);
+    }
+
+    private void pushStack(int value) {
+    	stack[stackIndex++] = value;
+    }
+
+    private int popStack() {
+    	return stack[--stackIndex];
+    }
+
+    public int getAddress(int argument) {
+    	return (base | argument) + baseOffset;
+    }
+
+    public boolean isStackEmpty() {
+    	return stackIndex <= 0;
+    }
+
+    public void jump(int argument) {
+    	pc = getAddress(argument) & 0xFFFFFFFC;
+    }
+
+    public void call(int argument) {
+    	pushStack(pc);
+    	pushStack(baseOffset);
+    	jump(argument);
+    }
+
+    public void ret() {
+    	if (!isStackEmpty()) {
+    		baseOffset = popStack();
+    		pc = popStack();
+    	}
     }
 }
