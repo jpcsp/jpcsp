@@ -1234,7 +1234,17 @@ public class sceMpeg implements HLEModule {
     }
 
     private int getSizeFromPackets(int packets) {
-    	return (packets * 104) + (packets * 2048);
+    	int size = (packets * 104) + (packets * 2048);
+
+    	// for now remove the cap, some games check if sceMpegRingbufferAvailableSize is the requested size
+        if (!enableMpeg) {
+            // we use a 2mb cap, not sure if there is actually a cap or how big it is
+            if (size > 0x200000) {
+                size = 0x200000;
+            }
+        }
+
+    	return size;
     }
 
     public void sceMpegRingbufferQueryMemSize(Processor processor) {
@@ -1245,13 +1255,6 @@ public class sceMpeg implements HLEModule {
 
         int size = getSizeFromPackets(packets);
         Modules.log.debug("sceMpegRingbufferQueryMemSize packets=" + packets + ", size=0x" + Integer.toHexString(size));
-
-        // for now remove the cap, some games check if sceMpegRingbufferAvailableSize is the requested size
-        if (!enableMpeg) {
-            // we use a 2mb cap, not sure if there is actually a cap or how big it is
-            if (size > 0x200000)
-                size = 0x200000;
-        }
 
         cpu.gpr[2] = size;
     }
