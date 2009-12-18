@@ -32,8 +32,8 @@ import jpcsp.Controller.keyCode;
  * @author  shadow
  */
 public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
-
-    private boolean getKey = false;
+	private static final long serialVersionUID = -732715495873159718L;
+	private boolean getKey = false;
     private JTextField sender;
     private keyCode targetKey;
     private HashMap<Integer, keyCode> currentKeys;
@@ -76,6 +76,9 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
 
         enabled = Settings.getInstance().readBool("emu.onlyGEGraphics");
         onlyGEGraphicsCheck.setSelected(enabled);
+
+        enabled = Settings.getInstance().readBool("emu.useViewport");
+        useViewportCheck.setSelected(enabled);
 
         enabled = Settings.getInstance().readBool("emu.enableMpeg");
         enableMpegCheck.setSelected(enabled);
@@ -267,6 +270,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         disableGECheck = new javax.swing.JCheckBox();
         disableVBOCheck = new javax.swing.JCheckBox();
         onlyGEGraphicsCheck = new javax.swing.JCheckBox();
+        useViewportCheck = new javax.swing.JCheckBox();
         enableMpegCheck = new javax.swing.JCheckBox();
         jPanel3 = new javax.swing.JPanel();
         invalidMemoryCheck = new javax.swing.JCheckBox();
@@ -462,6 +466,8 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
 
         onlyGEGraphicsCheck.setText("Only GE graphics (not recommended for homebrew)");
 
+        useViewportCheck.setText("Use Viewport (can improve graphics)");
+
         enableMpegCheck.setText("Enable faked MPEG Video");
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
@@ -473,6 +479,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                     .addComponent(disableGECheck)
                     .addComponent(disableVBOCheck)
                     .addComponent(onlyGEGraphicsCheck)
+                    .addComponent(useViewportCheck)
                     .addComponent(enableMpegCheck))
                 .addContainerGap())
         );
@@ -484,6 +491,8 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                 .addComponent(disableVBOCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(onlyGEGraphicsCheck)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(useViewportCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(enableMpegCheck)
                 .addContainerGap(42, Short.MAX_VALUE))
@@ -1018,6 +1027,7 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
    Settings.getInstance().writeBool("emu.disablege", disableGECheck.isSelected());
    Settings.getInstance().writeBool("emu.disablevbo", disableVBOCheck.isSelected());
    Settings.getInstance().writeBool("emu.onlyGEGraphics", onlyGEGraphicsCheck.isSelected());
+   Settings.getInstance().writeBool("emu.useViewport", useViewportCheck.isSelected());
    Settings.getInstance().writeBool("emu.enableMpeg",enableMpegCheck.isSelected());
    Settings.getInstance().writeBool("emu.ignoreInvalidMemoryAccess", invalidMemoryCheck.isSelected());
    Settings.getInstance().writeBool("emu.disablereservedthreadmemory", disableReservedThreadMemoryCheck.isSelected());
@@ -1189,6 +1199,7 @@ private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JPanel keyPanel;
     private javax.swing.JCheckBox onlyGEGraphicsCheck;
+    private javax.swing.JCheckBox useViewportCheck;
     private javax.swing.JCheckBox openLogwindowCheck;
     private javax.swing.JCheckBox pbpunpackcheck;
     private javax.swing.JCheckBox saveWindowPosCheck;
