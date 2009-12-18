@@ -24,6 +24,7 @@ public class MemoryStick {
 
     // available size on memory stick, in bytes.
     private static long freeSize = 1 * 1024 * 1024 * 1024;	// 1GB
+    private static int sectorSize = 32 * 1024; // 32KB
 
 	public static int getState() {
 		return state;
@@ -37,7 +38,33 @@ public class MemoryStick {
 		return freeSize;
 	}
 
+	public static int getFreeSizeKb() {
+		return (int) (getFreeSize() / 1024);
+	}
+
 	public static void setFreeSize(long freeSize) {
 		MemoryStick.freeSize = freeSize;
+	}
+
+	public static int getSectorSize() {
+		return sectorSize;
+	}
+
+	public static int getSectorSizeKb() {
+		return getSectorSize() / 1024;
+	}
+
+	public static String getSizeKbString(int sizeKb) {
+		if (sizeKb < 1024) {
+			return String.format("%d KB", sizeKb);
+		} else {
+			sizeKb /= 1024;
+			if (sizeKb < 1024) {
+				return String.format("%d MB", sizeKb);
+			} else {
+				sizeKb /= 1024;
+				return String.format("%d GB", sizeKb);
+			}
+		}
 	}
 }
