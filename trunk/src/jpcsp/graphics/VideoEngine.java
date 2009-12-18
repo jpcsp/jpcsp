@@ -58,7 +58,6 @@ import org.apache.log4j.Logger;
 import com.sun.opengl.util.BufferUtil;
 
 public class VideoEngine {
-	private static final boolean useViewport = false;
     public static final int NUM_LIGHTS = 4;
     private final int[] prim_mapping = new int[] { GL.GL_POINTS, GL.GL_LINES, GL.GL_LINE_STRIP, GL.GL_TRIANGLES, GL.GL_TRIANGLE_STRIP, GL.GL_TRIANGLE_FAN, GL.GL_QUADS };
 
@@ -117,6 +116,7 @@ public class VideoEngine {
     private boolean openGL1_5;
     private int errorCount;
     private static final int maxErrorCount = 5; // Abort list processing when detecting more errors
+	private boolean useViewport = false;
 
     private int fbp, fbw; // frame buffer pointer and width
     private int zbp, zbw; // depth buffer pointer and width
@@ -1964,6 +1964,11 @@ public class VideoEngine {
                 if (!mem.isAddressGood(vinfo.ptr_vertex)) {
                 	// Abort here to avoid a lot of useless memory read errors...
                 	error(helper.getCommandString(PRIM) + " Invalid vertex address 0x" + Integer.toHexString(vinfo.ptr_vertex));
+                	break;
+                }
+
+                if (type >= prim_mapping.length) {
+                    error(helper.getCommandString(PRIM) + " Type unhandled " + type);
                 	break;
                 }
 
@@ -4900,4 +4905,13 @@ public class VideoEngine {
 
         context.copyContextToGL(gl);
     }
+
+	public boolean isUseViewport() {
+		return useViewport;
+	}
+
+	public void setUseViewport(boolean useViewport) {
+		this.useViewport = useViewport;
+        log.info("Use Viewport: " + useViewport);
+	}
 }

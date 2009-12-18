@@ -906,6 +906,9 @@ private void installCompatibilitySettings()
     boolean onlyGEGraphics = Settings.getInstance().readBool("emu.onlyGEGraphics");
     pspdisplay.getInstance().setOnlyGEGraphics(onlyGEGraphics);
 
+    boolean useViewport = Settings.getInstance().readBool("emu.useViewport");
+    VideoEngine.getInstance().setUseViewport(useViewport);
+
     boolean enableMpeg = Settings.getInstance().readBool("emu.enableMpeg");
     sceMpeg.setEnableMpeg(enableMpeg);
 
@@ -966,6 +969,10 @@ public boolean installCompatibilityPatches(String filename)
         String onlyGEGraphics = patchSettings.getProperty("emu.onlyGEGraphics");
         if (onlyGEGraphics != null)
             pspdisplay.getInstance().setOnlyGEGraphics(Integer.parseInt(onlyGEGraphics) != 0);
+
+        String useViewport = patchSettings.getProperty("emu.useViewport");
+        if (useViewport != null)
+            VideoEngine.getInstance().setUseViewport(Integer.parseInt(useViewport) != 0);
 
         String enableMpeg = patchSettings.getProperty("emu.enableMpeg");
         if (enableMpeg != null)
