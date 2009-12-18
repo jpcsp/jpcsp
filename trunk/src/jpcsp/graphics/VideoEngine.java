@@ -578,14 +578,14 @@ public class VideoEngine {
     private boolean tryToFallback() {
     	boolean abort = false;
 
-    	if (currentList.stackIndex > 0) {
+    	if (!currentList.isStackEmpty()) {
     		// When have some CALLs on the stack, try to return from the last CALL
-            int npc = currentList.stack[--currentList.stackIndex];
+    		int oldPc = currentList.pc;
+    		currentList.ret();
+    		int newPc = currentList.pc;
             if (log.isDebugEnabled()) {
-                log(helper.getCommandString(NOP) + " old PC:" + String.format("%08x", currentList.pc)
-                        + " new PC:" + String.format("%08x", npc));
+                log(String.format("tryToFallback old PC: 0x%08X, new PC: 0x%08X", oldPc, newPc));
             }
-            currentList.pc = npc;
     	} else {
     		// Finish this list
     		currentList.listHasFinished = true;
@@ -1012,14 +1012,14 @@ public class VideoEngine {
             	break;
 
             case IADDR:
-                vinfo.ptr_index = (currentList.base | normalArgument) + currentList.baseOffset;
+                vinfo.ptr_index = currentList.getAddress(normalArgument);
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(IADDR) + " " + String.format("%08x", vinfo.ptr_index));
                 }
                 break;
 
             case VADDR:
-                vinfo.ptr_vertex = (currentList.base | normalArgument) + currentList.baseOffset;
+                vinfo.ptr_vertex = currentList.getAddress(normalArgument);
                 if (log.isDebugEnabled()) {
                     log(helper.getCommandString(VADDR) + " " + String.format("%08x", vinfo.ptr_vertex));
                 }
@@ -2426,36 +2426,31 @@ public class VideoEngine {
 	                }
             	}
                 break;
-            case JUMP:
-            {
-                int npc = ((currentList.base | normalArgument) & 0xFFFFFFFC) + currentList.baseOffset;
-                //I guess it must be unsign as psp player emulator
+            case JUMP: {
+            	int oldPc = currentList.pc;
+            	currentList.jump(normalArgument);
+            	int newPc = currentList.pc;
                 if (log.isDebugEnabled()) {
-                    log(helper.getCommandString(JUMP) + " old PC:" + String.format("%08x", currentList.pc)
-                            + " new PC:" + String.format("%08x", npc));
+                    log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(JUMP), oldPc, newPc));
                 }
-                currentList.pc = npc;
                 break;
             }
-            case CALL:
-            {
-                currentList.stack[currentList.stackIndex++] = currentList.pc;
-                int npc = ((currentList.base | normalArgument) & 0xFFFFFFFC) + currentList.baseOffset;
+            case CALL: {
+            	int oldPc = currentList.pc;
+            	currentList.call(normalArgument);
+            	int newPc = currentList.pc;
                 if (log.isDebugEnabled()) {
-                    log(helper.getCommandString(CALL) + " old PC:" + String.format("%08x", currentList.pc)
-                            + " new PC:" + String.format("%08x", npc));
+                    log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(CALL), oldPc, newPc));
                 }
-                currentList.pc = npc;
                 break;
             }
-            case RET:
-            {
-                int npc = currentList.stack[--currentList.stackIndex];
+            case RET: {
+            	int oldPc = currentList.pc;
+            	currentList.ret();
+            	int newPc = currentList.pc;
                 if (log.isDebugEnabled()) {
-                    log(helper.getCommandString(RET) + " old PC:" + String.format("%08x", currentList.pc)
-                            + " new PC:" + String.format("%08x", npc));
+                    log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(RET), oldPc, newPc));
                 }
-                currentList.pc = npc;
                 break;
             }
 
@@ -3223,12 +3218,12 @@ public class VideoEngine {
             }
             case BJUMP: {
             	if (takeConditionalJump) {
-	                int npc = ((currentList.base | normalArgument) & 0xFFFFFFFC) + currentList.baseOffset;
-	                if (log.isDebugEnabled()) {
-	                    log(helper.getCommandString(BJUMP) + " old PC:" + String.format("%08x", currentList.pc)
-	                            + " new PC:" + String.format("%08x", npc));
-	                }
-	                currentList.pc = npc;
+                	int oldPc = currentList.pc;
+                	currentList.jump(normalArgument);
+                	int newPc = currentList.pc;
+                    if (log.isDebugEnabled()) {
+                        log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(BJUMP), oldPc, newPc));
+                    }
             	} else {
 	                if (log.isDebugEnabled()) {
 	                    log(helper.getCommandString(BJUMP) + " not taking Conditional Jump");
