@@ -31,6 +31,7 @@ import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.pspiofilemgr;
+import jpcsp.hardware.MemoryStick;
 import jpcsp.util.Utilities;
 
 import jpcsp.Emulator;
@@ -186,8 +187,6 @@ public class sceUtility implements HLEModule {
 
     protected int savedata_status;
     protected int savedata_mode; //hacky should be done better
-    public static final int memoryStickSectorSizeKb = 32;
-    public static final int memoryStickFreeSpaceKb = 1024;  // 1MB free
 
     protected int msgdialog_status;
     protected SceUtilityMsgDialogParams msgdialog_params;
@@ -408,9 +407,10 @@ public class sceUtility implements HLEModule {
 
 	private int computeMemoryStickRequiredSpaceKb(int sizeByte) {
 	    int sizeKb = (sizeByte + 1023) / 1024;
-	    int sizeSector = (sizeKb + memoryStickSectorSizeKb - 1) / memoryStickSectorSizeKb;
+	    int sectorSizeKb = MemoryStick.getSectorSizeKb();
+	    int numberSectors = (sizeKb + sectorSizeKb - 1) / sectorSizeKb;
 
-	    return sizeSector * memoryStickSectorSizeKb;
+	    return numberSectors * sectorSizeKb;
 	}
 
 	public void sceUtilitySavedataInitStart(Processor processor) {
@@ -507,33 +507,33 @@ public class sceUtility implements HLEModule {
                 }
                 int buffer1Addr = sceUtilitySavedataParam.buffer1Addr;
                 if (mem.isAddressGood(buffer1Addr)) {
-                    String memoryStickFreeSpaceKbString = String.format("%d KB", memoryStickFreeSpaceKb);
+                    String memoryStickFreeSpaceString = MemoryStick.getSizeKbString(MemoryStick.getFreeSizeKb());
 
-                    mem.write32(buffer1Addr +  0, memoryStickSectorSizeKb * 1024);
-                    mem.write32(buffer1Addr +  4, memoryStickFreeSpaceKb / memoryStickSectorSizeKb);
-                    mem.write32(buffer1Addr +  8, memoryStickFreeSpaceKb);
-                    Utilities.writeStringNZ(mem, buffer1Addr +  12, 8, memoryStickFreeSpaceKbString);
+                    mem.write32(buffer1Addr +  0, MemoryStick.getSectorSize());
+                    mem.write32(buffer1Addr +  4, MemoryStick.getFreeSizeKb() / MemoryStick.getSectorSizeKb());
+                    mem.write32(buffer1Addr +  8, MemoryStick.getFreeSizeKb());
+                    Utilities.writeStringNZ(mem, buffer1Addr +  12, 8, memoryStickFreeSpaceString);
 
-                    Modules.log.debug("Memory Stick Free Space = " + memoryStickFreeSpaceKbString);
+                    Modules.log.debug("Memory Stick Free Space = " + memoryStickFreeSpaceString);
                 }
                 int buffer3Addr = sceUtilitySavedataParam.buffer3Addr;
                 if (mem.isAddressGood(buffer3Addr)) {
                     int memoryStickRequiredSpaceKb = 0;
-                    memoryStickRequiredSpaceKb += memoryStickSectorSizeKb; // Assume 1 sector for SFO-Params
+                    memoryStickRequiredSpaceKb += MemoryStick.getSectorSizeKb(); // Assume 1 sector for SFO-Params
                     memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(sceUtilitySavedataParam.dataSize);
-                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(sceUtilitySavedataParam.icon0FileData.bufSize);
-                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(sceUtilitySavedataParam.icon1FileData.bufSize);
-                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(sceUtilitySavedataParam.pic1FileData.bufSize);
-                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(sceUtilitySavedataParam.snd0FileData.bufSize);
-                    String memoryStickRequiredSpaceKbString = String.format("%d KB", memoryStickRequiredSpaceKb);
+                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(sceUtilitySavedataParam.icon0FileData.size);
+                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(sceUtilitySavedataParam.icon1FileData.size);
+                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(sceUtilitySavedataParam.pic1FileData.size);
+                    memoryStickRequiredSpaceKb += computeMemoryStickRequiredSpaceKb(sceUtilitySavedataParam.snd0FileData.size);
+                    String memoryStickRequiredSpaceString = MemoryStick.getSizeKbString(memoryStickRequiredSpaceKb);
 
-                    mem.write32(buffer3Addr +  0, memoryStickRequiredSpaceKb / memoryStickSectorSizeKb);
+                    mem.write32(buffer3Addr +  0, memoryStickRequiredSpaceKb / MemoryStick.getSectorSizeKb());
                     mem.write32(buffer3Addr +  4, memoryStickRequiredSpaceKb);
-                    Utilities.writeStringNZ(mem, buffer3Addr +  8, 8, memoryStickRequiredSpaceKbString);
+                    Utilities.writeStringNZ(mem, buffer3Addr +  8, 8, memoryStickRequiredSpaceString);
                     mem.write32(buffer3Addr + 16, memoryStickRequiredSpaceKb);
-                    Utilities.writeStringNZ(mem, buffer3Addr + 20, 8, memoryStickRequiredSpaceKbString);
+                    Utilities.writeStringNZ(mem, buffer3Addr + 20, 8, memoryStickRequiredSpaceString);
 
-                    Modules.log.debug("Memory Stick Required Space = " + memoryStickRequiredSpaceKbString);
+                    Modules.log.debug("Memory Stick Required Space = " + memoryStickRequiredSpaceString);
                 }
                 break;
             }
