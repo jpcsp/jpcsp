@@ -31,6 +31,7 @@ import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.textures.TextureCache;
 import jpcsp.hardware.Battery;
+import jpcsp.hardware.Interrupts;
 
 import org.apache.log4j.Logger;
 
@@ -159,6 +160,7 @@ public class Emulator implements Runnable {
         getProcessor().reset();
         Memory.getInstance().Initialise();
         Battery.initialize();
+        Interrupts.initialize();
         jpcsp.HLE.kernel.types.SceModule.ResetAllocator(); // HACK, see SceModule for details
 
         NIDMapper.getInstance().Initialise();
