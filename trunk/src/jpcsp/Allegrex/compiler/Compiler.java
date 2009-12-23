@@ -163,18 +163,23 @@ public class Compiler implements ICompiler {
 		documentBuilderFactory.setIgnoringComments(true);
 		documentBuilderFactory.setCoalescing(true);
 //		documentBuilderFactory.setValidating(true);
+		configuration = null;
 		try {
 			DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
 			configuration = documentBuilder.parse(new File("Compiler.xml"));
 		} catch (ParserConfigurationException e) {
-			Compiler.log.error(e);
+			log.error(e);
 		} catch (SAXException e) {
-			Compiler.log.error(e);
+			log.error(e);
 		} catch (IOException e) {
-			Compiler.log.error(e);
+			log.error(e);
 		}
 
-		nativeCodeManager = new NativeCodeManager(configuration.getDocumentElement());
+		if (configuration != null) {
+			nativeCodeManager = new NativeCodeManager(configuration.getDocumentElement());
+		} else {
+			nativeCodeManager = new NativeCodeManager(null);
+		}
 
 		reset();
 	}
