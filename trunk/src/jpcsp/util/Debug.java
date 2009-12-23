@@ -16,18 +16,23 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.util;
 
+import static jpcsp.HLE.pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_565;
+import static jpcsp.HLE.pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_5551;
+import static jpcsp.HLE.pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_4444;
+import static jpcsp.HLE.pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_8888;
 import jpcsp.Memory;
+import jpcsp.HLE.pspdisplay;
 
 /**
  * @author gid15
  *
  */
 public class Debug {
-	public static void printFramebuffer(int base, int bufferwidth, int x, int y, int colorFg, int colorBg, String s) {
-		printFramebuffer(base, bufferwidth, x, y, colorFg, colorBg, 1, s);
+	public static void printFramebuffer(int base, int bufferwidth, int x, int y, int colorFg, int colorBg, int pixelformat, String s) {
+		printFramebuffer(base, bufferwidth, x, y, colorFg, colorBg, pixelformat, 1, s);
 	}
 
-	public static void printFramebuffer(int base, int bufferwidth, int x, int y, int colorFg, int colorBg, int size, String s) {
+	public static void printFramebuffer(int base, int bufferwidth, int x, int y, int colorFg, int colorBg, int pixelformat, int size, String s) {
 		int length = s.length();
 		for (int i = 0; i < length; i++) {
 			char c = s.charAt(i);
@@ -35,36 +40,59 @@ public class Debug {
 				x = 0;
 				y += Font.charHeight * size;
 			} else {
-				printFramebuffer(base, bufferwidth, x, y, colorFg, colorBg, size, c);
+				printFramebuffer(base, bufferwidth, x, y, colorFg, colorBg, pixelformat, size, c);
 				x += Font.charWidth * size;
 			}
 		}
 	}
 
-	private static void printFramebuffer(int base, int bufferwidth, int x, int y, int colorFg, int colorBg, int size, char c) {
+	private static void printFramebuffer(int base, int bufferwidth, int x, int y, int colorFg, int colorBg, int pixelformat, int size, char c) {
 		int fontBaseIndex = c * 8;
 		for (int i = 0; i < Font.charHeight; i++) {
 			for (int j = 0; j < Font.charWidth; j++) {
 				int pixel = Font.font[fontBaseIndex + i] & (128 >> j);
 				if (pixel != 0) {
-					setPixel(base, bufferwidth, x + j * size, y + i * size, colorFg, size);
+					setPixel(base, bufferwidth, x + j * size, y + i * size, colorFg, pixelformat, size);
 				} else if (colorBg != 0) {
-					setPixel(base, bufferwidth, x + j * size, y + i * size, colorBg, size);
+					setPixel(base, bufferwidth, x + j * size, y + i * size, colorBg, pixelformat, size);
 				}
 			}
 		}
 	}
 
-	private static void setPixel(int base, int bufferwidth, int x, int y, int color, int size) {
+	private static void setPixel(int base, int bufferwidth, int x, int y, int color, int pixelformat, int size) {
 		Memory mem = Memory.getInstance();
-		int pixelWidth = 4;
-		int framebufferAddr = base + (y * bufferwidth + x) * pixelWidth;
+		int pixelBytes = pspdisplay.getPixelFormatBytes(pixelformat);
+		int framebufferAddr = base + (y * bufferwidth + x) * pixelBytes;
+		int pixelColor = getPixelColor(color, pixelformat);
 		for (int i = 0; i < size; i++) {
 			for (int j = 0; j < size; j++) {
-				mem.write32(framebufferAddr + j * pixelWidth, color);
+				if (pixelBytes == 4) {
+					mem.write32(framebufferAddr + j * pixelBytes, pixelColor);
+				} else if (pixelBytes == 2) {
+					mem.write16(framebufferAddr + j * pixelBytes, (short) pixelColor);
+				}
 			}
-			framebufferAddr += bufferwidth * pixelWidth;
+			framebufferAddr += bufferwidth * pixelBytes;
 		}
+	}
+
+	public static int getPixelColor(int color, int pixelformat) {
+		switch (pixelformat) {
+			case PSP_DISPLAY_PIXEL_FORMAT_565:
+				color = ((color & 0x00F80000) >> 8) | ((color & 0x0000FC00) >> 5) | ((color & 0x000000F8) >> 3);
+				break;
+			case PSP_DISPLAY_PIXEL_FORMAT_5551:
+				color = ((color & 0x80000000) >> 16) | ((color & 0x00F80000) >> 9) | ((color & 0x0000F800) >> 6) | ((color & 0x000000F8) >> 3);
+				break;
+			case PSP_DISPLAY_PIXEL_FORMAT_4444:
+				color = ((color & 0xF0000000) >> 16) | ((color & 0x00F00000) >> 12) | ((color & 0x0000F000) >> 8) | ((color & 0x000000F0) >> 4);
+				break;
+			case PSP_DISPLAY_PIXEL_FORMAT_8888:
+				break;
+		}
+
+		return color;
 	}
 
 	public static class Font {
