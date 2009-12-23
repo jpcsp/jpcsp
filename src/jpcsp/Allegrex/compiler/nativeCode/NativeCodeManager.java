@@ -201,6 +201,10 @@ public class NativeCodeManager {
 	}
 
 	private void load(Element configuration) {
+		if (configuration == null) {
+			return;
+		}
+
 		NodeList nativeCodeBlocks = configuration.getElementsByTagName("NativeCodeSequence");
 		int n = nativeCodeBlocks.getLength();
 		for (int i = 0; i < n; i++) {
