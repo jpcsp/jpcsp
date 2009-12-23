@@ -20,6 +20,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.hardware.Interrupts;
 
 import jpcsp.Processor;
 
@@ -43,7 +44,6 @@ public class Kernel_Library implements HLEModule {
             mm.addFunction(sceKernelIsCpuIntrEnableFunction, 0xB55249D2);
 
         }
-        interruptsEnabled = true;
     }
 
     @Override
@@ -59,7 +59,6 @@ public class Kernel_Library implements HLEModule {
         }
     }
 
-    private boolean interruptsEnabled;
     private final int flagInterruptsEnabled = 1;
     private final int flagInterruptsDisabled = 0;
 
@@ -72,12 +71,12 @@ public class Kernel_Library implements HLEModule {
         CpuState cpu = processor.cpu; // New-Style Processor
 
         if (Modules.log.isDebugEnabled()) {
-        	Modules.log.debug("sceKernelCpuSuspendIntr interruptsEnabled=" + interruptsEnabled);
+        	Modules.log.debug("sceKernelCpuSuspendIntr interruptsEnabled=" + Interrupts.isInterruptsEnabled());
         }
 
-        if (interruptsEnabled) {
+        if (Interrupts.isInterruptsEnabled()) {
         	cpu.gpr[2] = flagInterruptsEnabled;
-            interruptsEnabled = false;
+            Interrupts.disableInterrupts();
         } else {
         	cpu.gpr[2] = flagInterruptsDisabled;
         }
@@ -97,9 +96,9 @@ public class Kernel_Library implements HLEModule {
         }
 
         if (flagInterrupts == flagInterruptsEnabled) {
-        	interruptsEnabled = true;
+        	Interrupts.enableInterrupts();
         } else if (flagInterrupts == flagInterruptsDisabled) {
-        	interruptsEnabled = false;
+        	Interrupts.disableInterrupts();
         } else {
         	Modules.log.warn("sceKernelCpuResumeIntr unknown flag value " + flagInterrupts);
         }
@@ -146,10 +145,10 @@ public class Kernel_Library implements HLEModule {
         CpuState cpu = processor.cpu; // New-Style Processor
 
         if (Modules.log.isDebugEnabled()) {
-        	Modules.log.debug("sceKernelIsCpuIntrEnable interruptsEnabled=" + interruptsEnabled);
+        	Modules.log.debug("sceKernelIsCpuIntrEnable interruptsEnabled=" + Interrupts.isInterruptsEnabled());
         }
 
-        if (interruptsEnabled) {
+        if (Interrupts.isInterruptsEnabled()) {
         	cpu.gpr[2] = 1;
         } else {
         	cpu.gpr[2] = 0;

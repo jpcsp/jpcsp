@@ -119,6 +119,10 @@ public class SemaManager {
         SceKernelSemaInfo sema = new SceKernelSemaInfo(name, attr, initVal, maxVal);
         semaMap.put(sema.uid, sema);
 
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug("sceKernelCreateSema name= " + name + " created with uid=0x" + Integer.toHexString(sema.uid));
+        }
+
         Emulator.getProcessor().cpu.gpr[2] = sema.uid;
     }
 
