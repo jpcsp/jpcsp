@@ -1660,6 +1660,22 @@ public class ThreadMan {
     	}
     }
 
+    public void ThreadMan_sceKernelCancelWakeupThread(int uid) {
+        if (uid == 0) uid = current_thread.uid;
+        SceUidManager.checkUidPurpose(uid, "ThreadMan-thread", true);
+        SceKernelThreadInfo thread = threadMap.get(uid);
+        if (thread == null) {
+            Modules.log.warn("sceKernelCancelWakeupThread SceUID=" + Integer.toHexString(uid) + ") unknown thread");
+            Emulator.getProcessor().cpu.gpr[2] = ERROR_NOT_FOUND_THREAD;
+        } else {
+        	if (Modules.log.isDebugEnabled()) {
+        		Modules.log.debug("sceKernelCancelWakeupThread SceUID=" + Integer.toHexString(uid) + ") wakeupCount=" + thread.wakeupCount);
+        	}
+            Emulator.getProcessor().cpu.gpr[2] = thread.wakeupCount;
+            thread.wakeupCount = 0;
+        }
+    }
+
     /** Registers a callback on the current thread.
      * @return true on success (the cbid was a valid callback uid) */
     public boolean setCallback(int callbackType, int cbid) {
