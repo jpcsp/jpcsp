@@ -18,6 +18,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 
 package jpcsp.HLE.modules150;
 
+import static jpcsp.HLE.pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_565;
+import static jpcsp.HLE.pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_5551;
+import static jpcsp.HLE.pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_4444;
+import static jpcsp.HLE.pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_8888;
+
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
@@ -26,6 +31,7 @@ import java.util.TimeZone;
 
 import jpcsp.HLE.Modules;
 import jpcsp.HLE.ThreadMan;
+import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.modules.HLECallback;
 import jpcsp.HLE.modules.HLEModule;
 import jpcsp.HLE.modules.HLEModuleFunction;
@@ -190,6 +196,7 @@ public class sceMpeg implements HLEModule {
     protected boolean[] avcEsBufferAllocated = new boolean[numberAvcEsBuffers];
     protected int videoFrameCount;
     protected int audioFrameCount;
+    protected int videoPixelMode;
 
     protected static final int MPEG_VERSION_0012 = 0;
     protected static final int MPEG_VERSION_0013 = 1;
@@ -441,6 +448,7 @@ public class sceMpeg implements HLEModule {
             mpegAvcCurrentTimestamp = 0;
             videoFrameCount = 0;
             audioFrameCount = 0;
+            videoPixelMode = PSP_DISPLAY_PIXEL_FORMAT_8888;
 
             cpu.gpr[2] = 0;
         } else {
@@ -944,23 +952,33 @@ public class sceMpeg implements HLEModule {
                 // Generate a random image...
                 Random random = new Random();
                 final int pixelSize = 3;
+                final int bytesPerPixel = pspdisplay.getPixelFormatBytes(videoPixelMode);
                 for (int y = 0; y < 272 - pixelSize + 1; y += pixelSize) {
-                    int address = buffer + y * frameWidth * 4;
+                    int address = buffer + y * frameWidth * bytesPerPixel;
                     final int width = Math.min(480, frameWidth);
                     for (int x = 0; x < width; x += pixelSize) {
                         int n = random.nextInt(256);
-                        int pixel = 0xFF000000 | n << 16 | n << 8 | n;
-                        for (int i = 0; i < pixelSize; i++) {
-                            for (int j = 0; j < pixelSize; j++) {
-                                mem.write32(address + (i * frameWidth + j) * 4, pixel);
-                            }
+                        int color = 0xFF000000 | (n << 16) | (n << 8) | n;
+                        int pixelColor = Debug.getPixelColor(color, videoPixelMode);
+                        if (bytesPerPixel == 4) {
+	                        for (int i = 0; i < pixelSize; i++) {
+	                            for (int j = 0; j < pixelSize; j++) {
+	                                mem.write32(address + (i * frameWidth + j) * 4, pixelColor);
+	                            }
+	                        }
+                        } else if (bytesPerPixel == 2) {
+	                        for (int i = 0; i < pixelSize; i++) {
+	                            for (int j = 0; j < pixelSize; j++) {
+	                                mem.write16(address + (i * frameWidth + j) * 2, (short) pixelColor);
+	                            }
+	                        }
                         }
-                        address += pixelSize * 4;
+                        address += pixelSize * bytesPerPixel;
                     }
                 }
 
-                Debug.printFramebuffer(buffer, frameWidth, 10, 250, 0xFFFFFFFF, 0xFF000000, 1, " This is a faked MPEG video ");
-                Debug.printFramebuffer(buffer, frameWidth, 10, 258, 0xFFFFFFFF, 0xFF000000, 1, " (video decoding is not yet implemented) ");
+                Debug.printFramebuffer(buffer, frameWidth, 10, 250, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " This is a faked MPEG video ");
+                Debug.printFramebuffer(buffer, frameWidth, 10, 258, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 1, " (video decoding is not yet implemented) ");
                 videoFrameCount++;
 
                 if (Modules.log.isDebugEnabled()) {
@@ -974,12 +992,12 @@ public class sceMpeg implements HLEModule {
                 dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
                 if (mpegLastDate != null) {
                 	String displayedString = String.format(" %s / %s ", dateFormat.format(currentDate), dateFormat.format(mpegLastDate));
-                	Debug.printFramebuffer(buffer, frameWidth, 10, 10, 0xFFFFFFFF, 0xFF000000, 2, displayedString);
+                	Debug.printFramebuffer(buffer, frameWidth, 10, 10, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
                 }
                 int packetsInRingbuffer = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
                 int processedPackets = mpegRingbuffer.packetsRead - packetsInRingbuffer;
                 int processedSize = processedPackets * mpegRingbuffer.packetSize;
-                Debug.printFramebuffer(buffer, frameWidth, 10, 30, 0xFFFFFFFF, 0xFF000000, 2, String.format(" %d/%d (%.0f%%) ", processedSize, mpegStreamSize, processedSize * 100f / mpegStreamSize));
+                Debug.printFramebuffer(buffer, frameWidth, 10, 30, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, String.format(" %d/%d (%.0f%%) ", processedSize, mpegStreamSize, processedSize * 100f / mpegStreamSize));
 
                 if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets) {
                     mpegRingbuffer.packetsFree = Math.min(mpegRingbuffer.packets, mpegRingbuffer.packetsFree + packetsConsumed);
@@ -1036,22 +1054,24 @@ public class sceMpeg implements HLEModule {
         int mode_addr = cpu.gpr[5];
 
         Modules.log.warn("IGNORING:sceMpegAvcDecodeMode(mpeg=0x" + Integer.toHexString(mpeg)
-            + ",mode=0x" + Integer.toHexString(mode_addr) + ")");
+            + ",mode_addr=0x" + Integer.toHexString(mode_addr) + ")");
 
         if (getMpegHandle(mpeg) != mpegHandle) {
-            Modules.log.warn("sceMpegAvcDecodeMode bad mpeg handle 0x" + Integer.toHexString(mpeg));
+            Modules.log.warn(String.format("sceMpegAvcDecodeMode bad mpeg handle 0x%08X", mpeg));
             cpu.gpr[2] = -1;
         } else if (mem.isAddressGood(mode_addr)) {
             int unk = mem.read32(mode_addr); // castlevania x: -1
             int mode = mem.read32(mode_addr + 4);
-
-            Modules.log.debug("sceMpegAvcDecodeMode unk=0x" + Integer.toHexString(unk)
-                + " mode=0x" + Integer.toHexString(mode));
+            if (mode >= PSP_DISPLAY_PIXEL_FORMAT_565 && mode <= PSP_DISPLAY_PIXEL_FORMAT_8888) {
+            	videoPixelMode = mode;
+                Modules.log.debug("sceMpegAvcDecodeMode unk=0x" + Integer.toHexString(unk) + " mode=" + mode);
+            } else {
+                Modules.log.warn("sceMpegAvcDecodeMode unk=0x" + Integer.toHexString(unk) + " mode=" + mode + ": unknown mode");
+            }
 
             cpu.gpr[2] = 0;
         } else {
-            Modules.log.warn("sceMpegAvcDecodeMode bad address "
-                + String.format("0x%08X", mode_addr));
+            Modules.log.warn(String.format("sceMpegAvcDecodeMode bad address 0x%08X", mode_addr));
             cpu.gpr[2] = -1;
         }
     }
