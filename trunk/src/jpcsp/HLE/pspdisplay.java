@@ -313,7 +313,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                     + "," + pixelformat + ")");
             }
 
-            boolean loadGEToScreen = false;
+            boolean loadGEToScreen = true; // Always reload the GE memory to the screen
             if (copyGEToMemory && this.topaddrGe != topaddr) {
             	if (VideoEngine.log.isDebugEnabled()) {
             		VideoEngine.log.debug(String.format("Copy GE Screen to Memory 0x%08X-0x%08X", topaddrGe, bottomaddrGe));
@@ -328,7 +328,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                     0, 0, 0, 0, widthGe, heightGe);
 
                 // Re-render GE/current texture upside down
-                drawFrameBuffer(gl, true, true, widthGe, heightGe);
+                drawFrameBuffer(gl, true, true, bufferwidthGe, pixelformatGe, widthGe, heightGe);
 
                 copyScreenToPixels(gl, pixelsGe, bufferwidthGe, pixelformatGe, widthGe, heightGe);
                 loadGEToScreen = true;
@@ -349,7 +349,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             // everytime, but we could be wasting time copying unnecessary pixels around.
             // For now use height but clamp it to the valid area (fiveofhearts)
             // update: I think we can get it from XSCALE/YSCALE GE command/sceGuViewport/hleDisplaySetGeMode
-            if (bottomaddrGe > MemoryMap.END_VRAM + 1 && !Memory.getInstance().isIgnoreInvalidMemoryAccess()) {
+            if (bottomaddrGe > MemoryMap.END_VRAM + 1 && !Memory.getInstance().isIgnoreInvalidMemoryAccess() && !VideoEngine.getInstance().isUseViewport()) {
                 // We can probably remove this message since it's allowed on
                 // real PSP but it's interesting to see what games do it.
                 Modules.log.warn("clamping ge buf top=" + Integer.toHexString(topaddrGe)
@@ -373,15 +373,17 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             	gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
 
             	// Define the texture from the GE Memory
+                gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, getPixelFormatBytes(pixelformatGe));
+                gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, bufferwidthGe);
 	            int pixelFormatGL = getPixelFormatGL(pixelformatGe);
 				gl.glTexSubImage2D(
 	                GL.GL_TEXTURE_2D, 0,
-	                0, 0, bufferwidthGe, heightGe,
+	                0, 0, widthGe, heightGe,
 	                getFormatGL(pixelformatGe),
 	                pixelFormatGL, pixelsGe);
 
 				// Draw the GE
-	            drawFrameBuffer(gl, false, true, widthGe, heightGe);
+	            drawFrameBuffer(gl, false, true, bufferwidthGe, pixelformatGe, widthGe, heightGe);
 
 	            if (State.captureGeNextFrame) {
 	            	captureGeImage(gl);
@@ -392,15 +394,15 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         setGeBufCalledAtLeastOnce = true;
     }
 
-    private static int getFormatGL(int pixelformat) {
+    public static int getFormatGL(int pixelformat) {
     	return pixelformat == PSP_DISPLAY_PIXEL_FORMAT_565 ? GL.GL_RGB : GL.GL_RGBA;
     }
 
-    private static int getPixelFormatBytes(int pixelformat) {
+    public static int getPixelFormatBytes(int pixelformat) {
         return pixelformat == PSP_DISPLAY_PIXEL_FORMAT_8888 ? 4 : 2;
     }
 
-    private static int getPixelFormatGL(int pixelformat) {
+    public static int getPixelFormatGL(int pixelformat) {
         switch (pixelformat) {
         case PSP_DISPLAY_PIXEL_FORMAT_565:
             return GL.GL_UNSIGNED_SHORT_5_6_5_REV;
@@ -450,7 +452,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
     /** @param first : true  = draw as psp size
      *                 false = draw as window size */
-    private void drawFrameBuffer(final GL gl, boolean first, boolean invert, int width, int height) {
+    private void drawFrameBuffer(final GL gl, boolean first, boolean invert, int bufferwidth, int pixelformat, int width, int height) {
         if(!isrotating){
 
             texS1 = texS4 = texS;
@@ -482,8 +484,8 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
         gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
         gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
-        gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, getPixelFormatBytes(pixelformatFb));
-        gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, bufferwidthFb);
+        gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, getPixelFormatBytes(pixelformat));
+        gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, bufferwidth);
 
     	gl.glMatrixMode(GL.GL_PROJECTION);
         gl.glPushMatrix();
@@ -578,7 +580,28 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             if (temp instanceof ByteBuffer) {
                 ((ByteBuffer) pixels).put((ByteBuffer) temp);
             } else if (temp instanceof IntBuffer) {
-                ((IntBuffer) pixels).put((IntBuffer) temp);
+            	if (VideoEngine.getInstance().isUsingTRXKICK()) {
+            		// Hack: God of War is using GE command lists stored into the non-visible
+            		// part of the GE buffer. The lists are copied from the main memory into
+            		// the VRAM using TRXKICK. Be careful to not overwrite these non-visible
+            		// parts.
+            		//
+            		// Copy only the visible part of the GE to the memory, e.g.
+            		// when width==480 and bufferwidth==1024, copy only 480 pixels
+            		// per line and skip 1024-480 pixels.
+            		IntBuffer srcBuffer = (IntBuffer) temp;
+            		IntBuffer dstBuffer = (IntBuffer) pixels;
+            		int pixelsPerElement = 4 / getPixelFormatBytes(pixelformat);
+            		for (int y = 0; y < height; y++) {
+            			int startOffset = y * bufferwidth / pixelsPerElement;
+            			srcBuffer.limit(startOffset + (width + 1) / pixelsPerElement);
+            			srcBuffer.position(startOffset);
+            			dstBuffer.position(startOffset);
+            			dstBuffer.put(srcBuffer);
+            		}
+            	} else {
+            		((IntBuffer) pixels).put((IntBuffer) temp);
+            	}
             } else {
                 throw new RuntimeException("unhandled buffer type");
             }
@@ -677,7 +700,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             //drawFrameBuffer(gl, false, false);
             //copyScreenToPixels(gl, pixelsFb, bufferwidthFb, pixelformatFb);
 
-            drawFrameBuffer(gl, false, true, width, height);
+            drawFrameBuffer(gl, false, true, bufferwidthFb, pixelformatFb, width, height);
         } else if (onlyGEGraphics) {
             VideoEngine.getInstance().update();
         } else {
@@ -704,7 +727,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 	                pixelFormatGL, pixelsGe);
 
                 // why is 2nd param not set to "true" here? (fiveofhearts)
-	            drawFrameBuffer(gl, false, true, width, height);
+	            drawFrameBuffer(gl, false, true, bufferwidthFb, pixelformatFb, width, height);
             }
 
             if (VideoEngine.getInstance().update()) {
@@ -718,7 +741,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
                     0, 0, 0, 0, widthGe, heightGe);
 
                 // Re-render GE/current texture upside down
-                drawFrameBuffer(gl, true, true, width, height);
+                drawFrameBuffer(gl, true, true, bufferwidthFb, pixelformatFb, width, height);
 
                 // Save GE/current texture to vram
                 copyScreenToPixels(gl, pixelsGe, bufferwidthGe, pixelformatGe, widthGe, heightGe);
@@ -738,7 +761,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             if(ang != 4)
                 rotate(ang);
 
-            drawFrameBuffer(gl, false, true, width, height);
+            drawFrameBuffer(gl, false, true, bufferwidthFb, pixelformatFb, width, height);
 
             //swapBuffers();
         }

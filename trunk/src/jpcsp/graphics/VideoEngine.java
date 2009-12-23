@@ -103,6 +103,7 @@ public class VideoEngine {
     private static VideoEngine instance;
     private GL gl;
     private GLU glu;
+    private pspdisplay display;
     public static Logger log = Logger.getLogger("ge");
     public static final boolean useTextureCache = true;
     private static GeCommands helper;
@@ -215,6 +216,7 @@ public class VideoEngine {
     private int textureTx_dx;
     private int textureTx_dy;
     private int textureTx_pixelSize;
+    private boolean usingTRXKICK;
 
     private float[] dfix_color = new float[4];
     private float[] sfix_color = new float[4];
@@ -360,6 +362,7 @@ public class VideoEngine {
     public void setGL(GL gl) {
     	this.gl = gl;
     	this.glu = new GLU();
+    	display = pspdisplay.getInstance();
 
     	String openGLVersion = getOpenGLVersion(gl);
         openGL1_2 = openGLVersion.compareTo("1.2") >= 0;
@@ -524,6 +527,7 @@ public class VideoEngine {
         TextureCache.getInstance().resetTextureAlreadyHashed();
         somethingDisplayed = false;
         errorCount = 0;
+        usingTRXKICK = false;
 
         if (State.captureGeNextFrame) {
             CaptureManager.startCapture("capture.bin", list);
@@ -1873,7 +1877,7 @@ public class VideoEngine {
                 }
 
                 if (!useViewport) {
-                	pspdisplay.getInstance().hleDisplaySetGeMode(viewport_width, viewport_height);
+                	display.hleDisplaySetGeMode(viewport_width, viewport_height);
                 }
                 break;
 
@@ -2210,7 +2214,7 @@ public class VideoEngine {
                 if (State.captureGeNextFrame && !isVertexBufferEmbedded()) {
                     log.info("Capture PRIM");
                     CaptureManager.captureRAM(vinfo.ptr_vertex, vinfo.vertexSize * numberOfVertex);
-                    pspdisplay.getInstance().captureGeImage(gl);
+                    display.captureGeImage(gl);
                 }
 
                 // VADDR/IADDR are updated after vertex rendering
@@ -2832,6 +2836,10 @@ public class VideoEngine {
             case TRXSBW:
             	textureTx_sourceAddress = (textureTx_sourceAddress & 0x00FFFFFF) | ((normalArgument << 8) & 0xFF000000);
             	textureTx_sourceLineWidth = normalArgument & 0x0000FFFF;
+
+            	// TODO Check when sx and sy are reset to 0. Here or after TRXKICK?
+            	textureTx_sx = 0;
+            	textureTx_sy = 0;
             	break;
 
             case TRXDBP:
@@ -2841,6 +2849,10 @@ public class VideoEngine {
             case TRXDBW:
             	textureTx_destinationAddress = (textureTx_destinationAddress & 0x00FFFFFF) | ((normalArgument << 8) & 0xFF000000);
             	textureTx_destinationLineWidth = normalArgument & 0x0000FFFF;
+
+            	// TODO Check when dx and dy are reset to 0. Here or after TRXKICK?
+            	textureTx_dx = 0;
+            	textureTx_dy = 0;
             	break;
 
             case TRXSIZE:
@@ -2861,20 +2873,30 @@ public class VideoEngine {
             case TRXKICK:
             	textureTx_pixelSize = normalArgument & 0x1;
 
-                if (log.isDebugEnabled()) {
+            	textureTx_sourceAddress &= Memory.addressMask;
+            	textureTx_destinationAddress &= Memory.addressMask;
+
+            	if (log.isDebugEnabled()) {
                     log(helper.getCommandString(TRXKICK) + " from 0x" + Integer.toHexString(textureTx_sourceAddress) + "(" + textureTx_sx + "," + textureTx_sy + ") to 0x" + Integer.toHexString(textureTx_destinationAddress) + "(" + textureTx_dx + "," + textureTx_dy + "), width=" + textureTx_width + ", height=" + textureTx_height + ", pixelSize=" + textureTx_pixelSize);
                 }
 
+                usingTRXKICK = true;
                 updateGeBuf();
 
-                pspdisplay display = pspdisplay.getInstance();
-            	if (!display.isGeAddress(textureTx_destinationAddress)) {
+                int pixelFormatGe = psm;
+            	int bpp = ( textureTx_pixelSize == TRXKICK_16BIT_TEXEL_SIZE ) ? 2 : 4;
+            	int bppGe = pspdisplay.getPixelFormatBytes(pixelFormatGe);
+
+                if (!display.isGeAddress(textureTx_destinationAddress) || bpp != bppGe) {
             		if (log.isDebugEnabled()) {
-            			log(helper.getCommandString(TRXKICK) + " not in Ge Address space");
+            			if (bpp != bppGe) {
+            				log(helper.getCommandString(TRXKICK) + " BPP not compatible with GE");
+            			} else {
+            				log(helper.getCommandString(TRXKICK) + " not in Ge Address space");
+            			}
             		}
                 	int width = textureTx_width;
                 	int height = textureTx_height;
-                	int bpp = ( textureTx_pixelSize == TRXKICK_16BIT_TEXEL_SIZE ) ? 2 : 4;
 
                 	int srcAddress = textureTx_sourceAddress      + (textureTx_sy * textureTx_sourceLineWidth      + textureTx_sx) * bpp;
             		int dstAddress = textureTx_destinationAddress + (textureTx_dy * textureTx_destinationLineWidth + textureTx_dx) * bpp;
@@ -2906,24 +2928,18 @@ public class VideoEngine {
                         log.warn("TRXKICK outside of Ge Address space not supported in capture yet");
                     }
             	} else {
-	            	if (textureTx_pixelSize == TRXKICK_16BIT_TEXEL_SIZE) {
-	                    log.warn("Unsupported 16bit for video command [ " + helper.getCommandString(command(instruction)) + " ]");
-	            		break;
-	            	}
-
 	            	int width = textureTx_width;
 	            	int height = textureTx_height;
 	            	int dx = textureTx_dx;
 	            	int dy = textureTx_dy;
 	            	int lineWidth = textureTx_sourceLineWidth;
-	            	int bpp = (textureTx_pixelSize == TRXKICK_16BIT_TEXEL_SIZE) ? 2 : 4;
 
 	            	int geAddr = display.getTopAddrGe();
 	            	dy +=  (textureTx_destinationAddress - geAddr) / (display.getBufferWidthGe() * bpp);
 	            	dx += ((textureTx_destinationAddress - geAddr) % (display.getBufferWidthGe() * bpp)) / bpp;
 
             		if (log.isDebugEnabled()) {
-            			log(helper.getCommandString(TRXKICK) + " in Ge Address space: dx=" + dx + ", dy=" + dy + ", width=" + width + ", height=" + height);
+            			log(helper.getCommandString(TRXKICK) + " in Ge Address space: dx=" + dx + ", dy=" + dy + ", width=" + width + ", height=" + height  + ", lineWidth=" + lineWidth + ", bpp=" + bpp);
             		}
 
 	            	int[] textures = new int[1];
@@ -2967,11 +2983,13 @@ public class VideoEngine {
 	        		// This the reason why we are also using glTexSubImage2D.
 	            	//
                 	int bufferHeight = Utilities.makePow2(height);
+                	int pixelFormatGL = pspdisplay.getPixelFormatGL(pixelFormatGe);
+                	int formatGL = pspdisplay.getFormatGL(pixelFormatGe);
                     gl.glTexImage2D(
                             GL.GL_TEXTURE_2D, 0,
                             GL.GL_RGBA,
                             lineWidth, bufferHeight, 0,
-                            GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, null);
+                            formatGL, pixelFormatGL, null);
 
                 	gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
                 	gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
@@ -2981,7 +2999,7 @@ public class VideoEngine {
     	            gl.glTexSubImage2D(
     		                GL.GL_TEXTURE_2D, 0,
     		                textureTx_sx, textureTx_sy, width, height,
-    		                GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, buffer);
+    		                formatGL, pixelFormatGL, buffer);
 
     	            gl.glEnable(GL.GL_TEXTURE_2D);
 
@@ -4202,6 +4220,12 @@ public class VideoEngine {
 
         if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
         	if (useViewport) {
+        		if (viewport_cx == 0 && viewport_cy == 0 && viewport_height == 0 && viewport_width == 0) {
+        			viewport_cx = 2048;
+        			viewport_cy = 2048;
+        			viewport_width = 480;
+        			viewport_height = 272;
+        		}
         		gl.glViewport(viewport_cx - offset_x - viewport_width / 2, 272 - (viewport_cy - offset_y) - viewport_height / 2, viewport_width, viewport_height);
         	}
         	// Use non-inverted depthFunc (which is depthFunc2D, see ZTST)
@@ -4627,7 +4651,7 @@ public class VideoEngine {
 
     private void updateGeBuf() {
     	if (geBufChanged) {
-    		pspdisplay.getInstance().hleDisplaySetGeBuf(gl, fbp, fbw, psm, somethingDisplayed);
+    		display.hleDisplaySetGeBuf(gl, fbp, fbw, psm, somethingDisplayed);
     		geBufChanged = false;
     	}
     }
@@ -4913,5 +4937,9 @@ public class VideoEngine {
 	public void setUseViewport(boolean useViewport) {
 		this.useViewport = useViewport;
         log.info("Use Viewport: " + useViewport);
+	}
+
+	public boolean isUsingTRXKICK() {
+		return usingTRXKICK;
 	}
 }
