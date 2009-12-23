@@ -281,7 +281,7 @@ public class sceUmdUser implements HLEModule {
 
             if (doCallbacks) {
             	threadMan.yieldCurrentThreadCB();
-            } else {
+            } else if (!threadMan.isInsideCallback()){
             	threadMan.yieldCurrentThread();
             }
         } else {
