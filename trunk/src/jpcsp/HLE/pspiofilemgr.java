@@ -412,6 +412,12 @@ public class pspiofilemgr {
                 wait = false;
             }
 
+            // Hack: if we are in a callback, complete the Async IO immediately.
+            // This is required as long as we can't context switch inside a callback.
+            if (ThreadMan.getInstance().isInsideCallback()) {
+            	onContextSwitch();
+            }
+
             // This case happens when the game switches thread before calling waitAsync,
             // example: sceIoReadAsync -> sceKernelDelayThread -> sceIoWaitAsync
             // Technically we should wait at least some time, since tests show
@@ -464,7 +470,7 @@ public class pspiofilemgr {
 
             threadMan.changeThreadState(current_thread, PSP_THREAD_WAITING);
             threadMan.contextSwitch(threadMan.nextThread());
-        } else if (callbacks) {
+        } else if (callbacks && !ThreadMan.getInstance().isInsideCallback()) {
             ThreadMan.getInstance().yieldCurrentThreadCB();
         }
     }
