@@ -378,7 +378,7 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 	            int pixelFormatGL = getPixelFormatGL(pixelformatGe);
 				gl.glTexSubImage2D(
 	                GL.GL_TEXTURE_2D, 0,
-	                0, 0, widthGe, heightGe,
+	                0, 0, bufferwidthGe, heightGe,
 	                getFormatGL(pixelformatGe),
 	                pixelFormatGL, pixelsGe);
 
