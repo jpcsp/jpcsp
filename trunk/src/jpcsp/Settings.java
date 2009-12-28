@@ -26,7 +26,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Collection;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -37,6 +37,7 @@ import java.util.Vector;
 
 import jpcsp.Controller.keyCode;
 import jpcsp.GUI.RecentElement;
+import jpcsp.util.Utilities;
 
 /**
  *
@@ -65,16 +66,21 @@ public class Settings {
 
 	private Settings() {
 		defaultSettings = new Properties();
+                InputStream defaultSettingsStream = null, loadedSettingsStream = null;
 		try {
-			defaultSettings.load(getClass().getResourceAsStream(DEFAULT_SETTINGS_FILE_NAME));
+                        defaultSettingsStream = getClass().getResourceAsStream(DEFAULT_SETTINGS_FILE_NAME);
+			defaultSettings.load(defaultSettingsStream);
 			loadedSettings = new SortedProperties(defaultSettings);
 			File settingsFile = new File(SETTINGS_FILE_NAME);
 			settingsFile.createNewFile();
-			loadedSettings.load(new BufferedInputStream(new FileInputStream(settingsFile)));
+                        loadedSettingsStream = new BufferedInputStream(new FileInputStream(settingsFile));
+			loadedSettings.load(loadedSettingsStream);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
+		} finally{
+                        Utilities.close(defaultSettingsStream, loadedSettingsStream);
 		}
 
 	}

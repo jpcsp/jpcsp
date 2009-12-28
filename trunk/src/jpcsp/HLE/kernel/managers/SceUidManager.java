@@ -71,7 +71,7 @@ public class SceUidManager {
         }
 
         if (purpose.equals(found.getPurpose())) {
-            uidMap.remove(found);
+            uidMap.remove(uid);
         } else {
             Emulator.log.error("Attempt to release SceUID for different purpose (purpose='" + purpose.toString() + "',original='" + found.getPurpose().toString() + "')");
             return false;

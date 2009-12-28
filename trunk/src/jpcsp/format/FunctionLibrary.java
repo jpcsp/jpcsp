@@ -16,7 +16,7 @@ class Module {
     private Hashtable<String, String> m_functions;
 
     public Module(String name) {
-        m_name = new String(name);
+        m_name = name;
         m_functions = new Hashtable<String, String>();
     }
 

@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.util;
 
+import java.io.Closeable;
 import java.io.IOException;
 
 import jpcsp.Emulator;
@@ -30,6 +31,8 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Utilities {
 
@@ -362,5 +365,20 @@ public class Utilities {
 
 		// Reset the original ByteOrder of the destination
 		destination.order(order);
+    }
+
+        /**
+     * Close closeables. Use this in a finally clause.
+     */
+    public static void close(Closeable... closeables) {
+        for (Closeable c : closeables) {
+            if (c != null) {
+                try {
+                    c.close();
+                } catch (Exception ex) {
+                    Logger.getLogger(Utilities.class.getName()).log(Level.WARNING, "Couldn't close Closeable", ex);
+}
+            }
+        }
     }
 }
