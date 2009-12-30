@@ -720,8 +720,7 @@ public class sceUtility implements HLEModule {
 	}
 
     public void sceUtilityMsgDialogInitStart(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
         int params_addr = cpu.gpr[4];
@@ -732,17 +731,21 @@ public class sceUtility implements HLEModule {
             Modules.log.warn("PARTIAL:sceUtilityMsgDialogInitStart message='" + msgdialog_params.message + "'");
             Modules.log.debug(msgdialog_params.toString());
 
-            msgdialog_status = PSP_UTILITY_DIALOG_QUIT;
-
-            if ((msgdialog_params.mode == 0 || msgdialog_params.mode == 1) &&
-                (msgdialog_params.options == 0 ||
-                msgdialog_params.options == 0x001 ||
-                msgdialog_params.options == 0x010 ||
-                msgdialog_params.options == 0x110)) {
-
-                // Only go to init state if we got good params, but always return 0 even if we got bad mode/options
-                msgdialog_status = PSP_UTILITY_DIALOG_INIT;
+            if (msgdialog_params.options == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_NO ||
+            	msgdialog_params.options == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_YES) {
+                int result = JOptionPane.showConfirmDialog(null, msgdialog_params.message, null, JOptionPane.YES_NO_OPTION);
+                if (result == JOptionPane.YES_OPTION) {
+                	msgdialog_params.buttonPressed = 1;
+                } else if (result == JOptionPane.NO_OPTION) {
+                	msgdialog_params.buttonPressed = 2;
+                } else if (result == JOptionPane.CANCEL_OPTION) {
+                	msgdialog_params.buttonPressed = 3;
+                }
+            } else if (msgdialog_params.mode == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_MODE_TEXT) {
+            	JOptionPane.showMessageDialog(null, msgdialog_params.message);
             }
+            msgdialog_params.base.result = 0;
+            msgdialog_params.write(mem);
 
             // HACK let's start on quit, then the app should call shutdown and then we change status to finished
             msgdialog_status = PSP_UTILITY_DIALOG_QUIT;
@@ -756,43 +759,23 @@ public class sceUtility implements HLEModule {
     }
 
     public void sceUtilityMsgDialogShutdownStart(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
+        CpuState cpu = processor.cpu;
 
         Modules.log.warn("PARTIAL:sceUtilityMsgDialogShutdownStart");
 
         msgdialog_status = PSP_UTILITY_DIALOG_FINISHED;
 
-        if (msgdialog_params != null) {
-            // HACK set a sensible result/button value
-            if (msgdialog_params.mode == 1) {
-                // 1=Yes, 2=No, 3=Back
-                if (msgdialog_params.options == 0x010) {
-                    msgdialog_params.buttonPressed = 1;
-                } else if (msgdialog_params.options == 0x110) {
-                    msgdialog_params.buttonPressed = 2;
-                }
-            }
-
-            msgdialog_params.write(mem);
-            msgdialog_params = null;
-        }
-
-        // no return code
-        // cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = 0;
     }
 
 	public void sceUtilityMsgDialogUpdate(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
-		// Processor cpu = processor; // Old-Style Processor
+		CpuState cpu = processor.cpu;
 
 		int unk1 = cpu.gpr[4];
 
         Modules.log.warn("UNIMPLEMENTED:sceUtilityMsgDialogUpdate(unk1=" + unk1 + ")");
 
-        // no return code
-        // cpu.gpr[2] = 0xDEADC0DE;
+        cpu.gpr[2] = 0;
 	}
 
     public void sceUtilityMsgDialogGetStatus(Processor processor) {

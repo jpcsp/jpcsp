@@ -61,7 +61,6 @@ public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure 
     }
 
     protected void write() {
-        base = new pspUtilityDialogCommon();
         setMaxSize(base.size);
         write(base);
 
