@@ -370,6 +370,12 @@ public class pspge {
         }
         */
 
+    	if (IntrManager.getInstance().isInsideInterrupt()) {
+    		VideoEngine.log.warn("sceGeDrawSync called inside an Interrupt!");
+    		Emulator.getProcessor().cpu.gpr[2] = -1;
+    		return;
+    	}
+
     	if (VideoEngine.log.isDebugEnabled()) {
     		VideoEngine.log.debug("sceGeDrawSync syncType=" + syncType);
     	}
