@@ -1249,6 +1249,23 @@
 088C8BBC:[00000000]: nop
 ]]></CodeInstructions>
 	</NativeCodeSequence>
+	<NativeCodeSequence name="bzero">
+		<Class>jpcsp.Allegrex.compiler.nativeCode.Memset</Class>
+		<IsReturning>true</IsReturning>
+		<Parameters>$a0,$zr,$a1</Parameters>
+		<CodeInstructions><![CDATA[
+0890B500:[24A5FFFF]: addiu      $a1, $a1, -1
+0890B504:[2402FFFF]: addiu      $v0, $zr, -1 <=> li $v0, -1
+0890B508:[10A20005]: beq        $a1, $v0, 0x0890B520
+0890B50C:[00000000]: nop
+0890B510:[24A5FFFF]: addiu      $a1, $a1, -1
+0890B514:[A0800000]: sb         $zr, 0($a0)
+0890B518:[14A2FFFD]: bne        $a1, $v0, 0x0890B510
+0890B51C:[24840001]: addiu      $a0, $a0, 1
+0890B520:[03E00008]: jr         $ra
+0890B524:[00000000]: nop
+]]></CodeInstructions>
+	</NativeCodeSequence>
 	<NativeCodeSequence name="strcat">
 		<Class>jpcsp.Allegrex.compiler.nativeCode.Strcat</Class>
 		<IsReturning>true</IsReturning>
