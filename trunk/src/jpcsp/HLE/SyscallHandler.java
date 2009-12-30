@@ -21,6 +21,7 @@ import jpcsp.Emulator;
 import jpcsp.GeneralJpcspException;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.kernel.Managers;
+import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.Allegrex.CpuState;
 
 public class SyscallHandler {
@@ -37,10 +38,18 @@ public class SyscallHandler {
         try {
             // Currently using FW1.50 codes
             switch(code) {
-              //  case 0x2000: //sceKernelRegisterSubIntrHandler
-              //  case 0x2001: // sceKernelReleaseSubIntrHandler
-		//  case 0x2002: //sceKernelEnableSubIntr
-		//  case 0x2003: //sceKernelDisableSubIntr
+              case 0x2000:
+            	  gpr[2] = IntrManager.getInstance().sceKernelRegisterSubIntrHandler(gpr[4], gpr[5], gpr[6], gpr[7]);
+            	  break;
+              case 0x2001:
+            	  gpr[2] = IntrManager.getInstance().sceKernelReleaseSubIntrHandler(gpr[4], gpr[5]);
+            	  break;
+              case 0x2002:
+            	  gpr[2] = IntrManager.getInstance().sceKernelEnableSubIntr(gpr[4], gpr[5]);
+            	  break;
+              case 0x2003:
+            	  gpr[2] = IntrManager.getInstance().sceKernelDisableSubIntr(gpr[4], gpr[5]);
+            	  break;
 		//  case 0x2004: //sceKernelSuspendSubIntr
 		//  case 0x2005: //sceKernelResumeSubIntr
 		//  case 0x2006: //sceKernelIsSubInterruptOccurred
@@ -1003,6 +1012,14 @@ public class SyscallHandler {
                     break;
                 case 0x30de:
                     pspSysMem.getInstance().SysMemUserForUser_DB83A952(gpr[4], gpr[5]);
+                    break;
+
+                // special codes for HLE syscalls
+                case 0x6f000:
+                	ThreadMan.getInstance().hleKernelExitThread();
+                    break;
+                case 0x6f001:
+                	ThreadMan.getInstance().hleKernelExitCallback();
                     break;
 
                 case 0xfffff: { // special code for unmapped imports

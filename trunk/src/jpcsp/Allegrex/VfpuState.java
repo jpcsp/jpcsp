@@ -130,10 +130,10 @@ public class VfpuState extends FpuState {
             }
 
             public void copy(PfxSrc that) {
-                swz = that.swz.clone();
-                abs = that.abs.clone();
-                cst = that.cst.clone();
-                neg = that.neg.clone();
+            	System.arraycopy(that.swz, 0, swz, 0, swz.length);
+            	System.arraycopy(that.abs, 0, abs, 0, abs.length);
+            	System.arraycopy(that.cst, 0, cst, 0, cst.length);
+            	System.arraycopy(that.neg, 0, neg, 0, neg.length);
                 enabled = that.enabled;
             }
 
@@ -163,8 +163,8 @@ public class VfpuState extends FpuState {
             }
 
             public void copy(PfxDst that) {
-                sat = that.sat.clone();
-                msk = that.msk.clone();
+            	System.arraycopy(that.sat, 0, sat, 0, sat.length);
+            	System.arraycopy(that.msk, 0, msk, 0, msk.length);
                 enabled = that.enabled;
             }
 
@@ -235,7 +235,7 @@ public class VfpuState extends FpuState {
     public void copy(VfpuState that) {
         super.copy(that);
         vpr = that.vpr.clone();
-        vcr = new Vcr(that.vcr);
+        vcr.copy(that.vcr);
     }
 
     public VfpuState(VfpuState that) {

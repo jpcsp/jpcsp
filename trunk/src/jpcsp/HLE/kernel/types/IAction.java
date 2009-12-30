@@ -14,32 +14,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.hardware;
+package jpcsp.HLE.kernel.types;
 
-public class Interrupts {
-	private static boolean interruptsEnabled = true;
+import jpcsp.Processor;
 
-    public static void initialize() {
-    	interruptsEnabled = true;
-    }
-
-	public static boolean isInterruptsEnabled() {
-		return interruptsEnabled;
-	}
-
-	public static boolean isInterruptsDisabled() {
-		return !isInterruptsEnabled();
-	}
-
-	public static void setInterruptsEnabled(boolean interruptsEnabled) {
-		Interrupts.interruptsEnabled = interruptsEnabled;
-	}
-
-	public static void enableInterrupts() {
-		setInterruptsEnabled(true);
-	}
-
-	public static void disableInterrupts() {
-		setInterruptsEnabled(false);
-	}
+public interface IAction {
+	public void execute(Processor processor);
 }

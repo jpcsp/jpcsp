@@ -40,6 +40,7 @@ import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.pspge;
+import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.hardware.Interrupts;
@@ -235,6 +236,18 @@ public class RuntimeContext {
         return true;
     }
 
+    public static void executeCallback() {
+    	if (!isActive) {
+    		return;
+    	}
+
+    	CpuState callbackCpuState = Emulator.getProcessor().cpu;
+    	SceKernelThreadInfo previousCurrentThread = currentThread;
+    	currentThread = ThreadMan.getInstance().getCurrentThread();
+	    executeCallbackImmediately(callbackCpuState);
+	    currentThread = previousCurrentThread;
+    }
+
     public static void executeCallback(SceKernelThreadInfo callbackThreadInfo) {
     	if (!isActive) {
     		return;
@@ -291,8 +304,9 @@ public class RuntimeContext {
 
     	IExecutable executable = getExecutable(pc);
         int newPc = 0;
+        int returnAddress = cpu.gpr[31];
 		try {
-			newPc = executable.exec(0, 0, false);
+			newPc = executable.exec(returnAddress, returnAddress, false);
 		} catch (StopThreadException e) {
 			// Ignore exception
 		} catch (Exception e) {
@@ -323,7 +337,7 @@ public class RuntimeContext {
         updateStaticVariables();
 
         ThreadMan threadManager = ThreadMan.getInstance();
-        if (!insideCallback) {
+        if (!insideCallback && !IntrManager.getInstance().isInsideInterrupt()) {
             SceKernelThreadInfo newThread = threadManager.getCurrentThread();
             if (newThread != null && newThread != currentThread) {
                 switchThread(newThread);
@@ -381,6 +395,7 @@ public class RuntimeContext {
     private static void syncIdle() throws StopThreadException {
         if (isIdle) {
             ThreadMan threadMan = ThreadMan.getInstance();
+            IntrManager intrManager = IntrManager.getInstance();
 
             log.debug("Starting Idle State...");
             idleDuration.start();
@@ -389,6 +404,7 @@ public class RuntimeContext {
                 syncEmulator(true);
                 syncPause();
                 threadMan.step();
+                intrManager.step();
                 if (threadMan.isIdleThread(threadMan.getCurrentThread())) {
                     threadMan.contextSwitch(threadMan.nextThread());
                 }
@@ -542,7 +558,7 @@ public class RuntimeContext {
     }
 
     public static void syscall(int code) throws StopThreadException {
-    	if (fastSyscalls.contains(code)) {
+    	if (fastSyscalls.contains(code) || IntrManager.getInstance().isInsideInterrupt()) {
     		// Fast syscall: no context switching
     		SyscallHandler.syscall(code);
     	} else {

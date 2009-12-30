@@ -29,7 +29,7 @@ public class GprState {
     }
 
     public void copy(GprState that) {
-        gpr = that.gpr.clone();
+    	System.arraycopy(that.gpr, 0, gpr, 0, gpr.length);
     }
 
     public GprState(GprState that) {

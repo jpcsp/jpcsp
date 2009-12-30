@@ -33,7 +33,7 @@ public class RuntimeThread extends Thread {
 		this.threadInfo = threadInfo;
 		this.isInSyscall = false;
 		if (RuntimeContext.log.isDebugEnabled()) {
-			setName(threadInfo.name + "_" + threadInfo.uid);
+			setName(threadInfo.name + "_" + Integer.toHexString(threadInfo.uid));
 		} else {
 			setName(threadInfo.name);
 		}
