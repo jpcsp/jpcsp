@@ -28,6 +28,7 @@ import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
 import jpcsp.Processor;
+import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.kernel.types.SceKernelCallbackInfo;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
@@ -105,7 +106,7 @@ public class pspge {
 
         // Process deferred callbacks
         // TODO if these callbacks block GE we have more work to do...
-        if (DEFER_CALLBACKS && !threadMan.isInsideCallback()) {
+        if (DEFER_CALLBACKS && !threadMan.isInsideCallback() && !IntrManager.getInstance().isInsideInterrupt()) {
             DeferredCallbackInfo info = deferredCallbackQueue.poll();
             if (info != null) {
             	int callbackIndex = info.callbackIndex;

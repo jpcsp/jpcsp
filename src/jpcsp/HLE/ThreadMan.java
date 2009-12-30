@@ -36,17 +36,23 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
+import jpcsp.AllegrexOpcodes;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
+import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Debugger.DumpDebugState;
+import jpcsp.Debugger.DisassemblerModule.syscallsFirm15;
 import static jpcsp.util.Utilities.*;
 
 import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.*;
+import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.modules.HLECallback;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
@@ -73,6 +79,13 @@ public class ThreadMan {
     private static final int WDT_THREAD_IDLE_CYCLES = 1000000;
     private static final int WDT_THREAD_HOG_CYCLES = (0x0A000000 - 0x08400000) * 3; // memset can take a while when you're using sb!
 
+	protected static final int CALLBACKID_REGISTER = 16; // $s0
+	protected CallbackManager callbackManager = new CallbackManager();
+
+	protected static final int IDLE_THREAD_ADDRESS           = MemoryMap.START_RAM;
+	protected static final int THREAD_EXIT_HANDLER_ADDRESS   = MemoryMap.START_RAM + 0x20;
+	protected static final int CALLBACK_EXIT_HANDLER_ADDRESS = MemoryMap.START_RAM + 0x30;
+
     private boolean insideCallback;
     private HashMap<Integer, SceKernelCallbackInfo> callbackMap;
 
@@ -80,6 +93,7 @@ public class ThreadMan {
     private boolean USE_THREAD_BANLIST = false;
     private static final boolean LOG_CONTEXT_SWITCHING = false;
     private static final boolean IGNORE_DELAY = false;
+    private static final boolean LOG_INSTRUCTIONS = false;
     public boolean exitCalled = false;
 
     // see sceKernelGetThreadmanIdList
@@ -136,12 +150,15 @@ public class ThreadMan {
 
         insideCallback = false;
         callbackMap = new HashMap<Integer, SceKernelCallbackInfo>();
+		callbackManager.Initialize();
 
         // Clear stack allocation info
         //pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_Addr, 0x000fffff, 0x09f00000);
         //stackAllocated = 0;
 
         install_idle_threads();
+        install_thread_exit_handler();
+        install_callback_exit_handler();
 
         // Create a thread the program will run inside
         current_thread = new SceKernelThreadInfo("root", entry_addr, 0x20, 0x4000, attr);
@@ -171,42 +188,76 @@ public class ThreadMan {
     }
 
     private void install_idle_threads() {
+        Memory mem = Memory.getInstance();
+
         // Generate 2 idle threads which can toggle between each other when there are no ready threads
         int instruction_addiu = // addiu a0, zr, 0
-            ((jpcsp.AllegrexOpcodes.ADDIU & 0x3f) << 26)
+            ((AllegrexOpcodes.ADDIU & 0x3f) << 26)
             | ((0 & 0x1f) << 21)
             | ((4 & 0x1f) << 16);
         int instruction_lui = // lui ra, 0x08000000
-            ((jpcsp.AllegrexOpcodes.LUI & 0x3f) << 26)
+            ((AllegrexOpcodes.LUI & 0x3f) << 26)
             | ((31 & 0x1f) << 16)
             | (0x0800 & 0x0000ffff);
         int instruction_jr = // jr ra
-            ((jpcsp.AllegrexOpcodes.SPECIAL & 0x3f) << 26)
-            | (jpcsp.AllegrexOpcodes.JR & 0x3f)
+            ((AllegrexOpcodes.SPECIAL & 0x3f) << 26)
+            | (AllegrexOpcodes.JR & 0x3f)
             | ((31 & 0x1f) << 21);
         int instruction_syscall = // syscall 0x0201c [sceKernelDelayThread]
-            ((jpcsp.AllegrexOpcodes.SPECIAL & 0x3f) << 26)
-            | (jpcsp.AllegrexOpcodes.SYSCALL & 0x3f)
-            | ((0x201c & 0x000fffff) << 6);
+            ((AllegrexOpcodes.SPECIAL & 0x3f) << 26)
+            | (AllegrexOpcodes.SYSCALL & 0x3f)
+            | ((syscallsFirm15.calls.sceKernelDelayThread.getSyscall() & 0x000fffff) << 6);
 
         // TODO
         //pspSysMem.getInstance().malloc(1, pspSysMem.PSP_SMEM_Addr, 16, MemoryMap.START_RAM);
 
-        Memory.getInstance().write32(MemoryMap.START_RAM + 0, instruction_addiu);
-        Memory.getInstance().write32(MemoryMap.START_RAM + 4, instruction_lui);
-        Memory.getInstance().write32(MemoryMap.START_RAM + 8, instruction_jr);
-        Memory.getInstance().write32(MemoryMap.START_RAM + 12, instruction_syscall);
+        mem.write32(IDLE_THREAD_ADDRESS + 0,  instruction_addiu);
+        mem.write32(IDLE_THREAD_ADDRESS + 4,  instruction_lui);
+        mem.write32(IDLE_THREAD_ADDRESS + 8,  instruction_jr);
+        mem.write32(IDLE_THREAD_ADDRESS + 12, instruction_syscall);
 
         // lowest allowed priority is 0x77, so we are ok at 0x7f
-        idle0 = new SceKernelThreadInfo("idle0", MemoryMap.START_RAM | 0x80000000, 0x7f, 0x0, PSP_THREAD_ATTR_KERNEL);
+        // Allocate a small stack because interrupts can be processed by the
+        // idle thread, using its stack.
+        idle0 = new SceKernelThreadInfo("idle0", IDLE_THREAD_ADDRESS | 0x80000000, 0x7f, 0x200, PSP_THREAD_ATTR_KERNEL);
         threadMap.put(idle0.uid, idle0);
         changeThreadState(idle0, PSP_THREAD_READY);
 
-        idle1 = new SceKernelThreadInfo("idle1", MemoryMap.START_RAM | 0x80000000, 0x7f, 0x0, PSP_THREAD_ATTR_KERNEL);
+        idle1 = new SceKernelThreadInfo("idle1", IDLE_THREAD_ADDRESS | 0x80000000, 0x7f, 0x200, PSP_THREAD_ATTR_KERNEL);
         threadMap.put(idle1.uid, idle1);
         changeThreadState(idle1, PSP_THREAD_READY);
 
         continuousIdleCycles = 0;
+    }
+
+    private void install_thread_exit_handler() {
+        Memory mem = Memory.getInstance();
+
+        int instruction_syscall = // syscall 0x6f000 [hleKernelExitThread]
+            ((AllegrexOpcodes.SPECIAL & 0x3f) << 26)
+            | (AllegrexOpcodes.SYSCALL & 0x3f)
+            | ((syscallsFirm15.calls.hleKernelExitThread.getSyscall() & 0x000fffff) << 6);
+
+        // Add a "jr $ra" instruction to indicate the end of the CodeBlock to the compiler
+        int instruction_jr = AllegrexOpcodes.JR | (31 << 21);
+
+        mem.write32(THREAD_EXIT_HANDLER_ADDRESS + 0, instruction_syscall);
+        mem.write32(THREAD_EXIT_HANDLER_ADDRESS + 4, instruction_jr);
+    }
+
+    private void install_callback_exit_handler() {
+        Memory mem = Memory.getInstance();
+
+        int instruction_syscall = // syscall 0x6f001 [hleKernelExitCallback]
+            ((AllegrexOpcodes.SPECIAL & 0x3f) << 26)
+            | (AllegrexOpcodes.SYSCALL & 0x3f)
+            | ((syscallsFirm15.calls.hleKernelExitCallback.getSyscall() & 0x000fffff) << 6);
+
+        // Add a "jr $ra" instruction to indicate the end of the CodeBlock to the compiler
+        int instruction_jr = AllegrexOpcodes.JR | (31 << 21);
+
+        mem.write32(CALLBACK_EXIT_HANDLER_ADDRESS + 0, instruction_syscall);
+        mem.write32(CALLBACK_EXIT_HANDLER_ADDRESS + 4, instruction_jr);
     }
 
     /** to be called when exiting the emulation */
@@ -238,6 +289,15 @@ public class ThreadMan {
     /** to be called from the main emulation loop */
     public void step() {
         CpuState cpu = Emulator.getProcessor().cpu;
+
+        if (LOG_INSTRUCTIONS) {
+			if (Modules.log.isTraceEnabled() && !isIdleThread(current_thread) && cpu.pc != 0) {
+				int address = cpu.pc - 4;
+				int opcode = Memory.getInstance().read32(address);
+				Modules.log.trace(String.format("Executing %08X %s", address, Decoder.instruction(opcode).disasm(address, opcode)));
+			}
+		}
+
         if (current_thread != null) {
             current_thread.runClocks++;
 
@@ -387,6 +447,12 @@ public class ThreadMan {
 
     /** @param newthread The thread to switch in. */
     public void contextSwitch(SceKernelThreadInfo newthread) {
+		if (IntrManager.getInstance().isInsideInterrupt()) {
+			// No context switching inside an interrupt
+            Modules.log.debug("Inside an interrupt, not context switching to " + newthread);
+			return;
+		}
+
     	if (!dispatchThreadEnabled) {
             Modules.log.info("DispatchThread disabled, not context switching to " + newthread);
     		return;
@@ -474,6 +540,20 @@ public class ThreadMan {
 		}
 
         return found;
+    }
+
+    /**
+     * Switch to the thread with status PSP_THREAD_READY and having the highest priority.
+     * If the current thread is still having the highest priority, nothing is changed.
+     */
+    public void rescheduleCurrentThread() {
+		SceKernelThreadInfo newThread = nextThread();
+		if (current_thread.currentPriority > newThread.currentPriority) {
+			if (LOG_CONTEXT_SWITCHING && Modules.log.isDebugEnabled()) {
+				Modules.log.debug("Context switching to '" + newThread + "' after interrupt");
+			}
+			contextSwitch(newThread);
+		}
     }
 
     public int getCurrentThreadID() {
@@ -746,7 +826,76 @@ public class ThreadMan {
     }
 
 
-    /** Note: Some functions allow uid = 0 = current thread, others don't.
+	public void hleKernelExitCallback() {
+		Processor processor = Emulator.getProcessor();
+		CpuState cpu = processor.cpu;
+
+		int callbackId = cpu.gpr[CALLBACKID_REGISTER];
+		Callback callback = callbackManager.remove(callbackId);
+		if (callback != null) {
+			if (Modules.log.isTraceEnabled()) {
+				Modules.log.trace("End of callback " + callback);
+			}
+			cpu.gpr[CALLBACKID_REGISTER] = callback.getSavedIdRegister();
+			cpu.gpr[31] = callback.getSavedRa();
+			cpu.pc = callback.getSavedPc();
+			IAction afterAction = callback.getAfterAction();
+			if (afterAction != null) {
+				afterAction.execute(processor);
+			}
+		}
+	}
+
+	public void callAddress(int address, IAction afterAction) {
+		CpuState cpu = Emulator.getProcessor().cpu;
+		int callbackId = callbackManager.getNewCallbackId();
+		Callback callback = new Callback(callbackId, cpu.gpr[CALLBACKID_REGISTER], cpu.gpr[31], cpu.pc, afterAction);
+		cpu.gpr[CALLBACKID_REGISTER] = callbackId;
+		cpu.gpr[31] = CALLBACK_EXIT_HANDLER_ADDRESS;
+		cpu.pc = address;
+
+		callbackManager.addCallback(callback);
+		RuntimeContext.executeCallback();
+
+		// When the compiler is enabled, the callback is already executed
+		// when returning from RuntimeContext.executeCallback()
+		if (cpu.pc == CALLBACK_EXIT_HANDLER_ADDRESS) {
+			hleKernelExitCallback();
+		}
+	}
+	public void executeCallback(int address, IAction afterAction) {
+		callAddress(address, afterAction);
+	}
+
+	public void executeCallback(int address, IAction afterAction, int registerA0) {
+		CpuState cpu = Emulator.getProcessor().cpu;
+		cpu.gpr[4] = registerA0;
+
+		executeCallback(address, afterAction);
+	}
+
+	public void executeCallback(int address, IAction afterAction, int registerA0, int registerA1) {
+		CpuState cpu = Emulator.getProcessor().cpu;
+		cpu.gpr[4] = registerA0;
+		cpu.gpr[5] = registerA1;
+
+		executeCallback(address, afterAction);
+	}
+
+	public void executeCallback(int address, IAction afterAction, int registerA0, int registerA1, int registerA2) {
+		CpuState cpu = Emulator.getProcessor().cpu;
+		cpu.gpr[4] = registerA0;
+		cpu.gpr[5] = registerA1;
+		cpu.gpr[6] = registerA2;
+
+		executeCallback(address, afterAction);
+	}
+
+	public void hleKernelExitThread() {
+		ThreadMan_sceKernelExitThread(0);
+	}
+
+	/** Note: Some functions allow uid = 0 = current thread, others don't.
      * if uid = 0 then $v0 is set to ERROR_ILLEGAL_THREAD and false is returned
      * if uid < 0 then $v0 is set to ERROR_NOT_FOUND_THREAD and false is returned */
     private boolean checkThreadID(int uid) {
@@ -777,11 +926,14 @@ public class ThreadMan {
         if (current_thread != null)
             thread.moduleid = current_thread.moduleid;
 
-        Modules.log.debug("hleKernelCreateThread SceUID=" + Integer.toHexString(thread.uid)
-            + " name:'" + thread.name
-            + "' PC=" + Integer.toHexString(thread.cpuContext.pc)
-            + " attr:0x" + Integer.toHexString(attr)
-            + " pri:0x" + Integer.toHexString(initPriority));
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug("hleKernelCreateThread SceUID=" + Integer.toHexString(thread.uid)
+        			+ " name:'" + thread.name
+        			+ "' PC=" + Integer.toHexString(thread.cpuContext.pc)
+        			+ " attr:0x" + Integer.toHexString(attr)
+        			+ " pri:0x" + Integer.toHexString(initPriority)
+        			+ " stackSize:0x" + Integer.toHexString(stackSize));
+        }
 
         return thread;
     }
@@ -2024,4 +2176,89 @@ public class ThreadMan {
             public long runClocks;
         }
     }
+
+	private class CallbackManager {
+		private Map<Integer, Callback> callbacks;
+		private int currentCallbackId;
+
+		public void Initialize() {
+			callbacks = new HashMap<Integer, Callback>();
+			currentCallbackId = 1;
+		}
+
+		public void addCallback(Callback callback) {
+			callbacks.put(callback.getId(), callback);
+		}
+
+		public Callback remove(int id) {
+			Callback callback = callbacks.remove(id);
+
+			return callback;
+		}
+
+		public int getNewCallbackId() {
+			return currentCallbackId++;
+		}
+	}
+
+	private class Callback {
+		private int id;
+		private int savedIdRegister;
+		private int savedRa;
+		private int savedPc;
+		private IAction afterAction;
+
+		public Callback(int id, int savedIdRegister, int savedRa, int savedPc, IAction afterAction) {
+			this.id = id;
+			this.savedIdRegister = savedIdRegister;
+			this.savedRa = savedRa;
+			this.savedPc = savedPc;
+			this.afterAction = afterAction;
+		}
+
+		public IAction getAfterAction() {
+			return afterAction;
+		}
+
+		public void setAfterAction(IAction afterAction) {
+			this.afterAction = afterAction;
+		}
+
+		public int getId() {
+			return id;
+		}
+
+		public void setId(int id) {
+			this.id = id;
+		}
+
+		public int getSavedIdRegister() {
+			return savedIdRegister;
+		}
+
+		public void setSavedIdRegister(int savedIdRegister) {
+			this.savedIdRegister = savedIdRegister;
+		}
+
+		public int getSavedRa() {
+			return savedRa;
+		}
+
+		public void setSavedRa(int savedRa) {
+			this.savedRa = savedRa;
+		}
+
+		public int getSavedPc() {
+			return savedPc;
+		}
+
+		public void setSavedPc(int savedPc) {
+			this.savedPc = savedPc;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("Callback id=%d,savedIdReg=0x%08X,savedPc=0x%08X", getId(), getSavedIdRegister(), getSavedPc());
+		}
+	}
 }

@@ -42,6 +42,12 @@ public class FpuState extends BcuState {
             c = that.c;
             fs = that.fs;
         }
+
+        public void copy(Fcr31 that) {
+        	rm = that.rm;
+        	c = that.c;
+        	fs = that.fs;
+        }
     }
     public float[] fpr;
     public Fcr31 fcr31;
@@ -66,8 +72,8 @@ public class FpuState extends BcuState {
 
     public void copy(FpuState that) {
         super.copy(that);
-        fpr = that.fpr.clone();
-        fcr31 = new Fcr31(that.fcr31);
+        System.arraycopy(that.fpr, 0, fpr, 0, fpr.length);
+        fcr31.copy(that.fcr31);
     }
 
     public FpuState(FpuState that) {

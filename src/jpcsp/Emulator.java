@@ -27,7 +27,12 @@ import jpcsp.Debugger.InstructionCounter;
 import jpcsp.Debugger.StepLogger;
 import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.pspdisplay;
+import jpcsp.HLE.pspge;
+import jpcsp.HLE.pspiofilemgr;
+import jpcsp.HLE.psputils;
+import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceModule;
+import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.textures.TextureCache;
 import jpcsp.hardware.Battery;
@@ -141,11 +146,12 @@ public class Emulator implements Runnable {
         // Gets set in ThreadMan cpu.gpr[31] = 0x08000004; //ra, should this be 0?
         // All other registers are uninitialised/random values
 
-        jpcsp.HLE.ThreadMan.getInstance().Initialise(cpu.pc, module.attribute, module.pspfilename, module.modid);
-        jpcsp.HLE.psputils.getInstance().Initialise();
-        jpcsp.HLE.pspge.getInstance().Initialise();
-        jpcsp.HLE.pspdisplay.getInstance().Initialise();
-        jpcsp.HLE.pspiofilemgr.getInstance().Initialise();
+        ThreadMan.getInstance().Initialise(cpu.pc, module.attribute, module.pspfilename, module.modid);
+        IntrManager.getInstance().Initialize();
+        psputils.getInstance().Initialise();
+        pspge.getInstance().Initialise();
+        pspdisplay.getInstance().Initialise();
+        pspiofilemgr.getInstance().Initialise();
 
         if (State.memoryViewer != null)
             State.memoryViewer.RefreshMemory();
@@ -208,10 +214,11 @@ public class Emulator implements Runnable {
             	RuntimeContext.run();
             } else {
                 processor.step();
-                jpcsp.HLE.pspge.getInstance().step();
-                jpcsp.HLE.ThreadMan.getInstance().step();
-                jpcsp.HLE.pspdisplay.getInstance().step();
-                jpcsp.HLE.modules.HLEModuleManager.getInstance().step();
+                pspge.getInstance().step();
+                ThreadMan.getInstance().step();
+                IntrManager.getInstance().step();
+                pspdisplay.getInstance().step();
+                HLEModuleManager.getInstance().step();
                 State.controller.checkControllerState();
 
                 if (State.debugger != null)
