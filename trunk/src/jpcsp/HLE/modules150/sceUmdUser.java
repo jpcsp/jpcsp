@@ -253,7 +253,6 @@ public class sceUmdUser implements HLEModule {
         umdActivated = true;
         cpu.gpr[2] = 0;
 
-        if(!ThreadMan.getInstance().isInsideCallback())
         ThreadMan.getInstance().pushCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, getUmdCallbackEvent());
         checkWaitingThreads();
     }
@@ -269,7 +268,7 @@ public class sceUmdUser implements HLEModule {
 
         umdActivated = false;
         umdDeactivateCalled = true;
-        if(!ThreadMan.getInstance().isInsideCallback())
+
         ThreadMan.getInstance().pushCallback(SceKernelThreadInfo.THREAD_CALLBACK_UMD, getUmdCallbackEvent());
         checkWaitingThreads();
     }
