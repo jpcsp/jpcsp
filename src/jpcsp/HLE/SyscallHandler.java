@@ -162,16 +162,30 @@ public class SyscallHandler {
                 case 0x2030:
                     Managers.eventFlags.sceKernelReferEventFlagStatus(gpr[4], gpr[5]);
                     break;
-		// sceKernelCreateMbx(0x2031),
-		// sceKernelDeleteMbx(0x2032),
-		// sceKernelSendMbx(0x2033),
-		// sceKernelReceiveMbx(0x2034),
-		// sceKernelReceiveMbxCB(0x2035),
+		                case 0x2031:
+                    Managers.mbx.sceKernelCreateMbx(gpr[4], gpr[5], gpr[6]);
+                    break;
+                case 0x2032:
+                    Managers.mbx.sceKernelDeleteMbx(gpr[4]);
+                    break;
+                case 0x2033:
+                    Managers.mbx.sceKernelSendMbx(gpr[4], gpr[5]);
+                    break;
+                case 0x2034:
+                    Managers.mbx.sceKernelReceiveMbx(gpr[4], gpr[5], gpr[6]);
+                    break;
+                case 0x2035:
+                    Managers.mbx.sceKernelReceiveMbxCB(gpr[4], gpr[5], gpr[6]);
+                    break;
                 case 0x2036:
                 	Managers.mbx.sceKernelPollMbx(gpr[4], gpr[5]);
                 	break;
-		// sceKernelCancelReceiveMbx(0x2037),
-		// sceKernelReferMbxStatus(0x2038),
+                case 0x2037:
+                    Managers.mbx.sceKernelCancelReceiveMbx(gpr[4], gpr[5]);
+                    break;
+                case 0x2038:
+                    Managers.mbx.sceKernelReferMbxStatus(gpr[4], gpr[5]);
+                    break;
                 case 0x2039:
                     Managers.msgPipes.sceKernelCreateMsgPipe(gpr[4], gpr[5], gpr[6], gpr[7], gpr[8]);
                     break;

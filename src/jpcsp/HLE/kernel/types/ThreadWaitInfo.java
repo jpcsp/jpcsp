@@ -58,4 +58,8 @@ public class ThreadWaitInfo {
     public int MsgPipe_id;
     public int MsgPipe_address;
     public int MsgPipe_size;
+
+     //Mbx
+    public boolean waitingOnMbxReceive;
+    public int Mbx_id;
 }
