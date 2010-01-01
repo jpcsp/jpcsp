@@ -19,8 +19,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.modules150;
 
 import static jpcsp.HLE.pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_565;
-import static jpcsp.HLE.pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_5551;
-import static jpcsp.HLE.pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_4444;
 import static jpcsp.HLE.pspdisplay.PSP_DISPLAY_PIXEL_FORMAT_8888;
 
 import java.text.SimpleDateFormat;
@@ -204,6 +202,9 @@ public class sceMpeg implements HLEModule {
     protected static final int MPEG_VERSION_0014 = 2;
     protected static final int MPEG_VERSION_0015 = 3; // V_0015?
     protected int mpegVersion;
+    protected int mpegRawVersion;
+    protected int mpegMagic;
+    protected int mpegOffset;
 
 
 	public static boolean isEnableMpeg() {
@@ -252,6 +253,32 @@ public class sceMpeg implements HLEModule {
         return (x << 24) | ((x << 8) &  0xFF0000) | ((x >> 8) &  0xFF00) | ((x >> 24) &  0xFF);
     }
 
+    protected void analyseMpeg(int buffer_addr) {
+    	Memory mem = Memory.getInstance();
+
+        mpegMagic = mem.read32(buffer_addr);
+
+        mpegRawVersion = mem.read32(buffer_addr + 4);
+    	switch (mpegRawVersion) {
+    		case PSMF_VERSION_0012: mpegVersion = MPEG_VERSION_0012; break;
+    		case PSMF_VERSION_0013: mpegVersion = MPEG_VERSION_0013; break;
+    		case PSMF_VERSION_0014: mpegVersion = MPEG_VERSION_0014; break;
+    		case PSMF_VERSION_0015: mpegVersion = MPEG_VERSION_0015; break;
+    		default:                mpegVersion = -1;                break;
+    	}
+
+        mpegOffset = endianSwap(mem.read32(buffer_addr + 8));
+
+    	mpegStreamSize = endianSwap(mem.read32(buffer_addr + 12));
+        mpegLastTimestamp = endianSwap(mem.read32(buffer_addr + 80 + 12));
+        mpegLastDate = convertTimestampToDate(mpegLastTimestamp);
+
+        if (!enableMpeg) {
+            // HACK: if fake 0 size maybe it won't play :)
+            Modules.log.warn("sceMpegQueryStreamSize using fake size 0");
+            mpegStreamSize = 0;
+        }
+    }
 
     public void sceMpegQueryStreamOffset(Processor processor) {
         CpuState cpu = processor.cpu;
@@ -269,38 +296,27 @@ public class sceMpeg implements HLEModule {
             Modules.log.warn("sceMpegQueryStreamOffset bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
         } else if (mem.isAddressGood(buffer_addr) && mem.isAddressGood(offset_addr)) {
-            int magic = mem.read32(buffer_addr);
-            int version = mem.read32(buffer_addr + 4);
-            int offset = endianSwap(mem.read32(buffer_addr + 8));
-            int size = endianSwap(mem.read32(buffer_addr + 12));
+        	analyseMpeg(buffer_addr);
             Modules.log.debug(String.format("sceMpegQueryStreamOffset magic=0x%08X"
-                + " version=0x%08X offset=0x%08X size=0x%08X", magic, version, offset, size));
+                + " version=0x%08X offset=0x%08X size=0x%08X", mpegMagic, mpegVersion, mpegOffset, mpegStreamSize));
 
-            if (magic == PSMF_MAGIC) {
-            	switch (version) {
-                    case PSMF_VERSION_0012: mpegVersion = MPEG_VERSION_0012; break;
-                    case PSMF_VERSION_0013: mpegVersion = MPEG_VERSION_0013; break;
-                    case PSMF_VERSION_0014: mpegVersion = MPEG_VERSION_0014; break;
-                    case PSMF_VERSION_0015: mpegVersion = MPEG_VERSION_0015; break;
-                       default: mpegVersion = -1;break;
-            	}
-
+            if (mpegMagic == PSMF_MAGIC) {
             	if (mpegVersion < 0) {
-                    Modules.log.warn("sceMpegQueryStreamOffset bad version " + String.format("0x%08X", version));
+                    Modules.log.warn("sceMpegQueryStreamOffset bad version " + String.format("0x%08X", mpegRawVersion));
         			mem.write32(offset_addr, 0);
                     cpu.gpr[2] = 0x80610002;
             	} else {
-            		if ((offset & 2047) != 0 || offset == 0) {
-                        Modules.log.warn("sceMpegQueryStreamOffset bad offset " + String.format("0x%08X", offset));
+            		if ((mpegOffset & 2047) != 0 || mpegOffset == 0) {
+                        Modules.log.warn("sceMpegQueryStreamOffset bad offset " + String.format("0x%08X", mpegOffset));
             			mem.write32(offset_addr, 0);
             			cpu.gpr[2] = 0x806101FE;
             		} else {
-            			mem.write32(offset_addr, offset);
+            			mem.write32(offset_addr, mpegOffset);
             			cpu.gpr[2] = 0;
             		}
             	}
             } else {
-                Modules.log.warn("sceMpegQueryStreamOffset bad magic " + String.format("0x%08X", magic));
+                Modules.log.warn("sceMpegQueryStreamOffset bad magic " + String.format("0x%08X", mpegMagic));
     			mem.write32(offset_addr, 0);
                 cpu.gpr[2] = 0x806101FE;
             }
@@ -322,34 +338,22 @@ public class sceMpeg implements HLEModule {
             + ",size=0x" + Integer.toHexString(size_addr) + ")");
 
         if (mem.isAddressGood(buffer_addr) && mem.isAddressGood(size_addr)) {
-            int magic = mem.read32(buffer_addr);
-            int version = mem.read32(buffer_addr + 4);
-            int offset = endianSwap(mem.read32(buffer_addr + 8));
-            int size = endianSwap(mem.read32(buffer_addr + 12));
+            analyseMpeg(buffer_addr);
             Modules.log.debug(String.format("sceMpegQueryStreamSize magic=0x%08X"
-                + " version=0x%08X offset=0x%08X size=0x%08X", magic, version, offset, size));
+                + " version=0x%08X offset=0x%08X size=0x%08X", mpegMagic, mpegVersion, mpegOffset, mpegStreamSize));
 
-            if (!enableMpeg) {
-                // HACK: if fake 0 size maybe it won't play :)
-                Modules.log.warn("sceMpegQueryStreamSize using fake size 0");
-                size = 0;
-            }
-
-            mpegStreamSize = size;
-            mpegLastTimestamp = endianSwap(mem.read32(buffer_addr + 80 + 12));
-            mpegLastDate = convertTimestampToDate(mpegLastTimestamp);
             Modules.log.info("sceMpegQueryStreamSize lastTimeStamp=" + mpegLastTimestamp);
 
-            if (magic == PSMF_MAGIC) {
-            	if ((size & 2047) == 0) {
-	                mem.write32(size_addr, size);
+            if (mpegMagic == PSMF_MAGIC) {
+            	if ((mpegStreamSize & 2047) == 0) {
+	                mem.write32(size_addr, mpegStreamSize);
 	                cpu.gpr[2] = 0;
             	} else {
             		mem.write32(size_addr, 0);
             		cpu.gpr[2] = 0x806101FE;
             	}
             } else {
-                Modules.log.warn("sceMpegQueryStreamSize bad magic " + String.format("0x%08X", magic));
+                Modules.log.warn("sceMpegQueryStreamSize bad magic " + String.format("0x%08X", mpegMagic));
                 cpu.gpr[2] = -1;
             }
         } else {
@@ -719,7 +723,7 @@ public class sceMpeg implements HLEModule {
         } else if (mpegRingbuffer == null) {
             Modules.log.warn("sceMpegGetAvcAu ringbuffer not created");
             cpu.gpr[2] = -1;
-        } else if (mpegRingbuffer.packetsRead == 0) {
+        } else if (mpegRingbuffer.packetsRead == 0 || (enableMpeg && mpegRingbuffer.isEmpty())) {
             Modules.log.debug("sceMpegGetAvcAu ringbuffer empty");
             // TODO not sure about this check, either we check atracAuAddr or we check stream 1 is registered
             if (atracAuAddr != 0) {
@@ -782,7 +786,7 @@ public class sceMpeg implements HLEModule {
         } else if (mpegRingbuffer == null) {
             Modules.log.warn("sceMpegGetPcmAu ringbuffer not created");
             cpu.gpr[2] = -1;
-        } else if (mpegRingbuffer.packetsRead == 0) {
+        } else if (mpegRingbuffer.packetsRead == 0 || (enableMpeg && mpegRingbuffer.isEmpty())) {
             Modules.log.debug("sceMpegGetPcmAu ringbuffer empty");
             cpu.gpr[2] = -1; // TODO
         } else if (mem.isAddressGood(stream_addr) && mem.isAddressGood(au_addr)) {
@@ -828,7 +832,7 @@ public class sceMpeg implements HLEModule {
         } else if (mpegRingbuffer == null) {
             Modules.log.warn("sceMpegGetAtracAu ringbuffer not created");
             cpu.gpr[2] = -1;
-        } else if (mpegRingbuffer.packetsRead == 0) {
+        } else if (mpegRingbuffer.packetsRead == 0 || (enableMpeg && mpegRingbuffer.isEmpty())) {
             Modules.log.debug("sceMpegGetAtracAu ringbuffer empty");
             cpu.gpr[2] = 0x80618001; // no audio data in ring buffer (actual name unknown)
         } else if (mem.isAddressGood(stream_addr) && mem.isAddressGood(au_addr)) {
@@ -846,7 +850,9 @@ public class sceMpeg implements HLEModule {
                 ThreadMan.getInstance().yieldCurrentThread();
             } else {
 	            mem.write32(au_addr, 0x56560003);
-	            mem.write32(result_addr, mem.read32(au_addr + 16) + 8);
+	            if (result_addr != 0) {
+	            	mem.write32(result_addr, mem.read32(au_addr + 16) + 8);
+	            }
 	            if (enableMpeg) {
 	                mem.write32(au_addr + 4, mpegAtracCurrentTimestamp);
 	            }
@@ -922,7 +928,7 @@ public class sceMpeg implements HLEModule {
         } else if (mpegRingbuffer == null) {
             Modules.log.warn("sceMpegAvcDecode ringbuffer not created");
             cpu.gpr[2] = -1;
-        } else if (mpegRingbuffer.packetsRead == 0) {
+        } else if (mpegRingbuffer.packetsRead == 0 || (enableMpeg && mpegRingbuffer.isEmpty())) {
             Modules.log.debug("sceMpegAvcDecode ringbuffer empty");
             cpu.gpr[2] = 0x80628002; // no video data in ring buffer (actual name unknown)
         } else if (mem.isAddressGood(au_addr) && mem.isAddressGood(buffer_addr) && mem.isAddressGood(init_addr)) {
@@ -1000,7 +1006,13 @@ public class sceMpeg implements HLEModule {
                 int packetsInRingbuffer = mpegRingbuffer.packets - mpegRingbuffer.packetsFree;
                 int processedPackets = mpegRingbuffer.packetsRead - packetsInRingbuffer;
                 int processedSize = processedPackets * mpegRingbuffer.packetSize;
-                Debug.printFramebuffer(buffer, frameWidth, 10, 30, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, String.format(" %d/%d (%.0f%%) ", processedSize, mpegStreamSize, processedSize * 100f / mpegStreamSize));
+                String displayedString;
+                if (mpegStreamSize > 0) {
+                	displayedString = String.format(" %d/%d (%.0f%%) ", processedSize, mpegStreamSize, processedSize * 100f / mpegStreamSize);
+                } else {
+                	displayedString = String.format(" %d ", processedSize);
+                }
+                Debug.printFramebuffer(buffer, frameWidth, 10, 30, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
 
                 if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets) {
                     mpegRingbuffer.packetsFree = Math.min(mpegRingbuffer.packets, mpegRingbuffer.packetsFree + packetsConsumed);
