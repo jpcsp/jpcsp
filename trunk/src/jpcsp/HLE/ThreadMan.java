@@ -698,6 +698,11 @@ public class ThreadMan {
             Managers.msgPipes.onThreadWaitTimeout(thread);
         }
 
+        //Mbx
+        else if(thread.wait.waitingOnMbxReceive) {
+            Managers.mbx.onThreadWaitTimeout(thread);
+        }
+
         // IO has no timeout, it's always forever
     }
 
@@ -720,6 +725,7 @@ public class ThreadMan {
         Managers.semas.onThreadDeleted(thread);
         Managers.mutex.onThreadDeleted(thread);
         Managers.msgPipes.onThreadDeleted(thread);
+        Managers.mbx.onThreadDeleted(thread);
         Modules.sceUmdUserModule.onThreadDeleted(thread);
         RuntimeContext.onThreadDeleted(thread);
         // TODO blocking audio?
