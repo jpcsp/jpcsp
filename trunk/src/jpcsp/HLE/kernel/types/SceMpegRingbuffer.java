@@ -63,6 +63,10 @@ public class SceMpegRingbuffer {
         return ringbuffer;
     }
 
+    public boolean isEmpty() {
+    	return packetsFree == packets;
+    }
+
     public void read(Memory mem, int address) {
         packets         = mem.read32(address);
         packetsRead     = mem.read32(address + 4);
