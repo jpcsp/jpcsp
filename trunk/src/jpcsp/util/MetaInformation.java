@@ -35,9 +35,9 @@ public class MetaInformation {
 
     private MetaInformation() {
         //System.err.println("MetaInformation loading...");
-
+        InputStream is = null;
         try {
-            InputStream is = getClass().getResourceAsStream("/jpcsp/title.txt");
+            is = getClass().getResourceAsStream("/jpcsp/title.txt");
             if (is != null) {
                 InputStreamReader isr = new InputStreamReader(is);
                 BufferedReader br = new BufferedReader(isr);
@@ -56,6 +56,8 @@ public class MetaInformation {
         } catch(Exception e) {
             System.err.println("something went wrong: " + e.getMessage());
             e.printStackTrace();
+        }finally{
+            Utilities.close(is);
         }
     }
 

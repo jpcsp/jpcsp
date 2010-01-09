@@ -31,6 +31,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -71,6 +72,7 @@ import jpcsp.log.LogWindow;
 import jpcsp.log.LoggingOutputStream;
 import jpcsp.util.JpcspDialogManager;
 import jpcsp.util.MetaInformation;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -946,9 +948,11 @@ public boolean installCompatibilityPatches(String filename)
     }
 
     Properties patchSettings= new Properties();
+    InputStream patchInputStream = null;
     try {
         Emulator.log.info("Overriding previous settings with patch file");
-        patchSettings.load(new BufferedInputStream(new FileInputStream(patchfile)));
+        patchInputStream = new BufferedInputStream(new FileInputStream(patchfile));
+        patchSettings.load(patchInputStream);
 
         String disableAudio = patchSettings.getProperty("emu.disablesceAudio");
         if (disableAudio != null)
@@ -984,6 +988,8 @@ public boolean installCompatibilityPatches(String filename)
 
     } catch (IOException e) {
         e.printStackTrace();
+    } finally{
+        Utilities.close(patchInputStream);
     }
 
     return true;
