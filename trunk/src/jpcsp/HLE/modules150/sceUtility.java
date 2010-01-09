@@ -752,7 +752,7 @@ public class sceUtility implements HLEModule {
 
             cpu.gpr[2] = 0;
         } else {
-            Modules.log.error("sceUtilityMsgDialogInitStart bad address " + String.format("0x%08X", msgdialog_params));
+            Modules.log.error("sceUtilityMsgDialogInitStart bad address " + String.format("0x%08X", params_addr));
             Emulator.PauseEmuWithStatus(Emulator.EMU_STATUS_MEM_READ);
             cpu.gpr[2] = -1;
         }
