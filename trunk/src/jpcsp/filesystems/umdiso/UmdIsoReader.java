@@ -153,7 +153,7 @@ public class UmdIsoReader {
         {
             byte[] bytes = new byte[2048];
 
-            fileReader.seek(2048 * sectorNumber);
+            fileReader.seek(2048L * sectorNumber);
             fileReader.read(bytes);
             return bytes;
         }
