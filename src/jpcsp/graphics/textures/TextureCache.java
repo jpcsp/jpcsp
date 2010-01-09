@@ -25,7 +25,7 @@ import java.util.Set;
 import javax.media.opengl.GL;
 
 public class TextureCache {
-	public static int cacheMaxSize = 1000;
+	public static final int cacheMaxSize = 1000;
 	public static final float cacheLoadFactor = 0.75f;
 	private static TextureCache instance = null;
 	private LinkedHashMap<Integer, Texture> cache;

@@ -113,7 +113,7 @@ public class UmdIsoReader {
 
         id = new byte[6];
 
-        UmdIsoFile f;
+        UmdIsoFile f = null;
         try
         {
             f = new UmdIsoFile(this, 16, 2048, null);
@@ -124,6 +124,8 @@ public class UmdIsoReader {
             // UmdIsoFile constructor calls readSector and will fail if given a file less than 2048 bytes in size
             format = FileFormat.Unknown;
             throw new IOException("Unsupported file format or corrupt file.");
+        }finally{
+            Utilities.close(f);
         }
 
         if((((char)id[1])=='C')&&
