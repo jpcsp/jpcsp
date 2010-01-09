@@ -179,8 +179,7 @@ public class UmdIsoFile extends SeekableInputStream {
         if(currentOffset>=maxOffset)
             throw new EOFException();
         
-        DataInputStream s = new DataInputStream(this);
-        return s.readFloat();
+        return Float.intBitsToFloat(readInt());
     }
     
     @Override
@@ -189,8 +188,7 @@ public class UmdIsoFile extends SeekableInputStream {
         if(currentOffset>=maxOffset)
             throw new EOFException();
         
-        DataInputStream s = new DataInputStream(this);
-        return s.readDouble();
+        return Double.longBitsToDouble(readLong());
     }
     
     @Override
@@ -205,8 +203,11 @@ public class UmdIsoFile extends SeekableInputStream {
         if(currentOffset>=maxOffset)
             throw new EOFException();
         
-        DataInputStream s = new DataInputStream(this);
-        return s.readChar();
+        int ch1 = read();
+        int ch2 = read();
+        if ((ch1 | ch2) < 0)
+            throw new EOFException();
+        return (char)((ch1 << 8) + (ch2 << 0));
     }
     
     @Override
@@ -215,8 +216,7 @@ public class UmdIsoFile extends SeekableInputStream {
         if(currentOffset>=maxOffset)
             throw new EOFException();
 
-        DataInputStream s = new DataInputStream(this);
-        return s.readUTF();
+        return DataInputStream.readUTF(this);
     }
     
     @Override
