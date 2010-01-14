@@ -742,7 +742,7 @@ public class Common {
         } else if (vcode < 8) {
             return String.format("%1$-10s %2$s, %3$s, %4$s", opname + vsuffix[vsize - 1], vcondNames[vcode], vprNames[vsize - 1][vs], vprNames[vsize - 1][vt]);
         }
-        return String.format("%1$-10s %2$s, %3$s", opname + vsuffix[vsize - 1], vcondNames[vcode], vprNames[vsize - 1][vs], vprNames[vsize - 1][vt]);
+        return String.format("%1$-10s %2$s, %3$s, %4$s", opname + vsuffix[vsize - 1], vcondNames[vcode], vprNames[vsize - 1][vs], vprNames[vsize - 1][vt]);
     }
 
     public static String disasmVROT(String opname, int vsize, int vd, int vs, int vt) {
