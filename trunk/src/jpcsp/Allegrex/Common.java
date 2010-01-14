@@ -99,7 +99,7 @@ public class Common {
             return (flags & testFlags) == testFlags;
         }
 
-        private void appendFlagString(StringBuffer result, String flagString) {
+        private void appendFlagString(StringBuilder result, String flagString) {
             if (result.length() > 0) {
                 result.append(" | ");
             }
@@ -107,7 +107,7 @@ public class Common {
         }
 
         private String flagsToString() {
-            StringBuffer result = new StringBuffer();
+            StringBuilder result = new StringBuilder();
             if (hasFlags(FLAG_INTERPRETED)) {
                 appendFlagString(result, "FLAG_INTERPRETED");
             }

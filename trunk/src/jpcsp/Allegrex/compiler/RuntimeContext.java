@@ -983,7 +983,7 @@ public class RuntimeContext {
 
     public static void debugMemoryReadWrite(int address, int value, int pc, boolean isRead, int width) {
     	if (log.isTraceEnabled()) {
-	    	StringBuffer message = new StringBuffer();
+	    	StringBuilder message = new StringBuilder();
 	    	message.append(String.format("0x%08X - ", pc));
 	    	if (isRead) {
 	    		message.append(String.format("read%d(0x%08X)=0x", width, address));

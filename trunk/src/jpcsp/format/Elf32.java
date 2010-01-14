@@ -58,7 +58,7 @@ public class Elf32 {
 
     private void loadProgramHeaders(ByteBuffer f) throws IOException {
         programHeaderList = new LinkedList<Elf32ProgramHeader>();
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
 
         for (int i = 0; i < header.getE_phnum(); i++) {
             f.position((int)(elfOffset + header.getE_phoff() + (i * header.getE_phentsize())));
@@ -112,7 +112,7 @@ public class Elf32 {
 
         // 2nd pass
         // - Construct ELF section header info for debugger
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         int SectionCounter = 0;
         for (Elf32SectionHeader shdr : sectionHeaderList) {
             int position = (int)(elfOffset + shstrtab.getSh_offset() + shdr.getSh_name());

@@ -94,7 +94,7 @@ public class Utilities {
         f.readFully(buf.array(), offset + buf.arrayOffset(), size);
     }
     public static String readStringZ(SeekableDataInput f) throws IOException {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         int b;
         for (; f.getFilePointer() < f.length();) {
             b = f.readUnsignedByte();
@@ -107,7 +107,7 @@ public class Utilities {
     }
 
     public static String readStringZ(byte[] mem, int offset) {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         int b;
         for (; offset < mem.length;) {
             b = mem[offset++];
@@ -120,7 +120,7 @@ public class Utilities {
     }
 
     public static String readStringZ(ByteBuffer buf) throws IOException {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         byte b;
         for (; buf.position() < buf.limit();) {
               b = (byte)readUByte(buf);
@@ -131,7 +131,7 @@ public class Utilities {
         return sb.toString();
     }
     public static String readStringNZ(Memory mem, int address, int n) {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
     	address &= Memory.addressMask;
         if (address + n > MemoryMap.END_RAM) {
         	n = MemoryMap.END_RAM - address + 1;

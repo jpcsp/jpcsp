@@ -50,7 +50,7 @@ public class DurationStatistics implements Comparable<DurationStatistics> {
     }
 
     public String toString() {
-        StringBuffer result = new StringBuffer();
+        StringBuilder result = new StringBuilder();
 
         if (name != null) {
             result.append(name);

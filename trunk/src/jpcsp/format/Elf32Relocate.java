@@ -36,7 +36,7 @@ public class Elf32Relocate {
     }
 
     public String toString() {
-        StringBuffer str = new StringBuffer();
+        StringBuilder str = new StringBuilder();
         str.append("r_offset " + "\t " + Utilities.formatString("long", Long.toHexString(getR_offset() & 0xFFFFFFFFL).toUpperCase()) + "\n");
         str.append("r_info " + "\t\t " + Utilities.formatString("long", Long.toHexString(getR_info() & 0xFFFFFFFFL).toUpperCase()) + "\n");
         return str.toString();

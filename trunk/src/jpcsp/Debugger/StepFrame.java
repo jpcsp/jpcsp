@@ -71,7 +71,7 @@ public class StepFrame {
     }
 
     private String getRegistersInfo() {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 32; i += 4) {
             sb.append(String.format("%s:0x%08X %s:0x%08X %s:0x%08X %s:0x%08X\n",
                 Common.gprNames[i + 0].substring(1), gpr[i + 0],

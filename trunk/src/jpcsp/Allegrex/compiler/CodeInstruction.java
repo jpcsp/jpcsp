@@ -443,7 +443,7 @@ public class CodeInstruction {
     }
 
     public String toString() {
-    	StringBuffer result = new StringBuffer();
+    	StringBuilder result = new StringBuilder();
 
     	result.append(isBranching()    ? "<" : " ");
     	result.append(isBranchTarget() ? ">" : " ");

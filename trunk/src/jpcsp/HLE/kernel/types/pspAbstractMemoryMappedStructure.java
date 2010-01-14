@@ -201,7 +201,7 @@ public abstract class pspAbstractMemoryMappedStructure {
     	}
 
     	IMemoryReader memoryReader = MemoryReader.getMemoryReader(addr, 2);
-    	StringBuffer s = new StringBuffer();
+    	StringBuilder s = new StringBuilder();
     	while (true) {
     		int char16 = memoryReader.readNext();
     		if (char16 == 0) {
