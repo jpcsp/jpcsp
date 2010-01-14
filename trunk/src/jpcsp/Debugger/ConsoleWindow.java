@@ -27,6 +27,7 @@ import java.io.PrintStream;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import jpcsp.Settings;
+import jpcsp.util.Utilities;
 
 /**
  *
@@ -153,24 +154,9 @@ private void SaveMessageToFileButtonActionPerformed(java.awt.event.ActionEvent e
                      out = new BufferedWriter( new FileWriter(f) );
                      out.write( talogging.getText() );
                 }
-                 catch(IOException e)
-                {
-                  throw( e );
-                }
                 finally
                 {
-                   if( out!=null )
-                   {
-                     try
-                   {
-                     out.close();
-                   }
-                   catch(IOException ex)
-                   {
-                    //throw( ex );
-                    ex.printStackTrace();
-                   }
-                  }
+                   Utilities.close(out);
                  }
             }
             catch(Exception e)
