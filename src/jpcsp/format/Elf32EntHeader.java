@@ -63,7 +63,7 @@ public class Elf32EntHeader
 
     public String toString()
     {
-        StringBuffer str = new StringBuffer();
+        StringBuilder str = new StringBuilder();
         if (modulenamez != null && modulenamez.length() > 0)
             str.append(modulenamez + "\n");
         str.append("modulename" + "\t" +  formatString("long", Long.toHexString(modulename & 0xFFFFFFFFL).toUpperCase()) + "\n");

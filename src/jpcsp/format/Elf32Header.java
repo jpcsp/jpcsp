@@ -90,7 +90,7 @@ public class Elf32Header {
 
     @Override
     public String toString() {
-        StringBuffer str = new StringBuffer();
+        StringBuilder str = new StringBuilder();
         str.append("-----ELF HEADER---------" + "\n");
         str.append("e_magic " + "\t " + Utilities.formatString("long", Long.toHexString(getE_magic() & 0xFFFFFFFFL).toUpperCase()) + "\n");
         str.append("e_class " + "\t " + Utilities.integerToHex(getE_class() & 0xFF) + "\n");

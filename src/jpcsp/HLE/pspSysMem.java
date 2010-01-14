@@ -615,14 +615,14 @@ public class pspSysMem {
             fragmentedSize += info.size;
         }
 
-        StringBuffer allocatedDiagram = new StringBuffer();
+        StringBuilder allocatedDiagram = new StringBuilder();
         allocatedDiagram.append("[");
         for (int i = 0; i < SLOT_COUNT; i++) {
             allocatedDiagram.append(allocated[i] ? "X" : " ");
         }
         allocatedDiagram.append("]");
 
-        StringBuffer fragmentedDiagram = new StringBuffer();
+        StringBuilder fragmentedDiagram = new StringBuilder();
         fragmentedDiagram.append("[");
         for (int i = 0; i < SLOT_COUNT; i++) {
             fragmentedDiagram.append(fragmented[i] ? "X" : " ");

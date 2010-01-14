@@ -1086,7 +1086,7 @@ public class CompilerContext implements ICompilerContext {
 	}
 
 	private void visitNativeCodeSequence(NativeCodeSequence nativeCodeSequence) {
-    	StringBuffer methodSignature = new StringBuffer("(");
+    	StringBuilder methodSignature = new StringBuilder("(");
     	int numberParameters = nativeCodeSequence.getNumberParameters();
     	for (int i = 0; i < numberParameters; i++) {
     		loadImm(nativeCodeSequence.getParameter(i));

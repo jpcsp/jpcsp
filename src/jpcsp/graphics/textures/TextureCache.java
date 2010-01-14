@@ -52,7 +52,7 @@ public class TextureCache {
 
 		@Override
 		public String toString() {
-			StringBuffer result = new StringBuffer();
+			StringBuilder result = new StringBuilder();
 			result.append("TextureCache Statistics: ");
 			if (totalHits == 0) {
 				result.append("Cache deactivated");

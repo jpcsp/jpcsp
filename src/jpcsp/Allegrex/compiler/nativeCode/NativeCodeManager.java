@@ -98,7 +98,7 @@ public class NativeCodeManager {
 			return null;
 		}
 
-		StringBuffer content = new StringBuffer();
+		StringBuilder content = new StringBuilder();
 		int n = nodeList.getLength();
 		for (int i = 0; i < n; i++) {
 			Node node = nodeList.item(i);

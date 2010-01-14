@@ -78,7 +78,7 @@ public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure 
 
     @Override
     public String toString() {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         sb.append("unknown " + String.format("0x%08X", unknown) + "\n");
         sb.append("mode " + ((mode == PSP_UTILITY_MSGDIALOG_MODE_ERROR)
             ? "PSP_UTILITY_MSGDIALOG_MODE_ERROR"

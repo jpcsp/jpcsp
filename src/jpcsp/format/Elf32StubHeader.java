@@ -63,7 +63,7 @@ public class Elf32StubHeader
 
     public String toString()
     {
-        StringBuffer str = new StringBuffer();
+        StringBuilder str = new StringBuilder();
         if (s_modulenamez != null && s_modulenamez.length() > 0)
             str.append(s_modulenamez + "\n");
         str.append("s_modulename" + "\t" +  formatString("long", Long.toHexString(s_modulename & 0xFFFFFFFFL).toUpperCase()) + "\n");

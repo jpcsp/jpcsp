@@ -202,7 +202,7 @@ public class PSF {
     /** kxploit patcher tool adds "\nKXPloit Boot by PSP-DEV Team" */
     public String getPrintableString(String key) {
         String rawString = getString(key);
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for (int i = 0; i < rawString.length(); i++) {
             char c = rawString.charAt(i);
             if (c == '\0' || c == '\n')
@@ -323,7 +323,7 @@ public class PSF {
 
     @Override
     public String toString() {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
 
         /*
         sb.append("header:\n");
@@ -446,7 +446,7 @@ public class PSF {
 
         @Override
         public String toString() {
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
 
             /*
             sb.append("index entry:\n");

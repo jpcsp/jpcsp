@@ -566,7 +566,7 @@ public class VertexInfo {
 
     @Override
     public String toString() {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
 
         if (texture_info[texture] != null)
             sb.append(texture_info[texture] + "|");

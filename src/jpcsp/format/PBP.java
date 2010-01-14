@@ -116,7 +116,7 @@ public class PBP {
     }
     @Override
     public String toString() {
-        StringBuffer str = new StringBuffer();
+        StringBuilder str = new StringBuilder();
         str.append("-----PBP HEADER---------" + "\n");
         str.append("p_magic " + "\t\t" + formatString("long", Long.toHexString(p_magic & 0xFFFFFFFFL).toUpperCase()) + "\n");
         str.append("p_version " + "\t\t" + formatString("long", Long.toHexString(p_version & 0xFFFFFFFFL).toUpperCase()) + "\n");

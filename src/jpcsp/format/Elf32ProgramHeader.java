@@ -52,7 +52,7 @@ public class Elf32ProgramHeader {
     }
 
     public String toString() {
-        StringBuffer str = new StringBuffer();
+        StringBuilder str = new StringBuilder();
         str.append("p_type " + "\t\t " + Utilities.formatString("long", Long.toHexString(getP_type() & 0xFFFFFFFFL).toUpperCase()) + "\n");
         str.append("p_offset " + "\t " + Utilities.formatString("long", Long.toHexString(getP_offset() & 0xFFFFFFFFL).toUpperCase()) + "\n");
         str.append("p_vaddr " + "\t " + Utilities.formatString("long", Long.toHexString(getP_vaddr() & 0xFFFFFFFFL).toUpperCase()) + "\n");

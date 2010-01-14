@@ -113,7 +113,7 @@ public class NativeCodeSequence {
 
 	@Override
 	public String toString() {
-		StringBuffer result = new StringBuffer();
+		StringBuilder result = new StringBuilder();
 
 		result.append(name);
 
