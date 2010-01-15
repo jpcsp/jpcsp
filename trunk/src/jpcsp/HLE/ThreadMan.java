@@ -1356,6 +1356,10 @@ public class ThreadMan {
     }
 
     public void hleKernelDelayThread(int micros, boolean do_callbacks) {
+    	hleKernelDelayThread(micros, do_callbacks, 0);
+    }
+
+    public void hleKernelDelayThread(int micros, boolean do_callbacks, int returnCode) {
         // Go to wait state
         // callbacks
         //current_thread.do_callbacks = do_callbacks;
@@ -1375,7 +1379,7 @@ public class ThreadMan {
 
         changeThreadState(current_thread, PSP_THREAD_WAITING);
 
-        Emulator.getProcessor().cpu.gpr[2] = 0;
+        Emulator.getProcessor().cpu.gpr[2] = returnCode;
 
         // should be contextSwitch(nextThread()) but we get more logging this way
         // also current_thread.do_callbacks = do_callbacks;
