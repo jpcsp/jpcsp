@@ -183,6 +183,7 @@ public class VideoEngine {
     private int[] texture_width = new int[8];
     private int[] texture_height = new int[8];
     private int[] texture_buffer_width = new int[8];
+    private boolean textureChanged;
     private int tex_min_filter = GL.GL_NEAREST;
     private int tex_mag_filter = GL.GL_NEAREST;
     private int tex_mipmap_mode;
@@ -526,6 +527,8 @@ public class VideoEngine {
         statistics.start();
         TextureCache.getInstance().resetTextureAlreadyHashed();
         somethingDisplayed = false;
+        textureChanged = true;
+        clutIsDirty = true;
         errorCount = 0;
         usingTRXKICK = false;
 
@@ -1460,10 +1463,17 @@ public class VideoEngine {
             case TBW6:
             case TBW7: {
             	int level = command - TBW0;
+            	int old_texture_base_pointer = texture_base_pointer[level];
+            	int old_texture_buffer_width = texture_buffer_width[level];
                 texture_base_pointer[level] = (texture_base_pointer[level] & 0x00ffffff) | ((normalArgument << 8) & 0xff000000);
                 texture_buffer_width[level] = normalArgument & 0xffff;
+
+                if (old_texture_base_pointer != texture_base_pointer[level] || old_texture_buffer_width != texture_buffer_width[level]) {
+                	textureChanged = true;
+                }
+
                 if (log.isDebugEnabled()) {
-                    log ("sceGuTexImage(level=" + level + ", X, X, texBufferWidth=" + texture_buffer_width[level] + ", hi(pointer=0x" + Integer.toHexString(texture_base_pointer[level]) + "))");
+                    log("sceGuTexImage(level=" + level + ", X, X, texBufferWidth=" + texture_buffer_width[level] + ", hi(pointer=0x" + Integer.toHexString(texture_base_pointer[level]) + "))");
                 }
                 break;
             }
@@ -1477,7 +1487,13 @@ public class VideoEngine {
             case TBP6:
             case TBP7: {
             	int level = command - TBP0;
+            	int old_texture_base_pointer = texture_base_pointer[level];
                 texture_base_pointer[level] = (texture_base_pointer[level] & 0xff000000) | normalArgument;
+
+                if (old_texture_base_pointer != texture_base_pointer[level]) {
+                	textureChanged = true;
+                }
+
                 if (log.isDebugEnabled()) {
                     log ("sceGuTexImage(level=" + level + ", X, X, X, lo(pointer=0x" + Integer.toHexString(texture_base_pointer[level]) + "))");
                 }
@@ -1493,18 +1509,28 @@ public class VideoEngine {
             case TSIZE6:
             case TSIZE7: {
             	int level = command - TSIZE0;
+            	int old_texture_height = texture_height[level];
+            	int old_texture_width = texture_width[level];
             	// Astonishia Story is using normalArgument = 0x1804
             	// -> use texture_height = 1 << 0x08 (and not 1 << 0x18)
             	//        texture_width  = 1 << 0x04
             	texture_height[level] = 1 << ((normalArgument>>8) & 0x0F);
             	texture_width[level]  = 1 << ((normalArgument   ) & 0xFF);
-                if (log.isDebugEnabled()) {
+
+            	if (old_texture_height != texture_height[level] || old_texture_width != texture_width[level]) {
+            		textureChanged = true;
+            	}
+
+            	if (log.isDebugEnabled()) {
                     log ("sceGuTexImage(level=" + level + ", width=" + texture_width[level] + ", height=" + texture_height[level] + ", X, X)");
                 }
             	break;
             }
 
             case TMODE: {
+            	int old_texture_num_mip_maps = texture_num_mip_maps;
+            	boolean old_mipmapShareClut = mipmapShareClut;
+            	boolean old_texture_swizzle = texture_swizzle;
             	texture_num_mip_maps = ( normalArgument >> 16) & 0xFF;
             	// This parameter has only a meaning when
             	//  texture_storage == GU_PSM_T4 and texture_num_mip_maps > 0
@@ -1512,6 +1538,11 @@ public class VideoEngine {
             	// when parameter==1: each mipmap has its own clut table, 16 entries each, stored sequentially
             	mipmapShareClut      = ((normalArgument >>  8) & 0xFF) == 0;
             	texture_swizzle 	 = ((normalArgument      ) & 0xFF) != 0;
+
+            	if (old_texture_num_mip_maps != texture_num_mip_maps || old_mipmapShareClut != mipmapShareClut || old_texture_swizzle != texture_swizzle) {
+            		textureChanged = true;
+            	}
+
             	if (log.isDebugEnabled()) {
             	    log("sceGuTexMode(X, mipmaps=" + texture_num_mip_maps + ", mipmapShareClut=" + mipmapShareClut + ", swizzle=" + texture_swizzle + ")");
             	}
@@ -1519,18 +1550,30 @@ public class VideoEngine {
             }
 
             case TPSM:
+            	int old_texture_storage = texture_storage;
                 // TODO find correct mask
                 // - unknown game 0x105 (261)
                 // - hot wheels 0x40 (64)
             	texture_storage = normalArgument & 0xFF;
-                if (log.isDebugEnabled()) {
+
+            	if (old_texture_storage != texture_storage) {
+            		textureChanged = true;
+            	}
+
+            	if (log.isDebugEnabled()) {
                     log ("sceGuTexMode(tpsm=" + texture_storage + "(" + getPsmName(texture_storage) + "), X, X, X)");
                 }
             	break;
 
             case CBP: {
+            	int old_tex_clut_addr = tex_clut_addr;
                 tex_clut_addr = (tex_clut_addr & 0xff000000) | normalArgument;
-                clutIsDirty = true;
+
+            	clutIsDirty = true;
+                if (old_tex_clut_addr != tex_clut_addr) {
+                	textureChanged = true;
+                }
+
                 if (log.isDebugEnabled()) {
                     log ("sceGuClutLoad(X, lo(cbp=0x" + Integer.toHexString(tex_clut_addr) + "))");
                 }
@@ -1538,8 +1581,14 @@ public class VideoEngine {
             }
 
             case CBPH: {
+            	int old_tex_clut_addr = tex_clut_addr;
                 tex_clut_addr = (tex_clut_addr & 0x00ffffff) | ((normalArgument << 8) & 0x0f000000);
-                clutIsDirty = true;
+
+            	clutIsDirty = true;
+                if (old_tex_clut_addr != tex_clut_addr) {
+                	textureChanged = true;
+                }
+
                 if (log.isDebugEnabled()) {
                     log ("sceGuClutLoad(X, hi(cbp=0x" + Integer.toHexString(tex_clut_addr) + "))");
                 }
@@ -1547,8 +1596,13 @@ public class VideoEngine {
             }
 
             case CLOAD: {
+            	int old_tex_clut_num_blocks = tex_clut_num_blocks;
             	tex_clut_num_blocks = normalArgument;
-                clutIsDirty = true;
+
+        		clutIsDirty = true;
+            	if (old_tex_clut_num_blocks != tex_clut_num_blocks) {
+            		textureChanged = true;
+            	}
 
                 // Some games use the following sequence:
             	// - sceGuClutLoad(num_blocks=32, X)
@@ -1565,11 +1619,20 @@ public class VideoEngine {
             }
 
             case CMODE: {
+            	int old_tex_clut_mode = tex_clut_mode;
+            	int old_tex_clut_shift = tex_clut_shift;
+            	int old_tex_clut_mask = tex_clut_mask;
+            	int old_tex_clut_start = tex_clut_start;
                 tex_clut_mode   =  normalArgument       & 0x03;
                 tex_clut_shift  = (normalArgument >> 2) & 0x3F;
                 tex_clut_mask   = (normalArgument >> 8) & 0xFF;
                 tex_clut_start  = (normalArgument >> 16) & 0xFF;
-                clutIsDirty = true;
+
+            	clutIsDirty = true;
+                if (old_tex_clut_mode != tex_clut_mode || old_tex_clut_shift != tex_clut_shift || old_tex_clut_mask != tex_clut_mask || old_tex_clut_start != tex_clut_start) {
+                	textureChanged = true;
+                }
+
                 if (log.isDebugEnabled()) {
                     log ("sceGuClutMode(cpsm=" + tex_clut_mode + "(" + getPsmName(tex_clut_mode) + "), shift=" + tex_clut_shift + ", mask=0x" + Integer.toHexString(tex_clut_mask) + ", start=" + tex_clut_start + ")");
                 }
@@ -1587,6 +1650,9 @@ public class VideoEngine {
             }
 
             case TFLT: {
+            	int old_tex_mag_filter = tex_mag_filter;
+            	int old_tex_min_filter = tex_min_filter;
+
             	log ("sceGuTexFilter(min=" + (normalArgument & 0xFF) + ", mag=" + ((normalArgument >> 8) & 0xFF) + ") (mm#" + texture_num_mip_maps + ")");
 
             	switch ((normalArgument>>8) & 0xFF)
@@ -1639,6 +1705,9 @@ public class VideoEngine {
 	            	}
             	}
 
+            	if (old_tex_mag_filter != tex_mag_filter || old_tex_min_filter != tex_min_filter) {
+            		textureChanged = true;
+            	}
             	break;
             }
 
@@ -3575,6 +3644,12 @@ public class VideoEngine {
     }
 
     private void loadTexture() {
+        // No need to reload or check the texture cache if no texture parameter
+    	// has been changed since last call loadTexture()
+        if (!textureChanged) {
+        	return;
+        }
+
         // HACK: avoid texture uploads of null pointers
         // This can come from Sony's GE init code (pspsdk GE init is ok)
         if (texture_base_pointer[0] == 0)
@@ -4058,6 +4133,8 @@ public class VideoEngine {
                 log(helper.getCommandString(TFLUSH) + " Reusing cached texture " + texture.getGlId());
             }
         }
+
+        textureChanged = false;
     }
 
 	private void checkTextureMinFilter(boolean compressedTexture, int numberMipmaps) {
@@ -4653,6 +4730,7 @@ public class VideoEngine {
     	if (geBufChanged) {
     		display.hleDisplaySetGeBuf(gl, fbp, fbw, psm, somethingDisplayed);
     		geBufChanged = false;
+    		textureChanged = true;
     	}
     }
     // For capture/replay
