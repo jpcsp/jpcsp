@@ -642,22 +642,30 @@ public class Loader {
      * @param RelCount The number of Elf32Rel structs to read and process.
      */
     private void relocateFromBuffer(ByteBuffer f, SceModule module, int baseAddress,
-        Elf32 elf, int RelCount) throws IOException {
+        Elf32 elf, int RelCount, Elf32SectionHeader relocatedSection) throws IOException {
 
-        final boolean logRelocations = false;
-        //boolean logRelocations = true;
+    	// Display a message about untested R_MIPS_NONE only once per section
+    	boolean displayedUntestedR_MIPS_NONE = false;
 
-        Elf32Relocate rel = new Elf32Relocate();
+    	Elf32Relocate rel = new Elf32Relocate();
         int AHL = 0; // (AHI << 16) | (ALO & 0xFFFF)
         List<Integer> deferredHi16 = new LinkedList<Integer>(); // We'll use this to relocate R_MIPS_HI16 when we get a R_MIPS_LO16
 
+        int nextAddr = 0;
+        if (relocatedSection != null) {
+        	nextAddr = (int) (relocatedSection.getSh_addr() + baseAddress);
+        }
+
+        Memory mem = Memory.getInstance();
         for (int i = 0; i < RelCount; i++) {
             rel.read(f);
 
             int R_TYPE    = (int)( rel.getR_info()        & 0xFF);
             int OFS_BASE  = (int)((rel.getR_info() >>  8) & 0xFF);
             int ADDR_BASE = (int)((rel.getR_info() >> 16) & 0xFF);
-            //System.out.println("type=" + R_TYPE + ",base=" + OFS_BASE + ",addr=" + ADDR_BASE + "");
+            if (Memory.log.isTraceEnabled()) {
+            	Memory.log.trace(String.format("Relocation #%d type=%d,base=%08X,addr=%08X", i, R_TYPE, OFS_BASE, ADDR_BASE));
+            }
 
             int phOffset     = (int)elf.getProgramHeader(OFS_BASE).getP_vaddr();
             int phBaseOffset = (int)elf.getProgramHeader(ADDR_BASE).getP_vaddr();
@@ -665,18 +673,16 @@ public class Loader {
             // Address of data to relocate
             int data_addr = (int)(baseAddress + rel.getR_offset() + phOffset);
             // Value of data to relocate
-            int data = Memory.getInstance().read32(data_addr);
+            int data = mem.read32(data_addr);
             long result = 0; // Used to hold the result of relocation, OR this back into data
 
             // these are the addends?
             // SysV ABI MIPS quote: "Because MIPS uses only Elf32_Rel re-location entries, the relocated field holds the addend."
-            int half16 = data & 0x0000FFFF; // 31/07/08 unused (fiveofhearts)
 
             int word32 = data & 0xFFFFFFFF; // <=> data;
             int targ26 = data & 0x03FFFFFF;
             int hi16 = data & 0x0000FFFF;
             int lo16 = data & 0x0000FFFF;
-            int rel16 = data & 0x0000FFFF;
 
             int A = 0; // addend
             // moved outside the loop so context is saved
@@ -687,9 +693,30 @@ public class Loader {
 
             switch (R_TYPE) {
                 case 0: //R_MIPS_NONE
-                    // Don't do anything
-                    if (logRelocations)
-                        Memory.log.warn("R_MIPS_NONE addr=" + String.format("%08x", data_addr));
+
+                	// Starting at the last relocation address
+                	// (or at the beginning of the section for the first relocation),
+                	// perform a relocation analog to R_MIPS_32 on the first non NULL address.
+                	int value;
+                	while (true) {
+                		value = mem.read32(nextAddr);
+                		if (value != 0) {
+                			break;
+                		}
+                		nextAddr += 4;
+                	}
+                	data_addr = nextAddr;
+                	data = value + S;
+
+                	if (!displayedUntestedR_MIPS_NONE) {
+                		// I'm not sure about the implementation of the relocation R_MIPS_NONE (gid15).
+                		// This seems to work for the game "Little Britain".
+                		// Display a message to identify which programs are using this relocation type.
+                		Memory.log.info(String.format("Untested relocation of type R_MIPS_NONE addr=%08X", data_addr));
+                		displayedUntestedR_MIPS_NONE = true;
+                	} else if (Memory.log.isTraceEnabled()) {
+                		Memory.log.trace(String.format("R_MIPS_NONE addr=%08X", data_addr));
+                	}
                     break;
 
                 case 5: //R_MIPS_HI16
@@ -697,7 +724,9 @@ public class Loader {
                     AHL = A << 16;
                     //HI_addr = data_addr;
                     deferredHi16.add(data_addr);
-                    if (logRelocations) Memory.log.debug("R_MIPS_HI16 addr=" + String.format("%08x", data_addr));
+                	if (Memory.log.isTraceEnabled()) {
+                		Memory.log.trace(String.format("R_MIPS_HI16 addr=%08X", data_addr));
+                	}
                     break;
 
                 case 6: //R_MIPS_LO16
@@ -713,7 +742,7 @@ public class Loader {
                     // Process deferred R_MIPS_HI16
                     for (Iterator<Integer> it = deferredHi16.iterator(); it.hasNext();) {
                         int data_addr2 = it.next();
-                        int data2 = Memory.getInstance().read32(data_addr2);
+                        int data2 = mem.read32(data_addr2);
 
                         result = ((data2 & 0x0000FFFF) << 16) + A + S;
                         // The low order 16 bits are always treated as a signed
@@ -734,19 +763,16 @@ public class Loader {
                         data2 |= (result >> 16) & 0x0000FFFF; // truncate
 
 
-                        if (logRelocations)  {
-                            Memory.log.debug("R_MIPS_HILO16 addr=" + String.format("%08x", data_addr2)
-                                + " data2 before=" + Integer.toHexString(Memory.getInstance().read32(data_addr2))
-                                + " after=" + Integer.toHexString(data2));
+                    	if (Memory.log.isTraceEnabled()) {
+                    		Memory.log.trace(String.format("R_MIPS_HILO16 addr=%08X before=%08X after=%08X", data_addr2, mem.read32(data_addr2), data2));
                         }
-                        Memory.getInstance().write32(data_addr2, data2);
+                        mem.write32(data_addr2, data2);
                         it.remove();
                     }
 
-                    if (logRelocations)  {
-                        Memory.log.debug("R_MIPS_LO16 addr=" + String.format("%08x", data_addr) + " data before=" + Integer.toHexString(word32)
-                            + " after=" + Integer.toHexString(data));
-                    }
+                	if (Memory.log.isTraceEnabled()) {
+                		Memory.log.trace(String.format("R_MIPS_LO16 addr=%08X before=%08X after=%08X", data_addr, word32, data));
+                	}
                     break;
 
                 case 4: //R_MIPS_26
@@ -760,18 +786,16 @@ public class Loader {
                     data &= ~0x03FFFFFF;
                     data |= (int) (result & 0x03FFFFFF); // truncate
 
-                    if (logRelocations) {
-                        Memory.log.debug("R_MIPS_26 addr=" + String.format("%08x", data_addr) + " before=" + Integer.toHexString(word32)
-                            + " after=" + Integer.toHexString(data));
+                	if (Memory.log.isTraceEnabled()) {
+                		Memory.log.trace(String.format("R_MIPS_26 addr=%08X before=%08X after=%08X", data_addr, word32, data));
                     }
                     break;
 
                 case 2: //R_MIPS_32
                     data += S;
 
-                    if (logRelocations) {
-                        Memory.log.debug("R_MIPS_32 addr=" + String.format("%08x", data_addr) + " before=" + Integer.toHexString(word32)
-                            + " after=" + Integer.toHexString(data));
+                	if (Memory.log.isTraceEnabled()) {
+                		Memory.log.trace(String.format("R_MIPS_32 addr=%08X before%%08X after=%08X", data_addr, word32, data));
                     }
                     break;
 
@@ -798,12 +822,13 @@ public class Loader {
                 /* */
 
                 default:
-                    Memory.log.warn("Unhandled relocation type " + R_TYPE + " at " + String.format("%08x", data_addr));
+                	Memory.log.warn(String.format("Unhandled relocation type %d at %08X", R_TYPE, data_addr));
                     break;
             }
 
             //System.out.println("Relocation type " + R_TYPE + " at " + String.format("%08x", (int)baseAddress + (int)rel.r_offset));
-            Memory.getInstance().write32(data_addr, data);
+            mem.write32(data_addr, data);
+            nextAddr = data_addr + 4;
         }
     }
 
@@ -820,7 +845,7 @@ public class Loader {
                 Memory.log.debug("PH#" + i + ": relocating " + RelCount + " entries");
 
                 f.position((int)(elfOffset + phdr.getP_offset()));
-                relocateFromBuffer(f, module, baseAddress, elf, RelCount);
+                relocateFromBuffer(f, module, baseAddress, elf, RelCount, null);
                 // now skip relocate from section headers
                 return;
             } else if (phdr.getP_type() == 0x700000A1L) {
@@ -843,8 +868,12 @@ public class Loader {
                 int RelCount = (int)shdr.getSh_size() / Elf32Relocate.sizeof();
                 Memory.log.debug(shdr.getSh_namez() + ": relocating " + RelCount + " entries");
 
+                // The INFO field gives the section number of the section relocated
+                // by this relocation section.
+                Elf32SectionHeader relocatedSection = elf.getSectionHeader(shdr.getSh_info());
+
                 f.position((int)(elfOffset + shdr.getSh_offset()));
-                relocateFromBuffer(f, module, baseAddress, elf, RelCount);
+                relocateFromBuffer(f, module, baseAddress, elf, RelCount, relocatedSection);
             }
         }
     }
