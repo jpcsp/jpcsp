@@ -17,6 +17,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.modules150;
 
+import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
@@ -70,6 +71,7 @@ public class sceCtrl implements HLEModule {
     // PspCtrlMode
     public final static int PSP_CTRL_MODE_DIGITAL = 0;
     public final static int PSP_CTRL_MODE_ANALOG = 1;
+    private long lastSampleMicroTime;
 
     public boolean isModeDigital() {
         if (mode == PSP_CTRL_MODE_DIGITAL)
@@ -160,6 +162,8 @@ public class sceCtrl implements HLEModule {
             idleback = -1;
 
             mode = PSP_CTRL_MODE_DIGITAL; // check initial mode
+            cycle = 0;
+            lastSampleMicroTime = 0;
         }
     }
 
@@ -188,13 +192,13 @@ public class sceCtrl implements HLEModule {
     }
 
     public void sceCtrlSetSamplingCycle(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
+        CpuState cpu = processor.cpu;
 
         int newCycle = cpu.gpr[4];
 
-        Modules.log.trace("sceCtrlSetSamplingCycle(cycle=" + newCycle + ") returning " + cycle);
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug("sceCtrlSetSamplingCycle(cycle=" + newCycle + ") returning " + cycle);
+        }
 
         cpu.gpr[2] = cycle;
         cycle = newCycle;
@@ -213,11 +217,12 @@ public class sceCtrl implements HLEModule {
     /** returns the previous state */
     public void sceCtrlSetSamplingMode(Processor processor) {
         CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
 
         int newMode = cpu.gpr[4];
 
-        Modules.log.trace("sceCtrlSetSamplingMode(mode=" + newMode + ") returning " + mode);
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug("sceCtrlSetSamplingMode(mode=" + newMode + ") returning " + mode);
+        }
 
         cpu.gpr[2] = mode;
         mode = newMode;
@@ -269,13 +274,50 @@ public class sceCtrl implements HLEModule {
         cpu.gpr[2] = i;
     }
 
+    protected void waitForSampling(int returnValue) {
+    	// TODO Sampling should be implemented using interrupts.
+    	// E.g. VBLANK interrupt when cycle == 0.
+
+    	// cycle == 0 means VBLANK cycle
+    	int sampleCycleMicros = (cycle == 0 ? 1000000 / 60 : cycle);
+
+    	// Has the sampling cycle elapsed since the previous call?
+    	long now = Emulator.getClock().microTime();
+    	if ((now - lastSampleMicroTime) < sampleCycleMicros) {
+    		// A sampling cycle has not elapsed since the previous call,
+    		// wait for the next sampling cycle...
+    		int microsToNextSampling = sampleCycleMicros - ((int) (now - lastSampleMicroTime));
+
+    		if (Modules.log.isTraceEnabled()) {
+    			Modules.log.trace("waitForSampling microsToNextSampling=" + microsToNextSampling);
+    		}
+    		// TODO Check: wait with or without callbacks?
+    		ThreadMan.getInstance().hleKernelDelayThread(microsToNextSampling, false, returnValue);
+    		lastSampleMicroTime = now + microsToNextSampling;
+    	} else {
+    		// A sampling cycle has elapsed since the previous call,
+    		// no need to wait.
+    		if (Modules.log.isTraceEnabled()) {
+    			Modules.log.trace("waitForSampling not waiting");
+    		}
+    		//ThreadMan.getInstance().yieldCurrentThread();
+        	lastSampleMicroTime = now;
+    	}
+    }
+
     public void sceCtrlReadBufferPositive(Processor processor) {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
         int pad_addr = cpu.gpr[4], count = cpu.gpr[5];
         int i;
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceCtrlReadBufferPositive(0x%08X,%d)", pad_addr, count));
+        }
 
+        // TODO Sampling should be done using interrupts and stored into an internal buffer
+        // sceCtrlReadBufferPositive() then reads the content of this internal buffer
+        // and might return up to count entries.
         for (i = 0; i < count; i++) {
             mem.write32(pad_addr, TimeStamp);
             mem.write32(pad_addr + 4, Buttons);
@@ -285,7 +327,7 @@ public class sceCtrl implements HLEModule {
         }
 
         cpu.gpr[2] = i;
-        ThreadMan.getInstance().yieldCurrentThread();
+        waitForSampling(i);
     }
 
     public void sceCtrlReadBufferNegative(Processor processor) {
@@ -294,6 +336,9 @@ public class sceCtrl implements HLEModule {
 
         int pad_addr = cpu.gpr[4], count = cpu.gpr[5];
         int i;
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceCtrlReadBufferNegative(0x%08X,%d)", pad_addr, count));
+        }
 
         for (i = 0; i < count; i++) {
             mem.write32(pad_addr, TimeStamp);
@@ -304,7 +349,7 @@ public class sceCtrl implements HLEModule {
         }
 
         cpu.gpr[2] = i;
-        ThreadMan.getInstance().yieldCurrentThread();
+        waitForSampling(i);
     }
 
     public void sceCtrlPeekLatch(Processor processor) {
@@ -334,8 +379,7 @@ public class sceCtrl implements HLEModule {
     }
 
     public void sceCtrlSetIdleCancelThreshold(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
 
         idlereset = cpu.gpr[4];
         idleback = cpu.gpr[5];
@@ -346,8 +390,7 @@ public class sceCtrl implements HLEModule {
     }
 
     public void sceCtrlGetIdleCancelThreshold(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
         int idlereset_addr = cpu.gpr[4];
@@ -369,71 +412,35 @@ public class sceCtrl implements HLEModule {
     }
 
     public void sceCtrl_348D99D4(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
-
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        CpuState cpu = processor.cpu;
 
         Modules.log.warn("Unimplemented NID function sceCtrl_348D99D4 [0x348D99D4]");
 
         cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceCtrl_AF5960F3(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
-
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        CpuState cpu = processor.cpu;
 
         Modules.log.warn("Unimplemented NID function sceCtrl_AF5960F3 [0xAF5960F3]");
 
         cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceCtrlClearRapidFire(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
-
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        CpuState cpu = processor.cpu;
 
         Modules.log.warn("Unimplemented NID function sceCtrlClearRapidFire [0xA68FD260]");
 
         cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
 
     public void sceCtrlSetRapidFire(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
-        Memory mem = Processor.memory;
-
-        /* put your own code here instead */
-
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        CpuState cpu = processor.cpu;
 
         Modules.log.warn("Unimplemented NID function sceCtrlSetRapidFire [0x6841BE1A]");
 
         cpu.gpr[2] = 0xDEADC0DE;
-
-    // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
     }
     public final HLEModuleFunction sceCtrlSetSamplingCycleFunction = new HLEModuleFunction("sceCtrl", "sceCtrlSetSamplingCycle") {
 
