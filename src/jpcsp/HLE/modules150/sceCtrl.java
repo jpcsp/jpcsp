@@ -300,7 +300,7 @@ public class sceCtrl implements HLEModule {
     		if (Modules.log.isTraceEnabled()) {
     			Modules.log.trace("waitForSampling not waiting");
     		}
-    		//ThreadMan.getInstance().yieldCurrentThread();
+    		ThreadMan.getInstance().yieldCurrentThread();
         	lastSampleMicroTime = now;
     	}
     }
