@@ -123,47 +123,38 @@ private void ClearMessageButtonActionPerformed(java.awt.event.ActionEvent evt) {
 }//GEN-LAST:event_ClearMessageButtonActionPerformed
 
 private void SaveMessageToFileButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SaveMessageToFileButtonActionPerformed
-        JFileChooser m_fileChooser = new JFileChooser();
-        m_fileChooser.setSelectedFile( new File("logoutput.txt") );
-        m_fileChooser.setDialogTitle("Save logging output");
-        m_fileChooser.setCurrentDirectory(new java.io.File("."));
-        int returnVal = m_fileChooser.showSaveDialog( this );
-        if( returnVal==JFileChooser.APPROVE_OPTION )
-        {
-            File f = m_fileChooser.getSelectedFile();
-            
-            try
-            {
-                if( f.exists() )
-                {
-                    int res = JOptionPane.showConfirmDialog(
-                                    this, 
-                                    "File already Exists! Do you want to override?",
-                                    "Already Exists Message",
-                                    JOptionPane.YES_NO_OPTION, 
-                                    JOptionPane.QUESTION_MESSAGE);
-                    
-                    if( res!=0 )
-                        return;
-                }
-                
-                //IOHelper.saveTxtFile(f, ta_messages.getText(), false);
-                BufferedWriter out = null;
-                try
-                {
-                     out = new BufferedWriter( new FileWriter(f) );
-                     out.write( talogging.getText() );
-                }
-                finally
-                {
-                   Utilities.close(out);
-                 }
-            }
-            catch(Exception e)
-            {
-                e.printStackTrace();
+    JFileChooser m_fileChooser = new JFileChooser();
+    m_fileChooser.setSelectedFile(new File("logoutput.txt"));
+    m_fileChooser.setDialogTitle("Save logging output");
+    m_fileChooser.setCurrentDirectory(new java.io.File("."));
+    int returnVal = m_fileChooser.showSaveDialog(this);
+    if (returnVal != JFileChooser.APPROVE_OPTION) {
+        return;
+    }
+    File f = m_fileChooser.getSelectedFile();
+    BufferedWriter out = null;
+    try {
+        if (f.exists()) {
+            int res = JOptionPane.showConfirmDialog(
+                    this,
+                    "File already Exists! Do you want to override?",
+                    "Already Exists Message",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE);
+
+            if (res != 0) {
+                return;
             }
         }
+
+        //IOHelper.saveTxtFile(f, ta_messages.getText(), false);
+        out = new BufferedWriter(new FileWriter(f));
+        out.write(talogging.getText());
+    } catch (Exception e) {
+        e.printStackTrace();
+    } finally {
+        Utilities.close(out);
+    }
 }//GEN-LAST:event_SaveMessageToFileButtonActionPerformed
 
 private void formWindowDeactivated(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowDeactivated
