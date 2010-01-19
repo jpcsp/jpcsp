@@ -38,6 +38,7 @@ public class State extends jpcsp.HLE.Modules {
     public static final FileLoggerFrame fileLogger;
 
     public static String discId;
+    public static String title;
     // make sure these are valid filenames because it gets used by the screenshot system
     public static final String DISCID_UNKNOWN_NOTHING_LOADED = "[unknown, nothing loaded]";
     public static final String DISCID_UNKNOWN_FILE = "[unknown, file]";

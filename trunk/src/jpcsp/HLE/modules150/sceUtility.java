@@ -37,6 +37,7 @@ import jpcsp.util.Utilities;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.Processor;
+import jpcsp.State;
 
 import jpcsp.Allegrex.CpuState; // New-Style Processor
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
@@ -180,6 +181,7 @@ public class sceUtility implements HLEModule {
     public static final int PSP_UTILITY_DIALOG_QUIT = 3;
     public static final int PSP_UTILITY_DIALOG_FINISHED = 4;
 
+    protected static final int maxLineLengthForDialog = 80;
 
     protected int gamesharing_status;
     protected int netplaydialog_status;
@@ -200,6 +202,26 @@ public class sceUtility implements HLEModule {
     protected int systemParam_timeZone = 0; // TODO probably minutes west or east of UTC
     protected int systemParam_language = PSP_SYSTEMPARAM_LANGUAGE_ENGLISH;
     protected int systemParam_buttonPreference = 0;
+
+	protected String formatMessageForDialog(String message) {
+		StringBuilder formattedMessage = new StringBuilder();
+
+		for (int i = 0; i < message.length(); ) {
+			String rest = message.substring(i);
+			if (rest.length() > maxLineLengthForDialog) {
+				int lastSpace = rest.lastIndexOf(' ', maxLineLengthForDialog);
+				rest = rest.substring(0, (lastSpace >= 0 ? lastSpace : maxLineLengthForDialog));
+				formattedMessage.append(rest);
+				i += rest.length() + 1;
+				formattedMessage.append("\n");
+			} else {
+				formattedMessage.append(rest);
+				i += rest.length();
+			}
+		}
+
+		return formattedMessage.toString();
+	}
 
 	public void sceUtilityGameSharingInitStart(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
@@ -731,9 +753,10 @@ public class sceUtility implements HLEModule {
             Modules.log.warn("PARTIAL:sceUtilityMsgDialogInitStart message='" + msgdialog_params.message + "'");
             Modules.log.debug(msgdialog_params.toString());
 
+            String title = String.format("Message from %s", State.title);
             if (msgdialog_params.options == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_NO ||
             	msgdialog_params.options == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_YES) {
-                int result = JOptionPane.showConfirmDialog(null, msgdialog_params.message, null, JOptionPane.YES_NO_OPTION);
+                int result = JOptionPane.showConfirmDialog(null, formatMessageForDialog(msgdialog_params.message), null, JOptionPane.YES_NO_OPTION);
                 if (result == JOptionPane.YES_OPTION) {
                 	msgdialog_params.buttonPressed = 1;
                 } else if (result == JOptionPane.NO_OPTION) {
@@ -742,7 +765,7 @@ public class sceUtility implements HLEModule {
                 	msgdialog_params.buttonPressed = 3;
                 }
             } else if (msgdialog_params.mode == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_MODE_TEXT) {
-            	JOptionPane.showMessageDialog(null, msgdialog_params.message);
+            	JOptionPane.showMessageDialog(null, formatMessageForDialog(msgdialog_params.message), title, JOptionPane.INFORMATION_MESSAGE);
             }
             msgdialog_params.base.result = 0;
             msgdialog_params.write(mem);
