@@ -36,8 +36,9 @@ import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Properties;
-import java.util.Vector;
 
 import javax.swing.JFileChooser;
 import javax.swing.JMenuItem;
@@ -96,8 +97,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
     boolean umdLoaded;
     private Point mainwindowPos; // stores the last known window position
     private boolean snapConsole = true;
-    private Vector<RecentElement> recentUMD = new Vector<RecentElement>();
-    private Vector<RecentElement> recentFile = new Vector<RecentElement>();
+    private List<RecentElement> recentUMD = new LinkedList<RecentElement>();
+    private List<RecentElement> recentFile = new LinkedList<RecentElement>();
     private Level rootLogLevel = null;
 
     /** Creates new form MainGUI */
@@ -631,7 +632,7 @@ private void addRecentFile(File file, String title) {
             if (recentFile.get(i).path.equals(s))
                 recentFile.remove(i--);
         }
-        recentFile.insertElementAt(new RecentElement(s, title), 0);
+        recentFile.add(0, new RecentElement(s, title));
         while(recentFile.size() > MAX_RECENT)
             recentFile.remove(MAX_RECENT);
         Settings.getInstance().writeRecent("file", recentFile);
@@ -648,7 +649,7 @@ private void addRecentUMD(File file, String title) {
             if (recentUMD.get(i).path.equals(s))
                 recentUMD.remove(i--);
         }
-        recentUMD.insertElementAt(new RecentElement(s, title), 0);
+        recentUMD.add(0, new RecentElement(s, title));
         while(recentUMD.size() > MAX_RECENT)
             recentUMD.remove(MAX_RECENT);
         Settings.getInstance().writeRecent("umd", recentUMD);

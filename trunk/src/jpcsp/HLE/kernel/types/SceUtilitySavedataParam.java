@@ -20,7 +20,8 @@ import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel.MapMode;
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.List;
 
 import jpcsp.Memory;
 import jpcsp.HLE.pspiofilemgr;
@@ -173,7 +174,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		saveName    = readStringNZ(20);
 		saveNameListAddr = read32();
 		if (saveNameListAddr != 0) {
-			Vector<String> saveNameList = new Vector<String>();
+			List<String> saveNameList = new ArrayList<String>();
 			boolean endOfList = false;
 			for (int i = 0; !endOfList; i += 20) {
 				String saveNameItem = Utilities.readStringNZ(mem, saveNameListAddr + i, 20);

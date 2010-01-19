@@ -77,12 +77,9 @@ public class IntrManager {
 
 	public void Initialize() {
 		interrupts = new Vector<LinkedList<IntrHandler>>(PSP_NUMBER_INTERRUPTS);
-		interrupts.setSize(PSP_NUMBER_INTERRUPTS);
-
 		scheduler.Initialize();
 		intrHandlers = new IntrHandler[IntrManager.PSP_NUMBER_INTERRUPTS];
 		someHandlerDefined = false;
-
 		installDefaultInterrupts();
 	}
 
@@ -325,8 +322,7 @@ public class IntrManager {
 		private void updateNextAction() {
 			nextAction = null;
 
-			for (Iterator<SchedulerAction> it = actions.iterator(); it.hasNext(); ) {
-				SchedulerAction schedulerAction = it.next();
+			for (SchedulerAction schedulerAction : actions) {
 				updateNextAction(schedulerAction);
 			}
 		}

@@ -18,11 +18,11 @@ package jpcsp.Allegrex.compiler;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Vector;
 
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -227,13 +227,13 @@ public class CodeBlock {
     }
 
     private void splitCodeSequences(CompilerContext context, int methodMaxInstructions) {
-        Vector<CodeSequence> codeSequences = new Vector<CodeSequence>();
+        List<CodeSequence> codeSequences = new ArrayList<CodeSequence>();
 
         generateCodeSequences(codeSequences, methodMaxInstructions);
         Collections.sort(codeSequences);
 
         int currentMethodInstructions = codeInstructions.size();
-        Vector<CodeSequence> sequencesToBeSplit = new Vector<CodeSequence>();
+        List<CodeSequence> sequencesToBeSplit = new ArrayList<CodeSequence>();
         for (CodeSequence codeSequence : codeSequences) {
             sequencesToBeSplit.add(codeSequence);
             if (Compiler.log.isDebugEnabled()) {
