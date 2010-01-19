@@ -596,6 +596,7 @@ public void loadFile(File file) {
 
         RuntimeContext.setIsHomebrew(isHomebrew);
         State.discId = discId;
+        State.title = title;
 
         // use regular settings first
         installCompatibilitySettings();
@@ -866,6 +867,7 @@ public void loadUMD(File file) {
             loadUMD(iso, "PSP_GAME/SYSDIR/EBOOT.BIN")) {
 
             State.discId = discId;
+            State.title = title;
 
             pspiofilemgr.getInstance().setfilepath("disc0/");
             //pspiofilemgr.getInstance().setfilepath("disc0/PSP_GAME/SYSDIR");
