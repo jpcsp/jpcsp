@@ -1782,7 +1782,9 @@ public class VideoEngine {
                 tex_mipmap_mode = normalArgument & 0xFFFF;
                 tex_mipmap_bias_int = (int)(byte) (normalArgument >> 16);
                 tex_mipmap_bias = tex_mipmap_bias_int / 16.0f;
-                log.warn("Unimplemented sceGuTexLevelMode(mode=" + tex_mipmap_mode + ", bias=" + tex_mipmap_bias + ")");
+                if (log.isInfoEnabled()) {
+                	log.warn("Unimplemented sceGuTexLevelMode(mode=" + tex_mipmap_mode + ", bias=" + tex_mipmap_bias + ")");
+                }
                 break;
             }
 
@@ -1940,7 +1942,9 @@ public class VideoEngine {
                 viewport_height = (int)(-floatArgument * 2);
 
                 if (viewport_width != 480 || viewport_height != 272) {
-                    log.warn("sceGuViewport(X, X, w=" + viewport_width + ", h=" + viewport_height + ") non-standard dimensions");
+                	if (log.isInfoEnabled()) {
+                		log.warn("sceGuViewport(X, X, w=" + viewport_width + ", h=" + viewport_height + ") non-standard dimensions");
+                	}
                 } else if (log.isDebugEnabled()) {
                     log.debug("sceGuViewport(X, X, w=" + viewport_width + ", h=" + viewport_height + ")");
                 }
@@ -1965,10 +1969,12 @@ public class VideoEngine {
             case YPOS:
                 viewport_cy = (int)floatArgument;
 
-                if (viewport_cx != 2048 || viewport_cy != 2048) {
-                    log.warn("Unimplemented sceGuViewport(cx=" + viewport_cx + ", cy=" + viewport_cy + ", X, X) non-standard dimensions");
-                } else {
-                    log.warn("Unimplemented sceGuViewport(cx=" + viewport_cx + ", cy=" + viewport_cy + ", X, X)");
+                if (log.isInfoEnabled()) {
+	                if (viewport_cx != 2048 || viewport_cy != 2048) {
+	                    log.warn("Unimplemented sceGuViewport(cx=" + viewport_cx + ", cy=" + viewport_cy + ", X, X) non-standard dimensions");
+	                } else {
+	                    log.warn("Unimplemented sceGuViewport(cx=" + viewport_cx + ", cy=" + viewport_cy + ", X, X)");
+	                }
                 }
                 break;
 
@@ -1986,7 +1992,9 @@ public class VideoEngine {
                 break;
             case OFFSETY:
                 offset_y = normalArgument >> 4;
-                log.warn("Unimplemented sceGuOffset(x=" + offset_x + ",y=" + offset_y + ")");
+                if (log.isInfoEnabled()) {
+                	log.warn("Unimplemented sceGuOffset(x=" + offset_x + ",y=" + offset_y + ")");
+                }
                 break;
 
             case FBP:
@@ -3362,7 +3370,9 @@ public class VideoEngine {
 	            		// the list processing when too many errors are displayed.
 	                    error("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "](int="+normalArgument+",float="+floatArgument+")");
 	            	} else if (nextCommand != BOFS && previousCommand != PRIM && previousCommand != UNKNOWNCOMMAND_0xFF) {
-	                    log.warn("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "](int="+normalArgument+",float="+floatArgument+")");
+	            		if (log.isInfoEnabled()) {
+	            			log.warn("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "](int="+normalArgument+",float="+floatArgument+")");
+	            		}
 	            	} else if (log.isDebugEnabled()) {
 	                    log.debug("Ignored video command [" + helper.getCommandString(command(instruction)) + "](int="+normalArgument+")");
 	            	}
@@ -3371,7 +3381,9 @@ public class VideoEngine {
             }
 
             default:
-                log.warn("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "](int="+normalArgument+",float="+floatArgument+")");
+            	if (log.isInfoEnabled()) {
+            		log.warn("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "](int="+normalArgument+",float="+floatArgument+")");
+            	}
         }
         commandStatistics[command].end();
     }
