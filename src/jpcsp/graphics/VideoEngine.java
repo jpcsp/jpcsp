@@ -3947,11 +3947,17 @@ public class VideoEngine {
                     	IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, compressedTextureSize, 4);
                     	// PSP DXT1 hardware format reverses the colors and the per-pixel
                     	// bits, and encodes the color in RGB 565 format
-                    	int n = compressedTextureSize / 4;
-                        for (int i = 0; i < n; i += 2) {
-                            tmp_texture_buffer32[i + 1] = memoryReader.readNext();
-                            tmp_texture_buffer32[i + 0] = memoryReader.readNext();
-                        }
+                    	int i = 0;
+                    	for (int y = 0; y < texture_height[level]; y += 4) {
+                    		for (int x = 0; x < texture_buffer_width[level]; x += 4, i += 2) {
+                                tmp_texture_buffer32[i + 1] = memoryReader.readNext();
+                                tmp_texture_buffer32[i + 0] = memoryReader.readNext();
+                    		}
+                    		for (int x = texture_buffer_width[level]; x < texture_width[level]; x += 4, i += 2) {
+                                tmp_texture_buffer32[i + 0] = 0;
+                                tmp_texture_buffer32[i + 1] = 0;
+                    		}
+                    	}
                         final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
                         break;
                     }
@@ -3966,21 +3972,28 @@ public class VideoEngine {
                     	IMemoryReader memoryReader = MemoryReader.getMemoryReader(texaddr, compressedTextureSize, 4);
                     	// PSP DXT3 format reverses the alpha and color parts of each block,
                     	// and reverses the color and per-pixel terms in the color part.
-                    	int n = compressedTextureSize / 4;
-                        for (int i = 0; i < n; i += 4) {
-                        	// Color
-                            tmp_texture_buffer32[i + 3] = memoryReader.readNext();
-                            tmp_texture_buffer32[i + 2] = memoryReader.readNext();
-                            // Alpha
-                            tmp_texture_buffer32[i + 0] = memoryReader.readNext();
-                            tmp_texture_buffer32[i + 1] = memoryReader.readNext();
-                        }
+                    	int i = 0;
+                    	for (int y = 0; y < texture_height[level]; y += 4) {
+                    		for (int x = 0; x < texture_buffer_width[level]; x += 4, i += 4) {
+                            	// Color
+                                tmp_texture_buffer32[i + 3] = memoryReader.readNext();
+                                tmp_texture_buffer32[i + 2] = memoryReader.readNext();
+                                // Alpha
+                                tmp_texture_buffer32[i + 0] = memoryReader.readNext();
+                                tmp_texture_buffer32[i + 1] = memoryReader.readNext();
+                    		}
+                    		for (int x = texture_buffer_width[level]; x < texture_width[level]; x += 4, i += 4) {
+                                tmp_texture_buffer32[i + 0] = 0;
+                                tmp_texture_buffer32[i + 1] = 0;
+                                tmp_texture_buffer32[i + 2] = 0;
+                                tmp_texture_buffer32[i + 3] = 0;
+                    		}
+                    	}
                         final_buffer = IntBuffer.wrap(tmp_texture_buffer32);
                         break;
                     }
 
                     case TPSM_PIXEL_STORAGE_MODE_DXT5: {
-                    	log.warn("texture TPSM_PIXEL_STORAGE_MODE_DXT5 untested");
                     	if (log.isDebugEnabled()) {
                     		log.debug("Loading texture TPSM_PIXEL_STORAGE_MODE_DXT5 " + Integer.toHexString(texaddr));
                     	}
@@ -3992,19 +4005,31 @@ public class VideoEngine {
                     	// and reverses the color and per-pixel terms in the color part. In
                     	// the alpha part, the 2 reference alpha values are swapped with the
                     	// alpha interpolation values.
-                    	int n = compressedTextureSize / 2;
-                        for (int i = 0; i < n; i += 8) {
-                        	// Color
-                            tmp_texture_buffer16[i + 6] = (short) memoryReader.readNext();
-                            tmp_texture_buffer16[i + 7] = (short) memoryReader.readNext();
-                            tmp_texture_buffer16[i + 4] = (short) memoryReader.readNext();
-                            tmp_texture_buffer16[i + 5] = (short) memoryReader.readNext();
-                            // Alpha
-                            tmp_texture_buffer16[i + 1] = (short) memoryReader.readNext();
-                            tmp_texture_buffer16[i + 2] = (short) memoryReader.readNext();
-                            tmp_texture_buffer16[i + 3] = (short) memoryReader.readNext();
-                            tmp_texture_buffer16[i + 0] = (short) memoryReader.readNext();
-                        }
+                    	int i = 0;
+                    	for (int y = 0; y < texture_height[level]; y += 4) {
+                    		for (int x = 0; x < texture_buffer_width[level]; x += 4, i += 8) {
+                            	// Color
+                                tmp_texture_buffer16[i + 6] = (short) memoryReader.readNext();
+                                tmp_texture_buffer16[i + 7] = (short) memoryReader.readNext();
+                                tmp_texture_buffer16[i + 4] = (short) memoryReader.readNext();
+                                tmp_texture_buffer16[i + 5] = (short) memoryReader.readNext();
+                                // Alpha
+                                tmp_texture_buffer16[i + 1] = (short) memoryReader.readNext();
+                                tmp_texture_buffer16[i + 2] = (short) memoryReader.readNext();
+                                tmp_texture_buffer16[i + 3] = (short) memoryReader.readNext();
+                                tmp_texture_buffer16[i + 0] = (short) memoryReader.readNext();
+                    		}
+                    		for (int x = texture_buffer_width[level]; x < texture_width[level]; x += 4, i += 8) {
+                                tmp_texture_buffer16[i + 0] = 0;
+                                tmp_texture_buffer16[i + 1] = 0;
+                                tmp_texture_buffer16[i + 2] = 0;
+                                tmp_texture_buffer16[i + 3] = 0;
+                                tmp_texture_buffer16[i + 4] = 0;
+                                tmp_texture_buffer16[i + 5] = 0;
+                                tmp_texture_buffer16[i + 6] = 0;
+                                tmp_texture_buffer16[i + 7] = 0;
+                    		}
+                    	}
                         final_buffer = ShortBuffer.wrap(tmp_texture_buffer16);
                         break;
                     }
@@ -4700,7 +4725,7 @@ public class VideoEngine {
     }
 
     private int getCompressedTextureSize(int level, int compressionRatio) {
-    	return getCompressedTextureSize(texture_buffer_width[level], texture_height[level], compressionRatio);
+    	return getCompressedTextureSize(texture_width[level], texture_height[level], compressionRatio);
     }
 
     public static int getCompressedTextureSize(int width, int height, int compressionRatio) {
