@@ -454,23 +454,22 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         Settings.getInstance().readRecent("umd", recentUMD);
         Settings.getInstance().readRecent("file", recentFile);
 
-        if(recentUMD.size() > 0) {
-            for(int i = 0; i < recentUMD.size(); ++i) {
-                JMenuItem item = new JMenuItem(recentUMD.get(i).toString());
-                //item.setFont(Settings.getInstance().getFont()); // doesn't seem to work
-                item.addActionListener(new RecentElementActionListener(RecentElementActionListener.TYPE_UMD, recentUMD.get(i).path));
-                RecentMenu.add(item);
-            }
-            if(recentFile.size() > 0)
-                RecentMenu.addSeparator();
+        
+        for (RecentElement umd : recentUMD) {
+            JMenuItem item = new JMenuItem(umd.toString());
+            //item.setFont(Settings.getInstance().getFont()); // doesn't seem to work
+            item.addActionListener(new RecentElementActionListener(RecentElementActionListener.TYPE_UMD, umd.path));
+            RecentMenu.add(item);
         }
 
-        if(recentFile.size() > 0) {
-            for(int i = 0; i < recentFile.size(); ++i) {
-                JMenuItem item = new JMenuItem(recentFile.get(i).toString());
-                item.addActionListener(new RecentElementActionListener(RecentElementActionListener.TYPE_FILE, recentFile.get(i).path));
-                RecentMenu.add(item);
-            }
+        if (recentUMD.size() > 0 && recentFile.size() > 0) {
+            RecentMenu.addSeparator();
+        }
+        
+        for (RecentElement file : recentFile) {
+            JMenuItem item = new JMenuItem(file.toString());
+            item.addActionListener(new RecentElementActionListener(RecentElementActionListener.TYPE_FILE, file.path));
+            RecentMenu.add(item);
         }
     }
 
