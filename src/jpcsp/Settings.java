@@ -31,9 +31,9 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Vector;
 
 import jpcsp.Controller.keyCode;
 import jpcsp.GUI.RecentElement;
@@ -293,17 +293,14 @@ public class Settings {
 		@Override
 		@SuppressWarnings("unchecked")
 		public synchronized Enumeration keys() {
-			Enumeration<?> keysEnum = super.keys();
-			Vector keyList = new Vector();
-			while (keysEnum.hasMoreElements()) {
-				keyList.add(keysEnum.nextElement());
-			}
-			Collections.sort(keyList);
-			return keyList.elements();
+			Enumeration keysEnum = super.keys();
+			List keyList = Collections.list(keysEnum);
+                        Collections.sort(keyList);
+			return Collections.enumeration(keyList);
 		}
 	}
 
-	public void readRecent(String cat, Vector<RecentElement> recent) {
+	public void readRecent(String cat, List<RecentElement> recent) {
 		for(int i = 0;; ++i) {
     		String r = loadedSettings.getProperty("gui.recent." + cat + "." + i);
     		if(r == null) break;
@@ -313,18 +310,19 @@ public class Settings {
 	}
 
 	@SuppressWarnings("unchecked")
-	public void writeRecent(String cat, Vector<RecentElement> recent) {
+	public void writeRecent(String cat, List<RecentElement> recent) {
 		Enumeration<String> keys = loadedSettings.keys();
 		while(keys.hasMoreElements()) {
 			String key = keys.nextElement();
 			if(key.startsWith("gui.recent." + cat))
-				loadedSettings.remove(key);
+                            loadedSettings.remove(key);
 		}
-
-		for(int i = 0; i < recent.size(); ++i) {
-			loadedSettings.setProperty("gui.recent." + cat + "." + i, recent.get(i).path);
-			if(recent.get(i).title != null)
-				loadedSettings.setProperty("gui.recent." + cat + "." + i + ".title", recent.get(i).title);
+                int index = 0;
+		for(RecentElement elem : recent) {
+			loadedSettings.setProperty("gui.recent." + cat + "." + index, elem.path);
+			if(elem.title != null)
+                            loadedSettings.setProperty("gui.recent." + cat + "." + index + ".title", elem.title);
+                        index++;
 		}
 		writeSettings();
 	}

@@ -16,17 +16,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Vector;
-
-import jpcsp.Memory;
-import jpcsp.HLE.Modules;
-import jpcsp.HLE.pspiofilemgr;
-import jpcsp.filesystems.SeekableDataInput;
-import jpcsp.filesystems.SeekableRandomFile;
-import jpcsp.format.PSF;
-import jpcsp.util.Utilities;
 
 public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure {
 

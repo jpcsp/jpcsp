@@ -6,7 +6,8 @@
 package jpcsp.filesystems.umdiso.iso9660;
 
 import java.io.*;
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.List;
 import jpcsp.filesystems.umdiso.*;
 
 /**
@@ -15,14 +16,14 @@ import jpcsp.filesystems.umdiso.*;
  */
 public class Iso9660Directory {
 
-    private Vector<Iso9660File> files;
+    private List<Iso9660File> files;
 
     public Iso9660Directory(UmdIsoReader r, int directorySector, int directorySize) throws IOException
     {
         // parse directory sector
         UmdIsoFile dataStream = new UmdIsoFile(r, directorySector, directorySize, null);
 
-        files = new Vector<Iso9660File>();
+        files = new ArrayList<Iso9660File>();
 
         byte[] b;
 
@@ -58,7 +59,7 @@ public class Iso9660Directory {
         for(int i=0;i<files.size();i++)
         {
             String file = files.get(i).getFileName();
-            if(file.compareToIgnoreCase(fileName)==0)
+            if(file.equalsIgnoreCase(fileName))
             {
                 return i;
             }
