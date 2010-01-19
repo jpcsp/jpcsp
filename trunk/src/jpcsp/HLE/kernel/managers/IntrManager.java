@@ -77,6 +77,7 @@ public class IntrManager {
 
 	public void Initialize() {
 		interrupts = new Vector<LinkedList<IntrHandler>>(PSP_NUMBER_INTERRUPTS);
+		interrupts.setSize(PSP_NUMBER_INTERRUPTS);
 		scheduler.Initialize();
 		intrHandlers = new IntrHandler[IntrManager.PSP_NUMBER_INTERRUPTS];
 		someHandlerDefined = false;
