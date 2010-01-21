@@ -26,6 +26,8 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -172,6 +174,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         RotateItem = new javax.swing.JMenuItem();
         SetttingsMenu = new javax.swing.JMenuItem();
         ShotItem = new javax.swing.JMenuItem();
+        SaveSnap = new javax.swing.JMenuItem();
+        LoadSnap = new javax.swing.JMenuItem();
         DebugMenu = new javax.swing.JMenu();
         EnterDebugger = new javax.swing.JMenuItem();
         EnterMemoryViewer = new javax.swing.JMenuItem();
@@ -338,6 +342,24 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         OptionsMenu.add(ShotItem);
 
+        SaveSnap.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, java.awt.event.InputEvent.SHIFT_MASK));
+        SaveSnap.setText("Save Snapshot");
+        SaveSnap.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                SaveSnapActionPerformed(evt);
+            }
+        });
+        OptionsMenu.add(SaveSnap);
+
+        LoadSnap.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_L, java.awt.event.InputEvent.SHIFT_MASK));
+        LoadSnap.setText("Load Snapshot");
+        LoadSnap.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                LoadSnapActionPerformed(evt);
+            }
+        });
+        OptionsMenu.add(LoadSnap);
+
         MenuBar.add(OptionsMenu);
 
         DebugMenu.setText("Debug");
@@ -417,7 +439,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         ResetProfiler.setText("Reset Profiler Information");
         ResetProfiler.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-            	ResetProfilerActionPerformed(evt);
+                ResetProfilerActionPerformed(evt);
             }
         });
         DebugMenu.add(ResetProfiler);
@@ -1077,6 +1099,96 @@ if(jop != -1)
 else
     return;
 }//GEN-LAST:event_RotateItemActionPerformed
+private byte safeRead8(int address)
+{
+    byte value = 0;
+    if (Memory.getInstance().isAddressGood(address))
+        value = (byte)Memory.getInstance().read8(address);
+    return value;
+}
+
+private void safeWrite8(byte value, int address)
+{
+    if (Memory.getInstance().isAddressGood(address))
+        Memory.getInstance().write8(address, value);
+}
+private void SaveSnapActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SaveSnapActionPerformed
+File f = new File("Snap_" + State.discId + ".bin");
+BufferedOutputStream bOut = null;
+ByteBuffer cpuBuf = ByteBuffer.allocate(1024);
+
+Emulator.getProcessor().save(cpuBuf);
+
+try
+{
+    bOut = new BufferedOutputStream( new FileOutputStream(f) );
+    for(int i = 0x08000000; i<=0x09ffffff; i++)
+    {
+        bOut.write(safeRead8(i));
+    }
+
+    bOut.write(cpuBuf.array());
+}
+
+catch(IOException e)
+{
+
+}
+
+finally
+{
+    if( bOut!=null )
+    {
+        try
+        {
+            bOut.close();
+        }
+        catch(IOException ex)
+        {
+            ex.printStackTrace();
+        }
+    }
+}
+}//GEN-LAST:event_SaveSnapActionPerformed
+
+private void LoadSnapActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LoadSnapActionPerformed
+File f = new File("Snap_" + State.discId + ".bin");
+BufferedInputStream bIn = null;
+ByteBuffer cpuBuf = ByteBuffer.allocate(1024);
+
+try
+{
+    bIn = new BufferedInputStream(new FileInputStream(f));
+    for(int i = 0x08000000; i<=0x09ffffff; i++ )
+    {
+        safeWrite8((byte)bIn.read(), i);
+    }
+
+    bIn.read(cpuBuf.array());
+}
+
+catch(IOException e)
+{
+
+}
+
+finally
+{
+    if( bIn!=null )
+    {
+        try
+        {
+            bIn.close();
+        }
+        catch(IOException ex)
+        {
+            ex.printStackTrace();
+        }
+    }
+}
+
+Emulator.getProcessor().load(cpuBuf);
+}//GEN-LAST:event_LoadSnapActionPerformed
 
 private void exitEmu() {
     if (Settings.getInstance().readBool("gui.saveWindowPos"))
@@ -1233,6 +1345,7 @@ private void processArgs(String[] args) {
     private javax.swing.JMenu FileMenu;
     private javax.swing.JMenu HelpMenu;
     private javax.swing.JMenuItem InstructionCounter;
+    private javax.swing.JMenuItem LoadSnap;
     private javax.swing.JMenuBar MenuBar;
     private javax.swing.JMenuItem OpenFile;
     private javax.swing.JMenuItem OpenMemStick;
@@ -1242,14 +1355,15 @@ private void processArgs(String[] args) {
     private javax.swing.JMenu RecentMenu;
     private javax.swing.JButton ResetButton;
     private javax.swing.JMenuItem ResetEmu;
+    private javax.swing.JMenuItem ResetProfiler;
     private javax.swing.JMenuItem RotateItem;
     private javax.swing.JToggleButton RunButton;
     private javax.swing.JMenuItem RunEmu;
+    private javax.swing.JMenuItem SaveSnap;
     private javax.swing.JMenuItem SetttingsMenu;
     private javax.swing.JMenuItem ShotItem;
     private javax.swing.JMenuItem ToggleConsole;
     private javax.swing.JMenuItem ToggleDebugLog;
-    private javax.swing.JMenuItem ResetProfiler;
     private javax.swing.JMenuItem VfpuRegisters;
     private javax.swing.JToolBar jToolBar1;
     private javax.swing.JMenuItem openUmd;
