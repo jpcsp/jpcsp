@@ -53,12 +53,22 @@ public class Processor /* extends OldCpuState */ {
     }
 
     public void load(ByteBuffer buffer) {
+        cpu.pc = buffer.getInt();
+        cpu.npc = buffer.getInt();
+
+        for(int i = 0; i < 32; i++)
+            cpu.gpr[i] = buffer.getInt();
 
     }
 
     public void save(ByteBuffer buffer) {
+        buffer.putInt(cpu.pc);
+        buffer.putInt(cpu.npc);
 
+        for(int i = 0; i < 32; i++)
+            buffer.putInt(cpu.gpr[i]);
     }
+
 
     class CacheLine {
         boolean valid;
