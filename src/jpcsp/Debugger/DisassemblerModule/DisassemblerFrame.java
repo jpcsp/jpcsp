@@ -278,7 +278,6 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
     }
 
     private void updateSelectedRegisters(String text) {
-        boolean keepgoing;
 
         // selected address (highlight constant branch/jump addresses)
         {
@@ -290,35 +289,32 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         }
 
         selectedRegCount = 0; // clear tracked registers
-        do {
-            keepgoing = false;
+        int find = 0;
+        while ((find = text.indexOf("$", find)) != -1 && selectedRegCount < selectedRegColors.length) {
 
             // find register in disassembly
-            int find = text.indexOf("$");
-            if (find != -1) {
-                String regName = text.substring(find);
-                for (int i = 0; i < gprNames.length; i++) {
-                    if (regName.startsWith(gprNames[i])) {
-                        // check if we are already tracking this register
-                        boolean found = false;
-                        for (int j = 0; j < selectedRegCount && !found; j++) {
-                            found = regName.startsWith(selectedRegNames[j]);
-                        }
-
-                        // start tracking this register
-                        if (!found) {
-                            selectedRegNames[selectedRegCount] = gprNames[i];
-                            selectedRegCount++;
-                        }
-
-                        // move on to the remainder of the disassembled line
-                        keepgoing = true;
-                        text = text.substring(find + 3);
-                        break;
-                    }
+            String regName = text.substring(find);
+            for (int i = 0; i < gprNames.length; i++) {
+                if (!regName.startsWith(gprNames[i])) {
+                    continue;
                 }
+                // check if we are already tracking this register
+                boolean found = false;
+                for (int j = 0; j < selectedRegCount && !found; j++) {
+                    found = regName.startsWith(selectedRegNames[j]);
+                }
+
+                // start tracking this register
+                if (!found) {
+                    selectedRegNames[selectedRegCount] = gprNames[i];
+                    selectedRegCount++;
+                }
+
+                // move on to the remainder of the disassembled line
+                find += 3;
+                break;
             }
-        } while (keepgoing && selectedRegCount < selectedRegColors.length);
+        }
     }
 
     /** This method is called from within the constructor to
