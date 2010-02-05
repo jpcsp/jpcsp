@@ -179,15 +179,10 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         // register highlighting
         int lastfind = 0;
-        do {
+        // find register in disassembly
+        while ((lastfind = text.indexOf("$", lastfind)) != -1) {
 
-            // find register in disassembly
-            int find = text.indexOf("$", lastfind);
-            if (find == -1) {
-                break;
-            }
-
-            String regName = text.substring(find);
+            String regName = text.substring(lastfind);
             for (int i = 0; i < gprNames.length; i++) {
                 // we still need to check every possible register because a tracked register may not be the first operand
                 if (!regName.startsWith(gprNames[i])) {
@@ -196,15 +191,15 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 // check for tracked register
                 for (int j = 0; j < selectedRegCount; j++) {
                     if (regName.startsWith(selectedRegNames[j])) {
-                        label.addStyleRange(new StyleRange(lastfind + find, 3, Font.PLAIN, Color.BLACK, selectedRegColors[j], 0));
+                        label.addStyleRange(new StyleRange(lastfind, 3, Font.PLAIN, Color.BLACK, selectedRegColors[j], 0));
                     }
                 }
 
                 // move on to the remainder of the disassembled line on the next iteration
-                lastfind += find + 3;
+                lastfind += 3;
                 break;
             }
-        } while (true);
+        }
     }
 
     /** Delete breakpoints and reset to PC */
