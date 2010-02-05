@@ -177,35 +177,34 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             label.addStyleRange(new StyleRange(find, 8, Font.PLAIN, Color.BLACK, selectedAddressColor, 0));
         }
 
-        // register highlighting, clobbers "text" variable
-        boolean keepgoing;
+        // register highlighting
         int lastfind = 0;
         do {
-            keepgoing = false;
 
             // find register in disassembly
-            int find = text.indexOf("$");
-            if (find != -1) {
-                String regName = text.substring(find);
-                for (int i = 0; i < gprNames.length; i++) {
-                    // we still need to check every possible register because a tracked register may not be the first operand
-                    if (regName.startsWith(gprNames[i])) {
-                        // check for tracked register
-                        for (int j = 0; j < selectedRegCount; j++) {
-                            if (regName.startsWith(selectedRegNames[j])) {
-                                label.addStyleRange(new StyleRange(lastfind + find, 3, Font.PLAIN, Color.BLACK, selectedRegColors[j], 0));
-                            }
-                        }
+            int find = text.indexOf("$", lastfind);
+            if (find == -1) {
+                break;
+            }
 
-                        // move on to the remainder of the disassembled line
-                        keepgoing = true;
-                        lastfind += find + 3;
-                        text = text.substring(find + 3);
-                        break;
+            String regName = text.substring(find);
+            for (int i = 0; i < gprNames.length; i++) {
+                // we still need to check every possible register because a tracked register may not be the first operand
+                if (!regName.startsWith(gprNames[i])) {
+                    continue;
+                }
+                // check for tracked register
+                for (int j = 0; j < selectedRegCount; j++) {
+                    if (regName.startsWith(selectedRegNames[j])) {
+                        label.addStyleRange(new StyleRange(lastfind + find, 3, Font.PLAIN, Color.BLACK, selectedRegColors[j], 0));
                     }
                 }
+
+                // move on to the remainder of the disassembled line on the next iteration
+                lastfind += find + 3;
+                break;
             }
-        } while (keepgoing);
+        } while (true);
     }
 
     /** Delete breakpoints and reset to PC */
