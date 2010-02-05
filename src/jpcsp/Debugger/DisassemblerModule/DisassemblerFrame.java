@@ -1144,37 +1144,23 @@ private void DumpCodeToTextActionPerformed(java.awt.event.ActionEvent evt) {//GE
             bufferedWriter.newLine();
             int Start = Utilities.parseAddress(opt.getInput()[0]);
             int End = Utilities.parseAddress(opt.getInput()[1]);
-            for(int i =Start; i<=End; i+=4)
-            {
+            for (int i = Start; i <= End; i += 4) {
                 if (Memory.getInstance().isAddressGood(i)) {
                     int opcode = Memory.getInstance().read32(i);
-
                     Instruction insn = Decoder.instruction(opcode);
-
                     bufferedWriter.write(String.format("%08X:[%08X]: %s", i, opcode, insn.disasm(i, opcode)));
-                    bufferedWriter.newLine();
                 } else {
                     // Should we even both printing these?
                     bufferedWriter.write(String.format("%08X: invalid address", i));
-                    bufferedWriter.newLine();
                 }
+                bufferedWriter.newLine();
             }
-
-
         } catch (FileNotFoundException ex) {
             ex.printStackTrace();
         } catch (IOException ex) {
             ex.printStackTrace();
         } finally {
-            //Close the BufferedWriter
-            try {
-                if (bufferedWriter != null) {
-                    bufferedWriter.flush();
-                    bufferedWriter.close();
-                }
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
+            Utilities.close(bufferedWriter);
         }
     }
     //System.out.println("dump code dialog done");
