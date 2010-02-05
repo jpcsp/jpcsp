@@ -194,11 +194,10 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                         label.addStyleRange(new StyleRange(lastfind, 3, Font.PLAIN, Color.BLACK, selectedRegColors[j], 0));
                     }
                 }
-
-                // move on to the remainder of the disassembled line on the next iteration
-                lastfind += 3;
                 break;
             }
+            // move on to the remainder of the disassembled line on the next iteration
+            lastfind += 3;
         }
     }
 
@@ -307,11 +306,10 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                     selectedRegNames[selectedRegCount] = gprNames[i];
                     selectedRegCount++;
                 }
-
-                // move on to the remainder of the disassembled line
-                lastFind += 3;
                 break;
             }
+            // move on to the remainder of the disassembled line
+            lastFind += 3;
         }
     }
 
