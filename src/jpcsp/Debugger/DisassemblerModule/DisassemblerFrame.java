@@ -280,20 +280,18 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
     private void updateSelectedRegisters(String text) {
 
         // selected address (highlight constant branch/jump addresses)
-        {
-            selectedAddress = null;
-            int find = text.indexOf(" 0x");
-            if (find != -1 && (find + 11) <= text.length() && text.charAt(find + 7) != ' ') {
-                selectedAddress = text.substring(find + 3, find + 3 + 8);
-            }
+        selectedAddress = null;
+        int find = text.indexOf(" 0x");
+        if (find != -1 && (find + 11) <= text.length() && text.charAt(find + 7) != ' ') {
+            selectedAddress = text.substring(find + 3, find + 3 + 8);
         }
 
         selectedRegCount = 0; // clear tracked registers
-        int find = 0;
-        while ((find = text.indexOf("$", find)) != -1 && selectedRegCount < selectedRegColors.length) {
+        int lastFind = 0;
+        while ((lastFind = text.indexOf("$", lastFind)) != -1 && selectedRegCount < selectedRegColors.length) {
 
             // find register in disassembly
-            String regName = text.substring(find);
+            String regName = text.substring(lastFind);
             for (int i = 0; i < gprNames.length; i++) {
                 if (!regName.startsWith(gprNames[i])) {
                     continue;
@@ -311,7 +309,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
                 }
 
                 // move on to the remainder of the disassembled line
-                find += 3;
+                lastFind += 3;
                 break;
             }
         }
