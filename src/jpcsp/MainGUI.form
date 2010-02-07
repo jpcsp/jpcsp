@@ -152,6 +152,9 @@
                 <Property name="accelerator" type="javax.swing.KeyStroke" editor="org.netbeans.modules.form.editors.KeyStrokeEditor">
                   <KeyStroke key="Shift+S"/>
                 </Property>
+                <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
+                  <Image iconType="3" name="/jpcsp/icons/SaveStateIcon.png"/>
+                </Property>
                 <Property name="text" type="java.lang.String" value="Save Snapshot"/>
               </Properties>
               <Events>
@@ -162,6 +165,9 @@
               <Properties>
                 <Property name="accelerator" type="javax.swing.KeyStroke" editor="org.netbeans.modules.form.editors.KeyStrokeEditor">
                   <KeyStroke key="Shift+L"/>
+                </Property>
+                <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
+                  <Image iconType="3" name="/jpcsp/icons/LoadStateIcon.png"/>
                 </Property>
                 <Property name="text" type="java.lang.String" value="Load Snapshot"/>
               </Properties>

@@ -419,12 +419,20 @@ public class VideoEngine {
 
     	String[] srcArray = new String[1];
     	final String shaderVert = "/jpcsp/graphics/shader.vert";
-    	srcArray[0] = Utilities.toString(getClass().getResourceAsStream(shaderVert), true);
+        try {
+            srcArray[0] = Utilities.toString(getClass().getResourceAsStream(shaderVert), true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     	gl.glShaderSource(v, 1, srcArray, null, 0);
     	gl.glCompileShader(v);
     	printShaderInfoLog(gl, v);
         final String shaderFrag = "/jpcsp/graphics/shader.frag";
-    	srcArray[0] = Utilities.toString(getClass().getResourceAsStream(shaderFrag), true);
+        try {
+            srcArray[0] = Utilities.toString(getClass().getResourceAsStream(shaderFrag), true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     	gl.glShaderSource(f, 1, srcArray, null, 0);
     	gl.glCompileShader(f);
     	printShaderInfoLog(gl, f);
