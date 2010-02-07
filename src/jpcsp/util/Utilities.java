@@ -16,8 +16,11 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.util;
 
+import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
@@ -367,7 +370,35 @@ public class Utilities {
 		destination.order(order);
     }
 
-        /**
+    /**
+     * Reads inputstream i into a String with the UTF-8 charset
+     * until the inputstream is finished (don't use with infinite streams).
+     * @param inputStream to read into a string
+     * @param close if true, close the inputstream
+     * @return null if the inputstream is null, a string otherwise
+     * @throws java.io.IOException if thrown on reading the stream
+     */
+    public static String toString(InputStream inputStream, boolean close) throws IOException {
+        if (inputStream == null) {
+            return null;
+        }
+        String string;
+        StringBuilder outputBuilder = new StringBuilder();
+
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
+            while (null != (string = reader.readLine())) {
+                outputBuilder.append(string).append('\n');
+            }
+        } finally {
+            if (close) {
+                close(inputStream);
+            }
+        }
+        return outputBuilder.toString();
+    }
+
+    /**
      * Close closeables. Use this in a finally clause.
      */
     public static void close(Closeable... closeables) {

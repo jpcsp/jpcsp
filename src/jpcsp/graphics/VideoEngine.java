@@ -56,6 +56,8 @@ import static jpcsp.HLE.pspge.*;
 import org.apache.log4j.Logger;
 
 import com.sun.opengl.util.BufferUtil;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 
 public class VideoEngine {
     public static final int NUM_LIGHTS = 4;
@@ -415,34 +417,14 @@ public class VideoEngine {
     	int v = gl.glCreateShader(GL.GL_VERTEX_SHADER);
     	int f = gl.glCreateShader(GL.GL_FRAGMENT_SHADER);
 
-    	BufferedInputStream biv = new BufferedInputStream(getClass().getResourceAsStream("/jpcsp/graphics/shader.vert"));
-
     	String[] srcArray = new String[1];
-    	StringBuilder sb = new StringBuilder();
-    	int c;
-    	try {
-			while((c = (int) biv.read()) != -1)
-				sb.append((char)c);
-			biv.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-    	srcArray[0] = sb.toString();
+    	final String shaderVert = "/jpcsp/graphics/shader.vert";
+    	srcArray[0] = Utilities.toString(getClass().getResourceAsStream(shaderVert), true);
     	gl.glShaderSource(v, 1, srcArray, null, 0);
     	gl.glCompileShader(v);
     	printShaderInfoLog(gl, v);
-
-    	BufferedInputStream bif = new BufferedInputStream(getClass().getResourceAsStream("/jpcsp/graphics/shader.frag"));
-    	sb = new StringBuilder();
-    	try {
-			while((c = bif.read()) != -1)
-				sb.append((char)c);
-			bif.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-    	srcArray[0] = sb.toString();
+        final String shaderFrag = "/jpcsp/graphics/shader.frag";
+    	srcArray[0] = Utilities.toString(getClass().getResourceAsStream(shaderFrag), true);
     	gl.glShaderSource(f, 1, srcArray, null, 0);
     	gl.glCompileShader(f);
     	printShaderInfoLog(gl, f);
