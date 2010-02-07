@@ -191,6 +191,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         About = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        setForeground(java.awt.Color.white);
         setMinimumSize(new java.awt.Dimension(480, 272));
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {
@@ -250,6 +252,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         FileMenu.setText("File");
 
+        openUmd.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/LoadUmdIcon.png"))); // NOI18N
         openUmd.setText("Load UMD ");
         openUmd.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -258,6 +261,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         FileMenu.add(openUmd);
 
+        OpenFile.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/LoadFileIcon.png"))); // NOI18N
         OpenFile.setText("Load File");
         OpenFile.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -266,6 +270,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         FileMenu.add(OpenFile);
 
+        OpenMemStick.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/LoadMemoryStick.png"))); // NOI18N
         OpenMemStick.setText("Load MemStick");
         OpenMemStick.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -274,9 +279,11 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         FileMenu.add(OpenMemStick);
 
+        RecentMenu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/RecentIcon.png"))); // NOI18N
         RecentMenu.setText("Load Recent");
         FileMenu.add(RecentMenu);
 
+        ExitEmu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/CloseIcon.png"))); // NOI18N
         ExitEmu.setText("Exit");
         ExitEmu.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -289,6 +296,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         EmulationMenu.setText("Emulation");
 
+        RunEmu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PlayIcon.png"))); // NOI18N
         RunEmu.setText("Run");
         RunEmu.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -297,6 +305,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         EmulationMenu.add(RunEmu);
 
+        PauseEmu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PauseIcon.png"))); // NOI18N
         PauseEmu.setText("Pause");
         PauseEmu.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -305,6 +314,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         EmulationMenu.add(PauseEmu);
 
+        ResetEmu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StopIcon.png"))); // NOI18N
         ResetEmu.setText("Reset");
         ResetEmu.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -317,6 +327,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         OptionsMenu.setText("Options");
 
+        RotateItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/RotateIcon.png"))); // NOI18N
         RotateItem.setText("Rotate");
         RotateItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -325,6 +336,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         OptionsMenu.add(RotateItem);
 
+        SetttingsMenu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/SettingsIcon.png"))); // NOI18N
         SetttingsMenu.setText("Settings");
         SetttingsMenu.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -334,6 +346,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         OptionsMenu.add(SetttingsMenu);
 
         ShotItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F5, 0));
+        ShotItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/ScreenshotIcon.png"))); // NOI18N
         ShotItem.setText("Screenshot");
         ShotItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -448,6 +461,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         HelpMenu.setText("Help");
 
+        About.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/AboutIcon.png"))); // NOI18N
         About.setText("About");
         About.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {

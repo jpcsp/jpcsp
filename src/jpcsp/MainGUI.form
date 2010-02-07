@@ -14,6 +14,9 @@
           <SubComponents>
             <MenuItem class="javax.swing.JMenuItem" name="openUmd">
               <Properties>
+                <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
+                  <Image iconType="3" name="/jpcsp/icons/LoadUmdIcon.png"/>
+                </Property>
                 <Property name="text" type="java.lang.String" value="Load UMD "/>
               </Properties>
               <Events>
@@ -22,6 +25,9 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="OpenFile">
               <Properties>
+                <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
+                  <Image iconType="3" name="/jpcsp/icons/LoadFileIcon.png"/>
+                </Property>
                 <Property name="text" type="java.lang.String" value="Load File"/>
               </Properties>
               <Events>
@@ -30,6 +36,9 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="OpenMemStick">
               <Properties>
+                <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
+                  <Image iconType="3" name="/jpcsp/icons/LoadMemoryStick.png"/>
+                </Property>
                 <Property name="text" type="java.lang.String" value="Load MemStick"/>
               </Properties>
               <Events>
@@ -38,11 +47,17 @@
             </MenuItem>
             <Menu class="javax.swing.JMenu" name="RecentMenu">
               <Properties>
+                <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
+                  <Image iconType="3" name="/jpcsp/icons/RecentIcon.png"/>
+                </Property>
                 <Property name="text" type="java.lang.String" value="Load Recent"/>
               </Properties>
             </Menu>
             <MenuItem class="javax.swing.JMenuItem" name="ExitEmu">
               <Properties>
+                <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
+                  <Image iconType="3" name="/jpcsp/icons/CloseIcon.png"/>
+                </Property>
                 <Property name="text" type="java.lang.String" value="Exit"/>
               </Properties>
               <Events>
@@ -58,6 +73,9 @@
           <SubComponents>
             <MenuItem class="javax.swing.JMenuItem" name="RunEmu">
               <Properties>
+                <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
+                  <Image iconType="3" name="/jpcsp/icons/PlayIcon.png"/>
+                </Property>
                 <Property name="text" type="java.lang.String" value="Run"/>
               </Properties>
               <Events>
@@ -66,6 +84,9 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="PauseEmu">
               <Properties>
+                <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
+                  <Image iconType="3" name="/jpcsp/icons/PauseIcon.png"/>
+                </Property>
                 <Property name="text" type="java.lang.String" value="Pause"/>
               </Properties>
               <Events>
@@ -74,6 +95,9 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="ResetEmu">
               <Properties>
+                <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
+                  <Image iconType="3" name="/jpcsp/icons/StopIcon.png"/>
+                </Property>
                 <Property name="text" type="java.lang.String" value="Reset"/>
               </Properties>
               <Events>
@@ -89,6 +113,9 @@
           <SubComponents>
             <MenuItem class="javax.swing.JMenuItem" name="RotateItem">
               <Properties>
+                <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
+                  <Image iconType="3" name="/jpcsp/icons/RotateIcon.png"/>
+                </Property>
                 <Property name="text" type="java.lang.String" value="Rotate"/>
               </Properties>
               <Events>
@@ -97,6 +124,9 @@
             </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="SetttingsMenu">
               <Properties>
+                <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
+                  <Image iconType="3" name="/jpcsp/icons/SettingsIcon.png"/>
+                </Property>
                 <Property name="text" type="java.lang.String" value="Settings"/>
               </Properties>
               <Events>
@@ -107,6 +137,9 @@
               <Properties>
                 <Property name="accelerator" type="javax.swing.KeyStroke" editor="org.netbeans.modules.form.editors.KeyStrokeEditor">
                   <KeyStroke key="F5"/>
+                </Property>
+                <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
+                  <Image iconType="3" name="/jpcsp/icons/ScreenshotIcon.png"/>
                 </Property>
                 <Property name="text" type="java.lang.String" value="Screenshot"/>
               </Properties>
@@ -232,6 +265,9 @@
           <SubComponents>
             <MenuItem class="javax.swing.JMenuItem" name="About">
               <Properties>
+                <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
+                  <Image iconType="3" name="/jpcsp/icons/AboutIcon.png"/>
+                </Property>
                 <Property name="text" type="java.lang.String" value="About"/>
               </Properties>
               <Events>
@@ -245,6 +281,12 @@
   </NonVisualComponents>
   <Properties>
     <Property name="defaultCloseOperation" type="int" value="3"/>
+    <Property name="cursor" type="java.awt.Cursor" editor="org.netbeans.modules.form.editors2.CursorEditor">
+      <Color id="Default Cursor"/>
+    </Property>
+    <Property name="foreground" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+      <Color blue="ff" green="ff" id="white" palette="1" red="ff" type="palette"/>
+    </Property>
     <Property name="minimumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
       <Dimension value="[480, 272]"/>
     </Property>
