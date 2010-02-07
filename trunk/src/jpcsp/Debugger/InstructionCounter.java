@@ -30,6 +30,7 @@ import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.Allegrex.Instructions.*;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.Common.Instruction;
+import jpcsp.util.Utilities;
 
 /**
  *
@@ -277,15 +278,7 @@ private void SaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:ev
     } catch (IOException ex) {
         ex.printStackTrace();
     } finally {
-        //Close the BufferedWriter
-        try {
-            if (bufferedWriter != null) {
-                bufferedWriter.flush();
-                bufferedWriter.close();
-            }
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
+        Utilities.close(bufferedWriter);
     }
 
 }//GEN-LAST:event_SaveActionPerformed

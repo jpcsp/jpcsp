@@ -26,6 +26,7 @@ import javax.swing.JTextPane;
 import javax.swing.UIManager;
 
 import jpcsp.Settings;
+import jpcsp.util.Utilities;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -68,49 +69,40 @@ public class LogWindow extends JFrame {
 			}});
 		JButton saveButton = new JButton("Save to file...");
 		saveButton.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				JFileChooser m_fileChooser = new JFileChooser();
-				m_fileChooser.setSelectedFile(new File("logoutput.txt"));
-				m_fileChooser.setDialogTitle("Save logging output");
-				m_fileChooser.setCurrentDirectory(new java.io.File("."));
-				int returnVal = m_fileChooser.showSaveDialog(LogWindow.this);
-				if (returnVal == JFileChooser.APPROVE_OPTION) {
-					File f = m_fileChooser.getSelectedFile();
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        JFileChooser m_fileChooser = new JFileChooser();
+                        m_fileChooser.setSelectedFile(new File("logoutput.txt"));
+                        m_fileChooser.setDialogTitle("Save logging output");
+                        m_fileChooser.setCurrentDirectory(new java.io.File("."));
+                        int returnVal = m_fileChooser.showSaveDialog(LogWindow.this);
+                        if (returnVal != JFileChooser.APPROVE_OPTION) {
+                            return;
+                        }
+                        File f = m_fileChooser.getSelectedFile();
+                        BufferedWriter out = null;
+                        try {
+                            if (f.exists()) {
+                                int res = JOptionPane.showConfirmDialog(
+                                        LogWindow.this,
+                                        "File '" + f.getName() + "' already Exists! Do you want to override?",
+                                        "Save Log Output",
+                                        JOptionPane.YES_NO_OPTION,
+                                        JOptionPane.WARNING_MESSAGE);
 
-					try {
-						if (f.exists()) {
-							int res = JOptionPane.showConfirmDialog(
-											LogWindow.this,
-											"File '" + f.getName() + "' already Exists! Do you want to override?",
-											"Save Log Output",
-											JOptionPane.YES_NO_OPTION,
-											JOptionPane.WARNING_MESSAGE);
+                                if (res != JOptionPane.YES_OPTION) {
+                                    return;
+                                }
+                            }
 
-							if (res != 0)
-								return;
-						}
-
-						BufferedWriter out = null;
-						try {
-							out = new BufferedWriter(new FileWriter(f));
-							out.write(textPane.getText());
-						} catch (IOException ex) {
-							throw ex;
-						} finally {
-							if (out != null) {
-								try {
-									out.close();
-								} catch (IOException ex) {
-									ex.printStackTrace();
-								}
-							}
-						}
-					} catch (Exception ex) {
-						ex.printStackTrace();
-					}
-				}
-			}
+                            out = new BufferedWriter(new FileWriter(f));
+                            out.write(textPane.getText());
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        } finally {
+                            Utilities.close(out);
+                        }
+                    }
 		});
         JLabel loglevellabel = new JLabel("Choose Log Level");
         final JComboBox loglevelcombo = new JComboBox(loglevels);

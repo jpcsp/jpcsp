@@ -1143,25 +1143,13 @@ try
 
     bOut.write(cpuBuf.array());
 }
-
 catch(IOException e)
 {
 
 }
-
 finally
 {
-    if( bOut!=null )
-    {
-        try
-        {
-            bOut.close();
-        }
-        catch(IOException ex)
-        {
-            ex.printStackTrace();
-        }
-    }
+    Utilities.close(bOut);
 }
 }//GEN-LAST:event_SaveSnapActionPerformed
 
@@ -1188,17 +1176,7 @@ catch(IOException e)
 
 finally
 {
-    if( bIn!=null )
-    {
-        try
-        {
-            bIn.close();
-        }
-        catch(IOException ex)
-        {
-            ex.printStackTrace();
-        }
-    }
+    Utilities.close(bIn);
 }
 
 Emulator.getProcessor().load(cpuBuf);
