@@ -36,21 +36,19 @@ public class MetaInformation {
 
     private MetaInformation() {
         //System.err.println("MetaInformation loading...");
-        InputStream is = getClass().getResourceAsStream("/jpcsp/title.txt");
-        if (is != null) {
-            try {
-                String customName = Utilities.toString(is, true);
-                if (customName != null) {
-                    //System.err.println("found title '" + customName + "'");
-                    FULL_CUSTOM_NAME = NAME + " " + VERSION + " " + customName;
-                } else {
-                    System.err.println("first line of title.txt is blank or file is empty");
-                }
-            } catch (IOException e) {
-                System.err.println("something went wrong: " + e.getMessage());
-                e.printStackTrace();
+        try {
+            InputStream is = getClass().getResourceAsStream("/jpcsp/title.txt");
+            String customName = Utilities.toString(is, true);
+            if (customName.isEmpty()) {
+                System.err.println("first line of title.txt is blank or file is empty");
+            } else {
+                //System.err.println("found title '" + customName + "'");
+                FULL_CUSTOM_NAME = NAME + " " + VERSION + " " + customName;
             }
-        } else {
+        } catch (IOException e) {
+            System.err.println("something went wrong: " + e.getMessage());
+            e.printStackTrace();
+        } catch (NullPointerException ex) {
             // optional file ...
             // System.err.println("title.txt is missing");
         }
