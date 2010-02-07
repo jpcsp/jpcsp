@@ -636,24 +636,20 @@ public class ThreadMan {
     private String getCallingFunction()
     {
         String msg = "";
-        try {
-            throw new Exception();
-        } catch(Exception e) {
-            StackTraceElement[] lines = e.getStackTrace();
-            if (lines.length >= 3) {
-                msg = lines[2].toString();
-                msg = msg.substring(0, msg.indexOf("("));
-                //msg = "'" + msg.substring(msg.lastIndexOf(".") + 1, msg.length()) + "'";
-                String[] parts = msg.split("\\.");
-                msg = "'" + parts[parts.length - 2] + "." + parts[parts.length - 1] + "'";
-            } else {
-                for (int i = 0; i < lines.length && i < 10; i++)
-                {
-                    String line = lines[i].toString();
-                    if (line.startsWith("jpcsp.Allegrex") || line.startsWith("jpcsp.Processor"))
-                        break;
-                    msg += "\n" + line;
+        StackTraceElement[] lines = new Exception().getStackTrace();
+        if (lines.length >= 3) {
+            msg = lines[2].toString();
+            msg = msg.substring(0, msg.indexOf("("));
+            //msg = "'" + msg.substring(msg.lastIndexOf(".") + 1, msg.length()) + "'";
+            String[] parts = msg.split("\\.");
+            msg = "'" + parts[parts.length - 2] + "." + parts[parts.length - 1] + "'";
+        } else {
+            for (StackTraceElement e : lines) {
+                String line = e.toString();
+                if (line.startsWith("jpcsp.Allegrex") || line.startsWith("jpcsp.Processor")) {
+                    break;
                 }
+                msg += "\n" + line;
             }
         }
         return msg;
