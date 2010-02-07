@@ -301,19 +301,9 @@ private void DumpRawRamActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FI
 
    }
    finally
-  {
-       if( out!=null )
-        {
-           try
-          {
-              out.close();
-          }
-          catch(IOException ex)
-          {
-             ex.printStackTrace();
-           }
-          }
-     }
+   {
+        Utilities.close(out);
+   }
 
 
 }//GEN-LAST:event_DumpRawRamActionPerformed
