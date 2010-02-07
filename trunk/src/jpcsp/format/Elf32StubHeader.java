@@ -55,8 +55,8 @@ public class Elf32StubHeader
         s_modulename = mem.read32(address);
         s_version = mem.read16(address + 4);
         s_flags = mem.read16(address + 6);
-        s_size = mem.read16(address + 8);
-        s_imports = mem.read16(address + 10);
+        s_size = mem.read8(address + 8);
+        s_imports = mem.read8(address + 10);
         s_nid = mem.read32(address + 12);
         s_text = mem.read32(address + 16);
     }

@@ -162,7 +162,7 @@ public class SyscallHandler {
                 case 0x2030:
                     Managers.eventFlags.sceKernelReferEventFlagStatus(gpr[4], gpr[5]);
                     break;
-		                case 0x2031:
+		        case 0x2031:
                     Managers.mbx.sceKernelCreateMbx(gpr[4], gpr[5], gpr[6]);
                     break;
                 case 0x2032:

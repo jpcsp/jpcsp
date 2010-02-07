@@ -356,6 +356,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         OptionsMenu.add(ShotItem);
 
         SaveSnap.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, java.awt.event.InputEvent.SHIFT_MASK));
+        SaveSnap.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/SaveStateIcon.png"))); // NOI18N
         SaveSnap.setText("Save Snapshot");
         SaveSnap.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -365,6 +366,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         OptionsMenu.add(SaveSnap);
 
         LoadSnap.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_L, java.awt.event.InputEvent.SHIFT_MASK));
+        LoadSnap.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/LoadStateIcon.png"))); // NOI18N
         LoadSnap.setText("Load Snapshot");
         LoadSnap.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
