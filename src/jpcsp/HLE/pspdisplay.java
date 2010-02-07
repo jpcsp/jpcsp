@@ -1072,11 +1072,9 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         File screenshot = new File(State.discId + "-" + "Shot" + "-" + tag + ".png");
         File directory = new File(System.getProperty("user.dir"));
 
-        File[] files = directory.listFiles();
-
-        for(int i = 0; i < files.length; i++)
+        for(File file : directory.listFiles())
         {
-            if((files[i].getName()).equals(screenshot.getName()))
+            if(file.getName().equals(screenshot.getName()))
             {
                tag++;
                screenshot = new File(State.discId + "-" + "Shot" + "-" + tag + ".png");
@@ -1085,11 +1083,12 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
         gl.glReadBuffer(mode);
         BufferedImage img = Screenshot.readToBufferedImage(width, height);
-
         try{
             ImageIO.write(img, "png", screenshot);
         }catch(IOException e){
             return;
+        }finally{
+            img.flush();
         }
 
         getscreen = false;
