@@ -370,17 +370,18 @@ public class Utilities {
 		destination.order(order);
     }
 
-    /**
+        /**
      * Reads inputstream i into a String with the UTF-8 charset
      * until the inputstream is finished (don't use with infinite streams).
      * @param inputStream to read into a string
      * @param close if true, close the inputstream
-     * @return null if the inputstream is null, a string otherwise
+     * @return a string
      * @throws java.io.IOException if thrown on reading the stream
+     * @throws java.lang.NullPointerException if the given inputstream is null
      */
     public static String toString(InputStream inputStream, boolean close) throws IOException {
         if (inputStream == null) {
-            return null;
+            throw new NullPointerException("null inputstream");
         }
         String string;
         StringBuilder outputBuilder = new StringBuilder();
