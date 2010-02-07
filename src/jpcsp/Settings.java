@@ -92,14 +92,18 @@ public class Settings {
 	 *            Settings as XML document
 	 */
 	private void writeSettings() {
+                BufferedOutputStream out = null;
 		try {
-			loadedSettings.store(new BufferedOutputStream(
-					new FileOutputStream(SETTINGS_FILE_NAME)), null);
+                        out = new BufferedOutputStream(
+                                new FileOutputStream(SETTINGS_FILE_NAME));
+			loadedSettings.store(out, null);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
-		}
+		}finally{
+                    Utilities.close(out);
+                }
 	}
 
 	public int[] readWindowPos(String windowname) {
@@ -147,10 +151,7 @@ public class Settings {
 	}
 
 	public String readString(String option) {
-		String str = loadedSettings.getProperty(option);
-		if(str == null)
-			return "";
-		return str;
+            return loadedSettings.getProperty(option, "");
 	}
 
 	public void writeString(String option, String value) {
