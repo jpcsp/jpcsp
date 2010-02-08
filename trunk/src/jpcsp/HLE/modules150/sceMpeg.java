@@ -1165,57 +1165,206 @@ public class sceMpeg implements HLEModule {
     }
 
     public void sceMpegAvcInitYCbCr(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
+        Memory mem = Memory.getInstance();
 
-        Modules.log.warn("UNIMPLEMENTED:sceMpegAvcInitYCbCr "
-            + String.format("%08X %08X %08X %08X %08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]));
+        int mpeg = cpu.gpr[4];
+        int unknown = cpu.gpr[5];  //Flags/Mode?
+        int width = cpu.gpr[6];
+        int height = cpu.gpr[7];
+        int ycbcr_addr = cpu.gpr[8];  //Probably to store a handle.
+
+         Modules.log.warn("IGNORING:sceMpegAvcInitYCbCr(mpeg=0x" + Integer.toHexString(mpeg)
+            + ",YCbCr_addr=0x" + Integer.toHexString(ycbcr_addr));
+
+        //Fake.
+        mem.write32(ycbcr_addr, 0x4545FFFF);
 
         cpu.gpr[2] = 0;
     }
 
     public void sceMpegAvcDecodeYCbCr(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
+        Memory mem = Memory.getInstance();
 
-        Modules.log.warn("UNIMPLEMENTED:sceMpegAvcDecodeYCbCr "
-            + String.format("%08X %08X %08X %08X", cpu.gpr[4], cpu.gpr[5], cpu.gpr[6], cpu.gpr[7]));
+        int mpeg = cpu.gpr[4];
+        int au_addr = cpu.gpr[5];
+        int buffer_addr = cpu.gpr[6];
+        int init_addr = cpu.gpr[7];
 
-        cpu.gpr[2] = 0;
+        if (mpegRingbuffer != null) {
+            mpegRingbuffer.read(mem, mpegRingbufferAddr);
+        }
+
+        if (getMpegHandle(mpeg) != mpegHandle) {
+            Modules.log.warn("sceMpegAvcDecodeYCbCr bad mpeg handle 0x" + Integer.toHexString(mpeg));
+            cpu.gpr[2] = -1;
+        } else if (mpegRingbuffer == null) {
+            Modules.log.warn("sceMpegAvcDecodeYCbCr ringbuffer not created");
+            cpu.gpr[2] = -1;
+        } else if (mpegRingbuffer.packetsRead == 0 || (enableMpeg && mpegRingbuffer.isEmpty())) {
+            Modules.log.debug("sceMpegAvcDecodeYCbCr ringbuffer empty");
+            cpu.gpr[2] = 0x80628002;
+        } else if (mem.isAddressGood(au_addr) && mem.isAddressGood(buffer_addr) && mem.isAddressGood(init_addr)) {
+            if (enableMpeg) {
+
+                int au = mem.read32(au_addr);
+
+                //Should decode the data and save it in YCbCr mode.
+                //For now let's just fake the result.
+
+                mem.write32(init_addr, 1);
+
+                if (isFakeAuHandle(au)) {
+                    int type = getFakeAuType(au);
+                    switch(type) {
+                    case 1: Modules.log.debug("sceMpegAvcDecodeYCbCr got fake avc au"); break;
+                    case 2: Modules.log.debug("sceMpegAvcDecodeYCbCr got fake pcm au"); break;
+                    case 3: Modules.log.debug("sceMpegAvcDecodeYCbCr got fake atrac au"); break;
+                    }
+                }
+
+                cpu.gpr[2] = 0;
+
+            } else {
+                cpu.gpr[2] = 0xDEADC0DE;
+            }
+        } else {
+            Modules.log.warn("sceMpegAvcDecodeYCbCr bad address "
+                + String.format("0x%08X 0x%08X", au_addr, buffer_addr));
+
+            cpu.gpr[2] = -1;
+        }
     }
 
     public void sceMpegAvcDecodeStopYCbCr(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        int mpeg = cpu.gpr[4];
+        int buffer_addr = cpu.gpr[5];
+        int status_addr = cpu.gpr[6];
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        Modules.log.warn("IGNORING:sceMpegAvcDecodeStopYCbCr(mpeg=0x" + Integer.toHexString(mpeg)
+            + ",buffer=0x" + Integer.toHexString(buffer_addr)
+            + ",status=0x" + Integer.toHexString(status_addr) + ")");
 
-        System.out.println("Unimplemented NID function sceMpegAvcDecodeStopYCbCr [0xF2930C9C]");
+        if (getMpegHandle(mpeg) != mpegHandle) {
+            Modules.log.warn("sceMpegAvcDecodeStopYCbCr bad mpeg handle 0x" + Integer.toHexString(mpeg));
+            cpu.gpr[2] = -1;
+        } else if (mem.isAddressGood(buffer_addr) && mem.isAddressGood(status_addr)) {
+            int status = 0; //Same fake as in sceMpegAvcDecodeStop()
+            mem.write32(status_addr, status);
 
-        cpu.gpr[2] = 0xDEADC0DE;
-
-        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+            cpu.gpr[2] = 0;
+        } else {
+            Modules.log.warn("sceMpegAvcDecodeStopYCbCr bad address "
+                + String.format("0x%08X 0x%08X", buffer_addr, status_addr));
+            cpu.gpr[2] = -1;
+        }
     }
 
     public void sceMpegAvcCsc(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        /* put your own code here instead */
+        int mpeg = cpu.gpr[4];
+        int source_addr = cpu.gpr[5]; //YCbCr data
+        int range_addr = cpu.gpr[6];  //YCbCr range
+        int frameWidth = cpu.gpr[7];
+        int dest_addr = cpu.gpr[8]; //Converted data (RGB?)
 
-        // int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-        // float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        Modules.log.warn("PARTIAL:sceMpegAvcCsc(mpeg=0x" + Integer.toHexString(mpeg)
+            + ",source=0x" + Integer.toHexString(source_addr)
+            + ",range_addr=0x" + Integer.toHexString(range_addr)
+            + ",frameWidth=" + frameWidth
+            + ",dest=0x" + Integer.toHexString(dest_addr) + ")");
 
-        System.out.println("Unimplemented NID function sceMpegAvcCsc [0x31BD0272]");
+        if (mpegRingbuffer != null) {
+            mpegRingbuffer.read(mem, mpegRingbufferAddr);
+        }
 
-        cpu.gpr[2] = 0xDEADC0DE;
+        if (getMpegHandle(mpeg) != mpegHandle) {
+            Modules.log.warn("sceMpegAvcCsc bad mpeg handle 0x" + Integer.toHexString(mpeg));
+            cpu.gpr[2] = -1;
+        } else if (mpegRingbuffer == null) {
+            Modules.log.warn("sceMpegAvcCsc ringbuffer not created");
+            cpu.gpr[2] = -1;
+        } else if (mpegRingbuffer.packetsRead == 0 || (enableMpeg && mpegRingbuffer.isEmpty())) {
+            Modules.log.debug("sceMpegAvcCsc ringbuffer empty");
+            cpu.gpr[2] = 0x80628002;
+        } else if (mem.isAddressGood(dest_addr)) {
+            if (enableMpeg) {
 
-        // cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+                //Faking.
+                //This is where the video should be converted from YCbCr mode
+                //and played.
+
+                long currentSystemTime = Emulator.getClock().milliTime();
+                int elapsedTime = (int) (currentSystemTime - lastAvcSystemTime);
+                if (elapsedTime >= 0 && elapsedTime <= avcDecodeDelay) {
+                	int delayMillis = avcDecodeDelay - elapsedTime;
+            		Modules.log.info("Delaying sceMpegAvcCsc for " + delayMillis + "ms");
+                	ThreadMan.getInstance().hleKernelDelayThread(delayMillis * 1000, false);
+                	lastAvcSystemTime = currentSystemTime + delayMillis;
+                } else {
+                	lastAvcSystemTime = currentSystemTime;
+                }
+
+                mpegAvcCurrentTimestamp += (int)(90000 / 29.97);
+
+                int packetsConsumed = 3;
+
+                // Generate static at dest_addr.
+                Random random = new Random();
+                final int pixelSize = 3;
+                final int bytesPerPixel = pspdisplay.getPixelFormatBytes(videoPixelMode);
+                for (int y = 0; y < 272 - pixelSize + 1; y += pixelSize) {
+                    int address = dest_addr + y * frameWidth * bytesPerPixel;
+                    final int width = Math.min(480, frameWidth);
+                    for (int x = 0; x < width; x += pixelSize) {
+                        int n = random.nextInt(256);
+                        int color = 0xFF000000 | (n << 16) | (n << 8) | n;
+                        int pixelColor = Debug.getPixelColor(color, videoPixelMode);
+                        if (bytesPerPixel == 4) {
+	                        for (int i = 0; i < pixelSize; i++) {
+	                            for (int j = 0; j < pixelSize; j++) {
+	                                mem.write32(address + (i * frameWidth + j) * 4, pixelColor);
+	                            }
+	                        }
+                        } else if (bytesPerPixel == 2) {
+	                        for (int i = 0; i < pixelSize; i++) {
+	                            for (int j = 0; j < pixelSize; j++) {
+	                                mem.write16(address + (i * frameWidth + j) * 2, (short) pixelColor);
+	                            }
+	                        }
+                        }
+                        address += pixelSize * bytesPerPixel;
+                    }
+                }
+
+                videoFrameCount++;
+
+                if (Modules.log.isDebugEnabled()) {
+                	Modules.log.debug("sceMpegAvcCsc currentTimestamp=" + mpegAvcCurrentTimestamp);
+                }
+
+                if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets) {
+                    mpegRingbuffer.packetsFree = Math.min(mpegRingbuffer.packets, mpegRingbuffer.packetsFree + packetsConsumed);
+                    mpegRingbuffer.write(mem, mpegRingbufferAddr);
+                }
+
+                cpu.gpr[2] = 0;
+
+            } else {
+                cpu.gpr[2] = 0xDEADC0DE;
+            }
+        } else {
+            Modules.log.warn("sceMpegAvcCsc bad address "
+                + String.format("0x%08X 0x%08X", source_addr, dest_addr));
+
+            cpu.gpr[2] = -1;
+        }
     }
 
     public void sceMpegAtracDecode(Processor processor) {
