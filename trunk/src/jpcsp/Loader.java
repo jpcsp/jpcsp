@@ -987,10 +987,14 @@ public class Loader {
         {
             Elf32StubHeader stubHeader = new Elf32StubHeader(mem, stubHeadersAddress);
             stubHeader.setModuleNamez(Utilities.readStringNZ((int)stubHeader.getOffsetModuleName(), 64));
-            stubHeadersAddress += stubHeader.getSize() * 4;
 
-            if(stubHeader.getSize() > 5)
+            if(stubHeader.getSize() > 5) {
+                stubHeadersAddress += stubHeader.getSize() * 4;
                 Emulator.log.warn("'" + stubHeader.getModuleNamez() + "' has size " + stubHeader.getSize());
+            }
+            
+            else
+                stubHeadersAddress += Elf32StubHeader.sizeof();
 
             // n stubs per module to import
             for (int j = 0; j < stubHeader.getImports(); j++)
