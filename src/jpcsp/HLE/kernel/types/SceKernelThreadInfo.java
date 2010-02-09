@@ -148,10 +148,24 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         this.attr = attr;
 
         uid = SceUidManager.getNewUid("ThreadMan-thread");
-        status = PSP_THREAD_STOPPED;
 
         // setup the stack
         stack_addr = ThreadMan.getInstance().mallocStack(stackSize);
+
+        gpReg_addr = Emulator.getProcessor().cpu.gpr[28]; // inherit gpReg // TODO addr into ModuleInfo struct?
+        // internal state
+
+        // Inherit context
+        cpuContext = new CpuState(Emulator.getProcessor().cpu);
+
+        wait = new ThreadWaitInfo();
+
+        reset();
+    }
+
+    public void reset() {
+        status = PSP_THREAD_STOPPED;
+
         int k0 = stack_addr + stackSize - 0x100; // setup k0
         Memory mem = Memory.getInstance();
         if (stack_addr != 0 && stackSize > 0) {
@@ -170,7 +184,6 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
             mem.write32(stack_addr, uid);
         }
 
-        gpReg_addr = Emulator.getProcessor().cpu.gpr[28]; // inherit gpReg // TODO addr into ModuleInfo struct?
         currentPriority = initPriority;
         waitType = PSP_WAIT_NONE;
         waitId = 0; // probably a uid to a wait struct, we're using custom ThreadWaitInfo class at the moment
@@ -180,13 +193,6 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         intrPreemptCount = 0;
         threadPreemptCount = 0;
         releaseCount = 0;
-
-        // internal state
-
-        // Inherit context
-        //cpuContext = new CpuState();
-        //saveContext();
-        cpuContext = new CpuState(Emulator.getProcessor().cpu);
 
         // Thread specific registers
         cpuContext.pc = entry_addr;
@@ -201,8 +207,6 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
 
         do_delete = false;
         do_callbacks = false;
-
-        wait = new ThreadWaitInfo();
 
         callbackRegistered = new boolean[THREAD_CALLBACK_SIZE];
         callbackReady = new boolean[THREAD_CALLBACK_SIZE];

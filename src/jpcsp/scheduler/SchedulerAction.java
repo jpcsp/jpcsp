@@ -14,8 +14,32 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.HLE.kernel.types;
+package jpcsp.scheduler;
 
-public interface IAction {
-	public void execute();
+import jpcsp.HLE.kernel.types.IAction;
+
+public class SchedulerAction {
+	private long schedule;
+	private IAction action;
+
+	public SchedulerAction(long schedule, IAction action) {
+		this.schedule = schedule;
+		this.action = action;
+	}
+
+	public long getSchedule() {
+		return schedule;
+	}
+
+	public void setSchedule(long schedule) {
+		this.schedule = schedule;
+	}
+
+	public IAction getAction() {
+		return action;
+	}
+
+	public void setAction(IAction action) {
+		this.action = action;
+	}
 }

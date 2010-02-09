@@ -174,6 +174,10 @@ public class pspge {
     public void sceGeListUpdateStallAddr(int id, int stall_addr) {
         boolean found = false;
 
+        if (VideoEngine.log.isDebugEnabled()) {
+        	VideoEngine.log.debug(String.format("sceGeListUpdateStallAddr(id=%d, stall=0x%08X)", id, stall_addr));
+        }
+
         for (Iterator<PspGeList> it = listQueue.iterator(); it.hasNext(); ) {
             PspGeList list = it.next();
             if (list.id == id) {

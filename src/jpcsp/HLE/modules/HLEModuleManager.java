@@ -87,6 +87,7 @@ public class HLEModuleManager {
         sceSasCore(Modules.sceSasCoreModule, new String[] { "sc_sascore", "PSP_AV_MODULE_SASCORE", "PSP_MODULE_AV_SASCORE" } ),
         sceMpeg(Modules.sceMpegModule, new String[] { "mpeg", "mpeg_vsh", "PSP_AV_MODULE_MPEGBASE", "PSP_MODULE_AV_MPEGBASE" }),
         sceFont(Modules.sceFontModule, new String[] { "libfont" }),
+        TimerManager(Modules.TimerManager),
         // For testing purposes
     	SampleModule(Modules.SampleModule);
 

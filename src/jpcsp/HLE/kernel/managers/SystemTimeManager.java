@@ -31,7 +31,7 @@ public class SystemTimeManager {
      * @param sysclocks	- number of sysclocks
      * @return microseconds
      */
-    public long hleSysClock2USec(long sysclocks) {
+    public static long hleSysClock2USec(long sysclocks) {
     	// 1 sysclock == 1 microsecond
     	return sysclocks;
     }
@@ -44,7 +44,7 @@ public class SystemTimeManager {
      * @return microseconds (truncated to 32 bits)
      *         Integer.MAX_VALUE or MIN_VALUE in case of truncation overflow.
      */
-    public int hleSysClock2USec32(long sysclocks) {
+    public static int hleSysClock2USec32(long sysclocks) {
     	long micros64 = hleSysClock2USec(sysclocks);
 
     	int micros32 = (int) micros64;
@@ -133,7 +133,7 @@ public class SystemTimeManager {
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
-    private long getSystemTime() {
+    public static long getSystemTime() {
     	// System time is number of microseconds since program start
     	return Emulator.getClock().microTime();
     }

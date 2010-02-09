@@ -272,6 +272,8 @@ public class CompilerContext implements ICompilerContext {
     }
 
     public void visitCall(int address, int returnAddress, int returnRegister, boolean useAltervativeReturnAddress) {
+    	flushInstructionCount(false, false);
+
     	NativeCodeSequence calledNativeCodeBlock = null;
 
     	// Do not call native block directly if we are profiling,
@@ -328,6 +330,7 @@ public class CompilerContext implements ICompilerContext {
     }
 
     public void visitCall(int returnAddress, int returnRegister) {
+    	flushInstructionCount(false, false);
         if (returnRegister != 0) {
             storeRegister(returnRegister, returnAddress);
         }
@@ -336,6 +339,7 @@ public class CompilerContext implements ICompilerContext {
     }
 
     public void visitCall(int address, String methodName) {
+    	flushInstructionCount(false, false);
         mv.visitMethodInsn(Opcodes.INVOKESTATIC, getClassName(address), methodName, "()V");
     }
 

@@ -42,7 +42,6 @@ import jpcsp.AllegrexOpcodes;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
-import jpcsp.Processor;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.compiler.RuntimeContext;
@@ -54,6 +53,7 @@ import jpcsp.HLE.kernel.Managers;
 import jpcsp.HLE.kernel.types.*;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.managers.SceUidManager;
+import jpcsp.HLE.kernel.managers.SystemTimeManager;
 import jpcsp.HLE.modules.HLECallback;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import static jpcsp.HLE.kernel.types.SceKernelThreadInfo.*;
@@ -334,6 +334,8 @@ public class ThreadMan {
                         // this has to be the very last thing so it can call executeCallback again
                         hleCallback.execute(Emulator.getProcessor(), current_thread);
                     }
+
+                    IntrManager.getInstance().onInterruptsEnabled();
                 } else if (insideCallback) {
                     // Callback has exited
                     Modules.log.debug("Callback exit detected");
@@ -357,6 +359,8 @@ public class ThreadMan {
 
                         hleCallback.execute(Emulator.getProcessor(), callbackThread);
                     }
+
+                    IntrManager.getInstance().onInterruptsEnabled();
                 } else {
                     // Thread has exited
                     Modules.log.debug("Thread exit detected SceUID=" + Integer.toHexString(current_thread.uid)
@@ -449,7 +453,9 @@ public class ThreadMan {
     public void contextSwitch(SceKernelThreadInfo newthread) {
 		if (IntrManager.getInstance().isInsideInterrupt()) {
 			// No context switching inside an interrupt
-            Modules.log.debug("Inside an interrupt, not context switching to " + newthread);
+			if (Modules.log.isDebugEnabled()) {
+				Modules.log.debug("Inside an interrupt, not context switching to " + newthread);
+			}
 			return;
 		}
 
@@ -829,8 +835,7 @@ public class ThreadMan {
 
 
 	public void hleKernelExitCallback() {
-		Processor processor = Emulator.getProcessor();
-		CpuState cpu = processor.cpu;
+		CpuState cpu = Emulator.getProcessor().cpu;
 
 		int callbackId = cpu.gpr[CALLBACKID_REGISTER];
 		Callback callback = callbackManager.remove(callbackId);
@@ -843,7 +848,7 @@ public class ThreadMan {
 			cpu.pc = callback.getSavedPc();
 			IAction afterAction = callback.getAfterAction();
 			if (afterAction != null) {
-				afterAction.execute(processor);
+				afterAction.execute();
 			}
 		}
 	}
@@ -1080,6 +1085,9 @@ public class ThreadMan {
             + " data=0x" + Integer.toHexString(userDataAddr)
             + " gp=0x" + Integer.toHexString(gp));
 
+        // Reset all thread parameters: a thread can be restarted when it has exited.
+        thread.reset();
+
         // Setup args by copying them onto the stack
         //int address = thread.cpuContext.gpr[29];
         // 256 bytes padding between user data top and real stack top
@@ -1218,7 +1226,7 @@ public class ThreadMan {
             Emulator.getProcessor().cpu.gpr[2] = 0;
 
             // switch in the target thread if it's now higher priority
-            if (thread.currentPriority < current_thread.currentPriority) {
+            if (thread.currentPriority < current_thread.currentPriority && !isInsideCallback()) {
                 Modules.log.debug("sceKernelWakeupThread yielding to thread with higher priority");
                 yieldCurrentThread();
             }
@@ -1388,7 +1396,11 @@ public class ThreadMan {
 
     /** wait the current thread for a certain number of microseconds */
     public void ThreadMan_sceKernelDelayThread(int micros) {
-        hleKernelDelayThread(micros, false);
+        if (!isInsideCallback()) {
+        	hleKernelDelayThread(micros, false);
+        } else {
+            Modules.log.warn("sceKernelDelayThread called from inside callback!");
+        }
     }
 
     /** wait the current thread for a certain number of microseconds */
@@ -1415,7 +1427,7 @@ public class ThreadMan {
     	Memory mem = Memory.getInstance();
     	if (mem.isAddressGood(sysclocks_addr)) {
     		long sysclocks = mem.read64(sysclocks_addr);
-    		int micros = Managers.systime.hleSysClock2USec32(sysclocks);
+    		int micros = SystemTimeManager.hleSysClock2USec32(sysclocks);
             hleKernelDelayThread(micros, false);
     	} else {
             Modules.log.warn("sceKernelDelaySysClockThread invalid sysclocks address 0x" + Integer.toHexString(sysclocks_addr));
@@ -1435,7 +1447,7 @@ public class ThreadMan {
     	Memory mem = Memory.getInstance();
     	if (mem.isAddressGood(sysclocks_addr)) {
     		long sysclocks = mem.read64(sysclocks_addr);
-    		int micros = Managers.systime.hleSysClock2USec32(sysclocks);
+    		int micros = SystemTimeManager.hleSysClock2USec32(sysclocks);
             if (!insideCallback) {
                 hleKernelDelayThread(micros, true);
             } else {
