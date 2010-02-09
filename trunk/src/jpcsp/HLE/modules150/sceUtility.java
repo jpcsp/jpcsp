@@ -750,12 +750,10 @@ public class sceUtility implements HLEModule {
         if (mem.isAddressGood(params_addr)) {
             msgdialog_params.read(mem, params_addr);
 
-            Modules.log.warn("PARTIAL:sceUtilityMsgDialogInitStart message='" + msgdialog_params.message + "'");
-            Modules.log.debug(msgdialog_params.toString());
+            Modules.log.warn("PARTIAL:sceUtilityMsgDialogInitStart " + msgdialog_params.toString());
 
             String title = String.format("Message from %s", State.title);
-            if (msgdialog_params.options == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_NO ||
-            	msgdialog_params.options == SceUtilityMsgDialogParams.PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_YES) {
+            if (msgdialog_params.isOptionYesNo()) {
                 int result = JOptionPane.showConfirmDialog(null, formatMessageForDialog(msgdialog_params.message), null, JOptionPane.YES_NO_OPTION);
                 if (result == JOptionPane.YES_OPTION) {
                 	msgdialog_params.buttonPressed = 1;
