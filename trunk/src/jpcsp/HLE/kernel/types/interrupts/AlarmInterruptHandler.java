@@ -14,8 +14,18 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.HLE.kernel.types;
+package jpcsp.HLE.kernel.types.interrupts;
 
-public interface IAction {
-	public void execute();
+public class AlarmInterruptHandler extends AbstractAllegrexInterruptHandler {
+	public AlarmInterruptHandler(int address, int argument) {
+		super(address, argument);
+	}
+
+	public int getArgument() {
+		return getArgument(0);
+	}
+
+	public void setArgument(int argument) {
+		setArgument(0, argument);
+	}
 }

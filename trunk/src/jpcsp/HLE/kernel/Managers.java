@@ -35,6 +35,7 @@ public class Managers {
     public static ModuleManager modules;
     public static SystemTimeManager systime;
     public static MbxManager mbx;
+    public static IntrManager intr;
 
     /** call this when resetting the emulator */
     public static void reset() {
@@ -48,6 +49,7 @@ public class Managers {
         modules.reset();
         systime.reset();
         mbx.reset();
+        intr.reset();
     }
 
     static {
@@ -63,5 +65,6 @@ public class Managers {
         modules = ModuleManager.singleton;
         systime = SystemTimeManager.singleton;
         mbx = MbxManager.singleton;
+        intr = IntrManager.getInstance();
     }
 }

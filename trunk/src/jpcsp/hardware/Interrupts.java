@@ -16,6 +16,8 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.hardware;
 
+import jpcsp.HLE.kernel.managers.IntrManager;
+
 public class Interrupts {
 	private static boolean interruptsEnabled = true;
 
@@ -32,7 +34,14 @@ public class Interrupts {
 	}
 
 	public static void setInterruptsEnabled(boolean interruptsEnabled) {
-		Interrupts.interruptsEnabled = interruptsEnabled;
+		if (Interrupts.interruptsEnabled != interruptsEnabled) {
+			Interrupts.interruptsEnabled = interruptsEnabled;
+
+			if (interruptsEnabled) {
+				// Interrupts have been enabled
+				IntrManager.getInstance().onInterruptsEnabled();
+			}
+		}
 	}
 
 	public static void enableInterrupts() {

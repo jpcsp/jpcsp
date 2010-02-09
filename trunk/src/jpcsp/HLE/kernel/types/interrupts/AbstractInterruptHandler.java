@@ -14,8 +14,22 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
-package jpcsp.HLE.kernel.types;
+package jpcsp.HLE.kernel.types.interrupts;
 
-public interface IAction {
-	public void execute();
+import jpcsp.HLE.kernel.Managers;
+import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.HLE.kernel.types.IAction;
+
+public abstract class AbstractInterruptHandler implements IAction {
+	protected abstract void executeInterrupt();
+
+	@Override
+	public void execute() {
+		IntrManager intrManager = Managers.intr;
+		if (intrManager.canExecuteInterruptNow()) {
+			executeInterrupt();
+		} else {
+			intrManager.addDeferredInterrupt(this);
+		}
+	}
 }

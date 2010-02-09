@@ -45,6 +45,7 @@ import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.hardware.Interrupts;
 import jpcsp.memory.FastMemory;
+import jpcsp.scheduler.Scheduler;
 import jpcsp.util.DurationStatistics;
 
 /**
@@ -89,7 +90,7 @@ public class RuntimeContext {
 	private static volatile Emulator emulator;
 	private static volatile boolean isIdle = false;
 	private static volatile boolean reset = false;
-	private static DurationStatistics idleDuration = new DurationStatistics("Idle Time");
+	public  static DurationStatistics idleDuration = new DurationStatistics("Idle Time");
 	private static Map<Instruction, Integer> instructionTypeCounts = Collections.synchronizedMap(new HashMap<Instruction, Integer>());
 	private static SceKernelThreadInfo pendingCallbackThread = null;
     private static SceKernelThreadInfo pendingCallbackReturnThread = null;
@@ -197,7 +198,8 @@ public class RuntimeContext {
     public static void debugCodeInstruction(int address, int opcode) {
     	if (log.isTraceEnabled()) {
     		Instruction insn = Decoder.instruction(opcode);
-    		log.trace("Executing 0x" + Integer.toHexString(address).toUpperCase() + " - " + insn.disasm(address, opcode));
+    		String compileFlag = insn.hasFlags(Instruction.FLAG_INTERPRETED) ? "I" : "C";
+    		log.trace("Executing 0x" + Integer.toHexString(address).toUpperCase() + " " + compileFlag + " - " + insn.disasm(address, opcode));
     	}
     }
 
@@ -395,16 +397,21 @@ public class RuntimeContext {
     private static void syncIdle() throws StopThreadException {
         if (isIdle) {
             ThreadMan threadMan = ThreadMan.getInstance();
-            IntrManager intrManager = IntrManager.getInstance();
+            Scheduler scheduler = Emulator.getScheduler();
 
             log.debug("Starting Idle State...");
             idleDuration.start();
             while (isIdle) {
             	checkStoppedThread();
-                syncEmulator(true);
+            	{
+            		// Do not take the duration of pspdisplay into idleDuration
+            		idleDuration.end();
+            		syncEmulator(true);
+            		idleDuration.start();
+            	}
                 syncPause();
+                scheduler.step();
                 threadMan.step();
-                intrManager.step();
                 if (threadMan.isIdleThread(threadMan.getCurrentThread())) {
                     threadMan.contextSwitch(threadMan.nextThread());
                 }
@@ -419,6 +426,7 @@ public class RuntimeContext {
     }
 
     private static void syncThread() throws StopThreadException {
+    	Scheduler.getInstance().step();
     	ThreadMan.getInstance().step();
 
         syncIdle();

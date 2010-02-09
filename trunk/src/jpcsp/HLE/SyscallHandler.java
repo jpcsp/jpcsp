@@ -21,14 +21,22 @@ import jpcsp.Emulator;
 import jpcsp.GeneralJpcspException;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.HLE.kernel.Managers;
-import jpcsp.HLE.kernel.managers.IntrManager;
+import jpcsp.util.DurationStatistics;
 import jpcsp.Allegrex.CpuState;
 
 public class SyscallHandler {
-    // Change this to return the number of cycles used?
+	public static DurationStatistics durationStatistics = new DurationStatistics("Syscall");
+
+	public static void reset() {
+		durationStatistics.reset();
+	}
+
+	// Change this to return the number of cycles used?
     public static void syscall(int code) {
         int gpr[] = Emulator.getProcessor().cpu.gpr;
         ThreadMan.getInstance().clearSyscallFreeCycles();
+
+        durationStatistics.start();
 
         // Some syscalls implementation throw GeneralJpcspException,
         // and Processor isn't setup to catch exceptions so we'll do it
@@ -39,16 +47,16 @@ public class SyscallHandler {
             // Currently using FW1.50 codes
             switch(code) {
               case 0x2000:
-            	  gpr[2] = IntrManager.getInstance().sceKernelRegisterSubIntrHandler(gpr[4], gpr[5], gpr[6], gpr[7]);
+            	  gpr[2] = Managers.intr.sceKernelRegisterSubIntrHandler(gpr[4], gpr[5], gpr[6], gpr[7]);
             	  break;
               case 0x2001:
-            	  gpr[2] = IntrManager.getInstance().sceKernelReleaseSubIntrHandler(gpr[4], gpr[5]);
+            	  gpr[2] = Managers.intr.sceKernelReleaseSubIntrHandler(gpr[4], gpr[5]);
             	  break;
               case 0x2002:
-            	  gpr[2] = IntrManager.getInstance().sceKernelEnableSubIntr(gpr[4], gpr[5]);
+            	  gpr[2] = Managers.intr.sceKernelEnableSubIntr(gpr[4], gpr[5]);
             	  break;
               case 0x2003:
-            	  gpr[2] = IntrManager.getInstance().sceKernelDisableSubIntr(gpr[4], gpr[5]);
+            	  gpr[2] = Managers.intr.sceKernelDisableSubIntr(gpr[4], gpr[5]);
             	  break;
 		//  case 0x2004: //sceKernelSuspendSubIntr
 		//  case 0x2005: //sceKernelResumeSubIntr
@@ -1071,7 +1079,9 @@ public class SyscallHandler {
                 break;
             }
         } catch(GeneralJpcspException e) {
-            System.out.println(e.getMessage());
+        	Modules.log.error(e);
         }
+
+        durationStatistics.end();
     }
 }

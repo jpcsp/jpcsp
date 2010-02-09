@@ -25,6 +25,7 @@ import java.io.InputStreamReader;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.MemoryMap;
+import jpcsp.Allegrex.CpuState;
 import jpcsp.HLE.Modules;
 import jpcsp.filesystems.*;
 
@@ -409,8 +410,25 @@ public class Utilities {
                     c.close();
                 } catch (Exception ex) {
                     Logger.getLogger(Utilities.class.getName()).log(Level.WARNING, "Couldn't close Closeable", ex);
-}
+                }
             }
         }
+    }
+
+    public static long makeValue64(int low32, int high32) {
+    	return (((long) high32) << 32) | (((long) low32) & 0xFFFFFFFFL);
+    }
+
+    public static void storeRegister64(CpuState cpu, int register, long value) {
+    	cpu.gpr[register    ] = (int) (value      );
+    	cpu.gpr[register + 1] = (int) (value >> 32);
+    }
+
+    public static void returnRegister64(CpuState cpu, long value) {
+    	storeRegister64(cpu, 2, value);
+    }
+
+    public static long getRegister64(CpuState cpu, int register) {
+    	return makeValue64(cpu.gpr[register], cpu.gpr[register + 1]);
     }
 }
