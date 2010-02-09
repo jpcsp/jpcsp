@@ -20,7 +20,6 @@ package jpcsp.graphics;
 
 import static jpcsp.graphics.GeCommands.*;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -56,8 +55,6 @@ import static jpcsp.HLE.pspge.*;
 import org.apache.log4j.Logger;
 
 import com.sun.opengl.util.BufferUtil;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 
 public class VideoEngine {
     public static final int NUM_LIGHTS = 4;
