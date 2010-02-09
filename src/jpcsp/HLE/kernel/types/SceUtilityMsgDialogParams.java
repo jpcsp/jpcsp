@@ -27,6 +27,7 @@ public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure 
     public int errorValue;
     public String message; // 512 bytes
     public int options;
+    	public final static int PSP_UTILITY_MSGDIALOG_OPTION_YESNO_MASK         = 0x00000FF0;
         public final static int PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_YES  = 0x00000010;
         public final static int PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_NO   = 0x00000110;
     public int buttonPressed;
@@ -65,6 +66,18 @@ public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure 
         return base.size;
     }
 
+    public boolean isOptionYesNoDefaultYes() {
+    	return (options & PSP_UTILITY_MSGDIALOG_OPTION_YESNO_MASK) == PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_YES;
+    }
+
+    public boolean isOptionYesNoDefaultNo() {
+    	return (options & PSP_UTILITY_MSGDIALOG_OPTION_YESNO_MASK) == PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_NO;
+    }
+
+    public boolean isOptionYesNo() {
+    	return isOptionYesNoDefaultYes() || isOptionYesNoDefaultNo();
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -77,9 +90,9 @@ public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure 
         sb.append("errorValue " + String.format("0x%08X", errorValue) + "\n");
         sb.append("message '" + message + "'\n");
         sb.append("options " + String.format("0x%08X", options) + "\n");
-        if (options == PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_YES)
+        if (isOptionYesNoDefaultYes())
             sb.append("options PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_YES\n");
-        if (options == PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_NO)
+        if (isOptionYesNoDefaultNo())
             sb.append("options PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_NO\n");
         sb.append("buttonPressed " + String.format("0x%08X", buttonPressed));
 

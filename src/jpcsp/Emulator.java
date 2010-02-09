@@ -25,18 +25,19 @@ import jpcsp.Allegrex.compiler.Profiler;
 import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.Debugger.InstructionCounter;
 import jpcsp.Debugger.StepLogger;
+import jpcsp.HLE.SyscallHandler;
 import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.pspdisplay;
 import jpcsp.HLE.pspge;
 import jpcsp.HLE.pspiofilemgr;
 import jpcsp.HLE.psputils;
-import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleManager;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.textures.TextureCache;
 import jpcsp.hardware.Battery;
 import jpcsp.hardware.Interrupts;
+import jpcsp.scheduler.Scheduler;
 
 import org.apache.log4j.Logger;
 
@@ -44,6 +45,7 @@ public class Emulator implements Runnable {
     private static Emulator instance;
     private static Processor processor;
     private static Clock clock;
+    private static Scheduler scheduler;
     private boolean moduleLoaded;
     private Thread mainThread;
     public static boolean run = false;
@@ -58,6 +60,7 @@ public class Emulator implements Runnable {
         Emulator.gui = gui;
         processor = new Processor();
         clock = new Clock();
+        scheduler = Scheduler.getInstance();
 
         moduleLoaded = false;
         mainThread = new Thread(this, "Emu");
@@ -73,16 +76,21 @@ public class Emulator implements Runnable {
         if (ThreadMan.getInstance().statistics != null && pspdisplay.getInstance().statistics != null) {
             long totalMillis = getClock().milliTime();
             long displayMillis = pspdisplay.getInstance().statistics.cumulatedTimeMillis;
-            long cpuMillis = totalMillis - displayMillis;
+            long syscallMillis = SyscallHandler.durationStatistics.cumulatedTimeMillis;
+            long idleMillis = RuntimeContext.idleDuration.cumulatedTimeMillis;
+            long cpuMillis = totalMillis - displayMillis - syscallMillis - idleMillis;
             long cpuCycles = ThreadMan.getInstance().statistics.allCycles;
             double totalSecs = totalMillis / 1000.0;
             double displaySecs = displayMillis / 1000.0;
+            double syscallSecs = syscallMillis / 1000.0;
             double cpuSecs = cpuMillis / 1000.0;
             if (totalSecs != 0) {
                 log.info("Total execution time: " + String.format("%.3f", totalSecs) + "s");
                 log.info("     PSP CPU time: " + String.format("%.3f", cpuSecs) + "s (" + String.format("%.1f", cpuSecs / totalSecs * 100) + "%)");
                 log.info("     Display time: " + String.format("%.3f", displaySecs) + "s (" + String.format("%.1f", displaySecs / totalSecs * 100) + "%)");
+                log.info("     Syscall time: " + String.format("%.3f", syscallSecs) + "s (" + String.format("%.1f", syscallSecs / totalSecs * 100) + "%)");
             }
+            log.info(SyscallHandler.durationStatistics.toString());
             if (VideoEngine.getStatistics() != null) {
                 long videoCalls = VideoEngine.getStatistics().numberCalls;
                 if (videoCalls != 0) {
@@ -95,7 +103,7 @@ public class Emulator implements Runnable {
                 }
             }
             if (cpuSecs != 0) {
-                log.info("PSP CPU Speed: " + String.format("%.3f", cpuCycles / cpuSecs / (1024 * 1024)) + "Mhz (" + (long) (cpuCycles / cpuSecs) + " instructions per second)");
+                log.info("PSP CPU Speed: " + String.format("%.2f", cpuCycles / cpuSecs / 1000000.0) + "MHz (" + (long) (cpuCycles / cpuSecs) + " instructions per second)");
             }
         }
     }
@@ -147,7 +155,6 @@ public class Emulator implements Runnable {
         // All other registers are uninitialised/random values
 
         ThreadMan.getInstance().Initialise(cpu.pc, module.attribute, module.pspfilename, module.modid);
-        IntrManager.getInstance().Initialize();
         psputils.getInstance().Initialise();
         pspge.getInstance().Initialise();
         pspdisplay.getInstance().Initialise();
@@ -164,6 +171,8 @@ public class Emulator implements Runnable {
         Profiler.reset();
         getClock().reset();
         getProcessor().reset();
+        getScheduler().reset();
+        SyscallHandler.reset();
         Memory.getInstance().Initialise();
         Battery.initialize();
         Interrupts.initialize();
@@ -216,7 +225,7 @@ public class Emulator implements Runnable {
                 processor.step();
                 pspge.getInstance().step();
                 ThreadMan.getInstance().step();
-                IntrManager.getInstance().step();
+                scheduler.step();
                 pspdisplay.getInstance().step();
                 HLEModuleManager.getInstance().step();
                 State.controller.checkControllerState();
@@ -331,6 +340,10 @@ public class Emulator implements Runnable {
 
     public static Clock getClock() {
     	return clock;
+    }
+
+    public static Scheduler getScheduler() {
+    	return scheduler;
     }
 
     public static Emulator getInstance() {
