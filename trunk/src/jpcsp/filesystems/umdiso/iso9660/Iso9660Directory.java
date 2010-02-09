@@ -21,7 +21,7 @@ public class Iso9660Directory {
     public Iso9660Directory(UmdIsoReader r, int directorySector, int directorySize) throws IOException
     {
         // parse directory sector
-        UmdIsoFile dataStream = new UmdIsoFile(r, directorySector, directorySize, null);
+        UmdIsoFile dataStream = new UmdIsoFile(r, directorySector, directorySize, null, null);
 
         files = new ArrayList<Iso9660File>();
 

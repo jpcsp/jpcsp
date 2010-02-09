@@ -116,7 +116,7 @@ public class UmdIsoReader {
         UmdIsoFile f = null;
         try
         {
-            f = new UmdIsoFile(this, 16, 2048, null);
+            f = new UmdIsoFile(this, 16, 2048, null, null);
             f.read(id);
         }
         catch(ArrayIndexOutOfBoundsException e)
@@ -286,6 +286,7 @@ public class UmdIsoReader {
         int fileStart;
         long fileLength;
         Date timestamp = null;
+        String fileName = null;
 
         if (filePath != null && filePath.startsWith("sce_lbn"))
         {
@@ -328,9 +329,10 @@ public class UmdIsoReader {
 	        fileStart = info.getLBA();
 	        fileLength = info.getSize();
 	        timestamp = info.getTimestamp();
+	        fileName = info.getFileName();
         }
 
-        return new UmdIsoFile(this, fileStart, fileLength, timestamp);
+        return new UmdIsoFile(this, fileStart, fileLength, timestamp, fileName);
     }
 
     public String[] listDirectory(String filePath) throws IOException, FileNotFoundException
@@ -381,6 +383,57 @@ public class UmdIsoReader {
     public String getFilename()
     {
         return fileName;
+    }
+
+    private String getFileNameRecursive(int fileStartSector, String path, String[] files) throws FileNotFoundException, IOException
+    {
+    	for (String file : files)
+    	{
+    		String filePath = path + "/" + file;
+    		Iso9660File info = null;
+    		if (path.length() == 0)
+    		{
+    			filePath = file;
+    		}
+    		else
+    		{
+    			info = getFileEntry(filePath);
+    			if (info != null)
+    			{
+    				if (info.getLBA() == fileStartSector)
+    				{
+    					return info.getFileName();
+    				}
+    			}
+    		}
+
+    		if ((info == null || (info.getProperties() & 2) == 2) &&
+                    !file.equals(".") && !file.equals("\01"))
+            {
+                String[] childFiles = listDirectory(filePath);
+                String fileName = getFileNameRecursive(fileStartSector, filePath, childFiles);
+                if (fileName != null)
+                {
+                	return fileName;
+                }
+            }
+    	}
+
+    	return null;
+    }
+
+    public String getFileName(int fileStartSector)
+    {
+		try {
+			String[] files = listDirectory("");
+	    	return getFileNameRecursive(fileStartSector, "", files);
+		} catch (FileNotFoundException e) {
+			// Ignore Exception
+		} catch (IOException e) {
+			// Ignore Exception
+		}
+
+		return null;
     }
 
     public long dumpIndexRecursive(PrintWriter out, String path, String[] files) throws IOException
