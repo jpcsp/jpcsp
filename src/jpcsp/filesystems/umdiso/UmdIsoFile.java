@@ -21,13 +21,14 @@ public class UmdIsoFile extends SeekableInputStream {
     private long currentOffset;
     private long maxOffset;
     private Date timestamp;
+    private String name;
     
     private byte[] currentSector;
     private int sectorOffset;
     
     UmdIsoReader internalReader;
     
-    public UmdIsoFile(UmdIsoReader reader, int startSector, long lengthInBytes, Date timestamp) throws IOException
+    public UmdIsoFile(UmdIsoReader reader, int startSector, long lengthInBytes, Date timestamp, String name) throws IOException
     {
         startSectorNumber = startSector;
         currentSectorNumber = startSectorNumber;
@@ -272,6 +273,16 @@ public class UmdIsoFile extends SeekableInputStream {
     public int getStartSector()
     {
     	return startSectorNumber;
+    }
+
+    public String getName()
+    {
+    	if (name == null)
+    	{
+    		name = internalReader.getFileName(startSectorNumber);
+    	}
+
+    	return name;
     }
 
     private int readInternal(byte[] b, int off, int len) throws IOException

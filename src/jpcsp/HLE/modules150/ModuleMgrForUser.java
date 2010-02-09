@@ -36,6 +36,7 @@ import jpcsp.Loader;
 import jpcsp.Memory;
 import jpcsp.Processor;
 import jpcsp.filesystems.SeekableDataInput;
+import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.util.Utilities;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
@@ -99,50 +100,78 @@ public class ModuleMgrForUser implements HLEModule {
 	}
 
 
-	private void hleKernelLoadModule(Processor processor, String name, int flags, int uid, boolean byUid) {
+	private boolean hleKernelLoadHLEModule(Processor processor, String name, StringBuffer prxname) {
         CpuState cpu = processor.cpu;
-        Memory mem = Processor.memory;
 
-        String prxname = "UNKNOWN";
+        if (prxname == null) {
+        	prxname = new StringBuffer();
+        }
+
         int findprx = name.lastIndexOf("/");
         int endprx = name.toLowerCase().indexOf(".prx");
-        if (endprx >= 0)
-            prxname = name.substring(findprx+1, endprx);
+        if (endprx >= 0) {
+            prxname.append(name.substring(findprx+1, endprx));
+        } else {
+        	prxname.append("UNKNOWN");
+        }
 
         // Load flash0 modules as Java HLE modules
         if (name.startsWith("flash0:")) {
             // Simulate a successful loading
         	HLEModuleManager moduleManager = HLEModuleManager.getInstance();
-        	if (moduleManager.hasFlash0Module(prxname)) {
+        	if (moduleManager.hasFlash0Module(prxname.toString())) {
         		Modules.log.info("hleKernelLoadModule(path='" + name + "') HLE module loaded");
         	} else {
                 Modules.log.warn("IGNORED:hleKernelLoadModule(path='" + name + "'): module from flash0 not loaded");
         	}
-            cpu.gpr[2] = HLEModuleManager.getInstance().LoadFlash0Module(prxname);
-            return;
+            cpu.gpr[2] = HLEModuleManager.getInstance().LoadFlash0Module(prxname.toString());
+            return true;
         }
 
         // Ban some modules
         for (bannedModulesList bannedModuleName : bannedModulesList.values())
         {
-            if (bannedModuleName.name().equalsIgnoreCase(prxname))
+            if (bannedModuleName.name().equalsIgnoreCase(prxname.toString()))
             {
             	HLEModuleManager moduleManager = HLEModuleManager.getInstance();
-            	if (moduleManager.hasFlash0Module(prxname)) {
+            	if (moduleManager.hasFlash0Module(prxname.toString())) {
             		Modules.log.info("hleKernelLoadModule(path='" + name + "') HLE module loaded");
             	} else {
             		Modules.log.warn("IGNORED:hleKernelLoadModule(path='" + name + "'): module from banlist not loaded");
             	}
-                cpu.gpr[2] = HLEModuleManager.getInstance().LoadFlash0Module(prxname);
-                return;
+                cpu.gpr[2] = HLEModuleManager.getInstance().LoadFlash0Module(prxname.toString());
+                return true;
             }
+        }
+
+        return false;
+	}
+
+	private void hleKernelLoadModule(Processor processor, String name, int flags, int uid, boolean byUid) {
+        CpuState cpu = processor.cpu;
+        Memory mem = Processor.memory;
+
+        StringBuffer prxname = new StringBuffer();
+        if (hleKernelLoadHLEModule(processor, name, prxname)) {
+        	return;
         }
 
         // Load module as ELF
         try {
             SeekableDataInput moduleInput = pspiofilemgr.getInstance().getFile(name, flags);
             if (moduleInput != null) {
-                byte[] moduleBytes = new byte[(int) moduleInput.length()];
+            	if (moduleInput instanceof UmdIsoFile) {
+            		UmdIsoFile umdIsoFile = (UmdIsoFile) moduleInput;
+            		String realFileName = umdIsoFile.getName();
+            		if (realFileName != null && !name.endsWith(realFileName)) {
+            			if (hleKernelLoadHLEModule(processor, realFileName, null)) {
+            				moduleInput.close();
+            				return;
+            			}
+            		}
+            	}
+
+            	byte[] moduleBytes = new byte[(int) moduleInput.length()];
                 moduleInput.readFully(moduleBytes);
                 ByteBuffer moduleBuffer = ByteBuffer.wrap(moduleBytes);
 
@@ -159,7 +188,7 @@ public class ModuleMgrForUser implements HLEModule {
                     // Simulate a successful loading
                     Modules.log.warn("IGNORED:hleKernelLoadModule(path='" + name + "') encrypted module not loaded");
                     SceModule fakeModule = new SceModule(true);
-                    fakeModule.modname = prxname;
+                    fakeModule.modname = prxname.toString();
                     fakeModule.write(mem, fakeModule.address);
                     Managers.modules.addModule(fakeModule);
                     cpu.gpr[2] = fakeModule.modid;
