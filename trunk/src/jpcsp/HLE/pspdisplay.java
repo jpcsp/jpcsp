@@ -500,6 +500,10 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
         gl.glPushMatrix();
         gl.glLoadIdentity();
 
+        gl.glMatrixMode(GL.GL_TEXTURE);
+        gl.glPushMatrix();
+        gl.glLoadIdentity();
+
         gl.glEnable(GL.GL_TEXTURE_2D);
         gl.glFrontFace(GL.GL_CW);
         gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
@@ -521,11 +525,12 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
 
         gl.glEnd();
 
+        gl.glMatrixMode(GL.GL_TEXTURE);
+        gl.glPopMatrix();
         gl.glMatrixMode(GL.GL_MODELVIEW);
         gl.glPopMatrix();
         gl.glMatrixMode(GL.GL_PROJECTION);
         gl.glPopMatrix();
-        gl.glMatrixMode(GL.GL_MODELVIEW);
         gl.glPopAttrib();
 
         popTexEnv(gl);
@@ -535,13 +540,21 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
     }
 
     private void copyScreenToPixels(GL gl, Buffer pixels, int bufferwidth, int pixelformat, int width, int height) {
+    	gl.glMatrixMode(GL.GL_PROJECTION);
+        gl.glPushMatrix();
+        gl.glLoadIdentity();
+        gl.glMatrixMode(GL.GL_MODELVIEW);
+        gl.glPushMatrix();
+        gl.glLoadIdentity();
+        gl.glMatrixMode(GL.GL_TEXTURE);
+        gl.glPushMatrix();
+        gl.glLoadIdentity();
+
         // Using glReadPixels instead of glGetTexImage is showing
         // between 7 and 13% performance increase.
         // But glReadPixels seems only to work correctly with 32bit pixels...
         if (useGlReadPixels && pixelformat == PSP_DISPLAY_PIXEL_FORMAT_8888) {
             gl.glMatrixMode(GL.GL_PROJECTION);
-            gl.glPushMatrix();
-            gl.glLoadIdentity();
             gl.glOrtho(0.0, width, height, 0.0, -1.0, 1.0);
             int bufferStep = bufferwidth * getPixelFormatBytes(pixelformat);
             int pixelFormatGL = getPixelFormatGL(pixelformat);
@@ -552,7 +565,6 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             	Utilities.bytePositionBuffer(pixels, bufferPos); // this uses reflection -> slow(?)
                 gl.glReadPixels(0, y, widthToRead, 1, formatGL, pixelFormatGL, pixels);
             }
-            gl.glPopMatrix();
         } else {
             // Set texFb as the current texture
             gl.glBindTexture(GL.GL_TEXTURE_2D, texFb);
@@ -592,7 +604,14 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             		IntBuffer srcBuffer = (IntBuffer) temp;
             		IntBuffer dstBuffer = (IntBuffer) pixels;
             		int pixelsPerElement = 4 / getPixelFormatBytes(pixelformat);
-            		for (int y = 0; y < height; y++) {
+            		int maxHeight = VideoEngine.getInstance().getMaxSpriteHeight();
+            		if (VideoEngine.log.isDebugEnabled()) {
+            			VideoEngine.log.debug("maxSpriteHeight=" + maxHeight);
+            		}
+            		if (maxHeight > height) {
+            			maxHeight = height;
+            		}
+            		for (int y = 0; y < maxHeight; y++) {
             			int startOffset = y * bufferwidth / pixelsPerElement;
             			srcBuffer.limit(startOffset + (width + 1) / pixelsPerElement);
             			srcBuffer.position(startOffset);
@@ -607,6 +626,13 @@ public final class pspdisplay extends GLCanvas implements GLEventListener {
             }
             // We only use "temp" buffer in this function, its limit() will get restored on the next call to clear()
         }
+
+        gl.glMatrixMode(GL.GL_TEXTURE);
+        gl.glPopMatrix();
+        gl.glMatrixMode(GL.GL_MODELVIEW);
+        gl.glPopMatrix();
+        gl.glMatrixMode(GL.GL_PROJECTION);
+        gl.glPopMatrix();
     }
 
     // GLEventListener methods

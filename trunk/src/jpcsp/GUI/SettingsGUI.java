@@ -82,7 +82,10 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
 
         enabled = Settings.getInstance().readBool("emu.enableMpeg");
         enableMpegCheck.setSelected(enabled);
-        
+
+        enabled = Settings.getInstance().readBool("emu.useVertexCache");
+        useVertexCache.setSelected(enabled);
+
         enabled = Settings.getInstance().readBool("emu.ignoreInvalidMemoryAccess");
         invalidMemoryCheck.setSelected(enabled);
 
@@ -272,6 +275,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         onlyGEGraphicsCheck = new javax.swing.JCheckBox();
         useViewportCheck = new javax.swing.JCheckBox();
         enableMpegCheck = new javax.swing.JCheckBox();
+        useVertexCache = new javax.swing.JCheckBox();
         jPanel3 = new javax.swing.JPanel();
         invalidMemoryCheck = new javax.swing.JCheckBox();
         disableReservedThreadMemoryCheck = new javax.swing.JCheckBox();
@@ -470,6 +474,8 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
 
         enableMpegCheck.setText("Enable faked MPEG Video");
 
+        useVertexCache.setText("Use Vertex Cache (can improve performance)");
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -480,7 +486,8 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                     .addComponent(disableVBOCheck)
                     .addComponent(onlyGEGraphicsCheck)
                     .addComponent(useViewportCheck)
-                    .addComponent(enableMpegCheck))
+                    .addComponent(enableMpegCheck)
+                    .addComponent(useVertexCache))
                 .addContainerGap())
         );
         jPanel2Layout.setVerticalGroup(
@@ -495,6 +502,8 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                 .addComponent(useViewportCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(enableMpegCheck)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(useVertexCache)
                 .addContainerGap(42, Short.MAX_VALUE))
         );
 
@@ -1029,6 +1038,7 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
    Settings.getInstance().writeBool("emu.onlyGEGraphics", onlyGEGraphicsCheck.isSelected());
    Settings.getInstance().writeBool("emu.useViewport", useViewportCheck.isSelected());
    Settings.getInstance().writeBool("emu.enableMpeg",enableMpegCheck.isSelected());
+   Settings.getInstance().writeBool("emu.useVertexCache",useVertexCache.isSelected());
    Settings.getInstance().writeBool("emu.ignoreInvalidMemoryAccess", invalidMemoryCheck.isSelected());
    Settings.getInstance().writeBool("emu.disablereservedthreadmemory", disableReservedThreadMemoryCheck.isSelected());
    Settings.getInstance().writeBool("emu.disablesceAudio", DisableSceAudioCheck.isSelected());
@@ -1158,6 +1168,7 @@ private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.JCheckBox disableBlockingAudioCheck;
     private javax.swing.JCheckBox disableGECheck;
     private javax.swing.JCheckBox enableMpegCheck;
+    private javax.swing.JCheckBox useVertexCache;
     private javax.swing.JCheckBox disableReservedThreadMemoryCheck;
     private javax.swing.JCheckBox disableSoundCheck;
     private javax.swing.JCheckBox disableVBOCheck;

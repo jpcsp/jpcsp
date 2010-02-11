@@ -20,8 +20,7 @@ import javax.media.opengl.GL;
 
 import jpcsp.graphics.GeCommands;
 import jpcsp.graphics.VideoEngine;
-import jpcsp.memory.IMemoryReader;
-import jpcsp.memory.MemoryReader;
+import jpcsp.util.Hash;
 
 public class Texture {
 	private int addr;
@@ -102,27 +101,11 @@ public class Texture {
 				VideoEngine.log.debug("Texture.hashCode: " + bufferLengthInBytes + " bytes");
 			}
 
-			IMemoryReader memoryReader = MemoryReader.getMemoryReader(addr, bufferLengthInBytes, 4);
-			for (int i = 0; i < bufferLengthInBytes; i += 4) {
-				hashCode ^= memoryReader.readNext() + i + addr;
-				hashCode += i + addr;
-			}
+			hashCode = Hash.getHashCode(hashCode, addr, bufferLengthInBytes);
 		}
 
 		if (clutAddr != 0) {
-			if (clutMode == GeCommands.CMODE_FORMAT_32BIT_ABGR8888) {
-				int clutNumEntries = clutNumBlocks * 8;
-				IMemoryReader memoryReader = MemoryReader.getMemoryReader(clutAddr, clutNumEntries * 4, 4);
-				for (int i = clutStart; i < clutNumEntries; i++) {
-					hashCode ^= memoryReader.readNext() + i;
-				}
-			} else {
-				int clutNumEntries = clutNumBlocks * 16;
-				IMemoryReader memoryReader = MemoryReader.getMemoryReader(clutAddr, clutNumEntries * 2, 4);
-				for (int i = clutStart; i < clutNumEntries; i += 2) {
-					hashCode ^= memoryReader.readNext() + i;
-				}
-			}
+			hashCode = Hash.getHashCode(hashCode, clutAddr, clutNumBlocks * 32);
 		}
 
 		return hashCode;
