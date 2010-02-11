@@ -35,6 +35,8 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 	public final static boolean fullVersion = false;
 
 	// Almost all VideoEngine class variables...
+	public int base, baseOffset;
+
 	public int fbp, fbw;
     public int zbp, zbw;
     public int psm;
@@ -203,6 +205,9 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	protected void read() {
+		base = read32();
+		baseOffset = read32();
+
 		fbp = read32();
 		fbw = read32();
 		zbp = read32();
@@ -390,6 +395,9 @@ public class pspGeContext extends pspAbstractMemoryMappedStructure {
 
 	@Override
 	protected void write() {
+		write32(base);
+		write32(baseOffset);
+
 		write32(fbp);
 		write32(fbw);
 		write32(zbp);

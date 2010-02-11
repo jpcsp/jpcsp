@@ -17,17 +17,18 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE.kernel.types;
 
 import jpcsp.HLE.pspge;
+import jpcsp.graphics.VideoEngine;
 import static jpcsp.HLE.pspge.*;
 
 public class PspGeList
 {
+	private VideoEngine videoEngine;
     public int list_addr;
     public int stall_addr;
     public int cbid;
     public int arg_addr;
     public int context_addr; // pointer to 2k buffer for storing GE context, used as a paramater for the callbacks?
 
-    public int base;
     public int pc;
 
     // a stack entry contains the PC and the baseOffset
@@ -38,15 +39,11 @@ public class PspGeList
     public int syncStatus;
     public int id;
 
-    // The value of baseOffset has to be added (not ORed) to the base value.
-    // baseOffset is updated by the ORIGIN_ADDR and OFFSET_ADDR commands,
-    // and both commands share the same value field.
-    public int baseOffset;
-
     public int thid; // the thread we are blocking
     public boolean listHasFinished;
 
     public PspGeList(int list_addr, int stall_addr, int cbid, int arg_addr) {
+    	videoEngine = VideoEngine.getInstance();
         this.list_addr = list_addr;
         this.stall_addr = stall_addr;
         this.cbid = cbid;
@@ -66,7 +63,6 @@ public class PspGeList
 
         currentStatus = (pc == stall_addr) ? PSP_GE_LIST_STALL_REACHED : PSP_GE_LIST_QUEUED;
         syncStatus = currentStatus;
-        baseOffset = 0;
         stackIndex = 0;
     }
 
@@ -87,7 +83,7 @@ public class PspGeList
     }
 
     public int getAddress(int argument) {
-    	return (base | argument) + baseOffset;
+    	return (videoEngine.getBase() | argument) + videoEngine.getBaseOffset();
     }
 
     public boolean isStackEmpty() {
@@ -100,13 +96,13 @@ public class PspGeList
 
     public void call(int argument) {
     	pushStack(pc);
-    	pushStack(baseOffset);
+    	pushStack(videoEngine.getBaseOffset());
     	jump(argument);
     }
 
     public void ret() {
     	if (!isStackEmpty()) {
-    		baseOffset = popStack();
+    		videoEngine.setBaseOffset(popStack());
     		pc = popStack();
     	}
     }
