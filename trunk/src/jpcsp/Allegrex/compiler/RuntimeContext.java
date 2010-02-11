@@ -43,7 +43,6 @@ import jpcsp.HLE.pspge;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.SceKernelThreadInfo;
 import jpcsp.HLE.modules.HLEModuleManager;
-import jpcsp.hardware.Interrupts;
 import jpcsp.memory.FastMemory;
 import jpcsp.scheduler.Scheduler;
 import jpcsp.util.DurationStatistics;
@@ -60,7 +59,6 @@ public class RuntimeContext {
 	public  static volatile Processor processor;
 	public  static volatile CpuState cpu;
 	public  static volatile Memory memory;
-	public  static final boolean usePreemtiveScheduling = false;
 	public  static final boolean enableIntructionCounting = true;
 	public  static       boolean enableDebugger = true;
 	public  static final String debuggerName = "syncDebugger";
@@ -541,25 +539,14 @@ public class RuntimeContext {
     }
 
     public static void sync() throws StopThreadException {
-    	if (usePreemtiveScheduling && wantSync) {
-    		// Check if a thread with higher priority is ready to run.
-    		// Switch to this thread only if we are not in a callback
-    		// and the interrupts are enabled.
-    		ThreadMan threadMan = ThreadMan.getInstance();
-    		if (!threadMan.isInsideCallback() && Interrupts.isInterruptsEnabled()) {
-	    		SceKernelThreadInfo thread = threadMan.nextThread();
-	    		SceKernelThreadInfo currentThread = threadMan.getCurrentThread();
-	    		if (thread.currentPriority < currentThread.currentPriority) {
-	    			threadMan.yieldCurrentThread();
-	    		}
-    		}
+    	if (!IntrManager.getInstance().isInsideInterrupt()) {
+	    	syncPause();
+	        syncThread();
+	    	syncEmulator(false);
+	        syncDebugger();
+	    	syncPause();
+	    	checkStoppedThread();
     	}
-    	syncPause();
-        syncThread();
-    	syncEmulator(false);
-        syncDebugger();
-    	syncPause();
-    	checkStoppedThread();
 
     	lastSyncTime = System.currentTimeMillis();
     	wantSync = false;
@@ -1035,10 +1022,6 @@ public class RuntimeContext {
     		enableDaemonThreadSync = true;
     	} else {
     		enableDaemonThreadSync = false;
-    	}
-
-    	if (usePreemtiveScheduling) {
-    		enableDaemonThreadSync = true;
     	}
     }
 }
