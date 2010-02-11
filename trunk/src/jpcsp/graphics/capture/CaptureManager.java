@@ -199,7 +199,6 @@ public class CaptureManager {
         } catch(Exception e) {
             VideoEngine.log.error("Failed to capture RAM: " + e.getMessage());
             e.printStackTrace();
-            Emulator.PauseEmu();
         }
     }
 

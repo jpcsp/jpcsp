@@ -118,6 +118,12 @@ public class VideoEngine {
     private static final int maxErrorCount = 5; // Abort list processing when detecting more errors
 	private boolean useViewport = false;
 
+	private int base;
+    // The value of baseOffset has to be added (not ORed) to the base value.
+    // baseOffset is updated by the ORIGIN_ADDR and OFFSET_ADDR commands,
+    // and both commands share the same value field.
+    private int baseOffset;
+
     private int fbp, fbw; // frame buffer pointer and width
     private int zbp, zbw; // depth buffer pointer and width
     private int psm; // pixel format
@@ -340,6 +346,8 @@ public class VideoEngine {
         takeConditionalJump = false;
         glColorMask = new boolean[] { true, true, true, true };
         mipmapShareClut = true;
+        base = 0;
+        baseOffset = 0;
 
         statistics = new DurationStatistics("VideoEngine Statistics");
         commandStatistics = new DurationStatistics[256];
@@ -981,27 +989,27 @@ public class VideoEngine {
                 break;
 
             case BASE:
-        		currentList.base = (normalArgument << 8) & 0xff000000;
+        		base = (normalArgument << 8) & 0xff000000;
         		// Bits of (normalArgument & 0x0000FFFF) are ignored
         		// (tested: "Ape Escape On the Loose")
                 if (log.isDebugEnabled()) {
-                    log(helper.getCommandString(BASE) + " " + String.format("%08x", currentList.base));
+                    log(helper.getCommandString(BASE) + " " + String.format("%08x", base));
                 }
                 break;
 
             case ORIGIN_ADDR:
-            	currentList.baseOffset = currentList.pc - 4;
+            	baseOffset = currentList.pc - 4;
             	if (normalArgument != 0) {
                     log.warn(String.format("%s unknown argument 0x%08X", helper.getCommandString(ORIGIN_ADDR), normalArgument));
             	} else if (log.isDebugEnabled()) {
-                    log(String.format("%s 0x%08X originAddr=0x%08X", helper.getCommandString(ORIGIN_ADDR), normalArgument, currentList.baseOffset));
+                    log(String.format("%s 0x%08X originAddr=0x%08X", helper.getCommandString(ORIGIN_ADDR), normalArgument, baseOffset));
                 }
             	break;
 
             case OFFSET_ADDR:
-            	currentList.baseOffset = normalArgument << 8;
+            	baseOffset = normalArgument << 8;
             	if (log.isDebugEnabled()) {
-                    log(String.format("%s 0x%08X", helper.getCommandString(OFFSET_ADDR), currentList.baseOffset));
+                    log(String.format("%s 0x%08X", helper.getCommandString(OFFSET_ADDR), baseOffset));
                 }
             	break;
 
@@ -4777,6 +4785,9 @@ public class VideoEngine {
     }
 
     public void saveContext(pspGeContext context) {
+    	context.base = base;
+    	context.baseOffset = baseOffset;
+
     	context.fbp = fbp;
     	context.fbw = fbw;
     	context.zbp = zbp;
@@ -4905,6 +4916,9 @@ public class VideoEngine {
     }
 
     public void restoreContext(pspGeContext context) {
+    	base = context.base;
+    	baseOffset = context.baseOffset;
+
     	fbp = context.fbp;
     	fbw = context.fbw;
     	zbp = context.zbp;
@@ -5043,5 +5057,21 @@ public class VideoEngine {
 
 	public boolean isUsingTRXKICK() {
 		return usingTRXKICK;
+	}
+
+	public int getBase() {
+		return base;
+	}
+
+	public void setBase(int base) {
+		this.base = base;
+	}
+
+	public int getBaseOffset() {
+		return baseOffset;
+	}
+
+	public void setBaseOffset(int baseOffset) {
+		this.baseOffset = baseOffset;
 	}
 }
