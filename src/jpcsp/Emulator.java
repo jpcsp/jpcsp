@@ -33,6 +33,7 @@ import jpcsp.HLE.pspiofilemgr;
 import jpcsp.HLE.psputils;
 import jpcsp.HLE.kernel.types.SceModule;
 import jpcsp.HLE.modules.HLEModuleManager;
+import jpcsp.graphics.VertexCache;
 import jpcsp.graphics.VideoEngine;
 import jpcsp.graphics.textures.TextureCache;
 import jpcsp.hardware.Battery;
@@ -70,6 +71,7 @@ public class Emulator implements Runnable {
 
     public static void exit() {
         log.info(TextureCache.getInstance().statistics.toString());
+        log.info(VertexCache.getInstance().statistics.toString());
         Compiler.exit();
         RuntimeContext.exit();
         Profiler.exit();

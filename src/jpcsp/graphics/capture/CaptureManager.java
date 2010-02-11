@@ -127,7 +127,7 @@ public class CaptureManager {
         // Set the VideoEngine log level to TRACE when capturing,
         // the information in the log file is also interesting
         logLevel = VideoEngine.log.getLevel();
-        VideoEngine.log.setLevel(Level.TRACE);
+        VideoEngine.getInstance().setLogLevel(Level.TRACE);
         capturedImages = new HashSet<Integer>();
 
         try {

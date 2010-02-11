@@ -954,6 +954,9 @@ private void installCompatibilitySettings()
     boolean enableMpeg = Settings.getInstance().readBool("emu.enableMpeg");
     sceMpeg.setEnableMpeg(enableMpeg);
 
+    boolean useVertexCache = Settings.getInstance().readBool("emu.useVertexCache");
+    VideoEngine.getInstance().setUseVertexCache(useVertexCache);
+
     boolean disableAudio = Settings.getInstance().readBool("emu.disablesceAudio");
     jpcsp.HLE.Modules.sceAudioModule.setChReserveEnabled(!disableAudio);
 
@@ -1021,6 +1024,10 @@ public boolean installCompatibilityPatches(String filename)
         String enableMpeg = patchSettings.getProperty("emu.enableMpeg");
         if (enableMpeg != null)
             sceMpeg.setEnableMpeg(Integer.parseInt(enableMpeg) != 0);
+
+        String useVertexCache = patchSettings.getProperty("emu.useVertexCache");
+        if (useVertexCache != null)
+            VideoEngine.getInstance().setUseVertexCache(Integer.parseInt(useVertexCache) != 0);
 
         String disableReservedThreadMemory = patchSettings.getProperty("emu.disablereservedthreadmemory");
         if (disableReservedThreadMemory != null)

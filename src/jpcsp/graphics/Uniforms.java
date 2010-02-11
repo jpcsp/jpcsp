@@ -15,8 +15,11 @@ enum Uniforms {
 	matFlags("psp_matFlags"),
 	tex("tex"),
 	texEnable("texEnable"),
-	texEnvMode("texEnvMode");
-	
+	texEnvMode("texEnvMode"),
+	boneMatrix("psp_boneMatrix"),
+	weights("psp_weights"),
+	numberBones("psp_numberBones");
+
 	String uniformString;
 	int uniformId;
 	

@@ -418,6 +418,11 @@
                     <Property name="text" type="java.lang.String" value="Enable faked MPEG Video"/>
                   </Properties>
                 </Component>
+                <Component class="javax.swing.JCheckBox" name="useVertexCache">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" value="Use Vertex Cache (can improve performance)"/>
+                  </Properties>
+                </Component>
               </SubComponents>
             </Container>
             <Container class="javax.swing.JPanel" name="jPanel3">

@@ -24,49 +24,17 @@ import java.util.Set;
 
 import javax.media.opengl.GL;
 
+import jpcsp.util.CacheStatistics;
+
 public class TextureCache {
 	public static final int cacheMaxSize = 1000;
 	public static final float cacheLoadFactor = 0.75f;
 	private static TextureCache instance = null;
 	private LinkedHashMap<Integer, Texture> cache;
-	public Statistics statistics = new Statistics();
+	public CacheStatistics statistics = new CacheStatistics("Texture", cacheMaxSize);
 	// Remember which textures have already been hashed during one display
 	// (for applications reusing the same texture multiple times in one display)
 	private Set<Integer> textureAlreadyHashed;
-
-	public class Statistics {
-		public long totalHits = 0;			// Number of times a texture was searched
-		public long successfulHits = 0;		// Number of times a texture was successfully found
-		public long notPresentHits = 0;		// Number of times a texture was not present
-		public long changedHits = 0;		// Number of times a texture was present but had to be discarded because it was changed
-		public long entriesRemoved = 0;		// Number of times a texture had to be removed from the cache due to the size limit
-		public long maxSizeUsed = 0;		// Maximum size of the cache
-
-		private String percentage(long n, long max) {
-			return String.format("%.2f%%", (n / (double) max) * 100);
-		}
-
-		private String percentage(long hits) {
-			return percentage(hits, totalHits);
-		}
-
-		@Override
-		public String toString() {
-			StringBuilder result = new StringBuilder();
-			result.append("TextureCache Statistics: ");
-			if (totalHits == 0) {
-				result.append("Cache deactivated");
-			} else {
-			    result.append("TotalHits=" + totalHits + ", ");
-			    result.append("SuccessfulHits=" + successfulHits + " (" + percentage(successfulHits) + "), ");
-			    result.append("NotPresentHits=" + notPresentHits + " (" + percentage(notPresentHits) + "), ");
-			    result.append("ChangedHits=" + changedHits + " (" + percentage(changedHits) + "), ");
-			    result.append("EntriesRemoved=" + entriesRemoved + ", ");
-			    result.append("MaxSizeUsed=" + maxSizeUsed + " (" + percentage(maxSizeUsed, cacheMaxSize) + ")");
-			}
-			return result.toString();
-		}
-	}
 
 	public static TextureCache getInstance() {
 		if (instance == null) {

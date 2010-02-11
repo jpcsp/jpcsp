@@ -52,10 +52,27 @@ import jpcsp.util.DurationStatistics;
 import jpcsp.util.Utilities;
 import static jpcsp.HLE.pspge.*;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import com.sun.opengl.util.BufferUtil;
 
+//
+// Ideas for Optimization:
+// - reduce size of executeCommand method. It is currently not compiled by the
+//   the java JIT compiler due to its size
+//   Synchronization with Allegrex happen in pspge and SIGNAL/FINISH commands. 
+// - compile GE lists (or part of it) into OpenGL display list (glNewList/glCallList).
+//   For example, immutable subroutines called using CALL could be compiled into a display list.
+//   A first run of the game using a profiler option could be used to detect which parts
+//   are immutable. This information could be stored in a file for subsequent runs and
+//   used as hints for the next runs.
+// - Unswizzle textures in shader (is this possible?)
+// - interpret all the vertex type in a shader instead of transforming everything in
+//   GL_FLOAT in VertexInfo.readVertex(). Mapping integer values to [0..2] or [-1..1]
+//   could be performed in vertex shader.
+// - implement PRIM_SPRITES in shader (instead of duplicating vertex in Java)
+//
 public class VideoEngine {
     public static final int NUM_LIGHTS = 4;
     private final int[] prim_mapping = new int[] { GL.GL_POINTS, GL.GL_LINES, GL.GL_LINE_STRIP, GL.GL_TRIANGLES, GL.GL_TRIANGLE_STRIP, GL.GL_TRIANGLE_FAN, GL.GL_QUADS };
@@ -105,6 +122,7 @@ public class VideoEngine {
     private pspdisplay display;
     public static Logger log = Logger.getLogger("ge");
     public static final boolean useTextureCache = true;
+    private boolean useVertexCache = false;
     private static GeCommands helper;
     private VertexInfo vinfo = new VertexInfo();
     private VertexInfoReader vertexInfoReader = new VertexInfoReader();
@@ -117,6 +135,10 @@ public class VideoEngine {
     private int errorCount;
     private static final int maxErrorCount = 5; // Abort list processing when detecting more errors
 	private boolean useViewport = false;
+	private boolean isLogTraceEnabled;
+	private boolean isLogDebugEnabled;
+	private boolean isLogInfoEnabled;
+	private boolean isLogWarnEnabled;
 
 	private int base;
     // The value of baseOffset has to be added (not ORed) to the base value.
@@ -138,18 +160,24 @@ public class VideoEngine {
 
     private float[] proj_uploaded_matrix = new float[4 * 4];
     private MatrixUpload projectionMatrixUpload;
+    private boolean projectionMatrixChanged;
 
     private float[] texture_uploaded_matrix = new float[4 * 4];
     private MatrixUpload textureMatrixUpload;
+    private boolean textureMatrixChanged;
 
     private float[] model_uploaded_matrix = new float[4 * 4];
     private MatrixUpload modelMatrixUpload;
+    private boolean modelMatrixChanged;
 
     private float[] view_uploaded_matrix = new float[4 * 4];
     private MatrixUpload viewMatrixUpload;
+    private boolean viewMatrixChanged;
 
     private int boneMatrixIndex;
     private float[][] bone_uploaded_matrix = new float[8][4 * 3];
+    private float[] boneMatrixForShader = new float[8*4*4]; // Linearized version of bone_uploaded_matrix
+    private int boneMatrixForShaderUpdatedMatrix; // number of updated matrix
 
     private float[] morph_weight = new float[8];
 
@@ -168,6 +196,7 @@ public class VideoEngine {
     private static final float[] blackColor = new float[] { 0, 0, 0, 0 };
     private float[] spotLightExponent = new float[NUM_LIGHTS];
     private float[] spotLightCutoff = new float[NUM_LIGHTS];
+    private boolean lightingChanged;
 
     private float[] fog_color = new float[4];
     private float fog_far = 0.0f,fog_dist = 0.0f;
@@ -223,11 +252,13 @@ public class VideoEngine {
     private int textureTx_dy;
     private int textureTx_pixelSize;
     private boolean usingTRXKICK;
+    private int maxSpriteHeight;
 
     private float[] dfix_color = new float[4];
     private float[] sfix_color = new float[4];
     private int blend_src;
     private int blend_dst;
+    private boolean blendChanged;
 
     private boolean clearMode;
     private int clearModeDepthFunc;
@@ -266,6 +297,9 @@ public class VideoEngine {
 
     private boolean useShaders = true;
     private int shaderProgram;
+    private boolean useSkinningShaders = true; // Use Shaders for Skinning?
+	private int shaderAttribWeights1;
+	private int shaderAttribWeights2;
 
     private ConcurrentLinkedQueue<PspGeList> drawListQueue;
     private boolean somethingDisplayed;
@@ -346,8 +380,16 @@ public class VideoEngine {
         takeConditionalJump = false;
         glColorMask = new boolean[] { true, true, true, true };
         mipmapShareClut = true;
+        boneMatrixForShaderUpdatedMatrix = 8;
         base = 0;
         baseOffset = 0;
+
+        // Force a first load of these values
+        light_type[0] = light_type[1] = light_type[2] = light_type[3] = -1;
+        light_kind[0] = light_kind[1] = light_kind[2] = light_kind[3] = -1;
+        lightSpecularColor[0][0] = lightSpecularColor[1][0] = lightSpecularColor[2][0] = lightSpecularColor[3][0] = -1;
+        light_enabled[0] = light_enabled[1] = light_enabled[2] = light_enabled[3] = -1;
+        lighting = false;
 
         statistics = new DurationStatistics("VideoEngine Statistics");
         commandStatistics = new DurationStatistics[256];
@@ -391,31 +433,66 @@ public class VideoEngine {
 			gl.isFunctionAvailable("glAttachShader") &&
 			gl.isFunctionAvailable("glLinkProgram") &&
 			gl.isFunctionAvailable("glValidateProgram") &&
-			gl.isFunctionAvailable("glUseProgram") && true;
+			gl.isFunctionAvailable("glUseProgram");
+
+        if (!useShaders) {
+        	useSkinningShaders = false;
+        }
 
         VideoEngine.log.info("OpenGL version: " + openGLVersion);
 
-        if(useShaders) {
-        	VideoEngine.log.info("Using shaders");
+        if (useShaders) {
+        	if (useSkinningShaders) {
+        		VideoEngine.log.info("Using shaders with Skinning");
+        	} else {
+        		VideoEngine.log.info("Using shaders");
+        	}
         	loadShaders(gl);
         }
 
-        if(useVBO) {
+        if (useVBO) {
             VideoEngine.log.info("Using VBO");
             buildVBO(gl);
+        } else {
+        	// VertexCache is relying on VBO
+        	useVertexCache = false;
         }
     }
 
     private void buildVBO(GL gl) {
-        if (openGL1_5) {
-            gl.glGenBuffers(1, vboBufferId, 0);
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vboBufferId[0]);
-            gl.glBufferData(GL.GL_ARRAY_BUFFER, vboBufferSize, vboFloatBuffer, GL.GL_STREAM_DRAW);
-        } else {
-            gl.glGenBuffersARB(1, vboBufferId, 0);
-            gl.glBindBufferARB(GL.GL_ARRAY_BUFFER, vboBufferId[0]);
-            gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, vboBufferSize, vboFloatBuffer, GL.GL_STREAM_DRAW);
-        }
+    	glGenBuffers(gl, 1, vboBufferId, 0);
+    	glBindBuffer();
+    	glBufferData(gl, vboBufferSize, vboFloatBuffer, GL.GL_STREAM_DRAW);
+    }
+
+    public void glGenBuffers(GL gl, int length, int[] ids, int offset) {
+    	if (useVBO) {
+	    	if (openGL1_5) {
+	            gl.glGenBuffers(length, ids, offset);
+	    	} else {
+	            gl.glGenBuffersARB(length, ids, offset);
+	    	}
+    	}
+    }
+
+    public void glDeleteBuffers(GL gl, int length, int[] ids, int offset) {
+    	if (useVBO) {
+	    	if (openGL1_5) {
+	            gl.glDeleteBuffers(length, ids, offset);
+	    	} else {
+	            gl.glDeleteBuffers(length, ids, offset);
+	    	}
+    	}
+    }
+
+    public void glBufferData(GL gl, int size, Buffer buffer, int type) {
+    	if (useVBO) {
+            if (openGL1_5) {
+                gl.glBufferData(GL.GL_ARRAY_BUFFER, size, buffer, type);
+            } else {
+                gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, size, buffer, type);
+            }
+    	}
     }
 
     private void loadShaders(GL gl) {
@@ -450,9 +527,15 @@ public class VideoEngine {
     	gl.glValidateProgram(shaderProgram);
     	printProgramInfoLog(gl, shaderProgram);
 
-    	for(Uniforms uniform : Uniforms.values())
+    	for(Uniforms uniform : Uniforms.values()) {
     		uniform.allocateId(gl, shaderProgram);
-        }
+    	}
+
+    	if (useSkinningShaders) {
+    		shaderAttribWeights1 = gl.glGetAttribLocation(shaderProgram, "psp_weights1");
+    		shaderAttribWeights2 = gl.glGetAttribLocation(shaderProgram, "psp_weights2");
+    	}
+    }
 
     void printShaderInfoLog(GL gl, int obj)
 	{
@@ -519,13 +602,7 @@ public class VideoEngine {
         if (useShaders)
         	gl.glUseProgram(shaderProgram);
 
-        statistics.start();
-        TextureCache.getInstance().resetTextureAlreadyHashed();
-        somethingDisplayed = false;
-        textureChanged = true;
-        clutIsDirty = true;
-        errorCount = 0;
-        usingTRXKICK = false;
+        startUpdate();
 
         if (State.captureGeNextFrame) {
             CaptureManager.startCapture("capture.bin", list);
@@ -562,9 +639,71 @@ public class VideoEngine {
             State.replayGeNextFrame = false;
         }
 
-        statistics.end();
+        endUpdate();
 
         return true;
+    }
+
+    private void logLevelUpdated() {
+        isLogTraceEnabled = log.isTraceEnabled();
+        isLogDebugEnabled = log.isDebugEnabled();
+        isLogInfoEnabled = log.isInfoEnabled();
+        isLogWarnEnabled = log.isEnabledFor(Level.WARN);
+    }
+
+    public void setLogLevel(Level level) {
+    	log.setLevel(level);
+        logLevelUpdated();
+    }
+
+    /**
+     * The memory used by GE has been updated or changed.
+     * Update the caches so that they see these changes.
+     */
+    private void memoryForGEUpdated() {
+    	if (useTextureCache) {
+    		TextureCache.getInstance().resetTextureAlreadyHashed();
+    	}
+    	if (useVertexCache) {
+    		VertexCache.getInstance().resetVertexAlreadyHashed();
+    	}
+    }
+
+    private void startUpdate() {
+        statistics.start();
+
+        logLevelUpdated();
+        memoryForGEUpdated();
+        somethingDisplayed = false;
+        textureChanged = true;
+        projectionMatrixChanged = true;
+        modelMatrixChanged = true;
+        viewMatrixChanged = true;
+        textureMatrixChanged = true;
+        clutIsDirty = true;
+        lightingChanged = true;
+        blendChanged = true;
+        errorCount = 0;
+        usingTRXKICK = false;
+        maxSpriteHeight = 0;
+
+        gl.glMatrixMode(GL.GL_PROJECTION);
+        gl.glPushMatrix();
+        gl.glMatrixMode(GL.GL_TEXTURE);
+        gl.glPushMatrix();
+        gl.glMatrixMode(GL.GL_MODELVIEW);
+        gl.glPushMatrix();
+    }
+
+    private void endUpdate() {
+        gl.glMatrixMode(GL.GL_TEXTURE);
+        gl.glPopMatrix();
+        gl.glMatrixMode(GL.GL_PROJECTION);
+        gl.glPopMatrix();
+        gl.glMatrixMode(GL.GL_MODELVIEW);
+        gl.glPopMatrix();
+
+        statistics.end();
     }
 
     public void error(String message) {
@@ -585,7 +724,7 @@ public class VideoEngine {
     		int oldPc = currentList.pc;
     		currentList.ret();
     		int newPc = currentList.pc;
-            if (log.isDebugEnabled()) {
+            if (isLogDebugEnabled) {
                 log(String.format("tryToFallback old PC: 0x%08X, new PC: 0x%08X", oldPc, newPc));
             }
     	} else {
@@ -625,7 +764,7 @@ public class VideoEngine {
         currentList = list;
         listHasEnded = false;
 
-        if (log.isDebugEnabled()) {
+        if (isLogDebugEnabled) {
             log("executeList id=" + list.id);
         }
 
@@ -652,7 +791,7 @@ public class VideoEngine {
 
         if (currentList.pc == currentList.stall_addr) {
             currentList.currentStatus = PSP_GE_LIST_STALL_REACHED;
-            if (log.isDebugEnabled()) {
+            if (isLogDebugEnabled) {
                 log("list id=" + currentList.id + " stalled at " + String.format("%08x", currentList.stall_addr) + " listHasEnded=" + listHasEnded);
             }
         }
@@ -965,14 +1104,14 @@ public class VideoEngine {
         switch (command) {
             case END:
         		listHasEnded = true;
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log(helper.getCommandString(END) + " pc=0x" + Integer.toHexString(currentList.pc));
                 }
                 updateGeBuf();
                 break;
 
             case FINISH:
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log(helper.getCommandString(FINISH) + " (hex="+Integer.toHexString(normalArgument)+",int="+normalArgument+",float="+floatArgument+")");
                 }
                 currentList.listHasFinished = true;
@@ -982,7 +1121,7 @@ public class VideoEngine {
             case SIGNAL:
             	int behavior = (normalArgument >> 16) & 0xFF;
             	int signal = normalArgument & 0xFFFF;
-            	if (log.isDebugEnabled()) {
+            	if (isLogDebugEnabled) {
                     log(helper.getCommandString(SIGNAL) + " (behavior=" + behavior + ",signal=0x" + Integer.toHexString(signal) + ")");
                 }
                 currentList.pushSignalCallback(currentList.id, behavior, signal);
@@ -992,7 +1131,7 @@ public class VideoEngine {
         		base = (normalArgument << 8) & 0xff000000;
         		// Bits of (normalArgument & 0x0000FFFF) are ignored
         		// (tested: "Ape Escape On the Loose")
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log(helper.getCommandString(BASE) + " " + String.format("%08x", base));
                 }
                 break;
@@ -1001,39 +1140,54 @@ public class VideoEngine {
             	baseOffset = currentList.pc - 4;
             	if (normalArgument != 0) {
                     log.warn(String.format("%s unknown argument 0x%08X", helper.getCommandString(ORIGIN_ADDR), normalArgument));
-            	} else if (log.isDebugEnabled()) {
+            	} else if (isLogDebugEnabled) {
                     log(String.format("%s 0x%08X originAddr=0x%08X", helper.getCommandString(ORIGIN_ADDR), normalArgument, baseOffset));
                 }
             	break;
 
             case OFFSET_ADDR:
             	baseOffset = normalArgument << 8;
-            	if (log.isDebugEnabled()) {
+            	if (isLogDebugEnabled) {
                     log(String.format("%s 0x%08X", helper.getCommandString(OFFSET_ADDR), baseOffset));
                 }
             	break;
 
             case IADDR:
                 vinfo.ptr_index = currentList.getAddress(normalArgument);
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log(helper.getCommandString(IADDR) + " " + String.format("%08x", vinfo.ptr_index));
                 }
                 break;
 
             case VADDR:
                 vinfo.ptr_vertex = currentList.getAddress(normalArgument);
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log(helper.getCommandString(VADDR) + " " + String.format("%08x", vinfo.ptr_vertex));
                 }
                 break;
 
-            case VTYPE:
+            case VTYPE: {
+                int old_transform_mode = transform_mode;
                 vinfo.processType(normalArgument);
                 transform_mode = (normalArgument >> 23) & 0x1;
-                if (log.isDebugEnabled()) {
+
+                //Switching from 2D to 3D or 3D to 2D?
+                if (old_transform_mode != transform_mode) {
+                	projectionMatrixChanged = true;
+                	modelMatrixChanged = true;
+                	viewMatrixChanged = true;
+                	textureMatrixChanged = true;
+                	// Switching from 2D to 3D?
+                	if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
+                		lightingChanged = true;
+                	}
+                }
+
+                if (isLogDebugEnabled) {
                     log(helper.getCommandString(VTYPE) + " " + vinfo.toString());
                 }
                 break;
+            }
 
             case REGION1:
                 region_x1 = normalArgument & 0x3ff;
@@ -1045,7 +1199,7 @@ public class VideoEngine {
                 region_y2 = normalArgument >> 10;
                 region_width = (region_x2 + 1) - region_x1;
                 region_height = (region_y2 + 1) - region_y1;
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log("drawRegion(" + region_x1 + "," + region_y1 + "," + region_width + "," + region_height + ")");
                 }
                 break;
@@ -1068,7 +1222,8 @@ public class VideoEngine {
 
             case VMS:
             	viewMatrixUpload.startUpload(normalArgument);
-            	if (log.isDebugEnabled()) {
+            	viewMatrixChanged = true;
+            	if (isLogDebugEnabled) {
             		log("sceGumMatrixMode GU_VIEW " + normalArgument);
             	}
                 break;
@@ -1081,7 +1236,8 @@ public class VideoEngine {
 
             case MMS:
             	modelMatrixUpload.startUpload(normalArgument);
-            	if (log.isDebugEnabled()) {
+            	modelMatrixChanged = true;
+            	if (isLogDebugEnabled) {
             		log("sceGumMatrixMode GU_MODEL " + normalArgument);
             	}
                 break;
@@ -1098,30 +1254,17 @@ public class VideoEngine {
 
             // Position
 
-            case LXP0:
-            case LXP1:
-            case LXP2:
-            case LXP3: {
+            case LXP0: case LXP1: case LXP2: case LXP3: 
+            case LYP0: case LYP1: case LYP2: case LYP3: 
+            case LZP0: case LZP1: case LZP2: case LZP3: {
                 int lnum = (command - LXP0) / 3;
-            	light_pos[lnum][0] = floatArgument;
-            	break;
-            }
+                int component = (command - LXP0) % 3;
+                float old_light_pos = light_pos[lnum][component];
+            	light_pos[lnum][component] = floatArgument;
 
-            case LYP0:
-            case LYP1:
-            case LYP2:
-            case LYP3: {
-                int lnum = (command - LYP0) / 3;
-            	light_pos[lnum][1] = floatArgument;
-            	break;
-            }
-
-            case LZP0:
-            case LZP1:
-            case LZP2:
-            case LZP3: {
-                int lnum = (command - LZP0) / 3;
-            	light_pos[lnum][2] = floatArgument;
+            	if (old_light_pos != light_pos[lnum][component]) {
+            		lightingChanged = true;
+            	}
             	break;
             }
 
@@ -1136,7 +1279,7 @@ public class VideoEngine {
             	lightAmbientColor[lnum][0] = ((normalArgument      ) & 255) / 255.f;
             	lightAmbientColor[lnum][1] = ((normalArgument >>  8) & 255) / 255.f;
             	lightAmbientColor[lnum][2] = ((normalArgument >> 16) & 255) / 255.f;
-            	lightAmbientColor[lnum][3] = 1.f;             
+            	lightAmbientColor[lnum][3] = 1.f;
             	gl.glLightfv(GL.GL_LIGHT0 + lnum, GL.GL_AMBIENT, lightAmbientColor[lnum], 0);
             	log("sceGuLightColor (GU_LIGHT0, GU_AMBIENT)");
             	break;
@@ -1162,11 +1305,20 @@ public class VideoEngine {
             case SLC2:
             case SLC3: {
                 int lnum = (command - SLC0) / 3;
+                float old_lightSpecularColor0 = lightSpecularColor[lnum][0];
+                float old_lightSpecularColor1 = lightSpecularColor[lnum][1];
+                float old_lightSpecularColor2 = lightSpecularColor[lnum][2];
             	lightSpecularColor[lnum][0] = ((normalArgument      ) & 255) / 255.f;
             	lightSpecularColor[lnum][1] = ((normalArgument >>  8) & 255) / 255.f;
             	lightSpecularColor[lnum][2] = ((normalArgument >> 16) & 255) / 255.f;
             	lightSpecularColor[lnum][3] = 1.f;
-            	gl.glLightfv(GL.GL_LIGHT0 + lnum, GL.GL_SPECULAR, lightSpecularColor[lnum], 0);
+
+            	if (old_lightSpecularColor0 != lightSpecularColor[lnum][0] ||
+        			old_lightSpecularColor1 != lightSpecularColor[lnum][1] ||
+        			old_lightSpecularColor2 != lightSpecularColor[lnum][2]) {
+            		lightingChanged = true;
+            	}
+        		gl.glLightfv(GL.GL_LIGHT0 + lnum, GL.GL_SPECULAR, lightSpecularColor[lnum], 0);
             	log("sceGuLightColor (GU_LIGHT0, GU_SPECULAR)");
             	break;
             }
@@ -1206,7 +1358,7 @@ public class VideoEngine {
             case LMODE: {
                 int lightmode = (normalArgument != 0) ? GL.GL_SEPARATE_SPECULAR_COLOR : GL.GL_SINGLE_COLOR;
                 gl.glLightModeli(GL.GL_LIGHT_MODEL_COLOR_CONTROL, lightmode);
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     VideoEngine.log.info("sceGuLightMode(" + ((normalArgument != 0) ? "GU_SEPARATE_SPECULAR_COLOR" : "GU_SINGLE_COLOR") + ")");
                 }
                 // Check if other values than 0 and 1 are set
@@ -1220,9 +1372,15 @@ public class VideoEngine {
             case LYD0: case LYD1: case LYD2: case LYD3:
             case LZD0: case LZD1: case LZD2: case LZD3: {
                 int lnum = (command - LXD0) / 3;
-                int dircomponent = (command - LXD0) % 3;
+                int component = (command - LXD0) % 3;
+                float old_light_dir = light_dir[lnum][component];
+
                 // OpenGL requires a normal in the opposite direction as the PSP
-                light_dir[lnum][dircomponent] = -floatArgument;
+                light_dir[lnum][component] = -floatArgument;
+
+                if (old_light_dir != light_dir[lnum][component]) {
+                	lightingChanged = true;
+                }
                 // OpenGL parameter for light direction is set in initRendering
                 // because it depends on the model/view matrix
                 break;
@@ -1237,8 +1395,15 @@ public class VideoEngine {
             case LT2:
             case LT3: {
             	int lnum = command - LT0;
+            	int old_light_type = light_type[lnum];
+            	int old_light_kind = light_kind[lnum];
             	light_type[lnum] = (normalArgument >> 8) & 3;
             	light_kind[lnum] = normalArgument & 3;
+
+            	if (old_light_type != light_type[lnum] || old_light_kind != light_kind[lnum]) {
+            		lightingChanged = true;
+            	}
+
             	switch(light_type[lnum]) {
             	case LIGHT_DIRECTIONAL:
             		light_pos[lnum][3] = 0.f;
@@ -1257,7 +1422,10 @@ public class VideoEngine {
             		gl.glUniform4iv(Uniforms.lightType.getId(), 1, light_type, 0);
             		gl.glUniform4iv(Uniforms.lightKind.getId(), 1, light_kind, 0);
             	}
-            	log.debug("Light " + lnum + " type " + (normalArgument >> 8) + " kind " + (normalArgument & 3));
+
+            	if (isLogDebugEnabled) {
+            		log.debug("Light " + lnum + " type " + (normalArgument >> 8) + " kind " + (normalArgument & 3));
+            	}
             	break;
             }
             /*
@@ -1268,7 +1436,12 @@ public class VideoEngine {
             case LTE2:
             case LTE3: {
             	int lnum = command - LTE0;
+            	int old_light_enabled = light_enabled[lnum];
             	light_enabled[lnum] = normalArgument & 1;
+
+            	if (old_light_enabled != light_enabled[lnum]) {
+            		lightingChanged = true;
+            	}
             	if (normalArgument != 0) {
                     gl.glEnable(GL.GL_LIGHT0 + lnum);
                     log("sceGuEnable(GL_LIGHT"+lnum+")");
@@ -1290,8 +1463,14 @@ public class VideoEngine {
             case SLE2:
             case SLE3: {
             	int lnum = command - SLE0;
+            	float old_spotLightExponent = spotLightExponent[lnum];
             	spotLightExponent[lnum] = floatArgument;
-                if (log.isDebugEnabled()) {
+
+            	if (old_spotLightExponent != spotLightExponent[lnum]) {
+            		lightingChanged = true;
+            	}
+
+            	if (isLogDebugEnabled) {
                     VideoEngine.log.debug("sceGuLightSpot(" + lnum + ",X," + floatArgument + ",X)");
                 }
             	break;
@@ -1305,11 +1484,18 @@ public class VideoEngine {
             case SLF2:
             case SLF3: {
             	int lnum = command - SLF0;
+            	float old_spotLightCutoff = spotLightCutoff[lnum];
+
             	// PSP Cutoff is cosine of angle, OpenGL expects degrees
             	float degreeCutoff = (float) Math.toDegrees(Math.acos(floatArgument));
             	if ((degreeCutoff >= 0 && degreeCutoff <= 90) || degreeCutoff == 180) {
 	                spotLightCutoff[lnum] = degreeCutoff;
-	                if (log.isDebugEnabled()) {
+
+	                if (old_spotLightCutoff != spotLightCutoff[lnum]) {
+	                	lightingChanged = true;
+	                }
+
+	                if (isLogDebugEnabled) {
 	                    log.debug("sceGuLightSpot(" + lnum + ",X,X," + floatArgument + "=" + degreeCutoff + ")");
 	                }
             	} else {
@@ -1321,7 +1507,8 @@ public class VideoEngine {
             /*
              * Lighting enable/disable
              */
-            case LTE:
+            case LTE: {
+            	boolean old_lighting = lighting;
             	if (normalArgument != 0) {
             		lighting = true;
             		if(useShaders) gl.glUniform1i(Uniforms.lightingEnable.getId(), 1);
@@ -1333,21 +1520,26 @@ public class VideoEngine {
                     gl.glDisable(GL.GL_LIGHTING);
                     log("sceGuDisable(GL_LIGHTING)");
                 }
+
+        		if (old_lighting != lighting) {
+        			lightingChanged = true;
+        		}
                 break;
+            }
 
             /*
              * Material setup
              */
             case CMAT:
             	mat_flags = normalArgument & 7;
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log("sceGuColorMaterial " + mat_flags);
                 }
             	break;
 
             case AMA:
             	mat_ambient[3] = ((normalArgument      ) & 255) / 255.f;
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log(String.format("material ambient a=%.1f (%02X)",
                             mat_ambient[3], normalArgument & 255));
                 }
@@ -1357,7 +1549,7 @@ public class VideoEngine {
             	mat_ambient[0] = ((normalArgument	   ) & 255) / 255.f;
             	mat_ambient[1] = ((normalArgument >>  8) & 255) / 255.f;
             	mat_ambient[2] = ((normalArgument >> 16) & 255) / 255.f;
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log(String.format("material ambient r=%.1f g=%.1f b=%.1f (%08X)",
                             mat_ambient[0], mat_ambient[1], mat_ambient[2], normalArgument));
                 }
@@ -1368,7 +1560,7 @@ public class VideoEngine {
             	mat_diffuse[1] = ((normalArgument >>  8) & 255) / 255.f;
             	mat_diffuse[2] = ((normalArgument >> 16) & 255) / 255.f;
             	mat_diffuse[3] = 1.f;
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log("material diffuse " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
                             mat_diffuse[0], mat_diffuse[1], mat_diffuse[2], normalArgument));
                 }
@@ -1380,7 +1572,7 @@ public class VideoEngine {
             	mat_emissive[2] = ((normalArgument >> 16) & 255) / 255.f;
             	mat_emissive[3] = 1.f;
             	gl.glMaterialfv(GL.GL_FRONT, GL.GL_EMISSION, mat_emissive, 0);
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log("material emission " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
                             mat_emissive[0], mat_emissive[1], mat_emissive[2], normalArgument));
                 }
@@ -1391,7 +1583,7 @@ public class VideoEngine {
             	mat_specular[1] = ((normalArgument >>  8) & 255) / 255.f;
             	mat_specular[2] = ((normalArgument >> 16) & 255) / 255.f;
             	mat_specular[3] = 1.f;
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log("material specular " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
                             mat_specular[0], mat_specular[1], mat_specular[2], normalArgument));
                 }
@@ -1402,7 +1594,7 @@ public class VideoEngine {
             	ambient_light[1] = ((normalArgument >>  8) & 255) / 255.f;
             	ambient_light[2] = ((normalArgument >> 16) & 255) / 255.f;
             	gl.glLightModelfv(GL.GL_LIGHT_MODEL_AMBIENT, ambient_light, 0);
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log("ambient light " + String.format("r=%.1f g=%.1f b=%.1f (%08X)",
                             ambient_light[0], ambient_light[1], ambient_light[2], normalArgument));
                 }
@@ -1415,14 +1607,15 @@ public class VideoEngine {
 
             case SPOW:
             	gl.glMaterialf(GL.GL_FRONT, GL.GL_SHININESS, floatArgument);
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log("material shininess " + floatArgument);
                 }
             	break;
 
             case TMS:
             	textureMatrixUpload.startUpload(normalArgument);
-            	if (log.isDebugEnabled()) {
+            	textureMatrixChanged = true;
+            	if (isLogDebugEnabled) {
             		log("sceGumMatrixMode GU_TEXTURE " + normalArgument);
             	}
                 break;
@@ -1435,7 +1628,8 @@ public class VideoEngine {
 
             case PMS:
             	projectionMatrixUpload.startUpload(normalArgument);
-            	if (log.isDebugEnabled()) {
+            	projectionMatrixChanged = true;
+            	if (isLogDebugEnabled) {
             		log("sceGumMatrixMode GU_PROJECTION " + normalArgument);
             	}
                 break;
@@ -1467,7 +1661,7 @@ public class VideoEngine {
                 	textureChanged = true;
                 }
 
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log("sceGuTexImage(level=" + level + ", X, X, texBufferWidth=" + texture_buffer_width[level] + ", hi(pointer=0x" + Integer.toHexString(texture_base_pointer[level]) + "))");
                 }
                 break;
@@ -1489,7 +1683,7 @@ public class VideoEngine {
                 	textureChanged = true;
                 }
 
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log ("sceGuTexImage(level=" + level + ", X, X, X, lo(pointer=0x" + Integer.toHexString(texture_base_pointer[level]) + "))");
                 }
                 break;
@@ -1513,10 +1707,13 @@ public class VideoEngine {
             	texture_width[level]  = 1 << ((normalArgument   ) & 0xFF);
 
             	if (old_texture_height != texture_height[level] || old_texture_width != texture_width[level]) {
+                	if (transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD && level == 0) {
+                		textureMatrixChanged = true;
+                	}
             		textureChanged = true;
             	}
 
-            	if (log.isDebugEnabled()) {
+            	if (isLogDebugEnabled) {
                     log ("sceGuTexImage(level=" + level + ", width=" + texture_width[level] + ", height=" + texture_height[level] + ", X, X)");
                 }
             	break;
@@ -1538,13 +1735,13 @@ public class VideoEngine {
             		textureChanged = true;
             	}
 
-            	if (log.isDebugEnabled()) {
+            	if (isLogDebugEnabled) {
             	    log("sceGuTexMode(X, mipmaps=" + texture_num_mip_maps + ", mipmapShareClut=" + mipmapShareClut + ", swizzle=" + texture_swizzle + ")");
             	}
             	break;
             }
 
-            case TPSM:
+            case TPSM: {
             	int old_texture_storage = texture_storage;
                 // TODO find correct mask
                 // - unknown game 0x105 (261)
@@ -1555,10 +1752,11 @@ public class VideoEngine {
             		textureChanged = true;
             	}
 
-            	if (log.isDebugEnabled()) {
+            	if (isLogDebugEnabled) {
                     log ("sceGuTexMode(tpsm=" + texture_storage + "(" + getPsmName(texture_storage) + "), X, X, X)");
                 }
             	break;
+            }
 
             case CBP: {
             	int old_tex_clut_addr = tex_clut_addr;
@@ -1569,7 +1767,7 @@ public class VideoEngine {
                 	textureChanged = true;
                 }
 
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log ("sceGuClutLoad(X, lo(cbp=0x" + Integer.toHexString(tex_clut_addr) + "))");
                 }
                 break;
@@ -1584,7 +1782,7 @@ public class VideoEngine {
                 	textureChanged = true;
                 }
 
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log ("sceGuClutLoad(X, hi(cbp=0x" + Integer.toHexString(tex_clut_addr) + "))");
                 }
                 break;
@@ -1607,7 +1805,7 @@ public class VideoEngine {
             	//
             	readClut();
 
-            	if (log.isDebugEnabled()) {
+            	if (isLogDebugEnabled) {
                     log ("sceGuClutLoad(num_blocks=" + tex_clut_num_blocks + ", X)");
                 }
             	break;
@@ -1628,7 +1826,7 @@ public class VideoEngine {
                 	textureChanged = true;
                 }
 
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log ("sceGuClutMode(cpsm=" + tex_clut_mode + "(" + getPsmName(tex_clut_mode) + "), shift=" + tex_clut_shift + ", mask=0x" + Integer.toHexString(tex_clut_mask) + ", start=" + tex_clut_start + ")");
                 }
                 break;
@@ -1638,7 +1836,7 @@ public class VideoEngine {
                 // Do not load the texture right now, clut parameters can still be
                 // defined after the TFLUSH and before the PRIM command.
                 // Delay the texture loading until the PRIM command.
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log("tflush (deferring to prim)");
                 }
                 break;
@@ -1712,41 +1910,71 @@ public class VideoEngine {
              * Texture transformations
              */
             case UOFFSET: {
+            	float old_tex_translate_x = tex_translate_x;
             	tex_translate_x = floatArgument;
-                // only log in VOFFSET, assume the commands are always paired
-                //if (log.isDebugEnabled()) {
+
+            	if (old_tex_translate_x != tex_translate_x) {
+            		textureMatrixChanged = true;
+            	}
+
+            	// only log in VOFFSET, assume the commands are always paired
+                //if (isLogDebugEnabled) {
                 //    log ("sceGuTexOffset(u=" + tex_translate_x + ", X)");
                 //}
             	break;
             }
             case VOFFSET: {
+            	float old_tex_translate_y = tex_translate_y;
             	tex_translate_y = floatArgument;
-                if (log.isDebugEnabled()) {
+
+            	if (old_tex_translate_y != tex_translate_y) {
+            		textureMatrixChanged = true;
+            	}
+
+            	if (isLogDebugEnabled) {
                     log ("sceGuTexOffset(u=" + tex_translate_x + ", v=" + tex_translate_y + ")");
                 }
             	break;
             }
 
             case USCALE: {
+            	float old_tex_scale_x = tex_scale_x;
             	tex_scale_x = floatArgument;
-                // only log in VSCALE, assume the commands are always paired
-                //if (log.isDebugEnabled()) {
+
+            	if (old_tex_scale_x != tex_scale_x) {
+            		textureMatrixChanged = true;
+            	}
+
+            	// only log in VSCALE, assume the commands are always paired
+                //if (isLogDebugEnabled) {
                 //    log ("sceGuTexScale(u=" + tex_scale_x + ", X)");
                 //}
             	break;
             }
             case VSCALE: {
+            	float old_tex_scale_y = tex_scale_y;
             	tex_scale_y = floatArgument;
-                if (log.isDebugEnabled()) {
+
+            	if (old_tex_scale_y != tex_scale_y) {
+            		textureMatrixChanged = true;
+            	}
+
+            	if (isLogDebugEnabled) {
                     log ("sceGuTexScale(u=" + tex_scale_x + ", v=" + tex_scale_y + ")");
                 }
             	break;
             }
 
             case TMAP:
+            	int old_tex_map_mode = tex_map_mode;
             	tex_map_mode = normalArgument & 3;
             	tex_proj_map_mode = (normalArgument >> 8) & 3;
-                if (log.isDebugEnabled()) {
+
+            	if (old_tex_map_mode != tex_map_mode) {
+            		textureMatrixChanged = true;
+            	}
+
+            	if (isLogDebugEnabled) {
                     log ("sceGuTexMapMode(mode=" + tex_map_mode + ", X, X)");
                     log ("sceGuTexProjMapMode(mode=" + tex_proj_map_mode + ")");
                 }
@@ -1762,11 +1990,12 @@ public class VideoEngine {
             			column1 = (normalArgument>>8) & 0x03;
 
             		for (int i = 0; i < 3; i++) {
-            			tex_envmap_matrix [i+0] = light_pos[column0][i];
-            			tex_envmap_matrix [i+4] = light_pos[column1][i];
+            			tex_envmap_matrix[i+0] = light_pos[column0][i];
+            			tex_envmap_matrix[i+4] = light_pos[column1][i];
             		}
 
-            		if (log.isDebugEnabled()) {
+            		textureMatrixChanged = true;
+            		if (isLogDebugEnabled) {
             			log("sceGuTexMapMode(X, " + column0 + ", " + column1 + ")");
             		}
             	}
@@ -1777,7 +2006,7 @@ public class VideoEngine {
                 tex_mipmap_mode = normalArgument & 0xFFFF;
                 tex_mipmap_bias_int = (int)(byte) (normalArgument >> 16);
                 tex_mipmap_bias = tex_mipmap_bias_int / 16.0f;
-                if (log.isInfoEnabled()) {
+                if (isLogWarnEnabled) {
                 	log.warn("Unimplemented sceGuTexLevelMode(mode=" + tex_mipmap_mode + ", bias=" + tex_mipmap_bias + ")");
                 }
                 break;
@@ -1911,7 +2140,7 @@ public class VideoEngine {
            		gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, rgbScale);
            		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, env_mode);
 
-           		if (log.isDebugEnabled()) {
+           		if (isLogDebugEnabled) {
            		    log(String.format("sceGuTexFunc mode %06X", normalArgument)
            		            + (((normalArgument & 0x10000) != 0) ? " SCALE" : "")
            		            + (((normalArgument & 0x100) != 0) ? " ALPHA" : ""));
@@ -1925,7 +2154,7 @@ public class VideoEngine {
             	tex_env_color[3] = 1.f;
             	gl.glTexEnvfv(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_COLOR, tex_env_color, 0);
 
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log(String.format("sceGuTexEnvColor %08X (no alpha)", normalArgument));
                 }
             	break;
@@ -1937,10 +2166,10 @@ public class VideoEngine {
                 viewport_height = (int)(-floatArgument * 2);
 
                 if (viewport_width != 480 || viewport_height != 272) {
-                	if (log.isInfoEnabled()) {
+                	if (isLogWarnEnabled) {
                 		log.warn("sceGuViewport(X, X, w=" + viewport_width + ", h=" + viewport_height + ") non-standard dimensions");
                 	}
-                } else if (log.isDebugEnabled()) {
+                } else if (isLogDebugEnabled) {
                     log.debug("sceGuViewport(X, X, w=" + viewport_width + ", h=" + viewport_height + ")");
                 }
 
@@ -1952,7 +2181,7 @@ public class VideoEngine {
             case ZSCALE:
             	zscale = floatArgument / 65535.f;
             	if(useShaders) gl.glUniform1f(Uniforms.zScale.getId(), zscale);
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log(helper.getCommandString(ZSCALE) + " " + floatArgument);
                 }
                 break;
@@ -1964,7 +2193,7 @@ public class VideoEngine {
             case YPOS:
                 viewport_cy = (int)floatArgument;
 
-                if (log.isInfoEnabled()) {
+                if (isLogWarnEnabled) {
 	                if (viewport_cx != 2048 || viewport_cy != 2048) {
 	                    log.warn("Unimplemented sceGuViewport(cx=" + viewport_cx + ", cy=" + viewport_cy + ", X, X) non-standard dimensions");
 	                } else {
@@ -1976,7 +2205,7 @@ public class VideoEngine {
             case ZPOS:
             	zpos = floatArgument / 65535.f;
             	if(useShaders) gl.glUniform1f(Uniforms.zPos.getId(), zpos);
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log(helper.getCommandString(ZPOS), floatArgument);
                 }
                 break;
@@ -1987,7 +2216,7 @@ public class VideoEngine {
                 break;
             case OFFSETY:
                 offset_y = normalArgument >> 4;
-                if (log.isInfoEnabled()) {
+                if (isLogWarnEnabled) {
                 	log.warn("Unimplemented sceGuOffset(x=" + offset_x + ",y=" + offset_y + ")");
                 }
                 break;
@@ -1995,7 +2224,7 @@ public class VideoEngine {
             case FBP:
             	// FBP can be called before or after FBW
                 fbp = (fbp & 0xff000000) | normalArgument;
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log(helper.getCommandString(FBP) + " fbp=" + Integer.toHexString(fbp) + ", fbw=" + fbw);
                 }
                 geBufChanged = true;
@@ -2003,7 +2232,7 @@ public class VideoEngine {
             case FBW:
                 fbp = (fbp & 0x00ffffff) | ((normalArgument << 8) & 0xff000000);
                 fbw = normalArgument & 0xffff;
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log(helper.getCommandString(FBW) + " fbp=" + Integer.toHexString(fbp) + ", fbw=" + fbw);
                 }
                 geBufChanged = true;
@@ -2011,21 +2240,21 @@ public class VideoEngine {
 
             case ZBP:
                 zbp = (zbp & 0xff000000) | normalArgument;
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log("zbp=" + Integer.toHexString(zbp) + ", zbw=" + zbw);
                 }
                 break;
             case ZBW:
                 zbp = (zbp & 0x00ffffff) | ((normalArgument << 8) & 0xff000000);
                 zbw = normalArgument & 0xffff;
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log("zbp=" + Integer.toHexString(zbp) + ", zbw=" + zbw);
                 }
                 break;
 
             case PSM:
                 psm = normalArgument;
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log("psm=" + normalArgument + "(" + getPsmName(normalArgument) + ")");
                 }
                 geBufChanged = true;
@@ -2054,7 +2283,7 @@ public class VideoEngine {
                 loadTexture();
 
                 // Logging
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     switch (type) {
                         case PRIM_POINT:
                             log("prim point " + numberOfVertex + "x");
@@ -2114,9 +2343,25 @@ public class VideoEngine {
 
                 vertexStatistics.start();
 
+                vinfo.setMorphWeights(morph_weight);
+                vinfo.setDirty();
+
+                int numberOfWeightsForShader = 0;
+                if (useSkinningShaders) {
+            		if (vinfo.weight != 0) {
+            			gl.glUniform1i(Uniforms.numberBones.getId(), vinfo.skinningWeightCount);
+            			if (boneMatrixForShaderUpdatedMatrix > 0) {
+            				gl.glUniformMatrix4fv(Uniforms.boneMatrix.getId(), boneMatrixForShaderUpdatedMatrix, false, boneMatrixForShader, 0);
+            			}
+            			numberOfWeightsForShader = (vinfo.skinningWeightCount <= 4 ? 4 : 8);
+            		} else {
+            			gl.glUniform1i(Uniforms.numberBones.getId(), 0);
+            		}
+            	}
+
                 // Do not use optimized VertexInfo reading when tracing is enabled,
                 // it doesn't produce any trace information
-                if (vinfo.index == 0 && type != PRIM_SPRITES && mem.isAddressGood(vinfo.ptr_vertex) && !log.isTraceEnabled()) {
+                if (!useVertexCache && vinfo.index == 0 && type != PRIM_SPRITES && mem.isAddressGood(vinfo.ptr_vertex) && !isLogTraceEnabled) {
                 	// Optimized VertexInfo reading:
                 	// - do not copy the info already available in the OpenGL format
                 	//   (native format), load it into nativeBuffer (a direct buffer
@@ -2131,7 +2376,7 @@ public class VideoEngine {
                 	//
                     Buffer buffer = vertexInfoReader.read(vinfo, vinfo.ptr_vertex, numberOfVertex);
 
-                    enableClientState(useVertexColor, useTexture);
+                    enableClientState(useVertexColor, useTexture, numberOfWeightsForShader);
 
                     int stride = vertexInfoReader.getStride();
 					glBindBuffer();
@@ -2173,19 +2418,22 @@ public class VideoEngine {
 	                		textureOffset = vertexInfoReader.getTextureOffset();
 	                		textureType = vertexInfoReader.getTextureType();
                 		}
-                		glTexCoordPointer(useTexture, textureType, stride, textureOffset, textureNative, false);
+                		glTexCoordPointer(useTexture, textureType, stride, textureOffset, textureNative, false, true);
                     }
 
-                	glColorPointer(useVertexColor, vertexInfoReader.getColorType(), stride, vertexInfoReader.getColorOffset(), vertexInfoReader.isColorNative(), false);
-                	glNormalPointer(vertexInfoReader.getNormalType(), stride, vertexInfoReader.getNormalOffset(), vertexInfoReader.isNormalNative(), false);
-                	glVertexPointer(vertexInfoReader.getPositionType(), stride, vertexInfoReader.getPositionOffset(), vertexInfoReader.isPositionNative(), false);
+                	glColorPointer(useVertexColor, vertexInfoReader.getColorType(), stride, vertexInfoReader.getColorOffset(), vertexInfoReader.isColorNative(), false, true);
+                	glNormalPointer(vertexInfoReader.getNormalType(), stride, vertexInfoReader.getNormalOffset(), vertexInfoReader.isNormalNative(), false, true);
+                	glVertexPointer(vertexInfoReader.getPositionType(), stride, vertexInfoReader.getPositionOffset(), vertexInfoReader.isPositionNative(), false, true);
 
                     gl.glDrawArrays(prim_mapping[type], 0, numberOfVertex);
 
                 } else {
                 	// Non-optimized VertexInfo reading
 
-                	bindBuffers(useVertexColor, useTexture);
+                	VertexInfo cachedVertexInfo = null;
+                	if (useVertexCache) {
+                		cachedVertexInfo = VertexCache.getInstance().getVertex(vinfo, numberOfVertex, bone_uploaded_matrix, numberOfWeightsForShader);
+                	}
                 	vboFloatBuffer.clear();
 
 	                switch (type) {
@@ -2195,84 +2443,122 @@ public class VideoEngine {
 	                    case PRIM_TRIANGLE:
 	                    case PRIM_TRIANGLE_STRIPS:
 	                    case PRIM_TRIANGLE_FANS:
-	                        for (int i = 0; i < numberOfVertex; i++) {
-	                            int addr = vinfo.getAddress(mem, i);
+	                    	if (cachedVertexInfo == null) {
+		                        for (int i = 0; i < numberOfVertex; i++) {
+		                            int addr = vinfo.getAddress(mem, i);
 	                            
-	                            vinfo.setMorphWeights(morph_weight);
-	                            VertexState v = vinfo.readVertex(mem, addr);
+		                            VertexState v = vinfo.readVertex(mem, addr);
 
-	                            // Do skinning first as it modifies v.p and v.n
-	                            if (vinfo.position != 0 && vinfo.weight != 0) {
-	                                doSkinning(vinfo, v);
-	                            }
+		                            // Do skinning first as it modifies v.p and v.n
+		                            if (vinfo.weight != 0 && vinfo.position != 0 && !useSkinningShaders) {
+		                                doSkinning(vinfo, v);
+		                            }
 
-	                            if (vinfo.texture  != 0) vboFloatBuffer.put(v.t);
-	                            else if (useTextureFromNormal) vboFloatBuffer.put(v.n, 0, 2);
-	                            else if (useTextureFromPosition) vboFloatBuffer.put(v.p, 0, 2);
-	                            if (useVertexColor) vboFloatBuffer.put(v.c);
-	                            if (vinfo.normal   != 0) vboFloatBuffer.put(v.n);
-	                            if (vinfo.position != 0) vboFloatBuffer.put(v.p);
+		                            if (vinfo.texture  != 0) vboFloatBuffer.put(v.t);
+		                            else if (useTextureFromNormal) vboFloatBuffer.put(v.n, 0, 2);
+		                            else if (useTextureFromPosition) vboFloatBuffer.put(v.p, 0, 2);
+		                            if (useVertexColor) vboFloatBuffer.put(v.c);
+		                            if (vinfo.normal   != 0) vboFloatBuffer.put(v.n);
+		                            if (vinfo.position != 0) vboFloatBuffer.put(v.p);
+									if (numberOfWeightsForShader > 0) vboFloatBuffer.put(v.boneWeights, 0, numberOfWeightsForShader);
 
-	                            if (log.isTraceEnabled()) {
-	                            	if (vinfo.texture != 0 && vinfo.position != 0) {
-	                            		log.trace("  vertex#" + i + " (" + ((int) v.t[0]) + "," + ((int) v.t[1]) + ") at (" + ((int) v.p[0]) + "," + ((int) v.p[1]) + "," + ((int) v.p[2]) + ")");
-	                            	}
-	                            }
-	                        }
+		                            if (isLogTraceEnabled) {
+		                            	if (vinfo.texture != 0 && vinfo.position != 0) {
+		                            		log.trace("  vertex#" + i + " (" + ((int) v.t[0]) + "," + ((int) v.t[1]) + ") at (" + ((int) v.p[0]) + "," + ((int) v.p[1]) + "," + ((int) v.p[2]) + ")");
+		                            	}
+		                            }
+		                        }
 
-	                        if(useVBO) {
-	                            if (openGL1_5)
-	                                gl.glBufferData(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
-	                            else
-	                                gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
-	                        }
+		                        if (useVBO) {
+		                        	if (useVertexCache) {
+			                        	cachedVertexInfo = new VertexInfo(vinfo);
+				                        VertexCache.getInstance().addVertex(gl, cachedVertexInfo, numberOfVertex, bone_uploaded_matrix, numberOfWeightsForShader);
+				                        int size = vboFloatBuffer.position();
+				                        vboFloatBuffer.rewind();
+				                        cachedVertexInfo.loadVertex(gl, vboFloatBuffer, size);
+		                        	} else {
+		                        		glBindBuffer();
+			                            if (openGL1_5)
+			                                gl.glBufferData(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
+			                            else
+			                                gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
+		                        	}
+		                        }
+	                    	} else {
+	                        	if (isLogDebugEnabled) {
+	                        		log.debug("Reusing cached Vertex Data");
+	                        	}
+	                    		cachedVertexInfo.bindVertex(gl);
+	                    	}
+	                    	bindBuffers(useVertexColor, useTexture, false, numberOfWeightsForShader);
 	                        gl.glDrawArrays(prim_mapping[type], 0, numberOfVertex);
+	                        maxSpriteHeight = Integer.MAX_VALUE;
 	                        break;
 
 	                    case PRIM_SPRITES:
 	                        gl.glPushAttrib(GL.GL_ENABLE_BIT);
 	                        gl.glDisable(GL.GL_CULL_FACE);
-	                        for (int i = 0; i < numberOfVertex; i += 2) {
-	                            int addr1 = vinfo.getAddress(mem, i);
-	                            int addr2 = vinfo.getAddress(mem, i + 1);
-	                            vinfo.setMorphWeights(morph_weight);
-	                            VertexState v1 = vinfo.readVertex(mem, addr1);
-	                            VertexState v2 = vinfo.readVertex(mem, addr2);
+	                        if (cachedVertexInfo == null) {
+		                        for (int i = 0; i < numberOfVertex; i += 2) {
+		                            int addr1 = vinfo.getAddress(mem, i);
+		                            int addr2 = vinfo.getAddress(mem, i + 1);
+		                            VertexState v1 = vinfo.readVertex(mem, addr1);
+		                            VertexState v2 = vinfo.readVertex(mem, addr2);
 
-	                            v1.p[2] = v2.p[2];
+		                            v1.p[2] = v2.p[2];
 
-	                            if (log.isDebugEnabled() && transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
-	                                log("  sprite (" + ((int) v1.t[0]) + "," + ((int) v1.t[1]) + ")-(" + ((int) v2.t[0]) + "," + ((int) v2.t[1]) + ") at (" + ((int) v1.p[0]) + "," + ((int) v1.p[1]) + "," + ((int) v1.p[2]) + ")-(" + + ((int) v2.p[0]) + "," + ((int) v2.p[1]) + "," + ((int) v2.p[2]) + ")");
-	                            }
+		                            if (v2.p[1] > maxSpriteHeight) {
+		                            	maxSpriteHeight = (int) v2.p[1];
+		                            }
 
-	                            // V1
-	                            if (vinfo.texture  != 0) vboFloatBuffer.put(v1.t);
-	                            if (useVertexColor) vboFloatBuffer.put(v2.c);
-	                            if (vinfo.normal   != 0) vboFloatBuffer.put(v2.n);
-	                            if (vinfo.position != 0) vboFloatBuffer.put(v1.p);
+		                            if (isLogDebugEnabled && transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
+		                                log("  sprite (" + ((int) v1.t[0]) + "," + ((int) v1.t[1]) + ")-(" + ((int) v2.t[0]) + "," + ((int) v2.t[1]) + ") at (" + ((int) v1.p[0]) + "," + ((int) v1.p[1]) + "," + ((int) v1.p[2]) + ")-(" + + ((int) v2.p[0]) + "," + ((int) v2.p[1]) + "," + ((int) v2.p[2]) + ")");
+		                            }
 
-	                            if (vinfo.texture  != 0) vboFloatBuffer.put(v2.t[0]).put(v1.t[1]);
-	                            if (useVertexColor) vboFloatBuffer.put(v2.c);
-	                            if (vinfo.normal   != 0) vboFloatBuffer.put(v2.n);
-	                            if (vinfo.position != 0) vboFloatBuffer.put(v2.p[0]).put(v1.p[1]).put(v2.p[2]);
+		                            // V1
+		                            if (vinfo.texture  != 0) vboFloatBuffer.put(v1.t);
+		                            if (useVertexColor) vboFloatBuffer.put(v2.c);
+		                            if (vinfo.normal   != 0) vboFloatBuffer.put(v2.n);
+		                            if (vinfo.position != 0) vboFloatBuffer.put(v1.p);
 
-	                            // V2
-	                            if (vinfo.texture  != 0) vboFloatBuffer.put(v2.t);
-	                            if (useVertexColor) vboFloatBuffer.put(v2.c);
-	                            if (vinfo.normal   != 0) vboFloatBuffer.put(v2.n);
-	                            if (vinfo.position != 0) vboFloatBuffer.put(v2.p);
+		                            if (vinfo.texture  != 0) vboFloatBuffer.put(v2.t[0]).put(v1.t[1]);
+		                            if (useVertexColor) vboFloatBuffer.put(v2.c);
+		                            if (vinfo.normal   != 0) vboFloatBuffer.put(v2.n);
+		                            if (vinfo.position != 0) vboFloatBuffer.put(v2.p[0]).put(v1.p[1]).put(v2.p[2]);
 
-	                            if (vinfo.texture  != 0) vboFloatBuffer.put(v1.t[0]).put(v2.t[1]);
-	                            if (useVertexColor) vboFloatBuffer.put(v2.c);
-	                            if (vinfo.normal   != 0) vboFloatBuffer.put(v2.n);
-	                            if (vinfo.position != 0) vboFloatBuffer.put(v1.p[0]).put(v2.p[1]).put(v2.p[2]);
+		                            // V2
+		                            if (vinfo.texture  != 0) vboFloatBuffer.put(v2.t);
+		                            if (useVertexColor) vboFloatBuffer.put(v2.c);
+		                            if (vinfo.normal   != 0) vboFloatBuffer.put(v2.n);
+		                            if (vinfo.position != 0) vboFloatBuffer.put(v2.p);
+
+		                            if (vinfo.texture  != 0) vboFloatBuffer.put(v1.t[0]).put(v2.t[1]);
+		                            if (useVertexColor) vboFloatBuffer.put(v2.c);
+		                            if (vinfo.normal   != 0) vboFloatBuffer.put(v2.n);
+		                            if (vinfo.position != 0) vboFloatBuffer.put(v1.p[0]).put(v2.p[1]).put(v2.p[2]);
+		                        }
+		                        if(useVBO) {
+		                        	if (useVertexCache) {
+			                        	cachedVertexInfo = new VertexInfo(vinfo);
+				                        VertexCache.getInstance().addVertex(gl, cachedVertexInfo, numberOfVertex, bone_uploaded_matrix, numberOfWeightsForShader);
+				                        int size = vboFloatBuffer.position();
+				                        vboFloatBuffer.rewind();
+				                        cachedVertexInfo.loadVertex(gl, vboFloatBuffer, size);
+		                        	} else {
+		                        		glBindBuffer();
+			                            if (openGL1_5)
+			                                gl.glBufferData(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
+			                            else
+			                                gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
+		                        	}
+		                        }
+	                        } else {
+	                        	if (isLogDebugEnabled) {
+	                        		log.debug("Reusing cached Vertex Data");
+	                        	}
+	                        	cachedVertexInfo.bindVertex(gl);
 	                        }
-	                        if(useVBO) {
-	                            if (openGL1_5)
-	                                gl.glBufferData(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
-	                            else
-	                                gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
-	                        }
+	                    	bindBuffers(useVertexColor, useTexture, false, 0);
 	                        gl.glDrawArrays(GL.GL_QUADS, 0, numberOfVertex * 2);
 	                        gl.glPopAttrib();
 	                        break;
@@ -2304,6 +2590,8 @@ public class VideoEngine {
 
             case ALPHA: {
                 int blend_mode = GL.GL_FUNC_ADD;
+                int old_blend_src = blend_src;
+                int old_blend_dst = blend_dst;
                 blend_src =  normalArgument        & 0xF;
                 blend_dst = (normalArgument >> 4 ) & 0xF;
                 int op    = (normalArgument >> 8 ) & 0xF;
@@ -2344,7 +2632,11 @@ public class VideoEngine {
             		log.warn("VideoEngine: " + e.getMessage());
             	}
 
-            	if (log.isDebugEnabled()) {
+            	if (old_blend_src != blend_src || old_blend_dst != blend_dst) {
+            		blendChanged = true;
+            	}
+
+            	if (isLogDebugEnabled) {
             	    log("sceGuBlendFunc(op=" + op + ", src=" + blend_src + ", dst=" + blend_dst + ")");
             	}
             	break;
@@ -2353,7 +2645,7 @@ public class VideoEngine {
             case SHADE: {
                 int SETTED_MODEL = (normalArgument != 0) ? GL.GL_SMOOTH : GL.GL_FLAT;
                 gl.glShadeModel(SETTED_MODEL);
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log("sceGuShadeModel(" + ((normalArgument != 0) ? "smooth" : "flat") + ")");
                 }
                 break;
@@ -2362,7 +2654,7 @@ public class VideoEngine {
             case FFACE: {
                 int frontFace = (normalArgument != 0) ? GL.GL_CW : GL.GL_CCW;
                 gl.glFrontFace(frontFace);
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log(helper.getCommandString(FFACE) + " " + ((normalArgument != 0) ? "clockwise" : "counter-clockwise"));
                 }
                 break;
@@ -2416,7 +2708,7 @@ public class VideoEngine {
 	            	fog_color[3] = 1.f;
 	            	gl.glFogfv(GL.GL_FOG_COLOR, fog_color, 0);
 
-                    if (log.isDebugEnabled()) {
+                    if (isLogDebugEnabled) {
                         log(String.format("sceGuFog(X, X, color=%08X) (no alpha)", normalArgument));
                     }
 	            break;
@@ -2511,7 +2803,7 @@ public class VideoEngine {
             	int oldPc = currentList.pc;
             	currentList.jump(normalArgument);
             	int newPc = currentList.pc;
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(JUMP), oldPc, newPc));
                 }
                 break;
@@ -2520,7 +2812,7 @@ public class VideoEngine {
             	int oldPc = currentList.pc;
             	currentList.call(normalArgument);
             	int newPc = currentList.pc;
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(CALL), oldPc, newPc));
                 }
                 break;
@@ -2529,7 +2821,7 @@ public class VideoEngine {
             	int oldPc = currentList.pc;
             	currentList.ret();
             	int newPc = currentList.pc;
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(RET), oldPc, newPc));
                 }
                 break;
@@ -2541,7 +2833,7 @@ public class VideoEngine {
 	            	//		on pc it's the opposite
 	            	gl.glDepthMask(normalArgument == 1 ? false : true);
 
-	                if (log.isDebugEnabled()) {
+	                if (isLogDebugEnabled) {
 	                    log("sceGuDepthMask(" + (normalArgument == 1 ? "disableWrites" : "enableWrites") + ")");
 	                }
             	}
@@ -2714,7 +3006,7 @@ public class VideoEngine {
                 // TODO
                 // - as a workaround can we keep gl scissor on all the time at no performance loss?
                 // - or we can just put extra checks in the region commands
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log("sceGuScissor(" + scissor_x1 + "," + scissor_y1 + "," + scissor_width + "," + scissor_height + ")");
                 }
 
@@ -2725,7 +3017,7 @@ public class VideoEngine {
                     // TODO replace 272 with viewport_height?
                     gl.glScissor(scissor_x1, 272 - scissor_y1 - scissor_height, scissor_width, scissor_height);
 
-                    if (log.isDebugEnabled()) {
+                    if (isLogDebugEnabled) {
                         log("sceGuEnable(GU_SCISSOR_TEST) actual y-coord " + (272 - scissor_y1 - scissor_height) + " (inverted)");
                     }
                 } else {
@@ -2749,7 +3041,7 @@ public class VideoEngine {
                 }*/
 
                 gl.glDepthRange(nearZ, farZ);
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log.debug("sceGuDepthRange("+ nearZ + ", " + farZ + ")");
                 }
                 break;
@@ -2794,7 +3086,8 @@ public class VideoEngine {
                     gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, 1.0f);
                     gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_REPLACE);
 
-                    gl.glPushAttrib(GL.GL_ALL_ATTRIB_BITS);
+                    gl.glPushAttrib(GL.GL_ENABLE_BIT | GL.GL_COLOR_BUFFER_BIT | GL.GL_STENCIL_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
+//                    gl.glPushAttrib(GL.GL_ALL_ATTRIB_BITS);
             		gl.glDisable(GL.GL_BLEND);
             		gl.glDisable(GL.GL_STENCIL_TEST);
             		gl.glDisable(GL.GL_LIGHTING);
@@ -2835,13 +3128,20 @@ public class VideoEngine {
             		clearModeDepthFunc = depthFunc2D;
             		depthFunc2D = GL.GL_ALWAYS;
             		gl.glColorMask(color, color, color, alpha);
-                    if (log.isDebugEnabled()) {
+                    if (isLogDebugEnabled) {
                         log("clear mode : " + (normalArgument >> 8));
                     }
             	}
+
+            	blendChanged = true;
+        		lightingChanged = true;
+                projectionMatrixChanged = true;
+                modelMatrixChanged = true;
+                viewMatrixChanged = true;
+                textureMatrixChanged = true;
                 break;
             case NOP:
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log(helper.getCommandString(NOP));
                 }
 
@@ -2856,7 +3156,7 @@ public class VideoEngine {
              */
             case BOFS: {
             	boneMatrixIndex = normalArgument;
-            	if (log.isDebugEnabled()) {
+            	if (isLogDebugEnabled) {
             		log("bone matrix offset", normalArgument);
             	}
             	break;
@@ -2870,9 +3170,15 @@ public class VideoEngine {
             		error("Ignoring BONE matrix element: boneMatrixIndex=" + boneMatrixIndex);
             	} else {
 	            	bone_uploaded_matrix[matrixIndex][elementIndex] = floatArgument;
+	            	if (useSkinningShaders) {
+	            		boneMatrixForShader[(boneMatrixIndex / 3) * 4 + (boneMatrixIndex % 3)] = floatArgument;
+	            		if (matrixIndex >= boneMatrixForShaderUpdatedMatrix) {
+	            			boneMatrixForShaderUpdatedMatrix = matrixIndex + 1;
+	            		}
+	            	}
 	            	boneMatrixIndex++;
 
-	            	if (log.isDebugEnabled() && (boneMatrixIndex % 12) == 0) {
+	            	if (isLogDebugEnabled && (boneMatrixIndex % 12) == 0) {
 	                    for (int x = 0; x < 3; x++) {
 	                        log.debug(String.format("bone matrix %d %.2f %.2f %.2f %.2f",
 	                        							matrixIndex,
@@ -2948,7 +3254,7 @@ public class VideoEngine {
             	textureTx_sourceAddress &= Memory.addressMask;
             	textureTx_destinationAddress &= Memory.addressMask;
 
-            	if (log.isDebugEnabled()) {
+            	if (isLogDebugEnabled) {
                     log(helper.getCommandString(TRXKICK) + " from 0x" + Integer.toHexString(textureTx_sourceAddress) + "(" + textureTx_sx + "," + textureTx_sy + ") to 0x" + Integer.toHexString(textureTx_destinationAddress) + "(" + textureTx_dx + "," + textureTx_dy + "), width=" + textureTx_width + ", height=" + textureTx_height + ", pixelSize=" + textureTx_pixelSize);
                 }
 
@@ -2959,8 +3265,10 @@ public class VideoEngine {
             	int bpp = ( textureTx_pixelSize == TRXKICK_16BIT_TEXEL_SIZE ) ? 2 : 4;
             	int bppGe = pspdisplay.getPixelFormatBytes(pixelFormatGe);
 
-                if (!display.isGeAddress(textureTx_destinationAddress) || bpp != bppGe) {
-            		if (log.isDebugEnabled()) {
+            	memoryForGEUpdated();
+
+            	if (!display.isGeAddress(textureTx_destinationAddress) || bpp != bppGe) {
+            		if (isLogDebugEnabled) {
             			if (bpp != bppGe) {
             				log(helper.getCommandString(TRXKICK) + " BPP not compatible with GE");
             			} else {
@@ -2977,7 +3285,7 @@ public class VideoEngine {
             			// All the lines are adjacent in memory,
             			// copy them all in a single memcpy operation.
         				int copyLength = height * width * bpp;
-            			if (log.isDebugEnabled()) {
+            			if (isLogDebugEnabled) {
             				log(String.format("%s memcpy(0x%08X-0x%08X, 0x%08X, 0x%X)", helper.getCommandString(TRXKICK), dstAddress, dstAddress + copyLength, srcAddress, copyLength));
             			}
             			memory.memcpy(dstAddress, srcAddress, copyLength);
@@ -2987,7 +3295,7 @@ public class VideoEngine {
         				int srcLineLength = textureTx_sourceLineWidth * bpp;
         				int dstLineLength = textureTx_destinationLineWidth * bpp;
 	            		for (int y = 0; y < height; y++) {
-	            			if (log.isDebugEnabled()) {
+	            			if (isLogDebugEnabled) {
 	            				log(String.format("%s memcpy(0x%08X-0x%08X, 0x%08X, 0x%X)", helper.getCommandString(TRXKICK), dstAddress, dstAddress + copyLength, srcAddress, copyLength));
 	            			}
 	            			memory.memcpy(dstAddress, srcAddress, copyLength);
@@ -3010,7 +3318,7 @@ public class VideoEngine {
 	            	dy +=  (textureTx_destinationAddress - geAddr) / (display.getBufferWidthGe() * bpp);
 	            	dx += ((textureTx_destinationAddress - geAddr) % (display.getBufferWidthGe() * bpp)) / bpp;
 
-            		if (log.isDebugEnabled()) {
+            		if (isLogDebugEnabled) {
             			log(helper.getCommandString(TRXKICK) + " in Ge Address space: dx=" + dx + ", dy=" + dy + ", width=" + width + ", height=" + height  + ", lineWidth=" + lineWidth + ", bpp=" + bpp);
             		}
 
@@ -3141,7 +3449,7 @@ public class VideoEngine {
             case PSUB:
                 patch_div_s =  normalArgument       & 0xFF;
                 patch_div_t = (normalArgument >> 8) & 0xFF;
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log(helper.getCommandString(PSUB) + " patch_div_s=" + patch_div_s + ", patch_div_t=" + patch_div_t);
                 }
                 break;
@@ -3149,7 +3457,7 @@ public class VideoEngine {
             case BEZIER:
                 int ucount =  normalArgument       & 0xFF;
                 int vcount = (normalArgument >> 8) & 0xFF;
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log(helper.getCommandString(BEZIER) + " ucount=" + ucount + ", vcount=" + vcount);
                 }
 
@@ -3180,25 +3488,43 @@ public class VideoEngine {
                 }
                 break;
 
-            case DFIX:
+            case DFIX: {
+            	float old_dfix_color0 = dfix_color[0];
+            	float old_dfix_color1 = dfix_color[1];
+            	float old_dfix_color2 = dfix_color[2];
                 dfix_color[0] = ((normalArgument      ) & 255) / 255.f;
                 dfix_color[1] = ((normalArgument >>  8) & 255) / 255.f;
                 dfix_color[2] = ((normalArgument >> 16) & 255) / 255.f;
                 dfix_color[3] = 1.f;
-                if (log.isDebugEnabled()) {
+
+                if (old_dfix_color0 != dfix_color[0] || old_dfix_color1 != dfix_color[1] || old_dfix_color2 != dfix_color[2]) {
+                	blendChanged = true;
+                }
+
+                if (isLogDebugEnabled) {
                     log(String.format("%s : 0x%08X", helper.getCommandString(command), normalArgument));
                 }
                 break;
-
-            case SFIX:
+            }
+            case SFIX: {
+            	float old_sfix_color0 = sfix_color[0];
+            	float old_sfix_color1 = sfix_color[1];
+            	float old_sfix_color2 = sfix_color[2];
                 sfix_color[0] = ((normalArgument      ) & 255) / 255.f;
                 sfix_color[1] = ((normalArgument >>  8) & 255) / 255.f;
                 sfix_color[2] = ((normalArgument >> 16) & 255) / 255.f;
                 sfix_color[3] = 1.f;
-                if (log.isDebugEnabled()) {
+
+                if (old_sfix_color0 != sfix_color[0] || old_sfix_color1 != sfix_color[1] || old_sfix_color2 != sfix_color[2]) {
+                	blendChanged = true;
+                }
+
+                if (isLogDebugEnabled) {
                     log(String.format("%s : 0x%08X", helper.getCommandString(command), normalArgument));
                 }
                 break;
+            }
+
             case LOP:
                 int LogicOp = getLogicalOp(normalArgument & 0x0F);
                 gl.glLogicOp(LogicOp);
@@ -3225,7 +3551,7 @@ public class VideoEngine {
                     }
                 }
 
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log("DTH0:" + "  " + dither_matrix[0] + "  " + dither_matrix[1] + "  "
                         + dither_matrix[2] + "  " + dither_matrix[3]);
                 }
@@ -3248,7 +3574,7 @@ public class VideoEngine {
                     }
                 }
 
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                 log("DTH1:" + "  " + dither_matrix[4] + "  " + dither_matrix[5] + "  "
                         + dither_matrix[6] + "  " + dither_matrix[7]);
                 }
@@ -3271,7 +3597,7 @@ public class VideoEngine {
                     }
                 }
 
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                 log("DTH2:" + "  " + dither_matrix[8] + "  " + dither_matrix[9] + "  "
                         + dither_matrix[10] + "  " + dither_matrix[11]);
                 }
@@ -3294,7 +3620,7 @@ public class VideoEngine {
                     }
                 }
 
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                 log("DTH3:" + "  " + dither_matrix[12] + "  " + dither_matrix[13] + "  "
                         + dither_matrix[14] + "  " + dither_matrix[15]);
                 }
@@ -3304,7 +3630,7 @@ public class VideoEngine {
             case BBOX: {
                 int numberOfVertexBoundingBox = normalArgument;
                 // TODO Check if the bounding box is visible
-                if (log.isInfoEnabled()) {
+                if (isLogInfoEnabled) {
                     log.info("Not implemented (but can be ignored): " + helper.getCommandString(BBOX) + " numberOfVertex=" + numberOfVertexBoundingBox);
                 }
                 // If not visible, set takeConditionalJump to true.
@@ -3316,11 +3642,11 @@ public class VideoEngine {
                 	int oldPc = currentList.pc;
                 	currentList.jump(normalArgument);
                 	int newPc = currentList.pc;
-                    if (log.isDebugEnabled()) {
+                    if (isLogDebugEnabled) {
                         log(String.format("%s old PC: 0x%08X, new PC: 0x%08X", helper.getCommandString(BJUMP), oldPc, newPc));
                     }
             	} else {
-	                if (log.isDebugEnabled()) {
+	                if (isLogDebugEnabled) {
 	                    log(helper.getCommandString(BJUMP) + " not taking Conditional Jump");
 	                }
             	}
@@ -3328,7 +3654,7 @@ public class VideoEngine {
             }
 
             case PMSKC: {
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log(String.format("%s color mask=0x%06X", helper.getCommandString(PMSKC), normalArgument));
                 }
             	glColorMask[0] = getGLMask("Red color mask"  , (normalArgument      ) & 0xFF);
@@ -3340,7 +3666,7 @@ public class VideoEngine {
                 break;
             }
             case PMSKA: {
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log(String.format("%s alpha mask=0x%02X", helper.getCommandString(PMSKA), normalArgument));
                 }
             	glColorMask[3] = getGLMask("Alpha color mask", normalArgument & 0xFF);
@@ -3355,7 +3681,7 @@ public class VideoEngine {
             	// no special meaning.
             	// The command also appears sometimes after a PRIM command.
             	// Ignore the command in these cases.
-            	if (log.isInfoEnabled()) {
+            	if (isLogInfoEnabled) {
 	            	Memory mem = Memory.getInstance();
 	            	int nextCommand     = mem.read8(currentList.pc + 3);
 	            	int previousCommand = mem.read8(currentList.pc - 5);
@@ -3365,10 +3691,10 @@ public class VideoEngine {
 	            		// the list processing when too many errors are displayed.
 	                    error("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "](int="+normalArgument+",float="+floatArgument+")");
 	            	} else if (nextCommand != BOFS && previousCommand != PRIM && previousCommand != UNKNOWNCOMMAND_0xFF) {
-	            		if (log.isInfoEnabled()) {
+	            		if (isLogWarnEnabled) {
 	            			log.warn("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "](int="+normalArgument+",float="+floatArgument+")");
 	            		}
-	            	} else if (log.isDebugEnabled()) {
+	            	} else if (isLogDebugEnabled) {
 	                    log.debug("Ignored video command [" + helper.getCommandString(command(instruction)) + "](int="+normalArgument+")");
 	            	}
             	}
@@ -3376,14 +3702,14 @@ public class VideoEngine {
             }
 
             default:
-            	if (log.isInfoEnabled()) {
+            	if (isLogWarnEnabled) {
             		log.warn("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "](int="+normalArgument+",float="+floatArgument+")");
             	}
         }
         commandStatistics[command].end();
     }
 
-    private void enableClientState(boolean useVertexColor, boolean useTexture) {
+    private void enableClientState(boolean useVertexColor, boolean useTexture, int numberOfWeightsForShader) {
         if (vinfo.texture != 0 || useTexture) {
         	gl.glEnableClientState(GL.GL_TEXTURE_COORD_ARRAY);
         }
@@ -3393,16 +3719,26 @@ public class VideoEngine {
         if (vinfo.normal != 0) {
         	gl.glEnableClientState(GL.GL_NORMAL_ARRAY);
         }
+        if (numberOfWeightsForShader > 0) {
+        	gl.glEnableVertexAttribArray(shaderAttribWeights1);
+        	if (numberOfWeightsForShader > 4) {
+        		gl.glEnableVertexAttribArray(shaderAttribWeights2);
+        	}
+        }
         gl.glEnableClientState(GL.GL_VERTEX_ARRAY);
     }
 
-    private void glTexCoordPointer(boolean useTexture, int type, int stride, int offset, boolean isNative, boolean useVboFloatBuffer) {
+    private void glTexCoordPointer(boolean useTexture, int type, int stride, int offset, boolean isNative, boolean useVboFloatBuffer, boolean doBindBuffer) {
 	    if (vinfo.texture != 0 || useTexture) {
 			if (isNative) {
-				glBindBuffer(0);
+				if (doBindBuffer) {
+					glBindBuffer(0);
+				}
 				gl.glTexCoordPointer(2, type, vinfo.vertexSize, nativeBuffer.position(offset));
 			} else {
-		        glBindBuffer();
+				if (doBindBuffer) {
+					glBindBuffer();
+				}
 		        if (useVBO) {
 		        	gl.glTexCoordPointer(2, type, stride, offset);
 		        } else if (useVboFloatBuffer) {
@@ -3414,13 +3750,17 @@ public class VideoEngine {
 	    }
     }
 
-    private void glColorPointer(boolean useVertexColor, int type, int stride, int offset, boolean isNative, boolean useVboFloatBuffer) {
+    private void glColorPointer(boolean useVertexColor, int type, int stride, int offset, boolean isNative, boolean useVboFloatBuffer, boolean doBindBuffer) {
     	if (useVertexColor) {
         	if (isNative) {
-            	glBindBuffer(0);
+        		if (doBindBuffer) {
+        			glBindBuffer(0);
+        		}
         		gl.glColorPointer(4, type, vinfo.vertexSize, nativeBuffer.position(offset));
         	} else {
-                glBindBuffer();
+        		if (doBindBuffer) {
+        			glBindBuffer();
+        		}
                 if (useVBO) {
                 	gl.glColorPointer(4, type, stride, offset);
                 } else if (useVboFloatBuffer) {
@@ -3432,12 +3772,16 @@ public class VideoEngine {
     	}
     }
 
-    private void glVertexPointer(int type, int stride, int offset, boolean isNative, boolean useVboFloatBuffer) {
+    private void glVertexPointer(int type, int stride, int offset, boolean isNative, boolean useVboFloatBuffer, boolean doBindBuffer) {
     	if (isNative) {
-        	glBindBuffer(0);
+    		if (doBindBuffer) {
+    			glBindBuffer(0);
+    		}
         	gl.glVertexPointer(3, type, vinfo.vertexSize, nativeBuffer.position(offset));
         } else {
-            glBindBuffer();
+        	if (doBindBuffer) {
+        		glBindBuffer();
+        	}
             if (useVBO) {
             	gl.glVertexPointer(3, type, stride, offset);
             } else if (useVboFloatBuffer) {
@@ -3449,13 +3793,17 @@ public class VideoEngine {
     	
     }
 
-    private void glNormalPointer(int type, int stride, int offset, boolean isNative, boolean useVboFloatBuffer) {
+    private void glNormalPointer(int type, int stride, int offset, boolean isNative, boolean useVboFloatBuffer, boolean doBindBuffer) {
     	if (vinfo.normal != 0) {
 			if (isNative) {
-	        	glBindBuffer(0);
+				if (doBindBuffer) {
+					glBindBuffer(0);
+				}
 	    		gl.glNormalPointer(type, vinfo.vertexSize, nativeBuffer.position(offset));
 			} else {
-	            glBindBuffer();
+				if (doBindBuffer) {
+					glBindBuffer();
+				}
 	            if (useVBO) {
 	            	gl.glNormalPointer(type, stride, offset);
 	            } else if (useVboFloatBuffer) {
@@ -3467,8 +3815,8 @@ public class VideoEngine {
     	}
     }
 
-    private void bindBuffers(boolean useVertexColor, boolean useTexture) {
-    	int stride = 0, cpos = 0, npos = 0, vpos = 0;
+    private void bindBuffers(boolean useVertexColor, boolean useTexture, boolean doBindBuffer, int numberOfWeightsForShader) {
+    	int stride = 0, cpos = 0, npos = 0, vpos = 0, wpos1 = 0, wpos2 = 0;
 
     	if (vinfo.texture != 0 || useTexture) {
         	stride += BufferUtil.SIZEOF_FLOAT * 2;
@@ -3483,12 +3831,29 @@ public class VideoEngine {
         	vpos = stride;
         }
         stride += BufferUtil.SIZEOF_FLOAT * 3;
+        if (numberOfWeightsForShader > 0) {
+        	wpos1 = stride;
+        	stride += BufferUtil.SIZEOF_FLOAT * 4;
+        	if (numberOfWeightsForShader > 4) {
+        		wpos2 = stride;
+        		stride += BufferUtil.SIZEOF_FLOAT * 4;
+        	}
+        }
 
-    	enableClientState(useVertexColor, useTexture);
-        glTexCoordPointer(useTexture, GL.GL_FLOAT, stride, 0, false, true);
-        glColorPointer(useVertexColor, GL.GL_FLOAT, stride, cpos, false, true);
-        glNormalPointer(GL.GL_FLOAT, stride, npos, false, true);
-    	glVertexPointer(GL.GL_FLOAT, stride, vpos, false, true);
+    	enableClientState(useVertexColor, useTexture, numberOfWeightsForShader);
+    	if (doBindBuffer) {
+    		glBindBuffer();
+    	}
+        glTexCoordPointer(useTexture, GL.GL_FLOAT, stride, 0, false, true, false);
+        glColorPointer(useVertexColor, GL.GL_FLOAT, stride, cpos, false, true, false);
+        glNormalPointer(GL.GL_FLOAT, stride, npos, false, true, false);
+    	if (numberOfWeightsForShader > 0) {
+    		gl.glVertexAttribPointer(shaderAttribWeights1, 4, GL.GL_FLOAT, false, stride, wpos1);
+    		if (numberOfWeightsForShader > 4) {
+	    		gl.glVertexAttribPointer(shaderAttribWeights2, 4, GL.GL_FLOAT, false, stride, wpos2);
+    		}
+    	}
+    	glVertexPointer(GL.GL_FLOAT, stride, vpos, false, true, false);
 	}
 
     public void doPositionSkinning(VertexInfo vinfo, float[] boneWeights, float[] position) {
@@ -3611,19 +3976,19 @@ public class VideoEngine {
 	}
 
     private void log(String commandString, float floatArgument) {
-        if (log.isDebugEnabled()) {
+        if (isLogDebugEnabled) {
             log(commandString+SPACE+floatArgument);
         }
     }
 
     private void log(String commandString, int value) {
-        if (log.isDebugEnabled()) {
+        if (isLogDebugEnabled) {
             log(commandString+SPACE+value);
         }
     }
 
     private void log(String commandString, float[] matrix) {
-        if (log.isDebugEnabled()) {
+        if (isLogDebugEnabled) {
             for (int y = 0; y < 4; y++) {
                 log(commandString+SPACE+String.format("%.1f %.1f %.1f %.1f", matrix[0 + y * 4], matrix[1 + y * 4], matrix[2 + y * 4], matrix[3 + y * 4]));
             }
@@ -3725,7 +4090,7 @@ public class VideoEngine {
 
         // Load the texture if not yet loaded
         if (texture == null || !texture.isLoaded() || State.captureGeNextFrame || State.replayGeNextFrame) {
-            if (log.isDebugEnabled()) {
+            if (isLogDebugEnabled) {
                 log(helper.getCommandString(TFLUSH)
                     + " " + String.format("0x%08X", texture_base_pointer[0])
                     + ", buffer_width=" + texture_buffer_width[0]
@@ -3945,7 +4310,7 @@ public class VideoEngine {
 	                }
 
                     case TPSM_PIXEL_STORAGE_MODE_DXT1: {
-                    	if (log.isDebugEnabled()) {
+                    	if (isLogDebugEnabled) {
                     		log.debug("Loading texture TPSM_PIXEL_STORAGE_MODE_DXT1 " + Integer.toHexString(texaddr));
                     	}
                         texture_type = GL.GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
@@ -3970,7 +4335,7 @@ public class VideoEngine {
                     }
 
                     case TPSM_PIXEL_STORAGE_MODE_DXT3: {
-                    	if (log.isDebugEnabled()) {
+                    	if (isLogDebugEnabled) {
                     		log.debug("Loading texture TPSM_PIXEL_STORAGE_MODE_DXT3 " + Integer.toHexString(texaddr));
                     	}
                         texture_type = GL.GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
@@ -4001,7 +4366,7 @@ public class VideoEngine {
                     }
 
                     case TPSM_PIXEL_STORAGE_MODE_DXT5: {
-                    	if (log.isDebugEnabled()) {
+                    	if (isLogDebugEnabled) {
                     		log.debug("Loading texture TPSM_PIXEL_STORAGE_MODE_DXT5 " + Integer.toHexString(texaddr));
                     	}
                         texture_type = GL.GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
@@ -4118,7 +4483,7 @@ public class VideoEngine {
 
 	            if (texture != null) {
 	                texture.setIsLoaded();
-	                if (log.isDebugEnabled()) {
+	                if (isLogDebugEnabled) {
 	                    log(helper.getCommandString(TFLUSH) + " Loaded texture " + texture.getGlId());
 	                }
 	            }
@@ -4128,14 +4493,14 @@ public class VideoEngine {
 
             // OpenGL cannot build mipmaps on compressed textures
             if (numberMipmaps != 0 && final_buffer != null && !compressedTexture) {
-				if (log.isDebugEnabled()) {
+				if (isLogDebugEnabled) {
 	            	for(int level = 0; level <= numberMipmaps; ++level)
 	            		log(String.format("Mipmap PSP Texture level %d size %dx%d", level, texture_width[level], texture_height[level]));
 				}
 	            int maxLevel = (int) (Math.log(Math.max(texture_width[numberMipmaps], texture_height[numberMipmaps]) * (1 << numberMipmaps))/Math.log(2));
 
 	            if(maxLevel != numberMipmaps) {
-	            	if (log.isDebugEnabled()) {
+	            	if (isLogDebugEnabled) {
 	            		log(String.format("Generating mipmaps from level %d Size %dx%d to maxLevel %d", numberMipmaps, texture_width[0], texture_height[0], maxLevel));
 	            	}
 		            // Build the other mipmaps level
@@ -4145,7 +4510,7 @@ public class VideoEngine {
 		            		texture_format,
 		            		texture_type,
 		            		numberMipmaps, numberMipmaps + 1, maxLevel, final_buffer);
-		            if (log.isDebugEnabled()) {
+		            if (isLogDebugEnabled) {
 			            for(int i = 0; i <= maxLevel; ++i) {
 			            	float[] size = new float[2];
 			            	gl.glGetTexLevelParameterfv(GL.GL_TEXTURE_2D, i, GL.GL_TEXTURE_WIDTH, size, 0);
@@ -4161,7 +4526,7 @@ public class VideoEngine {
             gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, tex_mag_filter);
             checkTextureMinFilter(compressedTexture, texture_num_mip_maps);
 
-            if (log.isDebugEnabled()) {
+            if (isLogDebugEnabled) {
                 log(helper.getCommandString(TFLUSH) + " Reusing cached texture " + texture.getGlId());
             }
         }
@@ -4315,17 +4680,21 @@ public class VideoEngine {
 	}
 
 	private boolean initRendering() {
-        /*
+		/*
          * Apply Blending
          */
-        setBlendFunc();
+		if (blendChanged) {
+			setBlendFunc();
+			blendChanged = false;
+		}
 
         /*
          * Defer transformations until primitive rendering
          */
-        gl.glMatrixMode(GL.GL_PROJECTION);
-        gl.glPushMatrix ();
-        gl.glLoadIdentity();
+        if (projectionMatrixChanged) {
+        	gl.glMatrixMode(GL.GL_PROJECTION);
+        	gl.glLoadIdentity();
+        }
 
         if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
         	if (useViewport) {
@@ -4345,7 +4714,9 @@ public class VideoEngine {
             } else {
             	gl.glDepthRange(nearZ, farZ);
             }
-            gl.glLoadMatrixf(proj_uploaded_matrix, 0);
+            if (projectionMatrixChanged) {
+            	gl.glLoadMatrixf(proj_uploaded_matrix, 0);
+            }
         } else {
         	if (useViewport) {
         		gl.glViewport(0, 0, 480, 272);
@@ -4363,61 +4734,81 @@ public class VideoEngine {
                 gl.glUniform1f(Uniforms.zPos.getId(), zpos);
                 gl.glUniform1f(Uniforms.zScale.getId(), zscale);
             }
+
+            // TODO I don't know why, but the GL_MODELVIEW matrix has to be reloaded
+            // each time in 2D mode... Otherwise textures are not displayed.
+        	modelMatrixChanged = true;
         }
+        projectionMatrixChanged = false;
 
         /*
          * Apply texture transforms
          */
-        gl.glMatrixMode(GL.GL_TEXTURE);
-        gl.glPushMatrix ();
-        gl.glLoadIdentity();
-        if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
-            gl.glTranslatef(tex_translate_x, tex_translate_y, 0.f);
-            gl.glScalef(tex_scale_x, tex_scale_y, 1.f);
-        } else {
-            gl.glScalef(1.f / texture_width[0], 1.f / texture_height[0], 1.f);
+        if (textureMatrixChanged) {
+        	gl.glMatrixMode(GL.GL_TEXTURE);
+        	gl.glLoadIdentity();
+
+        	if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
+	            gl.glTranslatef(tex_translate_x, tex_translate_y, 0.f);
+	            gl.glScalef(tex_scale_x, tex_scale_y, 1.f);
+	        } else {
+	            gl.glScalef(1.f / texture_width[0], 1.f / texture_height[0], 1.f);
+	        }
+
+	        switch (tex_map_mode) {
+	            case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV:
+	                break;
+
+	            case TMAP_TEXTURE_MAP_MODE_TEXTURE_MATRIX:
+	                gl.glMultMatrixf (texture_uploaded_matrix, 0);
+	                break;
+
+	            case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP: {
+
+	                // First, setup texture uv generation
+	                gl.glTexGeni(GL.GL_S, GL.GL_TEXTURE_GEN_MODE, GL.GL_SPHERE_MAP);
+	                gl.glEnable (GL.GL_TEXTURE_GEN_S);
+
+	                gl.glTexGeni(GL.GL_T, GL.GL_TEXTURE_GEN_MODE, GL.GL_SPHERE_MAP);
+	                gl.glEnable (GL.GL_TEXTURE_GEN_T);
+
+	                // Setup also texture matrix
+	                gl.glMultMatrixf (tex_envmap_matrix, 0);
+	                break;
+	            }
+
+	            default:
+	            	log ("Unhandled texture matrix mode " + tex_map_mode);
+	        }
+	        textureMatrixChanged = false;
         }
 
-        switch (tex_map_mode) {
-            case TMAP_TEXTURE_MAP_MODE_TEXTURE_COORDIATES_UV:
-                break;
-
-            case TMAP_TEXTURE_MAP_MODE_TEXTURE_MATRIX:
-                gl.glMultMatrixf (texture_uploaded_matrix, 0);
-                break;
-
-            case TMAP_TEXTURE_MAP_MODE_ENVIRONMENT_MAP: {
-
-                // First, setup texture uv generation
-                gl.glTexGeni(GL.GL_S, GL.GL_TEXTURE_GEN_MODE, GL.GL_SPHERE_MAP);
-                gl.glEnable (GL.GL_TEXTURE_GEN_S);
-
-                gl.glTexGeni(GL.GL_T, GL.GL_TEXTURE_GEN_MODE, GL.GL_SPHERE_MAP);
-                gl.glEnable (GL.GL_TEXTURE_GEN_T);
-
-                // Setup also texture matrix
-                gl.glMultMatrixf (tex_envmap_matrix, 0);
-                break;
-            }
-
-            default:
-                log ("Unhandled texture matrix mode " + tex_map_mode);
-        }
+        /*
+         * Model-View matrix has to reloaded when
+         * - model matrix changed
+         * - view matrix changed
+         * - lighting has to be reloaded
+         */
+        boolean loadLightingSettings = (modelMatrixChanged || lightingChanged) && lighting && transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD;
+        boolean modelViewMatrixChanged = modelMatrixChanged || viewMatrixChanged || loadLightingSettings;
 
         /*
          * Apply view matrix
          */
-        gl.glMatrixMode(GL.GL_MODELVIEW);
-        gl.glPushMatrix ();
-        gl.glLoadIdentity();
+        if (modelViewMatrixChanged) {
+        	gl.glMatrixMode(GL.GL_MODELVIEW);
+        	gl.glLoadIdentity();
 
-        if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
-            gl.glLoadMatrixf(view_uploaded_matrix, 0);
+        	if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
+        		gl.glLoadMatrixf(view_uploaded_matrix, 0);
+        	}
+        	viewMatrixChanged = false;
+        }
 
         /*
          *  Setup lights on when view transformation is set up
          */
-        if (lighting && transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
+        if (loadLightingSettings) {
 	        for (int i = 0; i < NUM_LIGHTS; i++) {
 	            if (light_enabled[i] != 0) {
 	            	gl.glLightfv(GL.GL_LIGHT0 + i, GL.GL_POSITION, light_pos[i], 0);
@@ -4442,11 +4833,17 @@ public class VideoEngine {
 	                }
 	            }
 	        }
+
+	        lightingChanged = false;
         }
 
-        // Apply model matrix
-        if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD)
-            gl.glMultMatrixf(model_uploaded_matrix, 0);
+        if (modelViewMatrixChanged) {
+	        // Apply model matrix
+	        if (transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
+	            gl.glMultMatrixf(model_uploaded_matrix, 0);
+	        }
+	        modelMatrixChanged = false;
+        }
 
         boolean useVertexColor = false;
         if (!lighting || transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
@@ -4458,13 +4855,18 @@ public class VideoEngine {
             }
         } else if (vinfo.color != 0 && mat_flags != 0) {
             useVertexColor = true;
-            if(useShaders) {
-        		int[] bvec = new int[4];
-        		if((mat_flags & 1) != 0) bvec[1] = 1; // GL.GL_AMBIENT;
-            	if((mat_flags & 2) != 0) bvec[2] = 1; // GL.GL_DIFFUSE;
-            	if((mat_flags & 4) != 0) bvec[3] = 1; // GL.GL_SPECULAR;
-        		bvec[0] = 1;
-        		gl.glUniform4iv(Uniforms.matFlags.getId(), 1, bvec, 0);
+            if ((mat_flags & 1) == 0)
+            	gl.glMaterialfv(GL.GL_FRONT, GL.GL_AMBIENT, mat_ambient, 0);
+            if ((mat_flags & 2) == 0)
+            	gl.glMaterialfv(GL.GL_FRONT, GL.GL_DIFFUSE, mat_diffuse, 0);
+            if ((mat_flags & 4) == 0)
+            	gl.glMaterialfv(GL.GL_FRONT, GL.GL_SPECULAR, mat_specular, 0);
+            if (useShaders) {
+        		int[] ivec3 = new int[3];
+        		ivec3[0] = (mat_flags & 1) >> 0; // GL.GL_AMBIENT
+        		ivec3[1] = (mat_flags & 2) >> 1; // GL.GL_DIFFUSE
+        		ivec3[2] = (mat_flags & 4) >> 2; // GL.GL_SPECULAR
+        		gl.glUniform3iv(Uniforms.matFlags.getId(), 1, ivec3, 0);
         	} else {
             	int flags = 0;
             	// TODO : Can't emulate this properly right now since we can't mix the properties like we want
@@ -4481,10 +4883,12 @@ public class VideoEngine {
             gl.glMaterialfv(GL.GL_FRONT, GL.GL_AMBIENT, mat_ambient, 0);
             gl.glMaterialfv(GL.GL_FRONT, GL.GL_DIFFUSE, mat_diffuse, 0);
             gl.glMaterialfv(GL.GL_FRONT, GL.GL_SPECULAR, mat_specular, 0);
-            if(useShaders) {
-            	int[] bvec = new int[4];
-            	bvec[0] = 0;
-        		gl.glUniform4iv(Uniforms.matFlags.getId(), 1, bvec, 0);
+            if (useShaders) {
+            	int[] ivec3 = new int[3];
+            	ivec3[0] = 0; // GL.GL_AMBIENT
+            	ivec3[1] = 0; // GL.GL_DIFFUSE
+            	ivec3[2] = 0; // GL.GL_SPECULAR
+        		gl.glUniform3iv(Uniforms.matFlags.getId(), 1, ivec3, 0);
             }
         }
 
@@ -4508,13 +4912,6 @@ public class VideoEngine {
         if(useVertexColor) gl.glDisableClientState(GL.GL_COLOR_ARRAY);
         if(vinfo.normal != 0) gl.glDisableClientState(GL.GL_NORMAL_ARRAY);
 
-        gl.glPopMatrix  ();
-        gl.glMatrixMode (GL.GL_TEXTURE);
-        gl.glPopMatrix  ();
-        gl.glMatrixMode (GL.GL_PROJECTION);
-        gl.glPopMatrix  ();
-        gl.glMatrixMode (GL.GL_MODELVIEW);
-
         if(transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
             gl.glPopAttrib();
             if(useShaders) {
@@ -4537,7 +4934,7 @@ public class VideoEngine {
             for (int v = 0; v < vcount; v++) {
                 int addr = vinfo.getAddress(mem, u * vcount + v);
                 VertexState vs = vinfo.readVertex(mem, addr);
-                if (log.isDebugEnabled()) {
+                if (isLogDebugEnabled) {
                     log("drawBezier  vertex#" + u + "," + v + " (" + ((float) vs.t[0]) + "," + ((float) vs.t[1]) + ") at (" + ((float) vs.p[0]) + "," + ((float) vs.p[1]) + "," + ((int) vs.p[2]) + ")");
                 }
                 anchors[u][v] = vs;
@@ -4585,7 +4982,7 @@ public class VideoEngine {
         }
 
         boolean useTexture = true;
-        bindBuffers(useVertexColor, useTexture);
+        bindBuffers(useVertexColor, useTexture, true, 0);
 
         float pyold = 0;
         for (int u = 1; u <= udivs; u++) {
@@ -4748,7 +5145,7 @@ public class VideoEngine {
     	glBindBuffer(vboBufferId[0]);
     }
 
-    private void glBindBuffer(int bufferId) {
+    public void glBindBuffer(int bufferId) {
         if (useVBO) {
         	if (openGL1_5) {
         		gl.glBindBuffer(GL.GL_ARRAY_BUFFER, bufferId);
@@ -4763,6 +5160,11 @@ public class VideoEngine {
     		display.hleDisplaySetGeBuf(gl, fbp, fbw, psm, somethingDisplayed);
     		geBufChanged = false;
     		textureChanged = true;
+    		maxSpriteHeight = 0;
+			projectionMatrixChanged = true;
+			modelMatrixChanged = true;
+			viewMatrixChanged = true;
+			textureMatrixChanged = true;
     	}
     }
     // For capture/replay
@@ -5057,6 +5459,20 @@ public class VideoEngine {
 
 	public boolean isUsingTRXKICK() {
 		return usingTRXKICK;
+	}
+
+	public int getMaxSpriteHeight() {
+		return maxSpriteHeight;
+	}
+
+	public void setUseVertexCache(boolean useVertexCache) {
+    	// VertexCache is relying on VBO
+		if (useVBO) {
+			this.useVertexCache = useVertexCache;
+	        if (useVertexCache) {
+	        	VideoEngine.log.info("Using Vertex Cache");
+	        }
+		}
 	}
 
 	public int getBase() {
