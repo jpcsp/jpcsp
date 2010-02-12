@@ -746,7 +746,8 @@ public class sceMpeg implements HLEModule {
                 ThreadMan.getInstance().yieldCurrentThread();
             } else {
 	            mem.write32(au_addr, 0x56560001);
-	            mem.write32(result_addr, 1);
+                if(result_addr != 0)   //Can be null. In this case, just ignore the result.
+                    mem.write32(result_addr, 1);
 	            if (enableMpeg) {
 	                mem.write32(au_addr + 4, mpegAvcCurrentTimestamp);
 	            }
@@ -1175,10 +1176,7 @@ public class sceMpeg implements HLEModule {
         int ycbcr_addr = cpu.gpr[8];  //Probably to store a handle.
 
          Modules.log.warn("IGNORING:sceMpegAvcInitYCbCr(mpeg=0x" + Integer.toHexString(mpeg)
-            + ",YCbCr_addr=0x" + Integer.toHexString(ycbcr_addr));
-
-        //Fake.
-        mem.write32(ycbcr_addr, 0x4545FFFF);
+            + ",YCbCr_addr=0x" + Integer.toHexString(ycbcr_addr) + ")");
 
         cpu.gpr[2] = 0;
     }
