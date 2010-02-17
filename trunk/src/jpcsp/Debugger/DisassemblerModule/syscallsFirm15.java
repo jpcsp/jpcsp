@@ -1125,6 +1125,7 @@ public class syscallsFirm15 {
                 // jpcsp HLE syscalls
                 hleKernelExitThread(0x6f000, 0x009AB670),
                 hleKernelExitCallback(0x6f001, 0x7A49075B),
+                hleKernelAsyncLoop(0x6f002, 0xF9F32A75),
 
                 hleDummy(0x70000, 0xcdcdcdcd); // got bored of editing , and ; so leave this entry at the end of the enum
 

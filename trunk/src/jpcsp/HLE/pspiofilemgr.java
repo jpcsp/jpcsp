@@ -158,6 +158,8 @@ public class pspiofilemgr {
     private String filepath; // current working directory on PC
     private UmdIsoReader iso;
 
+    private SceKernelThreadInfo asyncThread;
+
     public static pspiofilemgr getInstance() {
         if (instance == null) {
             instance = new pspiofilemgr();
@@ -630,9 +632,9 @@ public class pspiofilemgr {
         return mode;
     }
 
-    public void sceIoOpen(int filename_addr, int flags, int permissions) {
+    public void hleIoOpen(int filename_addr, int flags, int permissions, boolean async) {
         String filename = readStringZ(filename_addr);
-        if (debug) Modules.log.info("sceIoOpen filename = " + filename + " flags = " + Integer.toHexString(flags) + " permissions = 0" + Integer.toOctalString(permissions));
+        if (debug) Modules.log.info("hleIoOpen filename = " + filename + " flags = " + Integer.toHexString(flags) + " permissions = 0" + Integer.toOctalString(permissions));
 
         if (debug) {
             if ((flags & PSP_O_RDONLY) == PSP_O_RDONLY) Modules.log.debug("PSP_O_RDONLY");
@@ -645,17 +647,23 @@ public class pspiofilemgr {
             if ((flags & PSP_O_EXCL) == PSP_O_EXCL) Modules.log.debug("PSP_O_EXCL");
             if ((flags & PSP_O_NOWAIT) == PSP_O_NOWAIT) Modules.log.debug("PSP_O_NOWAIT");
         }
-        if ((flags & PSP_O_UNKNOWN1) == PSP_O_UNKNOWN1) Modules.log.warn("UNIMPLEMENTED:sceIoOpen flags=PSP_O_UNKNOWN1 file='" + filename + "'");
-        if ((flags & PSP_O_UNKNOWN2) == PSP_O_UNKNOWN2) Modules.log.warn("UNIMPLEMENTED:sceIoOpen flags=PSP_O_UNKNOWN2 file='" + filename + "'");
+        if ((flags & PSP_O_UNKNOWN1) == PSP_O_UNKNOWN1) Modules.log.warn("UNIMPLEMENTED:hleIoOpen flags=PSP_O_UNKNOWN1 file='" + filename + "'");
+        if ((flags & PSP_O_UNKNOWN2) == PSP_O_UNKNOWN2) Modules.log.warn("UNIMPLEMENTED:hleIoOpen flags=PSP_O_UNKNOWN2 file='" + filename + "'");
 
         String mode = getMode(flags);
 
         if (mode == null) {
-            Modules.log.error("sceIoOpen - unhandled flags " + Integer.toHexString(flags));
+            Modules.log.error("hleIoOpen - unhandled flags " + Integer.toHexString(flags));
             State.fileLogger.logIoOpen(-1, filename_addr, filename, flags, permissions, mode);
             Emulator.getProcessor().cpu.gpr[2] = -1;
             return;
         }
+
+        //Retry count.
+        int retry = (flags >> 16);
+
+        if(retry != 0)
+            Modules.log.warn("hleIoOpen - retry count is " + retry);
 
         // TODO we may want to do something with PSP_O_CREAT and permissions
         // using java File and its setReadable/Writable/Executable.
@@ -666,24 +674,23 @@ public class pspiofilemgr {
         // This could get messy, is it even allowed?
         if ((flags & PSP_O_RDONLY) == PSP_O_RDONLY &&
             (flags & PSP_O_APPEND) == PSP_O_APPEND) {
-            Modules.log.warn("sceIoOpen - read and append flags both set!");
+            Modules.log.warn("hleIoOpen - read and append flags both set!");
         }
 
         try {
             String pcfilename = getDeviceFilePath(filename);
             if (pcfilename != null) {
-                if (debug) Modules.log.debug("sceIoOpen - opening file " + pcfilename);
-                //if (debug) Modules.log.debug("sceIoOpen - isUmdPath " + isUmdPath(pcfilename));
+                if (debug) Modules.log.debug("hleIoOpen - opening file " + pcfilename);
 
                 if (isUmdPath(pcfilename)) {
                     // check umd is mounted
                     if (iso == null) {
-                        Modules.log.error("sceIoOpen - no umd mounted");
+                        Modules.log.error("hleIoOpen - no umd mounted");
                         Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_DEVICE_NOT_FOUND;
 
                     // check umd is activated
                     } else if (!Modules.sceUmdUserModule.isUmdActivated()) {
-                        Modules.log.warn("sceIoOpen - umd mounted but not activated");
+                        Modules.log.warn("hleIoOpen - umd mounted but not activated");
                         Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_NO_SUCH_DEVICE;
 
                     // check flags are valid
@@ -691,29 +698,34 @@ public class pspiofilemgr {
                         (flags & PSP_O_CREAT) == PSP_O_CREAT ||
                         (flags & PSP_O_TRUNC) == PSP_O_TRUNC) {
                         // should we refuse (return -1) or just ignore?
-                        Modules.log.error("sceIoOpen - refusing to open umd media for write");
+                        Modules.log.error("hleIoOpen - refusing to open umd media for write");
                         Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_READ_ONLY;
                     } else {
                         // open file
-                        try {
-                        	String trimmedFileName = trimUmdPrefix(pcfilename);
-                            UmdIsoFile file = iso.getFile(trimmedFileName);
-                            IoInfo info = new IoInfo(filename, file, mode, flags, permissions);
-                            if (trimmedFileName != null && trimmedFileName.length() == 0) {
-                            	// Opening "umd0:" is allowing to read the whole UMD
-                            	// per sectors.
-                            	info.sectorBlockMode = true;
+
+                        //Tests revealed that apps are already prepared
+                        //to wait for the retry count of each file.
+                        for(int i = 0; i <= retry; i++) {
+                            try {
+                                String trimmedFileName = trimUmdPrefix(pcfilename);
+                                UmdIsoFile file = iso.getFile(trimmedFileName);
+                                IoInfo info = new IoInfo(filename, file, mode, flags, permissions);
+                                if (trimmedFileName != null && trimmedFileName.length() == 0) {
+                                    // Opening "umd0:" is allowing to read the whole UMD
+                                    // per sectors.
+                                    info.sectorBlockMode = true;
+                                }
+                                //info.result = info.uid;
+                                info.result = PSP_ERROR_NO_ASYNC_OP;
+                                Emulator.getProcessor().cpu.gpr[2] = info.uid;
+                                if (debug) Modules.log.debug("hleIoOpen assigned uid = 0x" + Integer.toHexString(info.uid));
+                            } catch(FileNotFoundException e) {
+                                if (debug) Modules.log.warn("hleIoOpen - umd file not found (ok to ignore this message, debug purpose only)");
+                                Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_FILE_NOT_FOUND;
+                            } catch(IOException e) {
+                                Modules.log.error("hleIoOpen - error opening umd media: " + e.getMessage());
+                                Emulator.getProcessor().cpu.gpr[2] = -1;
                             }
-                            //info.result = info.uid;
-                            info.result = PSP_ERROR_NO_ASYNC_OP;
-                            Emulator.getProcessor().cpu.gpr[2] = info.uid;
-                            if (debug) Modules.log.debug("sceIoOpen assigned uid = 0x" + Integer.toHexString(info.uid));
-                        } catch(FileNotFoundException e) {
-                            if (debug) Modules.log.warn("sceIoOpen - umd file not found (ok to ignore this message, debug purpose only)");
-                            Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_FILE_NOT_FOUND;
-                        } catch(IOException e) {
-                            Modules.log.error("sceIoOpen - error opening umd media: " + e.getMessage());
-                            Emulator.getProcessor().cpu.gpr[2] = -1;
                         }
                     }
                 } else {
@@ -723,12 +735,12 @@ public class pspiofilemgr {
                         (flags & PSP_O_CREAT) == PSP_O_CREAT &&
                         (flags & PSP_O_EXCL) == PSP_O_EXCL) {
                         // PSP_O_CREAT + PSP_O_EXCL + file already exists = error
-                        if (debug) Modules.log.debug("sceIoOpen - file already exists (PSP_O_CREAT + PSP_O_EXCL)");
+                        if (debug) Modules.log.debug("hleIoOpen - file already exists (PSP_O_CREAT + PSP_O_EXCL)");
                         Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_FILE_ALREADY_EXISTS;
                     } else {
                         if (file.exists() &&
                             (flags & PSP_O_TRUNC) == PSP_O_TRUNC) {
-                            if (debug) Modules.log.warn("sceIoOpen - file already exists, deleting UNIMPLEMENT (PSP_O_TRUNC)");
+                            if (debug) Modules.log.warn("hleIoOpen - file already exists, deleting UNIMPLEMENT (PSP_O_TRUNC)");
                             //file.delete();
                         }
 
@@ -737,7 +749,7 @@ public class pspiofilemgr {
                         //info.result = info.uid;
                         info.result = PSP_ERROR_NO_ASYNC_OP; // sceIoOpenAsync will set this properly
                         Emulator.getProcessor().cpu.gpr[2] = info.uid;
-                        if (debug) Modules.log.debug("sceIoOpen assigned uid = 0x" + Integer.toHexString(info.uid));
+                        if (debug) Modules.log.debug("hleIoOpen assigned uid = 0x" + Integer.toHexString(info.uid));
                     }
                 }
             } else {
@@ -746,37 +758,52 @@ public class pspiofilemgr {
             }
         } catch(FileNotFoundException e) {
             // To be expected under mode="r" and file doesn't exist
-            if (debug) Modules.log.warn("sceIoOpen - file not found (ok to ignore this message, debug purpose only)");
+            if (debug) Modules.log.warn("hleIoOpen - file not found (ok to ignore this message, debug purpose only)");
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_FILE_NOT_FOUND;
+        }
+
+        if(async) {
+            // TODO make asyncPending a global? only allow 1 async op across all io operations regardless of the uid?
+            int uid = Emulator.getProcessor().cpu.gpr[2];
+            IoInfo info = filelist.get(uid);
+            if (info != null) {
+                info.asyncPending = true;
+                info.result = Emulator.getProcessor().cpu.gpr[2];
+            } else {
+                Modules.log.debug("sceIoOpenAsync - file not found (ok to ignore this message, debug purpose only)");
+                // For async we still need to make and return a file handle even if we couldn't open the file,
+                // this is so the game can query on the handle (wait/async stat/io callback).
+                info = new IoInfo(readStringZ(filename_addr), null, null, flags, permissions);
+                info.result = PSP_ERROR_FILE_NOT_FOUND & 0xffffffffL;
+                //info.asyncPending = true;
+                Emulator.getProcessor().cpu.gpr[2] = info.uid;
+            }
         }
 
         State.fileLogger.logIoOpen(Emulator.getProcessor().cpu.gpr[2],
                 filename_addr, filename, flags, permissions, mode);
     }
 
+     public void sceIoOpen(int filename_addr, int flags, int permissions) {
+         if (debug) Modules.log.debug("sceIoOpen redirecting to hleIoOpen");
+         hleIoOpen(filename_addr, flags, permissions, false);
+     }
+
     /** allocates an fd and returns it, even if the file could not be opened.
      * on the next successful poll/wait async 0x80010002 will be saved if the
      * file could not be opened. */
     public void sceIoOpenAsync(int filename_addr, int flags, int permissions) {
-        if (debug) Modules.log.debug("sceIoOpenAsync redirecting to sceIoOpen");
-        sceIoOpen(filename_addr, flags, permissions);
+        if (debug) Modules.log.debug("sceIoOpenAsync redirecting to hleIoOpen");
 
-        // TODO refactor sceIoOpen into hleIoOpen and add more parameters
-        // TODO make asyncPending a global? only allow 1 async op across all io operations regardless of the uid?
-        int uid = Emulator.getProcessor().cpu.gpr[2];
-        IoInfo info = filelist.get(uid);
-        if (info != null) {
-            info.asyncPending = true;
-            info.result = Emulator.getProcessor().cpu.gpr[2];
-        } else {
-            Modules.log.debug("sceIoOpenAsync - file not found (ok to ignore this message, debug purpose only)");
-            // For async we still need to make and return a file handle even if we couldn't open the file,
-            // this is so the game can query on the handle (wait/async stat/io callback).
-            info = new IoInfo(readStringZ(filename_addr), null, null, flags, permissions);
-            info.result = PSP_ERROR_FILE_NOT_FOUND & 0xffffffffL;
-            //info.asyncPending = true;
-            Emulator.getProcessor().cpu.gpr[2] = info.uid;
-        }
+        //Start async thread (only 1 at a time allowed).
+        //The app should call sceIoCloseAsync to delete it.
+        ThreadMan threadMan = ThreadMan.getInstance();
+        asyncThread = threadMan.hleKernelCreateThread("SceIofileAsync", ThreadMan.ASYNC_LOOP_ADDRESS, 0x6F, 0x2000,
+                threadMan.getCurrentThread().attr, 0);
+
+        threadMan.ThreadMan_sceKernelStartThread(asyncThread.uid, 4, ThreadMan.ASYNC_LOOP_ADDRESS);
+
+        hleIoOpen(filename_addr, flags, permissions, true);
     }
 
     public void sceIoSetAsyncCallback(int uid, int cbid, int notifyArg) {
@@ -842,6 +869,9 @@ public class pspiofilemgr {
         } else {
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
         }
+
+        if(asyncThread != null)
+            ThreadMan.getInstance().ThreadMan_sceKernelDeleteThread(asyncThread.uid);
     }
 
     // Handle returning/storing result for sync/async operations
@@ -1644,8 +1674,8 @@ public class pspiofilemgr {
                     if (mem.isAddressGood(outdata_addr) && outlen >= 4) {
                         if (info.isUmdFile()) {
                             try {
-                                long fPointer = info.readOnlyFile.getFilePointer();
-                                mem.write64(outdata_addr, fPointer);
+                                int fPointer = (int)info.readOnlyFile.getFilePointer();
+                                mem.write32(outdata_addr, fPointer);
                                 Modules.log.debug("hleIoIoctl umd file get file pointer " + fPointer);
                                 result = 0;
                             } catch (IOException e) {

@@ -85,6 +85,7 @@ public class ThreadMan {
 	protected static final int IDLE_THREAD_ADDRESS           = MemoryMap.START_RAM;
 	protected static final int THREAD_EXIT_HANDLER_ADDRESS   = MemoryMap.START_RAM + 0x20;
 	protected static final int CALLBACK_EXIT_HANDLER_ADDRESS = MemoryMap.START_RAM + 0x30;
+    protected static final int ASYNC_LOOP_ADDRESS            = MemoryMap.START_RAM + 0x40;
 
     private boolean insideCallback;
     private HashMap<Integer, SceKernelCallbackInfo> callbackMap;
@@ -159,6 +160,7 @@ public class ThreadMan {
         install_idle_threads();
         install_thread_exit_handler();
         install_callback_exit_handler();
+        install_async_loop_handler();
 
         // Create a thread the program will run inside
         current_thread = new SceKernelThreadInfo("root", entry_addr, 0x20, 0x4000, attr);
@@ -258,6 +260,20 @@ public class ThreadMan {
 
         mem.write32(CALLBACK_EXIT_HANDLER_ADDRESS + 0, instruction_syscall);
         mem.write32(CALLBACK_EXIT_HANDLER_ADDRESS + 4, instruction_jr);
+    }
+
+    private void install_async_loop_handler() {
+        Memory mem = Memory.getInstance();
+
+        int instruction_syscall = // syscall 0x6f002 [hleKernelAsyncLoop]
+            ((AllegrexOpcodes.SPECIAL & 0x3f) << 26)
+            | (AllegrexOpcodes.SYSCALL & 0x3f)
+            | ((syscallsFirm15.calls.hleKernelAsyncLoop.getSyscall() & 0x000fffff) << 6);
+
+        int instruction_jr = AllegrexOpcodes.JR | (31 << 21);
+
+        mem.write32(ASYNC_LOOP_ADDRESS + 0, instruction_syscall);
+        mem.write32(ASYNC_LOOP_ADDRESS + 4, instruction_jr);
     }
 
     /** to be called when exiting the emulation */
@@ -902,6 +918,11 @@ public class ThreadMan {
 	public void hleKernelExitThread() {
 		ThreadMan_sceKernelExitThread(0);
 	}
+
+    public void hleKernelAsyncLoop() {
+        Modules.log.info("Running dummy async thread!");
+        Emulator.getProcessor().cpu.gpr[2] = 0;
+    }
 
 	/** Note: Some functions allow uid = 0 = current thread, others don't.
      * if uid = 0 then $v0 is set to ERROR_ILLEGAL_THREAD and false is returned
