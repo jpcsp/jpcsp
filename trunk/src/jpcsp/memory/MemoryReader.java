@@ -28,18 +28,41 @@ import jpcsp.MemoryMap;
  *
  */
 public class MemoryReader {
+	private static int getMaxLength(int address) {
+		int length;
+		
+		if (address >= MemoryMap.START_RAM && address <= MemoryMap.END_RAM) {
+			length = MemoryMap.END_RAM - address + 1;
+		} else if (address >= MemoryMap.START_VRAM && address <= MemoryMap.END_VRAM) {
+			length = MemoryMap.END_VRAM - address + 1;
+		} else if (address >= MemoryMap.START_SCRATCHPAD && address <= MemoryMap.END_SCRATCHPAD) {
+			length = MemoryMap.END_SCRATCHPAD - address + 1;
+		} else {
+			length = 0;
+		}
+
+		return length;
+	}
+
+	private static IMemoryReader getFastMemoryReader(FastMemory mem, int address, int step) {
+		int[] memoryInt = mem.getAll();
+
+		switch (step) {
+		case 1: return new MemoryReaderIntArray8(memoryInt, address);
+		case 2: return new MemoryReaderIntArray16(memoryInt, address);
+		case 4: return new MemoryReaderIntArray32(memoryInt, address);
+		}
+
+		// Default (generic) MemoryReader
+		return new MemoryReaderGeneric(address, getMaxLength(address), step);
+	}
+
 	public static IMemoryReader getMemoryReader(int address, int length, int step) {
 		Memory mem = Memory.getInstance();
 
 		address &= Memory.addressMask;
 		if (mem instanceof FastMemory) {
-			int[] memoryInt = ((FastMemory) mem).getAll();
-
-			switch (step) {
-			case 1: return new MemoryReaderIntArray8(memoryInt, address);
-			case 2: return new MemoryReaderIntArray16(memoryInt, address);
-			case 4: return new MemoryReaderIntArray32(memoryInt, address);
-			}
+			return getFastMemoryReader((FastMemory) mem, address, step);
 		} else {
 			Buffer buffer = Memory.getInstance().getBuffer(address, length);
 
@@ -65,20 +88,14 @@ public class MemoryReader {
 	}
 
 	public static IMemoryReader getMemoryReader(int address, int step) {
-		int length;
+		Memory mem = Memory.getInstance();
 
 		address &= Memory.addressMask;
-		if (address >= MemoryMap.START_RAM && address <= MemoryMap.END_RAM) {
-			length = MemoryMap.END_RAM - address + 1;
-		} else if (address >= MemoryMap.START_VRAM && address <= MemoryMap.END_VRAM) {
-			length = MemoryMap.END_VRAM - address + 1;
-		} else if (address >= MemoryMap.START_SCRATCHPAD && address <= MemoryMap.END_SCRATCHPAD) {
-			length = MemoryMap.END_SCRATCHPAD - address + 1;
+		if (mem instanceof FastMemory) {
+			return getFastMemoryReader((FastMemory) mem, address, step);
 		} else {
-			length = 0;
+			return getMemoryReader(address, getMaxLength(address), step);
 		}
-
-		return getMemoryReader(address, length, step);
 	}
 
 	private static class MemoryReaderGeneric implements IMemoryReader {
