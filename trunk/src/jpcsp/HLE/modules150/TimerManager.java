@@ -623,7 +623,9 @@ public class TimerManager implements HLEModule {
         	long schedule = mem.read64(scheduleAddr);
         	sceKernelVTimerInfo.handlerAddress = handlerAddress;
         	sceKernelVTimerInfo.handlerArgument = handlerArgument;
-        	scheduleVTimer(sceKernelVTimerInfo, schedule);
+        	if (handlerAddress != 0) {
+        		scheduleVTimer(sceKernelVTimerInfo, schedule);
+        	}
         	cpu.gpr[2] = 0;
         }
     }
@@ -655,7 +657,9 @@ public class TimerManager implements HLEModule {
         } else {
         	sceKernelVTimerInfo.handlerAddress = handlerAddress;
         	sceKernelVTimerInfo.handlerArgument = handlerArgument;
-        	scheduleVTimer(sceKernelVTimerInfo, schedule);
+        	if (handlerAddress != 0) {
+        		scheduleVTimer(sceKernelVTimerInfo, schedule);
+        	}
         	cpu.gpr[2] = 0;
         }
     }
