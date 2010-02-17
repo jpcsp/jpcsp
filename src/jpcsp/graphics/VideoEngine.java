@@ -59,8 +59,7 @@ import com.sun.opengl.util.BufferUtil;
 
 //
 // Ideas for Optimization:
-// - reduce size of executeCommand method. It is currently not compiled by the
-//   the java JIT compiler due to its size
+// - run the GE in a separate thread to use dual-core capabilites.
 //   Synchronization with Allegrex happen in pspge and SIGNAL/FINISH commands. 
 // - compile GE lists (or part of it) into OpenGL display list (glNewList/glCallList).
 //   For example, immutable subroutines called using CALL could be compiled into a display list.
@@ -832,8 +831,8 @@ public class VideoEngine {
         return (instruction & 0x00FFFFFF);
     }
 
-    private static float floatArgument(int instruction) {
-        return Float.intBitsToFloat(instruction << 8);
+    private static float floatArgument(int normalArgument) {
+        return Float.intBitsToFloat(normalArgument << 8);
     }
 
     private int getStencilOp (int pspOP) {
@@ -1095,9 +1094,18 @@ public class VideoEngine {
     	gl.glColorMask(glColorMask[0], glColorMask[1], glColorMask[2], glColorMask[3]);
     }
 
+    private String getArgumentLog(int normalArgument) {
+    	if (normalArgument == 0) {
+    		return "(0)"; // a very common case...
+    	}
+
+    	return String.format("(hex=%08X,int=%d,float=%f)", normalArgument, normalArgument, floatArgument(normalArgument));
+    }
+
     public void executeCommand(int instruction) {
         int normalArgument = intArgument(instruction);
-        float floatArgument = floatArgument(instruction);
+        // Compute floatArgument only on demand, most commands do not use it.
+        //float floatArgument = floatArgument(instruction);
 
         int command = command(instruction);
         commandStatistics[command].start();
@@ -1112,7 +1120,7 @@ public class VideoEngine {
 
             case FINISH:
                 if (isLogDebugEnabled) {
-                    log(helper.getCommandString(FINISH) + " (hex="+Integer.toHexString(normalArgument)+",int="+normalArgument+",float="+floatArgument+")");
+                    log(helper.getCommandString(FINISH) + " " + getArgumentLog(normalArgument));
                 }
                 currentList.listHasFinished = true;
                 currentList.pushFinishCallback(normalArgument);
@@ -1229,7 +1237,7 @@ public class VideoEngine {
                 break;
 
             case VIEW:
-            	if (viewMatrixUpload.uploadValue(floatArgument)) {
+            	if (viewMatrixUpload.uploadValue(floatArgument(normalArgument))) {
                     log("glLoadMatrixf", view_uploaded_matrix);
             	}
                 break;
@@ -1243,7 +1251,7 @@ public class VideoEngine {
                 break;
 
             case MODEL:
-                if (modelMatrixUpload.uploadValue(floatArgument)) {
+                if (modelMatrixUpload.uploadValue(floatArgument(normalArgument))) {
                 	log("glLoadMatrixf", model_uploaded_matrix);
                 }
                 break;
@@ -1260,7 +1268,7 @@ public class VideoEngine {
                 int lnum = (command - LXP0) / 3;
                 int component = (command - LXP0) % 3;
                 float old_light_pos = light_pos[lnum][component];
-            	light_pos[lnum][component] = floatArgument;
+            	light_pos[lnum][component] = floatArgument(normalArgument);
 
             	if (old_light_pos != light_pos[lnum][component]) {
             		lightingChanged = true;
@@ -1331,7 +1339,7 @@ public class VideoEngine {
             case LCA2:
             case LCA3: {
                 int lnum = (command - LCA0) / 3;
-            	gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_CONSTANT_ATTENUATION, floatArgument);
+            	gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_CONSTANT_ATTENUATION, floatArgument(normalArgument));
             	break;
             }
 
@@ -1341,7 +1349,7 @@ public class VideoEngine {
             case LLA2:
             case LLA3: {
                 int lnum = (command - LLA0) / 3;
-            	gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_LINEAR_ATTENUATION, floatArgument);
+            	gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_LINEAR_ATTENUATION, floatArgument(normalArgument));
             	break;
             }
 
@@ -1351,7 +1359,7 @@ public class VideoEngine {
             case LQA2:
             case LQA3: {
                 int lnum = (command - LQA0) / 3;
-            	gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_QUADRATIC_ATTENUATION, floatArgument);
+            	gl.glLightf(GL.GL_LIGHT0 + lnum, GL.GL_QUADRATIC_ATTENUATION, floatArgument(normalArgument));
             	break;
             }
 
@@ -1376,7 +1384,7 @@ public class VideoEngine {
                 float old_light_dir = light_dir[lnum][component];
 
                 // OpenGL requires a normal in the opposite direction as the PSP
-                light_dir[lnum][component] = -floatArgument;
+                light_dir[lnum][component] = -floatArgument(normalArgument);
 
                 if (old_light_dir != light_dir[lnum][component]) {
                 	lightingChanged = true;
@@ -1464,14 +1472,14 @@ public class VideoEngine {
             case SLE3: {
             	int lnum = command - SLE0;
             	float old_spotLightExponent = spotLightExponent[lnum];
-            	spotLightExponent[lnum] = floatArgument;
+            	spotLightExponent[lnum] = floatArgument(normalArgument);
 
             	if (old_spotLightExponent != spotLightExponent[lnum]) {
             		lightingChanged = true;
             	}
 
             	if (isLogDebugEnabled) {
-                    VideoEngine.log.debug("sceGuLightSpot(" + lnum + ",X," + floatArgument + ",X)");
+                    VideoEngine.log.debug("sceGuLightSpot(" + lnum + ",X," + spotLightExponent[lnum] + ",X)");
                 }
             	break;
             }
@@ -1487,6 +1495,7 @@ public class VideoEngine {
             	float old_spotLightCutoff = spotLightCutoff[lnum];
 
             	// PSP Cutoff is cosine of angle, OpenGL expects degrees
+            	float floatArgument = floatArgument(normalArgument);
             	float degreeCutoff = (float) Math.toDegrees(Math.acos(floatArgument));
             	if ((degreeCutoff >= 0 && degreeCutoff <= 90) || degreeCutoff == 180) {
 	                spotLightCutoff[lnum] = degreeCutoff;
@@ -1605,12 +1614,14 @@ public class VideoEngine {
             	gl.glLightModelfv(GL.GL_LIGHT_MODEL_AMBIENT, ambient_light, 0);
             	break;
 
-            case SPOW:
+            case SPOW: {
+            	float floatArgument = floatArgument(normalArgument);
             	gl.glMaterialf(GL.GL_FRONT, GL.GL_SHININESS, floatArgument);
                 if (isLogDebugEnabled) {
                     log("material shininess " + floatArgument);
                 }
             	break;
+            }
 
             case TMS:
             	textureMatrixUpload.startUpload(normalArgument);
@@ -1621,7 +1632,7 @@ public class VideoEngine {
                 break;
 
             case TMATRIX:
-            	if (textureMatrixUpload.uploadValue(floatArgument)) {
+            	if (textureMatrixUpload.uploadValue(floatArgument(normalArgument))) {
                     log("glLoadMatrixf", texture_uploaded_matrix);
             	}
                 break;
@@ -1635,7 +1646,7 @@ public class VideoEngine {
                 break;
 
             case PROJ:
-            	if (projectionMatrixUpload.uploadValue(floatArgument)) {
+            	if (projectionMatrixUpload.uploadValue(floatArgument(normalArgument))) {
                     log("glLoadMatrixf", proj_uploaded_matrix);
             	}
                 break;
@@ -1911,7 +1922,7 @@ public class VideoEngine {
              */
             case UOFFSET: {
             	float old_tex_translate_x = tex_translate_x;
-            	tex_translate_x = floatArgument;
+            	tex_translate_x = floatArgument(normalArgument);
 
             	if (old_tex_translate_x != tex_translate_x) {
             		textureMatrixChanged = true;
@@ -1925,7 +1936,7 @@ public class VideoEngine {
             }
             case VOFFSET: {
             	float old_tex_translate_y = tex_translate_y;
-            	tex_translate_y = floatArgument;
+            	tex_translate_y = floatArgument(normalArgument);
 
             	if (old_tex_translate_y != tex_translate_y) {
             		textureMatrixChanged = true;
@@ -1939,7 +1950,7 @@ public class VideoEngine {
 
             case USCALE: {
             	float old_tex_scale_x = tex_scale_x;
-            	tex_scale_x = floatArgument;
+            	tex_scale_x = floatArgument(normalArgument);
 
             	if (old_tex_scale_x != tex_scale_x) {
             		textureMatrixChanged = true;
@@ -1953,7 +1964,7 @@ public class VideoEngine {
             }
             case VSCALE: {
             	float old_tex_scale_y = tex_scale_y;
-            	tex_scale_y = floatArgument;
+            	tex_scale_y = floatArgument(normalArgument);
 
             	if (old_tex_scale_y != tex_scale_y) {
             		textureMatrixChanged = true;
@@ -2013,138 +2024,7 @@ public class VideoEngine {
             }
 
             case TFUNC:
-           		int env_mode = GL.GL_MODULATE;
-           		switch(normalArgument & 7) {
-	           		case 0: env_mode = GL.GL_MODULATE; break;
-	           		case 1: env_mode = GL.GL_DECAL; break;
-	           		case 2: env_mode = GL.GL_BLEND; break;
-	           		case 3: env_mode = GL.GL_REPLACE; break;
-	           		case 4: env_mode = GL.GL_ADD; break;
-           			default: VideoEngine.log.warn("Unimplemented tfunc mode " + (normalArgument & 7));
-           		}
-           		if(useShaders) gl.glUniform1i(Uniforms.texEnvMode.getId(), normalArgument & 7);
-
-           		int rgbScaleParam = (normalArgument >> 16) & 0xFF;
-           		float rgbScale = 1;
-           		if (rgbScaleParam == TFUNC_FRAGMENT_DOUBLE_ENABLE_COLOR_DOUBLED) {
-           			rgbScale = 2;
-           		} else if (rgbScaleParam != TFUNC_FRAGMENT_DOUBLE_ENABLE_COLOR_UNTOUCHED) {
-           			log.warn(String.format("sceGuTexFunc unknown RGB scale parameter %06X", normalArgument));
-           		}
-
-           		int alphaParam = (normalArgument >> 8) & 0xFF;
-           		boolean alphaIsOne = false;
-           		if (alphaParam == TFUNC_FRAGMENT_DOUBLE_TEXTURE_COLOR_ALPHA_IS_IGNORED) {
-       				// DECAL mode with ignored Alpha is always using
-       				// the equivalent of Alpha = 1.0 on PSP.
-           			alphaIsOne = true;
-           		} else if (alphaParam != TFUNC_FRAGMENT_DOUBLE_TEXTURE_COLOR_ALPHA_IS_READ) {
-           			log.warn(String.format("sceGuTexFunc unknown alpha parameter %06X", normalArgument));
-           		}
-
-           		if (rgbScale != 1 || alphaIsOne) {
-               		// GL_RGB_SCALE is only used in OpenGL when GL_TEXTURE_ENV_MODE is GL_COMBINE
-           			// See http://www.opengl.org/sdk/docs/man/xhtml/glTexEnv.xml
-           			switch (env_mode) {
-	       				case GL.GL_MODULATE:
-	       					// Cv = Cp * Cs
-	       					// Av = Ap * As
-	       					env_mode = GL.GL_COMBINE;
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_RGB, GL.GL_MODULATE);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_RGB, GL.GL_TEXTURE);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_RGB, GL.GL_SRC_COLOR);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_RGB, GL.GL_PREVIOUS);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_RGB, GL.GL_SRC_COLOR);
-
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_ALPHA, GL.GL_MODULATE);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, GL.GL_TEXTURE);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_ALPHA, GL.GL_SRC_ALPHA);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_ALPHA, GL.GL_PREVIOUS);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_ALPHA, GL.GL_SRC_ALPHA);
-	       					break;
-           				case GL.GL_DECAL:
-           					env_mode = GL.GL_COMBINE;
-           					// Cv = Cs * As + Cp * (1 - As)
-           					// Av = Ap
-           					if (alphaIsOne) {
-           						// Simplified version when As == 1:
-           						// Cv = Cs
-        		           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_RGB, GL.GL_REPLACE);
-        		           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_RGB, GL.GL_TEXTURE);
-        		           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_RGB, GL.GL_SRC_COLOR);
-           					} else {
-				           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_RGB, GL.GL_INTERPOLATE);
-				           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_RGB, GL.GL_TEXTURE);
-				           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_RGB, GL.GL_SRC_COLOR);
-				           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_RGB, GL.GL_PREVIOUS);
-				           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_RGB, GL.GL_SRC_COLOR);
-				           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC2_RGB, GL.GL_TEXTURE);
-				           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND2_RGB, GL.GL_SRC_ALPHA);
-           					}
-
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_ALPHA, GL.GL_REPLACE);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, GL.GL_PREVIOUS);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_ALPHA, GL.GL_SRC_ALPHA);
-           					break;
-           				case GL.GL_BLEND:
-           					// Cv = Cc * Cs + Cp * (1 - Cs)
-           					// Av = As * Ap
-           					env_mode = GL.GL_COMBINE;
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_RGB, GL.GL_INTERPOLATE);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_RGB, GL.GL_CONSTANT);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_RGB, GL.GL_SRC_COLOR);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_RGB, GL.GL_PREVIOUS);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_RGB, GL.GL_SRC_COLOR);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC2_RGB, GL.GL_TEXTURE);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND2_RGB, GL.GL_SRC_COLOR);
-
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_ALPHA, GL.GL_MODULATE);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, GL.GL_TEXTURE);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_ALPHA, GL.GL_SRC_ALPHA);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_ALPHA, GL.GL_PREVIOUS);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_ALPHA, GL.GL_SRC_ALPHA);
-           					break;
-           				case GL.GL_REPLACE:
-           					// Cv = Cs
-           					// Av = As
-	           				env_mode = GL.GL_COMBINE;
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_RGB, GL.GL_REPLACE);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_RGB, GL.GL_TEXTURE);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_RGB, GL.GL_SRC_COLOR);
-
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_ALPHA, GL.GL_REPLACE);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, GL.GL_TEXTURE);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_ALPHA, GL.GL_SRC_ALPHA);
-			           		break;
-	       				case GL.GL_ADD:
-	       					// Cv = Cp + Cs
-	       					// Av = Ap * As
-	       					env_mode = GL.GL_COMBINE;
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_RGB, GL.GL_ADD);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_RGB, GL.GL_TEXTURE);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_RGB, GL.GL_SRC_COLOR);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_RGB, GL.GL_PREVIOUS);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_RGB, GL.GL_SRC_COLOR);
-
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_ALPHA, GL.GL_MODULATE);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, GL.GL_TEXTURE);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_ALPHA, GL.GL_SRC_ALPHA);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_ALPHA, GL.GL_PREVIOUS);
-			           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_ALPHA, GL.GL_SRC_ALPHA);
-	       					break;
-       					default:
-       	           			log.warn(String.format("Unimplemented sceGuTexFunc RGB doubled for env_mode=" + env_mode));
-       						break;
-           			}
-           		}
-           		gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, rgbScale);
-           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, env_mode);
-
-           		if (isLogDebugEnabled) {
-           		    log(String.format("sceGuTexFunc mode %06X", normalArgument)
-           		            + (((normalArgument & 0x10000) != 0) ? " SCALE" : "")
-           		            + (((normalArgument & 0x100) != 0) ? " ALPHA" : ""));
-           		}
+            	executeCommandTFUNC(normalArgument);
             	break;
 
             case TEC:
@@ -2160,10 +2040,10 @@ public class VideoEngine {
             	break;
 
             case XSCALE:
-                viewport_width = (int)(floatArgument * 2);
+                viewport_width = (int)(floatArgument(normalArgument) * 2);
                 break;
             case YSCALE:
-                viewport_height = (int)(-floatArgument * 2);
+                viewport_height = (int)(-floatArgument(normalArgument) * 2);
 
                 if (viewport_width != 480 || viewport_height != 272) {
                 	if (isLogWarnEnabled) {
@@ -2178,20 +2058,22 @@ public class VideoEngine {
                 }
                 break;
 
-            case ZSCALE:
+            case ZSCALE: {
+            	float floatArgument = floatArgument(normalArgument);
             	zscale = floatArgument / 65535.f;
             	if(useShaders) gl.glUniform1f(Uniforms.zScale.getId(), zscale);
                 if (isLogDebugEnabled) {
                     log(helper.getCommandString(ZSCALE) + " " + floatArgument);
                 }
                 break;
+            }
 
             // sceGuViewport cx/cy, can we discard these settings? it's only for clipping?
             case XPOS:
-                viewport_cx = (int)floatArgument;
+                viewport_cx = (int)floatArgument(normalArgument);
                 break;
             case YPOS:
-                viewport_cy = (int)floatArgument;
+                viewport_cy = (int)floatArgument(normalArgument);
 
                 if (isLogWarnEnabled) {
 	                if (viewport_cx != 2048 || viewport_cy != 2048) {
@@ -2202,13 +2084,15 @@ public class VideoEngine {
                 }
                 break;
 
-            case ZPOS:
+            case ZPOS: {
+            	float floatArgument = floatArgument(normalArgument);
             	zpos = floatArgument / 65535.f;
             	if(useShaders) gl.glUniform1f(Uniforms.zPos.getId(), zpos);
                 if (isLogDebugEnabled) {
                     log(helper.getCommandString(ZPOS), floatArgument);
                 }
                 break;
+            }
 
             // sceGuOffset, can we discard these settings? it's only for clipping? (fiveofhearts)
             case OFFSETX:
@@ -2261,332 +2145,8 @@ public class VideoEngine {
                 break;
 
             case PRIM:
-            {
-                int numberOfVertex = normalArgument & 0xFFFF;
-                int type = ((normalArgument >> 16) & 0x7);
-
-                Memory mem = Memory.getInstance();
-                if (!mem.isAddressGood(vinfo.ptr_vertex)) {
-                	// Abort here to avoid a lot of useless memory read errors...
-                	error(helper.getCommandString(PRIM) + " Invalid vertex address 0x" + Integer.toHexString(vinfo.ptr_vertex));
-                	break;
-                }
-
-                if (type >= prim_mapping.length) {
-                    error(helper.getCommandString(PRIM) + " Type unhandled " + type);
-                	break;
-                }
-
-                updateGeBuf();
-            	somethingDisplayed = true;
-
-                loadTexture();
-
-                // Logging
-                if (isLogDebugEnabled) {
-                    switch (type) {
-                        case PRIM_POINT:
-                            log("prim point " + numberOfVertex + "x");
-                            break;
-                        case PRIM_LINE:
-                            log("prim line " + (numberOfVertex / 2) + "x");
-                            break;
-                        case PRIM_LINES_STRIPS:
-                            log("prim lines_strips " + (numberOfVertex - 1) + "x");
-                            break;
-                        case PRIM_TRIANGLE:
-                            log("prim triangle " + (numberOfVertex / 3) + "x");
-                            break;
-                        case PRIM_TRIANGLE_STRIPS:
-                            log("prim triangle_strips " + (numberOfVertex - 2) + "x");
-                            break;
-                        case PRIM_TRIANGLE_FANS:
-                            log("prim triangle_fans " + (numberOfVertex - 2) + "x");
-                            break;
-                        case PRIM_SPRITES:
-                            log("prim sprites " + (numberOfVertex / 2) + "x");
-                            break;
-                        default:
-                            VideoEngine.log.warn("prim unhandled " + type);
-                            break;
-                    }
-                }
-
-                boolean useVertexColor = initRendering();
-
-                boolean useTexture = false;
-                boolean useTextureFromNormal = false;
-                boolean useTextureFromPosition = false;
-                if (vinfo.texture != 0) {
-                	useTexture = true;
-                } else if (tex_enable == 1 && transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
-                	switch (tex_proj_map_mode) {
-                		// What is the difference between MODE_NORMAL and MODE_NORMALIZED_NORMAL?
-                		case TMAP_TEXTURE_PROJECTION_MODE_NORMAL:
-                		case TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL:
-                			if (tex_proj_map_mode == TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL) {
-                				log.warn("Texture mode TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL not tested");
-                			}
-                			if (vinfo.normal != 0) {
-                				useTexture = true;
-                				useTextureFromNormal = true;
-                			}
-                			break;
-                		case TMAP_TEXTURE_PROJECTION_MODE_POSITION:
-                			if (vinfo.position != 0) {
-                				useTexture = true;
-                				useTextureFromPosition = true;
-                			}
-                			break;
-                	}
-                }
-
-                vertexStatistics.start();
-
-                vinfo.setMorphWeights(morph_weight);
-                vinfo.setDirty();
-
-                int numberOfWeightsForShader = 0;
-                if (useSkinningShaders) {
-            		if (vinfo.weight != 0) {
-            			gl.glUniform1i(Uniforms.numberBones.getId(), vinfo.skinningWeightCount);
-            			if (boneMatrixForShaderUpdatedMatrix > 0) {
-            				gl.glUniformMatrix4fv(Uniforms.boneMatrix.getId(), boneMatrixForShaderUpdatedMatrix, false, boneMatrixForShader, 0);
-            			}
-            			numberOfWeightsForShader = (vinfo.skinningWeightCount <= 4 ? 4 : 8);
-            		} else {
-            			gl.glUniform1i(Uniforms.numberBones.getId(), 0);
-            		}
-            	}
-
-                // Do not use optimized VertexInfo reading when tracing is enabled,
-                // it doesn't produce any trace information
-                if (!useVertexCache && vinfo.index == 0 && type != PRIM_SPRITES && mem.isAddressGood(vinfo.ptr_vertex) && !isLogTraceEnabled) {
-                	// Optimized VertexInfo reading:
-                	// - do not copy the info already available in the OpenGL format
-                	//   (native format), load it into nativeBuffer (a direct buffer
-                	//   is required by OpenGL).
-                	// - try to keep the info in "int" format when possible, convert
-                	//   to "float" only when necessary
-                	// The best case is no reading and no conversion at all when all the
-                	// vertex info are available in a format usable by OpenGL.
-                	//
-                	// The optimized reading cannot currently handle
-                	// indexed vertex info (vinfo.index != 0) and PRIM_SPRITES.
-                	//
-                    Buffer buffer = vertexInfoReader.read(vinfo, vinfo.ptr_vertex, numberOfVertex);
-
-                    enableClientState(useVertexColor, useTexture, numberOfWeightsForShader);
-
-                    int stride = vertexInfoReader.getStride();
-					glBindBuffer();
-					if (buffer != null) {
-						if (useVBO) {
-	                        if (openGL1_5) {
-	                        	gl.glBufferData(GL.GL_ARRAY_BUFFER, stride * numberOfVertex, buffer, GL.GL_STREAM_DRAW);
-	                        } else {
-	                        	gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, stride * numberOfVertex, buffer, GL.GL_STREAM_DRAW);
-	                        }
-						} else {
-							vboBuffer.clear();
-							Utilities.putBuffer(vboBuffer, buffer, ByteOrder.nativeOrder());
-						}
-                    }
-
-                	if (vertexInfoReader.hasNative()) {
-                		// Copy the VertexInfo from Memory to the nativeBuffer
-                		// (a direct buffer is required by glXXXPointer())
-                		nativeBuffer.clear();
-                    	Buffer memBuffer = mem.getBuffer(vinfo.ptr_vertex, vinfo.vertexSize * numberOfVertex);
-                    	Utilities.putBuffer(nativeBuffer, memBuffer, ByteOrder.LITTLE_ENDIAN);
-                	}
-
-                	if (vinfo.texture != 0 || useTexture) {
-                		boolean textureNative;
-                		int textureOffset;
-                		int textureType;
-                		if (useTextureFromNormal) {
-                			textureNative = vertexInfoReader.isNormalNative();
-                			textureOffset = vertexInfoReader.getNormalOffset();
-                			textureType = vertexInfoReader.getNormalType();
-                		} else if (useTextureFromPosition) {
-                			textureNative = vertexInfoReader.isPositionNative();
-                			textureOffset = vertexInfoReader.getPositionOffset();
-                			textureType = vertexInfoReader.getPositionType();
-                		} else {
-                			textureNative = vertexInfoReader.isTextureNative();
-	                		textureOffset = vertexInfoReader.getTextureOffset();
-	                		textureType = vertexInfoReader.getTextureType();
-                		}
-                		glTexCoordPointer(useTexture, textureType, stride, textureOffset, textureNative, false, true);
-                    }
-
-                	glColorPointer(useVertexColor, vertexInfoReader.getColorType(), stride, vertexInfoReader.getColorOffset(), vertexInfoReader.isColorNative(), false, true);
-                	glNormalPointer(vertexInfoReader.getNormalType(), stride, vertexInfoReader.getNormalOffset(), vertexInfoReader.isNormalNative(), false, true);
-                	glVertexPointer(vertexInfoReader.getPositionType(), stride, vertexInfoReader.getPositionOffset(), vertexInfoReader.isPositionNative(), false, true);
-
-                    gl.glDrawArrays(prim_mapping[type], 0, numberOfVertex);
-
-                } else {
-                	// Non-optimized VertexInfo reading
-
-                	VertexInfo cachedVertexInfo = null;
-                	if (useVertexCache) {
-                		cachedVertexInfo = VertexCache.getInstance().getVertex(vinfo, numberOfVertex, bone_uploaded_matrix, numberOfWeightsForShader);
-                	}
-                	vboFloatBuffer.clear();
-
-	                switch (type) {
-	                    case PRIM_POINT:
-	                    case PRIM_LINE:
-	                    case PRIM_LINES_STRIPS:
-	                    case PRIM_TRIANGLE:
-	                    case PRIM_TRIANGLE_STRIPS:
-	                    case PRIM_TRIANGLE_FANS:
-	                    	if (cachedVertexInfo == null) {
-		                        for (int i = 0; i < numberOfVertex; i++) {
-		                            int addr = vinfo.getAddress(mem, i);
-	                            
-		                            VertexState v = vinfo.readVertex(mem, addr);
-
-		                            // Do skinning first as it modifies v.p and v.n
-		                            if (vinfo.weight != 0 && vinfo.position != 0 && !useSkinningShaders) {
-		                                doSkinning(vinfo, v);
-		                            }
-
-		                            if (vinfo.texture  != 0) vboFloatBuffer.put(v.t);
-		                            else if (useTextureFromNormal) vboFloatBuffer.put(v.n, 0, 2);
-		                            else if (useTextureFromPosition) vboFloatBuffer.put(v.p, 0, 2);
-		                            if (useVertexColor) vboFloatBuffer.put(v.c);
-		                            if (vinfo.normal   != 0) vboFloatBuffer.put(v.n);
-		                            if (vinfo.position != 0) vboFloatBuffer.put(v.p);
-									if (numberOfWeightsForShader > 0) vboFloatBuffer.put(v.boneWeights, 0, numberOfWeightsForShader);
-
-		                            if (isLogTraceEnabled) {
-		                            	if (vinfo.texture != 0 && vinfo.position != 0) {
-		                            		log.trace("  vertex#" + i + " (" + ((int) v.t[0]) + "," + ((int) v.t[1]) + ") at (" + ((int) v.p[0]) + "," + ((int) v.p[1]) + "," + ((int) v.p[2]) + ")");
-		                            	}
-		                            }
-		                        }
-
-		                        if (useVBO) {
-		                        	if (useVertexCache) {
-			                        	cachedVertexInfo = new VertexInfo(vinfo);
-				                        VertexCache.getInstance().addVertex(gl, cachedVertexInfo, numberOfVertex, bone_uploaded_matrix, numberOfWeightsForShader);
-				                        int size = vboFloatBuffer.position();
-				                        vboFloatBuffer.rewind();
-				                        cachedVertexInfo.loadVertex(gl, vboFloatBuffer, size);
-		                        	} else {
-		                        		glBindBuffer();
-			                            if (openGL1_5)
-			                                gl.glBufferData(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
-			                            else
-			                                gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
-		                        	}
-		                        }
-	                    	} else {
-	                        	if (isLogDebugEnabled) {
-	                        		log.debug("Reusing cached Vertex Data");
-	                        	}
-	                    		cachedVertexInfo.bindVertex(gl);
-	                    	}
-	                    	bindBuffers(useVertexColor, useTexture, false, numberOfWeightsForShader);
-	                        gl.glDrawArrays(prim_mapping[type], 0, numberOfVertex);
-	                        maxSpriteHeight = Integer.MAX_VALUE;
-	                        break;
-
-	                    case PRIM_SPRITES:
-	                        gl.glPushAttrib(GL.GL_ENABLE_BIT);
-	                        gl.glDisable(GL.GL_CULL_FACE);
-	                        if (cachedVertexInfo == null) {
-		                        for (int i = 0; i < numberOfVertex; i += 2) {
-		                            int addr1 = vinfo.getAddress(mem, i);
-		                            int addr2 = vinfo.getAddress(mem, i + 1);
-		                            VertexState v1 = vinfo.readVertex(mem, addr1);
-		                            VertexState v2 = vinfo.readVertex(mem, addr2);
-
-		                            v1.p[2] = v2.p[2];
-
-		                            if (v2.p[1] > maxSpriteHeight) {
-		                            	maxSpriteHeight = (int) v2.p[1];
-		                            }
-
-		                            if (isLogDebugEnabled && transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
-		                                log("  sprite (" + ((int) v1.t[0]) + "," + ((int) v1.t[1]) + ")-(" + ((int) v2.t[0]) + "," + ((int) v2.t[1]) + ") at (" + ((int) v1.p[0]) + "," + ((int) v1.p[1]) + "," + ((int) v1.p[2]) + ")-(" + + ((int) v2.p[0]) + "," + ((int) v2.p[1]) + "," + ((int) v2.p[2]) + ")");
-		                            }
-
-		                            // V1
-		                            if (vinfo.texture  != 0) vboFloatBuffer.put(v1.t);
-		                            if (useVertexColor) vboFloatBuffer.put(v2.c);
-		                            if (vinfo.normal   != 0) vboFloatBuffer.put(v2.n);
-		                            if (vinfo.position != 0) vboFloatBuffer.put(v1.p);
-
-		                            if (vinfo.texture  != 0) vboFloatBuffer.put(v2.t[0]).put(v1.t[1]);
-		                            if (useVertexColor) vboFloatBuffer.put(v2.c);
-		                            if (vinfo.normal   != 0) vboFloatBuffer.put(v2.n);
-		                            if (vinfo.position != 0) vboFloatBuffer.put(v2.p[0]).put(v1.p[1]).put(v2.p[2]);
-
-		                            // V2
-		                            if (vinfo.texture  != 0) vboFloatBuffer.put(v2.t);
-		                            if (useVertexColor) vboFloatBuffer.put(v2.c);
-		                            if (vinfo.normal   != 0) vboFloatBuffer.put(v2.n);
-		                            if (vinfo.position != 0) vboFloatBuffer.put(v2.p);
-
-		                            if (vinfo.texture  != 0) vboFloatBuffer.put(v1.t[0]).put(v2.t[1]);
-		                            if (useVertexColor) vboFloatBuffer.put(v2.c);
-		                            if (vinfo.normal   != 0) vboFloatBuffer.put(v2.n);
-		                            if (vinfo.position != 0) vboFloatBuffer.put(v1.p[0]).put(v2.p[1]).put(v2.p[2]);
-		                        }
-		                        if(useVBO) {
-		                        	if (useVertexCache) {
-			                        	cachedVertexInfo = new VertexInfo(vinfo);
-				                        VertexCache.getInstance().addVertex(gl, cachedVertexInfo, numberOfVertex, bone_uploaded_matrix, numberOfWeightsForShader);
-				                        int size = vboFloatBuffer.position();
-				                        vboFloatBuffer.rewind();
-				                        cachedVertexInfo.loadVertex(gl, vboFloatBuffer, size);
-		                        	} else {
-		                        		glBindBuffer();
-			                            if (openGL1_5)
-			                                gl.glBufferData(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
-			                            else
-			                                gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
-		                        	}
-		                        }
-	                        } else {
-	                        	if (isLogDebugEnabled) {
-	                        		log.debug("Reusing cached Vertex Data");
-	                        	}
-	                        	cachedVertexInfo.bindVertex(gl);
-	                        }
-	                    	bindBuffers(useVertexColor, useTexture, false, 0);
-	                        gl.glDrawArrays(GL.GL_QUADS, 0, numberOfVertex * 2);
-	                        gl.glPopAttrib();
-	                        break;
-	                }
-                }
-
-                vertexStatistics.end();
-
-                // Don't capture the ram if the vertex list is embedded in the display list. TODO handle stall_addr == 0 better
-                // TODO may need to move inside the loop if indices are used, or find the largest index so we can calculate the size of the vertex list
-                if (State.captureGeNextFrame && !isVertexBufferEmbedded()) {
-                    log.info("Capture PRIM");
-                    CaptureManager.captureRAM(vinfo.ptr_vertex, vinfo.vertexSize * numberOfVertex);
-                    display.captureGeImage(gl);
-                }
-
-                // VADDR/IADDR are updated after vertex rendering
-                // (IADDR when indexed and VADDR when not).
-                // Some games rely on this and don't reload VADDR/IADDR between 2 PRIM calls.
-                if (vinfo.index == 0) {
-                	vinfo.ptr_vertex = vinfo.getAddress(mem, numberOfVertex);
-                } else {
-                	vinfo.ptr_index += numberOfVertex * vinfo.index;
-                }
-
-                endRendering(useVertexColor, useTexture);
-                break;
-            }
+            	executeCommandPRIM(normalArgument);
+            	break;
 
             case ALPHA: {
                 int blend_mode = GL.GL_FUNC_ADD;
@@ -2713,16 +2273,16 @@ public class VideoEngine {
                     }
 	            break;
             case FFAR:
-            	fog_far = floatArgument;
+            	fog_far = floatArgument(normalArgument);
             	break;
             case FDIST:
-            	fog_dist = floatArgument;
-            	if((fog_far != 0.0f) && (fog_dist != 0.0f))
+            	fog_dist = floatArgument(normalArgument);
+            	if ((fog_far != 0.0f) && (fog_dist != 0.0f))
             	{
             		float end = fog_far;
-            		float start = end - (1/floatArgument);
-            		gl.glFogf( GL.GL_FOG_START, start );
-            		gl.glFogf( GL.GL_FOG_END, end );
+            		float start = end - (1 / fog_dist);
+            		gl.glFogf(GL.GL_FOG_START, start);
+            		gl.glFogf(GL.GL_FOG_END, end);
             	}
             	break;
             case ABE:
@@ -3056,90 +2616,9 @@ public class VideoEngine {
             }
 
             case CLEAR:
-            	if(clearMode && (normalArgument & 1) == 0) {
-            		clearMode = false;
-            		depthFunc2D = clearModeDepthFunc;
-            		gl.glPopAttrib();
-            		// These attributes were not restored by glPopAttrib,
-            		// restore saved copy.
-                    gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, clearModeRgbScale[0]);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, clearModeTextureEnvMode[0]);
-
-                    // TODO Remove this glClear
-            		// We should not use it at all but demos won't work at all without it and our current implementation
-            		// We need to tweak the Z values written to the depth buffer, but I think this is impossible to do properly
-            		// without a fragment shader
-            		if(!useShaders) {
-            			// gl.glClear(GL.GL_DEPTH_BUFFER_BIT);
-            		} else {
-            			gl.glUniform1f(Uniforms.zPos.getId(), zpos);
-            			gl.glUniform1f(Uniforms.zScale.getId(), zscale);
-            			gl.glUniform1i(Uniforms.texEnable.getId(), tex_enable);
-            			gl.glUniform1i(Uniforms.lightingEnable.getId(), lighting ? 1 : 0);
-            		}
-            		log("clear mode end");
-            	} else if((normalArgument & 1) != 0) {
-            		clearMode = true;
-            		// Save these attributes manually, they are not saved by glPushAttrib
-                    gl.glGetTexEnvfv(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, clearModeRgbScale, 0);
-                    gl.glGetTexEnviv(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, clearModeTextureEnvMode, 0);
-                    gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, 1.0f);
-                    gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_REPLACE);
-
-                    gl.glPushAttrib(GL.GL_ENABLE_BIT | GL.GL_COLOR_BUFFER_BIT | GL.GL_STENCIL_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
-//                    gl.glPushAttrib(GL.GL_ALL_ATTRIB_BITS);
-            		gl.glDisable(GL.GL_BLEND);
-            		gl.glDisable(GL.GL_STENCIL_TEST);
-            		gl.glDisable(GL.GL_LIGHTING);
-            		gl.glDisable(GL.GL_TEXTURE_2D);
-            		gl.glDisable(GL.GL_ALPHA_TEST);
-            		gl.glDisable(GL.GL_FOG);
-            		gl.glDisable(GL.GL_DEPTH_TEST);
-            		gl.glDisable(GL.GL_LOGIC_OP);
-            		gl.glDisable(GL.GL_CULL_FACE);
-                    // TODO disable: scissor?
-
-            		if(useShaders) {
-            			gl.glUniform1f(Uniforms.zPos.getId(), 0);
-            			gl.glUniform1f(Uniforms.zScale.getId(), 0);
-            			gl.glUniform1i(Uniforms.texEnable.getId(), 0);
-            			gl.glUniform1i(Uniforms.lightingEnable.getId(), 0);
-            		}
-
-            		// TODO Add more disabling in clear mode, we also need to reflect the change to the internal GE registers
-            		boolean color = false;
-            		boolean alpha = false;
-            		if((normalArgument & 0x100) != 0) {
-            			color = true;
-            		}
-            		if((normalArgument & 0x200) != 0) {
-            			alpha = true;
-            			// TODO Stencil not perfect, pspsdk clear code is doing more things
-                		gl.glEnable(GL.GL_STENCIL_TEST);
-            			gl.glStencilFunc(GL.GL_ALWAYS, 0, 0);
-            			gl.glStencilOp(GL.GL_KEEP, GL.GL_KEEP, GL.GL_ZERO);
-            		}
-            		if ((normalArgument & 0x400) != 0) {
-	            		gl.glEnable(GL.GL_DEPTH_TEST);
-	            		gl.glDepthMask(true);
-            		} else {
-	            		gl.glDepthMask(false);
-            		}
-            		clearModeDepthFunc = depthFunc2D;
-            		depthFunc2D = GL.GL_ALWAYS;
-            		gl.glColorMask(color, color, color, alpha);
-                    if (isLogDebugEnabled) {
-                        log("clear mode : " + (normalArgument >> 8));
-                    }
-            	}
-
-            	blendChanged = true;
-        		lightingChanged = true;
-                projectionMatrixChanged = true;
-                modelMatrixChanged = true;
-                viewMatrixChanged = true;
-                textureMatrixChanged = true;
+            	executeCommandCLEAR(normalArgument);
                 break;
+
             case NOP:
                 if (isLogDebugEnabled) {
                     log(helper.getCommandString(NOP));
@@ -3169,6 +2648,7 @@ public class VideoEngine {
             	if (matrixIndex >= 8) {
             		error("Ignoring BONE matrix element: boneMatrixIndex=" + boneMatrixIndex);
             	} else {
+                	float floatArgument = floatArgument(normalArgument);
 	            	bone_uploaded_matrix[matrixIndex][elementIndex] = floatArgument;
 	            	if (useSkinningShaders) {
 	            		boneMatrixForShader[(boneMatrixIndex / 3) * 4 + (boneMatrixIndex % 3)] = floatArgument;
@@ -3202,10 +2682,14 @@ public class VideoEngine {
             case MW4:
             case MW5:
             case MW6:
-            case MW7:
-            	log("morph weight " + (command(instruction) - MW0), floatArgument);
-            	morph_weight[command(instruction) - MW0] = floatArgument;
+            case MW7: {
+            	int index = command - MW0;
+            	morph_weight[index] = floatArgument(normalArgument);
+            	if (isLogDebugEnabled) {
+            		log("morph weight " + index, morph_weight[index]);
+            	}
             	break;
+            }
 
             case TRXSBP:
             	textureTx_sourceAddress = (textureTx_sourceAddress & 0xFF000000) | normalArgument;
@@ -3249,169 +2733,7 @@ public class VideoEngine {
             	break;
 
             case TRXKICK:
-            	textureTx_pixelSize = normalArgument & 0x1;
-
-            	textureTx_sourceAddress &= Memory.addressMask;
-            	textureTx_destinationAddress &= Memory.addressMask;
-
-            	if (isLogDebugEnabled) {
-                    log(helper.getCommandString(TRXKICK) + " from 0x" + Integer.toHexString(textureTx_sourceAddress) + "(" + textureTx_sx + "," + textureTx_sy + ") to 0x" + Integer.toHexString(textureTx_destinationAddress) + "(" + textureTx_dx + "," + textureTx_dy + "), width=" + textureTx_width + ", height=" + textureTx_height + ", pixelSize=" + textureTx_pixelSize);
-                }
-
-                usingTRXKICK = true;
-                updateGeBuf();
-
-                int pixelFormatGe = psm;
-            	int bpp = ( textureTx_pixelSize == TRXKICK_16BIT_TEXEL_SIZE ) ? 2 : 4;
-            	int bppGe = pspdisplay.getPixelFormatBytes(pixelFormatGe);
-
-            	memoryForGEUpdated();
-
-            	if (!display.isGeAddress(textureTx_destinationAddress) || bpp != bppGe) {
-            		if (isLogDebugEnabled) {
-            			if (bpp != bppGe) {
-            				log(helper.getCommandString(TRXKICK) + " BPP not compatible with GE");
-            			} else {
-            				log(helper.getCommandString(TRXKICK) + " not in Ge Address space");
-            			}
-            		}
-                	int width = textureTx_width;
-                	int height = textureTx_height;
-
-                	int srcAddress = textureTx_sourceAddress      + (textureTx_sy * textureTx_sourceLineWidth      + textureTx_sx) * bpp;
-            		int dstAddress = textureTx_destinationAddress + (textureTx_dy * textureTx_destinationLineWidth + textureTx_dx) * bpp;
-            		Memory memory = Memory.getInstance();
-            		if (textureTx_sourceLineWidth == width && textureTx_destinationLineWidth == width) {
-            			// All the lines are adjacent in memory,
-            			// copy them all in a single memcpy operation.
-        				int copyLength = height * width * bpp;
-            			if (isLogDebugEnabled) {
-            				log(String.format("%s memcpy(0x%08X-0x%08X, 0x%08X, 0x%X)", helper.getCommandString(TRXKICK), dstAddress, dstAddress + copyLength, srcAddress, copyLength));
-            			}
-            			memory.memcpy(dstAddress, srcAddress, copyLength);
-            		} else {
-            			// The lines are not adjacent in memory: copy line by line.
-        				int copyLength = width * bpp;
-        				int srcLineLength = textureTx_sourceLineWidth * bpp;
-        				int dstLineLength = textureTx_destinationLineWidth * bpp;
-	            		for (int y = 0; y < height; y++) {
-	            			if (isLogDebugEnabled) {
-	            				log(String.format("%s memcpy(0x%08X-0x%08X, 0x%08X, 0x%X)", helper.getCommandString(TRXKICK), dstAddress, dstAddress + copyLength, srcAddress, copyLength));
-	            			}
-	            			memory.memcpy(dstAddress, srcAddress, copyLength);
-	            			srcAddress += srcLineLength;
-	            			dstAddress += dstLineLength;
-	            		}
-            		}
-
-                    if (State.captureGeNextFrame) {
-                        log.warn("TRXKICK outside of Ge Address space not supported in capture yet");
-                    }
-            	} else {
-	            	int width = textureTx_width;
-	            	int height = textureTx_height;
-	            	int dx = textureTx_dx;
-	            	int dy = textureTx_dy;
-	            	int lineWidth = textureTx_sourceLineWidth;
-
-	            	int geAddr = display.getTopAddrGe();
-	            	dy +=  (textureTx_destinationAddress - geAddr) / (display.getBufferWidthGe() * bpp);
-	            	dx += ((textureTx_destinationAddress - geAddr) % (display.getBufferWidthGe() * bpp)) / bpp;
-
-            		if (isLogDebugEnabled) {
-            			log(helper.getCommandString(TRXKICK) + " in Ge Address space: dx=" + dx + ", dy=" + dy + ", width=" + width + ", height=" + height  + ", lineWidth=" + lineWidth + ", bpp=" + bpp);
-            		}
-
-	            	int[] textures = new int[1];
-                	gl.glGenTextures(1, textures, 0);
-                	int texture = textures[0];
-	            	gl.glBindTexture(GL.GL_TEXTURE_2D, texture);
-
-                    gl.glPushAttrib(GL.GL_ENABLE_BIT);
-	            	gl.glDisable(GL.GL_DEPTH_TEST);
-	            	gl.glDisable(GL.GL_BLEND);
-                    gl.glDisable(GL.GL_ALPHA_TEST);
-                    gl.glDisable(GL.GL_FOG);
-                    gl.glDisable(GL.GL_LIGHTING);
-                    gl.glDisable(GL.GL_LOGIC_OP);
-                    gl.glDisable(GL.GL_STENCIL_TEST);
-                    gl.glDisable(GL.GL_SCISSOR_TEST);
-
-	            	gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, bpp);
-	            	gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, lineWidth);
-
-	            	gl.glMatrixMode(GL.GL_PROJECTION);
-	            	gl.glPushMatrix();
-	            	gl.glLoadIdentity();
-	            	gl.glOrtho(0, 480, 272, 0, -1, 1);
-	                gl.glMatrixMode(GL.GL_MODELVIEW);
-	                gl.glPushMatrix ();
-	                gl.glLoadIdentity();
-
-                	Buffer buffer = Memory.getInstance().getBuffer(textureTx_sourceAddress, lineWidth * height * bpp);
-
-                    if (State.captureGeNextFrame) {
-                        log.info("Capture TRXKICK");
-                        CaptureManager.captureRAM(textureTx_sourceAddress, lineWidth * height * bpp);
-                    }
-
-	        		//
-	        		// glTexImage2D only supports
-	        		//		width = (1 << n)	for some integer n
-	        		//		height = (1 << m)	for some integer m
-	            	//
-	        		// This the reason why we are also using glTexSubImage2D.
-	            	//
-                	int bufferHeight = Utilities.makePow2(height);
-                	int pixelFormatGL = pspdisplay.getPixelFormatGL(pixelFormatGe);
-                	int formatGL = pspdisplay.getFormatGL(pixelFormatGe);
-                    gl.glTexImage2D(
-                            GL.GL_TEXTURE_2D, 0,
-                            GL.GL_RGBA,
-                            lineWidth, bufferHeight, 0,
-                            formatGL, pixelFormatGL, null);
-
-                	gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
-                	gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
-                    gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP);
-                    gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP);
-
-    	            gl.glTexSubImage2D(
-    		                GL.GL_TEXTURE_2D, 0,
-    		                textureTx_sx, textureTx_sy, width, height,
-    		                formatGL, pixelFormatGL, buffer);
-
-    	            gl.glEnable(GL.GL_TEXTURE_2D);
-
-                    gl.glBegin(GL.GL_QUADS);
-    	            gl.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-
-    	            float texCoordX = width / (float) lineWidth;
-    	            float texCoordY = height / (float) bufferHeight;
-
-    	            gl.glTexCoord2f(0.0f, 0.0f);
-    	            gl.glVertex2i(dx, dy);
-
-    	            gl.glTexCoord2f(texCoordX, 0.0f);
-    	            gl.glVertex2i(dx + width, dy);
-
-    	            gl.glTexCoord2f(texCoordX, texCoordY);
-    	            gl.glVertex2i(dx + width, dy + height);
-
-    	            gl.glTexCoord2f(0.0f, texCoordY);
-    	            gl.glVertex2i(dx, dy + height);
-
-    	            gl.glEnd();
-
-    	            gl.glMatrixMode(GL.GL_MODELVIEW);
-	                gl.glPopMatrix();
-	                gl.glMatrixMode(GL.GL_PROJECTION);
-	                gl.glPopMatrix();
-
-	                gl.glPopAttrib();
-
-	                gl.glDeleteTextures(1, textures, 0);
-            	}
+            	executeCommandTRXKICK(normalArgument);
             	break;
 
             case TWRAP:
@@ -3468,14 +2790,16 @@ public class VideoEngine {
                 break;
             case CPE: //Clip Plane Enable
                 //uggly trying ... don't break any demo (that I've tested)
-                if(normalArgument != 0) {
+                if (normalArgument != 0) {
                     gl.glEnable(GL.GL_CLIP_PLANE0);
                     gl.glEnable(GL.GL_CLIP_PLANE1);
                     gl.glEnable(GL.GL_CLIP_PLANE2);
                     gl.glEnable(GL.GL_CLIP_PLANE3);
                     gl.glEnable(GL.GL_CLIP_PLANE4);
                     gl.glEnable(GL.GL_CLIP_PLANE5);
-                    log("Clip Plane Enable (int="+normalArgument+",float="+floatArgument+")");
+                    if (isLogDebugEnabled) {
+                    	log("Clip Plane Enable " + getArgumentLog(normalArgument));
+                    }
                 }
                 else {
                     gl.glDisable(GL.GL_CLIP_PLANE0);
@@ -3484,7 +2808,9 @@ public class VideoEngine {
                     gl.glDisable(GL.GL_CLIP_PLANE3);
                     gl.glDisable(GL.GL_CLIP_PLANE4);
                     gl.glDisable(GL.GL_CLIP_PLANE5);
-                    log("Clip Plane Disable (int="+normalArgument+",float="+floatArgument+")");
+                    if (isLogDebugEnabled) {
+                    	log("Clip Plane Disable " + getArgumentLog(normalArgument));
+                    }
                 }
                 break;
 
@@ -3689,13 +3015,13 @@ public class VideoEngine {
 	            		// normalArgument != 0 means that we are executing some random
 	            		// command list. Display this as an error, which will abort
 	            		// the list processing when too many errors are displayed.
-	                    error("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "](int="+normalArgument+",float="+floatArgument+")");
+	                    error("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "]" + getArgumentLog(normalArgument));
 	            	} else if (nextCommand != BOFS && previousCommand != PRIM && previousCommand != UNKNOWNCOMMAND_0xFF) {
 	            		if (isLogWarnEnabled) {
-	            			log.warn("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "](int="+normalArgument+",float="+floatArgument+")");
+	            			log.warn("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "]" + getArgumentLog(normalArgument));
 	            		}
 	            	} else if (isLogDebugEnabled) {
-	                    log.debug("Ignored video command [" + helper.getCommandString(command(instruction)) + "](int="+normalArgument+")");
+	                    log.debug("Ignored video command [" + helper.getCommandString(command(instruction)) + "]" + getArgumentLog(normalArgument));
 	            	}
             	}
                 break;
@@ -3703,10 +3029,723 @@ public class VideoEngine {
 
             default:
             	if (isLogWarnEnabled) {
-            		log.warn("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "](int="+normalArgument+",float="+floatArgument+")");
+            		log.warn("Unknown/unimplemented video command [" + helper.getCommandString(command(instruction)) + "]" + getArgumentLog(normalArgument));
             	}
         }
         commandStatistics[command].end();
+    }
+
+    private void executeCommandCLEAR(int normalArgument) {
+    	if(clearMode && (normalArgument & 1) == 0) {
+    		clearMode = false;
+    		depthFunc2D = clearModeDepthFunc;
+    		gl.glPopAttrib();
+    		// These attributes were not restored by glPopAttrib,
+    		// restore saved copy.
+            gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, clearModeRgbScale[0]);
+            gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, clearModeTextureEnvMode[0]);
+
+            // TODO Remove this glClear
+    		// We should not use it at all but demos won't work at all without it and our current implementation
+    		// We need to tweak the Z values written to the depth buffer, but I think this is impossible to do properly
+    		// without a fragment shader
+    		if(!useShaders) {
+    			// gl.glClear(GL.GL_DEPTH_BUFFER_BIT);
+    		} else {
+    			gl.glUniform1f(Uniforms.zPos.getId(), zpos);
+    			gl.glUniform1f(Uniforms.zScale.getId(), zscale);
+    			gl.glUniform1i(Uniforms.texEnable.getId(), tex_enable);
+    			gl.glUniform1i(Uniforms.lightingEnable.getId(), lighting ? 1 : 0);
+    		}
+    		log("clear mode end");
+    	} else if((normalArgument & 1) != 0) {
+    		clearMode = true;
+    		// Save these attributes manually, they are not saved by glPushAttrib
+            gl.glGetTexEnvfv(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, clearModeRgbScale, 0);
+            gl.glGetTexEnviv(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, clearModeTextureEnvMode, 0);
+            gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, 1.0f);
+            gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_REPLACE);
+
+            gl.glPushAttrib(GL.GL_ENABLE_BIT | GL.GL_COLOR_BUFFER_BIT | GL.GL_STENCIL_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
+//            gl.glPushAttrib(GL.GL_ALL_ATTRIB_BITS);
+    		gl.glDisable(GL.GL_BLEND);
+    		gl.glDisable(GL.GL_STENCIL_TEST);
+    		gl.glDisable(GL.GL_LIGHTING);
+    		gl.glDisable(GL.GL_TEXTURE_2D);
+    		gl.glDisable(GL.GL_ALPHA_TEST);
+    		gl.glDisable(GL.GL_FOG);
+    		gl.glDisable(GL.GL_DEPTH_TEST);
+    		gl.glDisable(GL.GL_LOGIC_OP);
+    		gl.glDisable(GL.GL_CULL_FACE);
+            // TODO disable: scissor?
+
+    		if(useShaders) {
+    			gl.glUniform1f(Uniforms.zPos.getId(), 0);
+    			gl.glUniform1f(Uniforms.zScale.getId(), 0);
+    			gl.glUniform1i(Uniforms.texEnable.getId(), 0);
+    			gl.glUniform1i(Uniforms.lightingEnable.getId(), 0);
+    		}
+
+    		// TODO Add more disabling in clear mode, we also need to reflect the change to the internal GE registers
+    		boolean color = false;
+    		boolean alpha = false;
+    		if((normalArgument & 0x100) != 0) {
+    			color = true;
+    		}
+    		if((normalArgument & 0x200) != 0) {
+    			alpha = true;
+    			// TODO Stencil not perfect, pspsdk clear code is doing more things
+        		gl.glEnable(GL.GL_STENCIL_TEST);
+    			gl.glStencilFunc(GL.GL_ALWAYS, 0, 0);
+    			gl.glStencilOp(GL.GL_KEEP, GL.GL_KEEP, GL.GL_ZERO);
+    		}
+    		if ((normalArgument & 0x400) != 0) {
+        		gl.glEnable(GL.GL_DEPTH_TEST);
+        		gl.glDepthMask(true);
+    		} else {
+        		gl.glDepthMask(false);
+    		}
+    		clearModeDepthFunc = depthFunc2D;
+    		depthFunc2D = GL.GL_ALWAYS;
+    		gl.glColorMask(color, color, color, alpha);
+            if (isLogDebugEnabled) {
+                log("clear mode : " + (normalArgument >> 8));
+            }
+    	}
+
+    	blendChanged = true;
+		lightingChanged = true;
+        projectionMatrixChanged = true;
+        modelMatrixChanged = true;
+        viewMatrixChanged = true;
+        textureMatrixChanged = true;
+    }
+
+    private void executeCommandTFUNC(int normalArgument) {
+   		int env_mode = GL.GL_MODULATE;
+   		switch(normalArgument & 7) {
+       		case 0: env_mode = GL.GL_MODULATE; break;
+       		case 1: env_mode = GL.GL_DECAL; break;
+       		case 2: env_mode = GL.GL_BLEND; break;
+       		case 3: env_mode = GL.GL_REPLACE; break;
+       		case 4: env_mode = GL.GL_ADD; break;
+   			default: VideoEngine.log.warn("Unimplemented tfunc mode " + (normalArgument & 7));
+   		}
+   		if(useShaders) gl.glUniform1i(Uniforms.texEnvMode.getId(), normalArgument & 7);
+
+   		int rgbScaleParam = (normalArgument >> 16) & 0xFF;
+   		float rgbScale = 1;
+   		if (rgbScaleParam == TFUNC_FRAGMENT_DOUBLE_ENABLE_COLOR_DOUBLED) {
+   			rgbScale = 2;
+   		} else if (rgbScaleParam != TFUNC_FRAGMENT_DOUBLE_ENABLE_COLOR_UNTOUCHED) {
+   			log.warn(String.format("sceGuTexFunc unknown RGB scale parameter %06X", normalArgument));
+   		}
+
+   		int alphaParam = (normalArgument >> 8) & 0xFF;
+   		boolean alphaIsOne = false;
+   		if (alphaParam == TFUNC_FRAGMENT_DOUBLE_TEXTURE_COLOR_ALPHA_IS_IGNORED) {
+				// DECAL mode with ignored Alpha is always using
+				// the equivalent of Alpha = 1.0 on PSP.
+   			alphaIsOne = true;
+   		} else if (alphaParam != TFUNC_FRAGMENT_DOUBLE_TEXTURE_COLOR_ALPHA_IS_READ) {
+   			log.warn(String.format("sceGuTexFunc unknown alpha parameter %06X", normalArgument));
+   		}
+
+   		if (rgbScale != 1 || alphaIsOne) {
+       		// GL_RGB_SCALE is only used in OpenGL when GL_TEXTURE_ENV_MODE is GL_COMBINE
+   			// See http://www.opengl.org/sdk/docs/man/xhtml/glTexEnv.xml
+   			switch (env_mode) {
+   				case GL.GL_MODULATE:
+   					// Cv = Cp * Cs
+   					// Av = Ap * As
+   					env_mode = GL.GL_COMBINE;
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_RGB, GL.GL_MODULATE);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_RGB, GL.GL_TEXTURE);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_RGB, GL.GL_SRC_COLOR);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_RGB, GL.GL_PREVIOUS);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_RGB, GL.GL_SRC_COLOR);
+
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_ALPHA, GL.GL_MODULATE);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, GL.GL_TEXTURE);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_ALPHA, GL.GL_SRC_ALPHA);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_ALPHA, GL.GL_PREVIOUS);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_ALPHA, GL.GL_SRC_ALPHA);
+   					break;
+   				case GL.GL_DECAL:
+   					env_mode = GL.GL_COMBINE;
+   					// Cv = Cs * As + Cp * (1 - As)
+   					// Av = Ap
+   					if (alphaIsOne) {
+   						// Simplified version when As == 1:
+   						// Cv = Cs
+		           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_RGB, GL.GL_REPLACE);
+		           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_RGB, GL.GL_TEXTURE);
+		           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_RGB, GL.GL_SRC_COLOR);
+   					} else {
+		           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_RGB, GL.GL_INTERPOLATE);
+		           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_RGB, GL.GL_TEXTURE);
+		           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_RGB, GL.GL_SRC_COLOR);
+		           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_RGB, GL.GL_PREVIOUS);
+		           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_RGB, GL.GL_SRC_COLOR);
+		           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC2_RGB, GL.GL_TEXTURE);
+		           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND2_RGB, GL.GL_SRC_ALPHA);
+   					}
+
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_ALPHA, GL.GL_REPLACE);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, GL.GL_PREVIOUS);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_ALPHA, GL.GL_SRC_ALPHA);
+   					break;
+   				case GL.GL_BLEND:
+   					// Cv = Cc * Cs + Cp * (1 - Cs)
+   					// Av = As * Ap
+   					env_mode = GL.GL_COMBINE;
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_RGB, GL.GL_INTERPOLATE);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_RGB, GL.GL_CONSTANT);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_RGB, GL.GL_SRC_COLOR);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_RGB, GL.GL_PREVIOUS);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_RGB, GL.GL_SRC_COLOR);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC2_RGB, GL.GL_TEXTURE);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND2_RGB, GL.GL_SRC_COLOR);
+
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_ALPHA, GL.GL_MODULATE);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, GL.GL_TEXTURE);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_ALPHA, GL.GL_SRC_ALPHA);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_ALPHA, GL.GL_PREVIOUS);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_ALPHA, GL.GL_SRC_ALPHA);
+   					break;
+   				case GL.GL_REPLACE:
+   					// Cv = Cs
+   					// Av = As
+       				env_mode = GL.GL_COMBINE;
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_RGB, GL.GL_REPLACE);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_RGB, GL.GL_TEXTURE);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_RGB, GL.GL_SRC_COLOR);
+
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_ALPHA, GL.GL_REPLACE);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, GL.GL_TEXTURE);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_ALPHA, GL.GL_SRC_ALPHA);
+	           		break;
+   				case GL.GL_ADD:
+   					// Cv = Cp + Cs
+   					// Av = Ap * As
+   					env_mode = GL.GL_COMBINE;
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_RGB, GL.GL_ADD);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_RGB, GL.GL_TEXTURE);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_RGB, GL.GL_SRC_COLOR);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_RGB, GL.GL_PREVIOUS);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_RGB, GL.GL_SRC_COLOR);
+
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_COMBINE_ALPHA, GL.GL_MODULATE);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC0_ALPHA, GL.GL_TEXTURE);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND0_ALPHA, GL.GL_SRC_ALPHA);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_SRC1_ALPHA, GL.GL_PREVIOUS);
+	           		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_OPERAND1_ALPHA, GL.GL_SRC_ALPHA);
+   					break;
+					default:
+	           			log.warn(String.format("Unimplemented sceGuTexFunc RGB doubled for env_mode=" + env_mode));
+						break;
+   			}
+   		}
+   		gl.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_RGB_SCALE, rgbScale);
+   		gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, env_mode);
+
+   		if (isLogDebugEnabled) {
+   		    log(String.format("sceGuTexFunc mode %06X", normalArgument)
+   		            + (((normalArgument & 0x10000) != 0) ? " SCALE" : "")
+   		            + (((normalArgument & 0x100) != 0) ? " ALPHA" : ""));
+   		}
+    }
+
+    private void executeCommandPRIM(int normalArgument) {
+        int numberOfVertex = normalArgument & 0xFFFF;
+        int type = ((normalArgument >> 16) & 0x7);
+
+        Memory mem = Memory.getInstance();
+        if (!mem.isAddressGood(vinfo.ptr_vertex)) {
+        	// Abort here to avoid a lot of useless memory read errors...
+        	error(helper.getCommandString(PRIM) + " Invalid vertex address 0x" + Integer.toHexString(vinfo.ptr_vertex));
+        	return;
+        }
+
+        if (type >= prim_mapping.length) {
+            error(helper.getCommandString(PRIM) + " Type unhandled " + type);
+            return;
+        }
+
+        updateGeBuf();
+    	somethingDisplayed = true;
+
+        loadTexture();
+
+        // Logging
+        if (isLogDebugEnabled) {
+            switch (type) {
+                case PRIM_POINT:
+                    log("prim point " + numberOfVertex + "x");
+                    break;
+                case PRIM_LINE:
+                    log("prim line " + (numberOfVertex / 2) + "x");
+                    break;
+                case PRIM_LINES_STRIPS:
+                    log("prim lines_strips " + (numberOfVertex - 1) + "x");
+                    break;
+                case PRIM_TRIANGLE:
+                    log("prim triangle " + (numberOfVertex / 3) + "x");
+                    break;
+                case PRIM_TRIANGLE_STRIPS:
+                    log("prim triangle_strips " + (numberOfVertex - 2) + "x");
+                    break;
+                case PRIM_TRIANGLE_FANS:
+                    log("prim triangle_fans " + (numberOfVertex - 2) + "x");
+                    break;
+                case PRIM_SPRITES:
+                    log("prim sprites " + (numberOfVertex / 2) + "x");
+                    break;
+                default:
+                    VideoEngine.log.warn("prim unhandled " + type);
+                    break;
+            }
+        }
+
+        boolean useVertexColor = initRendering();
+
+        boolean useTexture = false;
+        boolean useTextureFromNormal = false;
+        boolean useTextureFromPosition = false;
+        if (vinfo.texture != 0) {
+        	useTexture = true;
+        } else if (tex_enable == 1 && transform_mode == VTYPE_TRANSFORM_PIPELINE_TRANS_COORD) {
+        	switch (tex_proj_map_mode) {
+        		// What is the difference between MODE_NORMAL and MODE_NORMALIZED_NORMAL?
+        		case TMAP_TEXTURE_PROJECTION_MODE_NORMAL:
+        		case TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL:
+        			if (tex_proj_map_mode == TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL) {
+        				log.warn("Texture mode TMAP_TEXTURE_PROJECTION_MODE_NORMALIZED_NORMAL not tested");
+        			}
+        			if (vinfo.normal != 0) {
+        				useTexture = true;
+        				useTextureFromNormal = true;
+        			}
+        			break;
+        		case TMAP_TEXTURE_PROJECTION_MODE_POSITION:
+        			if (vinfo.position != 0) {
+        				useTexture = true;
+        				useTextureFromPosition = true;
+        			}
+        			break;
+        	}
+        }
+
+        vertexStatistics.start();
+
+        vinfo.setMorphWeights(morph_weight);
+        vinfo.setDirty();
+
+        int numberOfWeightsForShader = 0;
+        if (useSkinningShaders) {
+    		if (vinfo.weight != 0) {
+    			gl.glUniform1i(Uniforms.numberBones.getId(), vinfo.skinningWeightCount);
+    			if (boneMatrixForShaderUpdatedMatrix > 0) {
+    				gl.glUniformMatrix4fv(Uniforms.boneMatrix.getId(), boneMatrixForShaderUpdatedMatrix, false, boneMatrixForShader, 0);
+    			}
+    			numberOfWeightsForShader = (vinfo.skinningWeightCount <= 4 ? 4 : 8);
+    		} else {
+    			gl.glUniform1i(Uniforms.numberBones.getId(), 0);
+    		}
+    	}
+
+        // Do not use optimized VertexInfo reading when tracing is enabled,
+        // it doesn't produce any trace information
+        if (!useVertexCache && vinfo.index == 0 && type != PRIM_SPRITES && mem.isAddressGood(vinfo.ptr_vertex) && !isLogTraceEnabled) {
+        	// Optimized VertexInfo reading:
+        	// - do not copy the info already available in the OpenGL format
+        	//   (native format), load it into nativeBuffer (a direct buffer
+        	//   is required by OpenGL).
+        	// - try to keep the info in "int" format when possible, convert
+        	//   to "float" only when necessary
+        	// The best case is no reading and no conversion at all when all the
+        	// vertex info are available in a format usable by OpenGL.
+        	//
+        	// The optimized reading cannot currently handle
+        	// indexed vertex info (vinfo.index != 0) and PRIM_SPRITES.
+        	//
+            Buffer buffer = vertexInfoReader.read(vinfo, vinfo.ptr_vertex, numberOfVertex);
+
+            enableClientState(useVertexColor, useTexture, numberOfWeightsForShader);
+
+            int stride = vertexInfoReader.getStride();
+			glBindBuffer();
+			if (buffer != null) {
+				if (useVBO) {
+                    if (openGL1_5) {
+                    	gl.glBufferData(GL.GL_ARRAY_BUFFER, stride * numberOfVertex, buffer, GL.GL_STREAM_DRAW);
+                    } else {
+                    	gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, stride * numberOfVertex, buffer, GL.GL_STREAM_DRAW);
+                    }
+				} else {
+					vboBuffer.clear();
+					Utilities.putBuffer(vboBuffer, buffer, ByteOrder.nativeOrder());
+				}
+            }
+
+        	if (vertexInfoReader.hasNative()) {
+        		// Copy the VertexInfo from Memory to the nativeBuffer
+        		// (a direct buffer is required by glXXXPointer())
+        		nativeBuffer.clear();
+            	Buffer memBuffer = mem.getBuffer(vinfo.ptr_vertex, vinfo.vertexSize * numberOfVertex);
+            	Utilities.putBuffer(nativeBuffer, memBuffer, ByteOrder.LITTLE_ENDIAN);
+        	}
+
+        	if (vinfo.texture != 0 || useTexture) {
+        		boolean textureNative;
+        		int textureOffset;
+        		int textureType;
+        		if (useTextureFromNormal) {
+        			textureNative = vertexInfoReader.isNormalNative();
+        			textureOffset = vertexInfoReader.getNormalOffset();
+        			textureType = vertexInfoReader.getNormalType();
+        		} else if (useTextureFromPosition) {
+        			textureNative = vertexInfoReader.isPositionNative();
+        			textureOffset = vertexInfoReader.getPositionOffset();
+        			textureType = vertexInfoReader.getPositionType();
+        		} else {
+        			textureNative = vertexInfoReader.isTextureNative();
+            		textureOffset = vertexInfoReader.getTextureOffset();
+            		textureType = vertexInfoReader.getTextureType();
+        		}
+        		glTexCoordPointer(useTexture, textureType, stride, textureOffset, textureNative, false, true);
+            }
+
+        	glColorPointer(useVertexColor, vertexInfoReader.getColorType(), stride, vertexInfoReader.getColorOffset(), vertexInfoReader.isColorNative(), false, true);
+        	glNormalPointer(vertexInfoReader.getNormalType(), stride, vertexInfoReader.getNormalOffset(), vertexInfoReader.isNormalNative(), false, true);
+        	glVertexPointer(vertexInfoReader.getPositionType(), stride, vertexInfoReader.getPositionOffset(), vertexInfoReader.isPositionNative(), false, true);
+
+            gl.glDrawArrays(prim_mapping[type], 0, numberOfVertex);
+
+        } else {
+        	// Non-optimized VertexInfo reading
+
+        	VertexInfo cachedVertexInfo = null;
+        	if (useVertexCache) {
+        		cachedVertexInfo = VertexCache.getInstance().getVertex(vinfo, numberOfVertex, bone_uploaded_matrix, numberOfWeightsForShader);
+        	}
+        	vboFloatBuffer.clear();
+
+            switch (type) {
+                case PRIM_POINT:
+                case PRIM_LINE:
+                case PRIM_LINES_STRIPS:
+                case PRIM_TRIANGLE:
+                case PRIM_TRIANGLE_STRIPS:
+                case PRIM_TRIANGLE_FANS:
+                	if (cachedVertexInfo == null) {
+                        for (int i = 0; i < numberOfVertex; i++) {
+                            int addr = vinfo.getAddress(mem, i);
+                        
+                            VertexState v = vinfo.readVertex(mem, addr);
+
+                            // Do skinning first as it modifies v.p and v.n
+                            if (vinfo.weight != 0 && vinfo.position != 0 && !useSkinningShaders) {
+                                doSkinning(vinfo, v);
+                            }
+
+                            if (vinfo.texture  != 0) vboFloatBuffer.put(v.t);
+                            else if (useTextureFromNormal) vboFloatBuffer.put(v.n, 0, 2);
+                            else if (useTextureFromPosition) vboFloatBuffer.put(v.p, 0, 2);
+                            if (useVertexColor) vboFloatBuffer.put(v.c);
+                            if (vinfo.normal   != 0) vboFloatBuffer.put(v.n);
+                            if (vinfo.position != 0) vboFloatBuffer.put(v.p);
+							if (numberOfWeightsForShader > 0) vboFloatBuffer.put(v.boneWeights, 0, numberOfWeightsForShader);
+
+                            if (isLogTraceEnabled) {
+                            	if (vinfo.texture != 0 && vinfo.position != 0) {
+                            		log.trace("  vertex#" + i + " (" + ((int) v.t[0]) + "," + ((int) v.t[1]) + ") at (" + ((int) v.p[0]) + "," + ((int) v.p[1]) + "," + ((int) v.p[2]) + ")");
+                            	}
+                            }
+                        }
+
+                        if (useVBO) {
+                        	if (useVertexCache) {
+	                        	cachedVertexInfo = new VertexInfo(vinfo);
+		                        VertexCache.getInstance().addVertex(gl, cachedVertexInfo, numberOfVertex, bone_uploaded_matrix, numberOfWeightsForShader);
+		                        int size = vboFloatBuffer.position();
+		                        vboFloatBuffer.rewind();
+		                        cachedVertexInfo.loadVertex(gl, vboFloatBuffer, size);
+                        	} else {
+                        		glBindBuffer();
+	                            if (openGL1_5)
+	                                gl.glBufferData(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
+	                            else
+	                                gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
+                        	}
+                        }
+                	} else {
+                    	if (isLogDebugEnabled) {
+                    		log.debug("Reusing cached Vertex Data");
+                    	}
+                		cachedVertexInfo.bindVertex(gl);
+                	}
+                	bindBuffers(useVertexColor, useTexture, false, numberOfWeightsForShader);
+                    gl.glDrawArrays(prim_mapping[type], 0, numberOfVertex);
+                    maxSpriteHeight = Integer.MAX_VALUE;
+                    break;
+
+                case PRIM_SPRITES:
+                    gl.glPushAttrib(GL.GL_ENABLE_BIT);
+                    gl.glDisable(GL.GL_CULL_FACE);
+                    if (cachedVertexInfo == null) {
+                        for (int i = 0; i < numberOfVertex; i += 2) {
+                            int addr1 = vinfo.getAddress(mem, i);
+                            int addr2 = vinfo.getAddress(mem, i + 1);
+                            VertexState v1 = vinfo.readVertex(mem, addr1);
+                            VertexState v2 = vinfo.readVertex(mem, addr2);
+
+                            v1.p[2] = v2.p[2];
+
+                            if (v2.p[1] > maxSpriteHeight) {
+                            	maxSpriteHeight = (int) v2.p[1];
+                            }
+
+                            if (isLogDebugEnabled && transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD) {
+                                log("  sprite (" + ((int) v1.t[0]) + "," + ((int) v1.t[1]) + ")-(" + ((int) v2.t[0]) + "," + ((int) v2.t[1]) + ") at (" + ((int) v1.p[0]) + "," + ((int) v1.p[1]) + "," + ((int) v1.p[2]) + ")-(" + + ((int) v2.p[0]) + "," + ((int) v2.p[1]) + "," + ((int) v2.p[2]) + ")");
+                            }
+
+                            // V1
+                            if (vinfo.texture  != 0) vboFloatBuffer.put(v1.t);
+                            if (useVertexColor) vboFloatBuffer.put(v2.c);
+                            if (vinfo.normal   != 0) vboFloatBuffer.put(v2.n);
+                            if (vinfo.position != 0) vboFloatBuffer.put(v1.p);
+
+                            if (vinfo.texture  != 0) vboFloatBuffer.put(v2.t[0]).put(v1.t[1]);
+                            if (useVertexColor) vboFloatBuffer.put(v2.c);
+                            if (vinfo.normal   != 0) vboFloatBuffer.put(v2.n);
+                            if (vinfo.position != 0) vboFloatBuffer.put(v2.p[0]).put(v1.p[1]).put(v2.p[2]);
+
+                            // V2
+                            if (vinfo.texture  != 0) vboFloatBuffer.put(v2.t);
+                            if (useVertexColor) vboFloatBuffer.put(v2.c);
+                            if (vinfo.normal   != 0) vboFloatBuffer.put(v2.n);
+                            if (vinfo.position != 0) vboFloatBuffer.put(v2.p);
+
+                            if (vinfo.texture  != 0) vboFloatBuffer.put(v1.t[0]).put(v2.t[1]);
+                            if (useVertexColor) vboFloatBuffer.put(v2.c);
+                            if (vinfo.normal   != 0) vboFloatBuffer.put(v2.n);
+                            if (vinfo.position != 0) vboFloatBuffer.put(v1.p[0]).put(v2.p[1]).put(v2.p[2]);
+                        }
+                        if(useVBO) {
+                        	if (useVertexCache) {
+	                        	cachedVertexInfo = new VertexInfo(vinfo);
+		                        VertexCache.getInstance().addVertex(gl, cachedVertexInfo, numberOfVertex, bone_uploaded_matrix, numberOfWeightsForShader);
+		                        int size = vboFloatBuffer.position();
+		                        vboFloatBuffer.rewind();
+		                        cachedVertexInfo.loadVertex(gl, vboFloatBuffer, size);
+                        	} else {
+                        		glBindBuffer();
+	                            if (openGL1_5)
+	                                gl.glBufferData(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
+	                            else
+	                                gl.glBufferDataARB(GL.GL_ARRAY_BUFFER, vboFloatBuffer.position() * BufferUtil.SIZEOF_FLOAT, vboFloatBuffer.rewind(), GL.GL_STREAM_DRAW);
+                        	}
+                        }
+                    } else {
+                    	if (isLogDebugEnabled) {
+                    		log.debug("Reusing cached Vertex Data");
+                    	}
+                    	cachedVertexInfo.bindVertex(gl);
+                    }
+                	bindBuffers(useVertexColor, useTexture, false, 0);
+                    gl.glDrawArrays(GL.GL_QUADS, 0, numberOfVertex * 2);
+                    gl.glPopAttrib();
+                    break;
+            }
+        }
+
+        vertexStatistics.end();
+
+        // Don't capture the ram if the vertex list is embedded in the display list. TODO handle stall_addr == 0 better
+        // TODO may need to move inside the loop if indices are used, or find the largest index so we can calculate the size of the vertex list
+        if (State.captureGeNextFrame && !isVertexBufferEmbedded()) {
+            log.info("Capture PRIM");
+            CaptureManager.captureRAM(vinfo.ptr_vertex, vinfo.vertexSize * numberOfVertex);
+            display.captureGeImage(gl);
+        }
+
+        // VADDR/IADDR are updated after vertex rendering
+        // (IADDR when indexed and VADDR when not).
+        // Some games rely on this and don't reload VADDR/IADDR between 2 PRIM calls.
+        if (vinfo.index == 0) {
+        	vinfo.ptr_vertex = vinfo.getAddress(mem, numberOfVertex);
+        } else {
+        	vinfo.ptr_index += numberOfVertex * vinfo.index;
+        }
+
+        endRendering(useVertexColor, useTexture);
+    }
+
+    private void executeCommandTRXKICK(int normalArgument) {
+    	textureTx_pixelSize = normalArgument & 0x1;
+
+    	textureTx_sourceAddress &= Memory.addressMask;
+    	textureTx_destinationAddress &= Memory.addressMask;
+
+    	if (isLogDebugEnabled) {
+            log(helper.getCommandString(TRXKICK) + " from 0x" + Integer.toHexString(textureTx_sourceAddress) + "(" + textureTx_sx + "," + textureTx_sy + ") to 0x" + Integer.toHexString(textureTx_destinationAddress) + "(" + textureTx_dx + "," + textureTx_dy + "), width=" + textureTx_width + ", height=" + textureTx_height + ", pixelSize=" + textureTx_pixelSize);
+        }
+
+        usingTRXKICK = true;
+        updateGeBuf();
+
+        int pixelFormatGe = psm;
+    	int bpp = ( textureTx_pixelSize == TRXKICK_16BIT_TEXEL_SIZE ) ? 2 : 4;
+    	int bppGe = pspdisplay.getPixelFormatBytes(pixelFormatGe);
+
+    	memoryForGEUpdated();
+
+    	if (!display.isGeAddress(textureTx_destinationAddress) || bpp != bppGe) {
+    		if (isLogDebugEnabled) {
+    			if (bpp != bppGe) {
+    				log(helper.getCommandString(TRXKICK) + " BPP not compatible with GE");
+    			} else {
+    				log(helper.getCommandString(TRXKICK) + " not in Ge Address space");
+    			}
+    		}
+        	int width = textureTx_width;
+        	int height = textureTx_height;
+
+        	int srcAddress = textureTx_sourceAddress      + (textureTx_sy * textureTx_sourceLineWidth      + textureTx_sx) * bpp;
+    		int dstAddress = textureTx_destinationAddress + (textureTx_dy * textureTx_destinationLineWidth + textureTx_dx) * bpp;
+    		Memory memory = Memory.getInstance();
+    		if (textureTx_sourceLineWidth == width && textureTx_destinationLineWidth == width) {
+    			// All the lines are adjacent in memory,
+    			// copy them all in a single memcpy operation.
+				int copyLength = height * width * bpp;
+    			if (isLogDebugEnabled) {
+    				log(String.format("%s memcpy(0x%08X-0x%08X, 0x%08X, 0x%X)", helper.getCommandString(TRXKICK), dstAddress, dstAddress + copyLength, srcAddress, copyLength));
+    			}
+    			memory.memcpy(dstAddress, srcAddress, copyLength);
+    		} else {
+    			// The lines are not adjacent in memory: copy line by line.
+				int copyLength = width * bpp;
+				int srcLineLength = textureTx_sourceLineWidth * bpp;
+				int dstLineLength = textureTx_destinationLineWidth * bpp;
+        		for (int y = 0; y < height; y++) {
+        			if (isLogDebugEnabled) {
+        				log(String.format("%s memcpy(0x%08X-0x%08X, 0x%08X, 0x%X)", helper.getCommandString(TRXKICK), dstAddress, dstAddress + copyLength, srcAddress, copyLength));
+        			}
+        			memory.memcpy(dstAddress, srcAddress, copyLength);
+        			srcAddress += srcLineLength;
+        			dstAddress += dstLineLength;
+        		}
+    		}
+
+            if (State.captureGeNextFrame) {
+                log.warn("TRXKICK outside of Ge Address space not supported in capture yet");
+            }
+    	} else {
+        	int width = textureTx_width;
+        	int height = textureTx_height;
+        	int dx = textureTx_dx;
+        	int dy = textureTx_dy;
+        	int lineWidth = textureTx_sourceLineWidth;
+
+        	int geAddr = display.getTopAddrGe();
+        	dy +=  (textureTx_destinationAddress - geAddr) / (display.getBufferWidthGe() * bpp);
+        	dx += ((textureTx_destinationAddress - geAddr) % (display.getBufferWidthGe() * bpp)) / bpp;
+
+    		if (isLogDebugEnabled) {
+    			log(helper.getCommandString(TRXKICK) + " in Ge Address space: dx=" + dx + ", dy=" + dy + ", width=" + width + ", height=" + height  + ", lineWidth=" + lineWidth + ", bpp=" + bpp);
+    		}
+
+        	int[] textures = new int[1];
+        	gl.glGenTextures(1, textures, 0);
+        	int texture = textures[0];
+        	gl.glBindTexture(GL.GL_TEXTURE_2D, texture);
+
+            gl.glPushAttrib(GL.GL_ENABLE_BIT);
+        	gl.glDisable(GL.GL_DEPTH_TEST);
+        	gl.glDisable(GL.GL_BLEND);
+            gl.glDisable(GL.GL_ALPHA_TEST);
+            gl.glDisable(GL.GL_FOG);
+            gl.glDisable(GL.GL_LIGHTING);
+            gl.glDisable(GL.GL_LOGIC_OP);
+            gl.glDisable(GL.GL_STENCIL_TEST);
+            gl.glDisable(GL.GL_SCISSOR_TEST);
+
+        	gl.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, bpp);
+        	gl.glPixelStorei(GL.GL_UNPACK_ROW_LENGTH, lineWidth);
+
+        	gl.glMatrixMode(GL.GL_PROJECTION);
+        	gl.glPushMatrix();
+        	gl.glLoadIdentity();
+        	gl.glOrtho(0, 480, 272, 0, -1, 1);
+            gl.glMatrixMode(GL.GL_MODELVIEW);
+            gl.glPushMatrix ();
+            gl.glLoadIdentity();
+
+        	Buffer buffer = Memory.getInstance().getBuffer(textureTx_sourceAddress, lineWidth * height * bpp);
+
+            if (State.captureGeNextFrame) {
+                log.info("Capture TRXKICK");
+                CaptureManager.captureRAM(textureTx_sourceAddress, lineWidth * height * bpp);
+            }
+
+    		//
+    		// glTexImage2D only supports
+    		//		width = (1 << n)	for some integer n
+    		//		height = (1 << m)	for some integer m
+        	//
+    		// This the reason why we are also using glTexSubImage2D.
+        	//
+        	int bufferHeight = Utilities.makePow2(height);
+        	int pixelFormatGL = pspdisplay.getPixelFormatGL(pixelFormatGe);
+        	int formatGL = pspdisplay.getFormatGL(pixelFormatGe);
+            gl.glTexImage2D(
+                    GL.GL_TEXTURE_2D, 0,
+                    GL.GL_RGBA,
+                    lineWidth, bufferHeight, 0,
+                    formatGL, pixelFormatGL, null);
+
+        	gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
+        	gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
+            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP);
+            gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP);
+
+            gl.glTexSubImage2D(
+	                GL.GL_TEXTURE_2D, 0,
+	                textureTx_sx, textureTx_sy, width, height,
+	                formatGL, pixelFormatGL, buffer);
+
+            gl.glEnable(GL.GL_TEXTURE_2D);
+
+            gl.glBegin(GL.GL_QUADS);
+            gl.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+            float texCoordX = width / (float) lineWidth;
+            float texCoordY = height / (float) bufferHeight;
+
+            gl.glTexCoord2f(0.0f, 0.0f);
+            gl.glVertex2i(dx, dy);
+
+            gl.glTexCoord2f(texCoordX, 0.0f);
+            gl.glVertex2i(dx + width, dy);
+
+            gl.glTexCoord2f(texCoordX, texCoordY);
+            gl.glVertex2i(dx + width, dy + height);
+
+            gl.glTexCoord2f(0.0f, texCoordY);
+            gl.glVertex2i(dx, dy + height);
+
+            gl.glEnd();
+
+            gl.glMatrixMode(GL.GL_MODELVIEW);
+            gl.glPopMatrix();
+            gl.glMatrixMode(GL.GL_PROJECTION);
+            gl.glPopMatrix();
+
+            gl.glPopAttrib();
+
+            gl.glDeleteTextures(1, textures, 0);
+    	}
     }
 
     private void enableClientState(boolean useVertexColor, boolean useTexture, int numberOfWeightsForShader) {
