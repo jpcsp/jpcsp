@@ -554,7 +554,8 @@ public class ThreadMan {
      */
     public void rescheduleCurrentThread() {
 		SceKernelThreadInfo newThread = nextThread();
-		if (current_thread.currentPriority > newThread.currentPriority) {
+		if (newThread != null && current_thread != null &&
+			current_thread.currentPriority > newThread.currentPriority) {
 			if (LOG_CONTEXT_SWITCHING && Modules.log.isDebugEnabled()) {
 				Modules.log.debug("Context switching to '" + newThread + "' after interrupt");
 			}
