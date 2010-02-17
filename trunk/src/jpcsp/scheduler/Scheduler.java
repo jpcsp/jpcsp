@@ -93,7 +93,7 @@ public class Scheduler {
 		}
 	}
 
-	public IAction getAction(long now) {
+	public synchronized IAction getAction(long now) {
 		if (nextAction == null || now < nextAction.getSchedule()) {
 			return null;
 		}
