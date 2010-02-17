@@ -136,7 +136,6 @@ vec4 doLight(in vec4 eyeCoordinatePosition, in vec4 matAmbient, in vec4 matDiffu
 
     calculateLighting(n, getEyeCoordinatePosition3(eyeCoordinatePosition), ambient, diffuse, specular);
 
-//	ambient += gl_FrontLightModelProduct.sceneColor;
 	ambient += gl_LightModel.ambient;
     vec4 color = (ambient  * matAmbient) +
                  (diffuse  * matDiffuse) +
@@ -163,44 +162,16 @@ vec4 getPosition(inout vec3 normal) {
 		return gl_Vertex;
 	}
 
-	float weights[8];
-	weights[0] = psp_weights1.x;
-	weights[1] = psp_weights1.y;
-	weights[2] = psp_weights1.z;
-	weights[3] = psp_weights1.w;
-	weights[4] = psp_weights2.x;
-	weights[5] = psp_weights2.y;
-	weights[6] = psp_weights2.z;
-	weights[7] = psp_weights2.w;
-
 	vec4 position = vec4(0.0, 0.0, 0.0, gl_Vertex.w);
+	vec4 vertex = vec4(gl_Vertex.xyz, 1.0);
 	normal = vec3(0.0, 0.0, 0.0);
 	for (int i = 0; i < psp_numberBones; i++) {
-		float weight = weights[i];
+		float weight = (i <= 3 ? psp_weights1[i] : psp_weights2[i - 4]);
 		if (weight != 0.0) {
-			position.x += ( gl_Vertex.x * psp_boneMatrix[i][0].x
-		    	          + gl_Vertex.y * psp_boneMatrix[i][1].x
-		        	      + gl_Vertex.z * psp_boneMatrix[i][2].x
-		            	  +               psp_boneMatrix[i][3].x) * weight;
-			position.y += ( gl_Vertex.x * psp_boneMatrix[i][0].y
-			              + gl_Vertex.y * psp_boneMatrix[i][1].y
-			              + gl_Vertex.z * psp_boneMatrix[i][2].y
-			              +               psp_boneMatrix[i][3].y) * weight;
-			position.z += ( gl_Vertex.x * psp_boneMatrix[i][0].z
-			              + gl_Vertex.y * psp_boneMatrix[i][1].z
-			              + gl_Vertex.z * psp_boneMatrix[i][2].z
-			              +               psp_boneMatrix[i][3].z) * weight;
+			position.xyz += vec3(psp_boneMatrix[i] * vertex) * weight;
 
 			// Normals shouldn't be translated :)
-			normal.x += ( gl_Normal.x * psp_boneMatrix[i][0].x
-		    	        + gl_Normal.y * psp_boneMatrix[i][1].x
-		        	    + gl_Normal.z * psp_boneMatrix[i][2].x) * weight;
-			normal.y += ( gl_Normal.x * psp_boneMatrix[i][0].y
-			            + gl_Normal.y * psp_boneMatrix[i][1].y
-			            + gl_Normal.z * psp_boneMatrix[i][2].y) * weight;
-			normal.z += ( gl_Normal.x * psp_boneMatrix[i][0].z
-			            + gl_Normal.y * psp_boneMatrix[i][1].z
-			            + gl_Normal.z * psp_boneMatrix[i][2].z) * weight;
+			normal += mat3(psp_boneMatrix[i]) * gl_Normal * weight;
 		}
 	}
 
