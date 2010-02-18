@@ -49,6 +49,7 @@ public class Modules {
     public static sceHprm sceHprmModule = new sceHprm();
     public static sceFont sceFontModule = new sceFont();
     public static TimerManager TimerManager = new TimerManager();
+    public static scePsmfPlayer scePsmfPlayerModule = new scePsmfPlayer();
 
 
     public static Logger log = Logger.getLogger("hle");
