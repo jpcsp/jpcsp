@@ -921,7 +921,6 @@ public class ThreadMan {
 
     public void hleKernelAsyncLoop() {
         Modules.log.info("Running dummy async thread!");
-        Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
 	/** Note: Some functions allow uid = 0 = current thread, others don't.
