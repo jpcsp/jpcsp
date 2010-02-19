@@ -390,7 +390,9 @@ public class SyscallHandler {
                 case 0x208a:
                     pspiofilemgr.getInstance().sceIoGetAsyncStat(gpr[4], gpr[5], gpr[6]);
                     break;
-		// sceIoChangeAsyncPriority(0x208b),
+                case 0x208b:
+                    pspiofilemgr.getInstance().sceIoChangeAsyncPriority(gpr[4], gpr[5]);
+                    break;
                 case 0x208c:
                     pspiofilemgr.getInstance().sceIoSetAsyncCallback(gpr[4], gpr[5], gpr[6]);
                     break;

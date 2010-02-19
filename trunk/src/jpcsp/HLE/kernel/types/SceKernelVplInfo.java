@@ -16,6 +16,7 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.HLE.kernel.types;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import jpcsp.HLE.kernel.managers.SceUidManager;
@@ -42,6 +43,7 @@ public class SceKernelVplInfo {
     public final int allocAddress;
     public int freeLowAddress;
     public int freeHighAddress;
+    public HashMap<Integer, Integer> dataBlockMap;  //Hash map to store each data address and respective size.
 
     public static final int VPL_ATTR_MASK = 0x41FF; // anything outside this mask is an illegal attr
     public static final int VPL_ATTR_UNKNOWN = 0x100;
@@ -54,6 +56,8 @@ public class SceKernelVplInfo {
 
         freeSize = poolSize;
         numWaitThreads = 0;
+
+        dataBlockMap = new HashMap<Integer, Integer>();
 
         uid = SceUidManager.getNewUid("ThreadMan-Vpl");
         this.partitionid = partitionid;
@@ -140,6 +144,7 @@ public class SceKernelVplInfo {
 
             freeSize -= alignedSize + 8;
         }
+        dataBlockMap.put(addr, alignedSize);
         return addr;
     }
 
@@ -152,14 +157,16 @@ public class SceKernelVplInfo {
             if (top != allocAddress) {
                 Modules.log.warn("Free VPL 0x" + Integer.toHexString(addr) + " bad address");
                 return false;
-            } else {
-                // TODO free
+             } else {
+                //Recover free size from deallocated block.
+                int deallocSize = (dataBlockMap.get(addr) + 8);
+                freeSize += deallocSize;
+                dataBlockMap.remove(addr);
 
-                //size = ...
-                //freeSize += size + 8;
+                Modules.log.debug("Free VPL: Block 0x" + Integer.toHexString(addr) + " with size=" +
+                        deallocSize + " freed");
 
-                Modules.log.error("UNIMPLEMENTED:Free VPL 0x" + Integer.toHexString(addr) + " not implemented");
-                return false;
+                return true;
             }
         } else {
             // address is not in valid range
