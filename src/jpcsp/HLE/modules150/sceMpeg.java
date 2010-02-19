@@ -213,6 +213,9 @@ public class sceMpeg implements HLEModule {
 
 	public static void setEnableMpeg(boolean enableMpeg) {
 		sceMpeg.enableMpeg = enableMpeg;
+		if (enableMpeg) {
+			Modules.log.info("Faked MPEG Video enabled");
+		}
 	}
 
     protected Date convertTimestampToDate(long timestamp) {
