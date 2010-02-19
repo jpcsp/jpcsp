@@ -196,6 +196,8 @@ public class sceMpeg implements HLEModule {
     protected int videoFrameCount;
     protected int audioFrameCount;
     protected int videoPixelMode;
+    protected int avcDetailFrameWidth;
+    protected int avcDetailFrameHeight;
 
     protected static final int MPEG_VERSION_0012 = 0;
     protected static final int MPEG_VERSION_0013 = 1;
@@ -966,9 +968,10 @@ public class sceMpeg implements HLEModule {
                 Random random = new Random();
                 final int pixelSize = 3;
                 final int bytesPerPixel = pspdisplay.getPixelFormatBytes(videoPixelMode);
-                for (int y = 0; y < 272 - pixelSize + 1; y += pixelSize) {
+                final int width = Math.min(480, frameWidth);
+                final int height = 272;
+                for (int y = 0; y < height - pixelSize + 1; y += pixelSize) {
                     int address = buffer + y * frameWidth * bytesPerPixel;
-                    final int width = Math.min(480, frameWidth);
                     for (int x = 0; x < width; x += pixelSize) {
                         int n = random.nextInt(256);
                         int color = 0xFF000000 | (n << 16) | (n << 8) | n;
@@ -1018,6 +1021,8 @@ public class sceMpeg implements HLEModule {
                 }
                 Debug.printFramebuffer(buffer, frameWidth, 10, 30, 0xFFFFFFFF, 0xFF000000, videoPixelMode, 2, displayedString);
 
+                avcDetailFrameWidth = width;
+                avcDetailFrameHeight = height;
                 if (mpegRingbuffer.packetsFree < mpegRingbuffer.packets) {
                     mpegRingbuffer.packetsFree = Math.min(mpegRingbuffer.packets, mpegRingbuffer.packetsFree + packetsConsumed);
                     mpegRingbuffer.write(mem, mpegRingbufferAddr);
@@ -1045,21 +1050,26 @@ public class sceMpeg implements HLEModule {
     }
 
     public void sceMpegAvcDecodeDetail(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
+        CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
         int mpeg = cpu.gpr[4];
-        // unknown params
+        int detailAddr = cpu.gpr[5];
 
-        Modules.log.warn("IGNORING:sceMpegAvcDecodeDetail(mpeg=0x" + Integer.toHexString(mpeg)
-            + String.format("%08X %08X %08X %08X", cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], cpu.gpr[8]));
+        if (Modules.log.isInfoEnabled()) {
+        	Modules.log.info(String.format("PARTIAL sceMpegAvcDecodeDetail(mpeg=0x%08X, detailAddr=0x%08X)", mpeg, detailAddr));
+        }
 
         if (getMpegHandle(mpeg) != mpegHandle) {
             Modules.log.warn("sceMpegAvcDecodeDetail bad mpeg handle 0x" + Integer.toHexString(mpeg));
             cpu.gpr[2] = -1;
+        } else if (!mem.isAddressGood(detailAddr)) {
+            Modules.log.warn(String.format("sceMpegAvcDecodeDetail bad address 0x%08X", detailAddr));
+        	cpu.gpr[2] = -1;
         } else {
-            // Fake success
+        	// Other detailAddr structure members are unknown...
+        	mem.write32(detailAddr + 8, avcDetailFrameWidth);
+        	mem.write32(detailAddr + 12, avcDetailFrameHeight);
             cpu.gpr[2] = 0;
         }
     }
