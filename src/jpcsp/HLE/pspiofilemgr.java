@@ -158,7 +158,8 @@ public class pspiofilemgr {
     private String filepath; // current working directory on PC
     private UmdIsoReader iso;
 
-    private SceKernelThreadInfo asyncThread;
+    private HashMap<Integer, SceKernelThreadInfo> asyncThreadMap;
+    private SceKernelThreadInfo currentAsyncThread;
 
     public static pspiofilemgr getInstance() {
         if (instance == null) {
@@ -186,6 +187,7 @@ public class pspiofilemgr {
         filelist = new HashMap<Integer, IoInfo>();
         dirlist = new HashMap<Integer, IoDirInfo>();
         MemoryStick.setState(MemoryStick.PSP_MEMORYSTICK_STATE_INSERTED);
+        asyncThreadMap = new HashMap<Integer, SceKernelThreadInfo>();
     }
 
     /** To properly emulate async io we cannot allow async io operations to
@@ -778,6 +780,7 @@ public class pspiofilemgr {
                 //info.asyncPending = true;
                 Emulator.getProcessor().cpu.gpr[2] = info.uid;
             }
+            asyncThreadMap.put(uid, currentAsyncThread);
         }
 
         State.fileLogger.logIoOpen(Emulator.getProcessor().cpu.gpr[2],
@@ -795,15 +798,36 @@ public class pspiofilemgr {
     public void sceIoOpenAsync(int filename_addr, int flags, int permissions) {
         if (debug) Modules.log.debug("sceIoOpenAsync redirecting to hleIoOpen");
 
-        //Start async thread (only 1 at a time allowed).
+        //Start async thread (only 1 at a time allowed)?
         //The app should call sceIoCloseAsync to delete it.
         ThreadMan threadMan = ThreadMan.getInstance();
-        asyncThread = threadMan.hleKernelCreateThread("SceIofileAsync", ThreadMan.ASYNC_LOOP_ADDRESS, 0x6F, 0x2000,
+
+        //Inherit priority from current thread.
+        int asyncPriority = threadMan.getCurrentThread().currentPriority;
+
+        //Set 0x6F to minimum priority possible.
+        if(asyncPriority < 0x6F)
+            asyncPriority = 0x6F;
+
+        currentAsyncThread = threadMan.hleKernelCreateThread("SceIofileAsync",
+                ThreadMan.ASYNC_LOOP_ADDRESS, asyncPriority, 0x2000,
                 threadMan.getCurrentThread().attr, 0);
 
-        threadMan.ThreadMan_sceKernelStartThread(asyncThread.uid, 4, ThreadMan.ASYNC_LOOP_ADDRESS);
+        threadMan.ThreadMan_sceKernelStartThread(currentAsyncThread.uid, 4, ThreadMan.ASYNC_LOOP_ADDRESS);
 
         hleIoOpen(filename_addr, flags, permissions, true);
+    }
+
+    public void sceIoChangeAsyncPriority(int uid, int priority) {
+        SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
+        SceKernelThreadInfo asyncThread = asyncThreadMap.get(uid);
+
+        asyncThread.currentPriority = priority;
+
+        Modules.log.info("sceIoChangeAsyncPriority changing priority of dummy async thread from fd=" +
+                uid + " to " + Integer.toHexString(priority));
+
+        Emulator.getProcessor().cpu.gpr[2] = 0;
     }
 
     public void sceIoSetAsyncCallback(int uid, int cbid, int notifyArg) {
@@ -869,9 +893,11 @@ public class pspiofilemgr {
         } else {
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
         }
-
-        if(asyncThread != null)
-            ThreadMan.getInstance().ThreadMan_sceKernelDeleteThread(asyncThread.uid);
+        
+        if(asyncThreadMap != null) {
+            ThreadMan.getInstance().ThreadMan_sceKernelDeleteThread(asyncThreadMap.get(uid).uid);
+            asyncThreadMap.remove(uid);
+        }
     }
 
     // Handle returning/storing result for sync/async operations
