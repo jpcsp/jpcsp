@@ -81,6 +81,7 @@ public class sceCtrl implements HLEModule {
     protected Sample samples[];
     protected int currentSamplingIndex;
     protected int currentReadingIndex;
+    protected int latchSamplingCount;
     protected final static int SAMPLE_BUFFER_SIZE = 10;
     protected List<ThreadWaitingForSampling> threadsWaitingForSampling;
 
@@ -181,6 +182,7 @@ public class sceCtrl implements HLEModule {
             }
             currentSamplingIndex = 0;
             currentReadingIndex = 0;
+            latchSamplingCount = 0;
 
             threadsWaitingForSampling = new LinkedList<ThreadWaitingForSampling>();
 
@@ -254,6 +256,11 @@ public class sceCtrl implements HLEModule {
 
             return addr + 16;
         }
+
+        @Override
+        public String toString() {
+        	return String.format("TimeStamp=%d,Lx=%d,Ly=%d,Buttons=%08X", TimeStamp, Lx, Ly, Buttons);
+        }
     }
 
     protected int incrementSampleIndex(int index) {
@@ -269,6 +276,8 @@ public class sceCtrl implements HLEModule {
     	if (Modules.log.isDebugEnabled()) {
     		Modules.log.debug("hleCtrlExecuteSampling");
     	}
+
+    	latchSamplingCount++;
 
     	Sample currentSampling = samples[currentSamplingIndex];
     	currentSampling.TimeStamp = TimeStamp;
@@ -355,6 +364,9 @@ public class sceCtrl implements HLEModule {
             peekIndex = incrementSampleIndex(peekIndex);
         }
 
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceCtrlPeekBufferPositive(0x%08X,%d) result %d", pad_addr, count, i));
+        }
         cpu.gpr[2] = i;
     }
 
@@ -371,6 +383,9 @@ public class sceCtrl implements HLEModule {
             peekIndex = incrementSampleIndex(peekIndex);
         }
 
+        if (Modules.log.isDebugEnabled()) {
+        	Modules.log.debug(String.format("sceCtrlPeekBufferNegative(0x%08X,%d) result %d", pad_addr, count, i));
+        }
         cpu.gpr[2] = i;
     }
 
@@ -440,7 +455,7 @@ public class sceCtrl implements HLEModule {
         mem.write32(latch_addr + 4, uiBreak);
         mem.write32(latch_addr + 8, uiPress);
         mem.write32(latch_addr + 12, uiRelease);
-        cpu.gpr[2] = 0;
+        cpu.gpr[2] = latchSamplingCount;
     }
 
     public void sceCtrlReadLatch(Processor processor) {
@@ -453,7 +468,8 @@ public class sceCtrl implements HLEModule {
         mem.write32(latch_addr + 4, uiBreak);
         mem.write32(latch_addr + 8, uiPress);
         mem.write32(latch_addr + 12, uiRelease);
-        cpu.gpr[2] = 0;
+        cpu.gpr[2] = latchSamplingCount;
+        latchSamplingCount = 0;
     }
 
     public void sceCtrlSetIdleCancelThreshold(Processor processor) {
