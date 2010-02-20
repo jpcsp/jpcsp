@@ -780,7 +780,8 @@ public class pspiofilemgr {
                 //info.asyncPending = true;
                 Emulator.getProcessor().cpu.gpr[2] = info.uid;
             }
-            asyncThreadMap.put(uid, currentAsyncThread);
+            if(currentAsyncThread != null)
+                asyncThreadMap.put(uid, currentAsyncThread);
         }
 
         State.fileLogger.logIoOpen(Emulator.getProcessor().cpu.gpr[2],
@@ -820,12 +821,21 @@ public class pspiofilemgr {
 
     public void sceIoChangeAsyncPriority(int uid, int priority) {
         SceUidManager.checkUidPurpose(uid, "IOFileManager-File", true);
-        SceKernelThreadInfo asyncThread = asyncThreadMap.get(uid);
 
-        asyncThread.currentPriority = priority;
+        if(asyncThreadMap.get(uid) != null) {
+            SceKernelThreadInfo asyncThread = asyncThreadMap.get(uid);
+            asyncThread.currentPriority = priority;
 
-        Modules.log.info("sceIoChangeAsyncPriority changing priority of dummy async thread from fd=" +
+            Modules.log.info("sceIoChangeAsyncPriority changing priority of dummy async thread from fd=" +
                 uid + " to " + Integer.toHexString(priority));
+        }
+        else {
+            //TODO
+            //Some games call sceIoChangeAsyncPriority without
+            //creating the thread first.
+            //Return an error?
+            Modules.log.warn("sceIoChangeAsyncPriority invalid fd=" + uid);
+        }
 
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }
