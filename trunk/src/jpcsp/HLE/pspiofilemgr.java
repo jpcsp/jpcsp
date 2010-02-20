@@ -904,10 +904,8 @@ public class pspiofilemgr {
             Emulator.getProcessor().cpu.gpr[2] = PSP_ERROR_BAD_FILE_DESCRIPTOR;
         }
         
-        if(asyncThreadMap != null) {
-            ThreadMan.getInstance().ThreadMan_sceKernelDeleteThread(asyncThreadMap.get(uid).uid);
-            asyncThreadMap.remove(uid);
-        }
+        if(currentAsyncThread != null)
+            ThreadMan.getInstance().ThreadMan_sceKernelDeleteThread(currentAsyncThread.uid);
     }
 
     // Handle returning/storing result for sync/async operations
