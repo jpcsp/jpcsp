@@ -21,6 +21,14 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import javax.swing.JOptionPane;
+import javax.swing.JFrame;
+import javax.swing.JButton;
+import javax.swing.JList;
+import javax.swing.JScrollPane;
+
+import java.awt.BorderLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 import jpcsp.HLE.kernel.types.SceIoStat;
 import jpcsp.HLE.kernel.types.SceUtilityMsgDialogParams;
@@ -203,6 +211,10 @@ public class sceUtility implements HLEModule {
     protected int systemParam_language = PSP_SYSTEMPARAM_LANGUAGE_ENGLISH;
     protected int systemParam_buttonPreference = 0;
 
+    //Save list vars.
+    protected Object saveListSelection;
+    protected boolean saveListSelected;
+
 	protected String formatMessageForDialog(String message) {
 		StringBuilder formattedMessage = new StringBuilder();
 
@@ -222,6 +234,43 @@ public class sceUtility implements HLEModule {
 
 		return formattedMessage.toString();
 	}
+
+    protected void showSavedataList(String[] options) {
+        final JFrame listFrame = new JFrame();
+        listFrame.setTitle("Savedata List");
+        listFrame.setSize(200, 220);
+        listFrame.setResizable(false);
+        listFrame.setLocation(800, 200);
+        listFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+        final JList saveList = new JList(options);
+        JScrollPane listScroll = new JScrollPane(saveList);
+        JButton selectButton = new JButton("Select");
+
+        listFrame.setLayout(new BorderLayout(5,5));
+        listFrame.getContentPane().add(listScroll, BorderLayout.CENTER);
+        listFrame.getContentPane().add(selectButton, BorderLayout.SOUTH);
+        listFrame.setVisible(true);
+
+        saveListSelected = false;
+
+        //Wait for user selection.
+        while(!saveListSelected) {
+            if(!listFrame.isVisible())
+                break;
+
+            selectButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent evt) {
+                    if(saveList.getSelectedIndex() != -1) {
+                        saveListSelection = saveList.getSelectedValue();
+                        listFrame.dispose();
+                        saveListSelected = true;
+                    }
+                }
+            });
+        }
+    }
 
 	public void sceUtilityGameSharingInitStart(Processor processor) {
 		CpuState cpu = processor.cpu; // New-Style Processor
@@ -455,15 +504,6 @@ public class sceUtility implements HLEModule {
         // HACK let's start on quit, then the app should call shutdown and then we change status to finished
         savedata_status = PSP_UTILITY_DIALOG_QUIT;
 
-        // TODO HACK to enable game loading in ToE. To be removed when dialog for MODE_LISTLOAD and MODE_LISTSAVE is implemented.
-        if (savedata_mode == SceUtilitySavedataParam.MODE_LISTLOAD) {
-            Modules.log.warn("sceUtilitySavedataInitStart MODE_LISTLOAD converted to MODE_AUTOLOAD");
-            savedata_mode = SceUtilitySavedataParam.MODE_AUTOLOAD;
-        } else if (savedata_mode == SceUtilitySavedataParam.MODE_LISTSAVE) {
-            Modules.log.warn("sceUtilitySavedataInitStart MODE_LISTSAVE converted to MODE_AUTOSAVE");
-            savedata_mode = SceUtilitySavedataParam.MODE_AUTOSAVE;
-        }
-
         switch (savedata_mode) {
             case SceUtilitySavedataParam.MODE_AUTOLOAD:
             case SceUtilitySavedataParam.MODE_LOAD:
@@ -488,9 +528,37 @@ public class sceUtility implements HLEModule {
                 break;
 
             case SceUtilitySavedataParam.MODE_LISTLOAD:
-                // TODO Implement dialog to display list of available SAVEDATA files
-                Modules.log.warn("sceUtilitySavedataInitStart MODE_LISTLOAD => result=ERROR_SAVEDATA_LOAD_NO_DATA");
-                sceUtilitySavedataParam.base.result = ERROR_SAVEDATA_LOAD_NO_DATA;
+                //Search for valid saves.
+                String[] validNames = new String[sceUtilitySavedataParam.saveNameList.length];
+
+                for(int i = 0; i < sceUtilitySavedataParam.saveNameList.length; i++) {
+                    sceUtilitySavedataParam.saveName = sceUtilitySavedataParam.saveNameList[i];
+
+                    if(sceUtilitySavedataParam.isPresent(pspiofilemgr.getInstance()))
+                        validNames[i] = sceUtilitySavedataParam.saveName;
+                    else
+                        validNames[i] = "NOT PRESENT";
+                }
+
+                showSavedataList(validNames);
+                if (saveListSelection == null || saveListSelection.equals("NOT PRESENT")) {
+                    Modules.log.warn("sceUtilitySavedataInitStart MODE_LISTLOAD no save selected");
+                    sceUtilitySavedataParam.base.result = ERROR_SAVEDATA_LOAD_NO_DATA;
+                }
+
+                else {
+                    sceUtilitySavedataParam.saveName = saveListSelection.toString();
+                    try {
+                        sceUtilitySavedataParam.load(mem, pspiofilemgr.getInstance());
+                        sceUtilitySavedataParam.base.result = 0;
+                        sceUtilitySavedataParam.write(mem);
+                    } catch (IOException e) {
+                        sceUtilitySavedataParam.base.result = ERROR_SAVEDATA_LOAD_NO_DATA;
+                    } catch (Exception e) {
+                        sceUtilitySavedataParam.base.result = ERROR_SAVEDATA_LOAD_NO_DATA;
+                        e.printStackTrace();
+                    }
+                }
                 break;
 
             case SceUtilitySavedataParam.MODE_AUTOSAVE:
@@ -515,9 +583,24 @@ public class sceUtility implements HLEModule {
                 break;
 
             case SceUtilitySavedataParam.MODE_LISTSAVE:
-                // TODO Implement dialog to display list of available SAVEDATA files
-                Modules.log.warn("sceUtilitySavedataInitStart MODE_LISTSAVE => result=ERROR_SAVEDATA_SAVE_NO_MS");
-                sceUtilitySavedataParam.base.result = ERROR_SAVEDATA_SAVE_NO_MEMSTICK;
+                showSavedataList(sceUtilitySavedataParam.saveNameList);
+                if (saveListSelection == null) {
+                    Modules.log.warn("sceUtilitySavedataInitStart MODE_LISTSAVE no save selected");
+                    sceUtilitySavedataParam.base.result = ERROR_SAVEDATA_SAVE_NO_MEMSTICK;
+                }
+
+                else {
+                    sceUtilitySavedataParam.saveName = saveListSelection.toString();
+                    try {
+                        sceUtilitySavedataParam.save(mem, pspiofilemgr.getInstance());
+                        sceUtilitySavedataParam.base.result = 0;
+                    } catch (IOException e) {
+                        sceUtilitySavedataParam.base.result = ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
+                    } catch (Exception e) {
+                        sceUtilitySavedataParam.base.result = ERROR_SAVEDATA_SAVE_ACCESS_ERROR;
+                        e.printStackTrace();
+                    }
+                }
                 break;
 
             case SceUtilitySavedataParam.MODE_TRYSAVE: {
