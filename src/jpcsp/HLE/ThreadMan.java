@@ -921,6 +921,7 @@ public class ThreadMan {
 
     public void hleKernelAsyncLoop() {
         Modules.log.info("Running dummy async thread!");
+        hleKernelExitThread();
     }
 
 	/** Note: Some functions allow uid = 0 = current thread, others don't.
