@@ -70,7 +70,7 @@ public class Processor /* extends OldCpuState */ {
     }
 
 
-    class CacheLine {
+    static class CacheLine {
         boolean valid;
         int address;
         int opcode;

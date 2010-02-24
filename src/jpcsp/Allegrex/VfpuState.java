@@ -51,7 +51,7 @@ public class VfpuState extends FpuState {
         (float) Math.sqrt(3.0) / 2.0f
     };
 
-    private class Random {
+    private static class Random {
         private long seed;
 
         private final static long multiplier = 0x5DEECE66DL;

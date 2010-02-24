@@ -2184,7 +2184,7 @@ public class ThreadMan {
         }
     }
 
-    public class Statistics {
+    public static class Statistics {
         private ArrayList<ThreadStatistics> threads = new ArrayList<ThreadStatistics>();
         public long allCycles = 0;
         public long startTimeMillis;
@@ -2211,13 +2211,13 @@ public class ThreadMan {
             allCycles += thread.runClocks;
         }
 
-        private class ThreadStatistics {
+        private static class ThreadStatistics {
             public String name;
             public long runClocks;
         }
     }
 
-	private class CallbackManager {
+	private static class CallbackManager {
 		private Map<Integer, Callback> callbacks;
 		private int currentCallbackId;
 
@@ -2241,7 +2241,7 @@ public class ThreadMan {
 		}
 	}
 
-	private class Callback {
+	private static class Callback {
 		private int id;
 		private int savedIdRegister;
 		private int savedRa;

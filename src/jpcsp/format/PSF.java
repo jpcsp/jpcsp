@@ -388,7 +388,7 @@ public class PSF {
         return homebrew;
     }
 
-    public class PSFKeyValuePair {
+    public static class PSFKeyValuePair {
         // index table info
         public int keyOffset;
         public int unknown1;

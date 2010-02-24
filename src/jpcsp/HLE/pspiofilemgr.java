@@ -507,7 +507,7 @@ public class pspiofilemgr {
         }
     }
 
-    private class PatternFilter implements FilenameFilter {
+    private static class PatternFilter implements FilenameFilter {
     	private Pattern pattern;
 
     	public PatternFilter(String pattern) {

@@ -636,7 +636,7 @@ public class pspSysMem {
         System.err.println(fragmentedDiagram);
     }
 
-    class SysMemInfo {
+    static class SysMemInfo {
         public final int uid;
         public final int partitionid;
         public final String name;

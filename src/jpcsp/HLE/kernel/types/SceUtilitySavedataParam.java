@@ -83,7 +83,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 	public int buffer4Addr;
 	public String key;		// encrypt/decrypt key for save with firmware >= 2.00
 
-	public class PspUtilitySavedataSFOParam extends pspAbstractMemoryMappedStructure {
+	public static class PspUtilitySavedataSFOParam extends pspAbstractMemoryMappedStructure {
         public String title;
 		public String savedataTitle;
 		public String detail;
@@ -108,7 +108,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		}
 	};
 
-	public class PspUtilitySavedataFileData extends pspAbstractMemoryMappedStructure {
+	public static class PspUtilitySavedataFileData extends pspAbstractMemoryMappedStructure {
 		public int buf;
 		public int bufSize;
 		public int size;
@@ -132,7 +132,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		}
 	}
 
-	public class PspUtilitySavedataListSaveNewData extends pspAbstractMemoryMappedStructure {
+	public static class PspUtilitySavedataListSaveNewData extends pspAbstractMemoryMappedStructure {
 		public PspUtilitySavedataFileData icon0;
 		public int titleAddr;
 		public String title;

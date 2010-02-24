@@ -22,7 +22,7 @@ public class SceUtilityOskParams extends pspAbstractMemoryMappedStructure {
 	public int oskDataAddr;
 	public SceUtilityOskData oskData;
 
-	public class SceUtilityOskData extends pspAbstractMemoryMappedStructure {
+	public static class SceUtilityOskData extends pspAbstractMemoryMappedStructure {
 		public int language;
 		public int lines;
 		public int descAddr;

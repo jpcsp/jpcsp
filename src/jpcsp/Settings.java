@@ -283,7 +283,7 @@ public class Settings {
 		loadedSettings.setProperty("keys." + keyName, Integer.toString(key));
 	}
 
-	private class SortedProperties extends Properties {
+	private static class SortedProperties extends Properties {
 
 		private static final long serialVersionUID = -8127868945637348944L;
 
