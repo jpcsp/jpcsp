@@ -209,7 +209,7 @@ public class IntrManager {
 			return false;
 		}
 
-		return interruptHandlers.remove(interruptHandlers);
+		return interruptHandlers.remove(interruptHandler);
 	}
 
 
