@@ -399,7 +399,7 @@ public class VertexInfoReader {
 	 * VertexDataBuffer based on "int" values
 	 *
 	 */
-	private class IntVertexDataBuffer implements IVertexDataBuffer {
+	private static class IntVertexDataBuffer implements IVertexDataBuffer {
 		private int[] buffer;
 		private int index;
 
@@ -430,7 +430,7 @@ public class VertexInfoReader {
 	 * VertexDataBuffer based on "float" values
 	 *
 	 */
-	private class FloatVertexDataBuffer implements IVertexDataBuffer {
+	private static class FloatVertexDataBuffer implements IVertexDataBuffer {
 		private float[] buffer;
 		private int index;
 

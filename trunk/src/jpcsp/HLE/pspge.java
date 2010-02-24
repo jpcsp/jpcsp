@@ -539,7 +539,7 @@ public class pspge {
         }
     }
 
-    class DeferredCallbackInfo {
+    static class DeferredCallbackInfo {
         public final int cbid;
         public final int callbackIndex;
         public final int listId;

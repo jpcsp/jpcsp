@@ -88,7 +88,7 @@ public class Clock {
 		return timeNano;
 	}
 
-	public class TimeNanos {
+	public static class TimeNanos {
 		public int seconds;
 		public int millis;
 		public int micros;

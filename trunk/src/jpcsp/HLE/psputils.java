@@ -149,7 +149,7 @@ public class psputils {
         }
     }
 
-    private class SceKernelUtilsMt19937Context {
+    private static class SceKernelUtilsMt19937Context {
         private Random r;
 
         public SceKernelUtilsMt19937Context(int seed) {
