@@ -90,7 +90,7 @@ public class AbstractAllegrexInterruptHandler {
 
 	@Override
 	public String toString() {
-		StringBuffer result = new StringBuffer();
+		StringBuilder result = new StringBuilder();
 
 		result.append(String.format("0x%08X(", getAddress()));
 		for (int i = 0; i < numberArguments; i++) {

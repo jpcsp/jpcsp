@@ -264,11 +264,11 @@ public class UmdIsoReader {
                 if((info.getProperties()&2)==2) // if it's a directory
                 {
                     dir  = new Iso9660Directory(this, info.getLBA(), info.getSize());
-                    String dirPath = path[0];
+                    StringBuilder dirPath = new StringBuilder(path[0]);
                     for (int j = 1; j <= i; j++) {
-                    	dirPath += "/" + path[j];
+                    	dirPath.append("/").append(path[j]);
                     }
-                    dirCache.put(dirPath, dir);
+                    dirCache.put(dirPath.toString(), dir);
                 }
                 i++;
             }
