@@ -100,11 +100,11 @@ public class ModuleMgrForUser implements HLEModule {
 	}
 
 
-	private boolean hleKernelLoadHLEModule(Processor processor, String name, StringBuffer prxname) {
+	private boolean hleKernelLoadHLEModule(Processor processor, String name, StringBuilder prxname) {
         CpuState cpu = processor.cpu;
 
         if (prxname == null) {
-        	prxname = new StringBuffer();
+        	prxname = new StringBuilder();
         }
 
         int findprx = name.lastIndexOf("/");
@@ -151,7 +151,7 @@ public class ModuleMgrForUser implements HLEModule {
         CpuState cpu = processor.cpu;
         Memory mem = Processor.memory;
 
-        StringBuffer prxname = new StringBuffer();
+        StringBuilder prxname = new StringBuilder();
         if (hleKernelLoadHLEModule(processor, name, prxname)) {
         	return;
         }

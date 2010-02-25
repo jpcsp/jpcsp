@@ -765,17 +765,17 @@ public class Common {
             }
         }
 
-        String rot = "[";
+        StringBuilder rot = new StringBuilder("[");
 
         i = 0;
         for (;;) {
-            rot += codes[i++];
+            rot.append(codes[i++]);
             if (i >= vsize) {
                 break;
             }
-            rot += ",";
+            rot.append(",");
         }
-        rot += "]";
+        rot.append("]");
         return String.format("%1$-10s %2$s, %3$s, %4$s", opname + vsuffix[vsize - 1], vprNames[vsize - 1][vd], vprNames[0][vs], rot);
     }
 

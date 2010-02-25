@@ -226,7 +226,7 @@ public class UmdIsoFile extends SeekableInputStream {
         if(currentOffset>=maxOffset)
             throw new EOFException();
         
-        String s = "";
+        StringBuilder s = new StringBuilder();
         char c=0;
         do {
             c = this.readChar();
@@ -235,10 +235,10 @@ public class UmdIsoFile extends SeekableInputStream {
             {
                 break;
             }
-            s+=c;
+            s.append(c);
         } while(true);
         
-        return s;
+        return s.toString();
     }
     
     @Override
