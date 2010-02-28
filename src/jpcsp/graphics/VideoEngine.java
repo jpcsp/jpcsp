@@ -479,7 +479,7 @@ public class VideoEngine {
 	    	if (openGL1_5) {
 	            gl.glDeleteBuffers(length, ids, offset);
 	    	} else {
-	            gl.glDeleteBuffers(length, ids, offset);
+	            gl.glDeleteBuffersARB(length, ids, offset);
 	    	}
     	}
     }
