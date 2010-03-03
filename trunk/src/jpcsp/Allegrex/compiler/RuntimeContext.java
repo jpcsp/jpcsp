@@ -776,13 +776,26 @@ public class RuntimeContext {
     public static void onThreadDeleted(SceKernelThreadInfo thread) {
     	RuntimeThread runtimeThread = threads.get(thread);
     	if (runtimeThread != null) {
-    		log.debug("Deleting Thread " + thread.name);
+    		if (log.isDebugEnabled()) {
+    			log.debug("Deleting Thread " + thread.toString());
+    		}
     		toBeStoppedThreads.put(thread, runtimeThread);
     		if (runtimeThread.isInSyscall() && Thread.currentThread() != runtimeThread) {
     			toBeDeletedThreads.put(thread, runtimeThread);
     			log.debug("Continue Thread " + runtimeThread.getName());
     			runtimeThread.continueRuntimeExecution();
     		}
+    	}
+    }
+
+    public static void onThreadExit(SceKernelThreadInfo thread) {
+    	RuntimeThread runtimeThread = threads.get(thread);
+    	if (runtimeThread != null) {
+    		if (log.isDebugEnabled()) {
+    			log.debug("Exiting Thread " + thread.toString());
+    		}
+    		toBeStoppedThreads.put(thread, runtimeThread);
+    		threads.remove(thread);
     	}
     }
 
