@@ -27,7 +27,7 @@ public class SceUtilityMsgDialogParams extends pspAbstractMemoryMappedStructure 
     public int errorValue;
     public String message; // 512 bytes
     public int options;
-    	public final static int PSP_UTILITY_MSGDIALOG_OPTION_YESNO_MASK         = 0x00000FF0;
+    	public final static int PSP_UTILITY_MSGDIALOG_OPTION_YESNO_MASK         = 0x00000110;
         public final static int PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_YES  = 0x00000010;
         public final static int PSP_UTILITY_MSGDIALOG_OPTION_YESNO_DEFAULT_NO   = 0x00000110;
     public int buttonPressed;

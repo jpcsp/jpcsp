@@ -427,7 +427,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         });
         DebugMenu.add(InstructionCounter);
 
-        FileLog.setLabel("File Log");
+        FileLog.setText("File Log");
         FileLog.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 FileLogActionPerformed(evt);
@@ -924,7 +924,7 @@ public void loadUMD(File file) {
             StepLogger.clear();
             StepLogger.setName(file.getPath());
         } else {
-            throw new GeneralJpcspException("File format not supported!");
+            throw new GeneralJpcspException("Loading of encrypted BOOT.BIN is not supported. It can only be decrypted using a real PSP.");
         }
     } catch (GeneralJpcspException e) {
         JpcspDialogManager.showError(this, "General Error : " + e.getMessage());
