@@ -830,6 +830,23 @@ public class ThreadMan {
         }
     }
 
+    private void terminateThread(SceKernelThreadInfo thread) {
+        changeThreadState(thread, PSP_THREAD_STOPPED);  // PSP_THREAD_STOPPED or PSP_THREAD_KILLED ?
+
+        // Cancel all waiting actions
+        thread.wait.waitingOnEventFlag = false;
+        thread.wait.waitingOnIo = false;
+        thread.wait.waitingOnMbxReceive = false;
+        thread.wait.waitingOnMsgPipeReceive = false;
+        thread.wait.waitingOnMsgPipeSend = false;
+        thread.wait.waitingOnMutex = false;
+        thread.wait.waitingOnSemaphore = false;
+        thread.wait.waitingOnThreadEnd = false;
+        thread.wait.waitingOnUmd = false;
+
+        RuntimeContext.onThreadExit(thread);
+    }
+
     private void onThreadStopped(SceKernelThreadInfo stoppedThread) {
         for (Iterator<SceKernelThreadInfo> it = threadMap.values().iterator(); it.hasNext(); ) {
             SceKernelThreadInfo thread = it.next();
@@ -1006,7 +1023,7 @@ public class ThreadMan {
             Modules.log.debug("sceKernelTerminateThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
 
             Emulator.getProcessor().cpu.gpr[2] = 0;
-            changeThreadState(thread, PSP_THREAD_STOPPED);  // PSP_THREAD_STOPPED or PSP_THREAD_KILLED ?
+            terminateThread(thread);
         }
     }
 
@@ -1040,8 +1057,7 @@ public class ThreadMan {
         } else {
             Modules.log.debug("sceKernelTerminateDeleteThread SceUID=" + Integer.toHexString(thread.uid) + " name:'" + thread.name + "'");
 
-            // Change thread state to stopped
-            changeThreadState(thread, PSP_THREAD_STOPPED);
+            terminateThread(thread);
 
             // Mark thread for deletion
             setToBeDeletedThread(thread);
