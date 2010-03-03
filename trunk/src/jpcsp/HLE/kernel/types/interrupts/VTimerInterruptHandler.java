@@ -26,6 +26,7 @@ public class VTimerInterruptHandler extends AbstractAllegrexInterruptHandler {
 
 	public VTimerInterruptHandler(SceKernelVTimerInfo sceKernelVTimerInfo) {
 		super(sceKernelVTimerInfo.handlerAddress);
+		this.sceKernelVTimerInfo = sceKernelVTimerInfo;
 		setArgument(0, sceKernelVTimerInfo.uid);
 		setArgument(3, sceKernelVTimerInfo.handlerArgument);
 	}

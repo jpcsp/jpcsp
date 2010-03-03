@@ -1714,8 +1714,11 @@ public class VideoEngine {
             	// Astonishia Story is using normalArgument = 0x1804
             	// -> use texture_height = 1 << 0x08 (and not 1 << 0x18)
             	//        texture_width  = 1 << 0x04
-            	texture_height[level] = 1 << ((normalArgument>>8) & 0x0F);
-            	texture_width[level]  = 1 << ((normalArgument   ) & 0xFF);
+            	// The maximum texture size is 512x512: the exponent value must be [0..9]
+            	int height_exp2 = Math.min((normalArgument >> 8) & 0x0F, 9);
+            	int width_exp2  = Math.min((normalArgument     ) & 0x0F, 9);
+            	texture_height[level] = 1 << height_exp2;
+            	texture_width[level]  = 1 << width_exp2;
 
             	if (old_texture_height != texture_height[level] || old_texture_width != texture_width[level]) {
                 	if (transform_mode == VTYPE_TRANSFORM_PIPELINE_RAW_COORD && level == 0) {
@@ -1801,7 +1804,8 @@ public class VideoEngine {
 
             case CLOAD: {
             	int old_tex_clut_num_blocks = tex_clut_num_blocks;
-            	tex_clut_num_blocks = normalArgument;
+            	// TODO Check mask value (some games send 0xFFFF20)
+            	tex_clut_num_blocks = normalArgument & 0x0000FF;
 
         		clutIsDirty = true;
             	if (old_tex_clut_num_blocks != tex_clut_num_blocks) {
@@ -2045,7 +2049,7 @@ public class VideoEngine {
             case YSCALE:
                 viewport_height = (int)(-floatArgument(normalArgument) * 2);
 
-                if (viewport_width != 480 || viewport_height != 272) {
+                if (!useViewport && (viewport_width != 480 || viewport_height != 272)) {
                 	if (isLogWarnEnabled) {
                 		log.warn("sceGuViewport(X, X, w=" + viewport_width + ", h=" + viewport_height + ") non-standard dimensions");
                 	}
@@ -2075,7 +2079,11 @@ public class VideoEngine {
             case YPOS:
                 viewport_cy = (int)floatArgument(normalArgument);
 
-                if (isLogWarnEnabled) {
+                if (useViewport) {
+                	if (isLogDebugEnabled) {
+	                    log.warn("sceGuViewport(cx=" + viewport_cx + ", cy=" + viewport_cy + ", X, X)");
+                	}
+                } else if (isLogWarnEnabled) {
 	                if (viewport_cx != 2048 || viewport_cy != 2048) {
 	                    log.warn("Unimplemented sceGuViewport(cx=" + viewport_cx + ", cy=" + viewport_cy + ", X, X) non-standard dimensions");
 	                } else {
@@ -2100,7 +2108,11 @@ public class VideoEngine {
                 break;
             case OFFSETY:
                 offset_y = normalArgument >> 4;
-                if (isLogWarnEnabled) {
+                if (useViewport) {
+                	if (isLogDebugEnabled) {
+                    	log.debug("sceGuOffset(x=" + offset_x + ",y=" + offset_y + ")");
+                	}
+                } else if (isLogWarnEnabled) {
                 	log.warn("Unimplemented sceGuOffset(x=" + offset_x + ",y=" + offset_y + ")");
                 }
                 break;

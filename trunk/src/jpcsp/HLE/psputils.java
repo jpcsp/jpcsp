@@ -28,10 +28,10 @@ import jpcsp.Clock;
 import jpcsp.Emulator;
 import jpcsp.Memory;
 import jpcsp.State;
+import jpcsp.HLE.kernel.managers.SystemTimeManager;
 
 public class psputils {
     private static psputils instance;
-    private int initialclocks;
     private HashMap<Integer, SceKernelUtilsMt19937Context> Mt19937List;
 
     public static psputils getInstance() {
@@ -46,8 +46,6 @@ public class psputils {
 
     /** call this when resetting the emulator */
     public void Initialise() {
-        //System.out.println("Utils: Initialise");
-        initialclocks = (int)System.nanoTime(); // seconds * 1 million
         Mt19937List = new HashMap<Integer, SceKernelUtilsMt19937Context>();
     }
 
@@ -61,15 +59,11 @@ public class psputils {
         Emulator.getProcessor().cpu.gpr[2] = seconds;
     }
 
-    /** returns the number of clocks since the "process" started.
-     * Current implemention uses clocks since Initialise was last called, and
-     * we are using clocks = seconds * CLOCKS_PER_SEC, where CLOCKS_PER_SEC
-     * is 1 million (1000000). */
-    protected int currentClocks = 0;
+    /** returns the number of clocks since the "process" started. 
+     *  This is equivalent to the "System Time".
+     */
     public void sceKernelLibcClock() {
-        //int clocks = (int)System.nanoTime() - initialclocks; // seconds * 1 million
-        currentClocks += 100; // FIXME: quick hack to fix NesterJ
-        Emulator.getProcessor().cpu.gpr[2] = currentClocks;
+        Emulator.getProcessor().cpu.gpr[2] = (int) SystemTimeManager.getSystemTime();
     }
 
     /* from man pages:
@@ -130,10 +124,7 @@ public class psputils {
         Mt19937List.put(ctx_addr, new SceKernelUtilsMt19937Context(seed));
 
         // We'll overwrite all the context memory, 628 bytes
-        Memory mem = Memory.getInstance();
-        for (int i = 0; i < 628; i += 4) {
-            mem.write32(ctx_addr + i, 0xcdcdcdcd);
-        }
+        Memory.getInstance().memset(ctx_addr, (byte) 0xCD, 628);
 
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }
@@ -144,7 +135,7 @@ public class psputils {
             Emulator.getProcessor().cpu.gpr[2] = ctx.r.nextInt();
         } else {
             // TODO what happens if the ctx is bad?
-            System.out.println("sceKernelUtilsMt19937UInt uninitialised context " + Integer.toHexString(ctx_addr));
+            Modules.log.warn("sceKernelUtilsMt19937UInt uninitialised context " + Integer.toHexString(ctx_addr));
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
     }
@@ -160,18 +151,28 @@ public class psputils {
     public void sceKernelGetGPI() {
         if (State.debugger != null) {
             int gpi = State.debugger.GetGPI();
-            Modules.log.debug("sceKernelGetGPI 0x" + String.format("%02X", gpi));
+            if (Modules.log.isDebugEnabled()) {
+            	Modules.log.debug("sceKernelGetGPI 0x" + String.format("%02X", gpi));
+            }
             Emulator.getProcessor().cpu.gpr[2] = gpi;
         } else {
-            Modules.log.info("sceKernelGetGPI debugger not enabled");
+        	if (Modules.log.isDebugEnabled()) {
+        		Modules.log.debug("sceKernelGetGPI debugger not enabled");
+        	}
             Emulator.getProcessor().cpu.gpr[2] = 0;
         }
     }
 
     public void sceKernelSetGPO(int value) {
-        Modules.log.info("sceKernelSetGPO 0x" + String.format("%02X", value));
         if (State.debugger != null) {
             State.debugger.SetGPO(value);
+            if (Modules.log.isDebugEnabled()) {
+            	Modules.log.debug("sceKernelSetGPO 0x" + String.format("%02X", value));
+            }
+        } else {
+        	if (Modules.log.isDebugEnabled()) {
+        		Modules.log.debug("sceKernelSetGPO debugger not enabled");
+        	}
         }
         Emulator.getProcessor().cpu.gpr[2] = 0;
     }

@@ -131,10 +131,15 @@ public class pspge {
     }
 
     public void sceGeListEnQueue(int list_addr, int stall_addr, int cbid, int arg_addr) {
-        VideoEngine.log.debug("sceGeListEnQueue(list=0x" + Integer.toHexString(list_addr)
-            + ",stall=0x" + Integer.toHexString(stall_addr)
-            + ",cbid=0x" + Integer.toHexString(cbid)
-            + ",arg=0x" + Integer.toHexString(arg_addr) + ") result id " + listIdAllocator);
+    	if (VideoEngine.log.isDebugEnabled()) {
+	        VideoEngine.log.debug("sceGeListEnQueue(list=0x" + Integer.toHexString(list_addr)
+	            + ",stall=0x" + Integer.toHexString(stall_addr)
+	            + ",cbid=0x" + Integer.toHexString(cbid)
+	            + ",arg=0x" + Integer.toHexString(arg_addr) + ") result id " + listIdAllocator);
+    	}
+
+    	list_addr &= Memory.addressMask;
+    	stall_addr &= Memory.addressMask;
 
         PspGeList list = new PspGeList(list_addr, stall_addr, cbid, arg_addr);
         list.id = listIdAllocator++;
@@ -177,6 +182,8 @@ public class pspge {
         if (VideoEngine.log.isDebugEnabled()) {
         	VideoEngine.log.debug(String.format("sceGeListUpdateStallAddr(id=%d, stall=0x%08X)", id, stall_addr));
         }
+
+        stall_addr &= Memory.addressMask;
 
         for (Iterator<PspGeList> it = listQueue.iterator(); it.hasNext(); ) {
             PspGeList list = it.next();
