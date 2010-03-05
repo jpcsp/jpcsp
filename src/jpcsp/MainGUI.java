@@ -978,6 +978,9 @@ private void installCompatibilitySettings()
 
     boolean enableWaitThreadEndCB = Settings.getInstance().readBool("emu.enablewaitthreadendcb");
     jpcsp.HLE.ThreadMan.getInstance().setEnableWaitThreadEndCB(enableWaitThreadEndCB);
+
+    boolean ignoreUnmappedImports = Settings.getInstance().readBool("emu.ignoreUnmappedImports");
+    jpcsp.HLE.SyscallHandler.setEnableIgnoreUnmappedImports(ignoreUnmappedImports);
 }
 
 /** @return true if a patch file was found */

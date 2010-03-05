@@ -162,7 +162,7 @@
                           <Component id="umdpath" alignment="3" min="-2" max="-2" attributes="0"/>
                           <Component id="jLabel1" alignment="3" min="-2" max="-2" attributes="0"/>
                       </Group>
-                      <EmptySpace pref="55" max="32767" attributes="0"/>
+                      <EmptySpace pref="32" max="32767" attributes="0"/>
                   </Group>
               </Group>
             </DimensionLayout>
@@ -323,7 +323,7 @@
                           <Component id="DisableSceAudioCheck" min="-2" max="-2" attributes="0"/>
                           <EmptySpace max="-2" attributes="0"/>
                           <Component id="disableBlockingAudioCheck" min="-2" max="-2" attributes="0"/>
-                          <EmptySpace pref="19" max="32767" attributes="0"/>
+                          <EmptySpace pref="65" max="32767" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
@@ -369,7 +369,7 @@
                               <Component id="disableVBOCheck" alignment="0" min="-2" max="-2" attributes="0"/>
                               <Component id="onlyGEGraphicsCheck" alignment="0" min="-2" max="-2" attributes="0"/>
                               <Component id="useViewportCheck" alignment="0" min="-2" max="-2" attributes="0"/>
-                              <Component id="enableMpeg" alignment="0" min="-2" max="-2" attributes="0"/>
+                              <Component id="enableMpegCheck" alignment="0" min="-2" max="-2" attributes="0"/>
                           </Group>
                           <EmptySpace min="-2" max="-2" attributes="0"/>
                       </Group>
@@ -386,7 +386,7 @@
                           <EmptySpace max="-2" attributes="0"/>
                           <Component id="useViewportCheck" min="-2" max="-2" attributes="0"/>
                           <EmptySpace max="-2" attributes="0"/>
-                          <Component id="enableMpeg" min="-2" max="-2" attributes="0"/>
+                          <Component id="enableMpegCheck" min="-2" max="-2" attributes="0"/>
                           <EmptySpace pref="42" max="32767" attributes="0"/>
                       </Group>
                   </Group>
@@ -413,7 +413,7 @@
                     <Property name="text" type="java.lang.String" value="Use Viewport (can improve graphics)"/>
                   </Properties>
                 </Component>
-                <Component class="javax.swing.JCheckBox" name="enableMpeg">
+                <Component class="javax.swing.JCheckBox" name="enableMpegCheck">
                   <Properties>
                     <Property name="text" type="java.lang.String" value="Enable faked MPEG Video"/>
                   </Properties>
@@ -452,7 +452,7 @@
                           <Component id="invalidMemoryCheck" min="-2" max="-2" attributes="0"/>
                           <EmptySpace max="-2" attributes="0"/>
                           <Component id="disableReservedThreadMemoryCheck" min="-2" max="-2" attributes="0"/>
-                          <EmptySpace pref="66" max="32767" attributes="0"/>
+                          <EmptySpace pref="20" max="32767" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
@@ -482,9 +482,12 @@
               <Layout>
                 <DimensionLayout dim="0">
                   <Group type="103" groupAlignment="0" attributes="0">
-                      <Group type="102" alignment="0" attributes="0">
-                          <Component id="enableWaitThreadEndCB" min="-2" max="-2" attributes="0"/>
-                          <EmptySpace pref="126" max="32767" attributes="0"/>
+                      <Group type="102" attributes="0">
+                          <Group type="103" groupAlignment="0" attributes="0">
+                              <Component id="enableWaitThreadEndCB" alignment="0" min="-2" max="-2" attributes="0"/>
+                              <Component id="ignoreUnmappedImports" min="-2" max="-2" attributes="0"/>
+                          </Group>
+                          <EmptySpace pref="26" max="32767" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
@@ -492,7 +495,9 @@
                   <Group type="103" groupAlignment="0" attributes="0">
                       <Group type="102" alignment="0" attributes="0">
                           <Component id="enableWaitThreadEndCB" min="-2" max="-2" attributes="0"/>
-                          <EmptySpace pref="89" max="32767" attributes="0"/>
+                          <EmptySpace max="-2" attributes="0"/>
+                          <Component id="ignoreUnmappedImports" min="-2" max="-2" attributes="0"/>
+                          <EmptySpace pref="20" max="32767" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
@@ -501,6 +506,11 @@
                 <Component class="javax.swing.JCheckBox" name="enableWaitThreadEndCB">
                   <Properties>
                     <Property name="text" type="java.lang.String" value="Enable waitThreadEndCB"/>
+                  </Properties>
+                </Component>
+                <Component class="javax.swing.JCheckBox" name="ignoreUnmappedImports">
+                  <Properties>
+                    <Property name="text" type="java.lang.String" value="Ignore unmapped imports (not recommended)"/>
                   </Properties>
                 </Component>
               </SubComponents>

@@ -106,6 +106,9 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
 
         enabled = Settings.getInstance().readBool("emu.enablewaitthreadendcb");
         enableWaitThreadEndCB.setSelected(enabled);
+
+        enabled = Settings.getInstance().readBool("emu.ignoreUnmappedImports");
+        ignoreUnmappedImports.setSelected(enabled);
         
         enabled = Settings.getInstance().readBool("emu.umdbrowser");
         if(enabled)
@@ -281,6 +284,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
         disableReservedThreadMemoryCheck = new javax.swing.JCheckBox();
         jPanel4 = new javax.swing.JPanel();
         enableWaitThreadEndCB = new javax.swing.JCheckBox();
+        ignoreUnmappedImports = new javax.swing.JCheckBox();
         keyPanel = new javax.swing.JPanel();
         fgPanel = new javax.swing.JPanel();
         fieldStart = new javax.swing.JTextField();
@@ -422,7 +426,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                     .addComponent(jButton1)
                     .addComponent(umdpath, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel1))
-                .addContainerGap(55, Short.MAX_VALUE))
+                .addContainerGap(32, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab("General", generalPanel);
@@ -459,7 +463,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                 .addComponent(DisableSceAudioCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(disableBlockingAudioCheck)
-                .addContainerGap(19, Short.MAX_VALUE))
+                .addContainerGap(65, Short.MAX_VALUE))
         );
 
         jPanel2.setBorder(javax.swing.BorderFactory.createTitledBorder("Video"));
@@ -486,8 +490,7 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                     .addComponent(disableVBOCheck)
                     .addComponent(onlyGEGraphicsCheck)
                     .addComponent(useViewportCheck)
-                    .addComponent(enableMpegCheck)
-                    .addComponent(useVertexCache))
+                    .addComponent(enableMpegCheck))
                 .addContainerGap())
         );
         jPanel2Layout.setVerticalGroup(
@@ -502,8 +505,6 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                 .addComponent(useViewportCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(enableMpegCheck)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(useVertexCache)
                 .addContainerGap(42, Short.MAX_VALUE))
         );
 
@@ -529,26 +530,32 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
                 .addComponent(invalidMemoryCheck)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(disableReservedThreadMemoryCheck)
-                .addContainerGap(66, Short.MAX_VALUE))
+                .addContainerGap(20, Short.MAX_VALUE))
         );
 
         jPanel4.setBorder(javax.swing.BorderFactory.createTitledBorder("Misc"));
 
         enableWaitThreadEndCB.setText("Enable waitThreadEndCB");
 
+        ignoreUnmappedImports.setText("Ignore unmapped imports (not recommended)");
+
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
         jPanel4.setLayout(jPanel4Layout);
         jPanel4Layout.setHorizontalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel4Layout.createSequentialGroup()
-                .addComponent(enableWaitThreadEndCB)
-                .addContainerGap(126, Short.MAX_VALUE))
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(enableWaitThreadEndCB)
+                    .addComponent(ignoreUnmappedImports))
+                .addContainerGap(26, Short.MAX_VALUE))
         );
         jPanel4Layout.setVerticalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addComponent(enableWaitThreadEndCB)
-                .addContainerGap(89, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(ignoreUnmappedImports)
+                .addContainerGap(20, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout compatibilityPanelLayout = new javax.swing.GroupLayout(compatibilityPanel);
@@ -1015,13 +1022,83 @@ public class SettingsGUI extends javax.swing.JFrame implements KeyListener {
     }// </editor-fold>//GEN-END:initComponents
 public void RefreshWindow()
 {
-    /* (not needed?)
-    boolean pbpunpack = Settings.getInstance().readBool("emu.pbpunpack");
-    if (pbpunpack) pbpunpackcheck.setSelected(true);
-    */
+    boolean enabled = Settings.getInstance().readBool("emu.pbpunpack");
+    pbpunpackcheck.setSelected(enabled);
+
+    enabled = Settings.getInstance().readBool("gui.saveWindowPos");
+    saveWindowPosCheck.setSelected(enabled);
+
+    enabled = Settings.getInstance().readBool("gui.openLogwindow");
+    openLogwindowCheck.setSelected(enabled);
+
+    enabled = Settings.getInstance().readBool("gui.snapLogwindow");
+    snapConsoleCheck.setSelected(enabled);
+
+    enabled = Settings.getInstance().readBool("emu.compiler");
+    compilerCheck.setSelected(enabled);
+
+    enabled = Settings.getInstance().readBool("emu.profiler");
+    profilerCheck.setSelected(enabled);
+
+    enabled = Settings.getInstance().readBool("emu.useshaders");
+    shadersCheck.setSelected(enabled);
+
+    enabled = Settings.getInstance().readBool("emu.debug.enablefilelogger");
+    filelogCheck.setSelected(enabled);
+
+    enabled = Settings.getInstance().readBool("emu.disablege");
+    disableGECheck.setSelected(enabled);
+
+    enabled = Settings.getInstance().readBool("emu.disablevbo");
+    disableVBOCheck.setSelected(enabled);
+
+    enabled = Settings.getInstance().readBool("emu.onlyGEGraphics");
+    onlyGEGraphicsCheck.setSelected(enabled);
+
+    enabled = Settings.getInstance().readBool("emu.useViewport");
+    useViewportCheck.setSelected(enabled);
+
+    enabled = Settings.getInstance().readBool("emu.enableMpeg");
+    enableMpegCheck.setSelected(enabled);
+
+    enabled = Settings.getInstance().readBool("emu.useVertexCache");
+    useVertexCache.setSelected(enabled);
+
+    enabled = Settings.getInstance().readBool("emu.ignoreInvalidMemoryAccess");
+    invalidMemoryCheck.setSelected(enabled);
+
+    enabled = Settings.getInstance().readBool("emu.disablereservedthreadmemory");
+    disableReservedThreadMemoryCheck.setSelected(enabled);
+
+    enabled = Settings.getInstance().readBool("emu.disablesceAudio");
+    DisableSceAudioCheck.setSelected(enabled);
+
+    enabled = Settings.getInstance().readBool("emu.ignoreaudiothreads");
+    IgnoreAudioThreadsCheck.setSelected(enabled);
+
+    enabled = Settings.getInstance().readBool("emu.mutesound");
+    disableSoundCheck.setSelected(enabled);
+
+    enabled = Settings.getInstance().readBool("emu.disableblockingaudio");
+    disableBlockingAudioCheck.setSelected(enabled);
+
+    enabled = Settings.getInstance().readBool("emu.enablewaitthreadendcb");
+    enableWaitThreadEndCB.setSelected(enabled);
+
+    enabled = Settings.getInstance().readBool("emu.ignoreUnmappedImports");
+    ignoreUnmappedImports.setSelected(enabled);
+
+    enabled = Settings.getInstance().readBool("emu.umdbrowser");
+    if(enabled)
+        umdBrowser.setSelected(true);
+    else
+        ClassicOpenDialogumd.setSelected(true);
+
+    umdpath.setText(Settings.getInstance().readString("emu.umdpath"));
 }
 private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCancelActionPerformed
-   dispose();
+    RefreshWindow();
+    dispose();
 }//GEN-LAST:event_jButtonCancelActionPerformed
 
 private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
@@ -1046,6 +1123,7 @@ private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIR
    Settings.getInstance().writeBool("emu.mutesound",disableSoundCheck.isSelected());
    Settings.getInstance().writeBool("emu.disableblockingaudio",disableBlockingAudioCheck.isSelected());
    Settings.getInstance().writeBool("emu.enablewaitthreadendcb",enableWaitThreadEndCB.isSelected());
+   Settings.getInstance().writeBool("emu.ignoreUnmappedImports",ignoreUnmappedImports.isSelected());
    
    if(umdBrowser.isSelected())
       Settings.getInstance().writeBool("emu.umdbrowser", true);
@@ -1164,14 +1242,12 @@ private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.JPanel compatibilityPanel;
     private javax.swing.JCheckBox compilerCheck;
-    private javax.swing.JCheckBox profilerCheck;
     private javax.swing.JCheckBox disableBlockingAudioCheck;
     private javax.swing.JCheckBox disableGECheck;
-    private javax.swing.JCheckBox enableMpegCheck;
-    private javax.swing.JCheckBox useVertexCache;
     private javax.swing.JCheckBox disableReservedThreadMemoryCheck;
     private javax.swing.JCheckBox disableSoundCheck;
     private javax.swing.JCheckBox disableVBOCheck;
+    private javax.swing.JCheckBox enableMpegCheck;
     private javax.swing.JCheckBox enableWaitThreadEndCB;
     private javax.swing.JPanel fgPanel;
     private javax.swing.JTextField fieldAnalogDown;
@@ -1198,6 +1274,7 @@ private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.JTextField fieldVolPlus;
     private javax.swing.JCheckBox filelogCheck;
     private javax.swing.JPanel generalPanel;
+    private javax.swing.JCheckBox ignoreUnmappedImports;
     private javax.swing.JCheckBox invalidMemoryCheck;
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButtonCancel;
@@ -1210,14 +1287,16 @@ private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRS
     private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JPanel keyPanel;
     private javax.swing.JCheckBox onlyGEGraphicsCheck;
-    private javax.swing.JCheckBox useViewportCheck;
     private javax.swing.JCheckBox openLogwindowCheck;
     private javax.swing.JCheckBox pbpunpackcheck;
+    private javax.swing.JCheckBox profilerCheck;
     private javax.swing.JCheckBox saveWindowPosCheck;
     private javax.swing.JCheckBox shadersCheck;
     private javax.swing.JCheckBox snapConsoleCheck;
     private javax.swing.JRadioButton umdBrowser;
     private javax.swing.JTextField umdpath;
+    private javax.swing.JCheckBox useVertexCache;
+    private javax.swing.JCheckBox useViewportCheck;
     // End of variables declaration//GEN-END:variables
 
 }
