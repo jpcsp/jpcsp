@@ -26,10 +26,21 @@ import jpcsp.Allegrex.CpuState;
 
 public class SyscallHandler {
 	public static DurationStatistics durationStatistics = new DurationStatistics("Syscall");
+    public static boolean ignoreUnmappedImports = false;
 
 	public static void reset() {
 		durationStatistics.reset();
 	}
+
+    public static boolean isEnableIgnoreUnmappedImports(){
+        return ignoreUnmappedImports;
+    }
+
+    public static void setEnableIgnoreUnmappedImports(boolean enable){
+        ignoreUnmappedImports = enable;
+        if(enable)
+            Modules.log.info("Ignore Unmapped Imports enabled");
+    }
 
 	// Change this to return the number of cycles used?
     public static void syscall(int code) {
@@ -1051,9 +1062,15 @@ public class SyscallHandler {
 
                 case 0xfffff: { // special code for unmapped imports
                     CpuState cpu = Emulator.getProcessor().cpu;
+                    if(isEnableIgnoreUnmappedImports()) {
+                        Modules.log.warn(String.format("IGNORING: Unmapped import @ 0x%08X - %08x %08x %08x",
+                        cpu.pc, cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
+                    }
+                    else {
                     Modules.log.error(String.format("Unmapped import @ 0x%08X - %08x %08x %08x",
                         cpu.pc, cpu.gpr[4], cpu.gpr[5], cpu.gpr[6]));
                     Emulator.PauseEmu();
+                    }
                     break;
                 }
 
