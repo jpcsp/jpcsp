@@ -33,7 +33,7 @@ public class SceKernelVTimerInfo extends pspAbstractMemoryMappedStructure {
 	public int handlerArgument;
 
 	public final int uid;
-	public final VTimerInterruptHandler vtimerInterruptHandler;
+	public VTimerInterruptHandler vtimerInterruptHandler;
 	public final VTimerInterruptAction vtimerInterruptAction;
 	public final VTimerInterruptResultAction vtimerInterruptResultAction;
 	private int internalMemory;
