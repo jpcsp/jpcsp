@@ -972,6 +972,7 @@ private void installCompatibilitySettings()
 
     boolean ignoreInvalidMemoryAccess = Settings.getInstance().readBool("emu.ignoreInvalidMemoryAccess");
     Memory.getInstance().setIgnoreInvalidMemoryAccess(ignoreInvalidMemoryAccess);
+    jpcsp.Allegrex.compiler.Compiler.setIgnoreInvalidMemory(ignoreInvalidMemoryAccess);
 
     boolean disableReservedThreadMemory = Settings.getInstance().readBool("emu.disablereservedthreadmemory");
     jpcsp.HLE.pspSysMem.getInstance().setDisableReservedThreadMemory(disableReservedThreadMemory);
