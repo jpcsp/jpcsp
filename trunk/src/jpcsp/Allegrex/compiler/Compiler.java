@@ -130,6 +130,15 @@ public class Compiler implements ICompiler {
 	private DurationStatistics compileDuration = new DurationStatistics("Compilation Time");
 	private Document configuration;
 	private NativeCodeManager nativeCodeManager;
+    public static boolean ignoreInvalidMemory = false;
+
+    public static boolean isIgnoreInvalidMemory() {
+        return ignoreInvalidMemory;
+    }
+
+    public static void setIgnoreInvalidMemory(boolean enable) {
+        ignoreInvalidMemory = enable;
+    }
 
 	public static Compiler getInstance() {
 		if (instance == null) {
@@ -298,8 +307,12 @@ public class Compiler implements ICompiler {
     @Override
     public IExecutable compile(int address) {
     	if (!mem.isAddressGood(address)) {
-    		log.error(String.format("Trying to compile an invalid address 0x%08X", address));
-    		Emulator.PauseEmu();
+            if(isIgnoreInvalidMemory())
+                log.warn(String.format("IGNORING: Trying to compile an invalid address 0x%08X", address));
+            else {
+                log.error(String.format("Trying to compile an invalid address 0x%08X", address));
+                Emulator.PauseEmu();
+            }
     		return null;
     	}
 

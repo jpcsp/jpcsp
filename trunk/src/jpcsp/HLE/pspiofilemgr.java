@@ -806,10 +806,6 @@ public class pspiofilemgr {
         //Inherit priority from current thread.
         int asyncPriority = threadMan.getCurrentThread().currentPriority;
 
-        //Set 0x6F to minimum priority possible.
-        if(asyncPriority < 0x6F)
-            asyncPriority = 0x6F;
-
         currentAsyncThread = threadMan.hleKernelCreateThread("SceIofileAsync",
                 ThreadMan.ASYNC_LOOP_ADDRESS, asyncPriority, 0x2000,
                 threadMan.getCurrentThread().attr, 0);
