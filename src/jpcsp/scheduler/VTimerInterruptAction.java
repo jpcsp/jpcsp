@@ -20,6 +20,7 @@ import jpcsp.HLE.Modules;
 import jpcsp.HLE.kernel.managers.IntrManager;
 import jpcsp.HLE.kernel.types.IAction;
 import jpcsp.HLE.kernel.types.SceKernelVTimerInfo;
+import jpcsp.HLE.kernel.types.interrupts.VTimerInterruptHandler;
 
 public class VTimerInterruptAction implements IAction {
 	private SceKernelVTimerInfo sceKernelVTimerInfo;
@@ -36,6 +37,8 @@ public class VTimerInterruptAction implements IAction {
 		if (Modules.log.isDebugEnabled()) {
 			Modules.log.debug(String.format("Calling VTimer uid=%x, now=%d", sceKernelVTimerInfo.uid, now));
 		}
+
+        sceKernelVTimerInfo.vtimerInterruptHandler = new VTimerInterruptHandler(sceKernelVTimerInfo);
 
 		IntrManager.getInstance().triggerInterrupt(IntrManager.PSP_SYSTIMER0_INTR, null, sceKernelVTimerInfo.vtimerInterruptResultAction, sceKernelVTimerInfo.vtimerInterruptHandler);
 	}
