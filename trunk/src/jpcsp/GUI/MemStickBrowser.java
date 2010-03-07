@@ -51,6 +51,7 @@ import javax.swing.table.TableColumn;
 
 import jpcsp.Emulator;
 import jpcsp.MainGUI;
+import jpcsp.Resource;
 import jpcsp.Settings;
 import jpcsp.format.PBP;
 import jpcsp.format.PSF;
@@ -85,13 +86,13 @@ public class MemStickBrowser extends JDialog {
             setColumnMargin(0);
             CellRenderer cellRenderer = new CellRenderer();
             TableColumn tableColumn = new TableColumn(0, 144, cellRenderer, null);
-            tableColumn.setHeaderValue("Icon");
+            tableColumn.setHeaderValue(Resource.get("icon"));
             tableColumn.setMaxWidth(144);
             tableColumn.setMinWidth(144);
             TableColumn tableColumn2 = new TableColumn(1, 100, cellRenderer, null);
-            tableColumn2.setHeaderValue("Title");
+            tableColumn2.setHeaderValue(Resource.get("title"));
             TableColumn tableColumn3 = new TableColumn(2, 200, cellRenderer, null);
-            tableColumn3.setHeaderValue("Path");
+            tableColumn3.setHeaderValue(Resource.get("path"));
             addColumn(tableColumn);
             addColumn(tableColumn2);
             addColumn(tableColumn3);
@@ -105,7 +106,7 @@ public class MemStickBrowser extends JDialog {
 
         public MemStickTableModel(File path) {
             if(!path.isDirectory()) {
-                Emulator.log.error(path + " isn't a directory");
+                Emulator.log.error(path + Resource.get("nodirectory"));
                 return;
             }
             programs = path.listFiles(new FileFilter() {
@@ -294,7 +295,7 @@ public class MemStickBrowser extends JDialog {
         this.path = path;
         setModal(true);
 
-        setTitle("Memory Stick Browser");
+        setTitle(Resource.get("memstick"));
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         table = new JTable(new MemStickTableModel(path), new MemStickTableColumnModel());
         table.setFillsViewportHeight(true);
@@ -352,7 +353,7 @@ public class MemStickBrowser extends JDialog {
         layout.setAutoCreateGaps(true);
         layout.setAutoCreateContainerGaps(true);
 
-        JButton cancelButton = new JButton("Cancel");
+        JButton cancelButton = new JButton(Resource.get("cancel"));
         cancelButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -360,7 +361,7 @@ public class MemStickBrowser extends JDialog {
                 MemStickBrowser.this.dispose();
             }
         });
-        loadButton = new JButton("Load");
+        loadButton = new JButton(Resource.get("load"));
         loadButton.setEnabled(false);
         loadButton.addActionListener(new ActionListener() {
             @Override
@@ -395,20 +396,4 @@ public class MemStickBrowser extends JDialog {
         setVisible(false);
         dispose();
     }
-
-    /**
-     * @param args
-     */
-    public static void main(String[] args) {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        MemStickBrowser msb = new MemStickBrowser(null, new File("ms0/PSP/Game"));
-        msb.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-        msb.setVisible(true);
-    }
-
-
 }

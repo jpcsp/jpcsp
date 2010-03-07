@@ -16,11 +16,9 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
  */
 package jpcsp.Debugger;
 
-import java.util.Arrays;
 import jpcsp.Allegrex.Common;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Decoder;
-import jpcsp.Memory;
 import jpcsp.HLE.ThreadMan;
 
 public class StepFrame {

@@ -26,9 +26,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import javax.swing.JFileChooser;
 import jpcsp.Memory;
+import jpcsp.Resource;
 import jpcsp.HLE.kernel.types.SceModule;
-import jpcsp.Allegrex.Instructions.*;
-import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.Common.Instruction;
 import jpcsp.util.Utilities;
 
@@ -38,7 +37,8 @@ import jpcsp.util.Utilities;
  */
 public class InstructionCounter extends javax.swing.JFrame implements PropertyChangeListener {
 
-    private Task task;
+	private static final long serialVersionUID = 1L;
+	private Task task;
     private SceModule module;
 
     /** Creates new form InstructionCounter */
@@ -121,7 +121,7 @@ public class InstructionCounter extends javax.swing.JFrame implements PropertyCh
         stubtextcheck = new javax.swing.JCheckBox();
         Save = new javax.swing.JButton();
 
-        setTitle("Instruction Counter");
+        setTitle(Resource.get("instructioncounter"));
         setResizable(false);
 
         textcheck.setText(".text");
@@ -130,9 +130,9 @@ public class InstructionCounter extends javax.swing.JFrame implements PropertyCh
 
         finicheck.setText(".fini");
 
-        jLabel1.setText("Choose the sections you want to count:");
+        jLabel1.setText(Resource.get("chooseSectionsCount"));
 
-        startbutton.setText("Start Counting");
+        startbutton.setText(Resource.get("startcounting"));
         startbutton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 startbuttonActionPerformed(evt);
@@ -146,11 +146,10 @@ public class InstructionCounter extends javax.swing.JFrame implements PropertyCh
 
         OpcodeTable.setModel(new javax.swing.table.DefaultTableModel(
             new Object [jpcsp.Allegrex.Common.instructions().length][3],
-            new String [] {
-                "Opcode", "Category", "Count"
-            }
-        ) {
-            Class[] types = new Class [] {
+            new String [] {"Opcode", "Category", "Count"}) {
+            
+				private static final long serialVersionUID = 1L;
+			Class[] types = new Class [] {
                 java.lang.String.class, java.lang.String.class, java.lang.Object.class
             };
             boolean[] canEdit = new boolean [] {
@@ -169,7 +168,7 @@ public class InstructionCounter extends javax.swing.JFrame implements PropertyCh
 
         stubtextcheck.setText(".sceStub.text");
 
-        Save.setText("Save to file");
+        Save.setText(Resource.get("savetofile"));
         Save.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 SaveActionPerformed(evt);
@@ -251,7 +250,7 @@ private void startbuttonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-F
 private void SaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SaveActionPerformed
     File file;
     final JFileChooser fc = new JFileChooser();
-    fc.setDialogTitle("Save Instructions to File");
+    fc.setDialogTitle(Resource.get("saveinstructions"));
     fc.setCurrentDirectory(new java.io.File("."));
     fc.setSelectedFile(new File("instructionoutput.txt"));
     int returnvalue = fc.showSaveDialog(this);

@@ -54,9 +54,7 @@ public class Settings {
 	private SortedProperties loadedSettings;
 
 	public static Settings getInstance() {
-		if (instance == null) {
-			instance = new Settings();
-		}
+		if (instance == null) instance = new Settings();
 		return instance;
 	}
 
@@ -66,44 +64,51 @@ public class Settings {
 
 	private Settings() {
 		defaultSettings = new Properties();
-                InputStream defaultSettingsStream = null, loadedSettingsStream = null;
+        InputStream defaultSettingsStream = null, loadedSettingsStream = null;
 		try {
-                        defaultSettingsStream = getClass().getResourceAsStream(DEFAULT_SETTINGS_FILE_NAME);
+			defaultSettingsStream = getClass().getResourceAsStream(DEFAULT_SETTINGS_FILE_NAME);
 			defaultSettings.load(defaultSettingsStream);
 			loadedSettings = new SortedProperties(defaultSettings);
 			File settingsFile = new File(SETTINGS_FILE_NAME);
 			settingsFile.createNewFile();
-                        loadedSettingsStream = new BufferedInputStream(new FileInputStream(settingsFile));
+            loadedSettingsStream = new BufferedInputStream(new FileInputStream(settingsFile));
 			loadedSettings.load(loadedSettingsStream);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally{
-                        Utilities.close(defaultSettingsStream, loadedSettingsStream);
+			Utilities.close(defaultSettingsStream, loadedSettingsStream);
 		}
-
 	}
 
 	/**
 	 * Write settings in file
 	 *
 	 * @param doc
-	 *            Settings as XML document
+	 *        Settings as XML document
 	 */
 	private void writeSettings() {
                 BufferedOutputStream out = null;
 		try {
-                        out = new BufferedOutputStream(
-                                new FileOutputStream(SETTINGS_FILE_NAME));
+			out = new BufferedOutputStream(new FileOutputStream(SETTINGS_FILE_NAME));
 			loadedSettings.store(out, null);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}finally{
-                    Utilities.close(out);
-                }
+			Utilities.close(out);
+        }
+	}
+	
+	public String readLanguage() {
+		return loadedSettings.getProperty("emu.language");
+	}
+	
+	public void writeLanguage(String language) {
+		loadedSettings.setProperty("emu.language", language);
+		writeSettings();
 	}
 
 	public int[] readWindowPos(String windowname) {
@@ -138,8 +143,7 @@ public class Settings {
 
 	public boolean readBool(String option) {
 		String bool = loadedSettings.getProperty(option);
-		if(bool == null)
-			return false;
+		if(bool == null) return false;
 
 		return Integer.parseInt(bool) != 0;
 	}
@@ -367,11 +371,8 @@ public class Settings {
             }
 
             // Set font size
-            if (fontsizestr.length() > 0) {
-                fontsize = Integer.parseInt(fontsizestr);
-            } else {
-                System.err.println("gui.font.size setting is missing.");
-            }
+            if (fontsizestr.length() > 0) fontsize = Integer.parseInt(fontsizestr);
+            else System.err.println("gui.font.size setting is missing.");
 
             font = base.deriveFont(Font.PLAIN, fontsize);
 
