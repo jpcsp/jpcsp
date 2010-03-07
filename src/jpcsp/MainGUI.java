@@ -85,7 +85,7 @@ import org.apache.log4j.xml.DOMConfigurator;
  *
  * @author  shadow
  */
-public class MainGUI extends javax.swing.JFrame implements KeyListener, ComponentListener {
+public class MainGUI extends javax.swing.JFrame implements KeyListener, ComponentListener, ActionListener {
     private static final long serialVersionUID = -3647025845406693230L;
     public static final int MAX_RECENT = 10;
     LogWindow consolewin;
@@ -110,6 +110,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         consolewin = new LogWindow();
 
         emulator = new Emulator(this);
+        
+        Resource.add("jpcsp.languages."+Settings.getInstance().readLanguage());
 
         /*next two lines are for overlay menus over joglcanvas*/
         JPopupMenu.setDefaultLightWeightPopupEnabled(false);
@@ -189,6 +191,9 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         ResetProfiler = new javax.swing.JMenuItem();
         HelpMenu = new javax.swing.JMenu();
         About = new javax.swing.JMenuItem();
+        LanguageMenu = new javax.swing.JMenu();
+        English = new javax.swing.JMenuItem();
+        French = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
@@ -199,49 +204,37 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
                 formWindowClosing(evt);
             }
         });
-
+        
         jToolBar1.setFloatable(false);
         jToolBar1.setRollover(true);
 
         RunButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PlayIcon.png"))); // NOI18N
-        RunButton.setText("Run");
+        RunButton.setText(Resource.get("run"));
         RunButton.setFocusable(false);
         RunButton.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
         RunButton.setIconTextGap(2);
         RunButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        RunButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                RunButtonActionPerformed(evt);
-            }
-        });
+        RunButton.addActionListener(this);
         jToolBar1.add(RunButton);
-
+        
         PauseButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PauseIcon.png"))); // NOI18N
-        PauseButton.setText("Pause");
+        PauseButton.setText(Resource.get("pause"));
         PauseButton.setFocusable(false);
         PauseButton.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
         PauseButton.setIconTextGap(2);
         PauseButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        PauseButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                PauseButtonActionPerformed(evt);
-            }
-        });
+        PauseButton.addActionListener(this);
         jToolBar1.add(PauseButton);
-
+        
         ResetButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StopIcon.png"))); // NOI18N
-        ResetButton.setText("Reset");
+        ResetButton.setText(Resource.get("reset"));
         ResetButton.setFocusable(false);
         ResetButton.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
         ResetButton.setIconTextGap(2);
         ResetButton.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
-        ResetButton.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ResetButtonActionPerformed(evt);
-            }
-        });
+        ResetButton.addActionListener(this);
         jToolBar1.add(ResetButton);
-
+        
         getContentPane().add(jToolBar1, java.awt.BorderLayout.NORTH);
 
         MenuBar.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -249,235 +242,198 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
                 MenuBarMouseExited(evt);
             }
         });
-
-        FileMenu.setText("File");
+        
+        FileMenu.setText(Resource.get("file"));
 
         openUmd.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/LoadUmdIcon.png"))); // NOI18N
-        openUmd.setText("Load UMD ");
-        openUmd.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                openUmdActionPerformed(evt);
-            }
-        });
+        openUmd.setText(Resource.get("loadumd"));
+        openUmd.addActionListener(this);
         FileMenu.add(openUmd);
-
+        
         OpenFile.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/LoadFileIcon.png"))); // NOI18N
-        OpenFile.setText("Load File");
-        OpenFile.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                OpenFileActionPerformed(evt);
-            }
-        });
+        OpenFile.setText(Resource.get("loadfile"));
+        OpenFile.addActionListener(this);
         FileMenu.add(OpenFile);
-
+        
         OpenMemStick.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/LoadMemoryStick.png"))); // NOI18N
-        OpenMemStick.setText("Load MemStick");
-        OpenMemStick.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                OpenMemStickActionPerformed(evt);
-            }
-        });
+        OpenMemStick.setText(Resource.get("loadmemstick"));
+        OpenMemStick.addActionListener(this);
         FileMenu.add(OpenMemStick);
-
+        
         RecentMenu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/RecentIcon.png"))); // NOI18N
-        RecentMenu.setText("Load Recent");
+        RecentMenu.setText(Resource.get("loadrecent"));
         FileMenu.add(RecentMenu);
 
         ExitEmu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/CloseIcon.png"))); // NOI18N
-        ExitEmu.setText("Exit");
-        ExitEmu.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ExitEmuActionPerformed(evt);
-            }
-        });
+        ExitEmu.setText(Resource.get("exit"));
+        ExitEmu.addActionListener(this);
         FileMenu.add(ExitEmu);
-
+        
         MenuBar.add(FileMenu);
 
-        EmulationMenu.setText("Emulation");
+        EmulationMenu.setText(Resource.get("emulation"));
 
         RunEmu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PlayIcon.png"))); // NOI18N
-        RunEmu.setText("Run");
-        RunEmu.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                RunEmuActionPerformed(evt);
-            }
-        });
+        RunEmu.setText(Resource.get("run"));
+        RunEmu.addActionListener(this);
         EmulationMenu.add(RunEmu);
-
+        
         PauseEmu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PauseIcon.png"))); // NOI18N
-        PauseEmu.setText("Pause");
-        PauseEmu.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                PauseEmuActionPerformed(evt);
-            }
-        });
+        PauseEmu.setText(Resource.get("pause"));
+        PauseEmu.addActionListener(this);
         EmulationMenu.add(PauseEmu);
-
+        
         ResetEmu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StopIcon.png"))); // NOI18N
-        ResetEmu.setText("Reset");
-        ResetEmu.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ResetEmuActionPerformed(evt);
-            }
-        });
+        ResetEmu.setText(Resource.get("reset"));
+        ResetEmu.addActionListener(this);
         EmulationMenu.add(ResetEmu);
 
         MenuBar.add(EmulationMenu);
 
-        OptionsMenu.setText("Options");
+        OptionsMenu.setText(Resource.get("options"));
 
         RotateItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/RotateIcon.png"))); // NOI18N
-        RotateItem.setText("Rotate");
-        RotateItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                RotateItemActionPerformed(evt);
-            }
-        });
+        RotateItem.setText(Resource.get("rotate"));
+        RotateItem.addActionListener(this);
         OptionsMenu.add(RotateItem);
-
+        
         SetttingsMenu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/SettingsIcon.png"))); // NOI18N
-        SetttingsMenu.setText("Settings");
-        SetttingsMenu.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                SetttingsMenuActionPerformed(evt);
-            }
-        });
+        SetttingsMenu.setText(Resource.get("settings"));
+        SetttingsMenu.addActionListener(this);
         OptionsMenu.add(SetttingsMenu);
 
         ShotItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F5, 0));
         ShotItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/ScreenshotIcon.png"))); // NOI18N
-        ShotItem.setText("Screenshot");
-        ShotItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ShotItemActionPerformed(evt);
-            }
-        });
+        ShotItem.setText(Resource.get("screenshot"));
+        ShotItem.addActionListener(this);
         OptionsMenu.add(ShotItem);
-
+        
         SaveSnap.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, java.awt.event.InputEvent.SHIFT_MASK));
         SaveSnap.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/SaveStateIcon.png"))); // NOI18N
-        SaveSnap.setText("Save Snapshot");
-        SaveSnap.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                SaveSnapActionPerformed(evt);
-            }
-        });
+        SaveSnap.setText(Resource.get("savesnapshot"));
+        SaveSnap.addActionListener(this);
         OptionsMenu.add(SaveSnap);
 
         LoadSnap.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_L, java.awt.event.InputEvent.SHIFT_MASK));
         LoadSnap.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/LoadStateIcon.png"))); // NOI18N
-        LoadSnap.setText("Load Snapshot");
-        LoadSnap.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                LoadSnapActionPerformed(evt);
-            }
-        });
+        LoadSnap.setText(Resource.get("loadsnapshot"));
+        LoadSnap.addActionListener(this);
         OptionsMenu.add(LoadSnap);
-
+        
         MenuBar.add(OptionsMenu);
 
-        DebugMenu.setText("Debug");
+        DebugMenu.setText(Resource.get("debug"));
 
-        EnterDebugger.setText("Enter Debugger");
-        EnterDebugger.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                EnterDebuggerActionPerformed(evt);
-            }
-        });
+        EnterDebugger.setText(Resource.get("enterdebugger"));
+        EnterDebugger.addActionListener(this);
         DebugMenu.add(EnterDebugger);
-
-        EnterMemoryViewer.setText("Memory Viewer");
-        EnterMemoryViewer.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                EnterMemoryViewerActionPerformed(evt);
-            }
-        });
+        
+        EnterMemoryViewer.setText(Resource.get("memoryviewer"));
+        EnterMemoryViewer.addActionListener(this);
         DebugMenu.add(EnterMemoryViewer);
-
-        VfpuRegisters.setText("VFPU Registers");
-        VfpuRegisters.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                VfpuRegistersActionPerformed(evt);
-            }
-        });
+        
+        VfpuRegisters.setText(Resource.get("vfpuregisters"));
+        VfpuRegisters.addActionListener(this);
         DebugMenu.add(VfpuRegisters);
 
-        ToggleConsole.setText("Toggle Console");
-        ToggleConsole.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ToggleConsoleActionPerformed(evt);
-            }
-        });
+        ToggleConsole.setText(Resource.get("toggleconsole"));
+        ToggleConsole.addActionListener(this);
         DebugMenu.add(ToggleConsole);
-
-        ElfHeaderViewer.setText("Elf Header Info");
-        ElfHeaderViewer.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ElfHeaderViewerActionPerformed(evt);
-            }
-        });
+        
+        ElfHeaderViewer.setText(Resource.get("elfheaderinfo"));
+        ElfHeaderViewer.addActionListener(this);
         DebugMenu.add(ElfHeaderViewer);
 
-        InstructionCounter.setText("Instruction Counter");
-        InstructionCounter.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                InstructionCounterActionPerformed(evt);
-            }
-        });
+        InstructionCounter.setText(Resource.get("instructioncounter"));
+        InstructionCounter.addActionListener(this);
         DebugMenu.add(InstructionCounter);
-
-        FileLog.setText("File Log");
-        FileLog.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                FileLogActionPerformed(evt);
-            }
-        });
+        
+        FileLog.setText(Resource.get("filelog"));
+        FileLog.addActionListener(this);
         DebugMenu.add(FileLog);
 
-        ToggleDebugLog.setText("Toggle Debug Logging");
-        ToggleDebugLog.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ToggleDebugLogActionPerformed(evt);
-            }
-        });
+        ToggleDebugLog.setText(Resource.get("toggledebuglogging"));
+        ToggleDebugLog.addActionListener(this);
         DebugMenu.add(ToggleDebugLog);
 
-        DumpIso.setText("Dump ISO to iso-index.txt");
-        DumpIso.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                DumpIsoActionPerformed(evt);
-            }
-        });
+        DumpIso.setText(Resource.get("dumpisotosisoindex"));
+        DumpIso.addActionListener(this);
         DebugMenu.add(DumpIso);
-
-        ResetProfiler.setText("Reset Profiler Information");
-        ResetProfiler.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                ResetProfilerActionPerformed(evt);
-            }
-        });
+        
+        ResetProfiler.setText(Resource.get("resetprofilerinformation"));
+        ResetProfiler.addActionListener(this);
         DebugMenu.add(ResetProfiler);
 
         MenuBar.add(DebugMenu);
+        
+        LanguageMenu.setText(Resource.get("language"));
+        
+        // TODO Put menu for other languages here
+        English.setText(Resource.get("english"));
+        English.addActionListener(this);
+        LanguageMenu.add(English);
+        French.setText(Resource.get("french"));
+        French.addActionListener(this);
+        LanguageMenu.add(French);
 
-        HelpMenu.setText("Help");
+        MenuBar.add(LanguageMenu);
+        
+        HelpMenu.setText(Resource.get("help"));
 
         About.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/AboutIcon.png"))); // NOI18N
-        About.setText("About");
-        About.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                AboutActionPerformed(evt);
-            }
-        });
+        About.setText(Resource.get("about"));
+        About.addActionListener(this);
         HelpMenu.add(About);
-
+        
         MenuBar.add(HelpMenu);
-
+        
         setJMenuBar(MenuBar);
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+    
+    private void changeLanguage(String language) {
+    	Resource.add("jpcsp.languages."+language);
+    	Settings.getInstance().writeLanguage(language);
+    	initComponents();
+    }
+    
+	public void actionPerformed(ActionEvent e) {
+		Object source = e.getSource();
+		
+		if(source == this.RunButton) RunButtonActionPerformed();
+        if(source == this.PauseButton) PauseButtonActionPerformed();
+        if(source == this.ResetButton) ResetButtonActionPerformed();
+        if(source == this.openUmd) openUmdActionPerformed();
+        if(source == this.OpenFile) OpenFileActionPerformed();
+        if(source == this.OpenMemStick) OpenMemStickActionPerformed();
+        if(source == this.ExitEmu) ExitEmuActionPerformed();
+        if(source == this.RunEmu) RunEmuActionPerformed();
+        if(source == this.PauseEmu) PauseEmuActionPerformed();
+        if(source == this.ResetEmu) ResetEmuActionPerformed();
+        
+        if(source == this.RotateItem) RotateItemActionPerformed();
+        if(source == this.SetttingsMenu) SetttingsMenuActionPerformed();
+        if(source == this.ShotItem) ShotItemActionPerformed();
+        if(source == this.SaveSnap) SaveSnapActionPerformed();
+        if(source == this.LoadSnap) LoadSnapActionPerformed();
+        
+        if(source == this.EnterDebugger) EnterDebuggerActionPerformed();
+        if(source == this.EnterMemoryViewer) EnterMemoryViewerActionPerformed();
+        if(source == this.VfpuRegisters) VfpuRegistersActionPerformed();
+        if(source == this.ToggleConsole) ToggleConsoleActionPerformed();
+        if(source == this.ElfHeaderViewer) ElfHeaderViewerActionPerformed();
+        if(source == this.InstructionCounter) InstructionCounterActionPerformed();
+        if(source == this.FileLog) FileLogActionPerformed();
+        if(source == this.ToggleDebugLog) ToggleDebugLogActionPerformed();
+        if(source == this.DumpIso) DumpIsoActionPerformed();
+        if(source == this.ResetProfiler) ResetProfilerActionPerformed();
+        
+		if(source == this.English) changeLanguage("en_EN");
+		if(source == this.French) changeLanguage("fr_FR");
+		
+		if(source == this.About) AboutActionPerformed();
+	}
 
 
     public LogWindow getConsoleWindow() {
@@ -491,11 +447,9 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         Settings.getInstance().readRecent("umd", recentUMD);
         Settings.getInstance().readRecent("file", recentFile);
-
         
         for (RecentElement umd : recentUMD) {
             JMenuItem item = new JMenuItem(umd.toString());
-            //item.setFont(Settings.getInstance().getFont()); // doesn't seem to work
             item.addActionListener(new RecentElementActionListener(RecentElementActionListener.TYPE_UMD, umd.path));
             RecentMenu.add(item);
         }
@@ -511,7 +465,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         }
     }
 
-private void ToggleConsoleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ToggleConsoleActionPerformed
+private void ToggleConsoleActionPerformed() {//GEN-FIRST:event_ToggleConsoleActionPerformed
     if (!consolewin.isVisible() && snapConsole) {
         mainwindowPos = this.getLocation();
         consolewin.setLocation(mainwindowPos.x, mainwindowPos.y + getHeight());
@@ -519,13 +473,13 @@ private void ToggleConsoleActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     consolewin.setVisible(!consolewin.isVisible());
 }//GEN-LAST:event_ToggleConsoleActionPerformed
 
-private void EnterDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterDebuggerActionPerformed
+private void EnterDebuggerActionPerformed() {//GEN-FIRST:event_EnterDebuggerActionPerformed
     PauseEmu();
     if (State.debugger == null)
     {
         State.debugger = new DisassemblerFrame(emulator);
-        int pos[] = Settings.getInstance().readWindowPos("disassembler");
-        State.debugger.setLocation(pos[0], pos[1]);
+        Point mainwindow = this.getLocation();
+        State.debugger.setLocation(mainwindow.x, mainwindow.y);
         State.debugger.setVisible(true);
     }
     else
@@ -535,17 +489,17 @@ private void EnterDebuggerActionPerformed(java.awt.event.ActionEvent evt) {//GEN
     }
 }//GEN-LAST:event_EnterDebuggerActionPerformed
 
-private void RunButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RunButtonActionPerformed
+private void RunButtonActionPerformed() {//GEN-FIRST:event_RunButtonActionPerformed
             RunEmu();
 }//GEN-LAST:event_RunButtonActionPerformed
  private JFileChooser makeJFileChooser() {
         final JFileChooser fc = new JFileChooser();
-        fc.setDialogTitle("Open Elf/Pbp File");
+        fc.setDialogTitle(Resource.get("openelfpbpfile"));
         fc.setCurrentDirectory(new java.io.File("."));
         return fc;
     }
 
-private void OpenFileActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenFileActionPerformed
+private void OpenFileActionPerformed() {//GEN-FIRST:event_OpenFileActionPerformed
     PauseEmu();
 
     final JFileChooser fc = makeJFileChooser();
@@ -649,16 +603,16 @@ public void loadFile(File file) {
         StepLogger.clear();
         StepLogger.setName(file.getPath());
     } catch (GeneralJpcspException e) {
-        JpcspDialogManager.showError(this, "General Error : " + e.getMessage());
+        JpcspDialogManager.showError(this, Resource.get("generalError")+" : " + e.getMessage());
     } catch (IOException e) {
         e.printStackTrace();
-        JpcspDialogManager.showError(this, "IO Error : " + e.getMessage());
+        JpcspDialogManager.showError(this, Resource.get("ioError")+" : " + e.getMessage());
     } catch (Exception ex) {
         ex.printStackTrace();
         if (ex.getMessage() != null) {
-            JpcspDialogManager.showError(this, "Critical Error : " + ex.getMessage());
+            JpcspDialogManager.showError(this, Resource.get("criticalError")+" : " + ex.getMessage());
         } else {
-            JpcspDialogManager.showError(this, "Critical Error : Check console for details.");
+            JpcspDialogManager.showError(this, Resource.get("criticalError")+" : Check console for details.");
         }
     }
 }
@@ -697,11 +651,11 @@ private void addRecentUMD(File file, String title) {
     }
 }
 
-private void PauseButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PauseButtonActionPerformed
+private void PauseButtonActionPerformed() {//GEN-FIRST:event_PauseButtonActionPerformed
     TogglePauseEmu();
 }//GEN-LAST:event_PauseButtonActionPerformed
 
-private void ElfHeaderViewerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ElfHeaderViewerActionPerformed
+private void ElfHeaderViewerActionPerformed() {//GEN-FIRST:event_ElfHeaderViewerActionPerformed
      if(elfheader==null)
      {
 
@@ -717,7 +671,7 @@ private void ElfHeaderViewerActionPerformed(java.awt.event.ActionEvent evt) {//G
      }
 }//GEN-LAST:event_ElfHeaderViewerActionPerformed
 
-private void EnterMemoryViewerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_EnterMemoryViewerActionPerformed
+private void EnterMemoryViewerActionPerformed() {//GEN-FIRST:event_EnterMemoryViewerActionPerformed
     PauseEmu();
     if (State.memoryViewer == null)
     {
@@ -733,7 +687,7 @@ private void EnterMemoryViewerActionPerformed(java.awt.event.ActionEvent evt) {/
     }
 }//GEN-LAST:event_EnterMemoryViewerActionPerformed
 
-private void ToggleDebugLogActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ToggleDebugLogActionPerformed
+private void ToggleDebugLogActionPerformed() {//GEN-FIRST:event_ToggleDebugLogActionPerformed
 	Logger rootLogger = Logger.getRootLogger();
 	if (rootLogLevel == null)
 	{
@@ -749,45 +703,46 @@ private void ToggleDebugLogActionPerformed(java.awt.event.ActionEvent evt) {//GE
 	}
 }//GEN-LAST:event_ToggleDebugLogActionPerformed
 
-private void AboutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_AboutActionPerformed
+private void AboutActionPerformed() {//GEN-FIRST:event_AboutActionPerformed
   StringBuilder message = new StringBuilder();
-    message.append("<html>").append("<h2>" + MetaInformation.FULL_NAME + "</h2>").append("<hr/>").append("Official site      : <a href='" + MetaInformation.OFFICIAL_SITE + "'>" + MetaInformation.OFFICIAL_SITE + "</a><br/>").append("Official forum     : <a href='" + MetaInformation.OFFICIAL_FORUM + "'>" + MetaInformation.OFFICIAL_FORUM + "</a><br/>").append("Official repository: <a href='" + MetaInformation.OFFICIAL_REPOSITORY + "'>" + MetaInformation.OFFICIAL_REPOSITORY + "</a><br/>").append("<hr/>").append("<i>Team:</i> <font color='gray'>" + MetaInformation.TEAM + "</font>").append("</html>");
+    message.append("<html>").append("<h2>" + MetaInformation.FULL_NAME + "</h2>").append("<hr/>")
+    .append("Official site      : <a href='" + MetaInformation.OFFICIAL_SITE + "'>" + MetaInformation.OFFICIAL_SITE + "</a><br/>")
+    .append("Official forum     : <a href='" + MetaInformation.OFFICIAL_FORUM + "'>" + MetaInformation.OFFICIAL_FORUM + "</a><br/>")
+    .append("Official repository: <a href='" + MetaInformation.OFFICIAL_REPOSITORY + "'>" + MetaInformation.OFFICIAL_REPOSITORY + "</a><br/>")
+    .append("<hr/>").append("<i>Team:</i> <font color='gray'>" + MetaInformation.TEAM + "</font>").append("</html>");
     JOptionPane.showMessageDialog(this, message.toString(), MetaInformation.FULL_NAME, JOptionPane.INFORMATION_MESSAGE);
 }//GEN-LAST:event_AboutActionPerformed
 
-private void RunEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RunEmuActionPerformed
+private void RunEmuActionPerformed() {//GEN-FIRST:event_RunEmuActionPerformed
    RunEmu();
 }//GEN-LAST:event_RunEmuActionPerformed
 
-private void PauseEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PauseEmuActionPerformed
+private void PauseEmuActionPerformed() {//GEN-FIRST:event_PauseEmuActionPerformed
   PauseEmu();
 }//GEN-LAST:event_PauseEmuActionPerformed
 
-private void SetttingsMenuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SetttingsMenuActionPerformed
-
-    if(setgui==null)
-     {
-
-      setgui = new SettingsGUI();
-      Point mainwindow = this.getLocation();
-      setgui.setLocation(mainwindow.x+100, mainwindow.y+50);
-      setgui.setVisible(true);
-
-      /* add a direct link to the main window*/
-      setgui.setMainGUI(this);
-     }
-     else
-     {
-       setgui.RefreshWindow();
-       setgui.setVisible(true);
-     }
+private void SetttingsMenuActionPerformed() {//GEN-FIRST:event_SetttingsMenuActionPerformed
+	if(setgui==null)
+    {
+		setgui = new SettingsGUI();
+		Point mainwindow = this.getLocation();
+		setgui.setLocation(mainwindow.x+100, mainwindow.y+50);
+		setgui.setVisible(true);
+		/* add a direct link to the main window*/
+		setgui.setMainGUI(this);
+    }
+    else
+    {
+    	 setgui.RefreshWindow();
+    	 setgui.setVisible(true);
+    }
 }//GEN-LAST:event_SetttingsMenuActionPerformed
 
-private void ExitEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ExitEmuActionPerformed
+private void ExitEmuActionPerformed() {//GEN-FIRST:event_ExitEmuActionPerformed
     exitEmu();
 }//GEN-LAST:event_ExitEmuActionPerformed
 
-private void OpenMemStickActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_OpenMemStickActionPerformed
+private void OpenMemStickActionPerformed() {//GEN-FIRST:event_OpenMemStickActionPerformed
     PauseEmu();
     if(memstick==null)
     {
@@ -807,7 +762,7 @@ private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:even
     exitEmu();
 }//GEN-LAST:event_formWindowClosing
 
-private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openUmdActionPerformed
+private void openUmdActionPerformed() {//GEN-FIRST:event_openUmdActionPerformed
     PauseEmu();
 
     if (Settings.getInstance().readBool("emu.umdbrowser"))
@@ -820,7 +775,7 @@ private void openUmdActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
     else
     {
         final JFileChooser fc = makeJFileChooser();
-        fc.setDialogTitle("Open umd iso");
+        fc.setDialogTitle(Resource.get("openumd"));
         int returnVal = fc.showOpenDialog(this);
 
         if (userChooseSomething(returnVal)) {
@@ -871,8 +826,7 @@ private boolean loadUnpackedUMD(String filename) throws IOException, GeneralJpcs
 
 public void loadUMD(File file) {
     try {
-        if (consolewin != null)
-            consolewin.clearScreenMessages();
+        if (consolewin != null) consolewin.clearScreenMessages();
         Emulator.log.info(MetaInformation.FULL_CUSTOM_NAME);
 
         umdLoaded = true;
@@ -924,19 +878,19 @@ public void loadUMD(File file) {
             StepLogger.clear();
             StepLogger.setName(file.getPath());
         } else {
-            throw new GeneralJpcspException("Loading of encrypted BOOT.BIN is not supported. It can only be decrypted using a real PSP.");
+        	throw new GeneralJpcspException(Resource.get("encryptedBoot"));
         }
     } catch (GeneralJpcspException e) {
-        JpcspDialogManager.showError(this, "General Error : " + e.getMessage());
+        JpcspDialogManager.showError(this, Resource.get("generalError")+" : " + e.getMessage());
     } catch (IOException e) {
         e.printStackTrace();
-        JpcspDialogManager.showError(this, "IO Error : " + e.getMessage());
+        JpcspDialogManager.showError(this, Resource.get("ioError")+" : " + e.getMessage());
     } catch (Exception ex) {
         ex.printStackTrace();
         if (ex.getMessage() != null) {
-            JpcspDialogManager.showError(this, "Critical Error : " + ex.getMessage());
+            JpcspDialogManager.showError(this, Resource.get("criticalError")+" : " + ex.getMessage());
         } else {
-            JpcspDialogManager.showError(this, "Critical Error : Check console for details.");
+            JpcspDialogManager.showError(this, Resource.get("criticalError")+" : Check console for details.");
         }
     }
 }
@@ -973,13 +927,13 @@ private void installCompatibilitySettings()
     boolean ignoreInvalidMemoryAccess = Settings.getInstance().readBool("emu.ignoreInvalidMemoryAccess");
     Memory.getInstance().setIgnoreInvalidMemoryAccess(ignoreInvalidMemoryAccess);
     jpcsp.Allegrex.compiler.Compiler.setIgnoreInvalidMemory(ignoreInvalidMemoryAccess);
-
+    
     boolean disableReservedThreadMemory = Settings.getInstance().readBool("emu.disablereservedthreadmemory");
     jpcsp.HLE.pspSysMem.getInstance().setDisableReservedThreadMemory(disableReservedThreadMemory);
 
     boolean enableWaitThreadEndCB = Settings.getInstance().readBool("emu.enablewaitthreadendcb");
     jpcsp.HLE.ThreadMan.getInstance().setEnableWaitThreadEndCB(enableWaitThreadEndCB);
-
+    
     boolean ignoreUnmappedImports = Settings.getInstance().readBool("emu.ignoreUnmappedImports");
     jpcsp.HLE.SyscallHandler.setEnableIgnoreUnmappedImports(ignoreUnmappedImports);
 }
@@ -1046,11 +1000,11 @@ public boolean installCompatibilityPatches(String filename)
     return true;
 }
 
-private void ResetEmuActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetEmuActionPerformed
+private void ResetEmuActionPerformed() {//GEN-FIRST:event_ResetEmuActionPerformed
     resetEmu();
 }//GEN-LAST:event_ResetEmuActionPerformed
 
-private void ResetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetButtonActionPerformed
+private void ResetButtonActionPerformed() {//GEN-FIRST:event_ResetButtonActionPerformed
     resetEmu();
 }//GEN-LAST:event_ResetButtonActionPerformed
 
@@ -1064,7 +1018,7 @@ private void resetEmu() {
     }
 }
 
-private void InstructionCounterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_InstructionCounterActionPerformed
+private void InstructionCounterActionPerformed() {//GEN-FIRST:event_InstructionCounterActionPerformed
     PauseEmu();
     if (instructioncounter==null)
     {
@@ -1081,16 +1035,16 @@ private void InstructionCounterActionPerformed(java.awt.event.ActionEvent evt) {
     }
 }//GEN-LAST:event_InstructionCounterActionPerformed
 
-private void FileLogActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_FileLogActionPerformed
+private void FileLogActionPerformed() {//GEN-FIRST:event_FileLogActionPerformed
     PauseEmu();
     State.fileLogger.setVisible(true);
 }//GEN-LAST:event_FileLogActionPerformed
 
-private void VfpuRegistersActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_VfpuRegistersActionPerformed
+private void VfpuRegistersActionPerformed() {//GEN-FIRST:event_VfpuRegistersActionPerformed
     VfpuFrame.getInstance().setVisible(true);
 }//GEN-LAST:event_VfpuRegistersActionPerformed
 
-private void DumpIsoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_DumpIsoActionPerformed
+private void DumpIsoActionPerformed() {//GEN-FIRST:event_DumpIsoActionPerformed
     if (umdLoaded) {
         UmdIsoReader iso = pspiofilemgr.getInstance().getIsoReader();
         if (iso != null) {
@@ -1103,7 +1057,7 @@ private void DumpIsoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
     }
 }//GEN-LAST:event_DumpIsoActionPerformed
 
-private void ResetProfilerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ResetProfilerActionPerformed
+private void ResetProfilerActionPerformed() {//GEN-FIRST:event_ResetProfilerActionPerformed
 	Profiler.reset();
 }//GEN-LAST:event_ResetProfilerActionPerformed
 
@@ -1111,15 +1065,15 @@ private void MenuBarMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:even
 pspdisplay.getInstance().repaint();
 }//GEN-LAST:event_MenuBarMouseExited
 
-private void ShotItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ShotItemActionPerformed
+private void ShotItemActionPerformed() {//GEN-FIRST:event_ShotItemActionPerformed
     pspdisplay.getInstance().getscreen = true;
 }//GEN-LAST:event_ShotItemActionPerformed
 
-private void RotateItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_RotateItemActionPerformed
+private void RotateItemActionPerformed() {//GEN-FIRST:event_RotateItemActionPerformed
 pspdisplay screen = pspdisplay.getInstance();
 Object[] options = {"90 CW","90 CCW","180","Mirror","Normal"};
 
-int jop = JOptionPane.showOptionDialog(null, "Choose the angle of rotation", "Rotate", JOptionPane.UNDEFINED_CONDITION, JOptionPane.QUESTION_MESSAGE, null, options, options[4]);
+int jop = JOptionPane.showOptionDialog(null, Resource.get("chooseRotation"), "Rotate", JOptionPane.UNDEFINED_CONDITION, JOptionPane.QUESTION_MESSAGE, null, options, options[4]);
 
 if(jop != -1)
     screen.rotate(jop);
@@ -1139,7 +1093,7 @@ private void safeWrite8(byte value, int address)
     if (Memory.getInstance().isAddressGood(address))
         Memory.getInstance().write8(address, value);
 }
-private void SaveSnapActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_SaveSnapActionPerformed
+private void SaveSnapActionPerformed() {//GEN-FIRST:event_SaveSnapActionPerformed
 File f = new File("Snap_" + State.discId + ".bin");
 BufferedOutputStream bOut = null;
 ByteBuffer cpuBuf = ByteBuffer.allocate(1024);
@@ -1166,7 +1120,7 @@ finally
 }
 }//GEN-LAST:event_SaveSnapActionPerformed
 
-private void LoadSnapActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_LoadSnapActionPerformed
+private void LoadSnapActionPerformed() {//GEN-FIRST:event_LoadSnapActionPerformed
 File f = new File("Snap_" + State.discId + ".bin");
 BufferedInputStream bIn = null;
 ByteBuffer cpuBuf = ByteBuffer.allocate(1024);
@@ -1276,7 +1230,7 @@ private void processArgs(String[] args) {
         if (args[i].equals("-d") || args[i].equals("--debugger")) {
             i++;
             // hack: reuse this function
-            EnterDebuggerActionPerformed(null);
+            EnterDebuggerActionPerformed();
         } else if (args[i].equals("-f") || args[i].equals("--loadfile")) {
             i++;
             if (i < args.length) {
@@ -1372,6 +1326,9 @@ private void processArgs(String[] args) {
     private javax.swing.JMenuItem VfpuRegisters;
     private javax.swing.JToolBar jToolBar1;
     private javax.swing.JMenuItem openUmd;
+    private javax.swing.JMenu LanguageMenu;
+    private javax.swing.JMenuItem English;
+    private javax.swing.JMenuItem French;
     // End of variables declaration//GEN-END:variables
 
     private boolean userChooseSomething(int returnVal) {

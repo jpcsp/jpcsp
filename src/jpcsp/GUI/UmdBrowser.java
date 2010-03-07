@@ -17,7 +17,6 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.GUI;
 
 import java.awt.Component;
-import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -37,7 +36,6 @@ import javax.swing.JDialog;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
-import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
@@ -49,11 +47,11 @@ import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 
 import jpcsp.MainGUI;
+import jpcsp.Resource;
 import jpcsp.filesystems.umdiso.UmdIsoFile;
 import jpcsp.filesystems.umdiso.UmdIsoReader;
 import jpcsp.format.PBP;
 import jpcsp.format.PSF;
-import jpcsp.util.MetaInformation;
 
 /**
  * @author Orphis
@@ -86,22 +84,22 @@ public class UmdBrowser extends JDialog {
 			setColumnMargin(0);
 			CellRenderer cellRenderer = new CellRenderer();
 			TableColumn tableColumn = new TableColumn(0, 144, cellRenderer, null);
-			tableColumn.setHeaderValue("Icon");
+			tableColumn.setHeaderValue(Resource.get("icon"));
 			tableColumn.setMaxWidth(154);
 			tableColumn.setMinWidth(144);
 			TableColumn tableColumn2 = new TableColumn(1, 100, cellRenderer, null);
-			tableColumn2.setHeaderValue("Title");
+			tableColumn2.setHeaderValue(Resource.get("title"));
                         TableColumn tableColumn3 = new TableColumn(2, 150, cellRenderer, null);
-			tableColumn3.setHeaderValue("DiscID");
+			tableColumn3.setHeaderValue(Resource.get("discid"));
                         TableColumn tableColumn4 = new TableColumn(3, 100, cellRenderer, null);
-			tableColumn4.setHeaderValue("Firmware");
+			tableColumn4.setHeaderValue(Resource.get("firmware"));
 			TableColumn tableColumn5 = new TableColumn(4, 200, cellRenderer, null);
-			tableColumn5.setHeaderValue("Path");
+			tableColumn5.setHeaderValue(Resource.get("path"));
 			addColumn(tableColumn);
 			addColumn(tableColumn2);
 			addColumn(tableColumn3);
-                        addColumn(tableColumn4);
-                        addColumn(tableColumn5);
+			addColumn(tableColumn4);
+			addColumn(tableColumn5);
 		}
 	}
 
@@ -112,7 +110,7 @@ public class UmdBrowser extends JDialog {
 
 		public MemStickTableModel(File path) {
 			if(!path.isDirectory()) {
-				System.out.println(path + " isn't a directory");
+				System.out.println(path + Resource.get("nodirectory"));
 				return;
 			}
 			programs = path.listFiles(new FileFilter() {
@@ -247,7 +245,7 @@ public class UmdBrowser extends JDialog {
 		this.path = path;
 		setModal(true);
 
-		setTitle("Umd Iso/Cso Browser");
+		setTitle(Resource.get("umdIsoCsobrowser"));
 		setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 		table = new JTable(new MemStickTableModel(path), new MemStickTableColumnModel());
 		table.setFillsViewportHeight(true);
@@ -304,7 +302,7 @@ public class UmdBrowser extends JDialog {
 		layout.setAutoCreateGaps(true);
 		layout.setAutoCreateContainerGaps(true);
 
-		JButton cancelButton = new JButton("Cancel");
+		JButton cancelButton = new JButton(Resource.get("cancel"));
 		cancelButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -312,7 +310,7 @@ public class UmdBrowser extends JDialog {
 				UmdBrowser.this.dispose();
 			}
 		});
-		loadButton = new JButton("Load");
+		loadButton = new JButton(Resource.get("load"));
 		loadButton.setEnabled(false);
 		loadButton.addActionListener(new ActionListener() {
 			@Override

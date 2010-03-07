@@ -43,10 +43,10 @@ import javax.swing.event.ListSelectionEvent;
 
 import jpcsp.Emulator;
 import jpcsp.Memory;
+import jpcsp.Resource;
 import jpcsp.Settings;
 import jpcsp.State;
 
-import jpcsp.Allegrex.Instructions.*;
 import jpcsp.Allegrex.Decoder;
 import jpcsp.Allegrex.CpuState;
 import jpcsp.Allegrex.Common.Instruction;
@@ -59,7 +59,9 @@ import jpcsp.util.*;
  * @author  shadow
  */
 public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOwner{
-    private int DebuggerPC;
+
+	private static final long serialVersionUID = 1L;
+	private int DebuggerPC;
     private int SelectedPC;
     private Emulator emu;
     private DefaultListModel listmodel = new DefaultListModel();
@@ -82,7 +84,10 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         initComponents();
         ViewTooltips.register(disasmList);
         disasmList.setCellRenderer(new StyledListCellRenderer() {
-            @Override
+
+			private static final long serialVersionUID = 1L;
+
+			@Override
             protected void customizeStyledLabel(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                 super.customizeStyledLabel(list, value, index, isSelected, cellHasFocus);
                 String text = getText();
@@ -376,7 +381,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         SearchField = new javax.swing.JTextField();
         jLabel3 = new javax.swing.JLabel();
 
-        CopyAddress.setText("Copy Address");
+        CopyAddress.setText(Resource.get("copyaddress"));
         CopyAddress.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 CopyAddressActionPerformed(evt);
@@ -384,7 +389,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         });
         DisMenu.add(CopyAddress);
 
-        CopyAll.setText("Copy All");
+        CopyAll.setText(Resource.get("copyall"));
         CopyAll.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 CopyAllActionPerformed(evt);
@@ -392,7 +397,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         });
         DisMenu.add(CopyAll);
 
-        BranchOrJump.setText("Copy Branch Or Jump address");
+        BranchOrJump.setText(Resource.get("copybranch"));
         BranchOrJump.setEnabled(false); //disable as default
         BranchOrJump.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -401,7 +406,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         });
         DisMenu.add(BranchOrJump);
 
-        SetPCToCursor.setText("Set PC to Cursor");
+        SetPCToCursor.setText(Resource.get("setpctocursor"));
         SetPCToCursor.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 SetPCToCursorActionPerformed(evt);
@@ -409,7 +414,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         });
         DisMenu.add(SetPCToCursor);
 
-        CopyValue.setText("Copy value");
+        CopyValue.setText(Resource.get("copyvalue"));
         CopyValue.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 CopyValueActionPerformed(evt);
@@ -417,7 +422,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         });
         RegMenu.add(CopyValue);
 
-        setTitle("Debugger");
+        setTitle(Resource.get("debugger"));
         setResizable(false);
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowDeactivated(java.awt.event.WindowEvent evt) {
@@ -449,7 +454,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         RunDebugger.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PlayIcon.png"))); // NOI18N
         RunDebugger.setMnemonic('R');
-        RunDebugger.setText("Run");
+        RunDebugger.setText(Resource.get("run"));
         RunDebugger.setFocusable(false);
         RunDebugger.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
         RunDebugger.setIconTextGap(2);
@@ -463,7 +468,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         PauseDebugger.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PauseIcon.png"))); // NOI18N
         PauseDebugger.setMnemonic('P');
-        PauseDebugger.setText("Pause");
+        PauseDebugger.setText(Resource.get("pause"));
         PauseDebugger.setFocusable(false);
         PauseDebugger.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
         PauseDebugger.setIconTextGap(2);
@@ -478,7 +483,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         disasmToolbar.add(jSeparator1);
 
         StepInto.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StepIntoIcon.png"))); // NOI18N
-        StepInto.setText("Step Into");
+        StepInto.setText(Resource.get("stepinto"));
         StepInto.setFocusable(false);
         StepInto.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
         StepInto.setIconTextGap(2);
@@ -491,7 +496,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         disasmToolbar.add(StepInto);
 
         jButton2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StepOverIcon.png"))); // NOI18N
-        jButton2.setText("Step Over");
+        jButton2.setText(Resource.get("stepover"));
         jButton2.setEnabled(false);
         jButton2.setFocusable(false);
         jButton2.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
@@ -500,7 +505,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
         disasmToolbar.add(jButton2);
 
         jButton3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StepOutIcon.png"))); // NOI18N
-        jButton3.setText("Step Out");
+        jButton3.setText(Resource.get("stepout"));
         jButton3.setEnabled(false);
         jButton3.setFocusable(false);
         jButton3.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
@@ -516,7 +521,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         ResetToPCbutton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/ResetToPc.png"))); // NOI18N
         ResetToPCbutton.setMnemonic('P');
-        ResetToPCbutton.setText("Reset To PC");
+        ResetToPCbutton.setText(Resource.get("resettopc"));
         ResetToPCbutton.setFocusable(false);
         ResetToPCbutton.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
         ResetToPCbutton.setIconTextGap(2);
@@ -530,7 +535,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         JumpToAddress.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/JumpTo.png"))); // NOI18N
         JumpToAddress.setMnemonic('J');
-        JumpToAddress.setText("Jump To");
+        JumpToAddress.setText(Resource.get("jumpto"));
         JumpToAddress.setFocusable(false);
         JumpToAddress.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
         JumpToAddress.setIconTextGap(2);
@@ -545,7 +550,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         AddBreakpoint.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/NewBreakpointIcon.png"))); // NOI18N
         AddBreakpoint.setMnemonic('A');
-        AddBreakpoint.setText("Add Break");
+        AddBreakpoint.setText(Resource.get("addbreak"));
         AddBreakpoint.setFocusable(false);
         AddBreakpoint.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
         AddBreakpoint.setIconTextGap(2);
@@ -559,7 +564,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         DeleteBreakpoint.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/DeleteBreakpointIcon.png"))); // NOI18N
         DeleteBreakpoint.setMnemonic('D');
-        DeleteBreakpoint.setText("Delete Break");
+        DeleteBreakpoint.setText(Resource.get("deletebreak"));
         DeleteBreakpoint.setFocusable(false);
         DeleteBreakpoint.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
         DeleteBreakpoint.setIconTextGap(2);
@@ -574,7 +579,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         DeleteAllBreakpoints.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/DeleteAllBreakpointsIcon.png"))); // NOI18N
         DeleteAllBreakpoints.setMnemonic('E');
-        DeleteAllBreakpoints.setText("DeleteAll");
+        DeleteAllBreakpoints.setText(Resource.get("deleteall"));
         DeleteAllBreakpoints.setFocusable(false);
         DeleteAllBreakpoints.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
         DeleteAllBreakpoints.setIconTextGap(2);
@@ -589,7 +594,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         DumpCodeToText.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/Dump.png"))); // NOI18N
         DumpCodeToText.setMnemonic('W');
-        DumpCodeToText.setText("Dump Code");
+        DumpCodeToText.setText(Resource.get("dumpcode"));
         DumpCodeToText.setFocusable(false);
         DumpCodeToText.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
         DumpCodeToText.setIconTextGap(2);
@@ -857,23 +862,23 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
 
         jLabel1.setText("GE Capture/Replay");
 
-        captureButton.setText("Capture next frame");
+        captureButton.setText(Resource.get("capturenextframe"));
         captureButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 captureButtonActionPerformed(evt);
             }
         });
 
-        replayButton.setText("Replay capture in next frame");
+        replayButton.setText(Resource.get("replaycapturenextframe"));
         replayButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 replayButtonActionPerformed(evt);
             }
         });
 
-        jLabel2.setText("Dump debug state");
+        jLabel2.setText(Resource.get("dumpdebugstate"));
 
-        dumpDebugStateButton.setText("Dump to console");
+        dumpDebugStateButton.setText(Resource.get("dumptoconsole"));
         dumpDebugStateButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 dumpDebugStateButtonActionPerformed(evt);
@@ -886,7 +891,7 @@ public class DisassemblerFrame extends javax.swing.JFrame implements ClipboardOw
             }
         });
 
-        jLabel3.setText("Search");
+        jLabel3.setText(Resource.get("search"));
 
         javax.swing.GroupLayout miscPanelLayout = new javax.swing.GroupLayout(miscPanel);
         miscPanel.setLayout(miscPanelLayout);
@@ -1096,7 +1101,7 @@ private void ResetToPCbuttonActionPerformed(java.awt.event.ActionEvent evt) {//G
 }//GEN-LAST:event_ResetToPCbuttonActionPerformed
 
 private void JumpToAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_JumpToAddressActionPerformed
-    String input = (String) JOptionPane.showInputDialog(this, "Enter the address to which to jump (Hex)", "Jpcsp", JOptionPane.QUESTION_MESSAGE, null, null, String.format("%08x", Emulator.getProcessor().cpu.pc));
+    String input = (String) JOptionPane.showInputDialog(this, Resource.get("entertojump"), "Jpcsp", JOptionPane.QUESTION_MESSAGE, null, null, String.format("%08x", Emulator.getProcessor().cpu.pc));
     if (input == null) {
         return;
     }
@@ -1104,7 +1109,7 @@ private void JumpToAddressActionPerformed(java.awt.event.ActionEvent evt) {//GEN
          try {
             value = Utilities.parseAddress(input);
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "The Number you enter is not correct");
+            JOptionPane.showMessageDialog(this, Resource.get("numbernotcorrect"));
             return;
         }
         DebuggerPC = value;

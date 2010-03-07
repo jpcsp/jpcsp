@@ -78,7 +78,7 @@ public class StepLogger {
         try {
             FileWriter fw = new FileWriter("step-trace.txt");
             PrintWriter out = new PrintWriter(fw);
-            int i, j;
+            int i;
             int flushPosition = (position - size + capacity) % capacity;
 
             out.println(name);
