@@ -194,6 +194,10 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         LanguageMenu = new javax.swing.JMenu();
         English = new javax.swing.JMenuItem();
         French = new javax.swing.JMenuItem();
+        Lithuanian = new javax.swing.JMenuItem();
+        Spanish = new javax.swing.JMenuItem();
+        Catalan = new javax.swing.JMenuItem(); 
+        
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
@@ -207,7 +211,6 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         
         jToolBar1.setFloatable(false);
         jToolBar1.setRollover(true);
-
         RunButton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PlayIcon.png"))); // NOI18N
         RunButton.setText(Resource.get("run"));
         RunButton.setFocusable(false);
@@ -245,16 +248,19 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         
         FileMenu.setText(Resource.get("file"));
 
+        openUmd.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, java.awt.event.InputEvent.CTRL_MASK));
         openUmd.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/LoadUmdIcon.png"))); // NOI18N
         openUmd.setText(Resource.get("loadumd"));
         openUmd.addActionListener(this);
         FileMenu.add(openUmd);
-        
+
+        OpenFile.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, java.awt.event.InputEvent.SHIFT_MASK));
         OpenFile.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/LoadFileIcon.png"))); // NOI18N
         OpenFile.setText(Resource.get("loadfile"));
         OpenFile.addActionListener(this);
         FileMenu.add(OpenFile);
-        
+
+        OpenMemStick.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, java.awt.event.InputEvent.ALT_MASK));
         OpenMemStick.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/LoadMemoryStick.png"))); // NOI18N
         OpenMemStick.setText(Resource.get("loadmemstick"));
         OpenMemStick.addActionListener(this);
@@ -264,6 +270,7 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         RecentMenu.setText(Resource.get("loadrecent"));
         FileMenu.add(RecentMenu);
 
+        ExitEmu.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_E, java.awt.event.InputEvent.CTRL_MASK));
         ExitEmu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/CloseIcon.png"))); // NOI18N
         ExitEmu.setText(Resource.get("exit"));
         ExitEmu.addActionListener(this);
@@ -272,17 +279,19 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         MenuBar.add(FileMenu);
 
         EmulationMenu.setText(Resource.get("emulation"));
-
+        RunEmu.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F2, 0));
         RunEmu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PlayIcon.png"))); // NOI18N
         RunEmu.setText(Resource.get("run"));
         RunEmu.addActionListener(this);
         EmulationMenu.add(RunEmu);
-        
+
+        PauseEmu.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F3, 0));
         PauseEmu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/PauseIcon.png"))); // NOI18N
         PauseEmu.setText(Resource.get("pause"));
         PauseEmu.addActionListener(this);
         EmulationMenu.add(PauseEmu);
-        
+
+        ResetEmu.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F4, 0));
         ResetEmu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/StopIcon.png"))); // NOI18N
         ResetEmu.setText(Resource.get("reset"));
         ResetEmu.addActionListener(this);
@@ -292,11 +301,13 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
 
         OptionsMenu.setText(Resource.get("options"));
 
+        RotateItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F11, 0));
         RotateItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/RotateIcon.png"))); // NOI18N
         RotateItem.setText(Resource.get("rotate"));
         RotateItem.addActionListener(this);
         OptionsMenu.add(RotateItem);
-        
+
+        SetttingsMenu.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F12, 0));
         SetttingsMenu.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/SettingsIcon.png"))); // NOI18N
         SetttingsMenu.setText(Resource.get("settings"));
         SetttingsMenu.addActionListener(this);
@@ -369,12 +380,26 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         LanguageMenu.setText(Resource.get("language"));
         
         // TODO Put menu for other languages here
+        English.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/en_EN.png")));
         English.setText(Resource.get("english"));
         English.addActionListener(this);
         LanguageMenu.add(English);
+        French.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/fr_FR.png")));
         French.setText(Resource.get("french"));
         French.addActionListener(this);
         LanguageMenu.add(French);
+        Lithuanian.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/lt_LT.png")));
+        Lithuanian.setText(Resource.get("lithuanian"));
+        Lithuanian.addActionListener(this);
+        LanguageMenu.add(Lithuanian);
+        Spanish.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/es_ES.png")));
+        Spanish.setText(Resource.get("spanish"));
+        Spanish.addActionListener(this);
+        LanguageMenu.add(Spanish); 
+        Catalan.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/es_CA.png")));
+        Catalan.setText(Resource.get("catalan"));
+        Catalan.addActionListener(this);
+        LanguageMenu.add(Catalan);  
 
         MenuBar.add(LanguageMenu);
         
@@ -431,6 +456,9 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         
 		if(source == this.English) changeLanguage("en_EN");
 		if(source == this.French) changeLanguage("fr_FR");
+                if(source == this.Lithuanian) changeLanguage("lt_LT");
+                if(source == this.Spanish) changeLanguage("es_ES");
+                if(source == this.Catalan) changeLanguage("es_CA");  
 		
 		if(source == this.About) AboutActionPerformed();
 	}
@@ -1329,6 +1357,9 @@ private void processArgs(String[] args) {
     private javax.swing.JMenu LanguageMenu;
     private javax.swing.JMenuItem English;
     private javax.swing.JMenuItem French;
+    private javax.swing.JMenuItem Lithuanian;
+    private javax.swing.JMenuItem Spanish;
+    private javax.swing.JMenuItem Catalan;
     // End of variables declaration//GEN-END:variables
 
     private boolean userChooseSomething(int returnVal) {
