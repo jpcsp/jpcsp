@@ -24,7 +24,7 @@ import java.io.InputStreamReader;
 
 public class MetaInformation {
     public static String NAME = "Jpcsp";
-    public static String VERSION = "v0.4";
+    public static String VERSION = "v0.5";
     public static String FULL_NAME = NAME + " " + VERSION;
     public static String FULL_CUSTOM_NAME = NAME + " " + VERSION;
     public static String OFFICIAL_SITE = "http://jpcsp.org/";
