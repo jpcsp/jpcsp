@@ -194,10 +194,10 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         LanguageMenu = new javax.swing.JMenu();
         English = new javax.swing.JMenuItem();
         French = new javax.swing.JMenuItem();
+        German = new javax.swing.JMenuItem();
         Lithuanian = new javax.swing.JMenuItem();
         Spanish = new javax.swing.JMenuItem();
         Catalan = new javax.swing.JMenuItem(); 
-        
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
@@ -388,6 +388,10 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         French.setText(Resource.get("french"));
         French.addActionListener(this);
         LanguageMenu.add(French);
+        German.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/de_DE.png")));
+        German.setText(Resource.get("german"));
+        German.addActionListener(this);
+        LanguageMenu.add(German);
         Lithuanian.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/lt_LT.png")));
         Lithuanian.setText(Resource.get("lithuanian"));
         Lithuanian.addActionListener(this);
@@ -454,11 +458,12 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         if(source == this.DumpIso) DumpIsoActionPerformed();
         if(source == this.ResetProfiler) ResetProfilerActionPerformed();
         
-		if(source == this.English) changeLanguage("en_EN");
-		if(source == this.French) changeLanguage("fr_FR");
-                if(source == this.Lithuanian) changeLanguage("lt_LT");
-                if(source == this.Spanish) changeLanguage("es_ES");
-                if(source == this.Catalan) changeLanguage("es_CA");  
+	if(source == this.English) changeLanguage("en_EN");
+	if(source == this.French) changeLanguage("fr_FR");
+        if(source == this.German) changeLanguage("de_DE");
+        if(source == this.Lithuanian) changeLanguage("lt_LT");
+        if(source == this.Spanish) changeLanguage("es_ES");
+        if(source == this.Catalan) changeLanguage("es_CA");
 		
 		if(source == this.About) AboutActionPerformed();
 	}
@@ -1357,6 +1362,7 @@ private void processArgs(String[] args) {
     private javax.swing.JMenu LanguageMenu;
     private javax.swing.JMenuItem English;
     private javax.swing.JMenuItem French;
+    private javax.swing.JMenuItem German;
     private javax.swing.JMenuItem Lithuanian;
     private javax.swing.JMenuItem Spanish;
     private javax.swing.JMenuItem Catalan;
