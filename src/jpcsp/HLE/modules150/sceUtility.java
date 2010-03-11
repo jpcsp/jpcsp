@@ -215,6 +215,8 @@ public class sceUtility implements HLEModule {
     protected Object saveListSelection;
     protected boolean saveListSelected;
 
+    protected int updatedSavedataAddr;
+
 	protected String formatMessageForDialog(String message) {
 		StringBuilder formattedMessage = new StringBuilder();
 
@@ -484,25 +486,8 @@ public class sceUtility implements HLEModule {
 	    return numberSectors * sectorSizeKb;
 	}
 
-	public void sceUtilitySavedataInitStart(Processor processor) {
-        CpuState cpu = processor.cpu; // New-Style Processor
+    private void executeSavedataMode(SceUtilitySavedataParam sceUtilitySavedataParam) {
         Memory mem = Processor.memory;
-
-        int savedataParamAddr = cpu.gpr[4];
-
-        SceUtilitySavedataParam sceUtilitySavedataParam = new SceUtilitySavedataParam();
-        sceUtilitySavedataParam.read(mem, savedataParamAddr);
-
-        Modules.log.debug("PARTIAL:sceUtilitySavedataInitStart savedataParamAddr=0x" + Integer.toHexString(savedataParamAddr) +
-            ", gameName=" + sceUtilitySavedataParam.gameName +
-            ", saveName=" + sceUtilitySavedataParam.saveName +
-            ", fileName=" + sceUtilitySavedataParam.fileName +
-            ", mode=" + sceUtilitySavedataParam.mode);
-
-        savedata_mode = sceUtilitySavedataParam.mode;
-
-        // HACK let's start on quit, then the app should call shutdown and then we change status to finished
-        savedata_status = PSP_UTILITY_DIALOG_QUIT;
 
         switch (savedata_mode) {
             case SceUtilitySavedataParam.MODE_AUTOLOAD:
@@ -542,7 +527,7 @@ public class sceUtility implements HLEModule {
 
                 showSavedataList(validNames);
                 if (saveListSelection == null || saveListSelection.equals("NOT PRESENT")) {
-                    Modules.log.warn("sceUtilitySavedataInitStart MODE_LISTLOAD no save selected");
+                    Modules.log.warn("Savedata MODE_LISTLOAD no save selected");
                     sceUtilitySavedataParam.base.result = ERROR_SAVEDATA_LOAD_NO_DATA;
                 }
 
@@ -585,7 +570,7 @@ public class sceUtility implements HLEModule {
             case SceUtilitySavedataParam.MODE_LISTSAVE:
                 showSavedataList(sceUtilitySavedataParam.saveNameList);
                 if (saveListSelection == null) {
-                    Modules.log.warn("sceUtilitySavedataInitStart MODE_LISTSAVE no save selected");
+                    Modules.log.warn("Savedata MODE_LISTSAVE no save selected");
                     sceUtilitySavedataParam.base.result = ERROR_SAVEDATA_SAVE_NO_MEMSTICK;
                 }
 
@@ -604,7 +589,7 @@ public class sceUtility implements HLEModule {
                 break;
 
             case SceUtilitySavedataParam.MODE_TRYSAVE: {
-                Modules.log.warn("PARTIAL:sceUtilitySavedataInitStart mode 8");
+                Modules.log.warn("PARTIAL:Savedata mode 8");
                 if (sceUtilitySavedataParam.isPresent(pspiofilemgr.getInstance())) {
                     sceUtilitySavedataParam.base.result = 0;
                 } else {
@@ -620,6 +605,16 @@ public class sceUtility implements HLEModule {
                     Utilities.writeStringNZ(mem, buffer1Addr +  12, 8, memoryStickFreeSpaceString);
 
                     Modules.log.debug("Memory Stick Free Space = " + memoryStickFreeSpaceString);
+                }
+                int buffer2Addr = sceUtilitySavedataParam.buffer2Addr;
+                if (mem.isAddressGood(buffer2Addr)) {
+                    String gameName = Utilities.readStringNZ(mem, buffer2Addr, 16);
+                    String saveName = Utilities.readStringNZ(mem, buffer2Addr + 16, 16);
+
+                    sceUtilitySavedataParam.gameName = gameName;
+                    sceUtilitySavedataParam.saveName = saveName;
+
+                    Modules.log.debug("Changing saveName to= " + saveName);
                 }
                 int buffer3Addr = sceUtilitySavedataParam.buffer3Addr;
                 if (mem.isAddressGood(buffer3Addr)) {
@@ -644,7 +639,7 @@ public class sceUtility implements HLEModule {
             }
 
             case SceUtilitySavedataParam.MODE_LIST: {
-                Modules.log.debug("sceUtilitySavedataInitStart mode 11");
+                Modules.log.debug("Savedata mode 11");
                 int buffer4Addr = sceUtilitySavedataParam.buffer4Addr;
                 if (mem.isAddressGood(buffer4Addr)) {
                 	int maxEntries = mem.read32(buffer4Addr + 0);
@@ -703,9 +698,40 @@ public class sceUtility implements HLEModule {
             }
 
             default:
-                Modules.log.warn("sceUtilitySavedataInitStart - Unsupported mode " + savedata_mode);
+                Modules.log.warn("Savedata - Unsupported mode " + savedata_mode);
                 sceUtilitySavedataParam.base.result = -1;
                 break;
+        }
+
+        savedata_status = PSP_UTILITY_DIALOG_QUIT;
+    }
+
+	public void sceUtilitySavedataInitStart(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
+        Memory mem = Processor.memory;
+
+        int savedataParamAddr = cpu.gpr[4];
+
+        SceUtilitySavedataParam sceUtilitySavedataParam = new SceUtilitySavedataParam();
+        sceUtilitySavedataParam.read(mem, savedataParamAddr);
+
+        Modules.log.debug("PARTIAL:sceUtilitySavedataInitStart savedataParamAddr=0x" + Integer.toHexString(savedataParamAddr) +
+            ", gameName=" + sceUtilitySavedataParam.gameName +
+            ", saveName=" + sceUtilitySavedataParam.saveName +
+            ", fileName=" + sceUtilitySavedataParam.fileName +
+            ", mode=" + sceUtilitySavedataParam.mode);
+
+        savedata_mode = sceUtilitySavedataParam.mode;
+        //Start with INIT and executeSavedataMode() should change it to QUIT.
+        savedata_status = PSP_UTILITY_DIALOG_INIT;
+
+        executeSavedataMode(sceUtilitySavedataParam);
+
+        //If, after processing the save mode, there's still no fileName
+        //it means sceUtilitySavedataUpdate will be called next.
+        if(sceUtilitySavedataParam.fileName.equals("")) {
+            savedata_status = PSP_UTILITY_DIALOG_VISIBLE;  //Change the status from QUIT to VISIBLE (it means it's still being processed).
+            updatedSavedataAddr = savedataParamAddr;      //Save the params' address (in case the game changes it).
         }
 
         sceUtilitySavedataParam.base.writeResult(mem, savedataParamAddr);
@@ -726,21 +752,36 @@ public class sceUtility implements HLEModule {
         cpu.gpr[2] = 0; // return code required
     }
 
-	public void sceUtilitySavedataUpdate(Processor processor) {
-		CpuState cpu = processor.cpu; // New-Style Processor
+    public void sceUtilitySavedataUpdate(Processor processor) {
+        CpuState cpu = processor.cpu; // New-Style Processor
 		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
-		/* put your own code here instead */
+        //If the status is VISIBLE, try executeSavedataMode() again.
+        //But this time let the final status be QUIT.
 
-		// int a0 = cpu.gpr[4];  int a1 = cpu.gpr[5];  ...  int t3 = cpu.gpr[11];
-		// float f12 = cpu.fpr[12];  float f13 = cpu.fpr[13];  ... float f19 = cpu.fpr[19];
+        //TODO: Check if any game calls this function
+        //more than once.
+		if(savedata_status == PSP_UTILITY_DIALOG_VISIBLE) {
+            SceUtilitySavedataParam sceUtilitySavedataParam = new SceUtilitySavedataParam();
+            sceUtilitySavedataParam.read(mem, updatedSavedataAddr);
 
-		Modules.log.warn("Unimplemented NID function sceUtilitySavedataUpdate [0xD4B95FFB]");
+            Modules.log.debug("PARTIAL:sceUtilitySavedataUpdate savedataParamAddr=0x" + Integer.toHexString(updatedSavedataAddr) +
+                    ", gameName=" + sceUtilitySavedataParam.gameName +
+                    ", saveName=" + sceUtilitySavedataParam.saveName +
+                    ", fileName=" + sceUtilitySavedataParam.fileName +
+                    ", mode=" + sceUtilitySavedataParam.mode);
 
-		cpu.gpr[2] = 0xDEADC0DE;
+            savedata_mode = sceUtilitySavedataParam.mode;
 
-		// cpu.gpr[2] = (int)(result & 0xffffffff);  cpu.gpr[3] = (int)(result  32); cpu.fpr[0] = result;
+            executeSavedataMode(sceUtilitySavedataParam);
+
+            sceUtilitySavedataParam.base.writeResult(mem, updatedSavedataAddr);
+            Modules.log.debug("sceUtilitySavedataUpdate savedResult:0x" + Integer.toHexString(sceUtilitySavedataParam.base.result));
+        }
+
+        cpu.gpr[2] = 0; //Requires return.
+        Modules.log.debug("sceUtilitySavedataUpdate ret:0x" + Integer.toHexString(cpu.gpr[2]));
 	}
 
     public void sceUtilitySavedataGetStatus(Processor processor) {
