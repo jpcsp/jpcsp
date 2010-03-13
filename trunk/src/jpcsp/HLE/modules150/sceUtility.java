@@ -588,13 +588,8 @@ public class sceUtility implements HLEModule {
                 }
                 break;
 
-            case SceUtilitySavedataParam.MODE_TRYSAVE: {
+            case SceUtilitySavedataParam.MODE_TRY: {
                 Modules.log.warn("PARTIAL:Savedata mode 8");
-                if (sceUtilitySavedataParam.isPresent(pspiofilemgr.getInstance())) {
-                    sceUtilitySavedataParam.base.result = 0;
-                } else {
-                    sceUtilitySavedataParam.base.result = ERROR_SAVEDATA_MODE8_NO_DATA;
-                }
                 int buffer1Addr = sceUtilitySavedataParam.buffer1Addr;
                 if (mem.isAddressGood(buffer1Addr)) {
                     String memoryStickFreeSpaceString = MemoryStick.getSizeKbString(MemoryStick.getFreeSizeKb());
@@ -610,6 +605,8 @@ public class sceUtility implements HLEModule {
                 if (mem.isAddressGood(buffer2Addr)) {
                     String gameName = Utilities.readStringNZ(mem, buffer2Addr, 16);
                     String saveName = Utilities.readStringNZ(mem, buffer2Addr + 16, 16);
+
+                    mem.write32(buffer2Addr + 52, MemoryStick.getSectorSize());   //Games that use buffer2Addr require this.
 
                     sceUtilitySavedataParam.gameName = gameName;
                     sceUtilitySavedataParam.saveName = saveName;
@@ -635,6 +632,8 @@ public class sceUtility implements HLEModule {
 
                     Modules.log.debug("Memory Stick Required Space = " + memoryStickRequiredSpaceString);
                 }
+
+                sceUtilitySavedataParam.base.result = 0;
                 break;
             }
 
@@ -757,6 +756,8 @@ public class sceUtility implements HLEModule {
 		// Processor cpu = processor; // Old-Style Processor
 		Memory mem = Processor.memory;
 
+        int unk = cpu.gpr[4];
+
         //If the status is VISIBLE, try executeSavedataMode() again.
         //But this time let the final status be QUIT.
 
@@ -770,7 +771,8 @@ public class sceUtility implements HLEModule {
                     ", gameName=" + sceUtilitySavedataParam.gameName +
                     ", saveName=" + sceUtilitySavedataParam.saveName +
                     ", fileName=" + sceUtilitySavedataParam.fileName +
-                    ", mode=" + sceUtilitySavedataParam.mode);
+                    ", mode=" + sceUtilitySavedataParam.mode +
+                    ", unk=" + unk);
 
             savedata_mode = sceUtilitySavedataParam.mode;
 

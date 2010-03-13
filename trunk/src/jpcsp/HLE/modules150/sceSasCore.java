@@ -533,7 +533,7 @@ public class sceSasCore implements HLEModule {
         int unk1 = cpu.gpr[6]; // set to 1
         // 99% sure there are no more parameters
 
-        Modules.log.warn("IGNORING:__sceSasGetEnvelopeHeight(sasCore=0x" + Integer.toHexString(sasCore) + ",voice=" + voice + ",unk1=0x" + Integer.toHexString(unk1) + ")");
+        Modules.log.debug("IGNORING:__sceSasGetEnvelopeHeight(sasCore=0x" + Integer.toHexString(sasCore) + ",voice=" + voice + ",unk1=0x" + Integer.toHexString(unk1) + ")");
 
         cpu.gpr[2] = 0xDEADC0DE;
     }
