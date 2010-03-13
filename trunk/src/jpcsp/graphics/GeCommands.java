@@ -65,7 +65,7 @@ public class GeCommands {
         public final static int VTYPE_POSITION_FORMAT_NOT_PRESENT = 0x00;
         public final static int VTYPE_POSITION_FORMAT_8_BIT = 0x01;
         public final static int VTYPE_POSITION_FORMAT_16_BIT = 0x02;
-        public final static int VTYPE_POSITION_FORMAT_36_BIT = 0x03;
+        public final static int VTYPE_POSITION_FORMAT_32_BIT = 0x03;
 
         public final static int VTYPE_NORMAL_FORMAT_NOT_PRESENT = 0x00;
         public final static int VTYPE_NORMAL_FORMAT_8_BIT = 0x01;

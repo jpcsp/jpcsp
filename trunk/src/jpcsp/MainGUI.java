@@ -458,8 +458,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         if(source == this.DumpIso) DumpIsoActionPerformed();
         if(source == this.ResetProfiler) ResetProfilerActionPerformed();
         
-	if(source == this.English) changeLanguage("en_EN");
-	if(source == this.French) changeLanguage("fr_FR");
+        if(source == this.English) changeLanguage("en_EN");
+        if(source == this.French) changeLanguage("fr_FR");
         if(source == this.German) changeLanguage("de_DE");
         if(source == this.Lithuanian) changeLanguage("lt_LT");
         if(source == this.Spanish) changeLanguage("es_ES");
@@ -755,6 +755,7 @@ private void PauseEmuActionPerformed() {//GEN-FIRST:event_PauseEmuActionPerforme
 }//GEN-LAST:event_PauseEmuActionPerformed
 
 private void SetttingsMenuActionPerformed() {//GEN-FIRST:event_SetttingsMenuActionPerformed
+	PauseEmu();
 	if(setgui==null)
     {
 		setgui = new SettingsGUI();

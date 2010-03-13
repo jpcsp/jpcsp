@@ -58,7 +58,6 @@ public class Processor /* extends OldCpuState */ {
 
         for(int i = 0; i < 32; i++)
             cpu.gpr[i] = buffer.getInt();
-
     }
 
     public void save(ByteBuffer buffer) {
@@ -100,9 +99,9 @@ public class Processor /* extends OldCpuState */ {
             line.opcode = memory.read32(cpu.pc);
             line.insn = Decoder.instruction(line.opcode);
             insnCacheMisses++;
-        } else {
-            insnCacheHits++;
         }
+        else insnCacheHits++;
+        
         insnCount++;
         // by default, the next instruction to emulate is at the next address
         cpu.pc = cpu.npc = cpu.pc + 4;
