@@ -50,7 +50,7 @@ public class SceUtilitySavedataParam extends pspAbstractMemoryMappedStructure {
 		public final static int MODE_LISTSAVE = 5;
 		public final static int MODE_LISTDELETE = 6;
 		public final static int MODE_DELETE = 7;
-		public final static int MODE_TRYSAVE = 8;
+		public final static int MODE_TRY = 8;
 		public final static int MODE_LIST = 11;
 		public final static int MODE_TEST = 15;
 	public int focus;
