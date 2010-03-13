@@ -909,7 +909,6 @@ public class sceMpeg implements HLEModule {
 
     public void sceMpegAvcDecode(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         int mpeg = cpu.gpr[4];
@@ -1380,7 +1379,6 @@ public class sceMpeg implements HLEModule {
 
     public void sceMpegAtracDecode(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         int mpeg = cpu.gpr[4];
@@ -1456,7 +1454,6 @@ public class sceMpeg implements HLEModule {
 
     public void sceMpegRingbufferConstruct(Processor processor) {
         CpuState cpu = processor.cpu; // New-Style Processor
-        // Processor cpu = processor; // Old-Style Processor
         Memory mem = Processor.memory;
 
         int ringbuffer_addr = cpu.gpr[4];
