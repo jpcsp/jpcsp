@@ -24,10 +24,12 @@ along with Jpcsp.  If not, see <http://www.gnu.org/licenses/>.
 package jpcsp.HLE;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Set;
 
 import jpcsp.Emulator;
 import jpcsp.GeneralJpcspException;
@@ -40,7 +42,7 @@ public class pspSysMem {
     private static pspSysMem instance;
 
     private static HashMap<Integer, SysMemInfo> blockList;
-    private static List<SysMemInfo> freeBlockList;
+    private static Set<SysMemInfo> freeBlockSet;
     private int heapTop, heapBottom;
     private int firmwareVersion = PSP_FIRMWARE_150;
 
@@ -85,7 +87,7 @@ public class pspSysMem {
     public void Initialise(int firmwareVersion)
     {
         blockList = new HashMap<Integer, SysMemInfo>();
-        freeBlockList = new LinkedList<SysMemInfo>();
+        freeBlockSet = new HashSet<SysMemInfo>();
 
         // The loader should do the first malloc which will set the heapBottom corectly
         heapBottom = 0x08400000; //MemoryMap.START_RAM; //0x08900000;
@@ -124,7 +126,7 @@ public class pspSysMem {
 	        }
 
 	        // Allocate from the free block list
-	    	for (ListIterator<SysMemInfo> lit = freeBlockList.listIterator(); lit.hasNext(); )
+	    	for (Iterator<SysMemInfo> lit = freeBlockSet.iterator(); lit.hasNext(); )
 	    	{
 	    		SysMemInfo info = lit.next();
 
@@ -146,7 +148,7 @@ public class pspSysMem {
 	    				if (info.size > size + alignmentSize)
 	    				{
 	    					SysMemInfo resizedInfo = new SysMemInfo(info.partitionid, info.name, info.type, info.size - size - alignmentSize, allocatedAddress + size);
-	    					freeBlockList.add(resizedInfo);
+	    					freeBlockSet.add(resizedInfo);
 	    				}
 
 	    				break;
@@ -289,7 +291,7 @@ public class pspSysMem {
     	boolean changed;
     	do {
     		changed = false;
-	    	for (ListIterator<SysMemInfo> lit = freeBlockList.listIterator(); lit.hasNext(); ) {
+	    	for (Iterator<SysMemInfo> lit = freeBlockSet.iterator(); lit.hasNext(); ) {
 	    		SysMemInfo info = lit.next();
 	    		if (info.addr == heapTop + 1) {
 	    			heapTop += info.size;
@@ -305,26 +307,26 @@ public class pspSysMem {
 
     	// Merge the newInfo block with adjacent blocks
     	// if it has not yet been merged into the heap
-    	if (freeBlockList.contains(newInfo)) {
+    	if (freeBlockSet.contains(newInfo)) {
 			SysMemInfo mergedInfo;
 			do {
 				mergedInfo = null;
-		    	for (ListIterator<SysMemInfo> lit = freeBlockList.listIterator(); lit.hasNext(); ) {
+		    	for (Iterator<SysMemInfo> lit = freeBlockSet.iterator(); lit.hasNext(); ) {
 		    		SysMemInfo info = lit.next();
 		    		if (info != newInfo) {
 		    			if (newInfo.addr + newInfo.size == info.addr) {
 		    				// partitionid, name and type are not relevant here.
 		    				mergedInfo = new SysMemInfo(newInfo.partitionid, newInfo.name, newInfo.type, newInfo.size + info.size, newInfo.addr);
 		    				lit.remove();
-		    				freeBlockList.remove(newInfo);
-		    				freeBlockList.add(mergedInfo);
+		    				freeBlockSet.remove(newInfo);
+		    				freeBlockSet.add(mergedInfo);
 		    				break;
 		    			} else if (info.addr + info.size == newInfo.addr) {
 		    				// partitionid, name and type are not relevant here.
 		    				mergedInfo = new SysMemInfo(info.partitionid, info.name, info.type, info.size + newInfo.size, info.addr);
 		    				lit.remove();
-		    				freeBlockList.remove(newInfo);
-		    				freeBlockList.add(mergedInfo);
+		    				freeBlockSet.remove(newInfo);
+		    				freeBlockSet.add(mergedInfo);
 		    				break;
 		    			}
 		    		}
@@ -338,12 +340,12 @@ public class pspSysMem {
 
     private void free(SysMemInfo info)
     {
-    	freeBlockList.add(info);
+    	freeBlockSet.add(info);
     	cleanupFreeBlockList(info);
-    	if (freeBlockList.isEmpty()) {
+    	if (freeBlockSet.isEmpty()) {
     		Modules.log.info("pspSysMem.free(info) successful (all blocks released)");
-    	} else if (!freeBlockList.contains(info)) {
-    		Modules.log.info("PARTIAL: pspSysMem.free(info) successful (" + freeBlockList.size() + " block(s) still pending)");
+    	} else if (!freeBlockSet.contains(info)) {
+    		Modules.log.info("PARTIAL: pspSysMem.free(info) successful (" + freeBlockSet.size() + " block(s) still pending)");
     	} else {
     		Modules.log.warn("PARTIAL: pspSysMem.free(info) partially implemented " + info);
     	}
@@ -364,7 +366,7 @@ public class pspSysMem {
         int maxFree = (heapTopGuard - heapBottom - 64) & ~3;
 
         // Check if a free block is larger than the heap
-        for (ListIterator<SysMemInfo> lit = freeBlockList.listIterator(); lit.hasNext(); ) {
+        for (Iterator<SysMemInfo> lit = freeBlockSet.iterator(); lit.hasNext(); ) {
     		SysMemInfo info = lit.next();
     		if (info.size > maxFree) {
     			maxFree = info.size;
@@ -604,7 +606,7 @@ public class pspSysMem {
             allocatedSize += info.size;
         }
 
-        for (Iterator<SysMemInfo> it = freeBlockList.iterator(); it.hasNext();)
+        for (Iterator<SysMemInfo> it = freeBlockSet.iterator(); it.hasNext();)
         {
             SysMemInfo info = it.next();
             for (int i = info.addr; i < info.addr + info.size; i += SLOT_SIZE) {
