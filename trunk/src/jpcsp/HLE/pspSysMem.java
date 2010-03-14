@@ -261,18 +261,7 @@ public class pspSysMem {
         // Delete blocks adjacent to the heap top and bottom limits
         SysMemInfo[] sortedInfos = new SysMemInfo[freeBlockSet.size()];
         freeBlockSet.toArray(sortedInfos);
-        Arrays.sort(sortedInfos, new Comparator<SysMemInfo>() {
-
-            @Override
-            public int compare(SysMemInfo o1, SysMemInfo o2) {
-                //there are no equal adresses. Or at least there shouldn't be...
-                if (o1.addr == o2.addr) {
-                    Modules.log.warn("Set invariant broken for SysMemInfo " + o1);
-                    return 0;
-                }
-                return o1.addr < o2.addr ? -1 : 1;
-            }
-        });
+        Arrays.sort(sortedInfos);
 
         int startIndex = 0;
         for (SysMemInfo info : sortedInfos) {
@@ -625,7 +614,7 @@ public class pspSysMem {
         System.err.println(fragmentedDiagram);
     }
 
-    static class SysMemInfo {
+    static class SysMemInfo implements Comparable<SysMemInfo> {
 
         public final int uid;
         public final int partitionid;
@@ -649,6 +638,16 @@ public class pspSysMem {
         @Override
         public String toString() {
             return "SysMemInfo{ uid=" + Integer.toHexString(uid) + ";partitionid=" + partitionid + ";name=" + name + ";type=" + type + ";size=" + size + ";addr=" + Integer.toHexString(addr) + " }";
+        }
+        
+        @Override
+        public int compareTo(SysMemInfo o) {
+        //there are no equal adresses. Or at least there shouldn't be...
+            if (addr == o.addr) {
+                Modules.log.warn("Set invariant broken for SysMemInfo " + this);
+                return 0;
+            }
+            return addr < o.addr ? -1 : 1;
         }
     }
 }
