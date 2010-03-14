@@ -314,10 +314,9 @@ public class pspSysMem {
                 if (info.addr + info.size != infoToMerge.addr) {
                     break;
                 }
-                SysMemInfo mergedInfo = new SysMemInfo(info.partitionid, info.name, info.type, info.size + newInfo.size, info.addr);
+                SysMemInfo mergedInfo = new SysMemInfo(info.partitionid, info.name, info.type, info.size + infoToMerge.size, info.addr);
                 freeBlockSet.remove(info);
                 freeBlockSet.remove(infoToMerge);
-                freeBlockSet.add(mergedInfo);
                 infoToMerge = mergedInfo;
             }
             //merge to the right.
@@ -326,12 +325,13 @@ public class pspSysMem {
                 if (infoToMerge.addr + infoToMerge.size != info.addr) {
                     break;
                 }
-                SysMemInfo mergedInfo = new SysMemInfo(newInfo.partitionid, newInfo.name, newInfo.type, newInfo.size + info.size, newInfo.addr);
+                SysMemInfo mergedInfo = new SysMemInfo(infoToMerge.partitionid, infoToMerge.name, infoToMerge.type, infoToMerge.size + info.size, infoToMerge.addr);
                 freeBlockSet.remove(info);
                 freeBlockSet.remove(infoToMerge);
-                freeBlockSet.add(mergedInfo);
                 infoToMerge = mergedInfo;
             }
+            //add the merged info
+            freeBlockSet.add(infoToMerge);
         }
     }
 
