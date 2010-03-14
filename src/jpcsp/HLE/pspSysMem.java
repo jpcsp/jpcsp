@@ -253,6 +253,18 @@ public class pspSysMem {
         }
     }
 
+    // For internal use, example: ThreadMan allocating stack space
+    // Also removes the associated SysMemInfo (if found) from blockList
+    public void freeWithUID(int uid){
+        SysMemInfo info = blockList.get(uid);
+        if (info != null) {
+            free(info);
+        }else{
+            // HLE modules using malloc should also call addSysMemInfo
+            Modules.log.warn("pspSysMem.free(addr) failed to find SysMemInfo with uid:" + uid);
+        }
+    }
+
     private void cleanupFreeBlockList(final SysMemInfo newInfo) {
         // Delete blocks adjacent to the heap top and bottom limits
         SysMemInfo[] sortedInfos = new SysMemInfo[freeBlockSet.size()];

@@ -86,7 +86,7 @@ public class VplManager {
             }
 
             // Free memory
-            info.deleteVplSysMemInfo();
+            info.deleteSysMemInfo();
 
             cpu.gpr[2] = 0;
         }

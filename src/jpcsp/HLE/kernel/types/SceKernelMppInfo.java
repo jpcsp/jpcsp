@@ -36,6 +36,7 @@ public class SceKernelMppInfo {
     public int numSendWaitThreads;
     public int numReceiveWaitThreads;
 
+    private final int sysMemUID;
     // Internal info
     public final int uid;
     public final int partitionid;
@@ -61,8 +62,8 @@ public class SceKernelMppInfo {
         address = pspSysMem.getInstance().malloc(partitionid, memType, alignedSize, 0);
         if (address == 0)
             throw new RuntimeException("SceKernelFplInfo: not enough free mem");
-        pspSysMem.getInstance().addSysMemInfo(partitionid, "ThreadMan-MsgPipe", memType, alignedSize, address);
 
+        this.sysMemUID = pspSysMem.getInstance().addSysMemInfo(partitionid, "ThreadMan-MsgPipe", memType, alignedSize, address);
         this.uid = SceUidManager.getNewUid("ThreadMan-MsgPipe");
         this.partitionid = partitionid;
         this.head = 0;
@@ -113,8 +114,8 @@ public class SceKernelMppInfo {
         return freeSize;
     }
 
-    public void free() {
-        pspSysMem.getInstance().free(address);
+    public void deleteSysMemInfo() {
+        pspSysMem.getInstance().freeWithUID(sysMemUID);
     }
 
     // this will clobber itself if used carelessly but won't overflow outside of its allocated memory
