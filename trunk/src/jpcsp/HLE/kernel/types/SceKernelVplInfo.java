@@ -36,6 +36,7 @@ public class SceKernelVplInfo {
     public int freeSize;
     public int numWaitThreads;
 
+    private final int sysMemUID;
     // Internal info
     public final int uid;
     public final int partitionid;
@@ -72,7 +73,7 @@ public class SceKernelVplInfo {
         int addr = pspSysMem.getInstance().malloc(partitionid, memType, totalVplSize, 0);
         if (addr == 0)
             throw new RuntimeException("SceKernelVplInfo: not enough free mem");
-        pspSysMem.getInstance().addSysMemInfo(partitionid, "ThreadMan-Vpl", memType, totalVplSize, addr);
+        sysMemUID = pspSysMem.getInstance().addSysMemInfo(partitionid, "ThreadMan-Vpl", memType, totalVplSize, addr);
 
         // 24 byte header, probably not necessary to mimick this
         Memory mem = Memory.getInstance();
@@ -104,8 +105,8 @@ public class SceKernelVplInfo {
         return info;
     }
 
-    public void deleteVplSysMemInfo() {
-        pspSysMem.getInstance().free(allocAddress);
+    public void deleteSysMemInfo() {
+        pspSysMem.getInstance().freeWithUID(sysMemUID);
     }
 
     public void read(Memory mem, int address) {

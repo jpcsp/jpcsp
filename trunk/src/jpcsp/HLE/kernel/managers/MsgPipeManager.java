@@ -212,7 +212,7 @@ public class MsgPipeManager {
             cpu.gpr[2] = ERROR_NOT_FOUND_MESSAGE_PIPE;
         } else {
             // Free memory
-            info.free();
+            info.deleteSysMemInfo();
 
             cpu.gpr[2] = 0;
         }
