@@ -1,8 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
-
 package jpcsp.filesystems.umdiso.iso9660;
 
 import java.io.*;
