@@ -86,7 +86,7 @@ public class VplManager {
             }
 
             // Free memory
-            pspSysMem.getInstance().free(info.allocAddress);
+            info.deleteVplSysMemInfo();
 
             cpu.gpr[2] = 0;
         }

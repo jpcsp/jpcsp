@@ -104,6 +104,10 @@ public class SceKernelVplInfo {
         return info;
     }
 
+    public void deleteVplSysMemInfo() {
+        pspSysMem.getInstance().free(allocAddress);
+    }
+
     public void read(Memory mem, int address) {
         int size        = mem.read32(address);
         name            = Utilities.readStringNZ(mem, address + 4, 32);
