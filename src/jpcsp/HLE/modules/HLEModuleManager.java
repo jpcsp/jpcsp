@@ -256,11 +256,6 @@ public class HLEModuleManager {
 
         // TODO terminate delete all threads that belong to this module
 
-        pspSysMem sysMem = pspSysMem.getInstance();
-        for (int i = 0; i < sceModule.nsegment; i++) {
-            sysMem.free(sceModule.segmentaddr[i]);
-        }
-
         sceModule.free();
 
         Managers.modules.removeModule(sceModule.modid);
