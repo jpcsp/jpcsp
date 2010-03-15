@@ -731,7 +731,7 @@ public class ThreadMan {
         // cleanup thread - free the stack
         if (thread.stack_addr != 0) {
             Modules.log.debug("thread:'" + thread.name + "' freeing stack " + String.format("0x%08X", thread.stack_addr));
-            pspSysMem.getInstance().free(thread.stack_addr);
+            thread.deleteSysMemInfo();
         }
 
         waitingThreads.remove(thread);
@@ -2177,26 +2177,6 @@ public class ThreadMan {
                     thread.do_callbacks = false;
                 }
             }
-        }
-    }
-
-    /** @return the bottom address or 0 on failure. */
-    public int mallocStack(int size) {
-        if (size > 0) {
-            //int p = 0x09f00000 - stackAllocated;
-            //stackAllocated += size;
-            //return p;
-
-            //int p = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_HighAligned, size, 0x1000);
-            int p = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_High, size, 0);
-            if (p != 0) {
-                pspSysMem.getInstance().addSysMemInfo(2, "ThreadMan-Stack", pspSysMem.PSP_SMEM_High, size, p);
-                //p += size; // top address
-            }
-
-            return p;
-        } else {
-            return 0;
         }
     }
 

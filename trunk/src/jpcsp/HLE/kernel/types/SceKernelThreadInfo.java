@@ -25,6 +25,7 @@ import jpcsp.Allegrex.compiler.RuntimeContext;
 import jpcsp.HLE.ThreadMan;
 import jpcsp.HLE.kernel.managers.SceUidManager;
 import jpcsp.HLE.modules.HLECallback;
+import jpcsp.HLE.pspSysMem;
 import static jpcsp.HLE.kernel.types.SceKernelErrors.*;
 import jpcsp.util.Utilities;
 
@@ -101,6 +102,7 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
     public int threadPreemptCount;
     public int releaseCount;
 
+    private int sysMemUID = -1;
     // internal variables
     public final int uid;
     public int moduleid;
@@ -150,7 +152,15 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
         uid = SceUidManager.getNewUid("ThreadMan-thread");
 
         // setup the stack
-        stack_addr = ThreadMan.getInstance().mallocStack(stackSize);
+        if (stackSize > 0) {
+            stack_addr = pspSysMem.getInstance().malloc(2, pspSysMem.PSP_SMEM_High, stackSize, 0);
+            if (stack_addr != 0) {
+                sysMemUID = pspSysMem.getInstance().addSysMemInfo(2, "ThreadMan-Stack", pspSysMem.PSP_SMEM_High, stackSize, stack_addr);
+            }
+        } else {
+            stack_addr = 0;
+        }
+
 
         gpReg_addr = Emulator.getProcessor().cpu.gpr[28]; // inherit gpReg // TODO addr into ModuleInfo struct?
         // internal state
@@ -285,4 +295,8 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
 	public String toString() {
 		return name;
 	}
+
+    public void deleteSysMemInfo() {
+        pspSysMem.getInstance().freeWithUID(sysMemUID);
+    }
 }

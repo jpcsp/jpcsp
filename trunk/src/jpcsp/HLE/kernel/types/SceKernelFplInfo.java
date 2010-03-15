@@ -37,6 +37,7 @@ public class SceKernelFplInfo {
     public int freeBlocks;
     public int numWaitThreads;
 
+    private final int sysMemUID;
     // Internal info
     public final int uid;
     public final int partitionid;
@@ -78,7 +79,7 @@ public class SceKernelFplInfo {
         int addr = pspSysMem.getInstance().malloc(partitionid, memType, totalFplSize, 0);
         if (addr == 0)
             throw new RuntimeException("SceKernelFplInfo: not enough free mem");
-        pspSysMem.getInstance().addSysMemInfo(partitionid, "ThreadMan-Fpl", memType, totalFplSize, addr);
+        sysMemUID = pspSysMem.getInstance().addSysMemInfo(partitionid, "ThreadMan-Fpl", memType, totalFplSize, addr);
 
         // Initialise the block addresses
         for (int i = 0; i < numBlocks; i++) {
@@ -165,5 +166,9 @@ public class SceKernelFplInfo {
             if (blockAddress[i] == addr)
                 return i;
         return -1;
+    }
+
+    public void deleteSysMemInfo() {
+        pspSysMem.getInstance().freeWithUID(sysMemUID);
     }
 }
