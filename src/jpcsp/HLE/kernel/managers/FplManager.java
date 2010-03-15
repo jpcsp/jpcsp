@@ -98,7 +98,7 @@ public class FplManager {
             }
 
             // Free memory
-            pspSysMem.getInstance().free(info.blockAddress[0]);
+            info.deleteSysMemInfo();
 
             cpu.gpr[2] = 0;
         }
