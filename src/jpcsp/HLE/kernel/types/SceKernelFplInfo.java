@@ -169,6 +169,6 @@ public class SceKernelFplInfo {
     }
 
     public void deleteSysMemInfo() {
-        pspSysMem.getInstance().free(sysMemUID, -1);
+        pspSysMem.getInstance().free(sysMemUID, blockAddress[0]);
     }
 }

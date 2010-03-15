@@ -106,7 +106,7 @@ public class SceKernelVplInfo {
     }
 
     public void deleteSysMemInfo() {
-        pspSysMem.getInstance().free(sysMemUID, -1);
+        pspSysMem.getInstance().free(sysMemUID, allocAddress);
     }
 
     public void read(Memory mem, int address) {
