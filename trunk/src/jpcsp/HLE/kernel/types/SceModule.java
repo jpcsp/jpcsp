@@ -128,7 +128,7 @@ public class SceModule {
     public void free() {
         pspSysMem sysMem = pspSysMem.getInstance();
         for (int i = 0; i < nsegment; i++) {
-            sysMem.free(segmentaddr[i]);
+            sysMem.free(-1, segmentaddr[i]);
         }
 
         // TODO fixup "next" field/linked list

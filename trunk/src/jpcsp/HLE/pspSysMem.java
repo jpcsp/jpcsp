@@ -231,37 +231,33 @@ public class pspSysMem {
         return info.uid;
     }
 
-    // For internal use, example: ThreadMan allocating stack space
-    // Also removes the associated SysMemInfo (if found) from blockList
-    public void free(int addr) {
-        boolean found = false;
-
-        // Reverse lookup on blockList, get SysMemInfo and call free
-        for (Iterator<SysMemInfo> it = blockList.values().iterator(); it.hasNext();) {
-            SysMemInfo info = it.next();
-            if (info.addr == addr) {
-                found = true;
-                it.remove();
-                free(info);
-                break;
+    /**
+     * For internal use, example: ThreadMan allocating stack space
+     * Also removes the associated SysMemInfo (if found) from blockList
+     * @param uidFastPath can be <= 0 to disable the fast path
+     * @param memAddress slower, but due to low cohesion or "fake" allocations
+     * sometimes necessary
+     */
+    public void free(int uidFastPath, int memAddress) {
+        SysMemInfo info = null;
+        if (uidFastPath > 0) {
+            info = blockList.remove(uidFastPath);
+        } else {
+            for (Iterator<SysMemInfo> it = blockList.values().iterator(); it.hasNext();) {
+                SysMemInfo i = it.next();
+                if (info.addr == memAddress) {
+                    it.remove();
+                    info = i;
+                    break;
+                }
             }
         }
 
-        if (!found) {
+        if (info == null) {
             // HLE modules using malloc should also call addSysMemInfo
-            Modules.log.warn("pspSysMem.free(addr) failed to find SysMemInfo for addr:0x" + Integer.toHexString(addr));
-        }
-    }
-
-    // For internal use, example: ThreadMan allocating stack space
-    // Also removes the associated SysMemInfo (if found) from blockList
-    public void freeWithUID(int uid){
-        SysMemInfo info = blockList.get(uid);
-        if (info != null) {
+            Modules.log.warn("pspSysMem.free(addr) failed to find SysMemInfo with uid:" + uidFastPath);
+        } else {
             free(info);
-        }else{
-            // HLE modules using malloc should also call addSysMemInfo
-            Modules.log.warn("pspSysMem.free(addr) failed to find SysMemInfo with uid:" + uid);
         }
     }
 
@@ -326,7 +322,7 @@ public class pspSysMem {
                 infoToMerge = mergedInfo;
             }
             //add the merged info
-            if(newInfo != infoToMerge){
+            if (newInfo != infoToMerge) {
                 freeBlockSet.remove(newInfo);
                 freeBlockSet.add(infoToMerge);
             }
@@ -647,10 +643,10 @@ public class pspSysMem {
         public String toString() {
             return "SysMemInfo{ uid=" + Integer.toHexString(uid) + ";partitionid=" + partitionid + ";name=" + name + ";type=" + type + ";size=" + size + ";addr=" + Integer.toHexString(addr) + " }";
         }
-        
+
         @Override
         public int compareTo(SysMemInfo o) {
-        //there are no equal adresses. Or at least there shouldn't be...
+            //there are no equal adresses. Or at least there shouldn't be...
             if (addr == o.addr) {
                 Modules.log.warn("Set invariant broken for SysMemInfo " + this);
                 return 0;
