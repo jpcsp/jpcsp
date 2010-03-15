@@ -297,6 +297,6 @@ public class SceKernelThreadInfo implements Comparator<SceKernelThreadInfo> {
 	}
 
     public void deleteSysMemInfo() {
-        pspSysMem.getInstance().freeWithUID(sysMemUID);
+        pspSysMem.getInstance().free(sysMemUID, -1);
     }
 }

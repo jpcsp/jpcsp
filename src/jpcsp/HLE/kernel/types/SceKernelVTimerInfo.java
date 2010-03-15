@@ -65,7 +65,7 @@ public class SceKernelVTimerInfo extends pspAbstractMemoryMappedStructure {
 
 	public void delete() {
 		if (internalMemory != 0) {
-			pspSysMem.getInstance().free(internalMemory);
+			pspSysMem.getInstance().free(-1, internalMemory);
 			internalMemory = 0;
 		}
 	}

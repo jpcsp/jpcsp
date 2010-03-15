@@ -115,7 +115,7 @@ public class SceKernelMppInfo {
     }
 
     public void deleteSysMemInfo() {
-        pspSysMem.getInstance().freeWithUID(sysMemUID);
+        pspSysMem.getInstance().free(sysMemUID, -1);
     }
 
     // this will clobber itself if used carelessly but won't overflow outside of its allocated memory
