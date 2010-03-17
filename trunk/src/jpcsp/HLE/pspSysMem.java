@@ -245,7 +245,7 @@ public class pspSysMem {
         } else {
             for (Iterator<SysMemInfo> it = blockList.values().iterator(); it.hasNext();) {
                 SysMemInfo i = it.next();
-                if (info.addr == memAddress) {
+                if (i.addr == memAddress) {
                     it.remove();
                     info = i;
                     break;
