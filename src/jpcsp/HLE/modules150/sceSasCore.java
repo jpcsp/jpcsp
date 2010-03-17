@@ -432,19 +432,19 @@ public class sceSasCore implements HLEModule {
                 + String.format("sasCore=0x%08x, unk1=0x%08x, unk2=0x%08x, unk3=0x%08x, sampleRate=%d",
                 sasCore, cpu.gpr[5], cpu.gpr[6], cpu.gpr[7], sampleRate));
 
-        // we'll support only 1 sascore instance at a time, we can fix this later if needed
+        // We support only 1 sascore instance at a time.
+        // Currently, we overwrite the previous sascore...
         if (sasCoreUid != -1) {
             Modules.log.warn("UNIMPLEMENTED:__sceSasInit multiple instances not yet supported");
-            cpu.gpr[2] = -1;
-        } else {
-            if (mem.isAddressGood(sasCore)) {
-                sasCoreUid = SceUidManager.getNewUid("sceMpeg-Mpeg");
-                mem.write32(sasCore, sasCoreUid);
-            }
-
-            this.sampleRate = sampleRate;
-            cpu.gpr[2] = 0;
         }
+
+        if (mem.isAddressGood(sasCore)) {
+            sasCoreUid = SceUidManager.getNewUid("sceMpeg-Mpeg");
+            mem.write32(sasCore, sasCoreUid);
+        }
+
+        this.sampleRate = sampleRate;
+        cpu.gpr[2] = 0;
     }
 
     public void __sceSasSetVolume(Processor processor) {
