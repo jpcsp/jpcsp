@@ -196,6 +196,8 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
         Lithuanian = new javax.swing.JMenuItem();
         Spanish = new javax.swing.JMenuItem();
         Catalan = new javax.swing.JMenuItem();
+        Portuguese = new javax.swing.JMenuItem();
+        Japanese = new javax.swing.JMenuItem();
         HelpMenu = new javax.swing.JMenu();
         About = new javax.swing.JMenuItem();
 
@@ -525,6 +527,24 @@ public class MainGUI extends javax.swing.JFrame implements KeyListener, Componen
             }
         });
         LanguageMenu.add(Catalan);
+
+        Portuguese.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/pt_PT.png"))); // NOI18N
+        Portuguese.setText(Resource.get("portuguese"));
+        Portuguese.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                PortugueseActionPerformed(evt);
+            }
+        });
+        LanguageMenu.add(Portuguese);
+
+        Japanese.setIcon(new javax.swing.ImageIcon(getClass().getResource("/jpcsp/icons/flags/jp_JP.png"))); // NOI18N
+        Japanese.setText(Resource.get("japanese"));
+        Japanese.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                JapaneseActionPerformed(evt);
+            }
+        });
+        LanguageMenu.add(Japanese);
 
         MenuBar.add(LanguageMenu);
 
@@ -1288,6 +1308,14 @@ private void CatalanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST
 changeLanguage("es_CA");
 }//GEN-LAST:event_CatalanActionPerformed
 
+private void PortugueseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_PortugueseActionPerformed
+changeLanguage("pt_PT");
+}//GEN-LAST:event_PortugueseActionPerformed
+
+private void JapaneseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_JapaneseActionPerformed
+changeLanguage("jp_JP");
+}//GEN-LAST:event_JapaneseActionPerformed
+
 private void exitEmu() {
     if (Settings.getInstance().readBool("gui.saveWindowPos"))
         Settings.getInstance().writeWindowPos("mainwindow", getLocation());
@@ -1447,6 +1475,7 @@ private void processArgs(String[] args) {
     private javax.swing.JMenuItem German;
     private javax.swing.JMenu HelpMenu;
     private javax.swing.JMenuItem InstructionCounter;
+    private javax.swing.JMenuItem Japanese;
     private javax.swing.JMenu LanguageMenu;
     private javax.swing.JMenuItem Lithuanian;
     private javax.swing.JMenuItem LoadSnap;
@@ -1456,6 +1485,7 @@ private void processArgs(String[] args) {
     private javax.swing.JMenu OptionsMenu;
     private javax.swing.JToggleButton PauseButton;
     private javax.swing.JMenuItem PauseEmu;
+    private javax.swing.JMenuItem Portuguese;
     private javax.swing.JMenu RecentMenu;
     private javax.swing.JButton ResetButton;
     private javax.swing.JMenuItem ResetEmu;
